@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const tenantSchema = z.object({
-	id: z.number().int().positive("ID must be a positive integer"),
+	id: z.string().regex(/^\d+$/, "ID must be a numeric string"),
 });
 
 export async function GET(
@@ -18,12 +18,17 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const tenantId = parseInt(params.id, 10);
-	if (isNaN(tenantId)) {
-		return NextResponse.json({ error: "Invalid tenant ID" }, { status: 400 });
+	// Validate the params with Zod
+	const validation = tenantSchema.safeParse({ id: params.id });
+	if (!validation.success) {
+		return NextResponse.json(
+			{ error: validation.error.errors[0].message },
+			{ status: 400 },
+		);
 	}
 
 	try {
+		const tenantId = parseInt(params.id, 10);
 		const tenant = await prisma.tenant.findUnique({
 			where: { id: tenantId },
 		});
