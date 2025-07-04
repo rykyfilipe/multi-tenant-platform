@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Minified files
+**/*.min.js
+**/*.bundle.js
+
+# Generated files
+.next/
+coverage/
