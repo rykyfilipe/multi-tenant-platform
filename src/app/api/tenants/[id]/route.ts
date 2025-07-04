@@ -7,6 +7,7 @@ import { z } from "zod";
 
 const tenantSchema = z.object({
 	id: z.string().regex(/^\d+$/, "ID must be a numeric string"),
+	id: z.string().regex(/^\d+$/, "ID must be a numeric string"),
 });
 
 export async function GET(
@@ -18,6 +19,14 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
+	// Validate the params with Zod
+	const validation = tenantSchema.safeParse({ id: params.id });
+	if (!validation.success) {
+		return NextResponse.json(
+			{ error: validation.error.errors[0].message },
+			{ status: 400 },
+		);
+	}
 	try {
 		const { id } = await params;
 
@@ -30,6 +39,8 @@ export async function GET(
 			);
 		}
 
+	try {
+		const tenantId = parseInt(params.id, 10);
 		const tenantId = parseInt(id, 10);
 		const tenant = await prisma.tenant.findUnique({
 			where: { id: tenantId },
