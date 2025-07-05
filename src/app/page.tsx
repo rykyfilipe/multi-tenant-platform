@@ -4,14 +4,6 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-
-interface User {
-	firstName: string;
-	lastName: string;
-	email: string;
-	role: "VIEWER" | "ADMIN";
-}
 
 function Welcome() {
 	return (
