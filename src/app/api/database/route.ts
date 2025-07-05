@@ -5,10 +5,6 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-const tenantSchema = z.object({
-	name: z.string().min(1, "Name is required"),
-});
-
 export async function GET(request: Request) {
 	const logged = verifyLogin(request);
 	if (!logged) {
@@ -21,24 +17,30 @@ export async function GET(request: Request) {
 	}
 
 	const user = await prisma.user.findUnique({
-		where: {
-			id: Number(userId),
-		},
+		where: { id: Number(userId) },
 	});
 
+	if (!user) {
+		return NextResponse.json({ error: "User not found" }, { status: 404 });
+	}
+
 	try {
-		const tenants = await prisma.tenant.findMany({
+		const databases = await prisma.database.findMany({
 			where: {
-				adminId: user?.id,
+				tenant: {
+					adminId: user.id,
+				},
 			},
 			include: {
-				database: true,
+				tenant: true,
+				tables: true,
 			},
 		});
-		return NextResponse.json(tenants);
+		return NextResponse.json(databases);
 	} catch (error) {
+		console.error(error);
 		return NextResponse.json(
-			{ error: "Failed to fetch tenants" },
+			{ error: "Failed to fetch databases" },
 			{ status: 500 },
 		);
 	}
@@ -47,6 +49,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
 	const logged = verifyLogin(request);
 	const admin = isAdmin(request);
+
 	if (!logged || !admin) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
@@ -54,9 +57,7 @@ export async function POST(request: Request) {
 	const userId = getUserId(request);
 
 	const user = await prisma.user.findUnique({
-		where: {
-			id: Number(userId),
-		},
+		where: { id: Number(userId) },
 	});
 
 	if (!user || user.role !== "ADMIN") {
@@ -64,36 +65,47 @@ export async function POST(request: Request) {
 	}
 
 	try {
-		const body = await request.json();
-		const parsedBody = tenantSchema.parse(body);
+		const tenantId = Number(user.tenantId);
 
-		const existingTenant = await prisma.tenant.findUnique({
-			where: {
-				name: parsedBody.name,
-			},
+		// Verificăm dacă Tenant-ul există și aparține user-ului admin
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: tenantId },
 		});
 
-		if (existingTenant) {
+		if (!tenant || tenant.adminId !== user.id) {
 			return NextResponse.json(
-				{ error: "Tenant with this slug already exists" },
+				{ error: "Tenant not found or you are not the admin of this tenant" },
+				{ status: 403 },
+			);
+		}
+
+		// Verificăm dacă deja are un Database
+		const existingDatabase = await prisma.database.findUnique({
+			where: { tenantId: tenant.id },
+		});
+
+		if (existingDatabase) {
+			return NextResponse.json(
+				{ error: "Tenant already has a database" },
 				{ status: 400 },
 			);
 		}
 
-		const newTenant = await prisma.tenant.create({
+		// Creăm Database-ul
+		const newDatabase = await prisma.database.create({
 			data: {
-				name: parsedBody.name,
-				adminId: user.id,
+				tenantId: tenant.id,
 			},
 		});
 
-		return NextResponse.json(newTenant, { status: 201 });
+		return NextResponse.json(newDatabase, { status: 201 });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return NextResponse.json({ error: error.errors }, { status: 400 });
 		}
+		console.error(error);
 		return NextResponse.json(
-			{ error: "Failed to create tenant" },
+			{ error: "Failed to create database" },
 			{ status: 500 },
 		);
 	}
