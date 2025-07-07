@@ -16,7 +16,7 @@ const columnSchema = z.object({
 
 const tableSchema = z.object({
 	name: z.string().min(1, { message: "Numele tabelului este obligatoriu" }),
-	columns: z  
+	columns: z
 		.array(columnSchema)
 		.min(1, { message: "Trebuie să ai cel puțin o coloană" }),
 });
@@ -86,7 +86,9 @@ export async function GET(
 		const { id } = await params;
 
 		const table = await prisma.table.findUnique({
-			where: { id: Number(id) },
+			where: {
+				id: Number(id),
+			},
 		});
 
 		if (!table) {

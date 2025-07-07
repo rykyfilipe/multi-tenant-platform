@@ -2,7 +2,6 @@
 
 "use client";
 
-import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,10 +16,12 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useApp } from "@/contexts/AppContext";
 
 function AuthForm() {
+	const { showAlert } = useApp();
+
 	const [tab, setTab] = useState("login");
 	const router = useRouter();
 
@@ -31,9 +32,6 @@ function AuthForm() {
 	const [lastName, setLastName] = useState("");
 	const [role, setRole] = useState("VIEWER");
 
-	const [showAlert, setShowAlert] = useState(false);
-	const [alertMessage, setAlertMessage] = useState("");
-	const [alertType, setAlertType] = useState<"success" | "error">("success");
 	const [loading, setLoading] = useState(false);
 
 	const resetForm = () => {
@@ -42,16 +40,6 @@ function AuthForm() {
 		setFirstName("");
 		setLastName("");
 		setRole("VIEWER");
-	};
-
-	const showTemporaryAlert = (message: string, type: "success" | "error") => {
-		setShowAlert(true);
-		setAlertType(type);
-		setAlertMessage(message);
-		setTimeout(() => {
-			setShowAlert(false);
-			setAlertMessage("");
-		}, 5000);
 	};
 
 	const handleLogin = async (e: React.FormEvent) => {
@@ -68,22 +56,19 @@ function AuthForm() {
 			const data = await response.json();
 
 			if (!response.ok) {
-				showTemporaryAlert(data.error || "Login failed", "error");
+				showAlert(data.error || "Login failed", "error");
 			} else if (data.token) {
 				localStorage.setItem("token", data.token);
 				localStorage.setItem("user", JSON.stringify(data.user));
-				showTemporaryAlert("Login successful!", "success");
+				showAlert("Login successful!", "success");
 				resetForm();
 
 				setTimeout(() => {
-					router.push("/dashboard");
+					router.push("/home/dashboard");
 				}, 2000);
 			}
 		} catch (error: any) {
-			showTemporaryAlert(
-				error.message || "An error occurred during login.",
-				"error",
-			);
+			showAlert(error.message || "An error occurred during login.", "error");
 		} finally {
 			setLoading(false);
 		}
@@ -109,19 +94,19 @@ function AuthForm() {
 			const data = await response.json();
 
 			if (!response.ok) {
-				showTemporaryAlert(data.error || "Registration failed", "error");
+				showAlert(data.error || "Registration failed", "error");
 			} else if (data.token) {
 				localStorage.setItem("token", data.token);
 				localStorage.setItem("user", JSON.stringify(data.user));
-				showTemporaryAlert("Registration successful!", "success");
+				showAlert("Registration successful!", "success");
 				resetForm();
 
 				setTimeout(() => {
-					router.push("/dashboard");
+					router.push("/home/dashboard");
 				}, 2000);
 			}
 		} catch (error: any) {
-			showTemporaryAlert(
+			showAlert(
 				error.message || "An error occurred during registration.",
 				"error",
 			);
@@ -132,20 +117,6 @@ function AuthForm() {
 
 	return (
 		<div className='flex items-center justify-center h-screen bg-gray-100'>
-			{showAlert && (
-				<div
-					className={cn(
-						"absolute top-4 right-4 p-2 rounded-md shadow-md",
-						alertType === "error"
-							? "bg-red-100 text-red-700"
-							: "bg-green-100 text-green-700",
-					)}>
-					<Alert className='w-auto'>
-						<AlertTitle>{alertMessage}</AlertTitle>
-					</Alert>
-				</div>
-			)}
-
 			<Tabs
 				defaultValue='login'
 				value={tab}

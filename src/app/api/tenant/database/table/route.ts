@@ -7,10 +7,11 @@ import { z } from "zod";
 
 const columnSchema = z.object({
 	name: z.string().min(1, { message: "Numele coloanei este obligatoriu" }),
-	type: z.enum(["integer", "string", "float", "datetime"]),
+	type: z.enum(["number", "string", "float", "date"]),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
 	required: z.boolean().optional(),
+	unique: z.boolean().optional(),
 	default: z.union([z.string(), z.number(), z.boolean()]).optional(),
 });
 
@@ -55,6 +56,24 @@ export async function POST(request: Request) {
 				id: true,
 			},
 		});
+
+		const tableExists = await prisma.table.findFirst({
+			where: {
+				name: body.name,
+				database: {
+					tenant: {
+						adminId: user.id,
+					},
+				},
+			},
+		});
+
+		if (tableExists) {
+			return NextResponse.json(
+				{ error: "Table already exists" },
+				{ status: 409 },
+			);
+		}
 
 		const { columns } = parsedData;
 		console.log("Creating table with columns:", columns);

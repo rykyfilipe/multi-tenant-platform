@@ -6,7 +6,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export async function GET(request: Request) {
-	console.log("GET /api/tenant/database");
 	const logged = verifyLogin(request);
 	if (!logged) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -36,7 +35,7 @@ export async function GET(request: Request) {
 				tables: true,
 			},
 		});
-		return NextResponse.json(database);
+		return NextResponse.json(database, { status: 200 });
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(
