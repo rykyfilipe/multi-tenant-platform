@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export async function GET(request: Request) {
+	console.log("GET /api/tenant/database");
 	const logged = verifyLogin(request);
 	if (!logged) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,7 +20,6 @@ export async function GET(request: Request) {
 	const user = await prisma.user.findUnique({
 		where: { id: Number(userId) },
 	});
-
 	if (!user) {
 		return NextResponse.json({ error: "User not found" }, { status: 404 });
 	}

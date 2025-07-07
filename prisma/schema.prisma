@@ -41,22 +41,15 @@ model Database {
 }
 
 model Table {
-  id            Int         @id @default(autoincrement())
-  databaseId    Int
-  database      Database    @relation(fields: [databaseId], references: [id])
+  id         Int      @id @default(autoincrement())
+  name String 
+  databaseId Int
+  database   Database @relation(fields: [databaseId], references: [id])
 
-  tableSchemaId Int
-  tableSchema   TableSchema @relation(fields: [tableSchemaId], references: [id])
-
-  rows          Json
+  columns    Json
+  rows       Json
 }
 
-model TableSchema {
-  id      Int   @id @default(autoincrement())
-  columns Json
-
-  tables  Table[]
-}
 
 enum Role {
   ADMIN
