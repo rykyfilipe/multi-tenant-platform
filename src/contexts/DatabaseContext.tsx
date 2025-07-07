@@ -69,12 +69,13 @@ export const DatabaseProvider = ({
 			if (!response.ok) throw new Error("Failed to fetch database");
 
 			const data = await response.json();
-			if (!data || !data.length) {
+			if (!data) {
 				setDatabaseInfo("No database found");
 				setTables([]);
 			} else {
 				setDatabaseInfo(null);
-				setTables(data[0]?.tables || []);
+
+				setTables(data.tables || []);
 			}
 		} catch (error) {
 			console.error("Error fetching database:", error);

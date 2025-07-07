@@ -59,10 +59,10 @@ function TableCard({ table }: TableCardProps) {
 				<div className='space-y-2'>
 					<p className='text-sm text-gray-600'>ID: {table.id}</p>
 					<p className='text-sm text-gray-600'>
-						Columns: {table.columns.create.length}
+						Columns: {table.columns.create.create.length}
 					</p>
 					<p className='text-sm text-gray-600'>
-						Rows: {table.rows.create.length}
+						Rows: {table.rows.create.create.length}
 					</p>
 				</div>
 			</CardContent>

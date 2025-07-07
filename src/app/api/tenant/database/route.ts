@@ -2,6 +2,7 @@
 
 import { getUserId, isAdmin, verifyLogin } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { error } from "console";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
 				tables: true,
 			},
 		});
-		return NextResponse.json(database, { status: 200 });
+		return NextResponse.json(database[0]);
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(

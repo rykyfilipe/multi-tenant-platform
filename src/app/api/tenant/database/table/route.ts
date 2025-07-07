@@ -138,8 +138,13 @@ export async function GET(request: Request) {
 				},
 			},
 		});
-
-		return NextResponse.json(tables);
+		const cleanTables = tables.map((table) => ({
+			id: table.id,
+			name: table.name,
+			rows: Array.isArray(table.rows) ? table.rows : [],
+			columns: Array.isArray(table.columns) ? table.columns : [],
+		}));
+		return NextResponse.json(cleanTables);
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(
