@@ -64,10 +64,14 @@ function TableCard({ table }: { table: Table }) {
 				<div className='space-y-2'>
 					<p className='text-sm text-gray-600'>ID: {table.id}</p>
 					<p className='text-sm text-gray-600'>
-						Columns: {table.columns.create.length}
+						Columns:{" "}
+						{Array.isArray(table.columns.create)
+							? table.columns.create.length
+							: 0}
 					</p>
 					<p className='text-sm text-gray-600'>
-						Rows: {table.rows.create.length}
+						Rows:{" "}
+						{Array.isArray(table.rows.create) ? table.rows.create.length : 0}
 					</p>
 				</div>
 			</CardContent>
