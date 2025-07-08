@@ -15,9 +15,13 @@ interface JwtPayload {
 
 export function generateToken(
 	payload: Omit<JwtPayload, "iat" | "exp">,
-	exp: string | number,
+	exp: SignOptions["expiresIn"],
 ): string {
-	return jwt.sign(payload, JWT_SECRET, exp as SignOptions);
+	const options: SignOptions = {
+		expiresIn: exp,
+	};
+
+	return jwt.sign(payload, JWT_SECRET, options);
 }
 
 export async function hashPassword(password: string): Promise<string> {
