@@ -68,9 +68,9 @@ function Page() {
 			</ul>
 
 			<h2 className='text-lg font-semibold mt-6 mb-2'>Rows</h2>
-			{table.rows?.length > 0 ? (
+			{table.rows?.create.length > 0 ? (
 				<ul className='grid gap-2'>
-					{table.rows.map((row, index) => (
+					{table.rows.create.map((row, index) => (
 						<li
 							key={index}
 							className='text-sm border rounded p-2 font-mono bg-gray-50'>
