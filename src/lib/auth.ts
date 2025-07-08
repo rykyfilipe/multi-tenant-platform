@@ -1,6 +1,6 @@
 /** @format */
 
-import jwt, { Secret } from "jsonwebtoken";
+import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -13,8 +13,11 @@ interface JwtPayload {
 	exp?: number;
 }
 
-export function generateToken(payload: JwtPayload, exp: string) {
-	return jwt.sign(payload, JWT_SECRET, { expiresIn: exp });
+export function generateToken(
+	payload: Omit<JwtPayload, "iat" | "exp">,
+	exp: string | number,
+): string {
+	return jwt.sign(payload, JWT_SECRET, exp as SignOptions);
 }
 
 export async function hashPassword(password: string): Promise<string> {
