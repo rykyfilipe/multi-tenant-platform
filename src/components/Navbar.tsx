@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
+import { useApp } from "@/contexts/AppContext";
 
 const items = [
 	{
@@ -66,6 +67,7 @@ const items = [
 ];
 
 export function AppSidebar() {
+	const { setToken, setUser } = useApp();
 	const router = useRouter();
 
 	const logout = async () => {
@@ -83,6 +85,9 @@ export function AppSidebar() {
 
 			localStorage.removeItem("token");
 			localStorage.removeItem("user");
+
+			setToken(null);
+			setUser(null);
 
 			router.push("/");
 		} catch (error) {

@@ -4,6 +4,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { Table, Column, ColumnSchema } from "@/types/database";
+import { useApp } from "./AppContext";
 
 interface DatabaseContextType {
 	token: string | null;
@@ -20,6 +21,11 @@ interface DatabaseContextType {
 	columnsSchema: ColumnSchema[];
 	databaseInfo: string | null;
 	setTables: (tables: Table[]) => void;
+	selectedTable: Table | null;
+	setSelectedTable: (table: Table | null) => void;
+	handleUpdateTable: (e: React.FormEvent) => void;
+	isUpdate: boolean;
+	setIsUpdate: (x: boolean) => void;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(
@@ -38,6 +44,11 @@ export const DatabaseProvider = ({
 	const [columns, setColumns] = useState<Column[]>([]);
 	const [showAddTableModal, setShowAddTableModal] = useState(false);
 	const [name, setName] = useState("");
+	const [isUpdate, setIsUpdate] = useState(false);
+
+	const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+
+	const { showAlert, user } = useApp();
 
 	const columnsSchema: ColumnSchema[] = [
 		{ name: "name", type: "string", required: true },
@@ -63,14 +74,14 @@ export const DatabaseProvider = ({
 
 	const fetchDatabase = async (authToken: string) => {
 		try {
-			const response = await fetch("/api/tenant/database", {
+			const response = await fetch(`/api/tenant/${user.tenantId}/database`, {
 				headers: { Authorization: `Bearer ${authToken}` },
 			});
 			if (!response.ok) throw new Error("Failed to fetch database");
 
 			const data = await response.json();
 			if (!data) {
-				setDatabaseInfo("No database found");
+				showAlert("No database found", "error");
 				setTables([]);
 			} else {
 				setDatabaseInfo(null);
@@ -78,8 +89,7 @@ export const DatabaseProvider = ({
 				setTables(data.tables || []);
 			}
 		} catch (error) {
-			console.error("Error fetching database:", error);
-			setDatabaseInfo("Error loading database");
+			showAlert("Error loading database", "error");
 		}
 	};
 
@@ -91,14 +101,48 @@ export const DatabaseProvider = ({
 		setLoading(true);
 
 		try {
-			const response = await fetch("/api/tenant/database/table", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+			const response = await fetch(
+				`/api/tenant/${user.tenantId}/database/table`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ name, columns }),
 				},
-				body: JSON.stringify({ name, columns }),
-			});
+			);
+			if (!response.ok) throw new Error("Failed to add table");
+
+			setShowAddTableModal(false);
+			setName("");
+			setColumns([]);
+			fetchDatabase(token);
+		} catch (error) {
+			console.error("Error adding table:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
+	const handleUpdateTable = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!token) return console.error("No token available");
+		if (!name || !columns.length)
+			return console.error("Table name and columns are required");
+		setLoading(true);
+
+		try {
+			const response = await fetch(
+				`/api/tenant/${user.tenantId}/database/table/${selectedTable?.id}`,
+				{
+					method: "PATCH",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ name, columns }),
+				},
+			);
 			if (!response.ok) throw new Error("Failed to add table");
 
 			setShowAddTableModal(false);
@@ -129,6 +173,11 @@ export const DatabaseProvider = ({
 				columnsSchema,
 				databaseInfo,
 				setTables,
+				selectedTable,
+				setSelectedTable,
+				handleUpdateTable,
+				isUpdate,
+				setIsUpdate,
 			}}>
 			{children}
 		</DatabaseContext.Provider>

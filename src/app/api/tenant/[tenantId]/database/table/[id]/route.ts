@@ -3,7 +3,12 @@
 import prisma from "@/lib/prisma";
 import z from "zod";
 import { NextResponse } from "next/server";
-import { getUserId, isAdmin, verifyLogin } from "@/lib/auth";
+import {
+	getUserFromRequest,
+	getUserId,
+	isAdmin,
+	verifyLogin,
+} from "@/lib/auth";
 
 const columnSchema = z.object({
 	name: z.string().min(1, { message: "Numele coloanei este obligatoriu" }),
@@ -26,48 +31,84 @@ export async function PATCH(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	const logged = verifyLogin(request);
-	const admin = isAdmin(request);
-
-	if (!logged || !admin) {
+	if (!logged) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
+	const { id } = await params;
 
-	const userId = getUserId(request);
-	if (!userId) {
-		return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+	const userResult = await getUserFromRequest(request);
+
+	if (userResult instanceof NextResponse) {
+		return userResult;
 	}
 
-	const user = await prisma.user.findUnique({
-		where: { id: Number(userId) },
-	});
+	const { userId, role } = userResult;
 
-	if (!user) {
-		return NextResponse.json({ error: "User not found" }, { status: 404 });
-	}
+	if (role !== "ADMIN")
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
 		const body = await request.json();
 		const parsedData = tableSchema.parse(body);
-		const { id } = await params;
 
-		const table = await prisma.table.findFirst({
+		const database = await prisma.database.findMany({
 			where: {
-				id: Number(id),
+				tenant: {
+					adminId: userId,
+				},
+			},
+			select: {
+				id: true,
 			},
 		});
 
-		if (!table) {
-			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		const tableExists = await prisma.table.findFirst({
+			where: {
+				name: body.name,
+				database: {
+					tenant: {
+						adminId: userId,
+					},
+				},
+			},
+		});
+
+		if (!tableExists) {
+			return NextResponse.json({ error: "Table nu exista" }, { status: 408 });
 		}
 
 		const { columns } = parsedData;
 		console.log("Creating table with columns:", columns);
+		const table = await prisma.table.update({
+			where: {
+				id: Number(id),
+			},
+			data: {
+				name: body.name,
+				columns: {
+					create: columns.map((column) => ({
+						name: column.name,
+						type: column.type,
+						primary: column.primary || false,
+						autoIncrement: column.autoIncrement || false,
+						required: column.required || false,
+						default: column.default,
+					})),
+				},
+				database: {
+					connect: { id: database[0]?.id },
+				},
+				rows: {
+					create: [],
+				},
+			},
+		});
 
-		return NextResponse.json(table);
+		return NextResponse.json(table, { status: 201 });
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(
-			{ error: "Failed to create table" },
+			{ error: "Failed to create table schema" },
 			{ status: 500 },
 		);
 	}

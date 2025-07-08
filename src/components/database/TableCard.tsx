@@ -1,33 +1,23 @@
 /** @format */
 
-import { Delete, Trash } from "lucide-react";
+import { Delete, Edit, Edit2Icon, Edit3Icon, Trash } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { useApp } from "@/contexts/AppContext";
 import Link from "next/link";
+import { Table } from "@/types/database";
 
-interface TableCardProps {
-	table: {
-		id: string;
-		name: string;
-		columns: {
-			create: Array<{
-				name: string;
-				type: string;
-				primary: boolean;
-				autoIncrement: boolean;
-				required: boolean;
-				unique: boolean;
-				defaultValue: string;
-			}>;
-		};
-		rows: { create: Array<Record<string, any>> };
-	};
-}
-
-function TableCard({ table }: TableCardProps) {
-	const { tables, setTables } = useDatabase();
+function TableCard({ table }: { table: Table }) {
+	const {
+		tables,
+		setTables,
+		setColumns,
+		setName,
+		setShowAddTableModal,
+		setIsUpdate,
+		setSelectedTable,
+	} = useDatabase();
 	const { showAlert } = useApp();
 	const deleteTable = async () => {
 		try {
@@ -50,19 +40,34 @@ function TableCard({ table }: TableCardProps) {
 			showAlert("Failed to delete table", "error");
 		}
 	};
+
+	const editTable = async () => {
+		setName(table.name);
+		setColumns(table.columns.create);
+		setShowAddTableModal(true);
+		setIsUpdate(true);
+		setSelectedTable(table);
+	};
 	return (
 		<Card>
 			<CardHeader>
-				<h2 className='text-lg font-semibold'>{table.name}</h2>
+				<div className='w-full flex items-center justify-between'>
+					<h2 className='text-lg font-semibold'>{table.name}</h2>
+					<Button
+						className='bg-transparent text-black shadow-none hover:bg-gray-200 max-w-min'
+						onClick={editTable}>
+						<Edit />
+					</Button>
+				</div>
 			</CardHeader>
 			<CardContent>
 				<div className='space-y-2'>
 					<p className='text-sm text-gray-600'>ID: {table.id}</p>
 					<p className='text-sm text-gray-600'>
-						Columns: {table.columns.create.create.length}
+						Columns: {table.columns.create.length}
 					</p>
 					<p className='text-sm text-gray-600'>
-						Rows: {table.rows.create.create.length}
+						Rows: {table.rows.create.length}
 					</p>
 				</div>
 			</CardContent>

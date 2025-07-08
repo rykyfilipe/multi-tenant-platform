@@ -21,6 +21,7 @@ function DatabaseContent() {
 		tables,
 		columns,
 		setColumns,
+		setIsUpdate,
 		showAddTableModal,
 		setShowAddTableModal,
 		name,
@@ -29,6 +30,10 @@ function DatabaseContent() {
 		loading,
 		columnsSchema,
 		databaseInfo,
+		selectedTable,
+		setSelectedTable,
+		isUpdate,
+		handleUpdateTable,
 	} = useDatabase();
 
 	return (
@@ -45,14 +50,22 @@ function DatabaseContent() {
 
 				<AddTableModal
 					isOpen={showAddTableModal}
-					onClose={() => setShowAddTableModal(false)}
+					onClose={() => {
+						setShowAddTableModal(false);
+						setSelectedTable(null);
+						setColumns([]);
+						setName("");
+						setIsUpdate(false);
+					}}
 					name={name}
 					setName={setName}
 					columns={columns}
 					setColumns={setColumns}
 					columnsSchema={columnsSchema}
-					onSubmit={handleAddTable}
+					onSubmit={isUpdate ? handleUpdateTable : handleAddTable}
 					loading={loading}
+					selectedTable={selectedTable}
+					setSelectedTable={setSelectedTable}
 				/>
 			</div>
 		</div>

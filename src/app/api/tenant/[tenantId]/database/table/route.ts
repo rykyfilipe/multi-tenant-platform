@@ -2,7 +2,13 @@
 
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getUserId, isAdmin, verifyLogin } from "@/lib/auth";
+import {
+	checkUserTenantAccess,
+	getUserFromRequest,
+	getUserId,
+	isAdmin,
+	verifyLogin,
+} from "@/lib/auth";
 import { z } from "zod";
 
 const columnSchema = z.object({
@@ -23,24 +29,20 @@ const tableSchema = z.object({
 
 export async function POST(request: Request) {
 	const logged = verifyLogin(request);
-	const admin = isAdmin(request);
-
-	if (!logged || !admin) {
+	if (!logged) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const userId = getUserId(request);
-	if (!userId) {
-		return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+	const userResult = await getUserFromRequest(request);
+
+	if (userResult instanceof NextResponse) {
+		return userResult;
 	}
 
-	const user = await prisma.user.findUnique({
-		where: { id: Number(userId) },
-	});
+	const { userId, role } = userResult;
 
-	if (!user) {
-		return NextResponse.json({ error: "User not found" }, { status: 404 });
-	}
+	if (role !== "ADMIN")
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
 		const body = await request.json();
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
 		const database = await prisma.database.findMany({
 			where: {
 				tenant: {
-					adminId: user.id,
+					adminId: userId,
 				},
 			},
 			select: {
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
 				name: body.name,
 				database: {
 					tenant: {
-						adminId: user.id,
+						adminId: userId,
 					},
 				},
 			},
@@ -153,3 +155,4 @@ export async function GET(request: Request) {
 		);
 	}
 }
+

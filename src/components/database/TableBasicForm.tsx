@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDatabase } from "@/contexts/DatabaseContext";
 import { Table2, X } from "lucide-react";
 
 interface TableBasicsFormProps {
@@ -21,6 +22,8 @@ export function TableBasicsForm({
 	onCancel,
 	loading,
 }: TableBasicsFormProps) {
+	const { selectedTable } = useDatabase();
+
 	return (
 		<Card className='border-0 shadow-2xl bg-white'>
 			<CardHeader className='text-center pb-4'>
@@ -60,7 +63,13 @@ export function TableBasicsForm({
 							type='submit'
 							disabled={loading}
 							className='flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200'>
-							{loading ? "Creating..." : "Create Table"}
+							{selectedTable
+								? loading
+									? "Updating..."
+									: "Update Table"
+								: loading
+								? "Creating..."
+								: "Create Table"}
 						</Button>
 						<Button
 							type='button'

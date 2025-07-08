@@ -9,60 +9,72 @@ import { useEffect, useState } from "react";
 
 function Page() {
 	const params = useParams();
-	const id = params.id;
+	const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
-	const { token } = useApp();
-
+	const { token, user } = useApp();
 	const [table, setTable] = useState<Table | null>(null);
+	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		if (!id) return;
 		const fetchTable = async () => {
+			if (!id || !user?.tenantId || !token) return;
+
 			try {
-				const res = await fetch(`/api/tenant/database/table/${id}`, {
-					method: "GET",
-					headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-				});
+				const res = await fetch(
+					`/api/tenant/${user.tenantId}/database/table/${id}`,
+					{
+						method: "GET",
+						headers: { Authorization: `Bearer ${token}` },
+					},
+				);
 				if (!res.ok) throw new Error("Failed to fetch table");
 				const data = await res.json();
 				setTable(data);
 			} catch (err) {
-				console.error(err);
+				console.error("Error fetching table:", err);
+			} finally {
+				setLoading(false);
 			}
 		};
 
 		fetchTable();
-	}, [id]);
+	}, [id, token, user]);
 
-	if (!table) return <div className='p-4'>Loading...</div>;
+	if (loading)
+		return (
+			<div className='p-4 text-gray-600 animate-pulse'>Loading table...</div>
+		);
+
+	if (!table)
+		return <div className='p-4 text-red-500'>Failed to load table.</div>;
 
 	return (
 		<div className='max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg'>
-			<h1 className='text-2xl font-bold mb-4'>{table.name}</h1>
-			<p className='text-gray-600 mb-2'>ID: {table.id}</p>
-			<p className='text-gray-600 mb-4'>
-				Description: {table.description || "No description available."}
-			</p>
+			<h1 className='text-2xl font-bold mb-2'>{table.name}</h1>
+			<p className='text-sm text-gray-500 mb-4'>ID: {table.id}</p>
 
-			<h2 className='text-xl font-semibold mb-2'>Columns</h2>
-			<ul className='list-disc pl-5'>
-				{table.columns?.create.map((column, index) => (
-					<li key={index} className='text-sm text-gray-700 border p-2 rounded'>
+			<h2 className='text-lg font-semibold mb-2'>Columns</h2>
+			<ul className='grid gap-3'>
+				{table.columns?.create?.map((column, index) => (
+					<li key={index} className='border rounded p-3 text-sm bg-gray-50'>
 						{Object.entries(column).map(([key, value]) => (
-							<p key={key}>
-								<span className='font-medium'>{key}:</span> {String(value)}
-							</p>
+							<div key={key} className='flex justify-between'>
+								<span className='font-medium text-gray-700'>{key}</span>
+								<span className='text-gray-900'>{String(value)}</span>
+							</div>
 						))}
 					</li>
 				))}
 			</ul>
 
-			<h2 className='text-xl font-semibold mt-6 mb-2'>Rows</h2>
+			<h2 className='text-lg font-semibold mt-6 mb-2'>Rows</h2>
 			{table.rows?.length > 0 ? (
-				<ul className='list-disc pl-5'>
+				<ul className='grid gap-2'>
 					{table.rows.map((row, index) => (
-						<li key={index} className='mb-1'>
-							{JSON.stringify(row)}
+						<li
+							key={index}
+							className='text-sm border rounded p-2 font-mono bg-gray-50'>
+							{JSON.stringify(row, null, 2)}
 						</li>
 					))}
 				</ul>

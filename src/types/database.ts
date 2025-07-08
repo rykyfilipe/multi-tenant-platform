@@ -13,8 +13,18 @@ export interface Column {
 export interface Table {
 	id: string;
 	name: string;
-	columns: Column[];
-	rows: Record<string, any>[];
+	columns: {
+		create: Array<{
+			name: string;
+			type: string;
+			primary: boolean;
+			autoIncrement: boolean;
+			required: boolean;
+			unique: boolean;
+			defaultValue: string;
+		}>;
+	};
+	rows: { create: Array<Record<string, any>> };
 }
 
 export interface ColumnSchema {

@@ -29,7 +29,6 @@ function Page() {
 				const data = await response.json();
 				setTenant(data);
 			} catch (error) {
-				console.error("Error fetching tenant:", error);
 				showAlert("Failed to load tenant", "error");
 			} finally {
 				setLoading(false);
@@ -55,7 +54,10 @@ function Page() {
 						No tenant available for this user
 					</h1>
 					<p className='text-gray-600'>Create a tenant to continue</p>
-					<Button onClick={() => setShowForm(true)} className='flex gap-2'>
+					<Button
+						onClick={() => setShowForm(true)}
+						className='flex gap-2'
+						disabled={user.role !== "ADMIN"}>
 						<Plus className='w-4 h-4' />
 						Create Tenant
 					</Button>
