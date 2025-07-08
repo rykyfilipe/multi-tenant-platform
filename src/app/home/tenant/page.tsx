@@ -7,11 +7,12 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AddTenantForm from "@/components/tenant/AddTenantForm";
 import { useApp } from "@/contexts/AppContext";
+import { Tenant } from "@/types/tenant";
 
 function Page() {
 	const { showAlert, token, user } = useApp();
 
-	const [tenant, setTenant] = useState(null);
+	const [tenant, setTenant] = useState<Tenant | null>(null);
 	const [showForm, setShowForm] = useState(false);
 	const [loading, setLoading] = useState(true);
 
@@ -47,7 +48,7 @@ function Page() {
 					Loading tenant...
 				</div>
 			) : tenant ? (
-				<h1 className='text-2xl font-bold text-center'>{tenant.name}</h1>
+				<h1 className='text-2xl font-bold text-center'>{tenant?.name}</h1>
 			) : (
 				<div className='flex flex-col items-center space-y-4'>
 					<h1 className='text-xl font-semibold'>
