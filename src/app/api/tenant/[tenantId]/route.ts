@@ -1,28 +1,43 @@
 /** @format */
 
 import prisma from "@/lib/prisma";
-import { verifyLogin } from "@/lib/auth";
+import {
+	getUserFromRequest,
+	checkUserTenantAccess,
+	verifyLogin,
+} from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const tenantSchema = z.object({
-	id: z.string().regex(/^\d+$/, "ID must be a numeric string"),
+	tenantId: z.string().regex(/^\d+$/, "tenantId must be a numeric string"),
 });
 
 export async function GET(
 	request: Request,
-	{ params }: { params: Promise<{ id: string }> },
+	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
 	const logged = verifyLogin(request);
 	if (!logged) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	try {
-		const { id } = await params;
+	const { tenantId } = await params;
+	const userResult = await getUserFromRequest(request);
 
-		// Validate the params with Zod
-		const validation = tenantSchema.safeParse({ id });
+	if (userResult instanceof NextResponse) {
+		return userResult;
+	}
+
+	const { userId, role } = userResult;
+
+	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+
+	if (!isMember)
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+	try {
+		const validation = tenantSchema.safeParse({ tenantId });
 		if (!validation.success) {
 			return NextResponse.json(
 				{ error: validation.error.errors[0].message },
@@ -30,9 +45,9 @@ export async function GET(
 			);
 		}
 
-		const tenantId = parseInt(id, 10);
+		const tenant_id = parseInt(tenantId, 10);
 		const tenant = await prisma.tenant.findUnique({
-			where: { id: tenantId },
+			where: { id: tenant_id },
 			include: {
 				users: true,
 			},

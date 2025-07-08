@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { verifyPassword, JWT_SECRET } from "@/lib/auth";
+import { verifyPassword, JWT_SECRET, generateToken } from "@/lib/auth";
 import jwt from "jsonwebtoken";
 
 const RegisterSchema = z.object({
@@ -40,11 +40,11 @@ export async function POST(request: Request) {
 		}
 
 		const payload = {
-			id: user.id,
-			email: user.email,
+			userId: user.id,
 			role: user.role,
 		};
-		const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+
+		const token = generateToken(payload, "7d");
 
 		const response = NextResponse.json(
 			{ message: "User log successfully", user, token },

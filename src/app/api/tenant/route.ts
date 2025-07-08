@@ -1,7 +1,14 @@
 /** @format */
 
-import { getUserId, isAdmin, verifyLogin } from "@/lib/auth";
+import {
+	checkUserTenantAccess,
+	getUserFromRequest,
+	getUserId,
+	isAdmin,
+	verifyLogin,
+} from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { error } from "console";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -15,27 +22,28 @@ export async function GET(request: Request) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const userId = getUserId(request);
-	if (!userId) {
-		return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+	const userResult = await getUserFromRequest(request);
+
+	if (userResult instanceof NextResponse) {
+		return userResult;
 	}
 
-	const user = await prisma.user.findUnique({
-		where: {
-			id: Number(userId),
-		},
-	});
-
+	const { userId, role } = userResult;
 	try {
-		const tenants = await prisma.tenant.findMany({
+		const tenant = await prisma.tenant.findFirst({
 			where: {
-				adminId: user?.id,
-			},
-			include: {
-				database: true,
+				users: {
+					some: {
+						id: userId,
+					},
+				},
 			},
 		});
-		return NextResponse.json(tenants);
+
+		if (!tenant)
+			return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+
+		return NextResponse.json(tenant);
 	} catch (error) {
 		return NextResponse.json(
 			{ error: "Failed to fetch tenants" },
@@ -46,44 +54,43 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
 	const logged = verifyLogin(request);
-	const admin = isAdmin(request);
-	if (!logged || !admin) {
+	if (!logged) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const userId = getUserId(request);
+	const userResult = await getUserFromRequest(request);
 
-	const user = await prisma.user.findUnique({
-		where: {
-			id: Number(userId),
-		},
-	});
-
-	if (!user || user.role !== "ADMIN") {
-		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+	if (userResult instanceof NextResponse) {
+		return userResult;
 	}
+
+	const { userId, role } = userResult;
+
+	if (role !== "ADMIN")
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
 		const body = await request.json();
+
 		const parsedBody = tenantSchema.parse(body);
 
-		const existingTenant = await prisma.tenant.findUnique({
+		const hasTenant = await prisma.tenant.findUnique({
 			where: {
-				name: parsedBody.name,
+				adminId: userId,
 			},
 		});
 
-		if (existingTenant) {
+		if (hasTenant)
 			return NextResponse.json(
-				{ error: "Tenant with this slug already exists" },
-				{ status: 400 },
+				{ message: "Admin already has a tenant" },
+				{ status: 409 },
 			);
-		}
 
 		const newTenant = await prisma.tenant.create({
 			data: {
 				name: parsedBody.name,
-				adminId: user.id,
+				adminId: userId,
+				users: { connect: { id: userId } },
 			},
 		});
 

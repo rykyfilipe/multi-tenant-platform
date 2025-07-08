@@ -2,7 +2,15 @@
 
 "use client";
 
-import { Database, Home, Inbox, Search, Settings } from "lucide-react";
+import {
+	Database,
+	Home,
+	HousePlugIcon,
+	Inbox,
+	Search,
+	Settings,
+	Users,
+} from "lucide-react";
 
 import {
 	Sidebar,
@@ -26,9 +34,19 @@ const items = [
 		icon: Home,
 	},
 	{
+		title: "Tenant",
+		url: "/home/tenant",
+		icon: HousePlugIcon,
+	},
+	{
 		title: "Inbox",
 		url: "#",
 		icon: Inbox,
+	},
+	{
+		title: "Users",
+		url: "/home/users",
+		icon: Users,
 	},
 	{
 		title: "Database",

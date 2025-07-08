@@ -1,8 +1,22 @@
 /** @format */
 
-import jwt from "jsonwebtoken";
+import jwt, { Secret } from "jsonwebtoken";
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
-export const JWT_SECRET = "super-secret";
+export const JWT_SECRET: Secret = "super-secret";
+
+interface JwtPayload {
+	userId: number;
+	role: string;
+	iat?: number;
+	exp?: number;
+}
+
+export function generateToken(payload: JwtPayload, exp: string) {
+	return jwt.sign(payload, JWT_SECRET, { expiresIn: exp });
+}
+
 export async function hashPassword(password: string): Promise<string> {
 	const encoder = new TextEncoder();
 	const data = encoder.encode(password);
@@ -46,16 +60,54 @@ export function verifyLogin(request: Request): boolean {
 	}
 }
 
-export function getUserId(request: Request): string | null {
+export function getUserId(request: Request): number | null {
 	const token = request.headers.get("Authorization")?.split(" ")[1];
 	if (!token) return null;
 
 	try {
-		const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-		return decoded.id;
+		const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+		return decoded.userId;
 	} catch (error) {
 		return null;
 	}
+}
+export function getUserRole(request: Request): string | null {
+	const token = request.headers.get("Authorization")?.split(" ")[1];
+	if (!token) return null;
+
+	try {
+		const decoded = jwt.verify(token, JWT_SECRET) as { role: string };
+		return decoded.role;
+	} catch (error) {
+		return null;
+	}
+}
+export async function getUserFromRequest(
+	request: Request,
+): Promise<{ userId: number; role: string } | NextResponse> {
+	if (!verifyLogin(request)) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	const userId = getUserId(request);
+	const role = getUserRole(request);
+
+	if (!userId || !role) {
+		return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+	}
+
+	return { userId, role };
+}
+
+export async function checkUserTenantAccess(userId: number, tenantId: number) {
+	const isMember = await prisma.user.findFirst({
+		where: {
+			id: userId,
+			tenantId: tenantId,
+		},
+	});
+
+	return !!isMember;
 }
 
 export function verifyToken(token: string): any {

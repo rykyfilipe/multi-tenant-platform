@@ -11,11 +11,14 @@ interface AppContextType {
 	alertMessage: string;
 	alertType: "success" | "error";
 	isAlertVisible: boolean;
+	user: any;
+	setUser: (user: any) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+	const [user, setUser] = useState<any>(null);
 	const [token, setToken] = useState<string | null>(null);
 	const [alertMessage, setAlertMessage] = useState("");
 	const [alertType, setAlertType] = useState<"success" | "error">("success");
@@ -24,6 +27,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 	useEffect(() => {
 		const storedToken = localStorage.getItem("token");
 		if (storedToken) setToken(storedToken);
+
+		const storedUser = localStorage.getItem("user");
+
+		if (storedUser) setUser(JSON.parse(storedUser));
 	}, []);
 
 	const showAlert = (
@@ -45,6 +52,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 				alertMessage,
 				alertType,
 				isAlertVisible,
+				user,
+				setUser,
 			}}>
 			{children}
 		</AppContext.Provider>
