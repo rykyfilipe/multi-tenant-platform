@@ -37,9 +37,10 @@ export const DatabaseProvider = ({
 }: {
 	children: React.ReactNode;
 }) => {
-	const [token, setToken] = useState<string | null>(null);
+	const { token, user, loading, showAlert } = useApp();
+	const tenantId = user?.tenantId;
+
 	const [databaseInfo, setDatabaseInfo] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
 	const [tables, setTables] = useState<Table[]>([]);
 	const [columns, setColumns] = useState<Column[]>([]);
 	const [showAddTableModal, setShowAddTableModal] = useState(false);
@@ -47,8 +48,6 @@ export const DatabaseProvider = ({
 	const [isUpdate, setIsUpdate] = useState(false);
 
 	const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-
-	const { showAlert, user } = useApp();
 
 	const columnsSchema: ColumnSchema[] = [
 		{ name: "name", type: "string", required: true },
@@ -66,19 +65,17 @@ export const DatabaseProvider = ({
 	];
 
 	useEffect(() => {
-		const storedToken = localStorage.getItem("token");
-		if (!storedToken) return;
-		setToken(storedToken);
-		fetchDatabase(storedToken);
-	}, []);
+		fetchDatabase();
+	}, [token, user, loading, tenantId]);
 
-	const fetchDatabase = async (authToken: string) => {
+	const fetchDatabase = async () => {
+		if (!tenantId || !user || !token) return;
 		try {
-			const response = await fetch(`/api/tenant/${user.tenantId}/database`, {
-				headers: { Authorization: `Bearer ${authToken}` },
+			const response = await fetch(`/api/tenant/${tenantId}/database`, {
+				headers: { Authorization: `Bearer ${token}` },
 			});
-			if (!response.ok) throw new Error("Failed to fetch database");
 
+			if (!response.ok) throw new Error("Failed to fetch database");
 			const data = await response.json();
 			if (!data) {
 				showAlert("No database found", "error");
@@ -98,7 +95,6 @@ export const DatabaseProvider = ({
 		if (!token) return console.error("No token available");
 		if (!name || !columns.length)
 			return console.error("Table name and columns are required");
-		setLoading(true);
 
 		try {
 			const response = await fetch(
@@ -117,11 +113,9 @@ export const DatabaseProvider = ({
 			setShowAddTableModal(false);
 			setName("");
 			setColumns([]);
-			fetchDatabase(token);
+			fetchDatabase();
 		} catch (error) {
 			console.error("Error adding table:", error);
-		} finally {
-			setLoading(false);
 		}
 	};
 	const handleUpdateTable = async (e: React.FormEvent) => {
@@ -129,7 +123,6 @@ export const DatabaseProvider = ({
 		if (!token) return console.error("No token available");
 		if (!name || !columns.length)
 			return console.error("Table name and columns are required");
-		setLoading(true);
 
 		try {
 			const response = await fetch(
@@ -148,11 +141,9 @@ export const DatabaseProvider = ({
 			setShowAddTableModal(false);
 			setName("");
 			setColumns([]);
-			fetchDatabase(token);
+			fetchDatabase();
 		} catch (error) {
-			console.error("Error adding table:", error);
-		} finally {
-			setLoading(false);
+			showAlert(error as string, "error");
 		}
 	};
 

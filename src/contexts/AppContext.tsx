@@ -13,6 +13,8 @@ interface AppContextType {
 	isAlertVisible: boolean;
 	user: any;
 	setUser: (user: any) => void;
+	setLoading: (x: boolean) => void;
+	loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,13 +26,16 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 	const [alertType, setAlertType] = useState<"success" | "error">("success");
 	const [isAlertVisible, setIsAlertVisible] = useState(false);
 
+	const [loading, setLoading] = useState(true);
+
 	useEffect(() => {
 		const storedToken = localStorage.getItem("token");
-		if (storedToken) setToken(storedToken);
-
 		const storedUser = localStorage.getItem("user");
 
+		if (storedToken) setToken(storedToken);
 		if (storedUser) setUser(JSON.parse(storedUser));
+
+		setLoading(false);
 	}, []);
 
 	const showAlert = (
@@ -53,6 +58,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 				alertType,
 				isAlertVisible,
 				user,
+				setLoading,
+				loading,
 				setUser,
 			}}>
 			{children}

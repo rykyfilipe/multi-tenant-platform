@@ -46,7 +46,7 @@ export async function GET(
 				tables: true,
 			},
 		});
-		return NextResponse.json(database);
+		return NextResponse.json(database, { status: 200 });
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(

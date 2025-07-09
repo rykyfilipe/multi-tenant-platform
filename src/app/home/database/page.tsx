@@ -7,6 +7,7 @@ import { TableGrid } from "@/components/database/TableGrid";
 import { AddTableModal } from "@/components/database/AddTableModal";
 
 import { DatabaseProvider, useDatabase } from "@/contexts/DatabaseContext";
+import Loading from "@/components/loading";
 
 export default function DatabasePage() {
 	return (
@@ -40,7 +41,11 @@ function DatabaseContent() {
 		<div className='min-h-screen bg-gray-50 p-6'>
 			<div className='max-w-7xl mx-auto'>
 				<DatabaseHeader onAddTable={() => setShowAddTableModal(true)} />
-				<TableGrid tables={tables} />
+				{loading || tables.length === 0 ? (
+					<Loading message='tables' />
+				) : (
+					<TableGrid tables={tables} />
+				)}
 
 				{databaseInfo && (
 					<div className='text-center mt-8'>

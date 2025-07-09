@@ -8,8 +8,8 @@ export interface User {
 	role: Role;
 }
 
-enum Role {
-	"ADMIN",
-	"VIEWER",
-	"EDITOR",
+export enum Role {
+	ADMIN = "ADMIN",
+	VIEWER = "VIEWER",
+	EDITOR = "EDITOR",
 }

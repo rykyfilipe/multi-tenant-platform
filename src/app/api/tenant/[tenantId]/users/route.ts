@@ -46,6 +46,7 @@ export async function GET(
 		const users = await prisma.user.findMany({
 			where: {
 				tenantId: Number(tenantId),
+				id: { not: Number(userId) },
 			},
 			select: {
 				id: true,
