@@ -69,14 +69,14 @@ export function TableView({
 													colName={col.name}
 													colType={col.type}
 													isEditing={
-														editingCell?.rowId === row["id"].toFixed(2) &&
+														editingCell?.rowId === row["id"].toFixed(0) &&
 														editingCell.colName === col.name
 													}
 													onStartEdit={() =>
-														onEditCell(row["id"].toFixed(2), col.name)
+														onEditCell(row["id"].toFixed(0), col.name)
 													}
 													onSave={(val) =>
-														onSaveCell(row["id"].toFixed(2), col.name, val)
+														onSaveCell(row["id"].toFixed(0), col.name, val)
 													}
 													onCancel={onCancelEdit}
 												/>
@@ -86,7 +86,7 @@ export function TableView({
 											<Button
 												variant='ghost'
 												size='sm'
-												onClick={() => onDeleteRow(row["id"].toFixed(2))}>
+												onClick={() => onDeleteRow(row["id"].toFixed(0))}>
 												<Trash2 />
 											</Button>
 										</td>

@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Table, Row } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { AddRowForm } from "./AddRowForm";
@@ -12,7 +12,8 @@ interface Props {
 }
 
 export default function TableEditor({ table }: Props) {
-	const { showAlert } = useApp();
+	const { showAlert, token, user } = useApp();
+
 	const [rows, setRows] = useState<Row[]>(table.rows || []);
 	const [editingCell, setEditingCell] = useState<{
 		rowId: string;
@@ -20,22 +21,66 @@ export default function TableEditor({ table }: Props) {
 	} | null>(null);
 
 	const handleAdd = (row: Row) => setRows((r) => [...r, row]);
-	const handleDelete = (id: string) => {
-		setRows((r) => r.filter((x) => x["id"].toFixed(2) !== id));
-		showAlert("Row deleted", "success");
+	const handleDelete = async (id: string) => {
+		try {
+			const response = await fetch(
+				`/api/tenant/${user.tenantId}/database/table/${table.id}/rows?rowId=${id}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
+			if (!response.ok) throw new Error("Failed to delete row");
+
+			setRows((r) => r.filter((x) => x["id"].toFixed(0) !== id));
+			showAlert("Row deleted", "success");
+		} catch (error) {
+			showAlert("Eroare la stergere", "error");
+		}
 	};
+
 	const handleEditCell = (rowId: string, colName: string) =>
 		setEditingCell({ rowId, colName });
-	const handleSaveCell = (rowId: string, colName: string, value: any) => {
-		setRows((r) =>
-			r.map((row) =>
-				row["id"].toFixed(2) === rowId
-					? { ...row, data: { ...row.data, [colName]: value } }
-					: row,
-			),
-		);
-		setEditingCell(null);
-		showAlert("Cell updated", "success");
+
+	const handleSaveCell = async (rowId: string, colName: string, value: any) => {
+		try {
+			setRows((prevRows) =>
+				prevRows.map((row) =>
+					row.id.toFixed(0) === rowId
+						? { ...row, data: { ...row.data, [colName]: value } }
+						: row,
+				),
+			);
+
+			const updatedRow = rows.find((row) => row.id.toFixed(0) === rowId);
+			if (!updatedRow) {
+				throw new Error("Row not found");
+			}
+
+			const response = await fetch(
+				`/api/tenant/${user.tenantId}/database/table/${table.id}/rows`,
+				{
+					method: "PATCH",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ updatedRow }),
+				},
+			);
+
+			if (!response.ok) throw new Error("Failed to update row");
+
+			showAlert("Row updated successfully", "success");
+			setEditingCell(null);
+		} catch (error) {
+			setRows((prevRows) => [...prevRows]); // Force re-render with original data
+			showAlert("Error updating row", "error");
+			console.error("Update error:", error);
+		}
 	};
 	const handleCancelEdit = () => setEditingCell(null);
 

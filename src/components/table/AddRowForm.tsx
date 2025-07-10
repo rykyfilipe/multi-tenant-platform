@@ -27,7 +27,7 @@ interface Props {
 
 export function AddRowForm({ columns, onAdd, rows, setRows, table }: Props) {
 	const [newRow, setNewRow] = useState<Record<string, any>>({});
-	const [rowId, setRowId] = useState(1);
+	const [rowId, setRowId] = useState((table.rows[rows.length - 1]?.id + 1) | 0);
 	const { showAlert, token, user } = useApp();
 
 	function validate(newRow: Record<string, any>) {
