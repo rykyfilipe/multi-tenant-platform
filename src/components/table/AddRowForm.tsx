@@ -87,6 +87,13 @@ export function AddRowForm({ columns, onAdd, rows, setRows, table }: Props) {
 			}
 
 			if (
+				col.defaultValue &&
+				(rowData === undefined || rowData.toString().trim() === "")
+			) {
+				newRow[col.name] = col.defaultValue;
+			}
+
+			if (
 				col.type === "boolean" &&
 				!["true", "false"].includes(rowData.toString().toLowerCase())
 			) {

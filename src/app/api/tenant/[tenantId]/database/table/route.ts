@@ -18,7 +18,7 @@ const columnSchema = z.object({
 	autoIncrement: z.boolean().optional(),
 	required: z.boolean().optional(),
 	unique: z.boolean().optional(),
-	default: z.union([z.string(), z.number(), z.boolean()]).optional(),
+	defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
 });
 
 const tableSchema = z.object({
@@ -82,17 +82,16 @@ export async function POST(request: Request) {
 		const table = await prisma.table.create({
 			data: {
 				name: body.name,
-				columns: {
-					create: columns.map((column) => ({
-						name: column.name,
-						type: column.type,
-						primary: column.primary || false,
-						autoIncrement: column.autoIncrement || false,
-						required: column.required || false,
-						default: column.default,
-						unique: column.unique,
-					})),
-				},
+				columns: columns.map((column) => ({
+					name: column.name,
+					type: column.type,
+					primary: column.primary || false,
+					autoIncrement: column.autoIncrement || false,
+					required: column.required || false,
+					defaultValue: column.defaultValue,
+					unique: column.unique,
+				})),
+
 				database: {
 					connect: { id: database[0]?.id },
 				},
@@ -139,13 +138,8 @@ export async function GET(request: Request) {
 				},
 			},
 		});
-		const cleanTables = tables.map((table) => ({
-			id: table.id,
-			name: table.name,
-			rows: Array.isArray(table.rows) ? table.rows : [],
-			columns: Array.isArray(table.columns) ? table.columns : [],
-		}));
-		return NextResponse.json(cleanTables);
+
+		return NextResponse.json(tables);
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(

@@ -70,17 +70,15 @@ export async function PATCH(
 			},
 			data: {
 				name: body.name,
-				columns: {
-					create: columns.map((column) => ({
-						name: column.name,
-						type: column.type,
-						primary: column.primary || false,
-						autoIncrement: column.autoIncrement || false,
-						required: column.required || false,
-						default: column.default,
-						unique: column.unique,
-					})),
-				},
+				columns: columns.map((column) => ({
+					name: column.name,
+					type: column.type,
+					primary: column.primary || false,
+					autoIncrement: column.autoIncrement || false,
+					required: column.required || false,
+					default: column.default,
+					unique: column.unique,
+				})),
 			},
 		});
 

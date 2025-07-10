@@ -23,7 +23,7 @@ function TableCard({ table }: { table: Table }) {
 
 	const editTable = async () => {
 		setName(table.name);
-		setColumns(table.columns.create);
+		setColumns(table.columns);
 		setShowAddTableModal(true);
 		setIsUpdate(true);
 		setSelectedTable(table);
@@ -44,10 +44,7 @@ function TableCard({ table }: { table: Table }) {
 				<div className='space-y-2'>
 					<p className='text-sm text-gray-600'>ID: {table.id}</p>
 					<p className='text-sm text-gray-600'>
-						Columns:{" "}
-						{Array.isArray(table.columns.create)
-							? table.columns.create.length
-							: 0}
+						Columns: {Array.isArray(table.columns) ? table.columns.length : 0}
 					</p>
 					<p className='text-sm text-gray-600'>
 						Rows: {Array.isArray(table.rows) ? table.rows.length : 0}

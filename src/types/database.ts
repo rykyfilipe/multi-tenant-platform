@@ -18,17 +18,16 @@ export interface Row {
 export interface Table {
 	id: string;
 	name: string;
-	columns: {
-		create: Array<{
-			name: string;
-			type: string;
-			primary: boolean;
-			autoIncrement: boolean;
-			required: boolean;
-			unique: boolean;
-			defaultValue: string;
-		}>;
-	};
+	columns: Array<{
+		name: string;
+		type: string;
+		primary: boolean;
+		autoIncrement: boolean;
+		required: boolean;
+		unique: boolean;
+		defaultValue: string;
+	}>,
+
 	rows: Row[];
 }
 

@@ -42,7 +42,7 @@ export function TableView({
 					<table className='w-full'>
 						<thead>
 							<tr>
-								{table.columns.create.map((col) => (
+								{table.columns.map((col) => (
 									<th className='text-start' key={col.name}>
 										{col.name}
 									</th>
@@ -54,7 +54,7 @@ export function TableView({
 							{rows.length === 0 ? (
 								<tr>
 									<td
-										colSpan={table.columns.create.length + 1}
+										colSpan={table.columns.length + 1}
 										className='text-center py-8'>
 										No data yet.
 									</td>
@@ -62,7 +62,7 @@ export function TableView({
 							) : (
 								rows.map((row) => (
 									<tr key={row.id}>
-										{table.columns.create.map((col) => (
+										{table.columns.map((col) => (
 											<td key={col.name}>
 												<EditableCell
 													row={row}

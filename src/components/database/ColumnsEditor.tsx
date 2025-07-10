@@ -106,7 +106,7 @@ export function ColumnEditor({ columns, setColumns }: ColumnEditorProps) {
 													Name
 												</Label>
 												<Input
-													value={column.name}
+													value={column.name || ""}
 													onChange={(e) =>
 														updateColumn(index, "name", e.target.value)
 													}
@@ -161,7 +161,7 @@ export function ColumnEditor({ columns, setColumns }: ColumnEditorProps) {
 													Default Value
 												</Label>
 												<Input
-													value={column.defaultValue}
+													value={column.defaultValue || ""}
 													onChange={(e) =>
 														updateColumn(index, "defaultValue", e.target.value)
 													}

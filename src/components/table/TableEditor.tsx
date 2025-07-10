@@ -13,7 +13,6 @@ interface Props {
 
 export default function TableEditor({ table }: Props) {
 	const { showAlert } = useApp();
-	console.log(table);
 	const [rows, setRows] = useState<Row[]>(table.rows || []);
 	const [editingCell, setEditingCell] = useState<{
 		rowId: string;
@@ -43,7 +42,7 @@ export default function TableEditor({ table }: Props) {
 	return (
 		<div className='space-y-6'>
 			<AddRowForm
-				columns={table.columns.create}
+				columns={table.columns}
 				onAdd={handleAdd}
 				rows={rows}
 				setRows={setRows}
