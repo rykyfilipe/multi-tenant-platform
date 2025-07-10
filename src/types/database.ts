@@ -10,6 +10,11 @@ export interface Column {
 	defaultValue: string;
 }
 
+export interface Row {
+	id: string;
+	[key: string]: any;
+}
+
 export interface Table {
 	id: string;
 	name: string;
@@ -24,7 +29,9 @@ export interface Table {
 			defaultValue: string;
 		}>;
 	};
-	rows: { create: Array<Record<string, any>> };
+	rows: {
+		create: Row[];
+	};
 }
 
 export interface ColumnSchema {

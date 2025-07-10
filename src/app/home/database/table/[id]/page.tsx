@@ -2,6 +2,7 @@
 
 "use client";
 
+import TableEditor from "@/components/table/TableEditor";
 import { useApp } from "@/contexts/AppContext";
 import { Table } from "@/types/database";
 import { useParams } from "next/navigation";
@@ -67,20 +68,7 @@ function Page() {
 				))}
 			</ul>
 
-			<h2 className='text-lg font-semibold mt-6 mb-2'>Rows</h2>
-			{table.rows?.create.length > 0 ? (
-				<ul className='grid gap-2'>
-					{table.rows.create.map((row, index) => (
-						<li
-							key={index}
-							className='text-sm border rounded p-2 font-mono bg-gray-50'>
-							{JSON.stringify(row, null, 2)}
-						</li>
-					))}
-				</ul>
-			) : (
-				<p className='text-gray-500'>No rows available.</p>
-			)}
+			<TableEditor table={table} />
 		</div>
 	);
 }

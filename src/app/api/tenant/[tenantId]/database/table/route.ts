@@ -13,7 +13,7 @@ import { z } from "zod";
 
 const columnSchema = z.object({
 	name: z.string().min(1, { message: "Numele coloanei este obligatoriu" }),
-	type: z.enum(["number", "string", "float", "date"]),
+	type: z.enum(["number", "string", "number", "date", "boolean"]),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
 	required: z.boolean().optional(),
@@ -90,6 +90,7 @@ export async function POST(request: Request) {
 						autoIncrement: column.autoIncrement || false,
 						required: column.required || false,
 						default: column.default,
+						unique: column.unique,
 					})),
 				},
 				database: {
@@ -155,4 +156,3 @@ export async function GET(request: Request) {
 		);
 	}
 }
-

@@ -17,29 +17,10 @@ function TableCard({ table }: { table: Table }) {
 		setShowAddTableModal,
 		setIsUpdate,
 		setSelectedTable,
+		handleDeleteTable
 	} = useDatabase();
 	const { showAlert } = useApp();
-	const deleteTable = async () => {
-		try {
-			const response = await fetch(`/api/tenant/database/table/${table.id}`, {
-				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${localStorage.getItem("token")}`,
-				},
-			});
-			if (!response.ok) {
-				throw new Error("Failed to delete table");
-			}
-			const updatedTables = tables.filter((t) => t.id !== table.id);
-			setTables(updatedTables);
-
-			showAlert("Table deleted successfully", "success");
-		} catch (error) {
-			console.error("Error deleting table:", error);
-			showAlert("Failed to delete table", "error");
-		}
-	};
+	
 
 	const editTable = async () => {
 		setName(table.name);
@@ -82,7 +63,7 @@ function TableCard({ table }: { table: Table }) {
 				<Button
 					className='bg-red-600 hover:bg-red-700 text-white'
 					size='sm'
-					onClick={deleteTable}>
+					onClick={() => handleDeleteTable(table?.id)}>
 					<Trash />
 				</Button>
 			</CardFooter>

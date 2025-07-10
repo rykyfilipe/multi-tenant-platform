@@ -41,7 +41,7 @@ function DatabaseContent() {
 		<div className='min-h-screen bg-gray-50 p-6'>
 			<div className='max-w-7xl mx-auto'>
 				<DatabaseHeader onAddTable={() => setShowAddTableModal(true)} />
-				{loading || tables.length === 0 ? (
+				{loading || tables === null ? (
 					<Loading message='tables' />
 				) : (
 					<TableGrid tables={tables} />
@@ -58,7 +58,17 @@ function DatabaseContent() {
 					onClose={() => {
 						setShowAddTableModal(false);
 						setSelectedTable(null);
-						setColumns([]);
+						setColumns([
+							{
+								name: "id",
+								type: "number",
+								unique: true,
+								primary: true,
+								autoIncrement: true,
+								defaultValue: "0",
+								required: false,
+							},
+						]);
 						setName("");
 						setIsUpdate(false);
 					}}

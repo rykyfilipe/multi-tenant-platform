@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { Table2, X } from "lucide-react";
 
@@ -22,8 +23,11 @@ export function TableBasicsForm({
 	onCancel,
 	loading,
 }: TableBasicsFormProps) {
-	const { selectedTable } = useDatabase();
-
+	const { selectedTable, tables } = useDatabase();
+	const { showAlert } = useApp();
+	const validateTableName = (n: string): boolean => {
+		return !tables.some((table) => table.name === n);
+	};
 	return (
 		<Card className='border-0 shadow-2xl bg-white'>
 			<CardHeader className='text-center pb-4'>
@@ -51,7 +55,13 @@ export function TableBasicsForm({
 							id='tableName'
 							type='text'
 							value={name}
-							onChange={(e) => setName(e.target.value)}
+							onChange={(e) => {
+								if (validateTableName(e.target.value)) setName(e.target.value);
+								else {
+									showAlert("Table name unavailible", "error");
+									return;
+								}
+							}}
 							placeholder='Enter table name'
 							required
 							className='h-12 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500'

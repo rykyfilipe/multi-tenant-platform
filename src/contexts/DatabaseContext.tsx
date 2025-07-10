@@ -26,6 +26,7 @@ interface DatabaseContextType {
 	handleUpdateTable: (e: React.FormEvent) => void;
 	isUpdate: boolean;
 	setIsUpdate: (x: boolean) => void;
+	handleDeleteTable: (id: string) => void;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(
@@ -42,7 +43,17 @@ export const DatabaseProvider = ({
 
 	const [databaseInfo, setDatabaseInfo] = useState<string | null>(null);
 	const [tables, setTables] = useState<Table[]>([]);
-	const [columns, setColumns] = useState<Column[]>([]);
+	const [columns, setColumns] = useState<Column[]>([
+		{
+			name: "id",
+			type: "number",
+			unique: true,
+			primary: true,
+			autoIncrement: true,
+			defaultValue: "0",
+			required: false,
+		},
+	]);
 	const [showAddTableModal, setShowAddTableModal] = useState(false);
 	const [name, setName] = useState("");
 	const [isUpdate, setIsUpdate] = useState(false);
@@ -146,7 +157,30 @@ export const DatabaseProvider = ({
 			showAlert(error as string, "error");
 		}
 	};
+	const handleDeleteTable = async (id: string) => {
+		try {
+			const response = await fetch(
+				`/api/tenant/${tenantId}/database/table/${id}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${localStorage.getItem("token")}`,
+					},
+				},
+			);
+			if (!response.ok) {
+				throw new Error("Failed to delete table");
+			}
+			const updatedTables = tables.filter((t) => t.id !== id);
+			setTables(updatedTables);
 
+			showAlert("Table deleted successfully", "success");
+		} catch (error) {
+			console.error("Error deleting table:", error);
+			showAlert("Failed to delete table", "error");
+		}
+	};
 	return (
 		<DatabaseContext.Provider
 			value={{
@@ -169,6 +203,7 @@ export const DatabaseProvider = ({
 				handleUpdateTable,
 				isUpdate,
 				setIsUpdate,
+				handleDeleteTable,
 			}}>
 			{children}
 		</DatabaseContext.Provider>

@@ -12,10 +12,12 @@ import {
 
 const columnSchema = z.object({
 	name: z.string().min(1, { message: "Numele coloanei este obligatoriu" }),
-	type: z.enum(["integer", "string", "float", "datetime"]),
+	type: z.enum(["integer", "string", "number", "date", "boolean"]),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
 	required: z.boolean().optional(),
+	unique: z.boolean().optional(),
+
 	default: z.union([z.string(), z.number(), z.boolean()]).optional(),
 });
 
@@ -78,7 +80,6 @@ export async function PATCH(
 		}
 
 		const { columns } = parsedData;
-		console.log("Creating table with columns:", columns);
 		const table = await prisma.table.update({
 			where: {
 				id: Number(id),
@@ -93,6 +94,7 @@ export async function PATCH(
 						autoIncrement: column.autoIncrement || false,
 						required: column.required || false,
 						default: column.default,
+						unique: column.unique,
 					})),
 				},
 				database: {

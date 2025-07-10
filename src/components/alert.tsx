@@ -13,7 +13,7 @@ function AlertMessage() {
 			{isAlertVisible && (
 				<div
 					className={cn(
-						"absolute top-4 right-4 p-2 rounded-md shadow-md",
+						"fixed top-4 right-4 p-2 rounded-md shadow-md z-[9999]",
 						alertType === "error"
 							? "bg-red-100 text-red-700"
 							: "bg-green-100 text-green-700",
