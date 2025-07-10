@@ -12,6 +12,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select";
+import { Button } from "../ui/button";
 
 interface Props {
 	row: Row;
@@ -56,6 +57,7 @@ export function EditableCell({
 					</Select>
 				) : (
 					<Input
+						className='w-max'
 						type={
 							colType === "date"
 								? "date"
@@ -69,8 +71,12 @@ export function EditableCell({
 						autoFocus
 					/>
 				)}
-				<button onClick={() => onSave(value)}>✓</button>
-				<button onClick={onCancel}>✕</button>
+				<Button variant='ghost' size='sm' onClick={() => onSave(value)}>
+					✓
+				</Button>
+				<Button variant='ghost' size='sm' onClick={onCancel}>
+					✕
+				</Button>
 			</div>
 		);
 	}

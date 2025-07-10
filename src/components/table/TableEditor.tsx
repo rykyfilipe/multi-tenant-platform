@@ -13,7 +13,8 @@ interface Props {
 
 export default function TableEditor({ table }: Props) {
 	const { showAlert } = useApp();
-	const [rows, setRows] = useState<Row[]>(table.rows.create || []);
+	console.log(table);
+	const [rows, setRows] = useState<Row[]>(table.rows || []);
 	const [editingCell, setEditingCell] = useState<{
 		rowId: string;
 		colName: string;
@@ -21,7 +22,7 @@ export default function TableEditor({ table }: Props) {
 
 	const handleAdd = (row: Row) => setRows((r) => [...r, row]);
 	const handleDelete = (id: string) => {
-		setRows((r) => r.filter((x) => x.id !== id));
+		setRows((r) => r.filter((x) => x["id"].toFixed(2) !== id));
 		showAlert("Row deleted", "success");
 	};
 	const handleEditCell = (rowId: string, colName: string) =>
@@ -29,7 +30,7 @@ export default function TableEditor({ table }: Props) {
 	const handleSaveCell = (rowId: string, colName: string, value: any) => {
 		setRows((r) =>
 			r.map((row) =>
-				row.id === rowId
+				row["id"].toFixed(2) === rowId
 					? { ...row, data: { ...row.data, [colName]: value } }
 					: row,
 			),
@@ -46,6 +47,7 @@ export default function TableEditor({ table }: Props) {
 				onAdd={handleAdd}
 				rows={rows}
 				setRows={setRows}
+				table={table}
 			/>
 			<TableView
 				table={table}

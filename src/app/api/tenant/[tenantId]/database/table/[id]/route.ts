@@ -3,12 +3,7 @@
 import prisma from "@/lib/prisma";
 import z from "zod";
 import { NextResponse } from "next/server";
-import {
-	getUserFromRequest,
-	getUserId,
-	isAdmin,
-	verifyLogin,
-} from "@/lib/auth";
+import { getUserFromRequest, isAdmin, verifyLogin } from "@/lib/auth";
 
 const columnSchema = z.object({
 	name: z.string().min(1, { message: "Numele coloanei este obligatoriu" }),
@@ -53,17 +48,6 @@ export async function PATCH(
 		const body = await request.json();
 		const parsedData = tableSchema.parse(body);
 
-		const database = await prisma.database.findMany({
-			where: {
-				tenant: {
-					adminId: userId,
-				},
-			},
-			select: {
-				id: true,
-			},
-		});
-
 		const tableExists = await prisma.table.findFirst({
 			where: {
 				name: body.name,
@@ -96,12 +80,6 @@ export async function PATCH(
 						default: column.default,
 						unique: column.unique,
 					})),
-				},
-				database: {
-					connect: { id: database[0]?.id },
-				},
-				rows: {
-					create: [],
 				},
 			},
 		});

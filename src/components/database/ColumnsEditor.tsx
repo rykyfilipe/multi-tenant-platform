@@ -49,12 +49,13 @@ export function ColumnEditor({ columns, setColumns }: ColumnEditorProps) {
 	const updateColumn = (index: number, field: keyof Column, value: any) => {
 		const newColumns = [...columns];
 		newColumns[index] = { ...newColumns[index], [field]: value };
-
-		if (validateColumn(newColumns[index])) setColumns(newColumns);
-		else {
-			showAlert("Column name unavailible", "error");
-			return;
-		}
+		if (field === "name")
+			if (validateColumn(newColumns[index])) setColumns(newColumns);
+			else {
+				showAlert("Column name unavailible", "error");
+				return;
+			}
+		setColumns(newColumns);
 	};
 
 	return (

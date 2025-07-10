@@ -3,7 +3,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Column, Row } from "@/types/database";
+import { Column, Row, Table } from "@/types/database";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
@@ -22,12 +22,13 @@ interface Props {
 	onAdd: (row: Row) => void;
 	rows: Row[];
 	setRows: (rows: Row[]) => void;
+	table: Table;
 }
 
-export function AddRowForm({ columns, onAdd, rows, setRows }: Props) {
+export function AddRowForm({ columns, onAdd, rows, setRows, table }: Props) {
 	const [newRow, setNewRow] = useState<Record<string, any>>({});
 	const [rowId, setRowId] = useState(1);
-	const { showAlert } = useApp();
+	const { showAlert, token, user } = useApp();
 
 	function validate(newRow: Record<string, any>) {
 		for (const col of columns) {
@@ -102,7 +103,7 @@ export function AddRowForm({ columns, onAdd, rows, setRows }: Props) {
 		return true;
 	}
 
-	function handleSubmit(e: FormEvent) {
+	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
 		if (!validate(newRow)) return;
 
@@ -130,14 +131,34 @@ export function AddRowForm({ columns, onAdd, rows, setRows }: Props) {
 		});
 
 		const row: Row = {
-			id: rowId.toString(),
+			id: rowId,
 			data: processedData,
 		};
+		console.log(row);
+		if (!token) return console.error("No token available");
 
-		setRows([...rows, row]);
-		setRowId(rowId + 1);
-		setNewRow({});
-		showAlert("Row added successfully", "success");
+		try {
+			const response = await fetch(
+				`/api/tenant/${user.tenantId}/database/table/${table.id}/rows`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ row }),
+				},
+			);
+			if (!response.ok) throw new Error("Failed to add row");
+
+			showAlert("Row added succesfuly", "success");
+
+			setRows([...rows, row]);
+			setRowId(rowId + 1);
+			setNewRow({});
+		} catch (error) {
+			showAlert("Error at adding a row", "error");
+		}
 	}
 
 	return (

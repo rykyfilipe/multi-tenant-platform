@@ -17,10 +17,9 @@ function TableCard({ table }: { table: Table }) {
 		setShowAddTableModal,
 		setIsUpdate,
 		setSelectedTable,
-		handleDeleteTable
+		handleDeleteTable,
 	} = useDatabase();
 	const { showAlert } = useApp();
-	
 
 	const editTable = async () => {
 		setName(table.name);
@@ -51,8 +50,7 @@ function TableCard({ table }: { table: Table }) {
 							: 0}
 					</p>
 					<p className='text-sm text-gray-600'>
-						Rows:{" "}
-						{Array.isArray(table.rows.create) ? table.rows.create.length : 0}
+						Rows: {Array.isArray(table.rows) ? table.rows.length : 0}
 					</p>
 				</div>
 			</CardContent>

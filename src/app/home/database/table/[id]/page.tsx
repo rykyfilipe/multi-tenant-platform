@@ -52,8 +52,8 @@ function Page() {
 	return (
 		<div className='max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg'>
 			<h1 className='text-2xl font-bold mb-2'>{table.name}</h1>
-			<p className='text-sm text-gray-500 mb-4'>ID: {table.id}</p>
-
+			{/*<p className='text-sm text-gray-500 mb-4'>ID: {table.id}</p>
+			 
 			<h2 className='text-lg font-semibold mb-2'>Columns</h2>
 			<ul className='grid gap-3'>
 				{table.columns?.create?.map((column, index) => (
@@ -66,7 +66,7 @@ function Page() {
 						))}
 					</li>
 				))}
-			</ul>
+			</ul> */}
 
 			<TableEditor table={table} />
 		</div>

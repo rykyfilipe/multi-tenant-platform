@@ -96,9 +96,7 @@ export async function POST(request: Request) {
 				database: {
 					connect: { id: database[0]?.id },
 				},
-				rows: {
-					create: [],
-				},
+				rows: [],
 			},
 		});
 

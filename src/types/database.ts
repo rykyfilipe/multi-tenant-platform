@@ -11,7 +11,7 @@ export interface Column {
 }
 
 export interface Row {
-	id: string;
+	id: number;
 	[key: string]: any;
 }
 
@@ -29,9 +29,7 @@ export interface Table {
 			defaultValue: string;
 		}>;
 	};
-	rows: {
-		create: Row[];
-	};
+	rows: Row[];
 }
 
 export interface ColumnSchema {

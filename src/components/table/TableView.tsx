@@ -43,9 +43,11 @@ export function TableView({
 						<thead>
 							<tr>
 								{table.columns.create.map((col) => (
-									<th key={col.name}>{col.name}</th>
+									<th className='text-start' key={col.name}>
+										{col.name}
+									</th>
 								))}
-								<th>Actions</th>
+								<th className='text-start'>Actions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -67,11 +69,15 @@ export function TableView({
 													colName={col.name}
 													colType={col.type}
 													isEditing={
-														editingCell?.rowId === row.id &&
+														editingCell?.rowId === row["id"].toFixed(2) &&
 														editingCell.colName === col.name
 													}
-													onStartEdit={() => onEditCell(row.id, col.name)}
-													onSave={(val) => onSaveCell(row.id, col.name, val)}
+													onStartEdit={() =>
+														onEditCell(row["id"].toFixed(2), col.name)
+													}
+													onSave={(val) =>
+														onSaveCell(row["id"].toFixed(2), col.name, val)
+													}
 													onCancel={onCancelEdit}
 												/>
 											</td>
@@ -80,7 +86,7 @@ export function TableView({
 											<Button
 												variant='ghost'
 												size='sm'
-												onClick={() => onDeleteRow(row.id)}>
+												onClick={() => onDeleteRow(row["id"].toFixed(2))}>
 												<Trash2 />
 											</Button>
 										</td>
