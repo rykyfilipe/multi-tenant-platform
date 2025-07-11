@@ -33,23 +33,54 @@ model User {
 }
 
 model Database {
-  id       Int     @id @default(autoincrement())
-  tenantId Int     @unique
-  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @unique
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
 
-  tables   Table[]
+  tables    Table[]
 }
 
 model Table {
-  id         Int      @id @default(autoincrement())
-  name String 
+  id         Int       @id @default(autoincrement())
+  name       String
   databaseId Int
-  database   Database @relation(fields: [databaseId], references: [id])
+  database   Database  @relation(fields: [databaseId], references: [id],onDelete: Cascade)
 
-  columns    Json
-  rows       Json
+  columns Column[] 
+  rows       Row[]
 }
 
+model Column {
+  id        Int     @id @default(autoincrement())
+  name      String
+  type      String
+  required  Boolean @default(false)
+  primary   Boolean @default(false)
+  autoIncrement Boolean @default(false)
+  tableId   Int
+  table     Table   @relation(fields: [tableId], references: [id],onDelete: Cascade)
+
+  cells     Cell[] 
+}
+
+model Row {
+  id        Int     @id @default(autoincrement())
+  tableId   Int
+  createdAt DateTime @default(now())
+  table     Table   @relation(fields: [tableId], references: [id],onDelete: Cascade)
+
+  cells     Cell[] 
+}
+
+model Cell {
+  id        Int     @id @default(autoincrement())
+  rowId     Int
+  columnId  Int
+  value     Json    
+
+  row       Row     @relation(fields: [rowId], references: [id],onDelete: Cascade)
+  column    Column  @relation(fields: [columnId], references: [id],onDelete: Cascade)
+}
 
 enum Role {
   ADMIN

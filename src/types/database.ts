@@ -1,32 +1,41 @@
 /** @format */
 
 export interface Column {
+	id: number;
 	name: string;
 	type: string;
+	required: boolean;
 	primary: boolean;
 	autoIncrement: boolean;
-	required: boolean;
-	unique: boolean;
-	defaultValue: string;
+	tableId: number;
+}
+
+export interface Cell {
+	id: number;
+	rowId: number;
+	columnId: number;
+	value: any;
 }
 
 export interface Row {
 	id: number;
-	[key: string]: any;
+	tableId: number;
+	createdAt: string;
+	cells: Cell[];
 }
 
 export interface Table {
-	id: string;
+	id: number;
 	name: string;
-	columns: Array<{
-		name: string;
-		type: string;
-		primary: boolean;
-		autoIncrement: boolean;
-		required: boolean;
-		unique: boolean;
-		defaultValue: string;
-	}>;
-
+	databaseId: number;
+	columns: Column[];
 	rows: Row[];
+}
+
+export interface ColumnSchema {
+	name: string;
+	type: "string" | "number" | "boolean" | "date";
+	required?: boolean | undefined;
+	primary?: boolean | undefined;
+	autoIncrement?: boolean | undefined;
 }
