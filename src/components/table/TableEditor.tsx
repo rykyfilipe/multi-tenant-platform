@@ -30,7 +30,8 @@ export default function TableEditor({ table }: Props) {
 
 	async function handleAdd(e: FormEvent) {
 		e.preventDefault();
-		if (!validateAndTransform(table, newRow, rowId, setNewRow)) return;
+		if (!validateAndTransform(table, newRow, rowId, setNewRow, showAlert))
+			return;
 
 		// Convert types properly
 		const processedData: Record<string, any> = {};

@@ -5,8 +5,6 @@ import { Table } from "@/types/database";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-const { showAlert } = useApp();
-
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
@@ -16,6 +14,7 @@ export function validateAndTransform(
 	newRow: Record<string, any>,
 	rowId: any,
 	setRowId: any,
+	showAlert: any,
 ) {
 	for (const col of table.columns) {
 		const rowData = newRow[col.name];

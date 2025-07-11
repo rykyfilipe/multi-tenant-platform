@@ -28,18 +28,15 @@ function UsersTable({ users, onUpdate, isLoading = false }: Props) {
 	const [tempValue, setTempValue] = useState<string>("");
 	const [error, setError] = useState<string | null>(null);
 
-	// Memoized role options to avoid recreation on every render
 	const roleOptions = useMemo(
 		() => Object.values(Role).filter((role) => role !== Role.ADMIN),
 		[],
 	);
 
-	// Email validation
 	const isValidEmail = useCallback((email: string): boolean => {
 		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 	}, []);
 
-	// Field validation
 	const validateField = useCallback(
 		(field: keyof User, value: string): string | null => {
 			if (!value.trim()) {
@@ -117,7 +114,6 @@ function UsersTable({ users, onUpdate, isLoading = false }: Props) {
 	const handleSelectChange = useCallback(
 		(value: string, user: User) => {
 			setTempValue(value);
-			// Update the user immediately with the new role
 			const updatedUser = { ...user, role: value as Role };
 			onUpdate?.(updatedUser);
 			setEditingCell(null);
