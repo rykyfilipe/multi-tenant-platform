@@ -26,14 +26,7 @@ export interface Table {
 		required: boolean;
 		unique: boolean;
 		defaultValue: string;
-	}>,
+	}>;
 
 	rows: Row[];
-}
-
-export interface ColumnSchema {
-	name: string;
-	type: string;
-	required: boolean;
-	default?: any;
 }

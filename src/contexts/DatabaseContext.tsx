@@ -3,7 +3,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { Table, Column, ColumnSchema } from "@/types/database";
+import { Table, Column } from "@/types/database";
 import { useApp } from "./AppContext";
 
 interface DatabaseContextType {
@@ -18,7 +18,6 @@ interface DatabaseContextType {
 	setName: (name: string) => void;
 	loading: boolean;
 	handleAddTable: (e: React.FormEvent) => void;
-	columnsSchema: ColumnSchema[];
 	databaseInfo: string | null;
 	setTables: (tables: Table[]) => void;
 	selectedTable: Table | null;
@@ -42,6 +41,7 @@ export const DatabaseProvider = ({
 	const tenantId = user?.tenantId;
 
 	const [databaseInfo, setDatabaseInfo] = useState<string | null>(null);
+
 	const [tables, setTables] = useState<Table[]>([]);
 	const [columns, setColumns] = useState<Column[]>([
 		{
@@ -54,26 +54,12 @@ export const DatabaseProvider = ({
 			required: false,
 		},
 	]);
+
 	const [showAddTableModal, setShowAddTableModal] = useState(false);
 	const [name, setName] = useState("");
 	const [isUpdate, setIsUpdate] = useState(false);
 
 	const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-
-	const columnsSchema: ColumnSchema[] = [
-		{ name: "name", type: "string", required: true },
-		{ name: "type", type: "string", required: true },
-		{ name: "primary", type: "boolean", required: false, default: false },
-		{
-			name: "auto-increment",
-			type: "boolean",
-			required: false,
-			default: false,
-		},
-		{ name: "required", type: "boolean", required: false, default: false },
-		{ name: "unique", type: "boolean", required: false, default: false },
-		{ name: "defaultValue", type: "string", required: false },
-	];
 
 	useEffect(() => {
 		fetchDatabase();
@@ -195,7 +181,6 @@ export const DatabaseProvider = ({
 				setName,
 				loading,
 				handleAddTable,
-				columnsSchema,
 				databaseInfo,
 				setTables,
 				selectedTable,

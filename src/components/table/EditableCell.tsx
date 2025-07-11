@@ -81,7 +81,6 @@ export function EditableCell({
 		);
 	}
 
-	// display mode
 	let display: string;
 	if (value == null || value === "") display = "Empty";
 	else if (colType === "boolean") display = value ? "True" : "False";

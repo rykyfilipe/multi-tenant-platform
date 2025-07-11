@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TableBasicsForm } from "./TableBasicForm";
 import { ColumnEditor } from "./ColumnsEditor";
-import { Column, ColumnSchema, Table } from "@/types/database";
+import { Column, Table } from "@/types/database";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +14,6 @@ interface AddTableModalProps {
 	setName: (name: string) => void;
 	columns: Column[];
 	setColumns: (columns: Column[]) => void;
-	columnsSchema: ColumnSchema[];
 	onSubmit: (e: React.FormEvent) => void;
 	loading: boolean;
 	selectedTable: Table | null;
@@ -28,7 +27,6 @@ export function AddTableModal({
 	setName,
 	columns,
 	setColumns,
-	columnsSchema,
 	onSubmit,
 	loading,
 }: AddTableModalProps) {
@@ -79,7 +77,6 @@ export function AddTableModal({
 							<ColumnEditor
 								columns={columns}
 								setColumns={setColumns}
-								columnsSchema={columnsSchema}
 							/>
 						</TabsContent>
 					</Tabs>

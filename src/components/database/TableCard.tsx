@@ -10,8 +10,6 @@ import { Table } from "@/types/database";
 
 function TableCard({ table }: { table: Table }) {
 	const {
-		tables,
-		setTables,
 		setColumns,
 		setName,
 		setShowAddTableModal,
@@ -19,7 +17,6 @@ function TableCard({ table }: { table: Table }) {
 		setSelectedTable,
 		handleDeleteTable,
 	} = useDatabase();
-	const { showAlert } = useApp();
 
 	const editTable = async () => {
 		setName(table.name);
@@ -67,19 +64,3 @@ function TableCard({ table }: { table: Table }) {
 }
 
 export default TableCard;
-
-{
-	/* <ul className='list-disc pl-5'>
-						{table.columns?.create.map((column, index) => (
-							<li
-								key={index}
-								className='text-sm text-gray-700 border p-2 rounded'>
-								{Object.entries(column).map(([key, value]) => (
-									<p key={key}>
-										<span className='font-medium'>{key}:</span> {String(value)}
-									</p>
-								))}
-							</li>
-						))}
-					</ul> */
-}

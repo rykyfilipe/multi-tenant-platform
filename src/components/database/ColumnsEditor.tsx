@@ -12,7 +12,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Column, ColumnSchema } from "@/types/database";
+import { Column } from "@/types/database";
 import { Plus, Trash2, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/contexts/AppContext";
@@ -20,7 +20,6 @@ import { useApp } from "@/contexts/AppContext";
 interface ColumnEditorProps {
 	columns: Column[];
 	setColumns: (columns: Column[]) => void;
-	columnsSchema: ColumnSchema[];
 }
 
 export function ColumnEditor({ columns, setColumns }: ColumnEditorProps) {

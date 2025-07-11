@@ -1,11 +1,12 @@
 /** @format */
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Table, Row } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { AddRowForm } from "./AddRowForm";
 import { TableView } from "./TableView";
+import { validateAndTransform } from "@/lib/utils";
 
 interface Props {
 	table: Table;
@@ -15,12 +16,76 @@ export default function TableEditor({ table }: Props) {
 	const { showAlert, token, user } = useApp();
 
 	const [rows, setRows] = useState<Row[]>(table.rows || []);
+	const [newRow, setNewRow] = useState<Record<string, any>>({});
+	const [rowId, setRowId] = useState((table.rows[rows.length - 1]?.id + 1) | 0);
+
 	const [editingCell, setEditingCell] = useState<{
 		rowId: string;
 		colName: string;
 	} | null>(null);
 
-	const handleAdd = (row: Row) => setRows((r) => [...r, row]);
+	const handleCancelEdit = () => setEditingCell(null);
+	const handleEditCell = (rowId: string, colName: string) =>
+		setEditingCell({ rowId, colName });
+
+	async function handleAdd(e: FormEvent) {
+		e.preventDefault();
+		if (!validateAndTransform(table, newRow, rowId, setNewRow)) return;
+
+		// Convert types properly
+		const processedData: Record<string, any> = {};
+		table.columns.forEach((col) => {
+			const value = newRow[col.name];
+			if (value !== undefined && value !== null && value !== "") {
+				switch (col.type) {
+					case "number":
+						processedData[col.name] = Number(value);
+						break;
+					case "boolean":
+						processedData[col.name] = value === "true";
+						break;
+					case "date":
+						processedData[col.name] = new Date(value).toISOString();
+						break;
+					default:
+						processedData[col.name] = value;
+				}
+			} else if (col.defaultValue) {
+				processedData[col.name] = col.defaultValue;
+			}
+		});
+
+		const row: Row = {
+			id: rowId,
+			data: processedData,
+		};
+		console.log(row);
+		if (!token) return console.error("No token available");
+
+		try {
+			const response = await fetch(
+				`/api/tenant/${user.tenantId}/database/table/${table.id}/rows`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ row }),
+				},
+			);
+			if (!response.ok) throw new Error("Failed to add row");
+
+			showAlert("Row added succesfuly", "success");
+
+			setRows([...rows, row]);
+			setRowId(rowId + 1);
+			setNewRow({});
+		} catch (error) {
+			showAlert("Error at adding a row", "error");
+		}
+	}
+
 	const handleDelete = async (id: string) => {
 		try {
 			const response = await fetch(
@@ -41,9 +106,6 @@ export default function TableEditor({ table }: Props) {
 			showAlert("Eroare la stergere", "error");
 		}
 	};
-
-	const handleEditCell = (rowId: string, colName: string) =>
-		setEditingCell({ rowId, colName });
 
 	const handleSaveCell = async (rowId: string, colName: string, value: any) => {
 		try {
@@ -77,21 +139,18 @@ export default function TableEditor({ table }: Props) {
 			showAlert("Row updated successfully", "success");
 			setEditingCell(null);
 		} catch (error) {
-			setRows((prevRows) => [...prevRows]); // Force re-render with original data
+			setRows((prevRows) => [...prevRows]);
 			showAlert("Error updating row", "error");
-			console.error("Update error:", error);
 		}
 	};
-	const handleCancelEdit = () => setEditingCell(null);
 
 	return (
 		<div className='space-y-6'>
 			<AddRowForm
 				columns={table.columns}
 				onAdd={handleAdd}
-				rows={rows}
-				setRows={setRows}
-				table={table}
+				newRow={newRow}
+				setNewRow={setNewRow}
 			/>
 			<TableView
 				table={table}
