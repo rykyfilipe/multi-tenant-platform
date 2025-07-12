@@ -39,3 +39,12 @@ export interface ColumnSchema {
 	primary?: boolean | undefined;
 	autoIncrement?: boolean | undefined;
 }
+
+export type FieldType = "string" | "boolean" | readonly string[];
+export interface FieldMeta {
+	key: keyof ColumnSchema;
+	type: FieldType;
+	required: boolean;
+	label: string;
+	placeholder?: string;
+}

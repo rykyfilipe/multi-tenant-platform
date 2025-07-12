@@ -2,7 +2,7 @@
 
 "use client";
 
-import TableEditor from "@/components/table/TableEditor";
+import TableEditor from "@/components/table/rows/TableEditor";
 import { useApp } from "@/contexts/AppContext";
 import { Table } from "@/types/database";
 import { useParams } from "next/navigation";

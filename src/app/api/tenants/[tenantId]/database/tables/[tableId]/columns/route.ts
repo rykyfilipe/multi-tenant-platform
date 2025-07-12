@@ -36,7 +36,7 @@ export async function POST(
 		return userResult;
 	}
 
-	const { tenantId, tableId } = params;
+	const { tenantId, tableId } = await params;
 	const { userId, role } = userResult;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
@@ -75,7 +75,7 @@ export async function POST(
 			);
 		}
 
-		await Promise.all(
+		const columns = await Promise.all(
 			parsedData.columns.map((col) => {
 				const parsedCol = ColumnSchema.parse(col);
 
@@ -93,7 +93,7 @@ export async function POST(
 			}),
 		);
 
-		return NextResponse.json({ message: "Columns created" }, { status: 201 });
+		return NextResponse.json(columns, { status: 201 });
 	} catch (error: any) {
 		console.error("❌ Failed to create columns:", error);
 		return NextResponse.json(

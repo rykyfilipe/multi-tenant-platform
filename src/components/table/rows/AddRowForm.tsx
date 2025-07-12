@@ -2,11 +2,11 @@
 
 "use client";
 
-import { FormEvent, useState } from "react";
-import { Column, Row, Table } from "@/types/database";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Input } from "../ui/input";
+import { FormEvent } from "react";
+import { Column } from "@/types/database";
+import { Button } from "../../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
+import { Input } from "../..//ui/input";
 import { Label } from "@radix-ui/react-label";
 import {
 	Select,
@@ -14,7 +14,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "../ui/select";
+} from "../../ui/select";
 
 interface Props {
 	columns: Column[];
@@ -23,12 +23,7 @@ interface Props {
 	setNewRow: (value: { [key: string]: any }) => void;
 }
 
-export function AddRowForm({
-	columns,
-	onAdd,
-	newRow,
-	setNewRow,
-}: Props) {
+export function AddRowForm({ columns, onAdd, newRow, setNewRow }: Props) {
 	return (
 		<Card className='shadow-lg'>
 			<CardHeader>

@@ -2,6 +2,7 @@
 
 "use client";
 
+import { User } from "@/types/user";
 import { createContext, useContext, useState, useEffect } from "react";
 
 interface AppContextType {
@@ -20,7 +21,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-	const [user, setUser] = useState<any>(null);
+	const [user, setUser] = useState<User | null>(null);
 	const [token, setToken] = useState<string | null>(null);
 	const [alertMessage, setAlertMessage] = useState("");
 	const [alertType, setAlertType] = useState<"success" | "error">("success");

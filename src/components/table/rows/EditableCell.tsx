@@ -4,15 +4,15 @@
 
 import { useState, KeyboardEvent } from "react";
 import { Row } from "@/types/database";
-import { Input } from "../ui/input";
+import { Input } from "../../ui/input";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "../ui/select";
-import { Button } from "../ui/button";
+} from "../../ui/select";
+import { Button } from "../../ui/button";
 
 interface Props {
 	row: Row;
