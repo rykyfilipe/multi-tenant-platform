@@ -7,7 +7,7 @@ import {
 	getUserFromRequest,
 	verifyLogin,
 } from "@/lib/auth";
-import { z } from "zod";
+import { tuple, z } from "zod";
 import { createRowWithCells } from "@/lib/rows";
 
 export const CellSchema = z.object({
@@ -46,6 +46,7 @@ export async function POST(
 
 	try {
 		const body = await request.json();
+		console.log(body);
 		const parsedData = RowsSchema.parse(body);
 
 		const table = await prisma.table.findFirst({
@@ -66,8 +67,17 @@ export async function POST(
 			),
 		);
 
+		const newRow = await prisma.row.findFirst({
+			where: {
+				id: createdRows[0].id,
+			},
+			include: {
+				cells: true,
+			},
+		});
+
 		return NextResponse.json(
-			{ message: "Rows created", rows: createdRows },
+			{ message: "Rows created", newRow },
 			{ status: 201 },
 		);
 	} catch (error: any) {

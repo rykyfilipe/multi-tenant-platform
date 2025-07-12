@@ -48,3 +48,12 @@ export interface FieldMeta {
 	label: string;
 	placeholder?: string;
 }
+
+export interface RowSchema {
+	createdAt: string;
+	cells: CellSchema[];
+}
+export interface CellSchema {
+	columnId: number;
+	value: any;
+}

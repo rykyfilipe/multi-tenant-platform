@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, KeyboardEvent } from "react";
-import { Row } from "@/types/database";
+import { Cell, Column, Row } from "@/types/database";
 import { Input } from "../../ui/input";
 import {
 	Select,
@@ -15,9 +15,8 @@ import {
 import { Button } from "../../ui/button";
 
 interface Props {
-	row: Row;
-	colName: string;
-	colType: string;
+	columns: Column[] | null;
+	cell: Cell;
 	isEditing: boolean;
 	onStartEdit: () => void;
 	onSave: (value: any) => void;
@@ -25,15 +24,17 @@ interface Props {
 }
 
 export function EditableCell({
-	row,
-	colName,
-	colType,
+	columns,
+	cell,
 	isEditing,
 	onStartEdit,
 	onSave,
 	onCancel,
 }: Props) {
-	const [value, setValue] = useState<any>(row.data[colName]);
+	const [value, setValue] = useState<any>(cell.value);
+	const column = columns?.find((col) => col.id === cell.columnId);
+
+	if (!column) return;
 
 	function handleKey(e: KeyboardEvent) {
 		if (e.key === "Enter") onSave(value);
@@ -43,7 +44,7 @@ export function EditableCell({
 	if (isEditing) {
 		return (
 			<div className='flex items-center gap-2'>
-				{colType === "boolean" ? (
+				{column.type === "boolean" ? (
 					<Select
 						value={String(value)}
 						onValueChange={(v) => setValue(v === "true")}>
@@ -59,9 +60,9 @@ export function EditableCell({
 					<Input
 						className='w-max'
 						type={
-							colType === "date"
+							column.type === "date"
 								? "date"
-								: colType === "number"
+								: column.type === "number"
 								? "number"
 								: "text"
 						}
@@ -71,7 +72,13 @@ export function EditableCell({
 						autoFocus
 					/>
 				)}
-				<Button variant='ghost' size='sm' onClick={() => onSave(value)}>
+				<Button
+					variant='ghost'
+					size='sm'
+					onClick={() => {
+						onSave(value);
+						console.log(cell.columnId + ":" + cell.rowId + ":" + value);
+					}}>
 					✓
 				</Button>
 				<Button variant='ghost' size='sm' onClick={onCancel}>
@@ -83,8 +90,9 @@ export function EditableCell({
 
 	let display: string;
 	if (value == null || value === "") display = "Empty";
-	else if (colType === "boolean") display = value ? "True" : "False";
-	else if (colType === "date") display = new Date(value).toLocaleDateString();
+	else if (column.type === "boolean") display = value ? "True" : "False";
+	else if (column.type === "date")
+		display = new Date(value).toLocaleDateString();
 	else display = String(value);
 
 	return (

@@ -1,18 +1,25 @@
 /** @format */
 "use client";
 
-import { Table, Row } from "@/types/database";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Table, Row, Column } from "@/types/database";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Database, Trash2 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
 
 interface Props {
 	table: Table;
 	rows: Row[];
-	editingCell: { rowId: string; colName: string } | null;
-	onEditCell: (rowId: string, colName: string) => void;
-	onSaveCell: (rowId: string, colName: string, value: any) => void;
+	columns: Column[];
+
+	editingCell: { rowId: string; columnId: string } | null;
+	onEditCell: (rowId: string, columnId: string, cellId: string) => void;
+	onSaveCell: (
+		rowId: string,
+		columnId: string,
+		cellId: string,
+		value: any,
+	) => void;
 	onCancelEdit: () => void;
 	onDeleteRow: (rowId: string) => void;
 }
@@ -20,6 +27,7 @@ interface Props {
 export function TableView({
 	table,
 	rows,
+	columns,
 	editingCell,
 	onEditCell,
 	onSaveCell,
@@ -42,7 +50,7 @@ export function TableView({
 					<table className='w-full'>
 						<thead>
 							<tr>
-								{table.columns.map((col) => (
+								{columns.map((col) => (
 									<th className='text-start' key={col.name}>
 										{col.name}
 									</th>
@@ -62,21 +70,29 @@ export function TableView({
 							) : (
 								rows.map((row) => (
 									<tr key={row.id}>
-										{table.columns.map((col) => (
-											<td key={col.name}>
+										{row.cells.map((cell) => (
+											<td key={cell.id}>
 												<EditableCell
-													row={row}
-													colName={col.name}
-													colType={col.type}
+													columns={columns}
+													cell={cell}
 													isEditing={
-														editingCell?.rowId === row["id"].toFixed(0) &&
-														editingCell.colName === col.name
+														editingCell?.rowId === row.id.toFixed(0) &&
+														Number(editingCell.columnId) === cell.columnId
 													}
 													onStartEdit={() =>
-														onEditCell(row["id"].toFixed(0), col.name)
+														onEditCell(
+															cell.rowId.toString(),
+															cell.columnId.toString(),
+															cell.id.toString(),
+														)
 													}
 													onSave={(val) =>
-														onSaveCell(row["id"].toFixed(0), col.name, val)
+														onSaveCell(
+															cell.rowId.toString(),
+															cell.columnId.toString(),
+															cell.id.toString(),
+															val,
+														)
 													}
 													onCancel={onCancelEdit}
 												/>

@@ -1,7 +1,7 @@
 /** @format */
 
 import { useApp } from "@/contexts/AppContext";
-import { Column, Table } from "@/types/database";
+import { Column, Row, Table } from "@/types/database";
 import { useEffect, useState } from "react";
 
 function useTable(id: string) {
@@ -12,6 +12,7 @@ function useTable(id: string) {
 	const [loading, setLoading] = useState(true);
 	const [table, setTable] = useState<Table | null>(null);
 	const [columns, setColumns] = useState<Column[] | null>(null);
+	const [rows, setRows] = useState<Row[] | null>(null);
 
 	useEffect(() => {
 		if (!token || !userId || !tenantId) return;
@@ -29,6 +30,7 @@ function useTable(id: string) {
 				const data = await res.json();
 				setTable(data);
 				setColumns(data.columns || []);
+				setRows(data.rows || []);
 			} catch (err) {
 				console.error("Error fetching table:", err);
 			} finally {
@@ -45,6 +47,8 @@ function useTable(id: string) {
 		columns,
 		setColumns,
 		loading,
+		rows,
+		setRows,
 	};
 }
 
