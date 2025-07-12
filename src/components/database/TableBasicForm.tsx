@@ -23,17 +23,15 @@ export function TableBasicsForm({
 	onCancel,
 	loading,
 }: TableBasicsFormProps) {
-	const { selectedTable, tables } = useDatabase();
+	const { validateTableName } = useDatabase();
 	const { showAlert } = useApp();
-	const validateTableName = (n: string): boolean => {
-		return !tables.some((table) => table.name === n);
-	};
+
 	return (
 		<Card className='border-0 shadow-2xl bg-white'>
 			<CardHeader className='text-center pb-4'>
 				<div className='flex items-center justify-center space-x-2 mb-2'>
 					<div className='p-2 bg-blue-100 rounded-lg'>
-						<Table2 className='h-6 w-6 text-blue-600' />
+						<Table2 className='h-6 w-6 ' />
 					</div>
 					<CardTitle className='text-2xl font-bold text-gray-900'>
 						Table Basics
@@ -64,7 +62,7 @@ export function TableBasicsForm({
 							}}
 							placeholder='Enter table name'
 							required
-							className='h-12 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500'
+							className='h-12 px-4 rounded-xl border-gray-200  focus:ring-black/25'
 						/>
 					</div>
 
@@ -72,14 +70,8 @@ export function TableBasicsForm({
 						<Button
 							type='submit'
 							disabled={loading}
-							className='flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200'>
-							{selectedTable
-								? loading
-									? "Updating..."
-									: "Update Table"
-								: loading
-								? "Creating..."
-								: "Create Table"}
+							className='flex-1 h-12  text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200'>
+							{loading ? "Creating..." : "Create Table"}
 						</Button>
 						<Button
 							type='button'

@@ -20,21 +20,13 @@ export default function DatabasePage() {
 function DatabaseContent() {
 	const {
 		tables,
-		columns,
-		setColumns,
-		setIsUpdate,
+		databaseInfo,
 		showAddTableModal,
 		setShowAddTableModal,
 		name,
 		setName,
 		handleAddTable,
 		loading,
-		columnsSchema,
-		databaseInfo,
-		selectedTable,
-		setSelectedTable,
-		isUpdate,
-		handleUpdateTable,
 	} = useDatabase();
 
 	return (
@@ -57,30 +49,12 @@ function DatabaseContent() {
 					isOpen={showAddTableModal}
 					onClose={() => {
 						setShowAddTableModal(false);
-						setSelectedTable(null);
-						setColumns([
-							{
-								name: "id",
-								type: "number",
-								unique: true,
-								primary: true,
-								autoIncrement: true,
-								defaultValue: "0",
-								required: false,
-							},
-						]);
 						setName("");
-						setIsUpdate(false);
 					}}
 					name={name}
 					setName={setName}
-					columns={columns}
-					setColumns={setColumns}
-					columnsSchema={columnsSchema}
-					onSubmit={isUpdate ? handleUpdateTable : handleAddTable}
+					onSubmit={handleAddTable}
 					loading={loading}
-					selectedTable={selectedTable}
-					setSelectedTable={setSelectedTable}
 				/>
 			</div>
 		</div>

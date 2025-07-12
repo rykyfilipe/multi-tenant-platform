@@ -40,7 +40,12 @@ export async function GET(
 			},
 			include: {
 				tenant: true,
-				tables: true,
+				tables: {
+					include: {
+						rows: true,
+						columns: true,
+					},
+				},
 			},
 		});
 		return NextResponse.json(database, { status: 200 });

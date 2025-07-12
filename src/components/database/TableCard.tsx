@@ -1,39 +1,25 @@
 /** @format */
 
-import { Delete, Edit, Edit2Icon, Edit3Icon, Trash } from "lucide-react";
+import { Edit, Trash } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { useDatabase } from "@/contexts/DatabaseContext";
-import { useApp } from "@/contexts/AppContext";
 import Link from "next/link";
 import { Table } from "@/types/database";
+import { useRouter } from "next/navigation";
 
 function TableCard({ table }: { table: Table }) {
-	const {
-		setColumns,
-		setName,
-		setShowAddTableModal,
-		setIsUpdate,
-		setSelectedTable,
-		handleDeleteTable,
-	} = useDatabase();
+	const { handleDeleteTable } = useDatabase();
 
-	const editTable = async () => {
-		setName(table.name);
-		setColumns(table.columns);
-		setShowAddTableModal(true);
-		setIsUpdate(true);
-		setSelectedTable(table);
-	};
 	return (
 		<Card>
 			<CardHeader>
 				<div className='w-full flex items-center justify-between'>
 					<h2 className='text-lg font-semibold'>{table.name}</h2>
-					<Button
-						className='bg-transparent text-black shadow-none hover:bg-gray-200 max-w-min'
-						onClick={editTable}>
-						<Edit />
+					<Button className='bg-transparent text-black shadow-none hover:bg-gray-200 max-w-min'>
+						<Link href={`/home/database/table/${table.id}/columns`}>
+							<Edit />
+						</Link>
 					</Button>
 				</div>
 			</CardHeader>
@@ -50,12 +36,12 @@ function TableCard({ table }: { table: Table }) {
 			</CardContent>
 			<CardFooter className='flex justify-between w-full'>
 				<Button variant='outline' size='sm'>
-					<Link href={`/home/database/table/${table.id}`}>View Details</Link>
+					<Link href={`/home/database/table/${table.id}/rows`}>View rows</Link>
 				</Button>
 				<Button
 					className='bg-red-600 hover:bg-red-700 text-white'
 					size='sm'
-					onClick={() => handleDeleteTable(table?.id)}>
+					onClick={() => handleDeleteTable(table?.id.toString())}>
 					<Trash />
 				</Button>
 			</CardFooter>
