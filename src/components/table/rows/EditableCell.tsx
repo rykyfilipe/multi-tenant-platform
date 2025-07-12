@@ -15,7 +15,7 @@ import {
 import { Button } from "../../ui/button";
 
 interface Props {
-	columns: Column[] | null;
+	columns: Column[];
 	cell: Cell;
 	isEditing: boolean;
 	onStartEdit: () => void;
@@ -33,7 +33,7 @@ export function EditableCell({
 }: Props) {
 	const [value, setValue] = useState<any>(cell.value);
 	const column = columns?.find((col) => col.id === cell.columnId);
-
+	
 	if (!column) return;
 
 	function handleKey(e: KeyboardEvent) {

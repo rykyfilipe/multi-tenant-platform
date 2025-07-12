@@ -70,34 +70,40 @@ export function TableView({
 							) : (
 								rows.map((row) => (
 									<tr key={row.id}>
-										{row.cells.map((cell) => (
-											<td key={cell.id}>
-												<EditableCell
-													columns={columns}
-													cell={cell}
-													isEditing={
-														editingCell?.rowId === row.id.toFixed(0) &&
-														Number(editingCell.columnId) === cell.columnId
-													}
-													onStartEdit={() =>
-														onEditCell(
-															cell.rowId.toString(),
-															cell.columnId.toString(),
-															cell.id.toString(),
-														)
-													}
-													onSave={(val) =>
-														onSaveCell(
-															cell.rowId.toString(),
-															cell.columnId.toString(),
-															cell.id.toString(),
-															val,
-														)
-													}
-													onCancel={onCancelEdit}
-												/>
-											</td>
-										))}
+										{columns.map((col) => {
+											const cell = row.cells.find(
+												(cell) => cell.columnId === col.id,
+											);
+											if (!cell) return;
+											return (
+												<td key={crypto.randomUUID()}>
+													<EditableCell
+														columns={columns}
+														cell={cell}
+														isEditing={
+															editingCell?.rowId === row.id.toFixed(0) &&
+															Number(editingCell.columnId) === col.id
+														}
+														onStartEdit={() =>
+															onEditCell(
+																cell.rowId.toString(),
+																cell.columnId.toString(),
+																cell.id.toString(),
+															)
+														}
+														onSave={(val) =>
+															onSaveCell(
+																cell.rowId.toString(),
+																cell.columnId.toString(),
+																cell.id.toString(),
+																val,
+															)
+														}
+														onCancel={onCancelEdit}
+													/>
+												</td>
+											);
+										})}
 										<td>
 											<Button
 												variant='ghost'
