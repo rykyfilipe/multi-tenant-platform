@@ -10,7 +10,7 @@ import {
 import { z } from "zod";
 import { colExists } from "@/lib/utils";
 
-export const ColumnSchema = z.object({
+const ColumnSchema = z.object({
 	name: z.string().min(1, "Name is mandatory"),
 	type: z.enum(["string", "boolean", "number", "date"]),
 	required: z.boolean().optional(),
@@ -18,7 +18,7 @@ export const ColumnSchema = z.object({
 	autoIncrement: z.boolean().optional(),
 });
 
-export const ColumnsSchema = z.object({
+const ColumnsSchema = z.object({
 	columns: z.array(ColumnSchema),
 });
 
