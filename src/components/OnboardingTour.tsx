@@ -1,45 +1,43 @@
 /** @format */
 
+// components/OnboardingTour.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Joyride, { Step } from "react-joyride";
+import React, { useEffect, useState, ReactNode } from "react";
+import { TourProvider } from "@reactour/tour";
 
 interface OnboardingTourProps {
-	steps: Step[];
+	steps: { selector: string; content: string }[];
 	tourKey: string;
+	children: ReactNode;
 }
 
-export const OnboardingTour = ({ steps, tourKey }: OnboardingTourProps) => {
-	const [run, setRun] = useState(false);
-	const [hasMounted, setHasMounted] = useState(false);
+export const OnboardingTour = ({
+	steps,
+	tourKey,
+	children,
+}: OnboardingTourProps) => {
+	const [shouldRun, setShouldRun] = useState(false);
 
 	useEffect(() => {
-		setHasMounted(true);
-		const seen = localStorage.getItem(`seen_tour_${tourKey}`) || false;
+		const seen = localStorage.getItem(`seen_tour_${tourKey}`);
 		if (!seen) {
-			setTimeout(() => {
-				setRun(true);
-				localStorage.setItem(`seen_tour_${tourKey}`, "true");
-			}, 300);
+			setShouldRun(true);
+			localStorage.setItem(`seen_tour_${tourKey}`, "true");
 		}
 	}, [tourKey]);
 
-	if (!hasMounted) return null;
-
 	return (
-		<Joyride
+		<TourProvider
 			steps={steps}
-			run={run}
-			continuous
-			showProgress
-			showSkipButton
+			startAt={0}
+			showNavigation
+			showDots
+			defaultOpen={shouldRun}
 			styles={{
-				options: {
-					zIndex: 10000,
-					primaryColor: "#6366f1",
-				},
-			}}
-		/>
+				popover: (base) => ({ ...base, zIndex: 9999 }),
+			}}>
+			{children}
+		</TourProvider>
 	);
 };

@@ -33,67 +33,67 @@ export default function DatabaseContent() {
 
 	const steps = [
 		{
-			target: ".add-table-button",
+			selector: ".add-table-button",
 			content: "Apasă acest buton pentru a adauga o tabela noua!",
 		},
 		{
-			target: ".table-name-input",
+			selector: ".table-name-input",
 			content: "Completează aici numele tabelei!",
 		},
 		{
-			target: ".table-description-input",
+			selector: ".table-description-input",
 			content: "Completează aici descrierea tabelei!",
 		},
 		{
-			target: ".submit-table-data",
+			selector: ".submit-table-data",
 			content: "Aici finalizezi totul.",
 		},
 	];
 
 	return (
-		<div className='min-h-screen bg-gray-50 p-6'>
-			<OnboardingTour steps={steps} tourKey='database' />
+		<OnboardingTour steps={steps} tourKey='database'>
+			<div className='min-h-screen bg-gray-50 p-6'>
+				<div className='max-w-7xl mx-auto'>
+					<DatabaseHeader onAddTable={() => setShowAddTableModal(true)} />
 
-			<div className='max-w-7xl mx-auto'>
-				<DatabaseHeader onAddTable={() => setShowAddTableModal(true)} />
+					{/* ✅ Loading este afișat chiar dacă `tables` e null */}
+					{loading && <Loading message='database' />}
 
-				{/* ✅ Loading este afișat chiar dacă `tables` e null */}
-				{loading && <Loading message='database' />}
+					{/* ⛔️ Mută verificarea `!tables` mai jos */}
+					{!loading && tables && <TableGrid tables={tables} />}
 
-				{/* ⛔️ Mută verificarea `!tables` mai jos */}
-				{!loading && tables && <TableGrid tables={tables} />}
+					{!loading && databaseInfo === null && tables?.length === 0 && (
+						<div className='flex flex-col items-center space-y-4'>
+							<h1 className='text-xl font-semibold'>No database available</h1>
+							<p className='text-gray-600'>Create a database to continue</p>
+							<Button
+								onClick={() => setShowForm(true)}
+								className='flex gap-2'
+								disabled={user?.role !== "ADMIN"}>
+								<Plus className='w-4 h-4' />
+								Create databse
+							</Button>
+						</div>
+					)}
 
-				{!loading && databaseInfo === null && tables?.length === 0 && (
-					<div className='flex flex-col items-center space-y-4'>
-						<h1 className='text-xl font-semibold'>No database available</h1>
-						<p className='text-gray-600'>Create a database to continue</p>
-						<Button
-							onClick={() => setShowForm(true)}
-							className='flex gap-2'
-							disabled={user?.role !== "ADMIN"}>
-							<Plus className='w-4 h-4' />
-							Create databse
-						</Button>
-					</div>
-				)}
+					{showForm && <AddDatabaseForm setShowForm={setShowForm} />}
 
-				{showForm && <AddDatabaseForm setShowForm={setShowForm} />}
-
-				<AddTableModal
-					isOpen={showAddTableModal}
-					onClose={() => {
-						setShowAddTableModal(false);
-						setName("");
-						setDescription("");
-					}}
-					name={name}
-					setName={setName}
-					description={description}
-					setDescription={setDescription}
-					onSubmit={handleAddTable}
-					loading={loading}
-				/>
+					<AddTableModal
+						isOpen={showAddTableModal}
+						onClose={() => {
+							setShowAddTableModal(false);
+							setName("");
+							setDescription("");
+						}}
+						name={name}
+						setName={setName}
+						description={description}
+						setDescription={setDescription}
+						onSubmit={handleAddTable}
+						loading={loading}
+					/>
+				</div>
 			</div>
-		</div>
+		</OnboardingTour>
 	);
 }
