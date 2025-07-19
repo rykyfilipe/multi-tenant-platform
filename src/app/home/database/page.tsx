@@ -13,6 +13,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+export const dynamic = "force-dynamic";
 
 export default function DatabaseContent() {
 	const {
@@ -51,9 +52,9 @@ export default function DatabaseContent() {
 	];
 
 	return (
-		<OnboardingTour steps={steps} tourKey='database'>
-			<div className='min-h-screen bg-gray-50 p-6'>
-				<div className='max-w-7xl mx-auto'>
+		<div className='min-h-screen bg-gray-50 p-6'>
+			<div className='max-w-7xl mx-auto'>
+				<OnboardingTour steps={steps} tourKey='database'>
 					<DatabaseHeader onAddTable={() => setShowAddTableModal(true)} />
 
 					{/* ✅ Loading este afișat chiar dacă `tables` e null */}
@@ -92,8 +93,9 @@ export default function DatabaseContent() {
 						onSubmit={handleAddTable}
 						loading={loading}
 					/>
-				</div>
+				</OnboardingTour>
+				;
 			</div>
-		</OnboardingTour>
+		</div>
 	);
 }
