@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  adminId    Int      @unique
+  admin      User     @relation("TenantAdmin", fields: [adminId], references: [id])
+  users      User[]   @relation("TenantUsers")
+
+  // 🔧 Configurări utile:
+  logoUrl    String?        // URL-ul logo-ului companiei
+  theme      String?        // dark | light | custom...
+  timezone   String?        // ex: "Europe/Bucharest"
+  language   String?        // ex: "ro", "en"
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime        @updatedAt @default(now())
+
+  // 🧾 Informații companie:
+  companyEmail String?      // email de contact
+  phone        String?      // număr de telefon
+  website      String?      // site oficial
+  address      String?      // adresa firmei
+
+  // 🔌 Extensii (ex: dashboard separat)
+  database   Database?
+}
+
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  firstName String
+  lastName  String
+  password  String
+  role      Role
+
+  tenantId  Int?
+  tenant    Tenant?  @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  adminOf   Tenant?  @relation("TenantAdmin")
+}
+
+model Database {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @unique
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  tables    Table[]
+}
+
+model Table {
+  id         Int       @id @default(autoincrement())
+  name       String
+  databaseId Int
+  database   Database  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  description String
+  columns Column[]
+  rows    Row[]
+}
+
+model Column {
+  id            Int     @id @default(autoincrement())
+  name          String
+  type          String
+  required      Boolean @default(false)
+  primary       Boolean @default(false)
+  autoIncrement Boolean @default(false)
+  tableId       Int
+  table         Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  cells         Cell[]
+}
+
+model Row {
+  id        Int      @id @default(autoincrement())
+  tableId   Int
+  createdAt DateTime @default(now())
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  cells     Cell[]
+}
+
+model Cell {
+  id        Int    @id @default(autoincrement())
+  rowId     Int
+  columnId  Int
+  value     Json
+
+  row       Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  column    Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
