@@ -33,7 +33,7 @@ function LoginForm() {
 
 			if (!response.ok) {
 				showAlert(data.error || "Login failed", "error");
-			} else if (data.token) {
+			} else {
 				localStorage.setItem("token", data.token);
 				localStorage.setItem("user", JSON.stringify(data.user));
 				setToken(data.token);

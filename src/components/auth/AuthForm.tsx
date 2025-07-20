@@ -4,15 +4,17 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import { useApp } from "@/contexts/AppContext";
 
 function AuthForm() {
 	const { setToken, setUser } = useApp();
-	setToken(null);
-	setUser(null);
+	useEffect(() => {
+		setToken(null);
+		setUser(null);
+	}, [setToken, setUser]);
 	const [tab, setTab] = useState("login");
 
 	return (

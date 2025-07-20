@@ -66,7 +66,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		if (token) {
 			fetchTenant();
 		}
-	}, [token, user, loading]);
+	}, [token, user]);
 
 	const showAlert = (
 		message: string,

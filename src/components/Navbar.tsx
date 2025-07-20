@@ -70,9 +70,6 @@ export function AppSidebar() {
 			localStorage.removeItem("token");
 			localStorage.removeItem("user");
 
-			// setToken(null);
-			// setUser(null);
-
 			router.push("/");
 		} catch (error) {
 			console.error("Logout error:", error);

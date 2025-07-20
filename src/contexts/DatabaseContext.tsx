@@ -39,7 +39,7 @@ export const DatabaseProvider = ({
 }: {
 	children: React.ReactNode;
 }) => {
-	const { token, user, loading, showAlert, tenant } = useApp();
+	const { token, user, loading, showAlert, tenant, setLoading } = useApp();
 	const tenantId = tenant?.id;
 
 	const [databaseInfo, setDatabaseInfo] = useState<any>(null);
@@ -50,15 +50,16 @@ export const DatabaseProvider = ({
 	const [description, setDescription] = useState("");
 
 	const [showAddTableModal, setShowAddTableModal] = useState(false);
-
 	useEffect(() => {
 		fetchDatabase();
-	}, [token, user, loading, tenantId]);
+	}, [token, user, tenant]);
 
 	const fetchDatabase = async () => {
-		if (!tenantId || !user || !token) return;
+		setLoading(true);
+
+		if (!tenant || !user || !token) return;
 		try {
-			const response = await fetch(`/api/tenants/${tenantId}/database`, {
+			const response = await fetch(`/api/tenants/${tenant.id}/database`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
@@ -74,6 +75,8 @@ export const DatabaseProvider = ({
 			}
 		} catch (error) {
 			showAlert("Error loading database", "error");
+		} finally {
+			setLoading(false);
 		}
 	};
 

@@ -52,7 +52,7 @@ function DatabaseContent() {
 
 				{/* ⛔️ Mută verificarea `!tables` mai jos */}
 				{!loading && tables && <TableGrid tables={tables} />}
-
+				{!loading && !tables && <p className='text-center'>No tables</p>}
 				{!loading && databaseInfo === null && tables?.length === 0 && (
 					<div className='flex flex-col items-center space-y-4'>
 						<h1 className='text-xl font-semibold'>No database available</h1>
