@@ -23,10 +23,10 @@ export function DatabaseHeader({ onAddTable }: DatabaseHeaderProps) {
 					</p>
 				</div>
 			</div>
-			{user.role !== "VIEWER" && (
-				<Button onClick={onAddTable}>
+			{user?.role !== "VIEWER" && (
+				<Button onClick={onAddTable} className='add-table-button'>
 					{" "}
-					<Plus className='h-5 w-5 add-table-button' />
+					<Plus className='h-5 w-5 ' />
 					<span>Add Table</span>
 				</Button>
 			)}

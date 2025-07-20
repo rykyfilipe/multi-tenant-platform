@@ -1,6 +1,5 @@
 /** @format */
 
-// components/OnboardingTour.tsx
 "use client";
 
 import React, { useEffect, useState, ReactNode } from "react";
@@ -18,11 +17,13 @@ export const OnboardingTour = ({
 	children,
 }: OnboardingTourProps) => {
 	const [shouldRun, setShouldRun] = useState(false);
-
 	useEffect(() => {
 		const seen = localStorage.getItem(`seen_tour_${tourKey}`);
 		if (!seen) {
-			setShouldRun(true);
+			setShouldRun(true); // pornim turul
+			const timeout = setTimeout(() => {
+				setShouldRun(true); // variabilă locală pentru run tur
+			}, 500);
 			localStorage.setItem(`seen_tour_${tourKey}`, "true");
 		}
 	}, [tourKey]);
