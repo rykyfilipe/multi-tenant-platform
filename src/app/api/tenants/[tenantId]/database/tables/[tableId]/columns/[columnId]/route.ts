@@ -10,7 +10,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const CellSchema = z.object({
-	field: z.enum(["name", "type", "required", "primary", "autoIncrement"]),
+	field: z.enum([
+		"name",
+		"type",
+		"required",
+		"primary",
+		"autoIncrement",
+		"referenceTableId",
+	]),
 	value: z.any(),
 });
 

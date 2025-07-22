@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Table, ColumnSchema, Column, FieldMeta } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import AddColumnForm from "./AddColumnForm";
@@ -20,6 +20,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	if (!columns) return;
 
 	const { showAlert, token, user, tenant } = useApp();
+	const [tables, setTables] = useState<Table[] | null>(null);
 	const tenantId = tenant?.id;
 	if (!token || !user) return;
 	const [showForm, setShowForm] = useState(false);
@@ -37,7 +38,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			},
 			{
 				key: "type",
-				type: ["string", "number", "boolean", "date"] as const,
+				type: ["string", "number", "boolean", "date", "reference"] as const,
 				required: true,
 				label: "Data Type",
 			},
@@ -58,6 +59,13 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				type: "boolean",
 				required: false,
 				label: "Auto Increment",
+			},
+			{
+				key: "referenceTableId",
+				type: "string",
+				required: false,
+				label: "Reference Table",
+				placeholder: "Select a table",
 			},
 		],
 		[],
@@ -80,6 +88,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			showAlert("This column already exists", "error");
 			return;
 		}
+		console.log(newColumn);
 
 		try {
 			const response = await fetch(
@@ -152,6 +161,25 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		);
 	};
 
+	useEffect(() => {
+		fetchDatabase();
+	}, []);
+
+	const fetchDatabase = async () => {
+		if (!tenant || !user || !token) return;
+		try {
+			const response = await fetch(`/api/tenants/${tenant.id}/database`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+
+			if (!response.ok) throw new Error("Failed to fetch database");
+			const data = await response.json();
+			setTables(data.tables);
+		} catch (error) {
+			showAlert("Error loading database", "error");
+		}
+	};
+
 	return (
 		<div className='space-y-6'>
 			<Button
@@ -164,11 +192,11 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 					setNewColumn={setNewColumn}
 					newColumn={newColumn}
 					onAdd={handleAdd}
-					columnSchemaMeta={columnSchemaMeta}
+					tables={tables}
 				/>
 			)}
 			<TableView
-				columnSchemaMeta={columnSchemaMeta}
+				tables={tables}
 				columns={columns || []}
 				editingCell={editingCell}
 				onEditCell={handleEditCell}

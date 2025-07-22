@@ -1,11 +1,12 @@
 /** @format */
 "use client";
 
-import { Column, ColumnSchema } from "@/types/database";
+import { Column, ColumnSchema, FieldType, Table } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Database, Trash2 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
+import { useMemo } from "react";
 
 interface Props {
 	columns: Column[];
@@ -18,10 +19,8 @@ interface Props {
 	) => void;
 	onCancelEdit: () => void;
 	onDeleteColumn: (columnId: string) => void;
-	columnSchemaMeta: FieldMeta[];
+	tables: Table[] | null;
 }
-
-type FieldType = "string" | "boolean" | readonly string[];
 
 interface FieldMeta {
 	key: keyof ColumnSchema;
@@ -29,6 +28,7 @@ interface FieldMeta {
 	required: boolean;
 	label: string;
 	placeholder?: string;
+	referenceOptions?: { value: number | string; label: string }[];
 }
 
 export function TableView({
@@ -38,8 +38,55 @@ export function TableView({
 	onSaveCell,
 	onCancelEdit,
 	onDeleteColumn,
-	columnSchemaMeta,
+	tables,
 }: Props) {
+	const columnSchemaMeta: FieldMeta[] = useMemo(() => {
+		const base: FieldMeta[] = [
+			{
+				key: "name",
+				type: "string",
+				required: true,
+				label: "Column Name",
+			},
+			{
+				key: "type",
+				type: ["string", "number", "boolean", "date", "reference"] as const,
+				required: true,
+				label: "Data Type",
+			},
+			{
+				key: "required",
+				type: "boolean",
+				required: false,
+				label: "Required",
+			},
+			{
+				key: "primary",
+				type: "boolean",
+				required: false,
+				label: "Primary Key",
+			},
+			{
+				key: "autoIncrement",
+				type: "boolean",
+				required: false,
+				label: "Auto Increment",
+			},
+			{
+				key: "referenceTableId",
+				type: tables?.map((t) => t.id.toString()) || [],
+				required: false,
+				label: "Reference Table",
+				referenceOptions: tables?.map((t) => ({
+					value: t.id,
+					label: t.name,
+				})),
+			},
+		];
+
+		return base;
+	}, [tables]);
+
 	return (
 		<Card className='shadow-lg'>
 			<CardHeader>
@@ -52,17 +99,12 @@ export function TableView({
 				</div>
 			</CardHeader>
 			<CardContent>
-				<div
-					className='overflow-auto'
-					style={{
-						scrollbarWidth: "none",
-						msOverflowStyle: "none",
-					}}>
+				<div className='overflow-auto' style={{ scrollbarWidth: "none" }}>
 					<table className='w-full'>
 						<thead>
 							<tr>
 								{columnSchemaMeta.map((meta) => (
-									<th className='text-start p-2 border-b' key={meta.key}>
+									<th key={meta.key} className='text-start p-2 border-b'>
 										{meta.label}
 									</th>
 								))}
@@ -80,9 +122,7 @@ export function TableView({
 								</tr>
 							) : (
 								columns.map((column) => (
-									<tr
-										key={column?.id || crypto.randomUUID()}
-										className='hover:bg-gray-50'>
+									<tr key={column.id} className='hover:bg-gray-50'>
 										{columnSchemaMeta.map((meta) => (
 											<td key={meta.key} className='p-2 border-b'>
 												<EditableCell
@@ -90,16 +130,17 @@ export function TableView({
 													fieldName={meta.key}
 													fieldType={meta.type}
 													isEditing={
-														editingCell?.columnId === column.id?.toString() &&
+														editingCell?.columnId === column.id.toString() &&
 														editingCell?.fieldName === meta.key
 													}
 													onStartEdit={() =>
-														onEditCell(column.id?.toString(), meta.key)
+														onEditCell(column.id.toString(), meta.key)
 													}
-													onSave={(val: string) =>
-														onSaveCell(column.id?.toString(), meta.key, val)
+													onSave={(val) =>
+														onSaveCell(column.id.toString(), meta.key, val)
 													}
 													onCancel={onCancelEdit}
+													referenceOptions={meta.referenceOptions}
 												/>
 											</td>
 										))}

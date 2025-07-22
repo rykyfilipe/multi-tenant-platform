@@ -3,7 +3,7 @@
 "use client";
 
 import { FormEvent, useCallback, useMemo } from "react";
-import { ColumnSchema } from "@/types/database";
+import { ColumnSchema, Table } from "@/types/database";
 import { Button } from "../../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Input } from "../../ui/input";
@@ -15,13 +15,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../ui/select";
-import Link from "next/link";
 
 interface Props {
 	newColumn: ColumnSchema | null;
 	setNewColumn: (col: ColumnSchema | null) => void;
 	onAdd: (e: FormEvent) => void;
-	columnSchemaMeta: FieldMeta[];
+	tables: Table[] | null;
 }
 
 type FieldType = "string" | "boolean" | readonly string[];
@@ -32,15 +31,17 @@ interface FieldMeta {
 	required: boolean;
 	label: string;
 	placeholder?: string;
+	referenceOptions?: { value: number | string; label: string }[];
 }
 
 export default function AddColumnForm({
 	newColumn,
 	setNewColumn,
 	onAdd,
-	columnSchemaMeta,
+	tables,
 }: Props) {
-	// Initialize default column if null
+	if (!tables) return null;
+
 	const currentColumn = useMemo(
 		() =>
 			newColumn || {
@@ -49,11 +50,11 @@ export default function AddColumnForm({
 				required: false,
 				primary: false,
 				autoIncrement: false,
+				referenceTableId: undefined,
 			},
 		[newColumn],
 	);
 
-	// Optimized update function
 	const updateColumn = useCallback(
 		(key: keyof ColumnSchema, value: any) => {
 			setNewColumn({
@@ -64,7 +65,6 @@ export default function AddColumnForm({
 		[currentColumn, setNewColumn],
 	);
 
-	// Handle boolean field changes
 	const handleBooleanChange = useCallback(
 		(key: keyof ColumnSchema, value: string) => {
 			updateColumn(key, value === "true");
@@ -72,7 +72,6 @@ export default function AddColumnForm({
 		[updateColumn],
 	);
 
-	// Handle string field changes
 	const handleStringChange = useCallback(
 		(key: keyof ColumnSchema, value: string) => {
 			updateColumn(key, value);
@@ -80,7 +79,6 @@ export default function AddColumnForm({
 		[updateColumn],
 	);
 
-	// Render boolean select field
 	const renderBooleanField = useCallback(
 		(field: FieldMeta) => {
 			const value = currentColumn[field.key] as boolean;
@@ -108,11 +106,11 @@ export default function AddColumnForm({
 		[currentColumn, handleBooleanChange],
 	);
 
-	// Render enum select field
 	const renderEnumField = useCallback(
 		(field: FieldMeta) => {
 			const value = currentColumn[field.key] as string;
-			const options = field.type as readonly string[];
+			const options =
+				field.referenceOptions ?? (field.type as readonly string[]);
 
 			return (
 				<div key={field.key} className='space-y-2'>
@@ -121,8 +119,10 @@ export default function AddColumnForm({
 						{field.required && <span className='text-destructive ml-1'>*</span>}
 					</Label>
 					<Select
-						value={value}
-						onValueChange={(val) => handleStringChange(field.key, val)}>
+						value={value?.toString()}
+						onValueChange={(val) =>
+							updateColumn(field.key, isNaN(Number(val)) ? val : Number(val))
+						}>
 						<SelectTrigger>
 							<SelectValue
 								placeholder={`Select ${field.label.toLowerCase()}`}
@@ -130,8 +130,16 @@ export default function AddColumnForm({
 						</SelectTrigger>
 						<SelectContent>
 							{options.map((option) => (
-								<SelectItem key={option} value={option}>
-									{option.charAt(0).toUpperCase() + option.slice(1)}
+								<SelectItem
+									key={
+										typeof option === "string" ? option : String(option.value)
+									}
+									value={
+										typeof option === "string" ? option : String(option.value)
+									}>
+									{typeof option === "string"
+										? option.charAt(0).toUpperCase() + option.slice(1)
+										: option.label}
 								</SelectItem>
 							))}
 						</SelectContent>
@@ -139,10 +147,9 @@ export default function AddColumnForm({
 				</div>
 			);
 		},
-		[currentColumn, handleStringChange],
+		[currentColumn, updateColumn],
 	);
 
-	// Render string input field
 	const renderStringField = useCallback(
 		(field: FieldMeta) => {
 			const value = currentColumn[field.key] as string;
@@ -169,23 +176,67 @@ export default function AddColumnForm({
 		[currentColumn, handleStringChange],
 	);
 
-	// Render field based on type
+	const columnSchemaMeta: FieldMeta[] = useMemo(() => {
+		const base: FieldMeta[] = [
+			{
+				key: "name",
+				type: "string",
+				required: true,
+				label: "Column Name",
+				placeholder: "Enter column name",
+			},
+			{
+				key: "type",
+				type: ["string", "number", "boolean", "date", "reference"] as const,
+				required: true,
+				label: "Data Type",
+			},
+			{
+				key: "required",
+				type: "boolean",
+				required: false,
+				label: "Required",
+			},
+			{
+				key: "primary",
+				type: "boolean",
+				required: false,
+				label: "Primary Key",
+			},
+			{
+				key: "autoIncrement",
+				type: "boolean",
+				required: false,
+				label: "Auto Increment",
+			},
+		];
+
+		// Dacă e de tip "reference", adaugă un câmp nou
+		if (currentColumn.type === "reference") {
+			base.push({
+				key: "referenceTableId",
+				type: tables.map((t) => t.id.toString()) as readonly string[],
+				required: true,
+				label: "Reference Table",
+				referenceOptions: tables.map((t) => ({
+					value: t.id,
+					label: t.name,
+				})),
+			});
+		}
+
+		return base;
+	}, [currentColumn.type, tables]);
+
 	const renderField = useCallback(
 		(field: FieldMeta) => {
-			if (field.type === "boolean") {
-				return renderBooleanField(field);
-			}
-
-			if (Array.isArray(field.type)) {
-				return renderEnumField(field);
-			}
-
+			if (field.type === "boolean") return renderBooleanField(field);
+			if (Array.isArray(field.type)) return renderEnumField(field);
 			return renderStringField(field);
 		},
 		[renderBooleanField, renderEnumField, renderStringField],
 	);
 
-	// Form validation
 	const isFormValid = useMemo(() => {
 		return (
 			currentColumn.name.trim().length > 0 && currentColumn.type.length > 0
@@ -198,7 +249,6 @@ export default function AddColumnForm({
 				<CardTitle className='text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent'>
 					Create New Column
 				</CardTitle>
-				
 			</CardHeader>
 			<CardContent>
 				<form onSubmit={onAdd} className='space-y-6'>
@@ -206,7 +256,6 @@ export default function AddColumnForm({
 						{columnSchemaMeta.map(renderField)}
 					</div>
 
-					{/* Logic validation warnings */}
 					{currentColumn.autoIncrement && currentColumn.type !== "number" && (
 						<div className='p-3 bg-warning/10 border border-warning/20 rounded-md'>
 							<p className='text-sm text-warning-foreground'>

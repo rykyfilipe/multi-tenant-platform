@@ -10,19 +10,21 @@ import {
 import { z } from "zod";
 import { colExists } from "@/lib/utils";
 
+// === VALIDARE ===
 const ColumnSchema = z.object({
 	name: z.string().min(1, "Name is mandatory"),
-	type: z.enum(["string", "boolean", "number", "date"]),
+	type: z.enum(["string", "boolean", "number", "date", "reference"]),
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
+	referenceTableId: z.number().optional(), // doar pt type "reference"
 });
 
 const ColumnsSchema = z.object({
 	columns: z.array(ColumnSchema),
 });
 
-// Funcție helper pentru a determina valoarea default bazată pe tipul coloanei
+// === VALOARE IMPLICITĂ ===
 const getDefaultValue = (
 	columnType: string,
 	required: boolean = false,
@@ -37,13 +39,16 @@ const getDefaultValue = (
 				return false;
 			case "date":
 				return new Date().toISOString();
+			case "reference":
+				return null; // referințele încep goale
 			default:
 				return "";
 		}
 	}
-	return null; // Pentru coloanele non-required, folosim null
+	return null;
 };
 
+// === ROUTA POST ===
 export async function POST(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string; tableId: string }> },
@@ -68,7 +73,7 @@ export async function POST(
 	try {
 		const body = await request.json();
 		const parsedData = ColumnsSchema.parse(body);
-
+		console.log("Parsed Data:", parsedData);
 		const database = await prisma.database.findFirst({
 			where: { tenantId: Number(tenantId) },
 		});
@@ -80,7 +85,6 @@ export async function POST(
 			);
 		}
 
-		// Găsim tabla cu toate coloanele și rândurile existente
 		const table = await prisma.table.findFirst({
 			where: {
 				id: Number(tableId),
@@ -88,7 +92,7 @@ export async function POST(
 			},
 			include: {
 				columns: true,
-				rows: { select: { id: true } }, // Selectăm doar ID-urile pentru performanță
+				rows: { select: { id: true } },
 			},
 		});
 
@@ -99,13 +103,17 @@ export async function POST(
 			);
 		}
 
-		// Folosim o transaction pentru a asigura consistența datelor
+		// === TRX ===
 		const result = await prisma.$transaction(async (tx) => {
-			// 1. Creăm coloanele noi
-			const createdColumns: any = [];
+			const createdColumns: any[] = [];
 
 			for (const col of parsedData.columns) {
 				const parsedCol = ColumnSchema.parse(col);
+
+				// dacă e referință, validăm că tabela referită există
+				if (parsedCol.type === "reference" && !parsedCol.referenceTableId) {
+					throw new Error("Reference column must include referenceTableId");
+				}
 
 				if (!colExists(table.columns, parsedCol)) {
 					const newColumn = await tx.column.create({
@@ -116,13 +124,15 @@ export async function POST(
 							primary: parsedCol.primary ?? false,
 							autoIncrement: parsedCol.autoIncrement ?? false,
 							tableId: table.id,
+							referenceTableId: parsedCol.referenceTableId,
 						},
 					});
+
 					createdColumns.push(newColumn);
 				}
 			}
 
-			// 2. Creăm cells pentru fiecare coloană nouă și fiecare rând existent
+			// Adăugăm cells default la fiecare rând
 			if (createdColumns.length > 0 && table.rows.length > 0) {
 				const cellsToCreate: {
 					rowId: number;
@@ -133,7 +143,6 @@ export async function POST(
 				for (const column of createdColumns) {
 					for (const row of table.rows) {
 						const defaultValue = getDefaultValue(column.type, column.required);
-
 						cellsToCreate.push({
 							rowId: row.id,
 							columnId: column.id,
@@ -142,27 +151,18 @@ export async function POST(
 					}
 				}
 
-				// Creăm toate cells-urile într-o singură operație batch
 				if (cellsToCreate.length > 0) {
-					await tx.cell.createMany({
-						data: cellsToCreate,
-					});
+					await tx.cell.createMany({ data: cellsToCreate });
 				}
 			}
 
 			return createdColumns;
 		});
 
-		return NextResponse.json(
-			{
-				newColumn: result[0],
-			},
-			{ status: 201 },
-		);
+		return NextResponse.json({ newColumn: result[0] }, { status: 201 });
 	} catch (error: any) {
 		console.error("❌ Failed to create columns:", error);
 
-		// Oferim mesaje de eroare mai detaliate
 		if (error.code === "P2002") {
 			return NextResponse.json(
 				{ error: "Column with this name already exists" },

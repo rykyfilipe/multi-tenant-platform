@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Table, Row, Column, RowSchema, CellSchema } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { AddRowForm } from "./AddRowForm";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import ImportExportControls from "./ImportExportControls";
 import { cn } from "@/lib/utils";
+import { da } from "date-fns/locale";
 
 interface Props {
 	table: Table;
@@ -33,7 +34,7 @@ export default function TableEditor({
 	const { showAlert, token, user, tenant } = useApp();
 	const tenantId = tenant?.id;
 	const [showForm, setShowForm] = useState(false);
-
+	const [tables, setTables] = useState<Table[] | null>(null);
 	if (!token || !user) return;
 
 	const [cells, setCells] = useState<CellSchema[] | []>([]);
@@ -112,7 +113,27 @@ export default function TableEditor({
 			showAlert,
 		);
 	};
+	useEffect(() => {
+		fetchTables();
+	}, []);
 
+	const fetchTables = async () => {
+		if (!tenant || !user || !token) return;
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenant.id}/database/tables`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			);
+
+			if (!response.ok) throw new Error("Failed to fetch database");
+			const data = await response.json();
+			setTables(data);
+		} catch (error) {
+			showAlert("Error loading database", "error");
+		}
+	};
 	return (
 		<div className='space-y-6'>
 			<div className='w-full flex items-center justify-between'>
@@ -132,9 +153,11 @@ export default function TableEditor({
 					cells={cells}
 					setCells={setCells}
 					onAdd={handleAdd}
+					tables={tables}
 				/>
 			)}
 			<TableView
+				tables={tables}
 				table={table}
 				columns={columns}
 				rows={rows}

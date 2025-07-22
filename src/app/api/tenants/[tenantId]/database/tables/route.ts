@@ -104,6 +104,7 @@ export async function GET(
 
 	if (!isMember)
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
 	try {
 		const tables = await prisma.table.findMany({
 			where: {
@@ -111,10 +112,13 @@ export async function GET(
 					tenantId: Number(tenantId),
 				},
 			},
-
 			include: {
-				rows: true,
 				columns: true,
+				rows: {
+					include: {
+						cells: true, // ✅ AICI era problema!
+					},
+				},
 			},
 		});
 

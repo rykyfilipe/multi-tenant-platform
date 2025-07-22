@@ -15,24 +15,20 @@ model Tenant {
   admin      User     @relation("TenantAdmin", fields: [adminId], references: [id])
   users      User[]   @relation("TenantUsers")
 
-  // 🔧 Configurări utile:
-  logoUrl    String?        // URL-ul logo-ului companiei
-  theme      String?        // dark | light | custom...
-  timezone   String?        // ex: "Europe/Bucharest"
-  language   String?        // ex: "ro", "en"
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime        @updatedAt @default(now())
+  logoUrl    String?
+  theme      String?
+  timezone   String?
+  language   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt @default(now())
 
-  // 🧾 Informații companie:
-  companyEmail String?      // email de contact
-  phone        String?      // număr de telefon
-  website      String?      // site oficial
-  address      String?      // adresa firmei
+  companyEmail String?
+  phone        String?
+  website      String?
+  address      String?
 
-  // 🔌 Extensii (ex: dashboard separat)
   database   Database?
 }
-
 
 model User {
   id        Int      @id @default(autoincrement())
@@ -63,8 +59,11 @@ model Table {
   database   Database  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   description String
-  columns Column[]
-  rows    Row[]
+  columns     Column[]
+  rows        Row[]
+
+  // 🔁 Relație inversă pentru referințele din coloane
+  referencedByColumns Column[] @relation("ReferenceColumnTable")
 }
 
 model Column {
@@ -78,6 +77,9 @@ model Column {
   table         Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
   cells         Cell[]
+
+  referenceTableId Int?
+  referenceTable   Table? @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
 }
 
 model Row {

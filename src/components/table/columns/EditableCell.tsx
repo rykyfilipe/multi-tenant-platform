@@ -1,27 +1,30 @@
 /** @format */
-import { useState, useEffect } from "react";
-import { Column, ColumnSchema } from "@/types/database";
-import { Check, X } from "lucide-react";
+
+"use client";
+
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
 	Select,
-	SelectTrigger,
 	SelectContent,
 	SelectItem,
+	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Column } from "@/types/database";
 
-type FieldType = "string" | "boolean" | readonly string[];
+type FieldType = "string" | "boolean" | "date" | string[];
 
 interface Props {
 	column: Column;
-	fieldName: keyof ColumnSchema;
+	fieldName: keyof Column;
 	fieldType: FieldType;
 	isEditing: boolean;
 	onStartEdit: () => void;
 	onSave: (value: any) => void;
 	onCancel: () => void;
+	referenceOptions?: { value: string | number; label: string }[];
 }
 
 export function EditableCell({
@@ -32,6 +35,7 @@ export function EditableCell({
 	onStartEdit,
 	onSave,
 	onCancel,
+	referenceOptions,
 }: Props) {
 	const [value, setValue] = useState<any>(column[fieldName]);
 
@@ -39,63 +43,71 @@ export function EditableCell({
 		setValue(column[fieldName]);
 	}, [column, fieldName]);
 
-	const handleSave = () => {
-		let processedValue = value;
-
-		// Convert value based on field type
-		if (fieldType === "boolean") {
-			processedValue = value === "true" || value === true;
-		} else if (Array.isArray(fieldType)) {
-			// For dropdown/select fields, ensure value is in allowed options
-			if (!fieldType.includes(value)) {
-				processedValue = fieldType[0]; // Default to first option
-			}
-		}
-
-		onSave(processedValue);
-	};
-
-	const handleKeyDown = (e: React.KeyboardEvent) => {
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
-			handleSave();
+			onSave(value);
 		} else if (e.key === "Escape") {
 			onCancel();
 		}
 	};
 
 	const renderValue = () => {
+		if (fieldName === "referenceTableId" && referenceOptions?.length) {
+			const option = referenceOptions.find(
+				(opt) => opt.value === column[fieldName],
+			);
+			return option?.label || `ID: ${column[fieldName]}`;
+		}
+
 		if (fieldType === "boolean") {
 			return column[fieldName] ? "Yes" : "No";
 		}
+
+		if (fieldType === "date" && column[fieldName]) {
+			return new Date(column[fieldName] as string).toLocaleDateString();
+		}
+
+		if (column[fieldName] === null || column[fieldName] === "") {
+			return "Empty";
+		}
+
 		return column[fieldName]?.toString() || "";
 	};
 
 	if (isEditing) {
 		return (
-			<div className='flex items-center gap-2'>
-				{fieldType === "boolean" ? (
+			<div className='flex items-center w-full gap-2'>
+				{Array.isArray(fieldType) || fieldName === "referenceTableId" ? (
 					<Select
 						value={value?.toString()}
-						onValueChange={(val) => setValue(val)}>
-						<SelectTrigger className='flex-1' onKeyDown={handleKeyDown}>
+						onValueChange={(val) => setValue(Number(val))}>
+						<SelectTrigger className='flex-1'>
+							<SelectValue placeholder='Select' />
+						</SelectTrigger>
+						<SelectContent>
+							{fieldName === "referenceTableId" && referenceOptions?.length
+								? referenceOptions.map((opt) => (
+										<SelectItem key={opt.value} value={opt.value.toString()}>
+											{opt.label}
+										</SelectItem>
+								  ))
+								: (fieldType as string[]).map((option) => (
+										<SelectItem key={option} value={option}>
+											{option}
+										</SelectItem>
+								  ))}
+						</SelectContent>
+					</Select>
+				) : fieldType === "boolean" ? (
+					<Select
+						value={value?.toString()}
+						onValueChange={(val) => setValue(val === "true")}>
+						<SelectTrigger className='flex-1'>
 							<SelectValue placeholder='Select' />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value='true'>Yes</SelectItem>
 							<SelectItem value='false'>No</SelectItem>
-						</SelectContent>
-					</Select>
-				) : Array.isArray(fieldType) ? (
-					<Select value={value} onValueChange={(val) => setValue(val)}>
-						<SelectTrigger className='flex-1' onKeyDown={handleKeyDown}>
-							<SelectValue placeholder='Select' />
-						</SelectTrigger>
-						<SelectContent>
-							{fieldType.map((option) => (
-								<SelectItem key={option} value={option}>
-									{option}
-								</SelectItem>
-							))}
 						</SelectContent>
 					</Select>
 				) : (
@@ -108,25 +120,19 @@ export function EditableCell({
 					/>
 				)}
 
-				<Button size='sm' onClick={handleSave} className='p-1 h-8 w-8'>
-					<Check className='h-4 w-4' />
+				<Button variant='ghost' size='sm' onClick={() => onSave(value)}>
+					✓
 				</Button>
-				<Button
-					size='sm'
-					variant='ghost'
-					onClick={onCancel}
-					className='p-1 h-8 w-8'>
-					<X className='h-4 w-4' />
+				<Button variant='ghost' size='sm' onClick={onCancel}>
+					✕
 				</Button>
 			</div>
 		);
 	}
 
 	return (
-		<div
-			className='cursor-pointer hover:bg-gray-100 p-1 rounded min-h-[32px] flex items-center'
-			onClick={onStartEdit}>
-			{renderValue()}
+		<div className='cursor-pointer w-full' onClick={onStartEdit}>
+			<p className='max-w-[100px] truncate'>{renderValue()}</p>
 		</div>
 	);
 }

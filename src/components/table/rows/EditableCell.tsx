@@ -2,8 +2,8 @@
 
 "use client";
 
-import { useState, KeyboardEvent } from "react";
-import { Cell, Column, Row } from "@/types/database";
+import { useState, KeyboardEvent, useMemo, JSX } from "react";
+import { Cell, Column, Row, Table } from "@/types/database";
 import { Input } from "../../ui/input";
 import {
 	Select,
@@ -14,6 +14,7 @@ import {
 } from "../../ui/select";
 import { Button } from "../../ui/button";
 import { useApp } from "@/contexts/AppContext";
+import { es } from "date-fns/locale";
 
 interface Props {
 	columns: Column[];
@@ -22,7 +23,82 @@ interface Props {
 	onStartEdit: () => void;
 	onSave: (value: any) => void;
 	onCancel: () => void;
+	tables: Table[] | null;
 }
+
+const createReferenceData = (tables: Table[] | null) => {
+	const referenceData: Record<number, { id: number; displayValue: string }[]> =
+		{};
+	if (!tables) return referenceData;
+
+	tables.forEach((table) => {
+		const options: { id: number; displayValue: string }[] = [];
+
+		if (Array.isArray(table.rows) && table.rows.length > 0) {
+			table.rows.forEach((row) => {
+				if (Array.isArray(row.cells) && row.cells.length > 0) {
+					const displayParts: string[] = [];
+
+					const sortedColumns = [...table.columns].sort((a, b) => {
+						if (a.primary && !b.primary) return -1;
+						if (!a.primary && b.primary) return 1;
+						if (a.autoIncrement && !b.autoIncrement) return -1;
+						if (!a.autoIncrement && b.autoIncrement) return 1;
+						return a.name.localeCompare(b.name);
+					});
+
+					let addedColumns = 0;
+					const maxColumns = 3;
+
+					sortedColumns.forEach((column) => {
+						if (addedColumns >= maxColumns) return;
+
+						const cell = row.cells.find((c) => c.columnId === column.id);
+						if (cell?.value != null && cell.value.toString().trim() !== "") {
+							let formattedValue = cell.value.toString().trim();
+
+							if (formattedValue.length > 15) {
+								formattedValue = formattedValue.substring(0, 15) + "...";
+							}
+
+							if (column.type === "date") {
+								try {
+									formattedValue = new Date(formattedValue).toLocaleDateString(
+										"ro-RO",
+									);
+								} catch {
+									// fallback la valoarea brută
+								}
+							} else if (column.type === "boolean") {
+								formattedValue = formattedValue === "true" ? "✓" : "✗";
+							}
+
+							if (addedColumns === 0 && column.primary) {
+								displayParts.push(`#${formattedValue}`);
+							} else {
+								displayParts.push(formattedValue);
+							}
+							addedColumns++;
+						}
+					});
+
+					const displayValue = displayParts.length
+						? displayParts.join(" • ").slice(0, 50)
+						: `Row #${row.id}`;
+
+					options.push({
+						id: row.id,
+						displayValue,
+					});
+				}
+			});
+		}
+
+		referenceData[table.id] = options;
+	});
+
+	return referenceData;
+};
 
 export function EditableCell({
 	columns,
@@ -31,16 +107,64 @@ export function EditableCell({
 	onStartEdit,
 	onSave,
 	onCancel,
+	tables,
 }: Props) {
 	const [value, setValue] = useState<any>(cell.value);
 	const column = columns?.find((col) => col.id === cell.columnId);
-	const { user } = useApp();
+	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
 
-	if (!column) return;
+	if (!column) return null;
 
-	function handleKey(e: KeyboardEvent) {
+	const handleKey = (e: KeyboardEvent) => {
 		if (e.key === "Enter") onSave(value);
 		if (e.key === "Escape") onCancel();
+	};
+
+	let referenceSelect: JSX.Element | null = null;
+	if (column.type === "reference") {
+		const options = referenceData[column.referenceTableId ?? -1] ?? [];
+		const referencedTable = tables?.find(
+			(t) => t.id === column.referenceTableId,
+		);
+
+		referenceSelect = (
+			<div className='flex flex-col gap-1'>
+				<Select
+					value={value ? String(value) : ""}
+					onValueChange={(val) => setValue(Number(val))}>
+					<SelectTrigger>
+						<SelectValue
+							placeholder={`Select ${referencedTable?.name || "reference"}`}
+						/>
+					</SelectTrigger>
+					<SelectContent className='max-w-[400px]'>
+						{options.length > 0 ? (
+							options.map((opt) => (
+								<SelectItem
+									key={opt.id}
+									value={String(opt.id)}
+									className='truncate max-w-[380px]'>
+									<span className='truncate' title={opt.displayValue}>
+										{opt.displayValue}
+									</span>
+								</SelectItem>
+							))
+						) : (
+							<SelectItem disabled value='no-options'>
+								No {referencedTable?.name || "options"} available
+							</SelectItem>
+						)}
+					</SelectContent>
+				</Select>
+
+				{process.env.NODE_ENV === "development" && (
+					<div className='text-xs text-muted-foreground'>
+						Table: {referencedTable?.name} (ID: {column.referenceTableId}),
+						Options: {options.length}
+					</div>
+				)}
+			</div>
+		);
 	}
 
 	if (isEditing) {
@@ -58,6 +182,8 @@ export function EditableCell({
 							<SelectItem value='false'>False</SelectItem>
 						</SelectContent>
 					</Select>
+				) : column.type === "reference" ? (
+					referenceSelect
 				) : (
 					<Input
 						className='w-max'
@@ -75,37 +201,48 @@ export function EditableCell({
 					/>
 				)}
 
-				<>
-					<Button
-						variant='ghost'
-						size='sm'
-						onClick={() => {
-							onSave(value);
-						}}>
-						✓
-					</Button>
-					<Button variant='ghost' size='sm' onClick={onCancel}>
-						✕
-					</Button>
-				</>
+				<Button variant='ghost' size='sm' onClick={() => onSave(value)}>
+					✓
+				</Button>
+				<Button variant='ghost' size='sm' onClick={onCancel}>
+					✕
+				</Button>
 			</div>
 		);
 	}
 
 	let display: string;
-	if (value == null || value === "") display = "Empty";
-	else if (column.type === "boolean")
-		display = value.toString() === "true" ? "True" : "False";
-	else if (column.type === "date")
+
+	if (value == null || value === "") {
+		display = "Empty";
+	} else if (column.type === "boolean") {
+		display = value === true ? "True" : "False";
+	} else if (column.type === "date") {
 		display = new Date(value).toLocaleDateString();
-	else display = String(value);
+	} else if (column.type === "reference" && column.referenceTableId) {
+		const referenceTable = tables?.find(
+			(t) => t.id === column.referenceTableId,
+		);
+		const referencedRow = referenceTable?.rows?.find(
+			(row: Row) => row.id === Number(value),
+		);
+
+		display = "";
+		referencedRow?.cells.forEach((cell) => {
+			display += `${cell.value} • `;
+		});
+	} else {
+		display = String(value);
+	}
 
 	return (
 		<div
 			onDoubleClick={onStartEdit}
 			title='Double-click to edit'
 			className={` ${display === "Empty" && "text-gray-500 italic"} `}>
-			{display}
+			<p className='max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis'>
+				{display}
+			</p>
 		</div>
 	);
 }

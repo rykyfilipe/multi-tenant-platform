@@ -9,6 +9,7 @@ import { EditableCell } from "./EditableCell";
 import { useApp } from "@/contexts/AppContext";
 
 interface Props {
+	tables: Table[] | null;
 	table: Table;
 	rows: Row[];
 	columns: Column[];
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function TableView({
+	tables,
 	table,
 	rows,
 	columns,
@@ -86,6 +88,7 @@ export function TableView({
 													<EditableCell
 														columns={columns}
 														cell={cell}
+														tables={tables}
 														isEditing={
 															editingCell?.rowId === row.id.toFixed(0) &&
 															Number(editingCell.columnId) === col.id

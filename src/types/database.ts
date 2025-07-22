@@ -1,5 +1,7 @@
 /** @format */
 
+export type FieldType = "string" | "boolean" | "date" | string[];
+
 export interface Column {
 	id: number;
 	name: string;
@@ -8,13 +10,21 @@ export interface Column {
 	primary: boolean;
 	autoIncrement: boolean;
 	tableId: number;
+
+	referenceTableId?: number | null;
+	referenceTable?: Table[] | null;
+}
+
+export interface RowReference {
+	referencedTableId: number;
+	referencedRowId: number;
 }
 
 export interface Cell {
 	id: number;
 	rowId: number;
 	columnId: number;
-	value: any;
+	value: string | number | boolean | Date | RowReference;
 }
 
 export interface Row {
@@ -35,13 +45,15 @@ export interface Table {
 
 export interface ColumnSchema {
 	name: string;
-	type: "string" | "number" | "boolean" | "date";
-	required?: boolean | undefined;
-	primary?: boolean | undefined;
-	autoIncrement?: boolean | undefined;
+	type: "string" | "number" | "boolean" | "date" | "reference";
+	required?: boolean;
+	primary?: boolean;
+	autoIncrement?: boolean;
+
+	// doar dacă type === "reference"
+	referenceTableId?: number;
 }
 
-export type FieldType = "string" | "boolean" | readonly string[];
 export interface FieldMeta {
 	key: keyof ColumnSchema;
 	type: FieldType;
@@ -54,7 +66,8 @@ export interface RowSchema {
 	createdAt: string;
 	cells: CellSchema[];
 }
+
 export interface CellSchema {
 	columnId: number;
-	value: any;
+	value: string | number | boolean | Date | RowReference;
 }
