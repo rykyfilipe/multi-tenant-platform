@@ -61,18 +61,8 @@ export async function POST(request: Request) {
 	const { userId, role } = userResult;
 
 	try {
-		let scopes: any = [];
-
-		if (role === "ADMIN" || role === "EDITOR") {
-			scopes = ["read", "write", "delete"];
-		} else if (role === "VIEWER") {
-			scopes = ["read"];
-		} else {
-			return NextResponse.json(
-				{ error: "Insufficient permissions" },
-				{ status: 403 },
-			);
-		}
+		const body = await request.json();
+		const { name, scopes, expiresIn } = body;
 
 		const payload = {
 			userId: userId,
@@ -83,10 +73,14 @@ export async function POST(request: Request) {
 
 		const newToken = await prisma.apiToken.create({
 			data: {
+				name: name,
 				userId,
 				tokenHash,
 				scopes,
-				expiresAt: null,
+				expiresAt: expiresIn
+					? new Date(Date.now() + expiresIn * 24 * 60 * 60 * 1000)
+					: undefined,
+				revoked: false,
 			},
 		});
 

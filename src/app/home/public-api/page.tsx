@@ -12,11 +12,11 @@ import {
 	Trash2,
 	Calendar,
 	Clock,
-	AlertCircle,
 	CheckCircle,
 	Info,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import RevokeTokenButton from "@/components/doc/RemoveTokenButton";
 
 type ApiToken = {
 	id: string;
@@ -83,8 +83,9 @@ const ApiTokensPage = () => {
 			});
 			if (!res.ok) throw new Error("Failed to generate token");
 			const result = await res.json();
-			setTokens((prev) => [...prev, result.tokenInfo]);
-			setNewTokenData({ token: result.token, name: tokenData.name });
+			console.log(result);
+			setTokens((prev) => [...prev, result]);
+			setNewTokenData({ token: result.tokenHash, name: tokenData.name });
 			setShowCreateModal(false);
 		} catch (err: any) {
 			showAlert(err.message || "Unknown error", "error");
@@ -95,13 +96,6 @@ const ApiTokensPage = () => {
 
 	// Revoke token
 	const revokeToken = async (tokenId: string) => {
-		if (
-			!confirm(
-				"Are you sure you want to revoke this token? This action cannot be undone.",
-			)
-		)
-			return;
-
 		try {
 			const res = await fetch(`/api/public/tokens/${tokenId}`, {
 				method: "DELETE",
@@ -333,14 +327,9 @@ const ApiTokensPage = () => {
 										</div>
 
 										<div className='flex items-center gap-2 ml-4'>
-											{!token.revoked && (
-												<button
-													onClick={() => revokeToken(token.id)}
-													className='text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors'
-													title='Revoke token'>
-													<Trash2 className='w-4 h-4' />
-												</button>
-											)}
+											<RevokeTokenButton
+												onConfirm={() => revokeToken(token.id)}
+											/>
 										</div>
 									</div>
 								</div>
@@ -802,7 +791,7 @@ const CreateTokenModal = ({
 	};
 
 	return (
-		<div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
+		<div className='fixed inset-0 bg-black/20 bg-opacity-50 flex items-center justify-center p-4 z-50'>
 			<div className='bg-white rounded-xl shadow-xl max-w-md w-full p-6'>
 				<h2 className='text-xl font-semibold text-gray-900 mb-6'>
 					Create New API Token
