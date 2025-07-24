@@ -2,7 +2,15 @@
 
 "use client";
 
-import { Database, Home, HousePlugIcon, Settings, Users } from "lucide-react";
+import {
+	AppWindow,
+	Database,
+	DatabaseZapIcon,
+	Home,
+	HousePlugIcon,
+	Settings,
+	Users,
+} from "lucide-react";
 
 import {
 	Sidebar,
@@ -19,6 +27,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { useApp } from "@/contexts/AppContext";
+import { title } from "process";
 
 const items = [
 	{
@@ -41,6 +50,11 @@ const items = [
 		title: "Database",
 		url: "/home/database",
 		icon: Database,
+	},
+	{
+		title: "Public API",
+		url: "/home/public-api",
+		icon: DatabaseZapIcon,
 	},
 
 	{
