@@ -8,7 +8,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 		<div className=''>
 			<SidebarProvider>
 				<AppSidebar />
-				<main className='max-w-screen-lg w-screen  md:min-w-[calc(100%-16rem)] '>
+				<main className=' md:max-w-screen-lg w-screen  md:min-w-[calc(100%-16rem)] '>
 					<SidebarTrigger className='block md:hidden fixed  z-50' />
 					{children}
 				</main>
