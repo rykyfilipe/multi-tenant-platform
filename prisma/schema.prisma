@@ -42,6 +42,7 @@ model User {
   tenant    Tenant?  @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
 
   adminOf   Tenant?  @relation("TenantAdmin")
+  apiTokens  ApiToken[]
 }
 
 model Database {
@@ -105,4 +106,19 @@ enum Role {
   ADMIN
   EDITOR
   VIEWER
+}
+
+model ApiToken {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+
+  tokenHash  String   @unique               
+  name       String?                        
+  scopes     String[]                      
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime?                    
+  revoked    Boolean  @default(false)
+
+  @@index([userId])
 }

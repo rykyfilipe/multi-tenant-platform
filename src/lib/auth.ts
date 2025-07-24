@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export const JWT_SECRET: Secret = "super-secret";
+export const PUBLIC_JWT_SECRET = "public-secret";
 
 interface JwtPayload {
 	userId: number;
@@ -15,13 +16,15 @@ interface JwtPayload {
 
 export function generateToken(
 	payload: Omit<JwtPayload, "iat" | "exp">,
-	exp: SignOptions["expiresIn"],
+	exp?: SignOptions["expiresIn"], // <-- acum e opțional
+	JWT_KEY: Secret = JWT_SECRET,
 ): string {
-	const options: SignOptions = {
-		expiresIn: exp,
-	};
+	const options: SignOptions = {};
+	if (exp) {
+		options.expiresIn = exp;
+	}
 
-	return jwt.sign(payload, JWT_SECRET, options);
+	return jwt.sign(payload, JWT_KEY, options);
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -67,23 +70,29 @@ export function verifyLogin(request: Request): boolean {
 	}
 }
 
-export function getUserId(request: Request): number | null {
+export function getUserId(
+	request: Request,
+	JWT_KEY: Secret = JWT_SECRET,
+): number | null {
 	const token = request.headers.get("Authorization")?.split(" ")[1];
 	if (!token) return null;
 
 	try {
-		const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+		const decoded = jwt.verify(token, JWT_KEY) as { userId: number };
 		return decoded.userId;
 	} catch (error) {
 		return null;
 	}
 }
-export function getUserRole(request: Request): string | null {
+export function getUserRole(
+	request: Request,
+	JWT_KEY: Secret = JWT_SECRET,
+): string | null {
 	const token = request.headers.get("Authorization")?.split(" ")[1];
 	if (!token) return null;
 
 	try {
-		const decoded = jwt.verify(token, JWT_SECRET) as { role: string };
+		const decoded = jwt.verify(token, JWT_KEY) as { role: string };
 		return decoded.role;
 	} catch (error) {
 		return null;
@@ -124,4 +133,38 @@ export function verifyToken(token: string): any {
 		}
 		return true;
 	});
+}
+
+export async function verifyPublicToken(request: Request): Promise<any> {
+	const token = request.headers.get("Authorization")?.split(" ")[1];
+	if (!token) return false;
+
+	try {
+		const storedToken: any = await prisma.apiToken.findFirst({
+			where: { tokenHash: token },
+			select: { id: true, userId: true, scopes: true, expiresAt: true },
+		});
+		if (!storedToken) return false;
+		return true;
+	} catch (error) {
+		return false;
+	}
+}
+
+export async function getPublicUserFromRequest(
+	request: Request,
+): Promise<{ userId: number; role: string } | NextResponse> {
+	const isValid = await verifyPublicToken(request);
+	if (!isValid) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	const userId = getUserId(request, PUBLIC_JWT_SECRET);
+	const role = getUserRole(request, PUBLIC_JWT_SECRET);
+
+	if (!userId || !role) {
+		return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+	}
+
+	return { userId, role };
 }
