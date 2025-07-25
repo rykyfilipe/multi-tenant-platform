@@ -27,12 +27,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { useApp } from "@/contexts/AppContext";
-import { title } from "process";
 
 const items = [
 	{
 		title: "Home",
-		url: "/home/dashboard",
+		url: "/home",
 		icon: Home,
 	},
 	{

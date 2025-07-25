@@ -782,7 +782,7 @@ const CreateTokenModal = ({
 		scopes: [],
 	});
 
-	const availableScopes = ["read:tables", "read:analytics", "write:webhooks"];
+	const availableScopes = ["tables:read", "rows:read", "rows:write"];
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();

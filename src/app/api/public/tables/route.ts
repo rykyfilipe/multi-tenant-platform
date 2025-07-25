@@ -19,6 +19,18 @@ export async function GET(request: Request) {
 	const { userId, role } = userResult;
 
 	try {
+		const token = await prisma.apiToken.findFirst({
+			where: { userId: userId },
+			select: { scopes: true },
+		});
+
+		if (!token || !token.scopes.includes("tables:read")) {
+			return NextResponse.json(
+				{ error: "Forbidden: Insufficient permissions" },
+				{ status: 403 },
+			);
+		}
+
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
 		});

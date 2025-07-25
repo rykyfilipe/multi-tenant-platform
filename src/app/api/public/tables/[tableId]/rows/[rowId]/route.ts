@@ -1,5 +1,6 @@
 /** @format */
 
+import { getPublicUserFromRequest, verifyPublicToken } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
@@ -8,7 +9,30 @@ export async function PATCH(
 	req: NextRequest,
 	{ params }: { params: Promise<{ tableId: string; rowId: string }> },
 ) {
+	const isValid = await verifyPublicToken(req);
+	if (!isValid) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	const userResult = await getPublicUserFromRequest(req);
+	if (userResult instanceof NextResponse) {
+		return userResult;
+	}
+	const { userId, role } = userResult;
+
 	try {
+		// Verificăm permisiunile utilizatorului
+		const token = await prisma.apiToken.findFirst({
+			where: { userId: userId },
+			select: { scopes: true },
+		});
+
+		if (!token || !token.scopes.includes("rows:write")) {
+			return NextResponse.json(
+				{ error: "Forbidden: Insufficient permissions" },
+				{ status: 403 },
+			);
+		}
 		const { tableId, rowId } = await params;
 		const tableIdNum = parseInt(tableId);
 		const rowIdNum = parseInt(rowId);
@@ -150,7 +174,30 @@ export async function DELETE(
 	req: NextRequest,
 	{ params }: { params: Promise<{ tableId: string; rowId: string }> },
 ) {
+	const isValid = await verifyPublicToken(req);
+	if (!isValid) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	const userResult = await getPublicUserFromRequest(req);
+	if (userResult instanceof NextResponse) {
+		return userResult;
+	}
+	const { userId, role } = userResult;
+
 	try {
+		// Verificăm permisiunile utilizatorului
+		const token = await prisma.apiToken.findFirst({
+			where: { userId: userId },
+			select: { scopes: true },
+		});
+
+		if (!token || !token.scopes.includes("rows:write")) {
+			return NextResponse.json(
+				{ error: "Forbidden: Insufficient permissions" },
+				{ status: 403 },
+			);
+		}
 		const { tableId, rowId } = await params;
 		const tableIdNum = parseInt(tableId);
 		const rowIdNum = parseInt(rowId);
