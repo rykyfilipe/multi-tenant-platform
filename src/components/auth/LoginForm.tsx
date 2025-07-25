@@ -41,7 +41,7 @@ function LoginForm() {
 
 				showAlert("Login successful!", "success");
 
-				setTimeout(() => router.push("/home/dashboard"), 2000);
+				setTimeout(() => router.push("/home"), 2000);
 			}
 		} catch (error: any) {
 			showAlert(error.message || "An error occurred during login.", "error");

@@ -9,7 +9,7 @@ import useUsersEditor from "@/hooks/useUsersEditor";
 import { TableView } from "./TableView";
 import { AddRowForm } from "./AddRowForm";
 import { Button } from "../ui/button";
-import { Minus, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 
 interface Props {
 	users: User[];

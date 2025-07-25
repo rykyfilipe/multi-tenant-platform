@@ -12,6 +12,7 @@ import { X } from "lucide-react";
 import ImportExportControls from "./ImportExportControls";
 import { cn } from "@/lib/utils";
 import { da } from "date-fns/locale";
+import Link from "next/link";
 
 interface Props {
 	table: Table;
@@ -136,17 +137,26 @@ export default function TableEditor({
 	};
 	return (
 		<div className='space-y-6'>
-			<div className='w-full flex items-center justify-between'>
+			<div className='w-full flex flex-col-reverse  xs:flex-row  justify-between items-center mb-4 gap-2'>
 				<Button
 					onClick={() => setShowForm((prev) => !prev)}
 					className={
 						user.role !== "ADMIN" ? "opacity-0 pointer-events-none" : ""
 					}>
-					{showForm ? <X /> : "Add new row"}
+					{showForm ? <X /> : <p className=''>Add new row</p>}
 				</Button>
-
-				<ImportExportControls rows={rows} columns={columns} table={table} />
+				<div className='flex flex-col items-end gap-5'>
+					<Link href={`/home/database/table/${table.id}/columns`}>
+						{user.role !== "VIEWER" && (
+							<Button variant='outline' size='sm'>
+								Edit columns
+							</Button>
+						)}
+					</Link>
+					<ImportExportControls rows={rows} columns={columns} table={table} />
+				</div>
 			</div>
+
 			{showForm && (
 				<AddRowForm
 					columns={columns}

@@ -27,13 +27,7 @@ function Page() {
 	return (
 		<div className='max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg'>
 			<h1 className='text-2xl font-bold mb-2'>{table.name}</h1>
-			<Link
-				href={`/home/database/table/${table.id}/rows`}
-				className='absolute right-6 top-6'>
-				<Button variant='outline' size='sm'>
-					Edit rows
-				</Button>
-			</Link>
+			
 			<TableEditor columns={columns} setColumns={setColumns} table={table} />
 		</div>
 	);

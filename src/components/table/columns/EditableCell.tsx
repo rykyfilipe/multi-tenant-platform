@@ -56,7 +56,11 @@ export function EditableCell({
 			const option = referenceOptions.find(
 				(opt) => opt.value === column[fieldName],
 			);
-			return option?.label || `ID: ${column[fieldName]}`;
+			return (
+				option?.label ||
+				(column[fieldName] && `ID: ${column[fieldName]}`) ||
+				"-"
+			);
 		}
 
 		if (fieldType === "boolean") {

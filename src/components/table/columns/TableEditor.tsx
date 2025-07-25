@@ -9,6 +9,7 @@ import { TableView } from "./TableView";
 import useColumnsTableEditor from "@/hooks/useColumnsTableEditor";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import Link from "next/link";
 
 interface Props {
 	columns: Column[] | null;
@@ -182,11 +183,18 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 
 	return (
 		<div className='space-y-6'>
-			<Button
-				onClick={() => setShowForm((prev) => !prev)}
-				className={`${user.role !== "ADMIN" && "opacity-0"}`}>
-				{showForm ? <X /> : "Add new column"}
-			</Button>
+			<div className='w-full flex flex-col-reverse  xs:flex-row  justify-between items-center mb-4 gap-2'>
+				<Button
+					onClick={() => setShowForm((prev) => !prev)}
+					className={`${user.role !== "ADMIN" && "opacity-0"}`}>
+					{showForm ? <X /> : "Add new column"}
+				</Button>
+				<Link href={`/home/database/table/${table.id}/rows`} className=''>
+					<Button variant='outline' size='sm'>
+						Edit rows
+					</Button>
+				</Link>
+			</div>
 			{showForm && (
 				<AddColumnForm
 					setNewColumn={setNewColumn}

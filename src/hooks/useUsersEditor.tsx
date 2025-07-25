@@ -14,7 +14,7 @@ function useUsersEditor() {
 	const handleCancelEdit = () => setEditingCell(null);
 
 	const handleEditCell = (userId: string, fieldName: string) => {
-		if (user.role === "VIEWER") return;
+		if (user.role !== "ADMIN") return;
 		setEditingCell({ userId, fieldName });
 	};
 

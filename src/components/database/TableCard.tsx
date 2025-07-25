@@ -44,7 +44,10 @@ function TableCard({ table }: { table: Table }) {
 				</p>
 			</CardContent>
 
-			<CardFooter className='flex justify-end gap-[124px] pt-4'>
+			<CardFooter
+				className={`flex ${
+					user.role === "VIEWER" ? "justify-end" : "justify-between"
+				}   pt-4`}>
 				<Link href={`/home/database/table/${table.id}/rows`}>
 					<Button variant='outline' size='sm'>
 						{user.role === "VIEWER" ? "View" : "Edit"} rows

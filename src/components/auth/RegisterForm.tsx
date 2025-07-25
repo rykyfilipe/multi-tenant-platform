@@ -57,7 +57,7 @@ function RegisterForm() {
 				setToken(data.token);
 				setUser(data.user);
 
-				setTimeout(() => router.push("/home/dashboard"), 2000);
+				setTimeout(() => router.push("/home"), 2000);
 			}
 		} catch (error: any) {
 			showAlert(

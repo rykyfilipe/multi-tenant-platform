@@ -13,8 +13,8 @@ export function DatabaseHeader({ onAddTable }: DatabaseHeaderProps) {
 	return (
 		<div className='max-w-full flex flex-col sm:flex-row gap-5  items-center justify-between py-8 px-6  bg-black/5 rounded-2xl mb-8 border'>
 			<div className='flex items-center space-x-4'>
-				<div className='p-3 bg-black/5 rounded-xl'>
-					<Database className='h-8 w-8 text-black' />
+				<div className='p-3 bg-black/5 rounded-xl hidden xs:block'>
+					<Database className='h-8 w-8 text-black ' />
 				</div>
 				<div>
 					<h1 className='text-4xl font-bold text-gray-900'>Database</h1>

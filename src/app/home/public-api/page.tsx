@@ -151,13 +151,13 @@ const ApiTokensPage = () => {
 
 	return (
 		<div className='min-h-screen bg-gray-50 p-6 '>
-			<div className='max-w-7xl mx-auto'>
+			<div className='max-w-7xl mx-auto space-y-8'>
 				{/* Header */}
 				<div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
 					<div className='max-w-full flex flex-col sm:flex-row gap-5  items-center justify-between py-8 px-6  bg-black/5 rounded-2xl mb-8 border'>
 						<div>
-							<h1 className='max-w-[90%] text-3xl font-bold text-gray-900 flex items-center gap-3'>
-								<Shield className='w-8 h-8 text-blue-600' />
+							<h1 className='max-w-[90%] text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3'>
+								<Shield className='w-8 h-8 text-blue-600 hidden xs:block' />
 								API Token Management
 							</h1>
 							<p className='text-gray-600 mt-2 max-w-[90%] ml-2'>
@@ -169,7 +169,7 @@ const ApiTokensPage = () => {
 							disabled={loading}
 							className='bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200'>
 							<Plus className='w-5 h-5' />
-							Create New Token
+							<p className='hidden xs:block'>Create New Token</p>
 						</Button>
 					</div>
 				</div>
@@ -177,7 +177,7 @@ const ApiTokensPage = () => {
 				{/* New Token Alert */}
 				{newTokenData && (
 					<div className='bg-green-50 border border-green-200 rounded-lg p-6'>
-						<div className='flex items-center gap-3 mb-4'>
+						<div className='flex flex-col xs:flex-row items-center gap-3 mb-4'>
 							<CheckCircle className='w-6 h-6 text-green-600' />
 							<h3 className='font-semibold text-green-800'>
 								Token Created Successfully!
@@ -388,7 +388,7 @@ const ApiTokensPage = () => {
 							<div className='space-y-6'>
 								{/* Tables List Endpoint */}
 								<div className='border border-gray-200 rounded-lg p-6'>
-									<div className='flex items-center gap-3 mb-4'>
+									<div className='flex flex-col xs:flex-row items-center gap-3 mb-4'>
 										<span className='bg-green-100 text-green-800 px-3 py-1 rounded-lg font-mono text-sm font-semibold'>
 											GET
 										</span>
@@ -441,7 +441,7 @@ const ApiTokensPage = () => {
 								{/* Tables Endpoint */}
 								<div className='border border-gray-200 rounded-lg p-6 space-y-10'>
 									<div>
-										<div className='flex items-center gap-3 mb-4'>
+										<div className='flex flex-col xs:flex-row items-center gap-3 mb-4'>
 											<span className='bg-green-100 text-green-800 px-3 py-1 rounded-lg font-mono text-sm font-semibold'>
 												GET
 											</span>
@@ -519,7 +519,7 @@ const ApiTokensPage = () => {
 								{/* Rows Endpoints */}
 								<div className='border border-gray-200 rounded-lg p-6 space-y-10'>
 									<div>
-										<div className='flex items-center gap-3 mb-4'>
+										<div className='flex flex-col xs:flex-row items-center gap-3 mb-4'>
 											<span className='bg-yellow-100 text-yellow-600 px-3 py-1 rounded-lg font-mono text-sm font-semibold'>
 												POST
 											</span>
@@ -578,7 +578,7 @@ const ApiTokensPage = () => {
 										</div>
 									</div>
 									<div>
-										<div className='flex items-center gap-3 mb-4'>
+										<div className='flex flex-col xs:flex-row items-center gap-3 mb-4'>
 											<span className='bg-pink-100 text-pink-600 px-3 py-1 rounded-lg font-mono text-sm font-semibold'>
 												PATCH
 											</span>
@@ -642,7 +642,7 @@ const ApiTokensPage = () => {
 										</div>
 									</div>
 									<div>
-										<div className='flex items-center gap-3 mb-4'>
+										<div className='flex flex-col xs:flex-row items-center gap-3 mb-4'>
 											<span className='bg-orange-100 text-orange-600 px-3 py-1 rounded-lg font-mono text-sm font-semibold'>
 												DELETE
 											</span>
@@ -825,7 +825,7 @@ const CreateTokenModal = ({
 
 					<div>
 						<label className='block text-sm font-medium text-gray-700 mb-2'>
-							Expires In (Optional)
+							Expires In *
 						</label>
 						<select
 							value={formData.expiresIn || ""}
@@ -847,7 +847,7 @@ const CreateTokenModal = ({
 
 					<div>
 						<label className='block text-sm font-medium text-gray-700 mb-2'>
-							Scopes (Optional)
+							Scopes *
 						</label>
 						<div className='space-y-2'>
 							{availableScopes.map((scope) => (

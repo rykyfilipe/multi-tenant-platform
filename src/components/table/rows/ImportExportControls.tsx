@@ -136,7 +136,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 	};
 	const [open, setOpen] = useState(false);
 	return (
-		<div className='flex items-center gap-2'>
+		<div className='absolute right-3 bottom-3 flex items-center gap-2'>
 			<Button
 				className='rounded-br-none rounded-tr-none rounded-l-2xl'
 				onClick={handleExport}>
