@@ -158,7 +158,7 @@ export function EditableCell({
 				</Select>
 
 				{process.env.NODE_ENV === "development" && (
-					<div className='text-xs text-muted-foreground'>
+					<div className=' text-xs text-muted-foreground'>
 						Table: {referencedTable?.name} (ID: {column.referenceTableId}),
 						Options: {options.length}
 					</div>
@@ -169,7 +169,7 @@ export function EditableCell({
 
 	if (isEditing) {
 		return (
-			<div className='flex items-center gap-2'>
+			<div className='flex items-start gap-2'>
 				{column.type === "boolean" ? (
 					<Select
 						value={String(value)}

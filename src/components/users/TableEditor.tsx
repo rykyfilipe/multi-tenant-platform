@@ -12,7 +12,7 @@ import { Button } from "../ui/button";
 import { X } from "lucide-react";
 
 interface Props {
-	users: User[];
+	users: User[] | null;
 	setUsers: (users: User[]) => void;
 }
 
@@ -30,7 +30,7 @@ export default function TableEditor({ users, setUsers }: Props) {
 		password: "",
 	});
 
-	if (!token || !user) return;
+	if (!token || !user || !users) return;
 
 	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
 		useUsersEditor();
@@ -53,7 +53,7 @@ export default function TableEditor({ users, setUsers }: Props) {
 
 			const data = await response.json();
 			showAlert("Row added successfully", "success");
-			setUsers([...users, data.user as User]);
+			setUsers([...(users || []), data.user as User]);
 			setNewUser({
 				email: "",
 				firstName: "",

@@ -20,7 +20,8 @@ function UsersContent() {
 	const { users, setUsers } = useUsers();
 
 	if (loading) return <Loading message='users' />;
-
+	if (!loading && !users) return <Loading message='users' />;
+	
 	return (
 		<div className='max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg'>
 			<TableEditor users={users} setUsers={setUsers} />

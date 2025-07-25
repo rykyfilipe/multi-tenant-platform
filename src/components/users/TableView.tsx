@@ -19,7 +19,6 @@ interface Props {
 }
 
 interface UserCols {
-	id: string;
 	firstName: string;
 	lastName: string;
 	email: string;
@@ -36,12 +35,10 @@ export function TableView({
 	const { user: curentUser } = useApp();
 
 	const mockUser: UserCols = {
-		id: "1",
-
 		email: "mock",
 		firstName: "mock",
 		lastName: "mock",
-		role: Role.ADMIN,
+		role: Role.VIEWER,
 	};
 
 	return (
@@ -82,26 +79,29 @@ export function TableView({
 							<tbody>
 								{users.map((user) => (
 									<tr key={user.id}>
-										{(Object.keys(user) as (keyof User)[]).map((key) => (
-											<td key={crypto.randomUUID()}>
-												<EditableCell
-													field={key}
-													user={user}
-													isEditing={
-														editingCell?.userId === user.id.toString() &&
-														editingCell.fieldName === key
-													}
-													onStartEdit={() => {
-														onEditCell(user.id.toString(), key);
-													}}
-													onSave={(val) => {
-														onSaveCell(user.id.toString(), key, val);
-													}}
-													onCancel={onCancelEdit}
-												/>
-											</td>
-										))}
-										{user.role !== "ADMIN" && curentUser.role === "ADMIN" && (
+										{(Object.keys(user) as (keyof User)[]).map((key) => {
+											if (key === "id") return null; // Skip ID column
+											return (
+												<td key={crypto.randomUUID()}>
+													<EditableCell
+														field={key}
+														user={user}
+														isEditing={
+															editingCell?.userId === user.id.toString() &&
+															editingCell.fieldName === key
+														}
+														onStartEdit={() => {
+															onEditCell(user.id.toString(), key);
+														}}
+														onSave={(val) => {
+															onSaveCell(user.id.toString(), key, val);
+														}}
+														onCancel={onCancelEdit}
+													/>
+												</td>
+											);
+										})}
+										{curentUser.role === "ADMIN" && (
 											<td>
 												<Button
 													variant='ghost'

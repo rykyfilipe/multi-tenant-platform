@@ -13,8 +13,8 @@ import {
 import { useApp } from "./AppContext";
 
 interface UsersContextType {
-	users: User[];
-	setUsers: (users: User[]) => void;
+	users: User[] | null;
+	setUsers: (users: User[] | null) => void;
 	handleAddUser: () => void;
 	handleUpdateUser: (user: User) => void;
 }
@@ -25,12 +25,13 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 	const { tenant, token, loading, showAlert, setLoading } = useApp();
 	const tenantId = tenant?.id;
 
-	const [users, setUsers] = useState<User[]>([]);
+	const [users, setUsers] = useState<User[] | null>(null);
 
 	useEffect(() => {
 		if (loading || !token || !tenantId) return;
 
 		const fetchUsers = async () => {
+			setLoading(true);
 			try {
 				const response = await fetch(`/api/tenants/${tenantId}/users`, {
 					headers: { Authorization: `Bearer ${token}` },
@@ -43,11 +44,13 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 			} catch (e) {
 				setLoading(false);
 				showAlert("Failed to load users", "error");
+			} finally {
+				setLoading(false);
 			}
 		};
 
 		fetchUsers();
-	}, [loading, token, tenantId]);
+	}, [token, tenantId]);
 
 	const handleAddUser = async () => {};
 	const handleUpdateUser = async (user: User) => {
@@ -71,8 +74,8 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 			}
 
 			const data: User = await response.json();
-			const updatedUsers = users.filter((u) => u.id !== data.id);
-			setUsers([...updatedUsers, data]);
+			const updatedUsers = users?.filter((u) => u.id !== data.id);
+			setUsers([...(updatedUsers || []), data]);
 
 			showAlert(`User ${data.firstName} ${data.lastName} updated`, "success");
 		} catch (error) {
