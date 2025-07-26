@@ -251,7 +251,7 @@ const ApiTokensPage = () => {
 										className='border-b border-gray-200 last:border-b-0 p-6 hover:bg-gray-50 transition-colors'>
 										<div className='flex items-start justify-between'>
 											<div className='flex-1'>
-												<div className='flex items-center gap-3 mb-3'>
+												<div className=' flex items-center gap-3 mb-3'>
 													<h3 className='font-semibold text-gray-900 text-lg'>
 														{token.name}
 													</h3>
@@ -259,6 +259,11 @@ const ApiTokensPage = () => {
 														className={`px-3 py-1 rounded-full text-xs font-medium ${status.color} ${status.bg} capitalize`}>
 														{status.status}
 													</span>
+													<div className='flex items-center gap-2 justify-self-end ml-auto'>
+														<RevokeTokenButton
+															onConfirm={() => revokeToken(token.id)}
+														/>
+													</div>
 												</div>
 
 												<div className='space-y-2 mb-4'>
@@ -289,14 +294,17 @@ const ApiTokensPage = () => {
 														Token:
 													</span>
 													<div className='bg-gray-100 rounded-lg px-3 py-2 font-mono text-sm flex items-center gap-2 flex-1 max-w-md'>
-														<span className='overflow-x-auto '>
-															{isVisible
-																? token.tokenHash
-																: "••••••••••••••••••••••••••••••••"}
-														</span>
+														<div className='overflow-x-auto max-w-[100px] sm:max-w-full whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200'>
+															<span className='block'>
+																{isVisible
+																	? token.tokenHash
+																	: "•••••••••••••••••••"}
+															</span>
+														</div>
 														<button
 															onClick={() => toggleTokenVisibility(token.id)}
-															className='text-gray-500 hover:text-gray-700'>
+															className='text-gray-500 hover:text-gray-700'
+															title={isVisible ? "Hide token" : "Show token"}>
 															{isVisible ? (
 																<EyeOff className='w-4 h-4' />
 															) : (
@@ -330,12 +338,6 @@ const ApiTokensPage = () => {
 														</div>
 													</div>
 												)}
-											</div>
-
-											<div className='flex items-center gap-2 ml-4'>
-												<RevokeTokenButton
-													onConfirm={() => revokeToken(token.id)}
-												/>
 											</div>
 										</div>
 									</div>

@@ -132,6 +132,52 @@ export async function POST(
 				},
 			},
 		});
+
+		const tables = await prisma.table.findMany({
+			where: {
+				database: {
+					tenantId: Number(tenantId),
+				},
+			},
+			include: {
+				columns: true,
+			},
+		});
+
+		// Creează permisiuni pentru fiecare tabel
+		const tablePermissions = await Promise.all(
+			tables.map((table) => {
+				return prisma.tablePermission.create({
+					data: {
+						tenantId: Number(tenantId),
+						userId: user.id,
+						tableId: table.id,
+						canDelete: false,
+						canRead: true,
+						canEdit: false,
+					},
+				});
+			}),
+		);
+
+		// Creează permisiuni pentru fiecare coloană din tabel
+		const columnPermissions = await Promise.all(
+			tables.flatMap((table) =>
+				table.columns.map((column) =>
+					prisma.columnPermission.create({
+						data: {
+							tenantId: Number(tenantId),
+							userId: user.id,
+							columnId: column.id,
+							canRead: true,
+							canEdit: false,
+							tableId: table?.id,
+						},
+					}),
+				),
+			),
+		);
+
 		const { password, tenantId: t, ...safeUser } = user;
 
 		const response = NextResponse.json(

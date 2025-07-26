@@ -2,12 +2,13 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Database, Trash2 } from "lucide-react";
+import { Database, Settings2, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { EditableCell } from "./EditableCell";
-import { User, UserSchema } from "@/types/user";
+import { User } from "@/types/user";
 import { Role } from "@/types/user";
 import { useApp } from "@/contexts/AppContext";
+import Link from "next/link";
 
 interface Props {
 	users: User[];
@@ -102,13 +103,20 @@ export function TableView({
 											);
 										})}
 										{curentUser.role === "ADMIN" && (
-											<td>
+											<td className='flex items-center justify-end gap-2'>
 												<Button
 													variant='ghost'
 													size='sm'
 													onClick={() => onDeleteRow(user.id.toString())}>
 													<Trash2 />
 												</Button>
+												<Link
+													href={`/home/users/permisions/${user.id}`}
+													className=''>
+													<Button variant='outline' size='sm'>
+														<Settings2 />
+													</Button>
+												</Link>
 											</td>
 										)}
 									</tr>

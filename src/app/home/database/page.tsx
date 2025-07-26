@@ -44,7 +44,7 @@ function DatabaseContent() {
 
 	return (
 		<div className='min-h-screen bg-gray-50 p-6'>
-			<div className='max-w-7xl mx-auto'>
+			<div className='max-w-8xl mx-auto'>
 				<DatabaseHeader onAddTable={() => setShowAddTableModal(true)} />
 
 				{/* ✅ Loading este afișat chiar dacă `tables` e null */}

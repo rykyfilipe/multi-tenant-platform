@@ -5,11 +5,11 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 function Layout({ children }: { children: React.ReactNode }) {
 	return (
-		<div className=''>
+		<div>
 			<SidebarProvider>
 				<AppSidebar />
 				<main className=' max-w-screen-lg w-screen  md:min-w-[calc(100%-16rem)] '>
-					<SidebarTrigger className='block md:hidden fixed  z-50' />
+					<SidebarTrigger className='block md:hidden fixed  z-99' />
 					{children}
 				</main>
 			</SidebarProvider>

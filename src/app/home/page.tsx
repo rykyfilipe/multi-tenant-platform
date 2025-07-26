@@ -24,6 +24,7 @@ import {
 	Bell,
 	Search,
 } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const weeklyData = [
 	{ day: "Mon", tokens: 12, users: 45 },
@@ -65,12 +66,12 @@ function Page() {
 	}, []);
 
 	return (
-		<div className='min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100'>
+		<div className='max-w-7xl mx-auto p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100'>
 			{/* Header */}
-			<div className='bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-50'>
+			<div className=' bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-50'>
 				<div className='px-8 py-4'>
-					<div className='flex items-center justify-between'>
-						<div className='flex items-center space-x-4'>
+					<div className='flex flex-wrap items-center justify-between'>
+						<div className='flex items-center space-x-4 flex-wrap'>
 							<div className='w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center'>
 								<Database className='w-5 h-5 text-white' />
 							</div>
@@ -88,7 +89,7 @@ function Page() {
 								</p>
 							</div>
 						</div>
-						<div className='flex items-center space-x-3'>
+						<div className='flex items-center space-x-3 flex-wrap'>
 							<div className='relative'>
 								<Search className='w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400' />
 								<input

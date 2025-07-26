@@ -9,62 +9,68 @@ datasource db {
 }
 
 model Tenant {
-  id         Int      @id @default(autoincrement())
-  name       String   @unique
-  adminId    Int      @unique
-  admin      User     @relation("TenantAdmin", fields: [adminId], references: [id])
-  users      User[]   @relation("TenantUsers")
+  id      Int    @id @default(autoincrement())
+  name    String @unique
+  adminId Int    @unique
+  admin   User   @relation("TenantAdmin", fields: [adminId], references: [id])
+  users   User[] @relation("TenantUsers")
 
-  logoUrl    String?
-  theme      String?
-  timezone   String?
-  language   String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt @default(now())
+  logoUrl   String?
+  theme     String?
+  timezone  String?
+  language  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   companyEmail String?
   phone        String?
   website      String?
   address      String?
 
-  database   Database?
+  database Database?
+
+  tablePermissions  TablePermission[]
+  columnPermissions ColumnPermission[]
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int    @id @default(autoincrement())
+  email     String @unique
   firstName String
   lastName  String
   password  String
   role      Role
 
-  tenantId  Int?
-  tenant    Tenant?  @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId Int?
+  tenant   Tenant? @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
 
-  adminOf   Tenant?  @relation("TenantAdmin")
-  apiTokens  ApiToken[]
+  adminOf           Tenant?            @relation("TenantAdmin")
+  apiTokens         ApiToken[]
+  tablePermissions  TablePermission[]
+  columnPermissions ColumnPermission[]
 }
 
 model Database {
-  id        Int      @id @default(autoincrement())
-  tenantId  Int      @unique
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  tables    Table[]
+  id       Int     @id @default(autoincrement())
+  tenantId Int     @unique
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tables   Table[]
 }
 
 model Table {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   name       String
   databaseId Int
-  database   Database  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   description String
   columns     Column[]
   rows        Row[]
 
-  // 🔁 Relație inversă pentru referințele din coloane
   referencedByColumns Column[] @relation("ReferenceColumnTable")
+
+  tablePermissions  TablePermission[]
+  columnPermissions ColumnPermission[]
 }
 
 model Column {
@@ -77,10 +83,12 @@ model Column {
   tableId       Int
   table         Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
-  cells         Cell[]
+  cells Cell[]
 
   referenceTableId Int?
   referenceTable   Table? @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
+
+  columnPermissions ColumnPermission[]
 }
 
 model Row {
@@ -88,18 +96,17 @@ model Row {
   tableId   Int
   createdAt DateTime @default(now())
   table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
-
   cells     Cell[]
 }
 
 model Cell {
-  id        Int    @id @default(autoincrement())
-  rowId     Int
-  columnId  Int
-  value     Json
+  id       Int  @id @default(autoincrement())
+  rowId    Int
+  columnId Int
+  value    Json
 
-  row       Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
-  column    Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  row    Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
@@ -109,16 +116,67 @@ enum Role {
 }
 
 model ApiToken {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     Int
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  tokenHash String    @unique
+  name      String?
+  scopes    String[]
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  revoked   Boolean   @default(false)
 
-  tokenHash  String   @unique               
-  name       String?                        
-  scopes     String[]                      
-  createdAt  DateTime @default(now())
-  expiresAt  DateTime?                    
-  revoked    Boolean  @default(false)
+  @@index([userId])
+}
 
+model TablePermission {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tableId Int
+  table   Table @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  tenantId Int
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  canRead   Boolean @default(false)
+  canEdit   Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tableId])
+  @@index([tenantId])
+  @@index([tableId])
+  @@index([userId])
+}
+
+model ColumnPermission {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  columnId Int
+  column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  tableId Int
+  table   Table @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  tenantId Int
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  canRead Boolean @default(false)
+  canEdit Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, columnId])
+  @@index([tenantId])
+  @@index([columnId])
   @@index([userId])
 }

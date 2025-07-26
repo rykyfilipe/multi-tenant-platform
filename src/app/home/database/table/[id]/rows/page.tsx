@@ -24,9 +24,9 @@ function Page() {
 		return <div className='p-4 text-red-500'>Failed to load table.</div>;
 
 	return (
-		<div className='max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg'>
+		<div className='max-w-8xl mx-auto p-6 bg-white shadow-md rounded-lg'>
 			<h1 className='text-2xl font-bold mb-2'>{table.name}</h1>
-			
+
 			<TableEditor
 				table={table}
 				columns={columns}
