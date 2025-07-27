@@ -56,75 +56,6 @@ interface TableInfo {
 
 type PermissionVariant = "read" | "edit" | "delete" | "default";
 
-// Mock data pentru demonstrație
-const mockPermissions: Permissions = {
-	tablePermissions: [
-		{
-			id: 1,
-			userId: 1,
-			tableId: 1,
-			tenantId: 1,
-			canRead: true,
-			canEdit: false,
-			canDelete: false,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: 2,
-			userId: 1,
-			tableId: 2,
-			tenantId: 1,
-			canRead: true,
-			canEdit: true,
-			canDelete: false,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: 3,
-			userId: 1,
-			tableId: 3,
-			tenantId: 1,
-			canRead: false,
-			canEdit: false,
-			canDelete: false,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	],
-	columnsPermissions: [
-		{
-			id: 1,
-			userId: 1,
-			tableId: 1,
-			tenantId: 1,
-			columnId: 1,
-			canRead: true,
-			canEdit: false,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: 2,
-			userId: 1,
-			tableId: 1,
-			tenantId: 1,
-			columnId: 2,
-			canRead: true,
-			canEdit: true,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	],
-};
-
-const mockTables: TableInfo[] = [
-	{ id: 1, name: "Users", description: "User management table" },
-	{ id: 2, name: "Posts", description: "Blog posts and articles" },
-	{ id: 3, name: "Settings", description: "System configuration" },
-];
-
 interface PermissionToggleProps {
 	enabled: boolean;
 	onChange: (value: boolean) => void;
@@ -340,8 +271,8 @@ function TablePermissionCard({
 }
 
 export default function PermissionsManager() {
-	const [permissions, setPermissions] = useState<Permissions>(mockPermissions);
-	const [tables, setTables] = useState<TableInfo[]>(mockTables);
+	const [permissions, setPermissions] = useState<Permissions | null>(null);
+	const [tables, setTables] = useState<TableInfo[] | null>(null);
 	const [hasGlobalChanges, setHasGlobalChanges] = useState<boolean>(false);
 
 	const { tenant, token, user, showAlert } = useApp();
@@ -355,6 +286,7 @@ export default function PermissionsManager() {
 	useEffect(() => {
 		const fetchPermissions = async () => {
 			// Aici ai implementa logica de fetch pentru permisiuni
+			if (!tenant || !token || !user) return;
 			const response = await fetch(
 				`/api/tenants/${tenant?.id}/users/${userId}/permisions`,
 				{
@@ -378,6 +310,8 @@ export default function PermissionsManager() {
 		};
 
 		const fetchTables = async () => {
+			if (!tenant || !token || !user) return;
+
 			const response = await fetch(
 				`/api/tenants/${tenant?.id}/database/tables`,
 				{
@@ -405,14 +339,14 @@ export default function PermissionsManager() {
 		field: keyof Pick<TablePermission, "canRead" | "canEdit" | "canDelete">,
 		value: boolean,
 	): void => {
-		setPermissions((prev) => {
+		setPermissions((prev: any) => {
 			const existingPermission: TablePermission | undefined =
-				prev.tablePermissions.find((tp) => tp.tableId === tableId);
+				prev?.tablePermissions.find((tp: any) => tp.tableId === tableId);
 
 			if (existingPermission) {
 				return {
 					...prev,
-					tablePermissions: prev.tablePermissions.map((tp) =>
+					tablePermissions: prev?.tablePermissions.map((tp: any) =>
 						tp.tableId === tableId ? { ...tp, [field]: value } : tp,
 					),
 				};
@@ -430,7 +364,7 @@ export default function PermissionsManager() {
 				};
 				return {
 					...prev,
-					tablePermissions: [...prev.tablePermissions, newPermission],
+					tablePermissions: [...(prev?.tablePermissions || []), newPermission],
 				};
 			}
 		});
@@ -443,9 +377,9 @@ export default function PermissionsManager() {
 		field: keyof Pick<ColumnPermission, "canRead" | "canEdit">,
 		value: boolean,
 	): void => {
-		setPermissions((prev) => ({
+		setPermissions((prev: any) => ({
 			...prev,
-			columnsPermissions: prev.columnsPermissions.map((cp) =>
+			columnsPermissions: prev?.columnsPermissions.map((cp: any) =>
 				cp.tableId === tableId && cp.columnId === columnId
 					? { ...cp, [field]: value }
 					: cp,
@@ -458,7 +392,30 @@ export default function PermissionsManager() {
 		// Aici ai implementa logica de salvare
 		console.log("Saving permissions:", permissions);
 		setHasGlobalChanges(false);
-		
+
+		const response = await fetch(
+			`/api/tenants/${tenant?.id}/users/${userId}/permisions`,
+			{
+				method: "PATCH",
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					tablePermissions: permissions?.tablePermissions || [],
+					columnsPermissions: permissions?.columnsPermissions || [],
+				}),
+			},
+		);
+		if (response.ok) {
+			const data = await response.json();
+			console.log("Permissions saved successfully:", data);
+			showAlert("Permissions saved successfully", "success");
+		} else {
+			const errorData = await response.json();
+			console.error("Failed to save permissions:", errorData);
+			showAlert("Failed to save permissions", "error");
+		}
 	};
 
 	return (
@@ -492,15 +449,15 @@ export default function PermissionsManager() {
 				</div>
 
 				<div className='space-y-6'>
-					{tables.map((table: TableInfo) => {
+					{tables?.map((table: TableInfo) => {
 						const tablePermission: TablePermission | undefined =
-							permissions.tablePermissions.find(
+							permissions?.tablePermissions.find(
 								(tp) => tp.tableId === table.id,
 							);
 						const columnPermissions: ColumnPermission[] =
-							permissions.columnsPermissions.filter(
+							permissions?.columnsPermissions.filter(
 								(cp) => cp.tableId === table.id,
-							);
+							) || [];
 
 						return (
 							<TablePermissionCard
@@ -515,7 +472,7 @@ export default function PermissionsManager() {
 					})}
 				</div>
 
-				{tables.length === 0 && (
+				{tables?.length === 0 && (
 					<div className='text-center py-12'>
 						<Table className='h-12 w-12 text-gray-400 mx-auto mb-4' />
 						<h3 className='text-lg font-medium text-gray-900 mb-2'>
