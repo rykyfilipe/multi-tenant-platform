@@ -47,9 +47,28 @@ function useRowsTableEditor() {
 					}),
 				},
 			);
-			if (!response.ok) throw new Error("Failed to update cell");
+			if (!response.ok) {
+				// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
+				let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
-			console.log(rowId + " " + cellId);
+				try {
+					const errorData = await response.json();
+					errorMessage =
+						errorData.error ||
+						errorData.message ||
+						errorData.details ||
+						errorMessage;
+				} catch (parseError) {
+					try {
+						const textError = await response.text();
+						errorMessage = textError || errorMessage;
+					} catch (textParseError) {
+						console.error("Could not parse error response:", textParseError);
+					}
+				}
+
+				throw new Error(errorMessage);
+			}
 
 			const updatedRows = rows.map((row) => {
 				if (row.id.toString() !== rowId) return row;
@@ -68,8 +87,19 @@ function useRowsTableEditor() {
 
 			setEditingCell(null);
 			showAlert("Cell updated successfully", "success");
-		} catch (error) {
-			showAlert("Error updating cell", "error");
+		} catch (error: any) {
+			// Gestionează diferite tipuri de erori
+			let errorMessage = "An unexpected error occurred";
+
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			} else if (typeof error === "string") {
+				errorMessage = error;
+			} else if (error?.message) {
+				errorMessage = error.message;
+			}
+
+			showAlert(errorMessage, "error");
 		}
 	};
 

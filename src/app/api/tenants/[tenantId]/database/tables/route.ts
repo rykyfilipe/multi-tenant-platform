@@ -73,6 +73,27 @@ export async function POST(
 			},
 		});
 
+		const users = await prisma.user.findMany({
+			where: {
+				tenantId: Number(tenantId),
+			},
+		});
+
+		Promise.all(
+			users.map((user) =>
+				prisma.tablePermission.create({
+					data: {
+						userId: user.id,
+						tableId: table.id,
+						tenantId: Number(tenantId),
+						canDelete: false,
+						canRead: true,
+						canEdit: false,
+					},
+				}),
+			),
+		);
+
 		return NextResponse.json(table, { status: 201 });
 	} catch (error) {
 		console.error(error);
@@ -106,17 +127,46 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
-		const tables = await prisma.table.findMany({
+		if (role === "ADMIN") {
+			const tables = await prisma.table.findMany({
+				where: {
+					database: {
+						tenantId: Number(tenantId),
+					},
+				},
+				include: {
+					columns: true,
+					rows: {
+						include: {
+							cells: true,
+						},
+						orderBy: {
+							createdAt: "asc",
+						},
+					},
+				},
+			});
+			return NextResponse.json(tables);
+		}
+
+		const tables = await prisma.tablePermission.findMany({
 			where: {
-				database: {
-					tenantId: Number(tenantId),
+				userId: userId,
+				table: {
+					database: {
+						tenantId: Number(tenantId),
+					},
 				},
 			},
 			include: {
-				columns: true,
-				rows: {
+				table: {
 					include: {
-						cells: true, // ✅ AICI era problema!
+						columns: true,
+						rows: {
+							include: {
+								cells: true,
+							},
+						},
 					},
 				},
 			},

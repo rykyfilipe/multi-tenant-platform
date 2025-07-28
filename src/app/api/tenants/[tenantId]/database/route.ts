@@ -32,7 +32,45 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
-		const database = await prisma.database.findFirst({
+		if (role === "ADMIN") {
+			const database = await prisma.database.findFirst({
+				where: {
+					tenantId: Number(tenantId),
+				},
+				include: {
+					tenant: true,
+					tables: {
+						include: {
+							columns: true,
+							rows: true,
+						},
+					},
+				},
+			});
+
+			return NextResponse.json(database, { status: 200 });
+		}
+
+		const tables = await prisma.tablePermission.findMany({
+			where: {
+				userId: userId,
+				table: {
+					database: {
+						tenantId: Number(tenantId),
+					},
+				},
+			},
+			include: {
+				table: {
+					include: {
+						columns: true,
+						rows: true,
+					},
+				},
+			},
+		});
+
+		const databaseInfo = await prisma.database.findFirst({
 			where: {
 				tenant: {
 					id: Number(tenantId),
@@ -40,14 +78,20 @@ export async function GET(
 			},
 			include: {
 				tenant: true,
-				tables: {
-					include: {
-						rows: true,
-						columns: true,
-					},
-				},
 			},
 		});
+
+		const database = {
+			...databaseInfo,
+			tables: tables.map((table) => ({
+				...table.table,
+				columns: table.table.columns,
+				rows: table.table.rows,
+			})),
+		};
+
+		console.log("Database fetched:", database);
+
 		return NextResponse.json(database, { status: 200 });
 	} catch (error) {
 		console.error(error);

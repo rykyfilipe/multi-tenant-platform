@@ -40,10 +40,47 @@ export async function PATCH(
 	const { userId, role } = userResult;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (role !== "ADMIN" || !isMember)
+	if (role === "VIEWER" || !isMember)
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
+		const tablePermissions = await prisma.tablePermission.findFirst({
+			where: {
+				tableId: Number(tableId),
+				tenantId: Number(tenantId),
+				userId,
+			},
+		});
+
+		const cellToEdit = await prisma.cell.findUnique({
+			where: {
+				id: Number(cellId),
+			},
+			include: {
+				column: true,
+			},
+		});
+
+		const columnPermissions = await prisma.columnPermission.findFirst({
+			where: {
+				columnId: cellToEdit?.column.id,
+				tableId: Number(tableId),
+				tenantId: Number(tenantId),
+			},
+		});
+
+		if (
+			!tablePermissions ||
+			!tablePermissions.canEdit ||
+			!columnPermissions ||
+			!columnPermissions.canEdit
+		) {
+			return NextResponse.json(
+				{ error: "You do not have permission to edit this table or column" },
+				{ status: 403 },
+			);
+		}
+
 		const body = await request.json();
 		const parsedData = CellSchema.parse(body);
 

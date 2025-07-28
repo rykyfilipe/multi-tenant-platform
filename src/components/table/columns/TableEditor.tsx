@@ -186,7 +186,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			<div className='w-full flex flex-col-reverse  xs:flex-row  justify-between items-center mb-4 gap-2'>
 				<Button
 					onClick={() => setShowForm((prev) => !prev)}
-					className={`${user.role !== "ADMIN" && "opacity-0"}`}>
+					className={`${user.role === "VIEWER" && "opacity-0"}`}>
 					{showForm ? <X /> : "Add new column"}
 				</Button>
 				<Link href={`/home/database/table/${table.id}/rows`} className=''>

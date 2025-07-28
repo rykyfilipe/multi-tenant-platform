@@ -67,10 +67,24 @@ export async function POST(
 	const { userId, role } = userResult;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (role !== "ADMIN" || !isMember)
+	if (role === "VIEWER" || !isMember)
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
+		// const tablePermissions = await prisma.tablePermission.findFirst({
+		// 	where: {
+		// 		tableId: Number(tableId),
+		// 		tenantId: Number(tenantId),
+		// 		userId,
+		// 	},
+		// });
+
+		// if (!tablePermissions || !tablePermissions.canEdit) {
+		// 	return NextResponse.json(
+		// 		{ error: "You do not have permission to create rows" },
+		// 		{ status: 403 },
+		// 	);
+		// }
 		const body = await request.json();
 		const parsedData = ColumnsSchema.parse(body);
 		console.log("Parsed Data:", parsedData);
@@ -158,6 +172,27 @@ export async function POST(
 
 			return createdColumns;
 		});
+
+		const users = await prisma.user.findMany({
+			where: {
+				tenantId: Number(tenantId),
+			},
+		});
+
+		Promise.all(
+			users.map((user) =>
+				prisma.columnPermission.create({
+					data: {
+						columnId: result[0].id,
+						userId: user.id,
+						tableId: table.id,
+						tenantId: Number(tenantId),
+						canRead: true,
+						canEdit: false,
+					},
+				}),
+			),
+		);
 
 		return NextResponse.json({ newColumn: result[0] }, { status: 201 });
 	} catch (error: any) {

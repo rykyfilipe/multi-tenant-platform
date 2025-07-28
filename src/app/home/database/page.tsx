@@ -5,13 +5,13 @@
 import AddDatabaseForm from "@/components/database/AddDatabaseForm";
 import { AddTableModal } from "@/components/database/AddTableModal";
 import { DatabaseHeader } from "@/components/database/DatabaseHeader";
+import { TableCardSkeletonAdaptive } from "@/components/database/LoadingState";
 import { TableGrid } from "@/components/database/TableGrid";
-import Loading from "@/components/loading";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
 import { DatabaseProvider, useDatabase } from "@/contexts/DatabaseContext";
-import { Plus } from "lucide-react";
+import { Plus, Table } from "lucide-react";
 import { useState } from "react";
 export const dynamic = "force-dynamic";
 
@@ -48,7 +48,7 @@ function DatabaseContent() {
 				<DatabaseHeader onAddTable={() => setShowAddTableModal(true)} />
 
 				{/* ✅ Loading este afișat chiar dacă `tables` e null */}
-				{loading && <Loading message='database' />}
+				{loading && <TableCardSkeletonAdaptive />}
 
 				{/* ⛔️ Mută verificarea `!tables` mai jos */}
 				{!loading && tables && <TableGrid tables={tables} />}

@@ -36,6 +36,21 @@ export async function DELETE(
 	try {
 		const { tableId } = await params;
 
+		const tablePermissions = await prisma.tablePermission.findFirst({
+			where: {
+				tableId: Number(tableId),
+				tenantId: Number(tenantId),
+				userId,
+			},
+		});
+
+		if (!tablePermissions || !tablePermissions.canEdit) {
+			return NextResponse.json(
+				{ error: "You do not have permission to delete rows" },
+				{ status: 403 },
+			);
+		}
+
 		const table = await prisma.table.findUnique({
 			where: { id: Number(tableId) },
 		});

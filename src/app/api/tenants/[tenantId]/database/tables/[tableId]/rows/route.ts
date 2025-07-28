@@ -41,10 +41,25 @@ export async function POST(
 	const { userId, role } = userResult;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (role !== "ADMIN" || !isMember)
+	if (role === "VIEWER" || !isMember)
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
+		const tablePermissions = await prisma.tablePermission.findFirst({
+			where: {
+				tableId: Number(tableId),
+				tenantId: Number(tenantId),
+				userId,
+			},
+		});
+
+		if (!tablePermissions || !tablePermissions.canEdit) {
+			return NextResponse.json(
+				{ error: "You do not have permission to create rows" },
+				{ status: 403 },
+			);
+		}
+
 		const body = await request.json();
 		console.log(body);
 		const parsedData = RowsSchema.parse(body);

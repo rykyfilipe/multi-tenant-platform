@@ -1,0 +1,107 @@
+/** @format */
+
+// components/TablePermissionCard.tsx
+import React, { useState } from "react";
+import { ChevronDown, ChevronRight, Table } from "lucide-react";
+import { PermissionToggle } from "./PermissionToggle";
+import { ColumnPermissions } from "./ColumnPermissions";
+import { TablePermissionCardProps, TablePermission } from "@/types/permissions";
+
+export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
+	table,
+	tablePermission,
+	columnPermissions,
+	onUpdateTablePermission,
+	onUpdateColumnPermission,
+}) => {
+	const [isExpanded, setIsExpanded] = useState(false);
+
+	const handleTablePermissionChange = (
+		field: keyof Pick<TablePermission, "canRead" | "canEdit" | "canDelete">,
+		value: boolean,
+	) => {
+		onUpdateTablePermission(table.id, field, value);
+	};
+
+	const tableColumns = columnPermissions.filter(
+		(cp) => cp.tableId === table.id,
+	);
+
+	const hasTableAccess =
+		tablePermission?.canRead ||
+		tablePermission?.canEdit ||
+		tablePermission?.canDelete ||
+		false;
+
+	return (
+		<div className='bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow'>
+			<div className='p-6'>
+				<div className='flex items-center justify-between'>
+					<div className='flex items-center space-x-3'>
+						<div
+							className={`p-2 rounded-lg ${
+								hasTableAccess ? "bg-green-100" : "bg-gray-100"
+							}`}>
+							<Table
+								className={`h-5 w-5 ${
+									hasTableAccess ? "text-green-600" : "text-gray-400"
+								}`}
+							/>
+						</div>
+						<div>
+							<h3 className='text-lg font-semibold text-gray-900'>
+								{table.name}
+							</h3>
+							<p className='text-sm text-gray-500'>{table.description}</p>
+						</div>
+					</div>
+					<div className='flex items-center space-x-4'>
+						<button
+							onClick={() => setIsExpanded(!isExpanded)}
+							className='flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors'>
+							{isExpanded ? (
+								<ChevronDown className='h-4 w-4' />
+							) : (
+								<ChevronRight className='h-4 w-4' />
+							)}
+							<span className='text-sm font-medium'>
+								{tableColumns.length} columns
+							</span>
+						</button>
+					</div>
+				</div>
+
+				<div className='mt-6 grid grid-cols-3 gap-4'>
+					<PermissionToggle
+						enabled={tablePermission?.canRead || false}
+						onChange={(value) => handleTablePermissionChange("canRead", value)}
+						label='Read'
+						variant='read'
+					/>
+					<PermissionToggle
+						enabled={tablePermission?.canEdit || false}
+						onChange={(value) => handleTablePermissionChange("canEdit", value)}
+						label='Edit'
+						variant='edit'
+					/>
+					<PermissionToggle
+						enabled={tablePermission?.canDelete || false}
+						onChange={(value) =>
+							handleTablePermissionChange("canDelete", value)
+						}
+						label='Delete'
+						variant='delete'
+					/>
+				</div>
+
+				{isExpanded && (
+					<ColumnPermissions
+						table={table}
+						columnPermissions={tableColumns}
+						onUpdateColumnPermission={onUpdateColumnPermission}
+					/>
+				)}
+			</div>
+		</div>
+	);
+};

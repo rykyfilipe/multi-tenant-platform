@@ -60,15 +60,47 @@ export default function TableEditor({
 				},
 			);
 
-			if (!response.ok) throw new Error("Failed to add row");
+			if (!response.ok) {
+				// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
+				let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+				try {
+					const errorData = await response.json();
+					errorMessage =
+						errorData.error ||
+						errorData.message ||
+						errorData.details ||
+						errorMessage;
+				} catch (parseError) {
+					try {
+						const textError = await response.text();
+						errorMessage = textError || errorMessage;
+					} catch (textParseError) {
+						console.error("Could not parse error response:", textParseError);
+					}
+				}
+
+				throw new Error(errorMessage);
+			}
 
 			const data = await response.json();
 			showAlert("Row added successfully", "success");
 			setRows([...(rows || []), data.newRow]);
 
 			setCells([]);
-		} catch (error) {
-			showAlert("Error adding row", "error");
+		} catch (error: any) {
+			// Gestionează diferite tipuri de erori
+			let errorMessage = "An unexpected error occurred";
+
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			} else if (typeof error === "string") {
+				errorMessage = error;
+			} else if (error?.message) {
+				errorMessage = error.message;
+			}
+
+			showAlert(errorMessage, "error");
 		}
 	}
 
@@ -85,13 +117,44 @@ export default function TableEditor({
 				},
 			);
 
-			if (!response.ok) throw new Error("Failed to delete row");
+			if (!response.ok) {
+				// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
+				let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
+				try {
+					const errorData = await response.json();
+					errorMessage =
+						errorData.error ||
+						errorData.message ||
+						errorData.details ||
+						errorMessage;
+				} catch (parseError) {
+					try {
+						const textError = await response.text();
+						errorMessage = textError || errorMessage;
+					} catch (textParseError) {
+						console.error("Could not parse error response:", textParseError);
+					}
+				}
+
+				throw new Error(errorMessage);
+			}
 			const updatedRows: Row[] = rows.filter((col) => col.id !== Number(rowId));
 			setRows(updatedRows);
 			showAlert("Row deleted successfully", "success");
-		} catch (error) {
-			showAlert("Error deleting row", "error");
+		} catch (error: any) {
+			// Gestionează diferite tipuri de erori
+			let errorMessage = "An unexpected error occurred";
+
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			} else if (typeof error === "string") {
+				errorMessage = error;
+			} else if (error?.message) {
+				errorMessage = error.message;
+			}
+
+			showAlert(errorMessage, "error");
 		}
 	};
 
@@ -141,7 +204,7 @@ export default function TableEditor({
 				<Button
 					onClick={() => setShowForm((prev) => !prev)}
 					className={
-						user.role !== "ADMIN" ? "opacity-0 pointer-events-none" : ""
+						user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
 					}>
 					{showForm ? <X /> : <p className=''>Add new row</p>}
 				</Button>
