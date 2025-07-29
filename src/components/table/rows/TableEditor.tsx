@@ -13,6 +13,7 @@ import ImportExportControls from "./ImportExportControls";
 import { cn } from "@/lib/utils";
 import { da } from "date-fns/locale";
 import Link from "next/link";
+import { useDatabase } from "@/contexts/DatabaseContext";
 
 interface Props {
 	table: Table;

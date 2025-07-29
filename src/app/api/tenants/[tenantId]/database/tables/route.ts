@@ -149,7 +149,7 @@ export async function GET(
 			return NextResponse.json(tables);
 		}
 
-		const tables = await prisma.tablePermission.findMany({
+		const permTables = await prisma.tablePermission.findMany({
 			where: {
 				userId: userId,
 				table: {
@@ -171,6 +171,8 @@ export async function GET(
 				},
 			},
 		});
+
+		const tables = permTables.map((item) => item.table);
 
 		return NextResponse.json(tables);
 	} catch (error) {

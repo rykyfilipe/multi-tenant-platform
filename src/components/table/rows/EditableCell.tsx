@@ -13,8 +13,6 @@ import {
 	SelectValue,
 } from "../../ui/select";
 import { Button } from "../../ui/button";
-import { useApp } from "@/contexts/AppContext";
-import { es } from "date-fns/locale";
 
 interface Props {
 	columns: Column[];
@@ -33,24 +31,17 @@ const createReferenceData = (tables: Table[] | null) => {
 
 	tables.forEach((table) => {
 		const options: { id: number; displayValue: string }[] = [];
-
+		console.log(table);
 		if (Array.isArray(table.rows) && table.rows.length > 0) {
 			table.rows.forEach((row) => {
 				if (Array.isArray(row.cells) && row.cells.length > 0) {
 					const displayParts: string[] = [];
 
-					const sortedColumns = [...table.columns].sort((a, b) => {
-						if (a.primary && !b.primary) return -1;
-						if (!a.primary && b.primary) return 1;
-						if (a.autoIncrement && !b.autoIncrement) return -1;
-						if (!a.autoIncrement && b.autoIncrement) return 1;
-						return a.name.localeCompare(b.name);
-					});
-
 					let addedColumns = 0;
 					const maxColumns = 3;
+					console.log(row.cells);
 
-					sortedColumns.forEach((column) => {
+					table.columns.forEach((column) => {
 						if (addedColumns >= maxColumns) return;
 
 						const cell = row.cells.find((c) => c.columnId === column.id);
@@ -114,7 +105,6 @@ export function EditableCell({
 	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
 
 	if (!column) return null;
-
 	const handleKey = (e: KeyboardEvent) => {
 		if (e.key === "Enter") onSave(value);
 		if (e.key === "Escape") onCancel();

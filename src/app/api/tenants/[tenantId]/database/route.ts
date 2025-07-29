@@ -95,7 +95,7 @@ export async function GET(
 					: [],
 			),
 		};
-
+		console.log(database.tables);
 		return NextResponse.json(database, { status: 200 });
 	} catch (error) {
 		console.error(error);
