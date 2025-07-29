@@ -189,27 +189,34 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	};
 
 	useEffect(() => {
-		const seen = localStorage.getItem("columns-editor-tour-seen");
-		if (!seen) {
-			localStorage.setItem("columns-editor-tour-seen", "true");
-			setColumns([
-				{
-					id: 0,
-					name: "demo",
-					type: "string",
-					required: false,
-					primary: false,
-					autoIncrement: true,
-					tableId: table.id,
-				},
-			]);
-			startTour();
-		}
+		setTimeout(() => {
+			const seen = localStorage.getItem("columns-editor-tour-seen");
+			if (!seen) {
+				localStorage.setItem("columns-editor-tour-seen", "true");
+				if (!columns || columns.length === 0)
+					setColumns([
+						{
+							id: 99,
+							name: "demo",
+							type: "string",
+							required: false,
+							primary: false,
+							autoIncrement: true,
+							tableId: table.id,
+						},
+					]);
+				startTour();
+			}
+		}, 3000);
 	}, [loading]);
 	useEffect(() => {
 		if (currentStep === 3) {
 			setTimeout(() => {
-				setColumns([]);
+				setColumns(
+					columns?.filter((col) => col.name !== "demo" && col.id !== 99) ||
+						null,
+				);
+
 				setIsOpen(false);
 			}, 5000);
 		}

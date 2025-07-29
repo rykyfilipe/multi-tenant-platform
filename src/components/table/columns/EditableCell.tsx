@@ -84,7 +84,7 @@ export function EditableCell({
 				{Array.isArray(fieldType) || fieldName === "referenceTableId" ? (
 					<Select
 						value={value?.toString()}
-						onValueChange={(val) => setValue(Number(val))}>
+						onValueChange={(val) => setValue(val)}>
 						<SelectTrigger className='flex-1'>
 							<SelectValue placeholder='Select' />
 						</SelectTrigger>
@@ -95,11 +95,13 @@ export function EditableCell({
 											{opt.label}
 										</SelectItem>
 								  ))
-								: (fieldType as string[]).map((option) => (
-										<SelectItem key={option} value={option}>
-											{option}
-										</SelectItem>
-								  ))}
+								: (fieldType as string[]).map((option) => {
+										return (
+											<SelectItem key={option} value={option}>
+												{option}
+											</SelectItem>
+										);
+								  })}
 						</SelectContent>
 					</Select>
 				) : fieldType === "boolean" ? (

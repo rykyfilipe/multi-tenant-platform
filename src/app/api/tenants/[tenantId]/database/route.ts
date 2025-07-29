@@ -83,14 +83,18 @@ export async function GET(
 
 		const database = {
 			...databaseInfo,
-			tables: tables.map((table) => ({
-				...table.table,
-				columns: table.table.columns,
-				rows: table.table.rows,
-			})),
+			tables: tables.flatMap((table) =>
+				table.canRead
+					? [
+							{
+								...table.table,
+								columns: table.table.columns,
+								rows: table.table.rows,
+							},
+					  ]
+					: [],
+			),
 		};
-
-		console.log("Database fetched:", database);
 
 		return NextResponse.json(database, { status: 200 });
 	} catch (error) {

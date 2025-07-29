@@ -4,6 +4,7 @@ import { Column, ColumnSchema } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 
 function useColumnsTableEditor() {
+	const { user } = useApp();
 	const [editingCell, setEditingCell] = useState<{
 		columnId: string;
 		fieldName: keyof ColumnSchema;
@@ -11,8 +12,9 @@ function useColumnsTableEditor() {
 
 	const handleCancelEdit = () => setEditingCell(null);
 
-	const handleEditCell = (columnId: string, fieldName: keyof ColumnSchema) =>
-		setEditingCell({ columnId, fieldName });
+	const handleEditCell = (columnId: string, fieldName: keyof ColumnSchema) => {
+		if (user.role !== "VIEWER") setEditingCell({ columnId, fieldName });
+	};
 
 	const { tenant } = useApp();
 	const tenantId = tenant?.id;

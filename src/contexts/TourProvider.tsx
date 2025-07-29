@@ -56,6 +56,7 @@ export default function TourProv({ children, steps }: TourProviderProps) {
 			showNavigation
 			showDots
 			disableDotsNavigation={false}
+			disableInteraction={true}
 			nextButton={({ Button, currentStep, stepsLength, ...props }) => (
 				<Button {...props}>
 					{currentStep === stepsLength - 1 ? "Finish" : "Next"}

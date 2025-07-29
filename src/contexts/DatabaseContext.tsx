@@ -5,6 +5,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { Table } from "@/types/database";
 import { useApp } from "./AppContext";
+import { da } from "date-fns/locale";
 
 interface DatabaseContextType {
 	token: string | null;

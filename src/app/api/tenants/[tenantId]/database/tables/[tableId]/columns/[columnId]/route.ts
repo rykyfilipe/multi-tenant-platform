@@ -105,7 +105,7 @@ export async function PATCH(
 	const { userId, role } = userResult;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (role !== "ADMIN" || !isMember) {
+	if (role === "VIEWER" || !isMember) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
