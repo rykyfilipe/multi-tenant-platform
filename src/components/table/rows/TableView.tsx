@@ -101,11 +101,7 @@ export function TableView({
 															);
 														}}
 														onSave={(val) => {
-															console.log(
-																cell.rowId.toString(),
-																cell.columnId.toString(),
-																cell.id.toString(),
-															);
+															
 															onSaveCell(
 																cell.columnId.toString(),
 																cell.rowId.toString(),

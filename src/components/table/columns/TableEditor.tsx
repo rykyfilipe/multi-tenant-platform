@@ -10,6 +10,7 @@ import useColumnsTableEditor from "@/hooks/useColumnsTableEditor";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import Link from "next/link";
+import { useTour } from "@reactour/tour";
 
 interface Props {
 	columns: Column[] | null;
@@ -20,7 +21,7 @@ interface Props {
 export default function TableEditor({ table, columns, setColumns }: Props) {
 	if (!columns) return;
 
-	const { showAlert, token, user, tenant } = useApp();
+	const { showAlert, token, user, tenant, loading } = useApp();
 	const [tables, setTables] = useState<Table[] | null>(null);
 	const tenantId = tenant?.id;
 	if (!token || !user) return;
@@ -180,16 +181,52 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			showAlert("Error loading database", "error");
 		}
 	};
+	const { setIsOpen, setCurrentStep, isOpen, currentStep } = useTour();
 
+	const startTour = () => {
+		setCurrentStep(0);
+		setIsOpen(true);
+	};
+
+	useEffect(() => {
+		const seen = localStorage.getItem("columns-editor-tour-seen");
+		if (!seen) {
+			localStorage.setItem("columns-editor-tour-seen", "true");
+			setColumns([
+				{
+					id: 0,
+					name: "demo",
+					type: "string",
+					required: false,
+					primary: false,
+					autoIncrement: true,
+					tableId: table.id,
+				},
+			]);
+			startTour();
+		}
+	}, [loading]);
+	useEffect(() => {
+		if (currentStep === 3) {
+			setTimeout(() => {
+				setColumns([]);
+				setIsOpen(false);
+			}, 5000);
+		}
+	}, [currentStep]);
 	return (
 		<div className='space-y-6'>
 			<div className='w-full flex flex-col-reverse  xs:flex-row  justify-between items-center mb-4 gap-2'>
 				<Button
 					onClick={() => setShowForm((prev) => !prev)}
-					className={`${user.role === "VIEWER" && "opacity-0"}`}>
+					className={`add-column-button ${
+						user.role === "VIEWER" && "opacity-0"
+					}`}>
 					{showForm ? <X /> : "Add new column"}
 				</Button>
-				<Link href={`/home/database/table/${table.id}/rows`} className=''>
+				<Link
+					href={`/home/database/table/${table.id}/rows`}
+					className='rows-button'>
 					<Button variant='outline' size='sm'>
 						Edit rows
 					</Button>

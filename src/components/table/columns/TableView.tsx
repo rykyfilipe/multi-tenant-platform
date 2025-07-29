@@ -99,7 +99,9 @@ export function TableView({
 				</div>
 			</CardHeader>
 			<CardContent>
-				<div className='overflow-auto' style={{ scrollbarWidth: "none" }}>
+				<div
+					className='table-content overflow-auto'
+					style={{ scrollbarWidth: "none" }}>
 					<table className='w-full'>
 						<thead>
 							<tr>
@@ -121,8 +123,12 @@ export function TableView({
 									</td>
 								</tr>
 							) : (
-								columns.map((column) => (
-									<tr key={column.id} className='hover:bg-gray-50'>
+								columns.map((column, index) => (
+									<tr
+										key={column.id}
+										className={`${
+											index === 0 && "column-row"
+										} hover:bg-gray-50`}>
 										{columnSchemaMeta.map((meta) => (
 											<td key={meta.key} className='p-2 border-b'>
 												<EditableCell

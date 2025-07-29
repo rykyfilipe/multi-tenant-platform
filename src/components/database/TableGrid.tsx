@@ -11,7 +11,7 @@ interface TableGridProps {
 export function TableGrid({ tables }: TableGridProps) {
 	if (tables.length === 0) {
 		return (
-			<div className='text-center py-16'>
+			<div className='text-center py-16 table-grid'>
 				<div className='p-4 bg-gray-100 rounded-full w-24 h-24 mx-auto mb-4 flex items-center justify-center'>
 					<Database className='h-12 w-12 text-gray-400' />
 				</div>

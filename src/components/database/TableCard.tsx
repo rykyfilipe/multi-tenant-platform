@@ -12,7 +12,7 @@ function TableCard({ table }: { table: Table }) {
 	const { handleDeleteTable } = useDatabase();
 	const { user } = useApp();
 	return (
-		<Card className='shadow-md hover:shadow-lg transition-shadow rounded-2xl'>
+		<Card className='table-card shadow-md hover:shadow-lg transition-shadow rounded-2xl'>
 			<CardHeader className='pb-2'>
 				<div className='w-full flex items-center justify-between'>
 					<h2 className='text-xl font-semibold text-slate-800'>{table.name}</h2>
@@ -21,7 +21,7 @@ function TableCard({ table }: { table: Table }) {
 							<Button
 								variant='ghost'
 								size='icon'
-								className='hover:bg-slate-100 text-slate-600'>
+								className='hover:bg-slate-100 text-slate-600 columns-button'>
 								<Edit className='w-5 h-5' />
 							</Button>
 						)}
@@ -30,7 +30,7 @@ function TableCard({ table }: { table: Table }) {
 			</CardHeader>
 
 			<CardContent className='space-y-2 text-sm text-slate-600'>
-				<p>
+				<p className='max-w-full  break-words'>
 					<span className='font-medium text-slate-800'>Description: </span>
 					{table.description}
 				</p>
@@ -49,7 +49,7 @@ function TableCard({ table }: { table: Table }) {
 					user.role === "VIEWER" ? "justify-end" : "justify-between"
 				}   pt-4`}>
 				<Link href={`/home/database/table/${table.id}/rows`}>
-					<Button variant='outline' size='sm'>
+					<Button variant='outline' size='sm' className='rows-button'>
 						{user.role === "VIEWER" ? "View" : "Edit"} rows
 					</Button>
 				</Link>
@@ -58,7 +58,7 @@ function TableCard({ table }: { table: Table }) {
 						size='sm'
 						variant='destructive'
 						onClick={() => handleDeleteTable(table?.id.toString())}
-						className='bg-red-500 hover:bg-red-600 text-white'>
+						className='bg-red-500 hover:bg-red-600 text-white delete-table-button'>
 						<Trash className='w-4 h-4' />
 					</Button>
 				)}

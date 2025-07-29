@@ -71,20 +71,6 @@ export async function POST(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
-		// const tablePermissions = await prisma.tablePermission.findFirst({
-		// 	where: {
-		// 		tableId: Number(tableId),
-		// 		tenantId: Number(tenantId),
-		// 		userId,
-		// 	},
-		// });
-
-		// if (!tablePermissions || !tablePermissions.canEdit) {
-		// 	return NextResponse.json(
-		// 		{ error: "You do not have permission to create rows" },
-		// 		{ status: 403 },
-		// 	);
-		// }
 		const body = await request.json();
 		const parsedData = ColumnsSchema.parse(body);
 		console.log("Parsed Data:", parsedData);
@@ -188,7 +174,7 @@ export async function POST(
 						tableId: table.id,
 						tenantId: Number(tenantId),
 						canRead: true,
-						canEdit: false,
+						canEdit: role === "ADMIN",
 					},
 				}),
 			),

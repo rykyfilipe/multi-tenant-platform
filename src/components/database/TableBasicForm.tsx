@@ -67,7 +67,7 @@ export function TableBasicsForm({
 							}}
 							placeholder='Enter table name'
 							required
-							className='table-name-input h-12 px-4 rounded-xl border-gray-200  focus:ring-black/25'
+							className='table-name h-12 px-4 rounded-xl border-gray-200  focus:ring-black/25'
 						/>
 					</div>
 					<div className='space-y-2'>
@@ -83,7 +83,7 @@ export function TableBasicsForm({
 							onChange={(e) => setDescription(e.target.value)}
 							placeholder='Enter table description'
 							required
-							className='table-description-input h-12 px-4 rounded-xl border-gray-200  focus:ring-black/25'
+							className='table-description h-12 px-4 rounded-xl border-gray-200  focus:ring-black/25'
 						/>
 					</div>
 
@@ -91,14 +91,14 @@ export function TableBasicsForm({
 						<Button
 							type='submit'
 							disabled={loading}
-							className='flex-1 h-12  text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200'>
+							className='add-table flex-1 h-12  text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200'>
 							{loading ? "Creating..." : "Create Table"}
 						</Button>
 						<Button
 							type='button'
 							variant='outline'
 							onClick={onCancel}
-							className='submit-table-data h-12 px-6 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl'>
+							className=' h-12 px-6 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl'>
 							Cancel
 						</Button>
 					</div>

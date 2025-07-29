@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
+import { useTourControls } from "@/hooks/useTourControls";
 import { Plus, Database } from "lucide-react";
 
 interface DatabaseHeaderProps {
@@ -10,9 +11,10 @@ interface DatabaseHeaderProps {
 
 export function DatabaseHeader({ onAddTable }: DatabaseHeaderProps) {
 	const { user } = useApp();
+
 	return (
 		<div className='max-w-full flex flex-col sm:flex-row gap-5  items-center justify-between py-8 px-6  bg-black/5 rounded-2xl mb-8 border'>
-			<div className='flex items-center space-x-4'>
+			<div className='flex items-center space-x-4 database-header'>
 				<div className='p-3 bg-black/5 rounded-xl hidden xs:block'>
 					<Database className='h-8 w-8 text-black ' />
 				</div>

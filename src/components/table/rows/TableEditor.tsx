@@ -86,6 +86,17 @@ export default function TableEditor({
 			const data = await response.json();
 			showAlert("Row added successfully", "success");
 			setRows([...(rows || []), data.newRow]);
+			setTables((prev: any) =>
+				prev?.map((t: any) => {
+					if (t.id === table.id) {
+						return {
+							...t,
+							rows: [...(t.rows || []), data.newRow],
+						};
+					}
+					return t;
+				}),
+			);
 
 			setCells([]);
 		} catch (error: any) {

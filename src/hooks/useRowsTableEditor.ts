@@ -1,5 +1,6 @@
 /** @format */
 import { useApp } from "@/contexts/AppContext";
+import { useDatabase } from "@/contexts/DatabaseContext";
 import { Row } from "@/types/database";
 import { useState } from "react";
 
@@ -83,7 +84,18 @@ function useRowsTableEditor() {
 				return { ...row, cells: updatedCells };
 			});
 
+			// const updatedTables = tables?.map((t) => {
+			// 	if (t.id === table.id) {
+			// 		return {
+			// 			...t,
+			// 			rows: updatedRows,
+			// 		};
+			// 	}
+			// 	return t;
+			// });
+
 			setRows(updatedRows);
+			// setTables(updatedTables || []);
 
 			setEditingCell(null);
 			showAlert("Cell updated successfully", "success");
