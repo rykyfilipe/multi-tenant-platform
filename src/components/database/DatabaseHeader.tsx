@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
-import { useTourControls } from "@/hooks/useTourControls";
 import { Plus, Database } from "lucide-react";
 
 interface DatabaseHeaderProps {
