@@ -2,7 +2,6 @@
 
 "use client";
 
-import { Analytics } from "@vercel/analytics/next";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
