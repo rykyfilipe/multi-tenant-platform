@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+	metadataBase: new URL("https://ydv.app"),
 	title: "YDV – Your Data. Your View.",
 	description:
 		"YDV is a powerful multi-tenant platform for building customizable databases and dashboards. Control your data structure and visualize it your way.",
