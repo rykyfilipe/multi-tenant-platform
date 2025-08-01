@@ -1,21 +1,11 @@
 /** @format */
 
-import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-	const token = request.cookies.get("token")?.value;
-	const pathname = request.nextUrl.pathname;
-
-	if ((pathname === "/" || pathname.startsWith("/auth")) && token) {
-		return NextResponse.redirect(new URL("/home", request.url));
-	}
-	if (!token) {
-		if (pathname.startsWith("/home")) {
-			return NextResponse.redirect(new URL("/", request.url));
-		}
-	}
-	return NextResponse.next();
+	//  const session = await getServerSession()
+	// if (session) { }
 }
 
 export const config = {

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 
 function LoginForm() {
 	const { showAlert, setToken, setUser } = useApp();
@@ -23,25 +24,16 @@ function LoginForm() {
 		setLoading(true);
 
 		try {
-			const response = await fetch("/api/login", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, password }),
+			const res = await signIn("credentials", {
+				email,
+				password,
+				redirect: false,
 			});
 
-			const data = await response.json();
-
-			if (!response.ok) {
-				showAlert(data.error || "Login failed", "error");
+			if (res?.ok) {
+				router.push("/home");
 			} else {
-				localStorage.setItem("token", data.token);
-				localStorage.setItem("user", JSON.stringify(data.user));
-				setToken(data.token);
-				setUser(data.user);
-
-				showAlert("Login successful!", "success");
-
-				setTimeout(() => router.push("/home"), 2000);
+				showAlert("Login unsuccessfull", "error");
 			}
 		} catch (error: any) {
 			showAlert(error.message || "An error occurred during login.", "error");

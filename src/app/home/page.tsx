@@ -25,6 +25,7 @@ import {
 	Search,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useApp } from "@/contexts/AppContext";
 
 const weeklyData = [
 	{ day: "Mon", tokens: 12, users: 45 },
@@ -46,12 +47,16 @@ const monthlyGrowth = [
 ];
 
 function Page() {
+	const { user } = useApp();
 	const [currentTime, setCurrentTime] = useState(new Date());
 	const [animatedStats, setAnimatedStats] = useState({
 		tokens: 0,
 		users: 0,
 		tables: 0,
 	});
+	useEffect(() => {
+		console.log(user);
+	}, [user]);
 
 	useEffect(() => {
 		const timer = setInterval(() => setCurrentTime(new Date()), 1000);

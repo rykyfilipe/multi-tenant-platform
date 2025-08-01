@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import { useApp } from "@/contexts/AppContext";
+import OAuthGoogleLogin from "./OuthGoogle";
 
 function AuthForm() {
 	const { setToken, setUser } = useApp();
@@ -28,6 +29,7 @@ function AuthForm() {
 					<TabsTrigger value='login'>Login</TabsTrigger>
 					<TabsTrigger value='register'>Register</TabsTrigger>
 				</TabsList>
+				<OAuthGoogleLogin />
 
 				<TabsContent value='login'>
 					<LoginForm />

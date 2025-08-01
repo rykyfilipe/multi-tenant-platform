@@ -6,7 +6,6 @@ export interface User {
 	firstName: string;
 	lastName: string;
 	role: Role;
-	password: string;
 }
 
 export enum Role {
@@ -21,5 +20,3 @@ export interface UserSchema {
 	role: Role;
 	password: string;
 }
-
-

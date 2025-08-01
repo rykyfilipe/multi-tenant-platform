@@ -4,6 +4,7 @@
 
 import { Tenant } from "@/types/tenant";
 import { User } from "@/types/user";
+import { useSession } from "next-auth/react";
 import { createContext, useContext, useState, useEffect } from "react";
 
 interface AppContextType {
@@ -24,6 +25,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+	const { data: session } = useSession();
+
 	const [user, setUser] = useState<User | null>(null);
 	const [tenant, setTenant] = useState<Tenant | null>(null);
 	const [token, setToken] = useState<string | null>(null);
@@ -34,16 +37,19 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const storedToken = localStorage.getItem("token");
-		const storedUser = localStorage.getItem("user");
-
-		if (storedToken) setToken(storedToken);
-		if (storedUser) setUser(JSON.parse(storedUser));
+		if (session) {
+			setUser({
+				...session.user,
+				id: Number(session.user.id),
+			});
+			setToken(session.customJWT || "");
+		}
 
 		setLoading(false);
-	}, []);
+	}, [session]);
 
 	useEffect(() => {
+		if (!token) return;
 		const fetchTenant = async () => {
 			try {
 				const response = await fetch("/api/tenants", {

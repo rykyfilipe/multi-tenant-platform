@@ -64,6 +64,7 @@ export const metadata: Metadata = {
 	manifest: "/site.webmanifest", // opțional, dacă ai PWA setup
 };
 import { Analytics } from "@vercel/analytics/next";
+import { Providers } from "./providers";
 
 export default function RootLayout({
 	children,
@@ -74,11 +75,13 @@ export default function RootLayout({
 		<html lang='en'>
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}>
-				<AppProvider>
-					<AlertMessage />
-					{children}
-					<Analytics />
-				</AppProvider>
+				<Providers>
+					<AppProvider>
+						<AlertMessage />
+						{children}
+						<Analytics />
+					</AppProvider>
+				</Providers>
 			</body>
 		</html>
 	);

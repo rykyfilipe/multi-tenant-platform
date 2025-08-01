@@ -15,6 +15,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { signIn } from "next-auth/react";
 
 function RegisterForm() {
 	const { showAlert, setToken, setUser } = useApp();
@@ -50,14 +51,17 @@ function RegisterForm() {
 			if (!response.ok) {
 				showAlert(data.error || "Registration failed", "error");
 			} else {
-				localStorage.setItem("token", data.token);
-				localStorage.setItem("user", JSON.stringify(data.user));
-				showAlert("Registration successful!", "success");
+				const res = await signIn("credentials", {
+					email,
+					password,
+					redirect: false,
+				});
 
-				setToken(data.token);
-				setUser(data.user);
-
-				setTimeout(() => router.push("/home"), 2000);
+				if (res?.ok) {
+					router.push("/home");
+				} else {
+					showAlert("Login unsuccessfull", "error");
+				}
 			}
 		} catch (error: any) {
 			showAlert(

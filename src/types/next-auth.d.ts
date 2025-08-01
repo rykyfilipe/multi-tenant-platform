@@ -1,0 +1,52 @@
+/** @format */
+
+import NextAuth, { DefaultUser } from "next-auth";
+import { User } from "./user";
+import { JWT as DefaultJWT } from "next-auth/jwt";
+import { ApiToken } from "@/generated/prisma";
+
+declare module "next-auth" {
+	/**
+	 * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
+	 */
+	interface Session {
+		user: User;
+		accessToken?: string;
+		customJWT?: string;
+	}
+
+	interface Account {
+		id: number;
+		userId: number;
+		provider: string;
+		providerAccountId: string;
+		refresh_token: string | null;
+		access_token: string | null;
+		expires_at: number | null;
+		token_type: string | null;
+		scope: string | null;
+		id_token: string | null;
+		session_state: string | null;
+	}
+
+	interface User {
+		id: string;
+		email: string;
+		firstName: string;
+		lastName: string;
+		role: Role;
+		tenantId?: string | null;
+	}
+}
+
+declare module "next-auth/jwt" {
+	interface JWT extends DefaultJWT {
+		id?: string;
+		firstName?: string;
+		lastName?: string;
+		role?: Role;
+		tenantId?: string | null;
+		accessToken?: string;
+		customJWT?: string;
+	}
+}
