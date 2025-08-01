@@ -24,7 +24,6 @@ function BasicSettings({ user }: Props) {
 		lastName: user.lastName,
 		email: user.email,
 		role: user.role,
-		password: user.password,
 	});
 
 	const updateField = async (field: EditableField, value: string) => {
