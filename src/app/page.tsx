@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	Database,
 	Users,
@@ -132,6 +132,7 @@ const YDVLandingPage = () => {
 			stripePriceId: "price_enterprise",
 		},
 	];
+
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50'>
 			{/* Navigation */}
@@ -201,17 +202,16 @@ const YDVLandingPage = () => {
 									Login
 								</Button>
 							)}
-
-							<button
-								className='md:hidden'
-								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-								{mobileMenuOpen ? (
-									<X className='w-6 h-6' />
-								) : (
-									<Menu className='w-6 h-6' />
-								)}
-							</button>
 						</div>
+						<button
+							className='md:hidden block'
+							onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+							{mobileMenuOpen ? (
+								<X className='w-6 h-6' />
+							) : (
+								<Menu className='w-6 h-6' />
+							)}
+						</button>
 					</div>
 				</div>
 
