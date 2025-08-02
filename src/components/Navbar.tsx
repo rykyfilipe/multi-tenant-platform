@@ -27,6 +27,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { useApp } from "@/contexts/AppContext";
+import { signOut } from "next-auth/react";
 
 const items = [
 	{
@@ -67,28 +68,6 @@ export function AppSidebar() {
 	const { setToken, setUser } = useApp();
 	const router = useRouter();
 
-	const logout = async () => {
-		try {
-			const response = await fetch("/api/logout", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			});
-
-			if (!response.ok) {
-				throw new Error("Logout failed");
-			}
-
-			localStorage.removeItem("token");
-			localStorage.removeItem("user");
-
-			router.push("/");
-		} catch (error) {
-			console.error("Logout error:", error);
-			alert("Logout failed. Please try again.");
-		}
-	};
 	return (
 		<Sidebar>
 			<SidebarContent>
@@ -111,7 +90,17 @@ export function AppSidebar() {
 				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter>
-				<Button onClick={logout}>Logout</Button>
+				<Button
+					onClick={() => router.push("/")}
+					className='bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-medium'>
+					Go to Home Page
+				</Button>
+				<Button
+					onClick={() => {
+						signOut({ callbackUrl: "/" });
+					}}>
+					Logout
+				</Button>
 			</SidebarFooter>
 		</Sidebar>
 	);

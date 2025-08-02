@@ -26,6 +26,8 @@ function BasicSettings({ user }: Props) {
 		role: user.role,
 	});
 
+	const [password, stPassword] = useState(null);
+
 	const updateField = async (field: EditableField, value: string) => {
 		if (!field) return;
 		try {

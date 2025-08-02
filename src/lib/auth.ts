@@ -3,7 +3,7 @@
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-
+import bcrypt from "bcryptjs";
 export const JWT_SECRET: Secret = "super-secret";
 export const PUBLIC_JWT_SECRET = "public-secret";
 
@@ -16,7 +16,7 @@ interface JwtPayload {
 
 export function generateToken(
 	payload: Omit<JwtPayload, "iat" | "exp">,
-	exp?: SignOptions["expiresIn"], // <-- acum e opțional
+	exp?: SignOptions["expiresIn"],
 	JWT_KEY: Secret = JWT_SECRET,
 ): string {
 	const options: SignOptions = {};
@@ -28,22 +28,14 @@ export function generateToken(
 }
 
 export async function hashPassword(password: string): Promise<string> {
-	const encoder = new TextEncoder();
-	const data = encoder.encode(password);
-	const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-	const hashArray = Array.from(new Uint8Array(hashBuffer));
-	const hashHex = hashArray
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
-	return hashHex;
+	const salt = await bcrypt.genSalt(10);
+	return bcrypt.hash(password, salt);
 }
-
 export async function verifyPassword(
-	password: string,
+	inputPassword: string,
 	hashedPassword: string,
 ): Promise<boolean> {
-	const hashedInput = await hashPassword(password);
-	return hashedInput === hashedPassword;
+	return bcrypt.compare(inputPassword, hashedPassword);
 }
 
 export async function isAdmin(request: Request): Promise<boolean> {

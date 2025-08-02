@@ -34,6 +34,7 @@ const authOptions = {
 				if (!credentials?.email || !credentials?.password) {
 					return null;
 				}
+				console.log(credentials);
 
 				const user = await prisma.user.findUnique({
 					where: {
@@ -44,12 +45,18 @@ const authOptions = {
 				if (!user) {
 					return null;
 				}
+				console.log(user);
 
 				// Verify the password
+				if (!user.password) return null;
+
 				const isPasswordValid = await verifyPassword(
 					credentials.password,
 					user.password,
 				);
+
+				console.log(isPasswordValid);
+
 				if (!isPasswordValid) {
 					return null;
 				}

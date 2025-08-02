@@ -38,7 +38,7 @@ model User {
   email     String @unique
   firstName String
   lastName  String
-  password  String
+  password  String?
   role      Role
 
   accounts Account[] // ← necesar pt OAuth

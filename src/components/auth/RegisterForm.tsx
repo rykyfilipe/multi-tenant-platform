@@ -2,7 +2,6 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import {
 import { signIn } from "next-auth/react";
 
 function RegisterForm() {
-	const { showAlert, setToken, setUser } = useApp();
+	const { showAlert } = useApp();
 	const router = useRouter();
 
 	const [firstName, setFirstName] = useState("");
@@ -58,9 +57,10 @@ function RegisterForm() {
 				});
 
 				if (res?.ok) {
-					router.push("/home");
+					showAlert("Register succes", "success");
+					router.push("/");
 				} else {
-					showAlert("Login unsuccessfull", "error");
+					showAlert("Login unsuccessful", "error");
 				}
 			}
 		} catch (error: any) {
@@ -74,71 +74,72 @@ function RegisterForm() {
 	};
 
 	return (
-		<Card className='p-6 shadow-lg'>
-			<CardHeader className='text-center text-2xl font-bold'>
-				Register
-			</CardHeader>
-			<CardContent>
-				<form className='flex flex-col space-y-4' onSubmit={handleRegister}>
-					<div>
-						<Label>First Name</Label>
-						<Input
-							type='text'
-							value={firstName}
-							onChange={(e) => setFirstName(e.target.value)}
-							required
-						/>
-					</div>
-					<div>
-						<Label>Last Name</Label>
-						<Input
-							type='text'
-							value={lastName}
-							onChange={(e) => setLastName(e.target.value)}
-							required
-						/>
-					</div>
-					<div>
-						<Label>Email</Label>
-						<Input
-							type='email'
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							required
-						/>
-					</div>
-					<div>
-						<Label>Password</Label>
-						<Input
-							type='password'
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							required
-						/>
-					</div>
-					<div className='flex gap-2 items-center'>
-						<Label>Role: ADMIN</Label>
-						<Popover open={open}>
-							<PopoverTrigger asChild>
-								<div
-									onMouseEnter={() => setOpen(true)}
-									onMouseLeave={() => setOpen(false)}>
-									<Info className='w-4 h-4 text-muted-foreground cursor-help' />
-								</div>
-							</PopoverTrigger>
-							<PopoverContent className='text-sm w-[260px] pointer-events-none'>
-								Contul va fi creat cu rolul de <strong>ADMIN</strong>. Poți
-								gestiona contul din aplicație după autentificare.
-							</PopoverContent>
-						</Popover>
-					</div>
+		<form className='flex flex-col space-y-4 mt-4' onSubmit={handleRegister}>
+			<div>
+				<Label>First Name</Label>
+				<Input
+					type='text'
+					placeholder='John'
+					value={firstName}
+					onChange={(e) => setFirstName(e.target.value)}
+					required
+				/>
+			</div>
+			<div>
+				<Label>Last Name</Label>
+				<Input
+					type='text'
+					placeholder='Doe'
+					value={lastName}
+					onChange={(e) => setLastName(e.target.value)}
+					required
+				/>
+			</div>
+			<div>
+				<Label>Email</Label>
+				<Input
+					type='email'
+					placeholder='you@example.com'
+					value={email}
+					onChange={(e) => setEmail(e.target.value)}
+					required
+				/>
+			</div>
+			<div>
+				<Label>Password</Label>
+				<Input
+					type='password'
+					placeholder='••••••••'
+					value={password}
+					onChange={(e) => setPassword(e.target.value)}
+					required
+				/>
+			</div>
 
-					<Button type='submit' disabled={loading}>
-						{loading ? "Please wait..." : "Register"}
-					</Button>
-				</form>
-			</CardContent>
-		</Card>
+			<div className='flex gap-2 items-center text-sm text-gray-600'>
+				Role: <span className='font-semibold'>ADMIN</span>
+				<Popover open={open}>
+					<PopoverTrigger asChild>
+						<div
+							onMouseEnter={() => setOpen(true)}
+							onMouseLeave={() => setOpen(false)}>
+							<Info className='w-4 h-4 text-gray-400 cursor-help' />
+						</div>
+					</PopoverTrigger>
+					<PopoverContent className='text-sm w-[260px] pointer-events-none'>
+						Contul va fi creat cu rolul de <strong>ADMIN</strong>. Poți gestiona
+						contul din aplicație după autentificare.
+					</PopoverContent>
+				</Popover>
+			</div>
+
+			<Button
+				type='submit'
+				disabled={loading}
+				className='w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg'>
+				{loading ? "Please wait..." : "Register"}
+			</Button>
+		</form>
 	);
 }
 
