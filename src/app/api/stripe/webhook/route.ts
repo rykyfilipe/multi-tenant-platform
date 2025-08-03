@@ -12,12 +12,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
+	console.log("=== WEBHOOK RECEIVED ===");
+	console.log("Request method:", request.method);
+	console.log("Request URL:", request.url);
+	
 	try {
 		const body = await request.text();
+		console.log("Request body length:", body.length);
+		
 		const headersList = await headers();
 		const signature = headersList.get("stripe-signature");
+		console.log("Stripe signature present:", !!signature);
 
 		if (!signature) {
+			console.error("No stripe signature found");
 			return NextResponse.json({ error: "No signature" }, { status: 400 });
 		}
 
@@ -25,6 +33,7 @@ export async function POST(request: NextRequest) {
 
 		try {
 			event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+			console.log("Event constructed successfully");
 		} catch (err) {
 			console.error("Webhook signature verification failed:", err);
 			return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
@@ -94,10 +103,16 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 		return;
 	}
 
-	// Type assertion to access current_period_end
+	// Calculate current period end (30 days from now as fallback)
 	const subscriptionWithPeriod = subscription as Stripe.Subscription & {
-		current_period_end: number;
+		current_period_end?: number;
 	};
+
+	const currentPeriodEnd = subscriptionWithPeriod.current_period_end
+		? new Date(subscriptionWithPeriod.current_period_end * 1000)
+		: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
+	console.log(`Current period end: ${currentPeriodEnd.toISOString()}`);
 
 	// Update user's subscription status in database
 	const updatedUser = await prisma.user.update({
@@ -107,9 +122,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 			stripeSubscriptionId: subscription.id,
 			subscriptionStatus: subscription.status,
 			subscriptionPlan: planName,
-			subscriptionCurrentPeriodEnd: new Date(
-				subscriptionWithPeriod.current_period_end * 1000,
-			),
+			subscriptionCurrentPeriodEnd: currentPeriodEnd,
 		},
 	});
 
@@ -121,19 +134,21 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
 	if (!userId) return;
 
-	// Type assertion to access current_period_end
+	// Calculate current period end (30 days from now as fallback)
 	const subscriptionWithPeriod = subscription as Stripe.Subscription & {
-		current_period_end: number;
+		current_period_end?: number;
 	};
+
+	const currentPeriodEnd = subscriptionWithPeriod.current_period_end
+		? new Date(subscriptionWithPeriod.current_period_end * 1000)
+		: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
 	// Update user's subscription status to canceled
 	await prisma.user.update({
 		where: { id: parseInt(userId) },
 		data: {
 			subscriptionStatus: "canceled",
-			subscriptionCurrentPeriodEnd: new Date(
-				subscriptionWithPeriod.current_period_end * 1000,
-			),
+			subscriptionCurrentPeriodEnd: currentPeriodEnd,
 		},
 	});
 }
