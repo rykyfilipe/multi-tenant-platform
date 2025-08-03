@@ -34,7 +34,6 @@ const authOptions = {
 				if (!credentials?.email || !credentials?.password) {
 					return null;
 				}
-				console.log(credentials);
 
 				const user = await prisma.user.findUnique({
 					where: {
@@ -45,7 +44,6 @@ const authOptions = {
 				if (!user) {
 					return null;
 				}
-				console.log(user);
 
 				// Verify the password
 				if (!user.password) return null;
@@ -54,8 +52,6 @@ const authOptions = {
 					credentials.password,
 					user.password,
 				);
-
-				console.log(isPasswordValid);
 
 				if (!isPasswordValid) {
 					return null;
@@ -134,7 +130,6 @@ const authOptions = {
 		}) {
 			// Initial sign-in handling (user is available)
 			if (user) {
-				console.log("Initial sign-in user:", user);
 				token.id = user.id;
 				token.email = user.email;
 				token.firstName = user.firstName;
@@ -158,7 +153,6 @@ const authOptions = {
 					});
 
 					if (dbUser) {
-						console.log("Found Google user in DB:", dbUser);
 						token.id = dbUser.id.toString();
 						token.firstName = dbUser.firstName;
 						token.lastName = dbUser.lastName;
@@ -186,9 +180,31 @@ const authOptions = {
 					};
 
 					token.customJWT = generateToken(payload, "7d");
-					console.log("Regenerated customJWT:", token.customJWT);
 				} catch (error) {
 					console.error("Error regenerating token:", error);
+				}
+			}
+
+			// Fetch subscription data for all cases
+			if (token.id) {
+				try {
+					const dbUser = await prisma.user.findUnique({
+						where: { id: parseInt(token.id as string) },
+						select: {
+							subscriptionStatus: true,
+							subscriptionPlan: true,
+							subscriptionCurrentPeriodEnd: true,
+						},
+					});
+
+					if (dbUser) {
+						token.subscriptionStatus = dbUser.subscriptionStatus;
+						token.subscriptionPlan = dbUser.subscriptionPlan;
+						token.subscriptionCurrentPeriodEnd =
+							dbUser.subscriptionCurrentPeriodEnd;
+					}
+				} catch (error) {
+					console.error("Error fetching subscription data:", error);
 				}
 			}
 
@@ -216,11 +232,15 @@ const authOptions = {
 				session.accessToken = (token.accessToken as string) || "";
 				session.customJWT = (token.customJWT as string) || "";
 
-				console.log("Token customJWT in session:", token.customJWT);
-				console.log("Session customJWT:", session.customJWT);
+				// Add subscription data to session
+				session.subscription = {
+					status: (token.subscriptionStatus as string) || null,
+					plan: (token.subscriptionPlan as string) || null,
+					currentPeriodEnd:
+						(token.subscriptionCurrentPeriodEnd as Date) || null,
+				};
 			}
 
-			console.log("Final Session:", session);
 			return session;
 		},
 	},
@@ -232,4 +252,4 @@ const authOptions = {
 
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST, authOptions };

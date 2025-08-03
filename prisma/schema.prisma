@@ -51,6 +51,13 @@ model User {
   apiTokens         ApiToken[]
   tablePermissions  TablePermission[]
   columnPermissions ColumnPermission[]
+
+  // Stripe subscription fields
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?
+  subscriptionStatus      String?
+  subscriptionPlan        String?
+  subscriptionCurrentPeriodEnd DateTime?
 }
 
 model Database {

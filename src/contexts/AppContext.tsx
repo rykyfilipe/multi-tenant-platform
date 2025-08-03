@@ -43,6 +43,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 				id: Number(session.user.id),
 			});
 			setToken(session.customJWT || "");
+			console.log("session", session);
 		}
 
 		setLoading(false);

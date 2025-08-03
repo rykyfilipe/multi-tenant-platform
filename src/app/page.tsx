@@ -29,18 +29,40 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { redirectToCheckout } from "@/lib/stripe";
 
 const YDVLandingPage = () => {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [selectedPlan, setSelectedPlan] = useState("pro");
 	const [showLoginModal, setShowLoginModal] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 
 	const { data: session } = useSession();
 	const router = useRouter();
 
-	const handleStripeCheckout = (priceId: string, planName: string) => {
-		// In a real implementation, this would redirect to Stripe Checkout
-		alert(`Redirecting to Stripe Checkout for ${planName} plan (${priceId})`);
+	const handleStripeCheckout = async (priceId: string, planName: string) => {
+		if (!session) {
+			setShowLoginModal(true);
+			return;
+		}
+
+		// Check if Stripe is configured
+		if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+			alert("Stripe is not configured. Please contact support.");
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			await redirectToCheckout(priceId, planName);
+		} catch (error) {
+			console.error("Checkout error:", error);
+			alert(
+				"Failed to start checkout. Please check your Stripe configuration and try again.",
+			);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 	const features = [
 		{
@@ -95,7 +117,8 @@ const YDVLandingPage = () => {
 				"Standard security",
 			],
 			popular: false,
-			stripePriceId: "price_starter",
+			stripePriceId:
+				process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID || "price_starter",
 		},
 		{
 			name: "Pro",
@@ -112,7 +135,7 @@ const YDVLandingPage = () => {
 				"Analytics dashboard",
 			],
 			popular: true,
-			stripePriceId: "price_pro",
+			stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || "price_pro",
 		},
 		{
 			name: "Enterprise",
@@ -129,7 +152,9 @@ const YDVLandingPage = () => {
 				"White-label options",
 			],
 			popular: false,
-			stripePriceId: "price_enterprise",
+			stripePriceId:
+				process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID ||
+				"price_enterprise",
 		},
 	];
 
@@ -278,8 +303,13 @@ const YDVLandingPage = () => {
 						</p>
 
 						<div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
-							<button className='group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg flex items-center'>
-								Start Free Trial
+							<button
+								onClick={() =>
+									handleStripeCheckout(plans[1].stripePriceId, plans[1].name)
+								}
+								disabled={isLoading}
+								className='group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg flex items-center disabled:opacity-50 disabled:cursor-not-allowed'>
+								{isLoading ? "Processing..." : "Start Free Trial"}
 								<ArrowRight className='w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform' />
 							</button>
 							<button className='text-slate-600 hover:text-blue-600 font-semibold text-lg px-8 py-4 border-2 border-slate-200 rounded-xl hover:border-blue-300 transition-all duration-200'>
@@ -386,12 +416,15 @@ const YDVLandingPage = () => {
 									onClick={() =>
 										handleStripeCheckout(plan.stripePriceId, plan.name)
 									}
+									disabled={isLoading}
 									className={`w-full py-4 rounded-xl font-semibold transition-all duration-200 ${
 										plan.popular
-											? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:scale-105"
-											: "bg-slate-100 text-slate-900 hover:bg-slate-200"
+											? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+											: "bg-slate-100 text-slate-900 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
 									}`}>
-									Get Started with {plan.name}
+									{isLoading
+										? "Processing..."
+										: `Get Started with ${plan.name}`}
 								</button>
 							</div>
 						))}

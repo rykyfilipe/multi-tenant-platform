@@ -13,6 +13,11 @@ declare module "next-auth" {
 		user: User;
 		accessToken?: string;
 		customJWT?: string;
+		subscription?: {
+			status: string | null;
+			plan: string | null;
+			currentPeriodEnd: Date | null;
+		};
 	}
 
 	interface Account {
@@ -48,5 +53,8 @@ declare module "next-auth/jwt" {
 		tenantId?: string | null;
 		accessToken?: string;
 		customJWT?: string;
+		subscriptionStatus?: string | null;
+		subscriptionPlan?: string | null;
+		subscriptionCurrentPeriodEnd?: Date | null;
 	}
 }

@@ -38,6 +38,7 @@
 		"@radix-ui/react-tooltip": "^1.2.7",
 		"@reactour/tour": "^3.8.0",
 		"@stripe/stripe-js": "^7.8.0",
+		"@types/stripe": "^8.0.416",
 		"@vercel/analytics": "^1.5.0",
 		"bcrypt": "^6.0.0",
 		"bcryptjs": "^3.0.2",
@@ -56,6 +57,7 @@
 		"react-shepherd": "^6.1.9",
 		"recharts": "^3.1.0",
 		"shepherd.js": "^14.5.1",
+		"stripe": "^18.4.0",
 		"tailwind-merge": "^3.3.1",
 		"zod": "^3.25.72"
 	},
