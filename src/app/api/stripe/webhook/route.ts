@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
 		}
 
+		console.log(`Processing webhook event: ${event.type}`);
+
 		switch (event.type) {
 			case "checkout.session.completed":
 				const session = event.data.object as Stripe.Checkout.Session;
@@ -87,7 +89,10 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 	const userId = subscription.metadata?.userId;
 	const planName = subscription.metadata?.planName;
 
-	if (!userId) return;
+	if (!userId) {
+		console.error("No userId found in subscription metadata");
+		return;
+	}
 
 	// Type assertion to access current_period_end
 	const subscriptionWithPeriod = subscription as Stripe.Subscription & {
@@ -108,7 +113,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 		},
 	});
 
-	console.log("updatedUser", updatedUser);
+	console.log(`Updated user ${userId} subscription to ${planName} plan`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {

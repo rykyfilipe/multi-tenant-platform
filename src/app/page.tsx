@@ -40,6 +40,10 @@ const YDVLandingPage = () => {
 	const { data: session } = useSession();
 	const router = useRouter();
 
+	// Get current subscription info
+	const currentPlan = session?.subscription?.plan;
+	const isSubscribed = session?.subscription?.status === "active";
+
 	const handleStripeCheckout = async (priceId: string, planName: string) => {
 		if (!session) {
 			setShowLoginModal(true);
@@ -64,6 +68,7 @@ const YDVLandingPage = () => {
 			setIsLoading(false);
 		}
 	};
+
 	const features = [
 		{
 			icon: <Database className='w-8 h-8' />,
@@ -117,7 +122,8 @@ const YDVLandingPage = () => {
 				"Standard security",
 			],
 			popular: false,
-			stripePriceId: process.env.STRIPE_STARTER_PRICE_ID || "price_starter",
+			stripePriceId:
+				process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID || "price_starter",
 		},
 		{
 			name: "Pro",
@@ -134,7 +140,7 @@ const YDVLandingPage = () => {
 				"Analytics dashboard",
 			],
 			popular: true,
-			stripePriceId: process.env.STRIPE_PRO_PRICE_ID || "price_pro",
+			stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || "price_pro",
 		},
 		{
 			name: "Enterprise",
@@ -152,7 +158,8 @@ const YDVLandingPage = () => {
 			],
 			popular: false,
 			stripePriceId:
-				process.env.STRIPE_ENTERPRISE_PRICE_ID || "price_enterprise",
+				process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID ||
+				"price_enterprise",
 		},
 	];
 
@@ -190,15 +197,26 @@ const YDVLandingPage = () => {
 										<button className='flex items-center space-x-2 text-slate-600 hover:text-blue-600 transition-colors font-medium'>
 											<UserCircle className='w-6 h-6' />
 											<span>{session.user?.name || "User"}</span>
+											{currentPlan && (
+												<span className='bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium'>
+													{currentPlan}
+												</span>
+											)}
 										</button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent
 										align='end'
 										className='w-48 bg-white rounded-md shadow-lg p-1'>
+										{currentPlan && (
+											<DropdownMenuItem className='cursor-default px-3 py-2 text-green-600 font-semibold'>
+												Current Plan: {currentPlan}
+											</DropdownMenuItem>
+										)}
+
 										<DropdownMenuItem
-											onClick={() => router.push("/profile")}
+											onClick={() => router.push("/home/settings")}
 											className='cursor-pointer hover:bg-blue-100 rounded-md px-3 py-2'>
-											Profile
+											Settings
 										</DropdownMenuItem>
 
 										<DropdownMenuSeparator />
@@ -367,65 +385,99 @@ const YDVLandingPage = () => {
 						<p className='text-xl text-slate-600 max-w-3xl mx-auto'>
 							Choose the perfect plan for your team. Scale up or down as needed.
 						</p>
+
+						{/* Current Plan Info */}
+						{isSubscribed && currentPlan && (
+							<div className='mt-8 p-4 bg-green-50 border border-green-200 rounded-lg max-w-md mx-auto'>
+								<div className='flex items-center justify-center space-x-2'>
+									<Check className='w-5 h-5 text-green-600' />
+									<span className='text-green-800 font-medium'>
+										You're currently on the {currentPlan} plan
+									</span>
+								</div>
+								<p className='text-green-600 text-sm mt-1'>
+									You can upgrade or manage your subscription anytime.
+								</p>
+							</div>
+						)}
 					</div>
 
 					<div className='grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto'>
-						{plans.map((plan, index) => (
-							<div
-								key={index}
-								className={`relative p-8 rounded-2xl border-2 transition-all duration-300 ${
-									plan.popular
-										? "border-blue-500 bg-white shadow-2xl scale-105"
-										: "border-slate-200 bg-white hover:border-blue-300 hover:shadow-xl"
-								}`}>
-								{plan.popular && (
-									<div className='absolute -top-4 left-1/2 transform -translate-x-1/2'>
-										<span className='bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-semibold'>
-											Most Popular
-										</span>
-									</div>
-								)}
+						{plans.map((plan, index) => {
+							const isCurrentPlan = currentPlan === plan.name;
+							const isUpgrade = isSubscribed && !isCurrentPlan;
 
-								<div className='text-center mb-8'>
-									<h3 className='text-2xl font-bold text-slate-900 mb-2'>
-										{plan.name}
-									</h3>
-									<p className='text-slate-600 mb-6'>{plan.description}</p>
-									<div className='flex items-end justify-center'>
-										<span className='text-5xl font-bold text-slate-900'>
-											{plan.price}
-										</span>
-										<span className='text-slate-600 ml-2'>{plan.period}</span>
-									</div>
-								</div>
-
-								<ul className='space-y-4 mb-8'>
-									{plan.features.map((feature, featureIndex) => (
-										<li
-											key={featureIndex}
-											className='flex items-center text-slate-600'>
-											<Check className='w-5 h-5 text-green-500 mr-3 flex-shrink-0' />
-											{feature}
-										</li>
-									))}
-								</ul>
-
-								<button
-									onClick={() =>
-										handleStripeCheckout(plan.stripePriceId, plan.name)
-									}
-									disabled={isLoading}
-									className={`w-full py-4 rounded-xl font-semibold transition-all duration-200 ${
+							return (
+								<div
+									key={index}
+									className={`relative p-8 rounded-2xl border-2 transition-all duration-300 ${
 										plan.popular
-											? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-											: "bg-slate-100 text-slate-900 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
-									}`}>
-									{isLoading
-										? "Processing..."
-										: `Get Started with ${plan.name}`}
-								</button>
-							</div>
-						))}
+											? "border-blue-500 bg-white shadow-2xl scale-105"
+											: "border-slate-200 bg-white hover:border-blue-300 hover:shadow-xl"
+									} ${isCurrentPlan ? "border-green-500 bg-green-50" : ""}`}>
+									{plan.popular && (
+										<div className='absolute -top-4 left-1/2 transform -translate-x-1/2'>
+											<span className='bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-semibold'>
+												Most Popular
+											</span>
+										</div>
+									)}
+
+									{isCurrentPlan && (
+										<div className='absolute -top-4 left-1/2 transform -translate-x-1/2'>
+											<span className='bg-green-600 text-white px-6 py-2 rounded-full text-sm font-semibold'>
+												Current Plan
+											</span>
+										</div>
+									)}
+
+									<div className='text-center mb-8'>
+										<h3 className='text-2xl font-bold text-slate-900 mb-2'>
+											{plan.name}
+										</h3>
+										<p className='text-slate-600 mb-6'>{plan.description}</p>
+										<div className='flex items-end justify-center'>
+											<span className='text-5xl font-bold text-slate-900'>
+												{plan.price}
+											</span>
+											<span className='text-slate-600 ml-2'>{plan.period}</span>
+										</div>
+									</div>
+
+									<ul className='space-y-4 mb-8'>
+										{plan.features.map((feature, featureIndex) => (
+											<li
+												key={featureIndex}
+												className='flex items-center text-slate-600'>
+												<Check className='w-5 h-5 text-green-500 mr-3 flex-shrink-0' />
+												{feature}
+											</li>
+										))}
+									</ul>
+
+									<button
+										onClick={() =>
+											handleStripeCheckout(plan.stripePriceId, plan.name)
+										}
+										disabled={isLoading || isCurrentPlan}
+										className={`w-full py-4 rounded-xl font-semibold transition-all duration-200 ${
+											isCurrentPlan
+												? "bg-green-600 text-white cursor-not-allowed"
+												: plan.popular
+												? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+												: "bg-slate-100 text-slate-900 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+										}`}>
+										{isLoading
+											? "Processing..."
+											: isCurrentPlan
+											? "Current Plan"
+											: isUpgrade
+											? `Upgrade to ${plan.name}`
+											: `Get Started with ${plan.name}`}
+									</button>
+								</div>
+							);
+						})}
 					</div>
 
 					<div className='text-center mt-12'>

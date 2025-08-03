@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
 
 		const { priceId, planName } = await request.json();
 
-		console.log("priceId", priceId);
-		console.log("planName", planName);
+		console.log(
+			`Creating checkout session for user ${session.user.id} - ${planName} plan`,
+		);
 
 		if (!priceId) {
 			return NextResponse.json(
@@ -53,6 +54,8 @@ export async function POST(request: NextRequest) {
 				},
 			},
 		});
+
+		console.log(`Checkout session created: ${checkoutSession.id}`);
 
 		return NextResponse.json({ sessionId: checkoutSession.id });
 	} catch (error) {
