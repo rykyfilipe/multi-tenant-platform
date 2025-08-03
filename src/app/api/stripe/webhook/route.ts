@@ -15,11 +15,11 @@ export async function POST(request: NextRequest) {
 	console.log("=== WEBHOOK RECEIVED ===");
 	console.log("Request method:", request.method);
 	console.log("Request URL:", request.url);
-	
+
 	try {
 		const body = await request.text();
 		console.log("Request body length:", body.length);
-		
+
 		const headersList = await headers();
 		const signature = headersList.get("stripe-signature");
 		console.log("Stripe signature present:", !!signature);
