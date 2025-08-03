@@ -4,7 +4,7 @@ import { loadStripe } from "@stripe/stripe-js";
 
 // Initialize Stripe on the client side
 export const getStripe = () => {
-	const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+	const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
 	if (!publishableKey) {
 		console.error("Stripe publishable key is not set");
 		return null;

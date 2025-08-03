@@ -47,7 +47,7 @@ const YDVLandingPage = () => {
 		}
 
 		// Check if Stripe is configured
-		if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+		if (!process.env.STRIPE_PUBLISHABLE_KEY) {
 			alert("Stripe is not configured. Please contact support.");
 			return;
 		}
@@ -117,8 +117,7 @@ const YDVLandingPage = () => {
 				"Standard security",
 			],
 			popular: false,
-			stripePriceId:
-				process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID || "price_starter",
+			stripePriceId: process.env.STRIPE_STARTER_PRICE_ID || "price_starter",
 		},
 		{
 			name: "Pro",
@@ -135,7 +134,7 @@ const YDVLandingPage = () => {
 				"Analytics dashboard",
 			],
 			popular: true,
-			stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || "price_pro",
+			stripePriceId: process.env.STRIPE_PRO_PRICE_ID || "price_pro",
 		},
 		{
 			name: "Enterprise",
@@ -153,8 +152,7 @@ const YDVLandingPage = () => {
 			],
 			popular: false,
 			stripePriceId:
-				process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID ||
-				"price_enterprise",
+				process.env.STRIPE_ENTERPRISE_PRICE_ID || "price_enterprise",
 		},
 	];
 
