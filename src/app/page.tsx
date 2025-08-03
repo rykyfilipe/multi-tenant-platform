@@ -296,7 +296,8 @@ const YDVLandingPage = () => {
 									Login
 								</button>
 							)}
-							<button className='w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 font-medium'>
+							<button className='w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 font-medium'
+onClick={()=> router.push("/home")}>
 								{session ? "Go to App" : "Get Started"}
 							</button>
 						</div>
