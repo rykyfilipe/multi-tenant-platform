@@ -27,12 +27,28 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Create customer portal session
-		const portalSession = await stripe.billingPortal.sessions.create({
-			customer: customerId,
-			return_url: `${process.env.NEXTAUTH_URL}/home/settings`,
-		});
+		try {
+			const portalSession = await stripe.billingPortal.sessions.create({
+				customer: customerId,
+				return_url: `${process.env.NEXTAUTH_URL}/home/settings`,
+			});
 
-		return NextResponse.json({ url: portalSession.url });
+			return NextResponse.json({ url: portalSession.url });
+		} catch (portalError: any) {
+			// If portal is not configured, provide alternative
+			if (portalError.message.includes("No configuration provided")) {
+				return NextResponse.json(
+					{
+						error:
+							"Customer portal not configured. Please contact support or configure it in Stripe Dashboard.",
+						details:
+							"Go to https://dashboard.stripe.com/settings/billing/portal to configure Customer Portal",
+					},
+					{ status: 400 },
+				);
+			}
+			throw portalError;
+		}
 	} catch (error) {
 		console.error("Error creating portal session:", error);
 		return NextResponse.json(

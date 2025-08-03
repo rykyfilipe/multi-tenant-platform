@@ -80,32 +80,49 @@ function BasicSettings({ user }: Props) {
 	};
 
 	const renderField = (label: string, field: EditableField) => (
-		<div className='space-y-1'>
-			<Label>{label}</Label>
+		<div className='space-y-2'>
+			<Label className="text-sm font-medium text-gray-700">{label}</Label>
 			{editingField === field ? (
-				<div className='flex items-center gap-2 mt-1'>
+				<div className='flex items-center gap-2'>
 					<Input
 						autoFocus
 						value={editedValues[field!]}
 						onChange={(e) => handleChange(field, e.target.value)}
 						onKeyDown={(e) => handleKeyDown(e, field)}
-						className='w-max'
+						className='flex-1'
 					/>
-					<div className='flex gap-1'>
+					<div className='flex gap-2'>
 						<Button
 							variant='default'
 							size='sm'
-							onClick={() => handleSave(field)}>
+							onClick={() => handleSave(field)}
+							className="px-4">
 							Save
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => {
+								setEditingField(null);
+								setEditedValues({
+									firstName: user.firstName,
+									lastName: user.lastName,
+									email: user.email,
+									role: user.role,
+								});
+							}}
+							className="px-4">
+							Cancel
 						</Button>
 					</div>
 				</div>
 			) : (
-				<p
-					className='mt-1 cursor-pointer hover:underline'
-					onDoubleClick={() => setEditingField(field)}>
-					{editedValues[field!]}
-				</p>
+				<div 
+					className='p-3 bg-gray-50 rounded-lg border cursor-pointer hover:bg-gray-100 transition-colors'
+					onClick={() => setEditingField(field)}>
+					<span className="text-sm text-gray-900">{editedValues[field!]}</span>
+					<p className="text-xs text-gray-500 mt-1">Click to edit</p>
+				</div>
 			)}
 		</div>
 	);
@@ -132,24 +149,32 @@ function BasicSettings({ user }: Props) {
 	};
 
 	return (
-		<div className='w-full max-w-xl'>
-			<Card className='w-full'>
-				<CardHeader>
-					<CardTitle className='text-xl'>Basic Settings</CardTitle>
-				</CardHeader>
-				<CardContent className='space-y-5'>
-					{renderField("First Name", "firstName")}
-					{renderField("Last Name", "lastName")}
-					{renderField("Email", "email")}
-					<div className='space-y-1'>
-						<Label>Role</Label>
-						<p className='mt-1 cursor-pointer hover:underline'>{user.role}</p>
+		<div className='space-y-6'>
+			{/* Personal Information */}
+			<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+				{renderField("First Name", "firstName")}
+				{renderField("Last Name", "lastName")}
+			</div>
+			
+			{renderField("Email", "email")}
+			
+			<div className='space-y-1'>
+				<Label className="text-sm font-medium text-gray-700">Role</Label>
+				<div className="mt-1 p-3 bg-gray-50 rounded-lg border">
+					<span className="text-sm text-gray-900 font-medium">{user.role}</span>
+				</div>
+			</div>
+
+			{/* Account Actions */}
+			<div className='pt-6 border-t'>
+				<div className='flex items-center justify-between'>
+					<div>
+						<h3 className="text-lg font-medium text-gray-900">Danger Zone</h3>
+						<p className="text-sm text-gray-600">Permanently delete your account and all associated data.</p>
 					</div>
-					<div className='w-full flex justify-end'>
-						<DeleteAccountButton onDelete={handleDelete} />
-					</div>
-				</CardContent>
-			</Card>
+					<DeleteAccountButton onDelete={handleDelete} />
+				</div>
+			</div>
 		</div>
 	);
 }

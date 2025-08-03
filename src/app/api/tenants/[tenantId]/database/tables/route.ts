@@ -8,6 +8,7 @@ import {
 	verifyLogin,
 } from "@/lib/auth";
 import { z } from "zod";
+import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
 
 const TableSchema = z.object({
 	name: z.string().min(1, { message: "Numele tabelei este obligatoriu" }),
@@ -40,6 +41,26 @@ export async function POST(
 	try {
 		const body = await request.json();
 		const parsedData = TableSchema.parse(body);
+
+		// Verificăm limitele planului pentru tabele
+		const currentCounts = await getCurrentCounts(userId);
+		const tableLimit = await checkPlanLimit(
+			userId,
+			"tables",
+			currentCounts.tables,
+		);
+
+		if (!tableLimit.allowed) {
+			return NextResponse.json(
+				{
+					error: `Plan limit exceeded. You can only have ${tableLimit.limit} table(s). Upgrade your plan to create more tables.`,
+					limit: tableLimit.limit,
+					current: tableLimit.current,
+					plan: "tables",
+				},
+				{ status: 403 },
+			);
+		}
 
 		const database = await prisma.database.findFirst({
 			where: {

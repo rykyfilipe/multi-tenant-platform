@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 		if (!user) {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
+		console.log("User subscription data:", user);
 
 		return NextResponse.json({
 			stripeCustomerId: user.stripeCustomerId,

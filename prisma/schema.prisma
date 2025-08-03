@@ -74,6 +74,7 @@ model Table {
   database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   description String
+  isPublic    Boolean @default(false)
   columns     Column[]
   rows        Row[]
 

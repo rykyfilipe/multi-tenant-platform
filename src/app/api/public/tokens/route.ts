@@ -8,6 +8,7 @@ import {
 	verifyLogin,
 	getUserFromRequest,
 } from "@/lib/auth";
+import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
 
 export async function GET(request: Request) {
 	const logged = verifyLogin(request);
@@ -63,6 +64,26 @@ export async function POST(request: Request) {
 	try {
 		const body = await request.json();
 		const { name, scopes, expiresIn } = body;
+
+		// Verificăm limitele planului pentru API tokens
+		const currentCounts = await getCurrentCounts(userId);
+		const tokenLimit = await checkPlanLimit(
+			userId,
+			"apiTokens",
+			currentCounts.apiTokens,
+		);
+
+		if (!tokenLimit.allowed) {
+			return NextResponse.json(
+				{
+					error: `Plan limit exceeded. You can only have ${tokenLimit.limit} API token(s). Upgrade your plan to create more tokens.`,
+					limit: tokenLimit.limit,
+					current: tokenLimit.current,
+					plan: "apiTokens",
+				},
+				{ status: 403 },
+			);
+		}
 
 		const payload = {
 			userId: userId,

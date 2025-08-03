@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
 
 export async function GET(
 	request: Request,
@@ -137,6 +138,26 @@ export async function POST(
 		if (!tenant || tenant.adminId !== userId) {
 			return NextResponse.json(
 				{ error: "Tenant not found or you are not the admin of this tenant" },
+				{ status: 403 },
+			);
+		}
+
+		// Verificăm limitele planului
+		const currentCounts = await getCurrentCounts(userId);
+		const databaseLimit = await checkPlanLimit(
+			userId,
+			"databases",
+			currentCounts.databases,
+		);
+
+		if (!databaseLimit.allowed) {
+			return NextResponse.json(
+				{
+					error: `Plan limit exceeded. You can only have ${databaseLimit.limit} database(s). Upgrade your plan to create more databases.`,
+					limit: databaseLimit.limit,
+					current: databaseLimit.current,
+					plan: "databases",
+				},
 				{ status: 403 },
 			);
 		}

@@ -99,6 +99,11 @@ export const authOptions = {
 								lastName: user.name?.split(" ").slice(1).join(" ") || "",
 								password: "", // OAuth users don't need password
 								role: "ADMIN", // Set default role
+								subscriptionStatus: "active",
+								subscriptionPlan: "Starter",
+								subscriptionCurrentPeriodEnd: new Date(
+									Date.now() + 365 * 24 * 60 * 60 * 1000,
+								), // 1 year from now
 							},
 						});
 

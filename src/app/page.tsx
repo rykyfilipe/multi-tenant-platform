@@ -72,54 +72,57 @@ const YDVLandingPage = () => {
 	const features = [
 		{
 			icon: <Database className='w-8 h-8' />,
-			title: "Create Custom Databases",
+			title: "Multi-Tenant Database Platform",
 			description:
-				"Build and deploy databases tailored to your specific needs with our intuitive interface.",
+				"Create and manage multiple databases for different clients or projects with complete isolation.",
 		},
 		{
 			icon: <Users className='w-8 h-8' />,
-			title: "Multi-Tenant Architecture",
+			title: "User Management & Permissions",
 			description:
-				"Secure, scalable infrastructure that keeps your data isolated and protected.",
+				"Add team members, manage roles, and control access to databases and tables with granular permissions.",
 		},
 		{
 			icon: <Settings className='w-8 h-8' />,
-			title: "Customizable Tables & Columns",
+			title: "Dynamic Table Builder",
 			description:
-				"Design your data structure exactly how you want it with flexible schema management.",
+				"Create custom tables with any columns you need - text, numbers, dates, and more. No coding required.",
 		},
 		{
 			icon: <Zap className='w-8 h-8' />,
-			title: "Lightning Fast Performance",
+			title: "Real-time Data Management",
 			description:
-				"Optimized queries and caching ensure your data is always accessible instantly.",
+				"Add, edit, and manage data in real-time. Import/export CSV files and collaborate with your team.",
 		},
 		{
 			icon: <Shield className='w-8 h-8' />,
-			title: "Enterprise Security",
+			title: "Secure API Access",
 			description:
-				"Bank-level encryption and compliance standards protect your valuable data.",
+				"Generate API tokens for secure access to your data. Perfect for integrations and custom applications.",
 		},
 		{
 			icon: <BarChart3 className='w-8 h-8' />,
-			title: "Advanced Analytics",
+			title: "Public Data Sharing",
 			description:
-				"Gain insights with built-in analytics and reporting tools for better decisions.",
+				"Share your data publicly with customizable views and read-only access for external users.",
 		},
 	];
 
 	const plans = [
 		{
 			name: "Starter",
-			price: "$19",
-			period: "/month",
-			description: "Perfect for small teams getting started",
+			price: "Free",
+			period: "",
+			description: "Perfect for individuals and small projects",
 			features: [
-				"Up to 3 databases",
-				"50GB storage",
-				"Basic support",
-				"API access",
-				"Standard security",
+				"1 database",
+				"1 table",
+				"2 users",
+				"1 API token",
+				"Basic user management",
+				"API access (limited)",
+				"Community support",
+				"Data import/export",
 			],
 			popular: false,
 			stripePriceId:
@@ -127,34 +130,43 @@ const YDVLandingPage = () => {
 		},
 		{
 			name: "Pro",
-			price: "$49",
+			price: "$20",
 			period: "/month",
-			description: "Most popular for growing businesses",
+			description: "Most popular for teams and businesses",
 			features: [
-				"Unlimited databases",
-				"500GB storage",
+				"1 database",
+				"5 tables",
+				"5 users",
+				"3 API tokens",
+				"2 public tables",
+				"Advanced user permissions",
+				"Full API access",
 				"Priority support",
-				"Advanced API",
-				"Enhanced security",
+				"Advanced data management",
+				"Public data sharing",
 				"Custom integrations",
-				"Analytics dashboard",
 			],
 			popular: true,
 			stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || "price_pro",
 		},
 		{
 			name: "Enterprise",
-			price: "$149",
+			price: "$99",
 			period: "/month",
-			description: "For large organizations with custom needs",
+			description: "For large teams and organizations",
 			features: [
+				"10 databases",
+				"50 tables",
+				"20 users",
+				"10 API tokens",
+				"10 public tables",
 				"Everything in Pro",
-				"Unlimited storage",
-				"24/7 dedicated support",
-				"Custom deployment",
-				"SLA guarantee",
-				"Advanced compliance",
+				"Advanced security features",
+				"24/7 priority support",
+				"Custom branding",
+				"Advanced analytics",
 				"White-label options",
+				"SLA guarantee",
 			],
 			popular: false,
 			stripePriceId:
@@ -302,39 +314,36 @@ const YDVLandingPage = () => {
 					<div className='text-center max-w-4xl mx-auto'>
 						<div className='inline-flex items-center px-4 py-2 bg-blue-50 rounded-full text-blue-700 text-sm font-medium mb-8 border border-blue-200'>
 							<Star className='w-4 h-4 mr-2' />
-							Trusted by 10,000+ businesses worldwide
+							Perfect for agencies, consultants, and teams
 						</div>
 
 						<h1 className='text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-8 leading-tight'>
-							Your Data,{" "}
+							Multi-Tenant{" "}
 							<span className='bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
-								Your View
+								Database Platform
 							</span>
 						</h1>
 
 						<p className='text-xl sm:text-2xl text-slate-600 mb-12 leading-relaxed max-w-3xl mx-auto'>
-							Transform how you manage data with customizable databases,
-							intelligent tables, and powerful analytics. Built for teams who
-							demand flexibility without complexity.
+							Create, manage, and share databases for multiple clients or
+							projects. No coding required - build custom tables, manage users,
+							and access data via API.
 						</p>
 
 						<div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
 							<button
-								onClick={() =>
-									handleStripeCheckout(plans[1].stripePriceId, plans[1].name)
-								}
-								disabled={isLoading}
-								className='group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg flex items-center disabled:opacity-50 disabled:cursor-not-allowed'>
-								{isLoading ? "Processing..." : "Start Free Trial"}
+								onClick={() => router.push("/home")}
+								className='group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg flex items-center'>
+								Get Started Free
 								<ArrowRight className='w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform' />
 							</button>
 							<button className='text-slate-600 hover:text-blue-600 font-semibold text-lg px-8 py-4 border-2 border-slate-200 rounded-xl hover:border-blue-300 transition-all duration-200'>
-								Watch Demo
+								View Pricing
 							</button>
 						</div>
 
 						<div className='mt-16 text-sm text-slate-500'>
-							No credit card required • 14-day free trial • Cancel anytime
+							Free Starter plan • No credit card required • Upgrade anytime
 						</div>
 					</div>
 				</div>
@@ -345,11 +354,11 @@ const YDVLandingPage = () => {
 				<div className='max-w-7xl mx-auto'>
 					<div className='text-center mb-16'>
 						<h2 className='text-4xl sm:text-5xl font-bold text-slate-900 mb-6'>
-							Everything you need to manage data
+							Everything you need to manage multiple databases
 						</h2>
 						<p className='text-xl text-slate-600 max-w-3xl mx-auto'>
-							Powerful features designed to give you complete control over your
-							data architecture and workflows.
+							From creating custom tables to managing team permissions, our
+							platform gives you complete control over your data.
 						</p>
 					</div>
 
@@ -383,7 +392,8 @@ const YDVLandingPage = () => {
 							Simple, transparent pricing
 						</h2>
 						<p className='text-xl text-slate-600 max-w-3xl mx-auto'>
-							Choose the perfect plan for your team. Scale up or down as needed.
+							Start free with the Starter plan. Upgrade when you need more
+							databases and features.
 						</p>
 
 						{/* Current Plan Info */}
@@ -456,9 +466,13 @@ const YDVLandingPage = () => {
 									</ul>
 
 									<button
-										onClick={() =>
-											handleStripeCheckout(plan.stripePriceId, plan.name)
-										}
+										onClick={() => {
+											if (plan.name === "Starter") {
+												router.push("/home");
+											} else {
+												handleStripeCheckout(plan.stripePriceId, plan.name);
+											}
+										}}
 										disabled={isLoading || isCurrentPlan}
 										className={`w-full py-4 rounded-xl font-semibold transition-all duration-200 ${
 											isCurrentPlan
@@ -471,6 +485,8 @@ const YDVLandingPage = () => {
 											? "Processing..."
 											: isCurrentPlan
 											? "Current Plan"
+											: plan.name === "Starter"
+											? "Get Started Free"
 											: isUpgrade
 											? `Upgrade to ${plan.name}`
 											: `Get Started with ${plan.name}`}
@@ -524,7 +540,10 @@ const YDVLandingPage = () => {
 					</div>
 
 					<div className='border-t border-slate-800 mt-8 pt-8 text-center text-slate-400'>
-						<p>&copy; 2025 YDV. All rights reserved. Your Data, Your View.</p>
+						<p>
+							&copy; 2025 YDV. All rights reserved. Multi-Tenant Database
+							Platform.
+						</p>
 					</div>
 				</div>
 			</footer>

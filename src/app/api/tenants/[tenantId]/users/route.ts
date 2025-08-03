@@ -9,6 +9,7 @@ import {
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
 
 const userSchema = z.object({
 	email: z.string().email(),
@@ -100,6 +101,26 @@ export async function POST(
 	try {
 		const body = await request.json();
 		const parsedData = userSchema.parse(body);
+
+		// Verificăm limitele planului pentru utilizatori
+		const currentCounts = await getCurrentCounts(userId);
+		const userLimit = await checkPlanLimit(
+			userId,
+			"users",
+			currentCounts.users,
+		);
+
+		if (!userLimit.allowed) {
+			return NextResponse.json(
+				{
+					error: `Plan limit exceeded. You can only have ${userLimit.limit} user(s). Upgrade your plan to add more users.`,
+					limit: userLimit.limit,
+					current: userLimit.current,
+					plan: "users",
+				},
+				{ status: 403 },
+			);
+		}
 
 		const existingUser = await prisma.user.findUnique({
 			where: {

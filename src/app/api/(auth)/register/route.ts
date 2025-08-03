@@ -42,6 +42,11 @@ export async function POST(request: Request) {
 				firstName: parsedData.firstName,
 				lastName: parsedData.lastName,
 				role: parsedData.role,
+				subscriptionStatus: "active",
+				subscriptionPlan: "Starter",
+				subscriptionCurrentPeriodEnd: new Date(
+					Date.now() + 365 * 24 * 60 * 60 * 1000,
+				), // 1 year from now
 			},
 		});
 

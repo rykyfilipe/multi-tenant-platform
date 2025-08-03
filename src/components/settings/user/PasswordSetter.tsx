@@ -161,122 +161,131 @@ function PasswordSetter({ user }: Props) {
 	};
 
 	return (
-		<div className='w-full max-w-xl'>
-			<Card>
-				<CardHeader>Password</CardHeader>
-				<CardContent className='space-y-4'>
-					{error && (
-						<div className='text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-200'>
-							{error}
+		<div className='space-y-6'>
+			{error && (
+				<div className='text-red-600 text-sm bg-red-50 p-4 rounded-lg border border-red-200 flex items-center gap-2'>
+					<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+						<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+					</svg>
+					{error}
+				</div>
+			)}
+
+			{isLoading ? (
+				<div className='flex items-center justify-center p-8'>
+					<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+					<span className='ml-3 text-sm text-gray-600'>Loading...</span>
+				</div>
+			) : password && !isChangingPassword ? (
+				<div className='space-y-4'>
+					<div className='p-4 bg-green-50 border border-green-200 rounded-lg'>
+						<div className='flex items-center gap-2'>
+							<svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+								<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+							</svg>
+							<span className='text-sm font-medium text-green-800'>Password is set</span>
+						</div>
+						<p className='text-xs text-green-600 mt-1'>Your account is protected with a password</p>
+					</div>
+					<Button
+						variant='outline'
+						onClick={handleChangePassword}
+						className="w-full">
+						Change Password
+					</Button>
+				</div>
+			) : (
+				<div className='space-y-6'>
+					{isChangingPassword && (
+						<div className='space-y-2'>
+							<Label htmlFor='oldPassword' className="text-sm font-medium text-gray-700">Current Password</Label>
+							<Input
+								id='oldPassword'
+								type='password'
+								placeholder='Enter current password'
+								value={oldPassword}
+								onChange={(e) => {
+									setOldPassword(e.target.value);
+									if (error) setError(null);
+								}}
+								disabled={isLoading}
+								className="w-full"
+							/>
 						</div>
 					)}
 
-					{isLoading ? (
-						<div className='flex items-center justify-center p-4'>
-							<div className='animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900'></div>
-							<span className='ml-2 text-sm text-gray-600'>Loading...</span>
-						</div>
-					) : password && !isChangingPassword ? (
-						<div className='space-y-2'>
-							<p className='font-mono text-sm bg-gray-100 p-3 rounded-md border'>
-								Password is set ✓
-							</p>
+					<div className='space-y-2'>
+						<Label htmlFor='newPassword' className="text-sm font-medium text-gray-700">
+							{isChangingPassword ? "New Password" : "Password"}
+						</Label>
+						<Input
+							id='newPassword'
+							type='password'
+							placeholder={
+								isChangingPassword ? "Enter new password" : "Enter password"
+							}
+							value={newPassword}
+							onChange={(e) => {
+								setNewPassword(e.target.value);
+								if (error) setError(null);
+							}}
+							disabled={isLoading}
+							className="w-full"
+						/>
+						<p className="text-xs text-gray-500">Password must be at least 6 characters long</p>
+					</div>
+
+					<div className='space-y-2'>
+						<Label htmlFor='confirmPassword' className="text-sm font-medium text-gray-700">Confirm Password</Label>
+						<Input
+							id='confirmPassword'
+							type='password'
+							placeholder={
+								isChangingPassword
+									? "Confirm new password"
+									: "Confirm password"
+							}
+							value={confirmPassword}
+							onChange={(e) => {
+								setConfirmPassword(e.target.value);
+								if (error) setError(null);
+							}}
+							disabled={isLoading}
+							className="w-full"
+						/>
+					</div>
+
+					<div className='flex gap-3 pt-4'>
+						<Button
+							onClick={setUserPassword}
+							disabled={
+								isLoading ||
+								!newPassword ||
+								!confirmPassword ||
+								(isChangingPassword && !oldPassword)
+							}
+							className='flex-1'>
+							{isLoading
+								? isChangingPassword
+									? "Changing Password..."
+									: "Setting Password..."
+								: isChangingPassword
+								? "Change Password"
+								: "Set Password"}
+						</Button>
+
+						{isChangingPassword && (
 							<Button
 								variant='outline'
-								size='sm'
-								onClick={handleChangePassword}>
-								Change Password
+								onClick={handleCancelChange}
+								disabled={isLoading}
+								className="flex-1">
+								Cancel
 							</Button>
-						</div>
-					) : (
-						<div className='space-y-4'>
-							{isChangingPassword && (
-								<div className='space-y-2'>
-									<Label htmlFor='oldPassword'>Current Password</Label>
-									<Input
-										id='oldPassword'
-										type='password'
-										placeholder='Enter current password'
-										value={oldPassword}
-										onChange={(e) => {
-											setOldPassword(e.target.value);
-											if (error) setError(null);
-										}}
-										disabled={isLoading}
-									/>
-								</div>
-							)}
-
-							<div className='space-y-2'>
-								<Label htmlFor='newPassword'>
-									{isChangingPassword ? "New Password" : "Password"}
-								</Label>
-								<Input
-									id='newPassword'
-									type='password'
-									placeholder={
-										isChangingPassword ? "Enter new password" : "Enter password"
-									}
-									value={newPassword}
-									onChange={(e) => {
-										setNewPassword(e.target.value);
-										if (error) setError(null);
-									}}
-									disabled={isLoading}
-								/>
-							</div>
-
-							<div className='space-y-2'>
-								<Label htmlFor='confirmPassword'>Confirm Password</Label>
-								<Input
-									id='confirmPassword'
-									type='password'
-									placeholder={
-										isChangingPassword
-											? "Confirm new password"
-											: "Confirm password"
-									}
-									value={confirmPassword}
-									onChange={(e) => {
-										setConfirmPassword(e.target.value);
-										if (error) setError(null);
-									}}
-									disabled={isLoading}
-								/>
-							</div>
-
-							<div className='flex gap-2'>
-								<Button
-									onClick={setUserPassword}
-									disabled={
-										isLoading ||
-										!newPassword ||
-										!confirmPassword ||
-										(isChangingPassword && !oldPassword)
-									}
-									className='flex-1'>
-									{isLoading
-										? isChangingPassword
-											? "Changing Password..."
-											: "Setting Password..."
-										: isChangingPassword
-										? "Change Password"
-										: "Set Password"}
-								</Button>
-
-								{isChangingPassword && (
-									<Button
-										variant='outline'
-										onClick={handleCancelChange}
-										disabled={isLoading}>
-										Cancel
-									</Button>
-								)}
-							</div>
-						</div>
-					)}
-				</CardContent>
-			</Card>
+						)}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
