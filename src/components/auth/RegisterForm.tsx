@@ -16,9 +16,8 @@ import {
 } from "@/components/ui/popover";
 import { signIn } from "next-auth/react";
 
-function RegisterForm() {
+function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 	const { showAlert } = useApp();
-	const router = useRouter();
 
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
@@ -58,7 +57,6 @@ function RegisterForm() {
 
 				if (res?.ok) {
 					showAlert("Register succes", "success");
-					router.push("/");
 				} else {
 					showAlert("Login unsuccessful", "error");
 				}

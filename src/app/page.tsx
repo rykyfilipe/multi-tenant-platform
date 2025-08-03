@@ -47,7 +47,7 @@ const YDVLandingPage = () => {
 		}
 
 		// Check if Stripe is configured
-		if (!process.env.STRIPE_PUBLISHABLE_KEY) {
+		if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
 			alert("Stripe is not configured. Please contact support.");
 			return;
 		}

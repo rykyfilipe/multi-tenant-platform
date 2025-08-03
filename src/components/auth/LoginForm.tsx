@@ -10,9 +10,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 
-function LoginForm() {
+function LoginForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 	const { showAlert } = useApp();
-	const router = useRouter();
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -31,7 +30,7 @@ function LoginForm() {
 
 			if (res?.ok) {
 				showAlert("Login succes", "success");
-				router.push("/");
+				closeForm(false);
 			} else {
 				showAlert("Login unsuccessful", "error");
 			}

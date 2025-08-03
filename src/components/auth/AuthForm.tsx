@@ -34,11 +34,11 @@ function AuthForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 				<OAuthGoogleLogin />
 
 				<TabsContent value='login'>
-					<LoginForm />
+					<LoginForm closeForm={closeForm} />
 				</TabsContent>
 
 				<TabsContent value='register'>
-					<RegisterForm />
+					<RegisterForm closeForm={closeForm} />
 				</TabsContent>
 			</Tabs>
 		</div>
