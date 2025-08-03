@@ -13,6 +13,7 @@ function Page() {
 	const { subscription, loading: subscriptionLoading } = useSubscription();
 
 	if (!user) return null;
+	if (!subscription) return null;
 
 	return (
 		<div className='min-h-screen p-6 flex bg-gray-50 justify-start flex-col items-center gap-6'>
