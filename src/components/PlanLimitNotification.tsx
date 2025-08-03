@@ -9,12 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import {
 	X,
 	AlertTriangle,
-	Upgrade,
 	Database,
 	Table,
 	Users,
 	Key,
 	Globe,
+	ArrowUp,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -122,7 +122,7 @@ export default function PlanLimitNotification({
 						<Button
 							onClick={onUpgrade}
 							className='flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'>
-							<Upgrade className='w-4 h-4 mr-2' />
+							<ArrowUp className='w-4 h-4 mr-2' />
 							Upgrade Plan
 						</Button>
 						<Button
