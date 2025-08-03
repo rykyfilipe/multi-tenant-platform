@@ -34,6 +34,7 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
 	const { data: session } = useSession();
 	const [isLoading, setIsLoading] = useState(false);
 
+
 	const getStatusColor = (status: string | null) => {
 		switch (status) {
 			case "active":

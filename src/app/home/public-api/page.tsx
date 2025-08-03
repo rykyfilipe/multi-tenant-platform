@@ -16,6 +16,7 @@ import {
 	Info,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 import RevokeTokenButton from "@/components/doc/RemoveTokenButton";
 import { Button } from "@/components/ui/button";
 
@@ -47,6 +48,7 @@ const ApiTokensPage = () => {
 	const [visibleTokens, setVisibleTokens] = useState<Set<string>>(new Set());
 
 	const { token, showAlert } = useApp();
+	const { handleApiError } = usePlanLimitError();
 
 	// Fetch user tokens
 	const fetchTokens = async () => {
@@ -82,12 +84,18 @@ const ApiTokensPage = () => {
 				},
 				body: JSON.stringify(tokenData),
 			});
-			if (!res.ok) throw new Error("Failed to generate token");
+			
+			if (!res.ok) {
+				handleApiError(res);
+				return;
+			}
+			
 			const result = await res.json();
 			console.log(result);
 			setTokens((prev) => [...prev, result]);
 			setNewTokenData({ token: result.tokenHash, name: tokenData.name });
 			setShowCreateModal(false);
+			showAlert("API token created successfully", "success");
 		} catch (err: any) {
 			showAlert(err.message || "Unknown error", "error");
 		} finally {

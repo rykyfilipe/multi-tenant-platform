@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { Input } from "../ui/input";
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
+import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 
 interface Props {
 	setShowForm: (x: boolean) => void;
@@ -18,6 +19,7 @@ function AddDatabaseForm({ setShowForm }: Props) {
 	const [loading, setLoading] = useState(false);
 	const { showAlert, token, tenant, user } = useApp();
 	const { databaseInfo, setDatabaseInfo } = useDatabase();
+	const { handleApiError } = usePlanLimitError();
 
 	const tenantId = tenant?.id;
 
@@ -36,14 +38,14 @@ function AddDatabaseForm({ setShowForm }: Props) {
 			});
 
 			if (!response.ok) {
-				showAlert("Eroare la creare database", "error");
+				handleApiError(response);
 			} else {
 				const data = await response.json();
 				setDatabaseInfo(data);
-				showAlert("Database creat cu succes", "success");
+				showAlert("Database created successfully", "success");
 			}
 		} catch (error) {
-			showAlert("Eroare rețea sau server", "error");
+			showAlert("Network or server error", "error");
 		} finally {
 			setLoading(false);
 			setShowForm(false);

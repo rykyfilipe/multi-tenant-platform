@@ -3,6 +3,7 @@
 
 import { FormEvent, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
+import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 
 import { Role, User, UserSchema } from "@/types/user";
 import useUsersEditor from "@/hooks/useUsersEditor";
@@ -20,6 +21,7 @@ export default function TableEditor({ users, setUsers }: Props) {
 	if (!users) return;
 
 	const { showAlert, token, user, tenant } = useApp();
+	const { handleApiError } = usePlanLimitError();
 	const [showForm, setShowForm] = useState(false);
 	const tenantId = tenant?.id;
 	const [newUser, setNewUser] = useState<UserSchema | null>({
@@ -49,10 +51,13 @@ export default function TableEditor({ users, setUsers }: Props) {
 				body: JSON.stringify(newUser),
 			});
 
-			if (!response.ok) throw new Error("Failed to add row");
+			if (!response.ok) {
+				handleApiError(response);
+				return;
+			}
 
 			const data = await response.json();
-			showAlert("Row added successfully", "success");
+			showAlert("User added successfully", "success");
 			setUsers([...(users || []), data.user as User]);
 			setNewUser({
 				email: "",
@@ -61,8 +66,9 @@ export default function TableEditor({ users, setUsers }: Props) {
 				role: Role.VIEWER,
 				password: "",
 			});
+			setShowForm(false);
 		} catch (error) {
-			showAlert("Error adding row", "error");
+			showAlert("Error adding user", "error");
 		}
 	}
 

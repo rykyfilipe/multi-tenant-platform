@@ -5,6 +5,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { Table } from "@/types/database";
 import { useApp } from "./AppContext";
+import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 import { da } from "date-fns/locale";
 
 interface DatabaseContextType {
@@ -41,6 +42,7 @@ export const DatabaseProvider = ({
 	children: React.ReactNode;
 }) => {
 	const { token, user, loading, showAlert, tenant, setLoading } = useApp();
+	const { handleApiError } = usePlanLimitError();
 	const tenantId = tenant?.id;
 
 	const [databaseInfo, setDatabaseInfo] = useState<any>(null);
@@ -105,14 +107,20 @@ export const DatabaseProvider = ({
 				},
 				body: JSON.stringify({ name, description }),
 			});
-			if (!response.ok) throw new Error("Failed to add table");
+			
+			if (!response.ok) {
+				handleApiError(response);
+				return;
+			}
 
 			setShowAddTableModal(false);
 			setName("");
 			setDescription("");
 			fetchDatabase();
+			showAlert("Table created successfully", "success");
 		} catch (error) {
 			console.error("Error adding table:", error);
+			showAlert("Failed to create table", "error");
 		}
 	};
 

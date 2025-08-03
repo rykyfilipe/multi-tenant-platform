@@ -41,6 +41,7 @@ export interface Table {
 	description: string;
 	columns: Column[];
 	rows: Row[];
+	isPublic: boolean;
 }
 
 export interface ColumnSchema {
