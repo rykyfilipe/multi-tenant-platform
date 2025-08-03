@@ -11,7 +11,7 @@ import prisma from "@/lib/prisma";
 import { verifyPassword } from "@/lib/auth";
 import { generateToken, JWT_SECRET } from "@/lib/auth";
 
-const authOptions = {
+export const authOptions = {
 	providers: [
 		GoogleProvider({
 			clientId: process.env.GOOGLE_CLIENT_ID || "",
