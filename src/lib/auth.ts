@@ -1,7 +1,6 @@
 /** @format */
 
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
-import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 export const JWT_SECRET: Secret = "super-secret";
@@ -15,8 +14,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import type { Adapter } from "next-auth/adapters";
 import { JWT } from "next-auth/jwt";
 import prisma from "@/lib/prisma";
-import { verifyPassword } from "@/lib/auth";
-import { generateToken, JWT_SECRET } from "@/lib/auth";
 
 export const authOptions = {
 	providers: [
