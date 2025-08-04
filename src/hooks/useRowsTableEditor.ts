@@ -77,7 +77,7 @@ function useRowsTableEditor() {
 			const updatedRows = rows.map((row) => {
 				if (row.id.toString() !== rowId) return row;
 
-				const updatedCells = row.cells.map((cell) => {
+				const updatedCells = row.cells?.map((cell) => {
 					if (cell.id.toString() === cellId) {
 						return { ...cell, value };
 					}
