@@ -86,11 +86,7 @@ export async function POST(
 			data: {
 				name: parsedData.name,
 				description: parsedData.description,
-				database: {
-					connect: {
-						tenantId: Number(tenantId),
-					},
-				},
+				databaseId: database!.id,
 			},
 		});
 

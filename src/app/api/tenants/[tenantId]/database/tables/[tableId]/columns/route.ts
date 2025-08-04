@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth";
 import { z } from "zod";
 import { colExists } from "@/lib/utils";
+import { Column } from "@/types/database";
 
 // === VALIDARE ===
 const ColumnSchema = z.object({
@@ -103,6 +104,12 @@ export async function POST(
 			);
 		}
 
+		// Transform Prisma columns to match the expected Column interface
+		const transformedColumns: Column[] = table.columns.map((col) => ({
+			...col,
+			referenceTableId: col.referenceTableId ?? undefined,
+		}));
+
 		// === TRX ===
 		const result = await prisma.$transaction(async (tx) => {
 			const createdColumns: any[] = [];
@@ -115,7 +122,7 @@ export async function POST(
 					throw new Error("Reference column must include referenceTableId");
 				}
 
-				if (!colExists(table.columns, parsedCol)) {
+				if (!colExists(transformedColumns, parsedCol)) {
 					const newColumn = await tx.column.create({
 						data: {
 							name: parsedCol.name,

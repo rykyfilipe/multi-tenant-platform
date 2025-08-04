@@ -238,22 +238,24 @@ export async function DELETE(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
-		const existingDatabase = await prisma.database.findUnique({
-			where: { tenantId: Number(tenantId) },
+		// Check if any databases exist for this tenant
+		const existingDatabase = await prisma.database.findFirst({
+			where: {
+				tenantId: Number(tenantId),
+			},
 		});
 
-		if (existingDatabase) {
+		if (!existingDatabase) {
 			return NextResponse.json(
-				{ error: "Tenant already has a database" },
-				{ status: 400 },
+				{ error: "No database found for this tenant" },
+				{ status: 404 },
 			);
 		}
 
+		// Delete all databases for this tenant
 		await prisma.database.deleteMany({
 			where: {
-				tenant: {
-					adminId: userId,
-				},
+				tenantId: Number(tenantId),
 			},
 		});
 

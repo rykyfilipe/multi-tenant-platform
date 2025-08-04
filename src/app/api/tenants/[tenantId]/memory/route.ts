@@ -13,7 +13,8 @@ import {
 
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { tenantId: string } },
+	{ params }: { params: Promise<{ tenantId: string }> },
+	
 ) {
 	try {
 		const session = await getServerSession(authOptions);
@@ -21,8 +22,10 @@ export async function GET(
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const tenantId = parseInt(params.tenantId);
-		if (isNaN(tenantId)) {
+		const { tenantId } = await params;
+
+		const tenantIdInt = parseInt(tenantId);
+		if (isNaN(tenantIdInt)) {
 			return NextResponse.json({ error: "Invalid tenant ID" }, { status: 400 });
 		}
 
@@ -32,13 +35,13 @@ export async function GET(
 			include: { tenant: true },
 		});
 
-		if (!user || user.tenantId !== tenantId) {
+		if (!user || user.tenantId !== tenantIdInt) {
 			return NextResponse.json({ error: "Access denied" }, { status: 403 });
 		}
 
 		// Get current storage usage
-		const memoryUsage = await getTenantMemoryUsage(tenantId);
-		const limitCheck = await checkMemoryLimit(tenantId);
+		const memoryUsage = await getTenantMemoryUsage(tenantIdInt);
+		const limitCheck = await checkMemoryLimit(tenantIdInt);
 
 		return NextResponse.json({
 			success: true,
