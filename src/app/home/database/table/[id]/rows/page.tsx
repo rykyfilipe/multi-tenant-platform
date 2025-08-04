@@ -17,7 +17,7 @@ function Page() {
 
 	if (!id) return;
 
-	const { table, columns, rows, setRows, loading } = useTable(id);
+	const { table, columns, setColumns, rows, setRows, loading } = useTable(id);
 	const { user } = useApp();
 	const { selectedDatabase } = useDatabase();
 
@@ -117,9 +117,9 @@ function Page() {
 				<TableEditor
 					table={table}
 					columns={columns}
+					setColumns={setColumns}
 					rows={rows}
 					setRows={setRows}
-					user={user}
 				/>
 			</div>
 		</TourProv>

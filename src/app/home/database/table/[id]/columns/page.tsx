@@ -116,12 +116,7 @@ function Page() {
 	return (
 		<TourProv steps={steps}>
 			<div className='h-full bg-background'>
-				<TableEditor
-					table={table}
-					columns={columns}
-					setColumns={setColumns}
-					user={user}
-				/>
+				<TableEditor table={table} columns={columns} setColumns={setColumns} />
 			</div>
 		</TourProv>
 	);
