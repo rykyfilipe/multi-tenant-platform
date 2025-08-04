@@ -27,7 +27,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			headers.join(";"),
 			...rows.map((row) => {
 				const rowData = columns.map((col) => {
-					const cell = row.cells.find((c) => c.columnId === col.id);
+					const cell = row.cells?.find((c) => c.columnId === col.id);
 					return JSON.stringify(cell?.value ?? "");
 				});
 				return rowData.join(";");

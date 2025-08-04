@@ -84,7 +84,7 @@ const createReferenceData = (tables: Table[] | null) => {
 					const displayParts: string[] = [];
 
 					// Sortează coloanele pentru o afișare consistentă (primary key primul)
-					const sortedColumns = [...table.columns].sort((a, b) => {
+					const sortedColumns = [...(table.columns || [])].sort((a, b) => {
 						if (a.primary && !b.primary) return -1;
 						if (!a.primary && b.primary) return 1;
 						if (a.autoIncrement && !b.autoIncrement) return -1;
@@ -94,13 +94,15 @@ const createReferenceData = (tables: Table[] | null) => {
 
 					// Ia doar primele 2-3 coloane importante
 					const maxColumns =
-						table.columns.length > 3 ? 3 : table.columns.length;
+						(table.columns?.length || 0) > 3 ? 3 : table.columns?.length || 0;
 					let addedColumns = 0;
 
-					table.columns.forEach((column) => {
+					(table.columns || []).forEach((column) => {
 						if (addedColumns >= maxColumns) return;
 
-						const cell = row.cells.find((c) => c.columnId === column.id);
+						const cell = (row.cells || []).find(
+							(c) => c.columnId === column.id,
+						);
 						if (cell && cell.value !== undefined && cell.value !== null) {
 							const value = cell.value.toString().trim();
 							if (value !== "") {

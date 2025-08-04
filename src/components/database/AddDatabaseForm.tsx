@@ -18,7 +18,7 @@ function AddDatabaseForm({ setShowForm }: Props) {
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const { showAlert, token, tenant, user } = useApp();
-	const { databaseInfo, setDatabaseInfo } = useDatabase();
+	const { selectedDatabase, setSelectedDatabase } = useDatabase();
 	const { handleApiError } = usePlanLimitError();
 
 	const tenantId = tenant?.id;
@@ -41,7 +41,7 @@ function AddDatabaseForm({ setShowForm }: Props) {
 				handleApiError(response);
 			} else {
 				const data = await response.json();
-				setDatabaseInfo(data);
+				setSelectedDatabase(data);
 				showAlert(
 					"Database created successfully! You can now start adding tables.",
 					"success",

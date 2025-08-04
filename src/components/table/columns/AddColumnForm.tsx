@@ -3,7 +3,7 @@
 "use client";
 
 import { FormEvent, useCallback, useMemo } from "react";
-import { ColumnSchema, Table } from "@/types/database";
+import { CreateColumnRequest, Table } from "@/types/database";
 import { Button } from "../../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Input } from "../../ui/input";
@@ -17,8 +17,8 @@ import {
 } from "../../ui/select";
 
 interface Props {
-	newColumn: ColumnSchema | null;
-	setNewColumn: (col: ColumnSchema | null) => void;
+	newColumn: CreateColumnRequest | null;
+	setNewColumn: (col: CreateColumnRequest | null) => void;
 	onAdd: (e: FormEvent) => void;
 	tables: Table[] | null;
 }
@@ -26,7 +26,7 @@ interface Props {
 type FieldType = "string" | "boolean" | readonly string[];
 
 interface FieldMeta {
-	key: keyof ColumnSchema;
+	key: keyof CreateColumnRequest;
 	type: FieldType;
 	required: boolean;
 	label: string;
@@ -56,7 +56,7 @@ export default function AddColumnForm({
 	);
 
 	const updateColumn = useCallback(
-		(key: keyof ColumnSchema, value: any) => {
+		(key: keyof CreateColumnRequest, value: any) => {
 			setNewColumn({
 				...currentColumn,
 				[key]: value,
@@ -66,14 +66,14 @@ export default function AddColumnForm({
 	);
 
 	const handleBooleanChange = useCallback(
-		(key: keyof ColumnSchema, value: string) => {
+		(key: keyof CreateColumnRequest, value: string) => {
 			updateColumn(key, value === "true");
 		},
 		[updateColumn],
 	);
 
 	const handleStringChange = useCallback(
-		(key: keyof ColumnSchema, value: string) => {
+		(key: keyof CreateColumnRequest, value: string) => {
 			updateColumn(key, value);
 		},
 		[updateColumn],
@@ -284,10 +284,7 @@ export default function AddColumnForm({
 						className='px-6'>
 						Cancel
 					</Button>
-					<Button
-						type='submit'
-						disabled={!isFormValid}
-						className='px-6'>
+					<Button type='submit' disabled={!isFormValid} className='px-6'>
 						Add Column
 					</Button>
 				</div>

@@ -46,6 +46,11 @@ export interface Cell {
 	value: any;
 }
 
+export interface CellSchema {
+	columnId: number;
+	value?: any;
+}
+
 export interface CreateDatabaseRequest {
 	name: string;
 }

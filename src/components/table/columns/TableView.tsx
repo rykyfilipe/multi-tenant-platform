@@ -1,29 +1,27 @@
 /** @format */
 "use client";
 
-import { Column, ColumnSchema, FieldType, Table } from "@/types/database";
+import { Column, Table } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Database, Trash2 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
 import { useMemo } from "react";
 
+type FieldType = "string" | "boolean" | "date" | string[];
+
 interface Props {
 	columns: Column[];
-	editingCell: { columnId: string; fieldName: keyof ColumnSchema } | null;
-	onEditCell: (columnId: string, fieldName: keyof ColumnSchema) => void;
-	onSaveCell: (
-		columnId: string,
-		fieldName: keyof ColumnSchema,
-		value: any,
-	) => void;
+	editingCell: { columnId: string; fieldName: keyof Column } | null;
+	onEditCell: (columnId: string, fieldName: keyof Column) => void;
+	onSaveCell: (columnId: string, fieldName: keyof Column, value: any) => void;
 	onCancelEdit: () => void;
 	onDeleteColumn: (columnId: string) => void;
 	tables: Table[] | null;
 }
 
 interface FieldMeta {
-	key: keyof ColumnSchema;
+	key: keyof Column;
 	type: FieldType;
 	required: boolean;
 	label: string;
@@ -50,7 +48,7 @@ export function TableView({
 			},
 			{
 				key: "type",
-				type: ["string", "number", "boolean", "date", "reference"] as const,
+				type: ["string", "number", "boolean", "date", "reference"],
 				required: true,
 				label: "Data Type",
 			},

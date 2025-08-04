@@ -70,7 +70,7 @@ export function TableView({
 							{rows.length === 0 ? (
 								<tr>
 									<td
-										colSpan={table.columns.length + 1}
+										colSpan={table.columns?.length ?? 0 + 1}
 										className='text-center py-8'>
 										No data yet.
 									</td>
@@ -79,7 +79,7 @@ export function TableView({
 								rows.map((row) => (
 									<tr key={row.id}>
 										{columns.map((col) => {
-											const cell = row.cells.find(
+											const cell = row.cells?.find(
 												(cell) => cell.columnId === col.id,
 											);
 											if (!cell) return;
@@ -101,7 +101,6 @@ export function TableView({
 															);
 														}}
 														onSave={(val) => {
-															
 															onSaveCell(
 																cell.columnId.toString(),
 																cell.rowId.toString(),

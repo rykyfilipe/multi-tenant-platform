@@ -33,7 +33,11 @@ const createReferenceData = (tables: Table[] | null) => {
 		const options: { id: number; displayValue: string }[] = [];
 		if (Array.isArray(table.rows) && table.rows.length > 0) {
 			table.rows.forEach((row) => {
-				if (Array.isArray(row.cells) && row.cells.length > 0) {
+				if (
+					Array.isArray(row.cells) &&
+					row.cells.length > 0 &&
+					Array.isArray(table.columns)
+				) {
 					const displayParts: string[] = [];
 
 					let addedColumns = 0;
@@ -42,32 +46,34 @@ const createReferenceData = (tables: Table[] | null) => {
 					table.columns.forEach((column) => {
 						if (addedColumns >= maxColumns) return;
 
-						const cell = row.cells.find((c) => c.columnId === column.id);
-						if (cell?.value != null && cell.value.toString().trim() !== "") {
-							let formattedValue = cell.value.toString().trim();
+						if (row.cells) {
+							const cell = row.cells.find((c) => c.columnId === column.id);
+							if (cell?.value != null && cell.value.toString().trim() !== "") {
+								let formattedValue = cell.value.toString().trim();
 
-							if (formattedValue.length > 15) {
-								formattedValue = formattedValue.substring(0, 15) + "...";
-							}
-
-							if (column.type === "date") {
-								try {
-									formattedValue = new Date(formattedValue).toLocaleDateString(
-										"ro-RO",
-									);
-								} catch {
-									// fallback la valoarea brută
+								if (formattedValue.length > 15) {
+									formattedValue = formattedValue.substring(0, 15) + "...";
 								}
-							} else if (column.type === "boolean") {
-								formattedValue = formattedValue === "true" ? "✓" : "✗";
-							}
 
-							if (addedColumns === 0 && column.primary) {
-								displayParts.push(`#${formattedValue}`);
-							} else {
-								displayParts.push(formattedValue);
+								if (column.type === "date") {
+									try {
+										formattedValue = new Date(
+											formattedValue,
+										).toLocaleDateString("ro-RO");
+									} catch {
+										// fallback la valoarea brută
+									}
+								} else if (column.type === "boolean") {
+									formattedValue = formattedValue === "true" ? "✓" : "✗";
+								}
+
+								if (addedColumns === 0 && column.primary) {
+									displayParts.push(`#${formattedValue}`);
+								} else {
+									displayParts.push(formattedValue);
+								}
+								addedColumns++;
 							}
-							addedColumns++;
 						}
 					});
 
@@ -216,9 +222,11 @@ export function EditableCell({
 		);
 
 		display = "";
-		referencedRow?.cells.forEach((cell) => {
-			display += `${cell.value} • `;
-		});
+		if (Array.isArray(referencedRow?.cells)) {
+			referencedRow.cells.forEach((cell) => {
+				display += `${cell.value} • `;
+			});
+		}
 	} else {
 		display = String(value);
 	}
