@@ -3,7 +3,35 @@
 // app/providers.tsx
 "use client";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
+import { useEffect, useState } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-	return <SessionProvider>{children}</SessionProvider>;
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	if (!mounted) {
+		return (
+			<SessionProvider>
+				<div className="dark">
+					{children}
+				</div>
+			</SessionProvider>
+		);
+	}
+
+	return (
+		<SessionProvider>
+			<ThemeProvider
+				attribute='class'
+				defaultTheme='dark'
+				enableSystem={false}
+				disableTransitionOnChange>
+				{children}
+			</ThemeProvider>
+		</SessionProvider>
+	);
 }

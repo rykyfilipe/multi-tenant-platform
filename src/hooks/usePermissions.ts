@@ -43,7 +43,10 @@ export const usePermissions = (userId: string) => {
 			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Unknown error");
-			showAlert("Failed to load permissions", "error");
+			showAlert(
+				"Failed to load permissions. Please refresh the page.",
+				"error",
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -75,7 +78,7 @@ export const usePermissions = (userId: string) => {
 				throw new Error("Failed to save permissions");
 			}
 		} catch (err) {
-			showAlert("Failed to save permissions", "error");
+			showAlert("Failed to save permissions. Please try again.", "error");
 			return false;
 		}
 	};
@@ -124,7 +127,7 @@ export const useTables = () => {
 			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Unknown error");
-			showAlert("Failed to load tables", "error");
+			showAlert("Failed to load tables. Please refresh the page.", "error");
 		} finally {
 			setLoading(false);
 		}

@@ -47,7 +47,11 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 			const data = await response.json();
 
 			if (!response.ok) {
-				showAlert(data.error || "Registration failed", "error");
+				showAlert(
+					data.error ||
+						"Registration failed. Please check your information and try again.",
+					"error",
+				);
 			} else {
 				const res = await signIn("credentials", {
 					email,
@@ -56,14 +60,17 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 				});
 
 				if (res?.ok) {
-					showAlert("Register succes", "success");
+					showAlert("Account created successfully! Welcome to YDV.", "success");
 				} else {
-					showAlert("Login unsuccessful", "error");
+					showAlert(
+						"Account created but login failed. Please log in manually.",
+						"warning",
+					);
 				}
 			}
 		} catch (error: any) {
 			showAlert(
-				error.message || "An error occurred during registration.",
+				"An unexpected error occurred during registration. Please try again.",
 				"error",
 			);
 		} finally {

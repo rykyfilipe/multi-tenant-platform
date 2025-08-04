@@ -42,10 +42,16 @@ function AddDatabaseForm({ setShowForm }: Props) {
 			} else {
 				const data = await response.json();
 				setDatabaseInfo(data);
-				showAlert("Database created successfully", "success");
+				showAlert(
+					"Database created successfully! You can now start adding tables.",
+					"success",
+				);
 			}
 		} catch (error) {
-			showAlert("Network or server error", "error");
+			showAlert(
+				"Failed to create database. Please check your connection and try again.",
+				"error",
+			);
 		} finally {
 			setLoading(false);
 			setShowForm(false);

@@ -33,8 +33,6 @@ const userFieldTypes: Record<keyof UserSchema, FieldType> = {
 };
 
 export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
-	
-
 	if (!newUser) return null;
 
 	const validateField = (key: keyof UserSchema, value: any): boolean => {
@@ -120,11 +118,15 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 								<SelectValue placeholder='Select role' />
 							</SelectTrigger>
 							<SelectContent>
-								{Object.values(Role).map((role) => (
-									<SelectItem key={role} value={role}>
-										{role}
-									</SelectItem>
-								))}
+								{Object.values(Role).map((role) => {
+									if (role === "ADMIN") return null;
+
+									return (
+										<SelectItem key={role} value={role}>
+											{role}
+										</SelectItem>
+									);
+								})}
 							</SelectContent>
 						</Select>
 					</div>
@@ -147,54 +149,75 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 	};
 
 	return (
-		<Card className='shadow-lg border-0 bg-gradient-to-br from-background to-muted/20'>
-			<CardHeader className='pb-4'>
-				<CardTitle className='text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent'>
-					Create New User
-				</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<form onSubmit={handleSubmit} className='space-y-6'>
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-						{(Object.keys(userFieldTypes) as (keyof UserSchema)[]).map(
-							renderField,
-						)}
+		<div className='space-y-6'>
+			{/* Header */}
+			<div className='text-center'>
+				<div className='flex items-center justify-center space-x-3 mb-3'>
+					<div className='p-3 bg-primary/10 rounded-xl'>
+						<svg
+							className='w-6 h-6 text-primary'
+							fill='none'
+							stroke='currentColor'
+							viewBox='0 0 24 24'>
+							<path
+								strokeLinecap='round'
+								strokeLinejoin='round'
+								strokeWidth={2}
+								d='M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z'
+							/>
+						</svg>
 					</div>
+				</div>
+				<h3 className='text-lg font-semibold text-foreground mb-2'>
+					Add New Team Member
+				</h3>
+				<p className='text-sm text-muted-foreground'>
+					Create a new user account with appropriate permissions
+				</p>
+			</div>
 
-					{/* Validation Errors */}
-					{!formValidation.isValid && (
-						<div className='p-3 bg-destructive/10 border border-destructive/20 rounded-md'>
-							<p className='text-sm font-medium text-destructive mb-2'>
-								Please fix the following errors:
-							</p>
-							<ul className='text-sm text-destructive-foreground space-y-1'>
-								{formValidation.errors.map((error, i) => (
-									<li key={i} className='flex items-start gap-2'>
-										<span className='text-destructive'>•</span>
-										{error}
-									</li>
-								))}
-							</ul>
-						</div>
+			{/* Form */}
+			<form onSubmit={handleSubmit} className='space-y-6'>
+				<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+					{(Object.keys(userFieldTypes) as (keyof UserSchema)[]).map(
+						renderField,
 					)}
+				</div>
 
-					{/* Buttons */}
-					<div className='flex justify-end space-x-3 pt-4'>
-						<Button
-							type='button'
-							variant='outline'
-							onClick={() => setNewUser(null)}>
-							Clear
-						</Button>
-						<Button
-							type='submit'
-							disabled={!formValidation.isValid}
-							className='min-w-[120px]'>
-							Add User
-						</Button>
+				{/* Validation Errors */}
+				{!formValidation.isValid && (
+					<div className='p-3 bg-destructive/10 border border-destructive/20 rounded-md'>
+						<p className='text-sm font-medium text-destructive mb-2'>
+							Please fix the following errors:
+						</p>
+						<ul className='text-sm text-destructive-foreground space-y-1'>
+							{formValidation.errors.map((error, i) => (
+								<li key={i} className='flex items-start gap-2'>
+									<span className='text-destructive'>•</span>
+									{error}
+								</li>
+							))}
+						</ul>
 					</div>
-				</form>
-			</CardContent>
-		</Card>
+				)}
+
+				{/* Buttons */}
+				<div className='flex justify-end space-x-3 pt-4'>
+					<Button
+						type='button'
+						variant='outline'
+						onClick={() => setNewUser(null)}
+						className='px-6'>
+						Cancel
+					</Button>
+					<Button
+						type='submit'
+						disabled={!formValidation.isValid}
+						className='px-6'>
+						Add User
+					</Button>
+				</div>
+			</form>
+		</div>
 	);
 }

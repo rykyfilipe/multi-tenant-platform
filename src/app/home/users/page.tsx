@@ -2,7 +2,7 @@
 
 "use client";
 
-import Loading from "@/components/loading";
+import { UsersLoadingState } from "@/components/ui/loading-states";
 import TableEditor from "@/components/users/TableEditor";
 import { useApp } from "@/contexts/AppContext";
 import { UsersProvider, useUsers } from "@/contexts/UsersContext";
@@ -19,12 +19,36 @@ function UsersContent() {
 	const { loading } = useApp();
 	const { users, setUsers } = useUsers();
 
-	if (loading) return <Loading message='users' />;
-	if (!loading && !users) return <Loading message='users' />;
+	if (loading) return <UsersLoadingState />;
+	if (!loading && !users) return <UsersLoadingState />;
 	
 	return (
-		<div className='max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg'>
-			<TableEditor users={users} setUsers={setUsers} />
+		<div className='h-full bg-background'>
+			{/* Header */}
+			<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
+				<div className='flex items-center justify-between px-6 py-4'>
+					<div className='flex items-center space-x-4'>
+						<div>
+							<h1 className='text-xl font-semibold text-foreground'>
+								User Management
+							</h1>
+							<p className='text-sm text-muted-foreground'>
+								Manage team members, permissions, and access controls
+							</p>
+						</div>
+					</div>
+					<div className='flex items-center space-x-3'>
+						<div className='text-sm text-muted-foreground'>
+							{users?.length || 0} users
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Main Content */}
+			<div className='p-6 max-w-7xl mx-auto'>
+				<TableEditor users={users} setUsers={setUsers} />
+			</div>
 		</div>
 	);
 }

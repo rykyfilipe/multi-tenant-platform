@@ -13,12 +13,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
+import { User } from "@/types/user";
 
 interface Props {
 	onDelete: () => void;
+	user: User;
 }
 
-export default function DeleteAccountButton({ onDelete }: Props) {
+export default function DeleteAccountButton({ onDelete, user }: Props) {
 	return (
 		<AlertDialog>
 			<AlertDialogTrigger asChild>
@@ -33,6 +35,17 @@ export default function DeleteAccountButton({ onDelete }: Props) {
 					<AlertDialogDescription>
 						This action cannot be undone. This will permanently delete the
 						account and remove all associated data from the system.
+						{/* Add warning for admin users */}
+						{user?.role === "ADMIN" && (
+							<>
+								<br />
+								<br />
+								<strong className="text-red-600">
+									⚠️ Warning: As an admin, this will also delete your entire tenant 
+									including all databases, tables, and data. This action is irreversible.
+								</strong>
+							</>
+						)}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

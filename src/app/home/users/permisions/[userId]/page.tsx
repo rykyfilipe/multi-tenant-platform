@@ -27,13 +27,13 @@ export default function PermissionsManager() {
 
 	if (!userId) {
 		return (
-			<div className='min-h-screen bg-gray-50 py-8'>
-				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8'>
+			<div className='h-full bg-background'>
+				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
 					<div className='text-center py-12'>
-						<h3 className='text-lg font-medium text-gray-900 mb-2'>
+						<h3 className='text-lg font-medium text-foreground mb-2'>
 							User ID not found
 						</h3>
-						<p className='text-gray-500'>
+						<p className='text-muted-foreground'>
 							Please provide a valid user ID to manage permissions.
 						</p>
 					</div>
@@ -68,8 +68,25 @@ export default function PermissionsManager() {
 	const loading = permissionsLoading || tablesLoading;
 
 	return (
-		<div className='min-h-screen bg-gray-50 py-8'>
-			<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8'>
+		<div className='h-full bg-background'>
+			{/* Header */}
+			<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
+				<div className='flex items-center justify-between px-6 py-4'>
+					<div className='flex items-center space-x-4'>
+						<div>
+							<h1 className='text-xl font-semibold text-foreground'>
+								User Permissions
+							</h1>
+							<p className='text-sm text-muted-foreground'>
+								Manage access controls and permissions for team members
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Main Content */}
+			<div className='p-6 max-w-6xl mx-auto'>
 				<PermissionsHeader
 					hasChanges={hasChanges}
 					onSave={handleSave}

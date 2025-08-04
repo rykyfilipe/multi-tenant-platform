@@ -1,14 +1,13 @@
 /** @format */
 
 @import "tailwindcss";
-
 @import "tw-animate-css";
 
-/*---break--- */
+/* Professional Data Management App Styles */
 
-/* Global default cursor */
+/* Global default cursor - Black cursor for light theme */
 * {
-	cursor: url("/cursor.png"), auto;
+	cursor: url("/cursor-black.png"), auto;
 }
 
 /* Radix UI portals & popper content */
@@ -16,7 +15,7 @@
 [data-radix-portal],
 [data-radix-popper-content-wrapper] *,
 [data-radix-portal] * {
-	cursor: url("/cursor.png"), auto;
+	cursor: url("/cursor-black.png"), auto;
 }
 
 /* All input types explicit */
@@ -32,12 +31,12 @@ textarea,
 select,
 button,
 a {
-	cursor: url("/cursor.png"), auto;
+	cursor: url("/cursor-black.png"), auto;
 }
 
 /* Webkit pseudo-elements (pentru calendarul din input[type="date"]) */
 input[type="date"]::-webkit-calendar-picker-indicator {
-	cursor: url("/cursor.png"), auto;
+	cursor: url("/cursor-black.png"), auto;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -48,209 +47,140 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	--breakpoint-xs: 20rem;
 	--breakpoint-sm: 33rem;
 
-	--radius-sm: calc(var(--radius) - 4px);
-
-	--radius-md: calc(var(--radius) - 2px);
-
+	--radius-sm: calc(var(--radius) - 2px);
+	--radius-md: calc(var(--radius) - 1px);
 	--radius-lg: var(--radius);
-
-	--radius-xl: calc(var(--radius) + 4px);
+	--radius-xl: calc(var(--radius) + 2px);
 
 	--color-background: var(--background);
-
 	--color-foreground: var(--foreground);
-
 	--color-card: var(--card);
-
 	--color-card-foreground: var(--card-foreground);
-
 	--color-popover: var(--popover);
-
 	--color-popover-foreground: var(--popover-foreground);
-
 	--color-primary: var(--primary);
-
 	--color-primary-foreground: var(--primary-foreground);
-
 	--color-secondary: var(--secondary);
-
 	--color-secondary-foreground: var(--secondary-foreground);
-
 	--color-muted: var(--muted);
-
 	--color-muted-foreground: var(--muted-foreground);
-
 	--color-accent: var(--accent);
-
 	--color-accent-foreground: var(--accent-foreground);
-
 	--color-destructive: var(--destructive);
-
 	--color-border: var(--border);
-
 	--color-input: var(--input);
-
 	--color-ring: var(--ring);
-
 	--color-chart-1: var(--chart-1);
-
 	--color-chart-2: var(--chart-2);
-
 	--color-chart-3: var(--chart-3);
-
 	--color-chart-4: var(--chart-4);
-
 	--color-chart-5: var(--chart-5);
-
 	--color-sidebar: var(--sidebar);
-
 	--color-sidebar-foreground: var(--sidebar-foreground);
-
 	--color-sidebar-primary: var(--sidebar-primary);
-
 	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-
 	--color-sidebar-accent: var(--sidebar-accent);
-
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-
 	--color-sidebar-border: var(--sidebar-border);
-
 	--color-sidebar-ring: var(--sidebar-ring);
 }
 
 /*---break--- */
 
 :root {
-	--radius: 0.625rem;
+	--radius: 1rem;
 
-	--background: oklch(1 0 0);
+	/* Premium Light Theme - Neumorphic */
+	--background: oklch(0.92 0.005 240); /* #eaeaea */
+	--foreground: oklch(0.15 0.01 240); /* #26282b */
+	--card: oklch(0.92 0.005 240);
+	--card-foreground: oklch(0.15 0.01 240);
+	--popover: oklch(0.92 0.005 240);
+	--popover-foreground: oklch(0.15 0.01 240);
 
-	--foreground: oklch(0.145 0 0);
+	/* Monochrome Color Palette */
+	--primary: oklch(0.15 0.01 240); /* #26282b */
+	--primary-foreground: oklch(0.92 0.005 240);
 
-	--card: oklch(1 0 0);
+	--secondary: oklch(0.8 0.01 240); /* Light gray */
+	--secondary-foreground: oklch(0.15 0.01 240);
 
-	--card-foreground: oklch(0.145 0 0);
+	--accent: oklch(0.7 0.01 240); /* Medium gray */
+	--accent-foreground: oklch(0.15 0.01 240);
 
-	--popover: oklch(1 0 0);
+	--muted: oklch(0.88 0.01 240);
+	--muted-foreground: oklch(0.4 0.01 240);
 
-	--popover-foreground: oklch(0.145 0 0);
+	--destructive: oklch(0.6 0.15 25);
+	--border: oklch(0.85 0.01 240);
+	--input: oklch(0.88 0.01 240);
+	--ring: oklch(0.15 0.01 240);
 
-	--primary: oklch(0.205 0 0);
+	/* Monochrome Chart Colors */
+	--chart-1: oklch(0.15 0.01 240); /* Dark */
+	--chart-2: oklch(0.4 0.01 240); /* Medium */
+	--chart-3: oklch(0.6 0.01 240); /* Light */
+	--chart-4: oklch(0.75 0.01 240); /* Lighter */
+	--chart-5: oklch(0.85 0.01 240); /* Lightest */
 
-	--primary-foreground: oklch(0.985 0 0);
-
-	--secondary: oklch(0.97 0 0);
-
-	--secondary-foreground: oklch(0.205 0 0);
-
-	--muted: oklch(0.97 0 0);
-
-	--muted-foreground: oklch(0.556 0 0);
-
-	--accent: oklch(0.97 0 0);
-
-	--accent-foreground: oklch(0.205 0 0);
-
-	--destructive: oklch(0.577 0.245 27.325);
-
-	--border: oklch(0.922 0 0);
-
-	--input: oklch(0.922 0 0);
-
-	--ring: oklch(0.708 0 0);
-
-	--chart-1: oklch(0.646 0.222 41.116);
-
-	--chart-2: oklch(0.6 0.118 184.704);
-
-	--chart-3: oklch(0.398 0.07 227.392);
-
-	--chart-4: oklch(0.828 0.189 84.429);
-
-	--chart-5: oklch(0.769 0.188 70.08);
-
-	--sidebar: oklch(0.985 0 0);
-
-	--sidebar-foreground: oklch(0.145 0 0);
-
-	--sidebar-primary: oklch(0.205 0 0);
-
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-
-	--sidebar-accent: oklch(0.97 0 0);
-
-	--sidebar-accent-foreground: oklch(0.205 0 0);
-
-	--sidebar-border: oklch(0.922 0 0);
-
-	--sidebar-ring: oklch(0.708 0 0);
+	/* Premium Sidebar */
+	--sidebar: oklch(0.92 0.005 240);
+	--sidebar-foreground: oklch(0.15 0.01 240);
+	--sidebar-primary: oklch(0.15 0.01 240);
+	--sidebar-primary-foreground: oklch(0.92 0.005 240);
+	--sidebar-accent: oklch(0.8 0.01 240);
+	--sidebar-accent-foreground: oklch(0.15 0.01 240);
+	--sidebar-border: oklch(0.85 0.01 240);
+	--sidebar-ring: oklch(0.15 0.01 240);
 }
 
 /*---break--- */
 
 .dark {
-	--background: oklch(0.145 0 0);
+	/* Premium Dark Theme - Enhanced Contrast */
+	--background: oklch(0.05 0.01 240); /* Very dark background */
+	--foreground: oklch(0.98 0.005 240); /* Very bright text */
 
-	--foreground: oklch(0.985 0 0);
+	/* Dark theme cursor - White cursor for better visibility */
+	--cursor: url("/cursor-white.png"), auto;
+	--card: oklch(0.1 0.01 240); /* Clear card distinction */
+	--card-foreground: oklch(0.98 0.005 240);
+	--popover: oklch(0.1 0.01 240);
+	--popover-foreground: oklch(0.98 0.005 240);
 
-	--card: oklch(0.205 0 0);
+	--primary: oklch(0.98 0.005 240); /* Very bright white */
+	--primary-foreground: oklch(0.05 0.01 240);
 
-	--card-foreground: oklch(0.985 0 0);
+	--secondary: oklch(0.2 0.01 240); /* Clear secondary distinction */
+	--secondary-foreground: oklch(0.98 0.005 240);
 
-	--popover: oklch(0.205 0 0);
+	--accent: oklch(0.8 0.2 240); /* Bright blue accent */
+	--accent-foreground: oklch(0.05 0.01 240);
 
-	--popover-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.12 0.01 240); /* Clear muted distinction */
+	--muted-foreground: oklch(0.85 0.01 240); /* Bright muted text */
 
-	--primary: oklch(0.922 0 0);
+	--destructive: oklch(0.8 0.25 25); /* Very bright red */
+	--border: oklch(0.18 0.01 240); /* Clear border contrast */
+	--input: oklch(0.12 0.01 240);
+	--ring: oklch(0.98 0.005 240);
 
-	--primary-foreground: oklch(0.205 0 0);
+	/* High Contrast Chart Colors for Dark Theme */
+	--chart-1: oklch(0.95 0.2 240); /* Very bright blue */
+	--chart-2: oklch(0.85 0.25 120); /* Very bright green */
+	--chart-3: oklch(0.9 0.22 60); /* Very bright yellow */
+	--chart-4: oklch(0.85 0.25 300); /* Very bright purple */
+	--chart-5: oklch(0.8 0.3 0); /* Very bright red */
 
-	--secondary: oklch(0.269 0 0);
-
-	--secondary-foreground: oklch(0.985 0 0);
-
-	--muted: oklch(0.269 0 0);
-
-	--muted-foreground: oklch(0.708 0 0);
-
-	--accent: oklch(0.269 0 0);
-
-	--accent-foreground: oklch(0.985 0 0);
-
-	--destructive: oklch(0.704 0.191 22.216);
-
-	--border: oklch(1 0 0 / 10%);
-
-	--input: oklch(1 0 0 / 15%);
-
-	--ring: oklch(0.556 0 0);
-
-	--chart-1: oklch(0.488 0.243 264.376);
-
-	--chart-2: oklch(0.696 0.17 162.48);
-
-	--chart-3: oklch(0.769 0.188 70.08);
-
-	--chart-4: oklch(0.627 0.265 303.9);
-
-	--chart-5: oklch(0.645 0.246 16.439);
-
-	--sidebar: oklch(0.205 0 0);
-
-	--sidebar-foreground: oklch(0.985 0 0);
-
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-
-	--sidebar-accent: oklch(0.269 0 0);
-
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-
-	--sidebar-border: oklch(1 0 0 / 10%);
-
-	--sidebar-ring: oklch(0.556 0 0);
+	/* Premium Dark Sidebar with Enhanced Contrast */
+	--sidebar: oklch(0.05 0.01 240);
+	--sidebar-foreground: oklch(0.98 0.005 240);
+	--sidebar-primary: oklch(0.98 0.005 240);
+	--sidebar-primary-foreground: oklch(0.05 0.01 240);
+	--sidebar-accent: oklch(0.2 0.01 240);
+	--sidebar-accent-foreground: oklch(0.98 0.005 240);
+	--sidebar-border: oklch(0.18 0.01 240);
+	--sidebar-ring: oklch(0.98 0.005 240);
 }
 
 /*---break--- */
@@ -259,12 +189,133 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	* {
 		@apply border-border outline-ring/50;
 	}
+
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-background text-foreground font-sans antialiased;
+		line-height: 1.6;
+	}
+
+	/* Dark theme cursor override */
+	.dark * {
+		cursor: var(--cursor);
+	}
+
+	.dark [data-radix-popper-content-wrapper],
+	.dark [data-radix-portal],
+	.dark [data-radix-popper-content-wrapper] *,
+	.dark [data-radix-portal] * {
+		cursor: var(--cursor);
+	}
+
+	.dark input,
+	.dark input[type="text"],
+	.dark input[type="number"],
+	.dark input[type="date"],
+	.dark input[type="time"],
+	.dark input[type="email"],
+	.dark input[type="search"],
+	.dark input[type="password"],
+	.dark textarea,
+	.dark select,
+	.dark button,
+	.dark a {
+		cursor: var(--cursor);
+	}
+
+	.dark input[type="date"]::-webkit-calendar-picker-indicator {
+		cursor: var(--cursor);
+	}
+
+	/* Professional Typography */
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		@apply font-semibold tracking-tight;
+	}
+
+	h1 {
+		@apply text-3xl;
+	}
+	h2 {
+		@apply text-2xl;
+	}
+	h3 {
+		@apply text-xl;
+	}
+	h4 {
+		@apply text-lg;
+	}
+	h5 {
+		@apply text-base;
+	}
+	h6 {
+		@apply text-sm;
+	}
+
+	/* Professional Focus States */
+	*:focus-visible {
+		@apply outline-2 outline-primary outline-offset-2;
+	}
+
+	/* Professional Scrollbar */
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		@apply bg-muted/50;
+	}
+
+	::-webkit-scrollbar-thumb {
+		@apply bg-muted-foreground/30 rounded-full;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		@apply bg-muted-foreground/50;
+	}
+
+	/* Dark Theme Scrollbar Improvements */
+	.dark ::-webkit-scrollbar-track {
+		@apply bg-muted/30;
+	}
+
+	.dark ::-webkit-scrollbar-thumb {
+		@apply bg-muted-foreground/50 rounded-full;
+	}
+
+	.dark ::-webkit-scrollbar-thumb:hover {
+		@apply bg-muted-foreground/70;
 	}
 }
 
+/* Professional Animations */
 @keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateX(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes scaleIn {
 	from {
 		opacity: 0;
 		transform: scale(0.95);
@@ -274,6 +325,413 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 		transform: scale(1);
 	}
 }
+
 .animate-fadeIn {
 	animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slideIn {
+	animation: slideIn 0.2s ease-out;
+}
+
+.animate-scaleIn {
+	animation: scaleIn 0.2s ease-out;
+}
+
+/* Premium Neumorphic Data Table Styles */
+@layer components {
+	.data-table {
+		@apply w-full border-collapse;
+	}
+
+	.data-table th {
+		@apply bg-card text-foreground font-semibold text-sm px-6 py-4 text-left border-b border-border/30;
+	}
+
+	.dark .data-table th {
+		@apply bg-card/90 border-border/50 font-bold;
+	}
+
+	.data-table td {
+		@apply px-6 py-4 border-b border-border/20;
+	}
+
+	.dark .data-table td {
+		@apply border-border/30;
+	}
+
+	.data-table tr:hover {
+		@apply bg-card/80;
+	}
+
+	.dark .data-table tr:hover {
+		@apply bg-card/70;
+	}
+
+	/* Dashboard Specific Styles for Better Dark Theme Contrast */
+	.dashboard-card {
+		@apply bg-card/90 backdrop-blur-xl border border-border/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500;
+	}
+
+	.dark .dashboard-card {
+		@apply bg-card/95 border-border/60 shadow-xl hover:shadow-2xl;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
+			0 2px 4px -1px rgba(0, 0, 0, 0.2);
+	}
+
+	.dark .dashboard-card:hover {
+		@apply border-border/80;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4),
+			0 4px 6px -2px rgba(0, 0, 0, 0.3);
+	}
+
+	.dashboard-stat {
+		@apply text-3xl font-bold text-foreground;
+	}
+
+	.dark .dashboard-stat {
+		@apply text-4xl font-bold text-foreground;
+	}
+
+	.dashboard-label {
+		@apply text-sm font-medium text-muted-foreground;
+	}
+
+	.dark .dashboard-label {
+		@apply text-sm font-semibold text-muted-foreground;
+	}
+
+	/* Chart Container Styles */
+	.chart-container {
+		@apply bg-card/80 backdrop-blur-sm rounded-xl border border-border/20 p-4;
+	}
+
+	.dark .chart-container {
+		@apply bg-card/90 border-border/50 shadow-lg;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+	}
+
+	/* Chart Legend Styles */
+	.chart-legend {
+		@apply flex flex-wrap gap-4 mt-4;
+	}
+
+	.chart-legend-item {
+		@apply flex items-center gap-2 text-sm;
+	}
+
+	.dark .chart-legend-item {
+		@apply text-foreground font-medium;
+	}
+
+	.chart-legend-color {
+		@apply w-4 h-4 rounded-full;
+	}
+
+	/* Chart Tooltip Styles */
+	.chart-tooltip {
+		@apply bg-card border border-border/30 rounded-lg shadow-lg p-3;
+	}
+
+	.dark .chart-tooltip {
+		@apply bg-card/95 border-border/50 shadow-xl;
+	}
+
+	/* Dashboard Grid Improvements */
+	.dashboard-grid {
+		@apply grid gap-6;
+	}
+
+	.dashboard-grid-item {
+		@apply bg-card/80 backdrop-blur-sm rounded-xl border border-border/20 p-6;
+	}
+
+	.dark .dashboard-grid-item {
+		@apply bg-card/90 border-border/40 shadow-lg;
+	}
+
+	/* Status Badge Improvements for Dark Theme */
+	.dark .status-active {
+		@apply bg-green-500/20 text-green-400 border border-green-500/30;
+	}
+
+	.dark .status-inactive {
+		@apply bg-gray-500/20 text-gray-400 border border-gray-500/30;
+	}
+
+	.dark .status-warning {
+		@apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+	}
+
+	.dark .status-error {
+		@apply bg-red-500/20 text-red-400 border border-red-500/30;
+	}
+
+	/* Premium Neumorphic Card Styles */
+	.professional-card {
+		@apply bg-card/90 backdrop-blur-xl border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02];
+	}
+
+	.dark .professional-card {
+		@apply bg-card/95 border border-border/30 shadow-xl hover:shadow-2xl;
+	}
+
+	.professional-card-header {
+		@apply px-8 py-6 border-b border-border/20;
+	}
+
+	.dark .professional-card-header {
+		@apply border-border/40;
+	}
+
+	.professional-card-content {
+		@apply px-8 py-6;
+	}
+
+	.professional-card-footer {
+		@apply px-8 py-6 border-t border-border/20 bg-card/50;
+	}
+
+	.dark .professional-card-footer {
+		@apply border-border/40 bg-card/60;
+	}
+
+	/* Premium Neumorphic Button Styles */
+	.btn-primary {
+		@apply bg-card text-primary-foreground shadow-lg hover:shadow-xl focus:ring-2 focus:ring-primary/30 transition-all duration-300 transform hover:scale-105;
+	}
+
+	.btn-secondary {
+		@apply bg-card text-secondary-foreground shadow-lg hover:shadow-xl focus:ring-2 focus:ring-secondary/30 transition-all duration-300 transform hover:scale-105;
+	}
+
+	.btn-ghost {
+		@apply hover:bg-card/50 focus:ring-2 focus:ring-muted/30 transition-all duration-300;
+	}
+
+	/* Premium Neumorphic Form Styles */
+	.form-input {
+		@apply w-full px-4 py-3 border-0 rounded-xl bg-card/80 backdrop-blur-xl text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 transition-all duration-300 shadow-inner focus:shadow-lg;
+	}
+
+	.form-label {
+		@apply text-sm font-semibold text-foreground mb-3 block;
+	}
+
+	.form-error {
+		@apply text-sm text-destructive mt-2;
+	}
+
+	/* Premium Neumorphic Status Indicators */
+	.status-active {
+		@apply bg-card/80 text-accent shadow-inner;
+	}
+
+	.status-inactive {
+		@apply bg-card/80 text-muted-foreground shadow-inner;
+	}
+
+	.status-warning {
+		@apply bg-card/80 text-yellow-600 dark:text-yellow-400 shadow-inner;
+	}
+
+	.status-error {
+		@apply bg-card/80 text-destructive shadow-inner;
+	}
+
+	/* Premium Glass Effect */
+	.glass-effect {
+		@apply bg-card/20 backdrop-blur-2xl border border-white/10 shadow-lg;
+	}
+
+	/* Premium Neumorphic Backgrounds */
+	.neumorphic-bg {
+		@apply bg-card shadow-inner;
+	}
+
+	.neumorphic-bg-out {
+		@apply bg-card shadow-lg;
+	}
+}
+
+/* Premium Neumorphic Styles */
+@layer utilities {
+	.neumorphic-light {
+		background-color: #eaeaea;
+		box-shadow: inset 4px 4px 12px rgb(170, 168, 170),
+			inset -4px -4px 12px white;
+		color: #26282b;
+	}
+
+	.neumorphic-light-out {
+		background-color: #eaeaea;
+		box-shadow: inset 5px 5px 20px 0px #cecece,
+			inset -5px -5px 20px 20px #eaeaea, -10px -10px 10px rgb(255, 255, 255),
+			4px 4px 20px rgb(89, 89, 89);
+		color: #26282b;
+	}
+
+	.neumorphic-dark {
+		background-color: #26282b;
+		box-shadow: inset 4px 4px 12px rgb(22, 22, 22),
+			inset -4px -4px 12px rgb(69, 69, 69);
+		color: #eaeaea;
+	}
+
+	.neumorphic-dark-out {
+		background-color: #26282b;
+		box-shadow: inset 5px 5px 20px 0px #2a2a2b,
+			inset -5px -5px 20px 20px #2a2a2b, -10px -10px 10px rgb(57, 57, 57),
+			4px 4px 20px black;
+		color: #eaeaea;
+	}
+}
+
+/* Premium Animations */
+@layer utilities {
+	@keyframes float {
+		0%,
+		100% {
+			transform: translateY(0px);
+		}
+		50% {
+			transform: translateY(-10px);
+		}
+	}
+
+	@keyframes pulse-glow {
+		0%,
+		100% {
+			box-shadow: inset 4px 4px 12px rgb(170, 168, 170),
+				inset -4px -4px 12px white, -10px -10px 10px rgb(255, 255, 255),
+				4px 4px 20px rgb(89, 89, 89);
+		}
+		50% {
+			box-shadow: inset 6px 6px 16px rgb(150, 148, 150),
+				inset -6px -6px 16px white, -15px -15px 15px rgb(255, 255, 255),
+				6px 6px 25px rgb(89, 89, 89);
+		}
+	}
+
+	.animate-float {
+		animation: float 3s ease-in-out infinite;
+	}
+
+	.animate-pulse-glow {
+		animation: pulse-glow 2s ease-in-out infinite;
+	}
+}
+
+/* Premium Sidebar Enhancements */
+@layer components {
+	.sidebar-elegant {
+		@apply backdrop-blur-2xl border-r border-sidebar-border/30 shadow-lg;
+	}
+
+	.dark .sidebar-elegant {
+		@apply bg-card/90 shadow-xl;
+	}
+
+	.sidebar-elegant {
+		@apply bg-card/90 shadow-lg;
+	}
+
+	/* Premium Navigation Items */
+	.nav-item-elegant {
+		@apply relative overflow-hidden rounded-xl transition-all duration-300;
+	}
+
+	.dark .nav-item-elegant:hover {
+		@apply bg-card/80 shadow-inner;
+	}
+
+	.nav-item-elegant:hover {
+		@apply bg-card/80 shadow-inner;
+	}
+
+	.nav-item-elegant::before {
+		content: "";
+		@apply absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-secondary/0 opacity-0 transition-opacity duration-300;
+	}
+
+	.nav-item-elegant:hover::before {
+		@apply opacity-100;
+	}
+
+	/* List Improvements for Dark Theme */
+	.dark .list-item {
+		@apply border-border/40;
+	}
+
+	.dark .list-item:hover {
+		@apply bg-card/60;
+	}
+
+	/* Input Improvements for Dark Theme */
+	.dark .form-input {
+		@apply bg-card/80 border-border/40 text-foreground placeholder:text-muted-foreground/80;
+	}
+
+	.dark .form-input:focus {
+		@apply bg-card/90 border-primary/50 ring-primary/20;
+	}
+
+	/* Button Improvements for Dark Theme */
+	.dark .btn-primary {
+		@apply bg-primary text-primary-foreground shadow-lg hover:shadow-xl focus:ring-2 focus:ring-primary/30;
+	}
+
+	.dark .btn-secondary {
+		@apply bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl focus:ring-2 focus:ring-secondary/30;
+	}
+
+	.dark .btn-ghost {
+		@apply hover:bg-card/60 focus:ring-2 focus:ring-muted/30;
+	}
+}
+
+/* Modal and Dialog Improvements for Dark Theme */
+.dark [data-radix-dialog-content] {
+	@apply bg-card/95 border border-border/50 shadow-2xl;
+}
+
+.dark [data-radix-dialog-overlay] {
+	@apply bg-black/60 backdrop-blur-sm;
+}
+
+.dark [data-radix-popover-content] {
+	@apply bg-card/95 border border-border/50 shadow-xl;
+}
+
+.dark [data-radix-dropdown-menu-content] {
+	@apply bg-card/95 border border-border/50 shadow-xl;
+}
+
+.dark [data-radix-select-content] {
+	@apply bg-card/95 border border-border/50 shadow-xl;
+}
+
+.dark [data-radix-tooltip-content] {
+	@apply bg-card/95 border border-border/50 shadow-xl text-foreground;
+}
+
+/* Alert and Notification Improvements for Dark Theme */
+.dark .alert {
+	@apply bg-card/90 border border-border/40;
+}
+
+.dark .alert-info {
+	@apply bg-blue-500/10 border-blue-500/30 text-blue-400;
+}
+
+.dark .alert-success {
+	@apply bg-green-500/10 border-green-500/30 text-green-400;
+}
+
+.dark .alert-warning {
+	@apply bg-yellow-500/10 border-yellow-500/30 text-yellow-400;
+}
+
+.dark .alert-error {
+	@apply bg-red-500/10 border-red-500/30 text-red-400;
 }

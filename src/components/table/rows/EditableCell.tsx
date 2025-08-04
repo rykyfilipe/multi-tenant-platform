@@ -31,7 +31,6 @@ const createReferenceData = (tables: Table[] | null) => {
 
 	tables.forEach((table) => {
 		const options: { id: number; displayValue: string }[] = [];
-		console.log(table);
 		if (Array.isArray(table.rows) && table.rows.length > 0) {
 			table.rows.forEach((row) => {
 				if (Array.isArray(row.cells) && row.cells.length > 0) {
@@ -39,7 +38,6 @@ const createReferenceData = (tables: Table[] | null) => {
 
 					let addedColumns = 0;
 					const maxColumns = 3;
-					console.log(row.cells);
 
 					table.columns.forEach((column) => {
 						if (addedColumns >= maxColumns) return;

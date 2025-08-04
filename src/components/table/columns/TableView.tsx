@@ -88,83 +88,100 @@ export function TableView({
 	}, [tables]);
 
 	return (
-		<Card className='shadow-lg'>
-			<CardHeader>
-				<div className='flex items-center gap-2'>
-					<Database />
-					<CardTitle>Table Columns</CardTitle>
-					<span className='ml-auto'>
-						{columns.length} column{columns.length !== 1 && "s"}
-					</span>
+		<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg overflow-hidden'>
+			{/* Table Header */}
+			<div className='flex items-center justify-between p-4 border-b border-border/20 bg-muted/30'>
+				<div className='flex items-center gap-3'>
+					<div className='p-2 bg-primary/10 rounded-lg'>
+						<Database className='w-4 h-4 text-primary' />
+					</div>
+					<div>
+						<h3 className='text-sm font-semibold text-foreground'>
+							Table Columns
+						</h3>
+						<p className='text-xs text-muted-foreground'>
+							{columns.length} column{columns.length !== 1 && "s"}
+						</p>
+					</div>
 				</div>
-			</CardHeader>
-			<CardContent>
-				<div
-					className='table-content overflow-auto'
-					style={{ scrollbarWidth: "none" }}>
-					<table className='w-full'>
-						<thead>
+			</div>
+
+			{/* Table Content */}
+			<div
+				className='table-content overflow-auto'
+				style={{ scrollbarWidth: "none" }}>
+				<table className='w-full'>
+					<thead>
+						<tr className='bg-muted/20'>
+							{columnSchemaMeta.map((meta) => (
+								<th
+									key={meta.key}
+									className='text-start p-3 text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+									{meta.label}
+								</th>
+							))}
+							<th className='text-start p-3 text-xs font-medium text-muted-foreground uppercase tracking-wider w-16'>
+								Actions
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						{columns.length === 0 ? (
 							<tr>
-								{columnSchemaMeta.map((meta) => (
-									<th key={meta.key} className='text-start p-2 border-b'>
-										{meta.label}
-									</th>
-								))}
-								<th className='text-start p-2 border-b'>Actions</th>
+								<td
+									colSpan={columnSchemaMeta.length + 1}
+									className='text-center py-12'>
+									<div className='text-muted-foreground'>
+										<p className='text-sm font-medium'>No columns yet</p>
+										<p className='text-xs mt-1'>
+											Add your first column to get started
+										</p>
+									</div>
+								</td>
 							</tr>
-						</thead>
-						<tbody>
-							{columns.length === 0 ? (
-								<tr>
-									<td
-										colSpan={columnSchemaMeta.length + 1}
-										className='text-center py-8'>
-										No columns yet.
+						) : (
+							columns.map((column, index) => (
+								<tr
+									key={column.id}
+									className={`${
+										index === 0 && "column-row"
+									} hover:bg-muted/30 transition-colors border-b border-border/10`}>
+									{columnSchemaMeta.map((meta) => (
+										<td key={meta.key} className='p-3'>
+											<EditableCell
+												column={column}
+												fieldName={meta.key}
+												fieldType={meta.type}
+												isEditing={
+													editingCell?.columnId === column.id.toString() &&
+													editingCell?.fieldName === meta.key
+												}
+												onStartEdit={() =>
+													onEditCell(column.id.toString(), meta.key)
+												}
+												onSave={(val) =>
+													onSaveCell(column.id.toString(), meta.key, val)
+												}
+												onCancel={onCancelEdit}
+												referenceOptions={meta.referenceOptions}
+											/>
+										</td>
+									))}
+									<td className='p-3'>
+										<Button
+											variant='ghost'
+											size='sm'
+											onClick={() => onDeleteColumn(column.id.toString())}
+											className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10'>
+											<Trash2 className='h-4 w-4' />
+										</Button>
 									</td>
 								</tr>
-							) : (
-								columns.map((column, index) => (
-									<tr
-										key={column.id}
-										className={`${
-											index === 0 && "column-row"
-										} hover:bg-gray-50`}>
-										{columnSchemaMeta.map((meta) => (
-											<td key={meta.key} className='p-2 border-b'>
-												<EditableCell
-													column={column}
-													fieldName={meta.key}
-													fieldType={meta.type}
-													isEditing={
-														editingCell?.columnId === column.id.toString() &&
-														editingCell?.fieldName === meta.key
-													}
-													onStartEdit={() =>
-														onEditCell(column.id.toString(), meta.key)
-													}
-													onSave={(val) =>
-														onSaveCell(column.id.toString(), meta.key, val)
-													}
-													onCancel={onCancelEdit}
-													referenceOptions={meta.referenceOptions}
-												/>
-											</td>
-										))}
-										<td className='p-2 border-b'>
-											<Button
-												variant='ghost'
-												size='sm'
-												onClick={() => onDeleteColumn(column.id.toString())}>
-												<Trash2 className='h-4 w-4' />
-											</Button>
-										</td>
-									</tr>
-								))
-							)}
-						</tbody>
-					</table>
-				</div>
-			</CardContent>
-		</Card>
+							))
+						)}
+					</tbody>
+				</table>
+			</div>
+		</div>
 	);
 }

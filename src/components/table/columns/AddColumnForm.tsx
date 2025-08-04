@@ -244,50 +244,54 @@ export default function AddColumnForm({
 	}, [currentColumn]);
 
 	return (
-		<Card className='shadow-lg border-0 bg-gradient-to-br from-background to-muted/20'>
-			<CardHeader className='pb-4'>
-				<CardTitle className='text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent'>
+		<div className='space-y-6'>
+			<div className='text-center'>
+				<h3 className='text-lg font-semibold text-foreground mb-2'>
 					Create New Column
-				</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<form onSubmit={onAdd} className='space-y-6'>
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-						{columnSchemaMeta.map(renderField)}
+				</h3>
+				<p className='text-sm text-muted-foreground'>
+					Define the column properties and constraints
+				</p>
+			</div>
+
+			<form onSubmit={onAdd} className='space-y-6'>
+				<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+					{columnSchemaMeta.map(renderField)}
+				</div>
+
+				{/* Validation Warnings */}
+				{currentColumn.autoIncrement && currentColumn.type !== "number" && (
+					<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+						<p className='text-sm text-amber-800'>
+							⚠️ Auto increment is typically used with number types
+						</p>
 					</div>
+				)}
 
-					{currentColumn.autoIncrement && currentColumn.type !== "number" && (
-						<div className='p-3 bg-warning/10 border border-warning/20 rounded-md'>
-							<p className='text-sm text-warning-foreground'>
-								⚠️ Auto increment is typically used with number types
-							</p>
-						</div>
-					)}
-
-					{currentColumn.primary && currentColumn.required === false && (
-						<div className='p-3 bg-info/10 border border-info/20 rounded-md'>
-							<p className='text-sm text-info-foreground'>
-								💡 Primary keys are usually required
-							</p>
-						</div>
-					)}
-
-					<div className='flex justify-end space-x-3 pt-4'>
-						<Button
-							type='button'
-							variant='outline'
-							onClick={() => setNewColumn(null)}>
-							Cancel
-						</Button>
-						<Button
-							type='submit'
-							disabled={!isFormValid}
-							className='min-w-[120px]'>
-							Add Column
-						</Button>
+				{currentColumn.primary && currentColumn.required === false && (
+					<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+						<p className='text-sm text-blue-800'>
+							💡 Primary keys are usually required
+						</p>
 					</div>
-				</form>
-			</CardContent>
-		</Card>
+				)}
+
+				<div className='flex justify-end space-x-3 pt-4'>
+					<Button
+						type='button'
+						variant='outline'
+						onClick={() => setNewColumn(null)}
+						className='px-6'>
+						Cancel
+					</Button>
+					<Button
+						type='submit'
+						disabled={!isFormValid}
+						className='px-6'>
+						Add Column
+					</Button>
+				</div>
+			</form>
+		</div>
 	);
 }

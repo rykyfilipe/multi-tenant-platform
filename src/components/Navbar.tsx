@@ -2,14 +2,20 @@
 
 "use client";
 
+import React, { useState, useEffect } from "react";
 import {
-	AppWindow,
 	Database,
-	DatabaseZapIcon,
-	Home,
-	HousePlugIcon,
-	Settings,
 	Users,
+	Settings,
+	BarChart3,
+	Building2,
+	Zap,
+	Home,
+	LogOut,
+	User,
+	Shield,
+	Sun,
+	Moon,
 } from "lucide-react";
 
 import {
@@ -22,85 +28,160 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarHeader,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { useApp } from "@/contexts/AppContext";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
+import { useTheme } from "next-themes";
 
-const items = [
+const navigationItems = [
 	{
-		title: "Home",
-		url: "/home",
-		icon: Home,
+		title: "Analytics",
+		url: "/home/dashboard",
+		icon: BarChart3,
+		description: "Detailed analytics and charts",
 	},
 	{
-		title: "Tenant",
+		title: "Tenant Management",
 		url: "/home/tenant",
-		icon: HousePlugIcon,
+		icon: Building2,
+		description: "Manage your organization",
 	},
-
 	{
-		title: "Users",
+		title: "User Management",
 		url: "/home/users",
 		icon: Users,
+		description: "Team members and permissions",
 	},
 	{
 		title: "Database",
 		url: "/home/database",
 		icon: Database,
+		description: "Data tables and schemas",
 	},
 	{
 		title: "Public API",
 		url: "/home/public-api",
-		icon: DatabaseZapIcon,
+		icon: Zap,
+		description: "API tokens and documentation",
 	},
-
 	{
 		title: "Settings",
 		url: "/home/settings",
 		icon: Settings,
+		description: "Application configuration",
 	},
 ];
 
 export function AppSidebar() {
 	const { setToken, setUser } = useApp();
 	const router = useRouter();
+	const pathname = usePathname();
+	const { data: session } = useSession();
+	const { theme, setTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	if (!mounted) {
+		return null;
+	}
+
+	const handleSignOut = async () => {
+		await signOut({ callbackUrl: "/" });
+		setToken(null);
+		setUser(null);
+	};
 
 	return (
-		<Sidebar>
-			<SidebarContent>
-				<SidebarGroup>
-					<SidebarGroupLabel>Application</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{items.map((item) => (
-								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton asChild>
-										<Link href={item.url}>
-											<item.icon />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
+		<Sidebar className='border-r border-border/20 bg-background'>
+			<SidebarHeader className='p-6 border-b border-border/20'>
+				<div className='flex items-center space-x-3'>
+					<div className='w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center'>
+						<Database className='w-4 h-4 text-primary' />
+					</div>
+					<span className='text-lg font-semibold text-foreground'>YDV</span>
+				</div>
+			</SidebarHeader>
+
+			<SidebarContent className='p-4'>
+				<SidebarMenu>
+					{navigationItems.map((item) => {
+						const isActive = pathname === item.url;
+						return (
+							<SidebarMenuItem key={item.title}>
+								<SidebarMenuButton
+									asChild
+									className={`w-full ${
+										isActive
+											? "bg-primary/10 text-primary border-r-2 border-primary"
+											: "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+									}`}>
+									<Link
+										href={item.url}
+										className='flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors'>
+										<item.icon className='w-5 h-5' />
+										<span className='text-sm font-medium'>{item.title}</span>
+									</Link>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+						);
+					})}
+				</SidebarMenu>
 			</SidebarContent>
-			<SidebarFooter>
-				<Button
-					onClick={() => router.push("/")}
-					className='bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-medium'>
-					Go to Home Page
-				</Button>
-				<Button
-					onClick={() => {
-						signOut({ callbackUrl: "/" });
-					}}>
-					Logout
-				</Button>
+
+			<SidebarFooter className='p-4 border-t border-border/20'>
+				<div className='space-y-3'>
+					{/* User Profile */}
+					{session?.user && (
+						<div className='flex items-center space-x-3 p-3 bg-muted/30 rounded-lg'>
+							<Avatar className='w-8 h-8'>
+								<AvatarImage src={session.user.image || undefined} />
+								<AvatarFallback className='text-xs font-medium'>
+									{session.user.firstName?.[0]}
+									{session.user.lastName?.[0]}
+								</AvatarFallback>
+							</Avatar>
+							<div className='flex-1 min-w-0'>
+								<p className='text-sm font-medium text-foreground truncate'>
+									{session.user.firstName} {session.user.lastName}
+								</p>
+								<p className='text-xs text-muted-foreground truncate'>
+									{session.user.email}
+								</p>
+							</div>
+						</div>
+					)}
+
+					{/* Actions */}
+					<div className='flex space-x-2'>
+						<Button
+							onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+							variant='ghost'
+							size='sm'
+							className='flex-1'>
+							{theme === "dark" ? (
+								<Sun className='w-4 h-4' />
+							) : (
+								<Moon className='w-4 h-4' />
+							)}
+						</Button>
+						<Button
+							onClick={handleSignOut}
+							variant='ghost'
+							size='sm'
+							className='flex-1'>
+							<LogOut className='w-4 h-4' />
+						</Button>
+					</div>
+				</div>
 			</SidebarFooter>
 		</Sidebar>
 	);

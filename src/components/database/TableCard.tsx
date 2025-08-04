@@ -23,7 +23,7 @@ function TableCard({ table }: { table: Table }) {
 		setIsUpdatingPublic(true);
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenant.id}/database/tables/${table.id}/public`,
+				`/api/tenants/${tenant.id}/database/${table.databaseId}/tables/${table.id}/public`,
 				{
 					method: "PATCH",
 					headers: {
@@ -40,29 +40,33 @@ function TableCard({ table }: { table: Table }) {
 			}
 
 			showAlert(
-				table.isPublic ? "Table is now private" : "Table is now public",
+				table.isPublic
+					? "Table is now private and only accessible to your team"
+					: "Table is now public and can be accessed via API",
 				"success",
 			);
 
 			// Refresh the page to update the table data
 			window.location.reload();
 		} catch (error) {
-			showAlert("Failed to update table public status", "error");
+			showAlert("Failed to update table visibility settings", "error");
 		} finally {
 			setIsUpdatingPublic(false);
 		}
 	};
 
 	return (
-		<Card className='table-card shadow-md hover:shadow-lg transition-shadow rounded-2xl'>
-			<CardHeader className='pb-2'>
+		<Card className='table-card border border-border/20 bg-card/50 backdrop-blur-sm hover:bg-card/80 hover:border-border/40 transition-all duration-300'>
+			<CardHeader className='pb-4'>
 				<div className='w-full flex items-center justify-between'>
-					<div className='flex items-center gap-2'>
-						<h2 className='text-xl font-semibold text-slate-800'>
+					<div className='flex items-center gap-3'>
+						<h2 className='text-lg font-semibold text-foreground'>
 							{table.name}
 						</h2>
 						{table.isPublic && (
-							<Badge variant='secondary' className='text-xs'>
+							<Badge
+								variant='secondary'
+								className='text-xs bg-primary/10 text-primary border-primary/20'>
 								<Globe className='w-3 h-3 mr-1' />
 								Public
 							</Badge>
@@ -73,36 +77,34 @@ function TableCard({ table }: { table: Table }) {
 							<Button
 								variant='ghost'
 								size='icon'
-								className='hover:bg-slate-100 text-slate-600 columns-button'>
-								<Edit className='w-5 h-5' />
+								className='hover:bg-muted/50 text-muted-foreground hover:text-foreground columns-button'>
+								<Edit className='w-4 h-4' />
 							</Button>
 						)}
 					</Link>
 				</div>
 			</CardHeader>
 
-			<CardContent className='space-y-2 text-sm text-slate-600'>
-				<p className='max-w-full  break-words'>
-					<span className='font-medium text-slate-800'>Description: </span>
-					{table.description}
-				</p>
-				<p>
-					<span className='font-medium text-slate-800'>Columns: </span>
-					{Array.isArray(table.columns) ? table.columns.length : 0}
-				</p>
-				<p>
-					<span className='font-medium text-slate-800'>Rows: </span>
-					{Array.isArray(table.rows) ? table.rows.length : 0}
-				</p>
+			<CardContent className='space-y-3 text-sm'>
+				<div className='space-y-2'>
+					<p className='text-muted-foreground line-clamp-2'>
+						{table.description || "No description provided"}
+					</p>
+					<div className='flex items-center justify-between text-xs'>
+						<span className='text-muted-foreground'>
+							{Array.isArray(table.columns) ? table.columns.length : 0} columns
+						</span>
+						<span className='text-muted-foreground'>
+							{Array.isArray(table.rows) ? table.rows.length : 0} rows
+						</span>
+					</div>
+				</div>
 			</CardContent>
 
-			<CardFooter
-				className={`flex ${
-					user.role === "VIEWER" ? "justify-end" : "justify-between"
-				}   pt-4 gap-2`}>
+			<CardFooter className='flex justify-between pt-4 gap-2'>
 				<div className='flex gap-2'>
 					<Link href={`/home/database/table/${table.id}/rows`}>
-						<Button variant='outline' size='sm' className='rows-button'>
+						<Button variant='outline' size='sm' className='rows-button text-xs'>
 							{user.role === "VIEWER" ? "View" : "Edit"} rows
 						</Button>
 					</Link>
@@ -112,10 +114,10 @@ function TableCard({ table }: { table: Table }) {
 							size='sm'
 							onClick={handleTogglePublic}
 							disabled={isUpdatingPublic}
-							className={`${
+							className={`text-xs ${
 								table.isPublic
-									? "text-orange-600 hover:text-orange-700"
-									: "text-blue-600 hover:text-blue-700"
+									? "text-orange-600 hover:text-orange-700 border-orange-200"
+									: "text-blue-600 hover:text-blue-700 border-blue-200"
 							}`}>
 							{table.isPublic ? (
 								<Lock className='w-4 h-4' />
@@ -130,7 +132,7 @@ function TableCard({ table }: { table: Table }) {
 						size='sm'
 						variant='destructive'
 						onClick={() => handleDeleteTable(table?.id.toString())}
-						className='bg-red-500 hover:bg-red-600 text-white delete-table-button'>
+						className='delete-table-button text-xs'>
 						<Trash className='w-4 h-4' />
 					</Button>
 				)}

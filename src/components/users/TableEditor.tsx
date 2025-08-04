@@ -57,7 +57,7 @@ export default function TableEditor({ users, setUsers }: Props) {
 			}
 
 			const data = await response.json();
-			showAlert("User added successfully", "success");
+			showAlert("User added successfully! They can now access the platform.", "success");
 			setUsers([...(users || []), data.user as User]);
 			setNewUser({
 				email: "",
@@ -68,7 +68,7 @@ export default function TableEditor({ users, setUsers }: Props) {
 			});
 			setShowForm(false);
 		} catch (error) {
-			showAlert("Error adding user", "error");
+			showAlert("Failed to add user. Please check the information and try again.", "error");
 		}
 	}
 
@@ -88,9 +88,9 @@ export default function TableEditor({ users, setUsers }: Props) {
 				(user) => user.id !== Number(userId),
 			);
 			setUsers(updatedUsers);
-			showAlert("Row deleted successfully", "success");
-		} catch (error) {
-			showAlert("Error deleting row", "error");
+					showAlert("User removed successfully", "success");
+	} catch (error) {
+		showAlert("Failed to remove user. Please try again.", "error");
 		}
 	};
 
@@ -104,26 +104,47 @@ export default function TableEditor({ users, setUsers }: Props) {
 
 	return (
 		<div className='space-y-6'>
-			{user.role === "ADMIN" && (
-				<Button onClick={() => setShowForm((prev) => !prev)}>
-					{showForm ? <X /> : "Add new user"}
-				</Button>
-			)}
+			{/* Header Actions */}
+			<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
+				<div className='flex items-center space-x-3'>
+					{user.role === "ADMIN" && (
+						<Button 
+							onClick={() => setShowForm((prev) => !prev)}
+							className='flex items-center space-x-2'
+						>
+							{showForm ? <X className='w-4 h-4' /> : <span>Add User</span>}
+						</Button>
+					)}
+					{showForm && (
+						<span className='text-sm text-muted-foreground'>
+							Fill in the form below to add a new team member...
+						</span>
+					)}
+				</div>
+			</div>
+
+			{/* Add User Form */}
 			{showForm && (
-				<AddRowForm
-					newUser={newUser}
-					setNewUser={setNewUser}
-					onAdd={handleAdd}
-				/>
+				<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg p-6'>
+					<AddRowForm
+						newUser={newUser}
+						setNewUser={setNewUser}
+						onAdd={handleAdd}
+					/>
+				</div>
 			)}
-			<TableView
-				users={users}
-				editingCell={editingCell}
-				onEditCell={handleEditCell}
-				onSaveCell={handleSaveCellWrapper}
-				onCancelEdit={handleCancelEdit}
-				onDeleteRow={handleDelete}
-			/>
+
+			{/* Users Table */}
+			<div className='table-content'>
+				<TableView
+					users={users}
+					editingCell={editingCell}
+					onEditCell={handleEditCell}
+					onSaveCell={handleSaveCellWrapper}
+					onCancelEdit={handleCancelEdit}
+					onDeleteRow={handleDelete}
+				/>
+			</div>
 		</div>
 	);
 }

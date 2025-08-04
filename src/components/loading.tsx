@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
+import { ElegantLoadingState } from "./ui/loading-states";
 
 interface Props {
 	message: string;
@@ -15,7 +16,7 @@ function Loading({ message }: Props) {
 			setShowFallback(true);
 		}, 5000);
 
-		return () => clearTimeout(timer); // cleanup dacă componenta dispare
+		return () => clearTimeout(timer);
 	}, []);
 
 	if (showFallback) {
@@ -32,14 +33,7 @@ function Loading({ message }: Props) {
 		);
 	}
 
-	return (
-		<div className='flex items-center justify-center h-64 w-full'>
-			<div className='flex flex-col items-center space-y-4'>
-				<div className='w-12 h-12 border-4 border-black/50 border-dashed rounded-full animate-spin' />
-				<p className='text-gray-600 text-sm'>Loading {message}...</p>
-			</div>
-		</div>
-	);
+	return <ElegantLoadingState message={`Loading ${message}...`} />;
 }
 
 export default Loading;

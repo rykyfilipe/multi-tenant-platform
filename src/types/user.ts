@@ -11,6 +11,7 @@ export interface User {
 export enum Role {
 	VIEWER = "VIEWER",
 	EDITOR = "EDITOR",
+	ADMIN = "ADMIN",
 }
 
 export interface UserSchema {

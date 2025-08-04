@@ -8,6 +8,14 @@ import {
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
+import { z } from "zod";
+
+const createDatabaseSchema = z.object({
+	name: z
+		.string()
+		.min(1, "Database name is required")
+		.max(100, "Database name too long"),
+});
 
 export async function GET(
 	request: Request,
@@ -34,7 +42,7 @@ export async function GET(
 
 	try {
 		if (role === "ADMIN") {
-			const database = await prisma.database.findFirst({
+			const databases = await prisma.database.findMany({
 				where: {
 					tenantId: Number(tenantId),
 				},
@@ -47,12 +55,16 @@ export async function GET(
 						},
 					},
 				},
+				orderBy: {
+					createdAt: "asc",
+				},
 			});
 
-			return NextResponse.json(database, { status: 200 });
+			return NextResponse.json(databases, { status: 200 });
 		}
 
-		const tables = await prisma.tablePermission.findMany({
+		// Pentru utilizatorii non-admin, returnăm doar bazele de date cu tabelele la care au acces
+		const tablePermissions = await prisma.tablePermission.findMany({
 			where: {
 				userId: userId,
 				table: {
@@ -64,6 +76,7 @@ export async function GET(
 			include: {
 				table: {
 					include: {
+						database: true,
 						columns: true,
 						rows: true,
 					},
@@ -71,33 +84,24 @@ export async function GET(
 			},
 		});
 
-		const databaseInfo = await prisma.database.findFirst({
-			where: {
-				tenant: {
-					id: Number(tenantId),
-				},
-			},
-			include: {
-				tenant: true,
-			},
+		// Grupăm tabelele pe baze de date
+		const databasesMap = new Map();
+
+		tablePermissions.forEach((permission) => {
+			if (permission.canRead) {
+				const database = permission.table.database;
+				if (!databasesMap.has(database.id)) {
+					databasesMap.set(database.id, {
+						...database,
+						tables: [],
+					});
+				}
+				databasesMap.get(database.id).tables.push(permission.table);
+			}
 		});
 
-		const database = {
-			...databaseInfo,
-			tables: tables.flatMap((table) =>
-				table.canRead
-					? [
-							{
-								...table.table,
-								columns: table.table.columns,
-								rows: table.table.rows,
-							},
-					  ]
-					: [],
-			),
-		};
-		console.log(database.tables);
-		return NextResponse.json(database, { status: 200 });
+		const databases = Array.from(databasesMap.values());
+		return NextResponse.json(databases, { status: 200 });
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(
@@ -131,6 +135,18 @@ export async function POST(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
+		const body = await request.json();
+		const validation = createDatabaseSchema.safeParse(body);
+
+		if (!validation.success) {
+			return NextResponse.json(
+				{ error: validation.error.errors[0].message },
+				{ status: 400 },
+			);
+		}
+
+		const { name } = validation.data;
+
 		const tenant = await prisma.tenant.findUnique({
 			where: { id: Number(tenantId) },
 		});
@@ -162,14 +178,17 @@ export async function POST(
 			);
 		}
 
-		// Verificăm dacă deja are un Database
-		const existingDatabase = await prisma.database.findUnique({
-			where: { tenantId: tenant.id },
+		// Verificăm dacă numele bazei de date deja există pentru acest tenant
+		const existingDatabase = await prisma.database.findFirst({
+			where: {
+				tenantId: tenant.id,
+				name: name,
+			},
 		});
 
 		if (existingDatabase) {
 			return NextResponse.json(
-				{ error: "Tenant already has a database" },
+				{ error: "A database with this name already exists" },
 				{ status: 400 },
 			);
 		}
@@ -177,7 +196,11 @@ export async function POST(
 		// Creăm Database-ul
 		const newDatabase = await prisma.database.create({
 			data: {
+				name: name,
 				tenantId: tenant.id,
+			},
+			include: {
+				tables: true,
 			},
 		});
 

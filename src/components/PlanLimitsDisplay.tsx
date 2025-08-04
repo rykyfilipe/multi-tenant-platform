@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Database, Table, Users, Key, Globe } from "lucide-react";
+import { Database, Table, Users, Key, Globe, Settings } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 
 interface PlanLimits {
@@ -90,7 +90,6 @@ export default function PlanLimitsDisplay() {
 				});
 				if (response.ok) {
 					const data = await response.json();
-					console.log("Received limits data:", data);
 					setCurrentCounts(data);
 				} else {
 					console.error("Failed to fetch limits:", response.status);
@@ -114,18 +113,16 @@ export default function PlanLimitsDisplay() {
 					<CardTitle>Plan Usage</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className='space-y-4'>
-						{Object.entries(planLimits).map(([key, limit]) => (
-							<div key={key} className='flex items-center justify-between'>
-								<div className='flex items-center space-x-2'>
-									<div className='w-4 h-4 bg-gray-200 rounded animate-pulse' />
-									<span className='text-sm text-gray-500'>
-										{LIMIT_LABELS[key as keyof PlanLimits]}
-									</span>
-								</div>
-								<div className='w-16 h-4 bg-gray-200 rounded animate-pulse' />
-							</div>
-						))}
+					<div className='text-center py-8'>
+						<div className='w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4'>
+							<Settings className='w-8 h-8 text-white animate-spin' />
+						</div>
+						<h3 className='text-lg font-semibold text-foreground mb-2'>
+							Loading usage data
+						</h3>
+						<p className='text-muted-foreground'>
+							Fetching your plan limits and current usage...
+						</p>
 					</div>
 				</CardContent>
 			</Card>
@@ -160,9 +157,7 @@ export default function PlanLimitsDisplay() {
 						const isAtLimit = current >= limit;
 						const isNearLimit = percentage >= 80;
 
-						console.log(
-							`Rendering ${key}: current=${current}, limit=${limit}, percentage=${percentage}`,
-						);
+						// Debug logging removed for production
 
 						return (
 							<div

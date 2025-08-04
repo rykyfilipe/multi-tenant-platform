@@ -61,7 +61,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 				columns.some((c) => c.name === h),
 			);
 			if (!isHeaderValid) {
-				showAlert("CSV-ul conține coloane necunoscute sau lipsă.", "error");
+				showAlert("The CSV file contains unknown or missing columns. Please check the file format.", "error");
 				return;
 			}
 
@@ -100,7 +100,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			const validRows = parsedRows.filter((r) => r !== null);
 
 			if (validRows.length === 0) {
-				showAlert("Niciun rând valid pentru import.", "error");
+				showAlert("No valid rows found for import. Please check your CSV file.", "error");
 				return;
 			}
 
@@ -118,12 +118,12 @@ function ImportExportControls({ columns, rows, table }: Props) {
 
 			if (!res.ok) {
 				const { error } = await res.json();
-				showAlert("Import eșuat: " + error, "error");
+				showAlert("Import failed: " + error, "error");
 			} else {
-				showAlert("Import reușit!", "success");
+				showAlert("Data imported successfully!", "success");
 			}
 		} catch (err) {
-			showAlert("Eroare la import.", "error");
+			showAlert("Failed to import data. Please try again.", "error");
 		}
 	};
 

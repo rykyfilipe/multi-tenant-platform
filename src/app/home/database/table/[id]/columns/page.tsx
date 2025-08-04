@@ -2,9 +2,10 @@
 
 "use client";
 
-import Loading from "@/components/loading";
+import { TableLoadingState } from "@/components/ui/loading-states";
 import TableEditor from "@/components/table/columns/TableEditor";
 import { useApp } from "@/contexts/AppContext";
+import { useDatabase } from "@/contexts/DatabaseContext";
 import TourProv from "@/contexts/TourProvider";
 import useTable from "@/hooks/useTable";
 import { StepType } from "@reactour/tour";
@@ -18,11 +19,24 @@ function Page() {
 
 	const { table, columns, setColumns, loading } = useTable(id);
 	const { user } = useApp();
+	const { selectedDatabase } = useDatabase();
 
-	if (loading) return <Loading message='table' />;
+	if (loading) return <TableLoadingState />;
+
+	if (!selectedDatabase) {
+		return (
+			<div className='p-4 text-center'>
+				<div className='text-red-500 mb-4'>No database selected</div>
+				<p className='text-muted-foreground'>
+					Please select a database from the dropdown to view this table.
+				</p>
+			</div>
+		);
+	}
 
 	if (!table)
 		return <div className='p-4 text-red-500'>Failed to load table.</div>;
+
 	const steps: StepType[] = [
 		{
 			selector: ".add-column-button",
@@ -98,12 +112,16 @@ function Page() {
 			},
 		},
 	];
+
 	return (
 		<TourProv steps={steps}>
-			<div className='max-w-8xl mx-auto p-6 bg-white shadow-md rounded-lg'>
-				<h1 className='text-2xl font-bold mb-2'>{table.name}</h1>
-
-				<TableEditor columns={columns} setColumns={setColumns} table={table} />
+			<div className='h-full bg-background'>
+				<TableEditor
+					table={table}
+					columns={columns}
+					setColumns={setColumns}
+					user={user}
+				/>
 			</div>
 		</TourProv>
 	);

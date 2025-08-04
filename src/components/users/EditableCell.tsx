@@ -73,7 +73,7 @@ export function EditableCell({
 					<Select
 						value={value ? "true" : "false"}
 						onValueChange={(v) => setValue(v === "true")}>
-						<SelectTrigger className='w-[100px]'>
+						<SelectTrigger className='w-[100px] h-8 text-sm'>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -83,7 +83,7 @@ export function EditableCell({
 					</Select>
 				) : isRole(value) ? (
 					<Select value={value} onValueChange={(v) => setValue(v as Role)}>
-						<SelectTrigger className='w-[150px]'>
+						<SelectTrigger className='w-[150px] h-8 text-sm'>
 							<SelectValue placeholder='Select role' />
 						</SelectTrigger>
 						<SelectContent>
@@ -96,7 +96,7 @@ export function EditableCell({
 					</Select>
 				) : (
 					<Input
-						className='w-max'
+						className='w-max h-8 text-sm'
 						type={getInputType(value)}
 						value={
 							isDate(value) ? String(value).slice(0, 10) : String(value ?? "")
@@ -113,14 +113,16 @@ export function EditableCell({
 					onClick={() => {
 						onSave(value);
 					}}
-					aria-label='Save'>
+					aria-label='Save'
+					className='h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50'>
 					✓
 				</Button>
 				<Button
 					variant='ghost'
 					size='sm'
 					onClick={onCancel}
-					aria-label='Cancel'>
+					aria-label='Cancel'
+					className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'>
 					✕
 				</Button>
 			</div>
@@ -139,8 +141,8 @@ export function EditableCell({
 		<div
 			onDoubleClick={onStartEdit}
 			title='Double-click to edit'
-			className={`cursor-pointer select-none ${
-				display === "Empty" ? "text-gray-500 italic text-start" : ""
+			className={`cursor-pointer select-none hover:bg-muted/30 px-2 py-1 rounded transition-colors ${
+				display === "Empty" ? "text-muted-foreground italic" : "text-foreground"
 			}`}>
 			{display}
 		</div>

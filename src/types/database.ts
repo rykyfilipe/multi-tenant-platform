@@ -1,6 +1,25 @@
 /** @format */
 
-export type FieldType = "string" | "boolean" | "date" | string[];
+export interface Database {
+	id: number;
+	name: string;
+	tenantId: number;
+	createdAt: string;
+	updatedAt: string;
+	tables?: Table[];
+}
+
+export interface Table {
+	id: number;
+	name: string;
+	databaseId: number;
+	description: string;
+	isPublic: boolean;
+	columns?: Column[];
+	rows?: Row[];
+	createdAt?: string;
+	updatedAt?: string;
+}
 
 export interface Column {
 	id: number;
@@ -10,65 +29,39 @@ export interface Column {
 	primary: boolean;
 	autoIncrement: boolean;
 	tableId: number;
-
-	referenceTableId?: number | null;
-	referenceTable?: Table[] | null;
-}
-
-export interface RowReference {
-	referencedTableId: number;
-	referencedRowId: number;
-}
-
-export interface Cell {
-	id: number;
-	rowId: number;
-	columnId: number;
-	value: string | number | boolean | Date | RowReference;
+	referenceTableId?: number;
 }
 
 export interface Row {
 	id: number;
 	tableId: number;
 	createdAt: string;
-	cells: Cell[];
+	cells?: Cell[];
 }
 
-export interface Table {
+export interface Cell {
 	id: number;
-	name: string;
-	databaseId: number;
-	description: string;
-	columns: Column[];
-	rows: Row[];
-	isPublic: boolean;
+	rowId: number;
+	columnId: number;
+	value: any;
 }
 
-export interface ColumnSchema {
+export interface CreateDatabaseRequest {
 	name: string;
-	type: "string" | "number" | "boolean" | "date" | "reference";
+}
+
+export interface CreateTableRequest {
+	name: string;
+	description: string;
+	isPublic?: boolean;
+	columns: CreateColumnRequest[];
+}
+
+export interface CreateColumnRequest {
+	name: string;
+	type: string;
 	required?: boolean;
 	primary?: boolean;
 	autoIncrement?: boolean;
-
-	// doar dacă type === "reference"
 	referenceTableId?: number;
-}
-
-export interface FieldMeta {
-	key: keyof ColumnSchema;
-	type: FieldType;
-	required: boolean;
-	label: string;
-	placeholder?: string;
-}
-
-export interface RowSchema {
-	createdAt: string;
-	cells: CellSchema[];
-}
-
-export interface CellSchema {
-	columnId: number;
-	value: string | number | boolean | Date | RowReference;
 }

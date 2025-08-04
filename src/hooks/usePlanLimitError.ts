@@ -16,7 +16,10 @@ export const usePlanLimitError = () => {
 
 	const handlePlanLimitError = (error: PlanLimitError) => {
 		// Afișăm mesajul de eroare
-		showAlert(error.error, "error");
+		showAlert(
+			error.error || "Plan limit exceeded. Please upgrade your plan.",
+			"warning",
+		);
 
 		// Dacă utilizatorul este pe planul Starter, îl redirecționăm la pagina de upgrade
 		if (error.plan && error.limit <= 1) {
@@ -29,21 +32,36 @@ export const usePlanLimitError = () => {
 
 	const handleApiError = (response: Response) => {
 		if (response.status === 403) {
-			response.json().then((data) => {
-				if (data.plan && data.limit !== undefined) {
-					handlePlanLimitError(data);
-				} else {
-					showAlert(data.error || "Access denied", "error");
-				}
-			}).catch(() => {
-				showAlert("Access denied", "error");
-			});
+			response
+				.json()
+				.then((data) => {
+					if (data.plan && data.limit !== undefined) {
+						handlePlanLimitError(data);
+					} else {
+						showAlert(
+							data.error || "Access denied. Please check your permissions.",
+							"error",
+						);
+					}
+				})
+				.catch(() => {
+					showAlert(
+						"Access denied. You don't have permission to perform this action.",
+						"error",
+					);
+				});
 		} else {
-			response.json().then((data) => {
-				showAlert(data.error || "An error occurred", "error");
-			}).catch(() => {
-				showAlert("An error occurred", "error");
-			});
+			response
+				.json()
+				.then((data) => {
+					showAlert(
+						data.error || "Server error. Please try again later.",
+						"error",
+					);
+				})
+				.catch(() => {
+					showAlert("An unexpected error occurred. Please try again.", "error");
+				});
 		}
 	};
 
@@ -51,4 +69,4 @@ export const usePlanLimitError = () => {
 		handlePlanLimitError,
 		handleApiError,
 	};
-}; 
+};

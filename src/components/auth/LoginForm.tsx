@@ -29,13 +29,22 @@ function LoginForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 			});
 
 			if (res?.ok) {
-				showAlert("Login succes", "success");
+				showAlert(
+					"Welcome back! You have been successfully logged in.",
+					"success",
+				);
 				closeForm(false);
 			} else {
-				showAlert("Login unsuccessful", "error");
+				showAlert(
+					"Login failed. Please check your credentials and try again.",
+					"error",
+				);
 			}
 		} catch (error: any) {
-			showAlert(error.message || "An error occurred during login.", "error");
+			showAlert(
+				"An unexpected error occurred during login. Please try again.",
+				"error",
+			);
 		} finally {
 			setLoading(false);
 		}

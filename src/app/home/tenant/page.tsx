@@ -3,55 +3,410 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import {
+	Building2,
+	Settings,
+	Users,
+	Database,
+	Globe,
+	Mail,
+	Phone,
+	MapPin,
+	ExternalLink,
+	Edit,
+	Plus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AddTenantForm from "@/components/tenant/AddTenantForm";
-import { useApp } from "@/contexts/AppContext";
-import Loading from "@/components/loading";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import AddTenantForm from "@/components/tenant/AddTenantForm";
+import TenantSettingsModal from "@/components/tenant/TenantSettingsModal";
+import { useApp } from "@/contexts/AppContext";
+import { TenantLoadingState } from "@/components/ui/loading-states";
+import Link from "next/link";
 
 function Page() {
-	const { user, loading, tenant } = useApp();
+	const { user, loading, tenant, token } = useApp();
 	const [showForm, setShowForm] = useState(false);
+	const [showSettings, setShowSettings] = useState(false);
+	const [tenantStats, setTenantStats] = useState({
+		users: 0,
+		tables: 0,
+		databases: 0,
+	});
+
+	// Fetch tenant statistics
+	const fetchTenantStats = async () => {
+		if (!token || !tenant) return;
+
+		try {
+			const [usersRes, databaseRes] = await Promise.all([
+				fetch(`/api/tenants/${tenant.id}/users`, {
+					headers: { Authorization: `Bearer ${token}` },
+				}),
+				fetch(`/api/tenants/${tenant.id}/database`, {
+					headers: { Authorization: `Bearer ${token}` },
+				}),
+			]);
+
+			if (usersRes.ok && databaseRes.ok) {
+				const users = await usersRes.json();
+				const database = await databaseRes.json();
+
+				setTenantStats({
+					users: users.length || 0,
+					tables: database?.tables?.length || 0,
+					databases: database ? 1 : 0,
+				});
+			}
+		} catch (error) {
+			console.error("Failed to fetch tenant stats:", error);
+		}
+	};
+
+	useEffect(() => {
+		if (tenant) {
+			fetchTenantStats();
+		}
+	}, [tenant, token]);
+
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+	};
+
+	if (loading) {
+		return <TenantLoadingState />;
+	}
+
+	if (!tenant) {
+		return (
+			<div className='h-full bg-background'>
+				{/* Header */}
+				<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
+					<div className='flex items-center justify-between px-6 py-4'>
+						<div className='flex items-center space-x-4'>
+							<div className='p-3 bg-primary/10 rounded-xl'>
+								<Building2 className='w-6 h-6 text-primary' />
+							</div>
+							<div>
+								<h1 className='text-xl font-semibold text-foreground'>
+									Organization Management
+								</h1>
+								<p className='text-sm text-muted-foreground'>
+									Create and manage your organization
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* Main Content */}
+				<div className='p-6 max-w-4xl mx-auto'>
+					<Card className='border border-border/20 bg-card/50 backdrop-blur-sm'>
+						<CardHeader className='text-center'>
+							<div className='p-4 bg-muted/30 rounded-full w-fit mx-auto mb-4'>
+								<Building2 className='w-8 h-8 text-muted-foreground' />
+							</div>
+							<CardTitle className='text-2xl'>No Organization Found</CardTitle>
+						</CardHeader>
+						<CardContent className='text-center space-y-4'>
+							<p className='text-muted-foreground'>
+								Create a new organization to start using the platform with your
+								team.
+							</p>
+							<Button
+								onClick={() => setShowForm(true)}
+								className='gap-2'
+								disabled={user?.role !== "ADMIN"}>
+								<Plus className='w-4 h-4' />
+								Create Organization
+							</Button>
+						</CardContent>
+					</Card>
+				</div>
+
+				{showForm && <AddTenantForm setShowForm={setShowForm} />}
+			</div>
+		);
+	}
 
 	return (
-		<div className='min-h-screen w-full bg-gradient-to-br from-gray-100 to-white flex items-center justify-center p-6'>
-			{loading ? (
-				<Loading message='Loading tenant...' />
-			) : tenant ? (
-				<Card className='w-full max-w-md shadow-xl'>
+		<div className='h-full bg-background'>
+			{/* Header */}
+			<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
+				<div className='flex items-center justify-between px-6 py-4'>
+					<div className='flex items-center space-x-4'>
+						<div className='p-3 bg-primary/10 rounded-xl'>
+							<Building2 className='w-6 h-6 text-primary' />
+						</div>
+						<div>
+							<h1 className='text-xl font-semibold text-foreground'>
+								{tenant.name}
+							</h1>
+							<p className='text-sm text-muted-foreground'>
+								Organization Management & Settings
+							</p>
+						</div>
+					</div>
+					<div className='flex items-center space-x-3'>
+						<Badge variant='secondary' className='text-xs'>
+							{user?.role}
+						</Badge>
+						<Button
+							onClick={() => setShowSettings(true)}
+							variant='outline'
+							size='sm'
+							className='gap-2'>
+							<Settings className='w-4 h-4' />
+							Settings
+						</Button>
+					</div>
+				</div>
+			</div>
+
+			{/* Main Content */}
+			<div className='p-6 max-w-7xl mx-auto space-y-6'>
+				{/* Overview Cards */}
+				<div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+					<Card className='border border-border/20 bg-card/50 backdrop-blur-sm'>
+						<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+							<CardTitle className='text-sm font-medium'>
+								Team Members
+							</CardTitle>
+							<Users className='h-4 w-4 text-muted-foreground' />
+						</CardHeader>
+						<CardContent>
+							<div className='text-2xl font-bold'>{tenantStats.users}</div>
+							<p className='text-xs text-muted-foreground'>
+								Active users in organization
+							</p>
+						</CardContent>
+					</Card>
+
+					<Card className='border border-border/20 bg-card/50 backdrop-blur-sm'>
+						<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+							<CardTitle className='text-sm font-medium'>Databases</CardTitle>
+							<Database className='h-4 w-4 text-muted-foreground' />
+						</CardHeader>
+						<CardContent>
+							<div className='text-2xl font-bold'>{tenantStats.databases}</div>
+							<p className='text-xs text-muted-foreground'>Active databases</p>
+						</CardContent>
+					</Card>
+
+					<Card className='border border-border/20 bg-card/50 backdrop-blur-sm'>
+						<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+							<CardTitle className='text-sm font-medium'>Tables</CardTitle>
+							<Database className='h-4 w-4 text-muted-foreground' />
+						</CardHeader>
+						<CardContent>
+							<div className='text-2xl font-bold'>{tenantStats.tables}</div>
+							<p className='text-xs text-muted-foreground'>
+								Total tables created
+							</p>
+						</CardContent>
+					</Card>
+				</div>
+
+				{/* Organization Details */}
+				<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+					{/* Basic Information */}
+					<Card className='border border-border/20 bg-card/50 backdrop-blur-sm'>
+						<CardHeader>
+							<CardTitle className='flex items-center gap-2'>
+								<Building2 className='w-5 h-5' />
+								Organization Information
+							</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-4'>
+							<div className='space-y-3'>
+								<div className='flex items-center justify-between'>
+									<span className='text-sm font-medium text-muted-foreground'>
+										Name
+									</span>
+									<span className='text-sm font-semibold'>{tenant.name}</span>
+								</div>
+								<Separator />
+								<div className='flex items-center justify-between'>
+									<span className='text-sm font-medium text-muted-foreground'>
+										Created
+									</span>
+									<span className='text-sm'>
+										{formatDate(tenant.createdAt)}
+									</span>
+								</div>
+								<Separator />
+								<div className='flex items-center justify-between'>
+									<span className='text-sm font-medium text-muted-foreground'>
+										Last Updated
+									</span>
+									<span className='text-sm'>
+										{formatDate(tenant.updatedAt)}
+									</span>
+								</div>
+								{tenant.timezone && (
+									<>
+										<Separator />
+										<div className='flex items-center justify-between'>
+											<span className='text-sm font-medium text-muted-foreground'>
+												Timezone
+											</span>
+											<span className='text-sm flex items-center gap-1'>
+												<Globe className='w-3 h-3' />
+												{tenant.timezone}
+											</span>
+										</div>
+									</>
+								)}
+								{tenant.language && (
+									<>
+										<Separator />
+										<div className='flex items-center justify-between'>
+											<span className='text-sm font-medium text-muted-foreground'>
+												Language
+											</span>
+											<span className='text-sm'>
+												{tenant.language.toUpperCase()}
+											</span>
+										</div>
+									</>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* Contact Information */}
+					<Card className='border border-border/20 bg-card/50 backdrop-blur-sm'>
+						<CardHeader>
+							<CardTitle className='flex items-center gap-2'>
+								<Mail className='w-5 h-5' />
+								Contact Information
+							</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-4'>
+							{tenant.companyEmail ? (
+								<div className='flex items-center gap-3 p-3 bg-muted/30 rounded-lg'>
+									<Mail className='w-4 h-4 text-muted-foreground' />
+									<div className='flex-1'>
+										<p className='text-sm font-medium'>{tenant.companyEmail}</p>
+										<p className='text-xs text-muted-foreground'>
+											Company Email
+										</p>
+									</div>
+								</div>
+							) : (
+								<div className='text-center py-6 text-muted-foreground'>
+									<Mail className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-sm'>No company email set</p>
+								</div>
+							)}
+
+							{tenant.phone ? (
+								<div className='flex items-center gap-3 p-3 bg-muted/30 rounded-lg'>
+									<Phone className='w-4 h-4 text-muted-foreground' />
+									<div className='flex-1'>
+										<p className='text-sm font-medium'>{tenant.phone}</p>
+										<p className='text-xs text-muted-foreground'>
+											Phone Number
+										</p>
+									</div>
+								</div>
+							) : (
+								<div className='text-center py-6 text-muted-foreground'>
+									<Phone className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-sm'>No phone number set</p>
+								</div>
+							)}
+
+							{tenant.website ? (
+								<div className='flex items-center gap-3 p-3 bg-muted/30 rounded-lg'>
+									<ExternalLink className='w-4 h-4 text-muted-foreground' />
+									<div className='flex-1'>
+										<p className='text-sm font-medium'>{tenant.website}</p>
+										<p className='text-xs text-muted-foreground'>Website</p>
+									</div>
+								</div>
+							) : (
+								<div className='text-center py-6 text-muted-foreground'>
+									<ExternalLink className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-sm'>No website set</p>
+								</div>
+							)}
+
+							{tenant.address ? (
+								<div className='flex items-center gap-3 p-3 bg-muted/30 rounded-lg'>
+									<MapPin className='w-4 h-4 text-muted-foreground' />
+									<div className='flex-1'>
+										<p className='text-sm font-medium'>{tenant.address}</p>
+										<p className='text-xs text-muted-foreground'>Address</p>
+									</div>
+								</div>
+							) : (
+								<div className='text-center py-6 text-muted-foreground'>
+									<MapPin className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-sm'>No address set</p>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				</div>
+
+				{/* Quick Actions */}
+				<Card className='border border-border/20 bg-card/50 backdrop-blur-sm'>
 					<CardHeader>
-						<CardTitle className='text-center text-2xl text-primary'>
-							Welcome to {tenant.name}
-						</CardTitle>
+						<CardTitle>Quick Actions</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className='text-center text-muted-foreground'>
-							You are associated with this tenant.
-						</p>
+						<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+							<Link href='/home/users'>
+								<Button
+									variant='outline'
+									className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
+									<Users className='w-5 h-5' />
+									<span>Manage Users</span>
+									<span className='text-xs text-muted-foreground'>
+										Add, remove, or edit team members
+									</span>
+								</Button>
+							</Link>
+							<Link href='/home/database'>
+								<Button
+									variant='outline'
+									className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
+									<Database className='w-5 h-5' />
+									<span>View Database</span>
+									<span className='text-xs text-muted-foreground'>
+										Access your organization's data
+									</span>
+								</Button>
+							</Link>
+							<Button
+								variant='outline'
+								className='h-auto p-4 flex flex-col items-center gap-2'
+								onClick={() => setShowSettings(true)}>
+								<Settings className='w-5 h-5' />
+								<span>Organization Settings</span>
+								<span className='text-xs text-muted-foreground'>
+									Configure preferences and branding
+								</span>
+							</Button>
+						</div>
 					</CardContent>
 				</Card>
-			) : (
-				<Card className='w-full max-w-md shadow-lg animate-in fade-in duration-300'>
-					<CardHeader>
-						<CardTitle className='text-center'>No Tenant Found</CardTitle>
-					</CardHeader>
-					<CardContent className='flex flex-col items-center gap-4'>
-						<p className='text-center text-muted-foreground'>
-							Create a new tenant to continue using the platform.
-						</p>
-						<Button
-							onClick={() => setShowForm(true)}
-							className='gap-2'
-							disabled={user?.role !== "ADMIN"}>
-							<Plus className='w-4 h-4' />
-							Create Tenant
-						</Button>
-					</CardContent>
-				</Card>
-			)}
+			</div>
 
 			{showForm && <AddTenantForm setShowForm={setShowForm} />}
+			{showSettings && (
+				<TenantSettingsModal
+					tenant={tenant}
+					onClose={() => setShowSettings(false)}
+				/>
+			)}
 		</div>
 	);
 }

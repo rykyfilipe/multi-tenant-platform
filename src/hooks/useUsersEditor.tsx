@@ -28,7 +28,10 @@ function useUsersEditor() {
 		setUsers: (users: User[]) => void,
 		value: any,
 		token: string,
-		showAlert: (message: string, type: "error" | "success") => void,
+		showAlert: (
+			message: string,
+			type: "error" | "success" | "warning" | "info",
+		) => void,
 	) => {
 		try {
 			const response = await fetch(`/api/tenants/${tenantId}/users/${userId}`, {
@@ -55,9 +58,12 @@ function useUsersEditor() {
 
 			setUsers(updatedUsers);
 			setEditingCell(null);
-			showAlert("User field updated successfully", "success");
+			showAlert("User information updated successfully", "success");
 		} catch (error) {
-			showAlert("Error updating field", "error");
+			showAlert(
+				"Failed to update user information. Please try again.",
+				"error",
+			);
 		}
 	};
 

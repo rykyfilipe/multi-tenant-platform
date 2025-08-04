@@ -32,11 +32,14 @@ function useRowsTableEditor() {
 		table: any,
 		token: string,
 		user: any,
-		showAlert: (message: string, type: "error" | "success") => void,
+		showAlert: (
+			message: string,
+			type: "error" | "success" | "warning" | "info",
+		) => void,
 	) => {
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/tables/${table.id}/rows/${rowId}/cell/${cellId}`,
+				`/api/tenants/${tenantId}/database/${table.databaseId}/tables/${table.id}/rows/${rowId}/cell/${cellId}`,
 				{
 					method: "PATCH",
 					headers: {
@@ -98,7 +101,7 @@ function useRowsTableEditor() {
 			// setTables(updatedTables || []);
 
 			setEditingCell(null);
-			showAlert("Cell updated successfully", "success");
+			showAlert("Data cell updated successfully", "success");
 		} catch (error: any) {
 			// Gestionează diferite tipuri de erori
 			let errorMessage = "An unexpected error occurred";

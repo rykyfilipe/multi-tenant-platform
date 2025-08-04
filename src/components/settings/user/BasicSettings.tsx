@@ -47,9 +47,12 @@ function BasicSettings({ user }: Props) {
 				throw new Error("Update failed");
 			}
 
-			showAlert("Succes la update user data", "success");
+			showAlert("Profile information updated successfully!", "success");
 		} catch (error) {
-			showAlert("Erroare la update user data", "error");
+			showAlert(
+				"Failed to update profile information. Please try again.",
+				"error",
+			);
 		}
 	};
 
@@ -81,7 +84,7 @@ function BasicSettings({ user }: Props) {
 
 	const renderField = (label: string, field: EditableField) => (
 		<div className='space-y-2'>
-			<Label className="text-sm font-medium text-gray-700">{label}</Label>
+			<Label className='text-sm font-medium text-gray-700'>{label}</Label>
 			{editingField === field ? (
 				<div className='flex items-center gap-2'>
 					<Input
@@ -96,7 +99,7 @@ function BasicSettings({ user }: Props) {
 							variant='default'
 							size='sm'
 							onClick={() => handleSave(field)}
-							className="px-4">
+							className='px-4'>
 							Save
 						</Button>
 						<Button
@@ -111,17 +114,17 @@ function BasicSettings({ user }: Props) {
 									role: user.role,
 								});
 							}}
-							className="px-4">
+							className='px-4'>
 							Cancel
 						</Button>
 					</div>
 				</div>
 			) : (
-				<div 
+				<div
 					className='p-3 bg-gray-50 rounded-lg border cursor-pointer hover:bg-gray-100 transition-colors'
 					onClick={() => setEditingField(field)}>
-					<span className="text-sm text-gray-900">{editedValues[field!]}</span>
-					<p className="text-xs text-gray-500 mt-1">Click to edit</p>
+					<span className='text-sm text-gray-900'>{editedValues[field!]}</span>
+					<p className='text-xs text-gray-500 mt-1'>Click to edit</p>
 				</div>
 			)}
 		</div>
@@ -141,10 +144,25 @@ function BasicSettings({ user }: Props) {
 
 			if (!response.ok) {
 				if (response.status === 409)
-					showAlert("User still has a tenant", "error");
-			} else showAlert("Account deleted successfully", "success");
+					showAlert(
+						"Cannot delete account while you still have active data. Please contact support.",
+						"error",
+					);
+			} else {
+				const message =
+					user.role === "ADMIN"
+						? "Account and tenant deleted successfully. You will be logged out."
+						: "Account deleted successfully. You will be logged out.";
+				showAlert(message, "success");
+				setTimeout(() => {
+					window.location.href = "/";
+				}, 2000);
+			}
 		} catch (error) {
-			showAlert("Error deleting user", "error");
+			showAlert(
+				"Failed to delete account. Please try again or contact support.",
+				"error",
+			);
 		}
 	};
 
@@ -155,13 +173,13 @@ function BasicSettings({ user }: Props) {
 				{renderField("First Name", "firstName")}
 				{renderField("Last Name", "lastName")}
 			</div>
-			
+
 			{renderField("Email", "email")}
-			
+
 			<div className='space-y-1'>
-				<Label className="text-sm font-medium text-gray-700">Role</Label>
-				<div className="mt-1 p-3 bg-gray-50 rounded-lg border">
-					<span className="text-sm text-gray-900 font-medium">{user.role}</span>
+				<Label className='text-sm font-medium text-gray-700'>Role</Label>
+				<div className='mt-1 p-3 bg-gray-50 rounded-lg border'>
+					<span className='text-sm text-gray-900 font-medium'>{user.role}</span>
 				</div>
 			</div>
 
@@ -169,10 +187,12 @@ function BasicSettings({ user }: Props) {
 			<div className='pt-6 border-t'>
 				<div className='flex items-center justify-between'>
 					<div>
-						<h3 className="text-lg font-medium text-gray-900">Danger Zone</h3>
-						<p className="text-sm text-gray-600">Permanently delete your account and all associated data.</p>
+						<h3 className='text-lg font-medium text-gray-900'>Danger Zone</h3>
+						<p className='text-sm text-gray-600'>
+							Permanently delete your account and all associated data.
+						</p>
 					</div>
-					<DeleteAccountButton onDelete={handleDelete} />
+					<DeleteAccountButton onDelete={handleDelete} user={user} />
 				</div>
 			</div>
 		</div>

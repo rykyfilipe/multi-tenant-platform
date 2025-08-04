@@ -40,10 +40,10 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 				const data = await response.json();
 
 				setUsers(data);
-				showAlert("Users data loaded", "success");
+				showAlert("Users data loaded successfully", "success");
 			} catch (e) {
 				setLoading(false);
-				showAlert("Failed to load users", "error");
+				showAlert("Failed to load users. Please refresh the page.", "error");
 			} finally {
 				setLoading(false);
 			}
@@ -77,10 +77,10 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 			const updatedUsers = users?.filter((u) => u.id !== data.id);
 			setUsers([...(updatedUsers || []), data]);
 
-			showAlert(`User ${data.firstName} ${data.lastName} updated`, "success");
+			showAlert(`User ${data.firstName} ${data.lastName} updated successfully`, "success");
 		} catch (error) {
 			const errorMessage =
-				error instanceof Error ? error.message : "An unknown error occurred";
+				error instanceof Error ? error.message : "Failed to update user information. Please try again.";
 			showAlert(errorMessage, "error");
 		}
 	};

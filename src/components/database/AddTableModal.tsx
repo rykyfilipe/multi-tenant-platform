@@ -93,22 +93,27 @@ export default function AddTableModal({
 		},
 	];
 	return (
-		<div className='fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 animate-in fade-in'>
-			<div className='bg-white  shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden'>
-				<div className='flex items-center justify-between p-6 border-b border-gray-200'>
-					<h2 className='text-2xl font-bold text-gray-900'>
-						{name ? name : "Create new Table"}
-					</h2>
+		<div className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in'>
+			<div className='bg-background border border-border/20 shadow-2xl rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden'>
+				<div className='flex items-center justify-between p-6 border-b border-border/20'>
+					<div>
+						<h2 className='text-xl font-semibold text-foreground'>
+							{name ? name : "Create New Table"}
+						</h2>
+						<p className='text-sm text-muted-foreground mt-1'>
+							Define your table structure and properties
+						</p>
+					</div>
 					<Button
 						variant='ghost'
 						size='sm'
 						onClick={onClose}
-						className='text-gray-400 hover:text-gray-600'>
-						<X className='h-6 w-6' />
+						className='text-muted-foreground hover:text-foreground hover:bg-muted/50'>
+						<X className='h-5 w-5' />
 					</Button>
 				</div>
 
-				<div className='p-6 overflow-y-auto max-h-[calc(90vh-80px)]'>
+				<div className='p-6 overflow-y-auto max-h-[calc(90vh-120px)]'>
 					<TableBasicsForm
 						name={name}
 						setName={setName}

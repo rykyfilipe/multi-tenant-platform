@@ -2,7 +2,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Table, ColumnSchema, Column, FieldMeta } from "@/types/database";
+import { Table, CreateColumnRequest, Column } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import AddColumnForm from "./AddColumnForm";
 import { TableView } from "./TableView";
@@ -27,9 +27,9 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	if (!token || !user) return;
 	const [showForm, setShowForm] = useState(false);
 
-	const [newColumn, setNewColumn] = useState<ColumnSchema | null>(null);
+	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
 
-	const columnSchemaMeta: FieldMeta[] = useMemo(
+	const columnSchemaMeta = useMemo(
 		() => [
 			{
 				key: "name",
@@ -87,14 +87,17 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		if (!token) return console.error("No token available");
 
 		if (!validateColumn()) {
-			showAlert("This column already exists", "error");
+			showAlert(
+				"A column with this name already exists. Please choose a different name.",
+				"error",
+			);
 			return;
 		}
-		console.log(newColumn);
+		// Debug logging removed for production
 
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/tables/${table.id}/columns`,
+				`/api/tenants/${tenantId}/database/${table.databaseId}/tables/${table.id}/columns`,
 				{
 					method: "POST",
 					headers: {
@@ -104,19 +107,25 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 					body: JSON.stringify({ columns: [newColumn] }),
 				},
 			);
-			console.log(response);
+			// Debug logging removed for production
 
 			if (!response.ok) throw new Error("Failed to add column");
 
 			const data = await response.json();
 
-			showAlert("Column added successfully", "success");
+			showAlert(
+				"Column added successfully! You can now start adding data.",
+				"success",
+			);
 
 			setColumns([...(columns || []), data.newColumn]);
 
 			setNewColumn(null);
 		} catch (error) {
-			showAlert("Error adding column", "error");
+			showAlert(
+				"Failed to add column. Please check your configuration and try again.",
+				"error",
+			);
 		}
 	}
 
@@ -139,15 +148,15 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				(col) => col.id !== Number(columnId),
 			);
 			setColumns(updatedColumns);
-			showAlert("Column deleted successfully", "success");
+			showAlert("Column removed successfully", "success");
 		} catch (error) {
-			showAlert("Error deleting column", "error");
+			showAlert("Failed to remove column. Please try again.", "error");
 		}
 	};
 
 	const handleSaveCellWrapper = (
 		columnId: string,
-		fieldName: keyof ColumnSchema,
+		fieldName: keyof CreateColumnRequest,
 		value: any,
 	) => {
 		handleSaveCell(
@@ -174,11 +183,22 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
-			if (!response.ok) throw new Error("Failed to fetch database");
+			if (!response.ok) throw new Error("Failed to fetch databases");
 			const data = await response.json();
-			setTables(data.tables);
+			if (data && data.length > 0) {
+				// Găsim baza de date care conține tabela curentă
+				const currentDatabase = data.find((db: any) =>
+					db.tables.some((t: any) => t.id === table.id),
+				);
+				if (currentDatabase) {
+					setTables(currentDatabase.tables || []);
+				}
+			}
 		} catch (error) {
-			showAlert("Error loading database", "error");
+			showAlert(
+				"Failed to load database information. Please refresh the page.",
+				"error",
+			);
 		}
 	};
 	const { setIsOpen, setCurrentStep, isOpen, currentStep } = useTour();
@@ -223,39 +243,55 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	}, [currentStep]);
 	return (
 		<div className='space-y-6'>
-			<div className='w-full flex flex-col-reverse  xs:flex-row  justify-between items-center mb-4 gap-2'>
-				<Button
-					onClick={() => setShowForm((prev) => !prev)}
-					className={`add-column-button ${
-						user.role === "VIEWER" && "opacity-0"
-					}`}>
-					{showForm ? <X /> : "Add new column"}
-				</Button>
+			{/* Header Actions */}
+			<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
+				<div className='flex items-center space-x-3'>
+					<Button
+						onClick={() => setShowForm((prev) => !prev)}
+						className={`add-column-button ${
+							user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
+						}`}>
+						{showForm ? <X className='w-4 h-4' /> : "Add Column"}
+					</Button>
+					{showForm && (
+						<span className='text-sm text-muted-foreground'>
+							Fill in the form below to add a new column
+						</span>
+					)}
+				</div>
 				<Link
 					href={`/home/database/table/${table.id}/rows`}
 					className='rows-button'>
 					<Button variant='outline' size='sm'>
-						Edit rows
+						Manage Rows
 					</Button>
 				</Link>
 			</div>
+
+			{/* Add Column Form */}
 			{showForm && (
-				<AddColumnForm
-					setNewColumn={setNewColumn}
-					newColumn={newColumn}
-					onAdd={handleAdd}
-					tables={tables}
-				/>
+				<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg p-6'>
+					<AddColumnForm
+						setNewColumn={setNewColumn}
+						newColumn={newColumn}
+						onAdd={handleAdd}
+						tables={tables}
+					/>
+				</div>
 			)}
-			<TableView
-				tables={tables}
-				columns={columns || []}
-				editingCell={editingCell}
-				onEditCell={handleEditCell}
-				onSaveCell={handleSaveCellWrapper}
-				onCancelEdit={handleCancelEdit}
-				onDeleteColumn={handleDelete}
-			/>
+
+			{/* Columns Table */}
+			<div className='table-content'>
+				<TableView
+					tables={tables}
+					columns={columns || []}
+					editingCell={editingCell}
+					onEditCell={handleEditCell}
+					onSaveCell={handleSaveCellWrapper}
+					onCancelEdit={handleCancelEdit}
+					onDeleteColumn={handleDelete}
+				/>
+			</div>
 		</div>
 	);
 }

@@ -28,7 +28,10 @@ function useColumnsTableEditor() {
 		table: any,
 		token: string,
 		user: any,
-		showAlert: (message: string, type: "error" | "success") => void,
+		showAlert: (
+			message: string,
+			type: "error" | "success" | "warning" | "info",
+		) => void,
 	) => {
 		try {
 			// Update local state first
@@ -46,7 +49,7 @@ function useColumnsTableEditor() {
 			}
 
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/tables/${table.id}/columns/${columnId}`,
+				`/api/tenants/${tenantId}/database/${table.databaseId}/tables/${table.id}/columns/${columnId}`,
 				{
 					method: "PATCH",
 					headers: {
@@ -62,12 +65,15 @@ function useColumnsTableEditor() {
 
 			if (!response.ok) throw new Error("Failed to update column");
 
-			showAlert("Column updated successfully", "success");
+			showAlert("Column configuration updated successfully", "success");
 			setEditingCell(null);
 		} catch (error) {
 			// Revert local state on error
 			setColumns([...columns]);
-			showAlert("Error updating column", "error");
+			showAlert(
+				"Failed to update column configuration. Please try again.",
+				"error",
+			);
 		}
 	};
 
