@@ -22,6 +22,9 @@ model Tenant {
   timezone          String?
   updatedAt         DateTime           @updatedAt
   website           String?
+  memoryUsedGB      Float              @default(0)
+  memoryLimitGB     Float              @default(1)
+  lastMemoryUpdate  DateTime?
   columnPermissions ColumnPermission[]
   databases         Database[]
   tablePermissions  TablePermission[]

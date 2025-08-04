@@ -145,7 +145,7 @@ export const updateTenantMemoryUsage = async (
 			usedGB: calculation.estimatedSizeGB,
 			limitGB: memoryLimitGB,
 			percentage: Math.min(percentage, 100), // Cap at 100%
-			lastUpdate: updatedTenant.lastMemoryUpdate,
+			lastUpdate: updatedTenant.lastMemoryUpdate || new Date(),
 		};
 	} catch (error) {
 		console.error("Error updating tenant storage usage:", error);
@@ -174,7 +174,7 @@ export const getTenantMemoryUsage = async (
 			usedGB: tenant.memoryUsedGB,
 			limitGB: tenant.memoryLimitGB,
 			percentage: Math.min(percentage, 100),
-			lastUpdate: tenant.lastMemoryUpdate,
+			lastUpdate: tenant.lastMemoryUpdate || new Date(),
 		};
 	} catch (error) {
 		console.error("Error getting tenant storage usage:", error);

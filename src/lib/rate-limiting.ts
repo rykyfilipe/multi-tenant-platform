@@ -71,7 +71,10 @@ export function createRateLimiter(config: RateLimitConfig) {
 
 function getClientIdentifier(request: NextRequest): string {
 	// Use IP address as primary identifier
-	const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown";
+	const ip = request.headers.get("x-forwarded-for") || 
+	           request.headers.get("x-real-ip") || 
+	           request.headers.get("cf-connecting-ip") || 
+	           "unknown";
 	
 	// Add user agent for additional uniqueness
 	const userAgent = request.headers.get("user-agent") || "";
