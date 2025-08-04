@@ -33,13 +33,16 @@ export const usePermissions = (userId: string) => {
 
 			if (response.ok) {
 				const data = await response.json();
+				console.log("Permissions data received:", data);
 				setPermissions({
 					tablePermissions: data.tablePermissions || [],
 					columnsPermissions: data.columnsPermissions || [],
 				});
 				showAlert("Permissions loaded successfully", "success");
 			} else {
-				throw new Error("Failed to load permissions");
+				const errorText = await response.text();
+				console.error("Permissions fetch failed:", response.status, errorText);
+				throw new Error(`Failed to load permissions: ${response.status}`);
 			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Unknown error");
@@ -72,10 +75,14 @@ export const usePermissions = (userId: string) => {
 			);
 
 			if (response.ok) {
+				const result = await response.json();
+				console.log("Permissions save result:", result);
 				showAlert("Permissions saved successfully", "success");
 				return true;
 			} else {
-				throw new Error("Failed to save permissions");
+				const errorText = await response.text();
+				console.error("Permissions save failed:", response.status, errorText);
+				throw new Error(`Failed to save permissions: ${response.status}`);
 			}
 		} catch (err) {
 			showAlert("Failed to save permissions. Please try again.", "error");
@@ -109,8 +116,10 @@ export const useTables = () => {
 
 		try {
 			setLoading(true);
+			console.log("useTables - Fetching tables for tenant:", tenant.id);
+
 			const response = await fetch(
-				`/api/tenants/${tenant.id}/database/tables`,
+				`/api/tenants/${tenant.id}/databases/tables`,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -121,11 +130,19 @@ export const useTables = () => {
 
 			if (response.ok) {
 				const data = await response.json();
+				console.log("useTables - Received tables:", data?.length || 0);
 				setTables(data || []);
 			} else {
-				throw new Error("Failed to load tables");
+				const errorText = await response.text();
+				console.error(
+					"useTables - Failed to load tables:",
+					response.status,
+					errorText,
+				);
+				throw new Error(`Failed to load tables: ${response.status}`);
 			}
 		} catch (err) {
+			console.error("useTables - Error:", err);
 			setError(err instanceof Error ? err.message : "Unknown error");
 			showAlert("Failed to load tables. Please refresh the page.", "error");
 		} finally {

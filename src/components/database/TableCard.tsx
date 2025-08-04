@@ -23,7 +23,7 @@ function TableCard({ table }: { table: Table }) {
 		setIsUpdatingPublic(true);
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenant.id}/database/${table.databaseId}/tables/${table.id}/public`,
+				`/api/tenants/${tenant.id}/databases/${table.databaseId}/tables/${table.id}/public`,
 				{
 					method: "PATCH",
 					headers: {

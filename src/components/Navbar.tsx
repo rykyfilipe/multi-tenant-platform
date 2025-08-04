@@ -126,7 +126,7 @@ export function AppSidebar() {
 									}`}>
 									<Link
 										href={item.url}
-										className='flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors'>
+										className=' flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors'>
 										<item.icon className='w-5 h-5' />
 										<span className='text-sm font-medium'>{item.title}</span>
 									</Link>
@@ -174,7 +174,7 @@ export function AppSidebar() {
 							)}
 						</Button>
 						<Button
-							onClick={handleSignOut}
+							onClick={() => (window.location.href = "/")}
 							variant='ghost'
 							size='sm'
 							className='flex-1'>

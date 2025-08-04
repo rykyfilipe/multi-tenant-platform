@@ -5,9 +5,9 @@
 
 /* Professional Data Management App Styles */
 
-/* Global default cursor - Black cursor for light theme */
+/* Global default cursor - Uses CSS variable for theme switching */
 * {
-	cursor: url("/cursor-black.png"), auto;
+	cursor: var(--cursor) !important;
 }
 
 /* Radix UI portals & popper content */
@@ -15,7 +15,7 @@
 [data-radix-portal],
 [data-radix-popper-content-wrapper] *,
 [data-radix-portal] * {
-	cursor: url("/cursor-black.png"), auto;
+	cursor: var(--cursor);
 }
 
 /* All input types explicit */
@@ -31,12 +31,12 @@ textarea,
 select,
 button,
 a {
-	cursor: url("/cursor-black.png"), auto;
+	cursor: var(--cursor);
 }
 
 /* Webkit pseudo-elements (pentru calendarul din input[type="date"]) */
 input[type="date"]::-webkit-calendar-picker-indicator {
-	cursor: url("/cursor-black.png"), auto;
+	cursor: var(--cursor);
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -90,6 +90,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 :root {
 	--radius: 1rem;
 
+	/* Cursor for light theme */
+	--cursor: url("/cursor-black.png"), auto;
+
 	/* Premium Light Theme - Neumorphic */
 	--background: oklch(0.92 0.005 240); /* #eaeaea */
 	--foreground: oklch(0.15 0.01 240); /* #26282b */
@@ -142,7 +145,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	--foreground: oklch(0.98 0.005 240); /* Very bright text */
 
 	/* Dark theme cursor - White cursor for better visibility */
-	--cursor: url("/cursor-white.png"), auto;
+	--cursor: url("/cursor-white.svg"), auto;
 	--card: oklch(0.1 0.01 240); /* Clear card distinction */
 	--card-foreground: oklch(0.98 0.005 240);
 	--popover: oklch(0.1 0.01 240);
@@ -193,37 +196,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	body {
 		@apply bg-background text-foreground font-sans antialiased;
 		line-height: 1.6;
-	}
-
-	/* Dark theme cursor override */
-	.dark * {
-		cursor: var(--cursor);
-	}
-
-	.dark [data-radix-popper-content-wrapper],
-	.dark [data-radix-portal],
-	.dark [data-radix-popper-content-wrapper] *,
-	.dark [data-radix-portal] * {
-		cursor: var(--cursor);
-	}
-
-	.dark input,
-	.dark input[type="text"],
-	.dark input[type="number"],
-	.dark input[type="date"],
-	.dark input[type="time"],
-	.dark input[type="email"],
-	.dark input[type="search"],
-	.dark input[type="password"],
-	.dark textarea,
-	.dark select,
-	.dark button,
-	.dark a {
-		cursor: var(--cursor);
-	}
-
-	.dark input[type="date"]::-webkit-calendar-picker-indicator {
-		cursor: var(--cursor);
 	}
 
 	/* Professional Typography */

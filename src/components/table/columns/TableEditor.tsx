@@ -73,8 +73,13 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		[],
 	);
 
-	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
-		useColumnsTableEditor();
+	const {
+		editingCell,
+		handleCancelEdit,
+		handleEditCell,
+		handleSaveCell,
+		handleDeleteColumn,
+	} = useColumnsTableEditor();
 
 	const validateColumn = () => {
 		return !columns.find((col) => col.name === newColumn?.name);
@@ -97,7 +102,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/${table.databaseId}/tables/${table.id}/columns`,
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns`,
 				{
 					method: "POST",
 					headers: {
@@ -112,14 +117,16 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			if (!response.ok) throw new Error("Failed to add column");
 
 			const data = await response.json();
+			console.log(data);
 
 			showAlert(
 				"Column added successfully! You can now start adding data.",
 				"success",
 			);
 
-			setColumns([...(columns || []), data.newColumn]);
-
+			// Handle both single column and array of columns
+			const newColumns = Array.isArray(data) ? data : [data];
+			setColumns([...(columns || []), ...newColumns]);
 			setNewColumn(null);
 		} catch (error) {
 			showAlert(
@@ -129,29 +136,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		}
 	}
 
-	const handleDelete = async (columnId: string) => {
-		try {
-			const response = await fetch(
-				`/api/tenants/${tenantId}/database/tables/${table.id}/columns/${columnId}`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-				},
-			);
-
-			if (!response.ok) throw new Error("Failed to delete column");
-
-			const updatedColumns: Column[] = columns.filter(
-				(col) => col.id !== Number(columnId),
-			);
-			setColumns(updatedColumns);
-			showAlert("Column removed successfully", "success");
-		} catch (error) {
-			showAlert("Failed to remove column. Please try again.", "error");
-		}
+	const handleDeleteWrapper = (columnId: string) => {
+		handleDeleteColumn(columnId, columns, setColumns, table, token, showAlert);
 	};
 
 	const handleSaveCellWrapper = (
@@ -179,7 +165,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	const fetchDatabase = async () => {
 		if (!tenant || !user || !token) return;
 		try {
-			const response = await fetch(`/api/tenants/${tenant.id}/database`, {
+			const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
@@ -289,7 +275,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 					onEditCell={handleEditCell}
 					onSaveCell={handleSaveCellWrapper}
 					onCancelEdit={handleCancelEdit}
-					onDeleteColumn={handleDelete}
+					onDeleteColumn={handleDeleteWrapper}
 				/>
 			</div>
 		</div>

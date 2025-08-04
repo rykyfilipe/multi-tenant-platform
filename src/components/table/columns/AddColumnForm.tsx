@@ -218,6 +218,7 @@ export default function AddColumnForm({
 				type: tables.map((t) => t.id.toString()) as readonly string[],
 				required: true,
 				label: "Reference Table",
+				placeholder: "Select a table to reference",
 				referenceOptions: tables.map((t) => ({
 					value: t.id,
 					label: t.name,
@@ -238,9 +239,15 @@ export default function AddColumnForm({
 	);
 
 	const isFormValid = useMemo(() => {
-		return (
-			currentColumn.name.trim().length > 0 && currentColumn.type.length > 0
-		);
+		const hasValidName = currentColumn.name.trim().length > 0;
+		const hasValidType = currentColumn.type.length > 0;
+		const hasValidReference =
+			currentColumn.type === "reference"
+				? currentColumn.referenceTableId !== undefined &&
+				  currentColumn.referenceTableId !== null
+				: true;
+
+		return hasValidName && hasValidType && hasValidReference;
 	}, [currentColumn]);
 
 	return (
@@ -272,6 +279,14 @@ export default function AddColumnForm({
 					<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
 						<p className='text-sm text-blue-800'>
 							💡 Primary keys are usually required
+						</p>
+					</div>
+				)}
+
+				{currentColumn.type === "reference" && !currentColumn.referenceTableId && (
+					<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+						<p className='text-sm text-amber-800'>
+							⚠️ Please select a reference table for this column
 						</p>
 					</div>
 				)}

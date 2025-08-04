@@ -79,10 +79,10 @@ const createReferenceData = (tables: Table[] | null) => {
 
 					const displayValue = displayParts.length
 						? displayParts.join(" • ").slice(0, 50)
-						: `Row #${row.id}`;
+						: `Row #${row.id || "unknown"}`;
 
 					options.push({
-						id: row.id,
+						id: row.id || 0,
 						displayValue,
 					});
 				}
@@ -104,6 +104,11 @@ export function EditableCell({
 	onCancel,
 	tables,
 }: Props) {
+	// Handle cases where cell might be undefined or missing properties
+	if (!cell || !cell.columnId) {
+		return <div className='text-gray-400 italic'>Empty</div>;
+	}
+
 	const [value, setValue] = useState<any>(cell.value);
 	const column = columns?.find((col) => col.id === cell.columnId);
 	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
@@ -117,6 +122,7 @@ export function EditableCell({
 	let referenceSelect: JSX.Element | null = null;
 	if (column.type === "reference") {
 		const options = referenceData[column.referenceTableId ?? -1] ?? [];
+		
 		const referencedTable = tables?.find(
 			(t) => t.id === column.referenceTableId,
 		);
@@ -153,8 +159,10 @@ export function EditableCell({
 
 				{process.env.NODE_ENV === "development" && (
 					<div className=' text-xs text-muted-foreground'>
-						Table: {referencedTable?.name} (ID: {column.referenceTableId}),
-						Options: {options.length}
+						Table:{" "}
+						{referencedTable?.name ||
+							`Unknown (ID: ${column.referenceTableId})`}
+						, Options: {options.length}
 					</div>
 				)}
 			</div>

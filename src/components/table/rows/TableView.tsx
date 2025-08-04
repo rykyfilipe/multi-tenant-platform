@@ -76,55 +76,89 @@ export function TableView({
 									</td>
 								</tr>
 							) : (
-								rows.map((row) => (
-									<tr key={row.id}>
-										{columns.map((col) => {
-											const cell = row.cells?.find(
-												(cell) => cell.columnId === col.id,
-											);
-											if (!cell) return;
-											return (
-												<td key={crypto.randomUUID()}>
-													<EditableCell
-														columns={columns}
-														cell={cell}
-														tables={tables}
-														isEditing={
-															editingCell?.rowId === row.id.toFixed(0) &&
-															Number(editingCell.columnId) === col.id
-														}
-														onStartEdit={() => {
-															onEditCell(
-																cell.rowId.toString(),
-																cell.columnId.toString(),
-																cell.id.toString(),
-															);
-														}}
-														onSave={(val) => {
-															onSaveCell(
-																cell.columnId.toString(),
-																cell.rowId.toString(),
-																cell.id.toString(),
-																val,
-															);
-														}}
-														onCancel={onCancelEdit}
-													/>
+								rows.map((row) => {
+									// Skip rows without valid ID
+									if (!row || row.id === undefined || row.id === null) {
+										return null;
+									}
+
+									return (
+										<tr key={row.id} className='row-row'>
+											{columns.map((col) => {
+												// Skip columns without valid ID
+												if (!col || col.id === undefined || col.id === null) {
+													return null;
+												}
+
+												const cell = row.cells?.find(
+													(cell) => cell && cell.columnId === col.id,
+												);
+
+												// If no cell exists for this column, render an empty cell
+												if (!cell) {
+													return (
+														<td
+															key={`${row.id}-${col.id}-empty`}
+															className='text-gray-400 italic'>
+															Empty
+														</td>
+													);
+												}
+
+												// Validate cell has required properties
+												if (!cell.id || !cell.rowId || !cell.columnId) {
+													return (
+														<td
+															key={`${row.id}-${col.id}-invalid`}
+															className='text-red-400 italic'>
+															Invalid Cell
+														</td>
+													);
+												}
+
+												return (
+													<td key={`${row.id}-${col.id}-${cell.id}`}>
+														<EditableCell
+															columns={columns}
+															cell={cell}
+															tables={tables}
+															isEditing={
+																editingCell?.rowId === String(row.id) &&
+																Number(editingCell.columnId) === col.id
+															}
+															onStartEdit={() => {
+																onEditCell(
+																	String(cell.rowId),
+																	String(cell.columnId),
+																	String(cell.id),
+																);
+															}}
+															onSave={(val) => {
+																onSaveCell(
+																	String(cell.columnId),
+																	String(cell.rowId),
+																	String(cell.id),
+																	val,
+																);
+															}}
+															onCancel={onCancelEdit}
+														/>
+													</td>
+												);
+											})}
+											{user.role !== "VIEWER" && (
+												<td>
+													<Button
+														variant='ghost'
+														size='sm'
+														onClick={() => onDeleteRow(String(row.id))}>
+														<Trash2 />
+													</Button>
 												</td>
-											);
-										})}
-										{user.role !== "VIEWER" && (
-											<td>
-												<Button
-													variant='ghost'
-													size='sm'
-													onClick={() => onDeleteRow(row["id"].toFixed(0))}>
-													<Trash2 />
-												</Button>
-											</td>
-										)}
-									</tr>
-								))
+											)}
+										</tr>
+									);
+								})
 							)}
 						</tbody>
 					</table>

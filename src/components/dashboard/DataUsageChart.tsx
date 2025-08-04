@@ -41,7 +41,6 @@ interface DataUsageChartProps {
 }
 
 const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
-	const storagePercentage = (data.storage.used / data.storage.total) * 100;
 	const tablesPercentage = (data.tables.used / data.tables.total) * 100;
 	const rowsPercentage = (data.rows.used / data.rows.total) * 100;
 	const databasesPercentage =
@@ -68,25 +67,41 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 					<div className='flex items-center gap-2'>
 						<HardDrive className='h-4 w-4 text-muted-foreground' />
 						<span className='text-sm font-medium'>Storage</span>
+						{data.memory.isOverLimit && (
+							<AlertTriangle className='h-3 w-3 text-red-500' />
+						)}
+						{data.memory.isNearLimit && !data.memory.isOverLimit && (
+							<AlertTriangle className='h-3 w-3 text-yellow-500' />
+						)}
 					</div>
 					<div className='space-y-2'>
 						<div className='flex items-center justify-between'>
 							<span className='text-sm text-muted-foreground'>
-								{data.storage.used} / {data.storage.total} {data.storage.unit}
+								{data.memory.used.toFixed(3)} / {data.memory.total} GB
 							</span>
 							<span className='text-sm font-medium'>
-								{storagePercentage.toFixed(1)}%
+								{memoryPercentage.toFixed(1)}%
 							</span>
 						</div>
 						<Progress
-							value={storagePercentage}
+							value={memoryPercentage}
 							className='h-2'
 							style={
 								{
-									"--progress-background": getUsageColor(storagePercentage),
+									"--progress-background": getUsageColor(memoryPercentage),
 								} as React.CSSProperties
 							}
 						/>
+						{data.memory.isOverLimit && (
+							<p className='text-xs text-red-500 font-medium'>
+								⚠️ Storage limit exceeded
+							</p>
+						)}
+						{data.memory.isNearLimit && !data.memory.isOverLimit && (
+							<p className='text-xs text-yellow-500 font-medium'>
+								⚠️ Approaching limit
+							</p>
+						)}
 					</div>
 				</div>
 
@@ -173,55 +188,12 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 					</div>
 				</div>
 
-				{/* Memory Usage */}
-				<div className='space-y-3'>
-					<div className='flex items-center gap-2'>
-						<HardDrive className='h-4 w-4 text-muted-foreground' />
-						<span className='text-sm font-medium'>Storage</span>
-						{data.memory.isOverLimit && (
-							<AlertTriangle className='h-3 w-3 text-red-500' />
-						)}
-						{data.memory.isNearLimit && !data.memory.isOverLimit && (
-							<AlertTriangle className='h-3 w-3 text-yellow-500' />
-						)}
-					</div>
-					<div className='space-y-2'>
-						<div className='flex items-center justify-between'>
-							<span className='text-sm text-muted-foreground'>
-								{data.memory.used.toFixed(3)} / {data.memory.total} GB
-							</span>
-							<span className='text-sm font-medium'>
-								{memoryPercentage.toFixed(1)}%
-							</span>
-						</div>
-						<Progress
-							value={memoryPercentage}
-							className='h-2'
-							style={
-								{
-									"--progress-background": getUsageColor(memoryPercentage),
-								} as React.CSSProperties
-							}
-						/>
-						{data.memory.isOverLimit && (
-							<p className='text-xs text-red-500 font-medium'>
-								⚠️ Storage limit exceeded
-							</p>
-						)}
-						{data.memory.isNearLimit && !data.memory.isOverLimit && (
-							<p className='text-xs text-yellow-500 font-medium'>
-								⚠️ Approaching limit
-							</p>
-						)}
-					</div>
-				</div>
-
 				{/* Usage Summary */}
 				<div className='grid grid-cols-2 gap-4 pt-4 border-t border-border/20'>
 					<div className='text-center'>
 						<div className='text-lg font-bold text-green-500'>
 							{Math.min(
-								storagePercentage,
+								memoryPercentage,
 								tablesPercentage,
 								rowsPercentage,
 								databasesPercentage,
@@ -233,7 +205,7 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 					<div className='text-center'>
 						<div className='text-lg font-bold text-red-500'>
 							{Math.max(
-								storagePercentage,
+								memoryPercentage,
 								tablesPercentage,
 								rowsPercentage,
 								databasesPercentage,

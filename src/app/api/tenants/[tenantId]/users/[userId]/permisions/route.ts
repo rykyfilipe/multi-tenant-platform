@@ -36,13 +36,34 @@ export async function GET(
 				tenantId: Number(tenantId),
 				userId: Number(userIdToUpdate),
 			},
+			include: {
+				table: {
+					include: {
+						database: true,
+					},
+				},
+			},
 		});
 		const columnsPermissions = await prisma.columnPermission.findMany({
 			where: {
 				tenantId: Number(tenantId),
 				userId: Number(userIdToUpdate),
 			},
+			include: {
+				column: {
+					include: {
+						table: {
+							include: {
+								database: true,
+							},
+						},
+					},
+				},
+			},
 		});
+
+		console.log("Fetched table permissions:", tablePermissions.length);
+		console.log("Fetched column permissions:", columnsPermissions.length);
 
 		return NextResponse.json(
 			{ tablePermissions, columnsPermissions },
@@ -95,39 +116,69 @@ export async function PATCH(
 		console.log("Table Permissions:", tablePermissions);
 
 		// Update table permissions
-		Promise.all(
-			tablePermissions.map((permission: any) =>
-				prisma.tablePermission.updateMany({
-					where: {
-						tenantId: Number(tenantId),
-						userId: Number(userIdToUpdate),
-						tableId: permission.tableId,
-					},
+		for (const permission of tablePermissions) {
+			const existingPermission = await prisma.tablePermission.findFirst({
+				where: {
+					tenantId: Number(tenantId),
+					userId: Number(userIdToUpdate),
+					tableId: permission.tableId,
+				},
+			});
+
+			if (existingPermission) {
+				await prisma.tablePermission.update({
+					where: { id: existingPermission.id },
 					data: {
 						canRead: permission.canRead,
 						canEdit: permission.canEdit,
 						canDelete: permission.canDelete,
 					},
-				}),
-			),
-		);
-
-		Promise.all(
-			// Update column permissions
-			columnsPermissions.map((permission: any) =>
-				prisma.columnPermission.updateMany({
-					where: {
+				});
+			} else {
+				await prisma.tablePermission.create({
+					data: {
 						tenantId: Number(tenantId),
 						userId: Number(userIdToUpdate),
-						columnId: permission.columnId,
+						tableId: permission.tableId,
+						canRead: permission.canRead,
+						canEdit: permission.canEdit,
+						canDelete: permission.canDelete,
 					},
+				});
+			}
+		}
+
+		// Update column permissions
+		for (const permission of columnsPermissions) {
+			const existingPermission = await prisma.columnPermission.findFirst({
+				where: {
+					tenantId: Number(tenantId),
+					userId: Number(userIdToUpdate),
+					columnId: permission.columnId,
+				},
+			});
+
+			if (existingPermission) {
+				await prisma.columnPermission.update({
+					where: { id: existingPermission.id },
 					data: {
 						canRead: permission.canRead,
 						canEdit: permission.canEdit,
 					},
-				}),
-			),
-		);
+				});
+			} else {
+				await prisma.columnPermission.create({
+					data: {
+						tenantId: Number(tenantId),
+						userId: Number(userIdToUpdate),
+						columnId: permission.columnId,
+						tableId: permission.tableId,
+						canRead: permission.canRead,
+						canEdit: permission.canEdit,
+					},
+				});
+			}
+		}
 
 		return NextResponse.json(
 			{ message: "Permissions updated successfully" },

@@ -37,6 +37,11 @@ export interface TableInfo {
 	name: string;
 	description: string;
 	columns?: Column[];
+	database?: {
+		id: number;
+		name: string;
+		tenantId: number;
+	};
 }
 
 export type PermissionVariant = "read" | "edit" | "delete" | "default";

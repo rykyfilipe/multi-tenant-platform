@@ -87,7 +87,7 @@ export const DatabaseProvider = ({
 
 		if (!tenant || !user || !token) return;
 		try {
-			const response = await fetch(`/api/tenants/${tenant.id}/database`, {
+			const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
@@ -138,7 +138,7 @@ export const DatabaseProvider = ({
 		}
 
 		try {
-			const response = await fetch(`/api/tenants/${tenantId}/database`, {
+			const response = await fetch(`/api/tenants/${tenantId}/databases`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -169,7 +169,7 @@ export const DatabaseProvider = ({
 	const handleDeleteDatabase = async (id: number) => {
 		if (!tenantId || !token) return;
 		try {
-			const response = await fetch(`/api/tenants/${tenantId}/database/${id}`, {
+			const response = await fetch(`/api/tenants/${tenantId}/databases/${id}`, {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",
@@ -210,7 +210,7 @@ export const DatabaseProvider = ({
 		}
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/${selectedDatabase.id}/tables`,
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables`,
 				{
 					method: "POST",
 					headers: {
@@ -247,7 +247,7 @@ export const DatabaseProvider = ({
 		if (!tenantId || !token || !selectedDatabase) return;
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/${selectedDatabase.id}/tables/${id}`,
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${id}`,
 				{
 					method: "DELETE",
 					headers: {

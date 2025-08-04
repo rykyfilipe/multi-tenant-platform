@@ -35,15 +35,19 @@ export async function GET(
 		if (role === "ADMIN") {
 			const database = await prisma.database.findFirst({
 				where: {
-					id: Number(databaseId),
 					tenantId: Number(tenantId),
+					id: Number(databaseId),
 				},
 				include: {
 					tenant: true,
 					tables: {
 						include: {
 							columns: true,
-							rows: true,
+							rows: {
+								include: {
+									cells: true,
+								},
+							},
 						},
 					},
 				},
@@ -59,14 +63,14 @@ export async function GET(
 			return NextResponse.json(database, { status: 200 });
 		}
 
-		// Pentru utilizatorii non-admin, verificăm permisiunile
+		// Pentru utilizatorii non-admin, returnăm doar baza de date specifică cu tabelele la care au acces
 		const tablePermissions = await prisma.tablePermission.findMany({
 			where: {
 				userId: userId,
 				table: {
-					databaseId: Number(databaseId),
 					database: {
 						tenantId: Number(tenantId),
+						id: Number(databaseId),
 					},
 				},
 			},
@@ -81,30 +85,34 @@ export async function GET(
 			},
 		});
 
-		if (tablePermissions.length === 0) {
+		// Construim baza de date cu tabelele la care utilizatorul are acces
+		const accessibleTables = tablePermissions
+			.filter((permission) => permission.canRead)
+			.map((permission) => permission.table);
+
+		if (accessibleTables.length === 0) {
 			return NextResponse.json(
-				{ error: "Database not found" },
+				{ error: "Database not found or access denied" },
 				{ status: 404 },
 			);
 		}
 
-		const database = {
-			...tablePermissions[0].table.database,
-			tables: tablePermissions
-				.filter((permission) => permission.canRead)
-				.map((permission) => permission.table),
+		// Luăm prima bază de date (toate tabelele ar trebui să aparțină aceleiași baze de date)
+		const database = accessibleTables[0].database;
+		const databaseWithTables = {
+			...database,
+			tables: accessibleTables,
 		};
 
-		return NextResponse.json(database, { status: 200 });
+		return NextResponse.json(databaseWithTables, { status: 200 });
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(
-			{ error: "Failed to fetch database" },
+			{ error: "Failed to fetch databases" },
 			{ status: 500 },
 		);
 	}
 }
-
 export async function DELETE(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string }> },

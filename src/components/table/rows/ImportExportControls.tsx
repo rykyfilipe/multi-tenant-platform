@@ -9,7 +9,7 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import { Column, Row, Table } from "@/types/database";
 import { Info } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface Props {
 	columns: Column[];
@@ -17,18 +17,139 @@ interface Props {
 	table: Table;
 }
 
+// Funcție pentru crearea datelor de referință (similar cu EditableCell)
+const createReferenceData = (tables: Table[] | null) => {
+	const referenceData: Record<number, { id: number; displayValue: string }[]> = {};
+	if (!tables) return referenceData;
+
+	tables.forEach((table) => {
+		const options: { id: number; displayValue: string }[] = [];
+		if (Array.isArray(table.rows) && table.rows.length > 0) {
+			table.rows.forEach((row) => {
+				if (
+					Array.isArray(row.cells) &&
+					row.cells.length > 0 &&
+					Array.isArray(table.columns)
+				) {
+					const displayParts: string[] = [];
+
+					let addedColumns = 0;
+					const maxColumns = 3;
+
+					table.columns.forEach((column) => {
+						if (addedColumns >= maxColumns) return;
+
+						if (row.cells) {
+							const cell = row.cells.find((c) => c.columnId === column.id);
+							if (cell?.value != null && cell.value.toString().trim() !== "") {
+								let formattedValue = cell.value.toString().trim();
+
+								if (formattedValue.length > 15) {
+									formattedValue = formattedValue.substring(0, 15) + "...";
+								}
+
+								if (column.type === "date") {
+									try {
+										formattedValue = new Date(formattedValue).toLocaleDateString("ro-RO");
+									} catch {
+										// fallback la valoarea brută
+									}
+								} else if (column.type === "boolean") {
+									formattedValue = formattedValue === "true" ? "✓" : "✗";
+								}
+
+								if (addedColumns === 0 && column.primary) {
+									displayParts.push(`#${formattedValue}`);
+								} else {
+									displayParts.push(formattedValue);
+								}
+								addedColumns++;
+							}
+						}
+					});
+
+					const displayValue = displayParts.length
+						? displayParts.join(" • ").slice(0, 50)
+						: `Row #${row.id || "unknown"}`;
+
+					options.push({
+						id: row.id || 0,
+						displayValue,
+					});
+				}
+			});
+		}
+
+		referenceData[table.id] = options;
+	});
+
+	return referenceData;
+};
+
 function ImportExportControls({ columns, rows, table }: Props) {
 	const { tenant, token, showAlert, user } = useApp();
 	const tenantId = tenant?.id;
+	const [tables, setTables] = useState<Table[] | null>(null);
+
+	// Fetch tables pentru referințe
+	useMemo(() => {
+		const fetchTables = async () => {
+			if (!tenant || !token) return;
+
+			try {
+				const response = await fetch(
+					`/api/tenants/${tenant.id}/databases/tables`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+					},
+				);
+
+				if (response.ok) {
+					const data = await response.json();
+					setTables(data || []);
+				}
+			} catch (error) {
+				console.error("Failed to fetch tables for export:", error);
+			}
+		};
+
+		fetchTables();
+	}, [tenant, token]);
 
 	const handleExport = () => {
 		const headers = columns.map((col) => col.name);
+		
+		// Creăm datele de referință pentru toate tabelele
+		const referenceData = createReferenceData(tables);
+		
 		const csvRows = [
 			headers.join(";"),
 			...rows.map((row) => {
 				const rowData = columns.map((col) => {
 					const cell = row.cells?.find((c) => c.columnId === col.id);
-					return JSON.stringify(cell?.value ?? "");
+					let value = cell?.value ?? "";
+					
+					// Pentru coloanele de tip "reference", înlocuim ID-ul cu numele
+					if (col.type === "reference" && col.referenceTableId && value) {
+						const referencedTableData = referenceData[col.referenceTableId];
+						if (referencedTableData) {
+							const referencedRow = referencedTableData.find(
+								(refRow) => refRow.id === Number(value)
+							);
+							if (referencedRow) {
+								value = referencedRow.displayValue;
+							} else {
+								value = `Unknown Row (ID: ${value})`;
+							}
+						} else {
+							value = `Unknown Table (ID: ${col.referenceTableId})`;
+						}
+					}
+					
+					return JSON.stringify(value);
 				});
 				return rowData.join(";");
 			}),
@@ -61,7 +182,10 @@ function ImportExportControls({ columns, rows, table }: Props) {
 				columns.some((c) => c.name === h),
 			);
 			if (!isHeaderValid) {
-				showAlert("The CSV file contains unknown or missing columns. Please check the file format.", "error");
+				showAlert(
+					"The CSV file contains unknown or missing columns. Please check the file format.",
+					"error",
+				);
 				return;
 			}
 
@@ -100,12 +224,15 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			const validRows = parsedRows.filter((r) => r !== null);
 
 			if (validRows.length === 0) {
-				showAlert("No valid rows found for import. Please check your CSV file.", "error");
+				showAlert(
+					"No valid rows found for import. Please check your CSV file.",
+					"error",
+				);
 				return;
 			}
 
 			const res = await fetch(
-				`/api/tenants/${tenantId}/database/tables/${table.id}/rows`,
+				`/api/tenants/${tenantId}/databases/tables/${table.id}/rows`,
 				{
 					method: "POST",
 					headers: {
@@ -120,7 +247,13 @@ function ImportExportControls({ columns, rows, table }: Props) {
 				const { error } = await res.json();
 				showAlert("Import failed: " + error, "error");
 			} else {
-				showAlert("Data imported successfully!", "success");
+				const data = await res.json();
+				showAlert(
+					`Successfully imported ${data.rows?.length || 0} rows!`,
+					"success",
+				);
+				// Refresh the table data
+				window.location.reload();
 			}
 		} catch (err) {
 			showAlert("Failed to import data. Please try again.", "error");

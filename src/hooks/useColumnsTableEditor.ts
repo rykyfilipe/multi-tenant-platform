@@ -48,22 +48,58 @@ function useColumnsTableEditor() {
 				throw new Error("Column not found");
 			}
 
+			// Construim obiectul de update cu câmpul specific
+			const updateData: any = {};
+
+			// Convertim valorile la tipurile corecte
+			if (fieldName === "referenceTableId") {
+				updateData[fieldName] = value ? Number(value) : null;
+			} else if (
+				fieldName === "required" ||
+				fieldName === "primary" ||
+				fieldName === "autoIncrement"
+			) {
+				updateData[fieldName] = Boolean(value);
+			} else {
+				updateData[fieldName] = value;
+			}
+
+			if (process.env.NODE_ENV === "development") {
+				console.log("Column update - Field:", fieldName, "Value:", value);
+				console.log("Column update - Update data:", updateData);
+			}
+
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/${table.databaseId}/tables/${table.id}/columns/${columnId}`,
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${columnId}`,
 				{
 					method: "PATCH",
 					headers: {
 						"Content-Type": "application/json",
 						Authorization: `Bearer ${token}`,
 					},
-					body: JSON.stringify({
-						field: fieldName,
-						value: value,
-					}),
+					body: JSON.stringify(updateData),
 				},
 			);
 
-			if (!response.ok) throw new Error("Failed to update column");
+			if (!response.ok) {
+				const errorText = await response.text();
+				console.error("Column update failed:", response.status, errorText);
+				throw new Error(`Failed to update column: ${response.status}`);
+			}
+
+			const updatedColumnData = await response.json();
+			if (process.env.NODE_ENV === "development") {
+				console.log("Column update - Response:", updatedColumnData);
+			}
+
+			// Actualizăm state-ul cu datele de la server
+			setColumns(
+				columns.map((col) =>
+					col.id.toString() === columnId
+						? { ...col, ...updatedColumnData }
+						: col,
+				),
+			);
 
 			showAlert("Column configuration updated successfully", "success");
 			setEditingCell(null);
@@ -77,12 +113,56 @@ function useColumnsTableEditor() {
 		}
 	};
 
+	const handleDeleteColumn = async (
+		columnId: string,
+		columns: Column[],
+		setColumns: (cols: Column[]) => void,
+		table: any,
+		token: string,
+		showAlert: (
+			message: string,
+			type: "error" | "success" | "warning" | "info",
+		) => void,
+	) => {
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${columnId}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				const errorMessage =
+					errorData.error || `Failed to delete column: ${response.status}`;
+				throw new Error(errorMessage);
+			}
+
+			// Actualizăm state-ul local prin eliminarea coloanei șterse
+			setColumns(columns.filter((col) => col.id.toString() !== columnId));
+			showAlert("Column deleted successfully", "success");
+		} catch (error) {
+			showAlert(
+				error instanceof Error
+					? error.message
+					: "Failed to delete column. Please try again.",
+				"error",
+			);
+		}
+	};
+
 	return {
 		editingCell,
 		setEditingCell,
 		handleCancelEdit,
 		handleEditCell,
 		handleSaveCell,
+		handleDeleteColumn,
 	};
 }
 

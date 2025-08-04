@@ -23,7 +23,7 @@ function useTable(id: string) {
 		const fetchTable = async () => {
 			try {
 				const res = await fetch(
-					`/api/tenants/${tenantId}/database/${databaseId}/tables/${id}`,
+					`/api/tenants/${tenantId}/databases/${databaseId}/tables/${id}`,
 					{
 						method: "GET",
 						headers: { Authorization: `Bearer ${token}` },

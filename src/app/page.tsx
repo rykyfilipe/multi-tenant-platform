@@ -23,10 +23,11 @@ import {
 	Clock,
 	Headphones,
 	AlertTriangle,
+	LogOut,
 } from "lucide-react";
 import AuthForm from "@/components/auth/AuthForm";
 import AuthModal from "@/components/auth/AuthModal";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,14 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { redirectToCheckout } from "@/lib/stripe";
 
 const DataHubLandingPage = () => {
@@ -260,17 +269,65 @@ const DataHubLandingPage = () => {
 						<div className='flex items-center space-x-4'>
 							{session ? (
 								<>
-									<Button variant='ghost' onClick={() => router.push("/home")}>
-										Dashboard
-									</Button>
 									{currentPlan && (
 										<span className='bg-card/80 text-foreground px-4 py-2 rounded-full text-xs font-semibold shadow-inner'>
 											{currentPlan}
 										</span>
 									)}
-									<Button onClick={() => router.push("/home")}>
+									<Button onClick={() => router.push("home/dashboard")}>
 										Go to App
 									</Button>
+
+									{/* User Profile Dropdown */}
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button
+												variant='ghost'
+												className='relative h-8 w-8 rounded-full'>
+												<Avatar className='h-8 w-8'>
+													<AvatarImage
+														src={session.user?.image || undefined}
+														alt='User'
+													/>
+													<AvatarFallback className='text-xs'>
+														{(session.user as any)?.firstName?.[0] || session.user?.name?.[0] || "U"}
+														{(session.user as any)?.lastName?.[0] || ""}
+													</AvatarFallback>
+												</Avatar>
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent
+											className='w-56'
+											align='end'
+											forceMount>
+											<div className='flex items-center justify-start gap-2 p-2'>
+												<div className='flex flex-col space-y-1 leading-none'>
+													<p className='font-medium'>
+														{(session.user as any)?.firstName && (session.user as any)?.lastName
+															? `${(session.user as any).firstName} ${(session.user as any).lastName}`
+															: session.user?.name || "User"}
+													</p>
+													{session.user?.email && (
+														<p className='w-[200px] truncate text-sm text-muted-foreground'>
+															{session.user.email}
+														</p>
+													)}
+												</div>
+											</div>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												onClick={() => router.push("/home/settings")}>
+												<Settings className='mr-2 h-4 w-4' />
+												<span>Settings</span>
+											</DropdownMenuItem>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												onClick={() => signOut({ callbackUrl: "/" })}>
+												<LogOut className='mr-2 h-4 w-4' />
+												<span>Log out</span>
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
 								</>
 							) : (
 								<>
@@ -495,7 +552,7 @@ const DataHubLandingPage = () => {
 													return; // Nu face nimic dacă este planul curent
 												}
 												if (plan.name === "Starter") {
-													router.push("/home");
+													router.push("home/dashboard");
 												} else {
 													plan.priceId
 														? handleStripeCheckout(plan.priceId, plan.name)

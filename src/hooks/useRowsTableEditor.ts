@@ -39,7 +39,7 @@ function useRowsTableEditor() {
 	) => {
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/database/${table.databaseId}/tables/${table.id}/rows/${rowId}/cell/${cellId}`,
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}/cell/${cellId}`,
 				{
 					method: "PATCH",
 					headers: {

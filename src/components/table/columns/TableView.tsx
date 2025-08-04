@@ -70,7 +70,12 @@ export function TableView({
 				required: false,
 				label: "Auto Increment",
 			},
-			{
+		];
+
+		// Adaugă câmpul referenceTableId doar dacă există coloane de tip reference
+		const hasReferenceColumns = columns.some((col) => col.type === "reference");
+		if (hasReferenceColumns) {
+			base.push({
 				key: "referenceTableId",
 				type: tables?.map((t) => t.id.toString()) || [],
 				required: false,
@@ -79,11 +84,11 @@ export function TableView({
 					value: t.id,
 					label: t.name,
 				})),
-			},
-		];
+			});
+		}
 
 		return base;
-	}, [tables]);
+	}, [tables, columns]);
 
 	return (
 		<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg overflow-hidden'>

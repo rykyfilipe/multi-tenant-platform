@@ -90,7 +90,7 @@ export const useDashboardData = () => {
 
 				// Fetch databases
 				const databasesResponse = await fetch(
-					`/api/tenants/${tenant.id}/database`,
+					`/api/tenants/${tenant.id}/databases`,
 					{
 						headers: {
 							Authorization: `Bearer ${token}`,
@@ -105,15 +105,8 @@ export const useDashboardData = () => {
 					},
 				});
 
-				// Fetch tables and rows data
-				const tablesResponse = await fetch(
-					`/api/tenants/${tenant.id}/database/tables`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-					},
-				);
+				// Fetch tables and rows data - folosim endpoint-ul corect
+				// Nu mai avem nevoie de acest request separat pentru că datele sunt deja în databasesResponse
 
 				// Fetch memory usage data
 				const memoryResponse = await fetch(`/api/tenants/${tenant.id}/memory`, {
@@ -122,30 +115,48 @@ export const useDashboardData = () => {
 					},
 				});
 
-				const [databasesData, usersData, tablesData, memoryData] =
-					await Promise.all([
-						databasesResponse.json(),
-						usersResponse.json(),
-						tablesResponse.json(),
-						memoryResponse.json(),
-					]);
+				const [databasesData, usersData, memoryData] = await Promise.all([
+					databasesResponse.json(),
+					usersResponse.json(),
+					memoryResponse.json(),
+				]);
 
 				// Process databases data
-				const databases = databasesData.databases || [];
+				const databases = Array.isArray(databasesData) ? databasesData : [];
+
+				if (process.env.NODE_ENV === "development") {
+					console.log("Dashboard - Databases data:", databases);
+				}
+
 				const totalTables = databases.reduce(
 					(acc: number, db: any) => acc + (db.tables?.length || 0),
 					0,
 				);
-				const totalRows = databases.reduce(
-					(acc: number, db: any) => acc + (db.totalRows || 0),
-					0,
-				);
+
+				// Calculăm totalRows din rândurile efective din fiecare tabelă
+				const totalRows = databases.reduce((acc: number, db: any) => {
+					const dbRows =
+						db.tables?.reduce(
+							(dbAcc: number, table: any) => dbAcc + (table.rows?.length || 0),
+							0,
+						) || 0;
+					return acc + dbRows;
+				}, 0);
+
+				if (process.env.NODE_ENV === "development") {
+					console.log("Dashboard - Total tables:", totalTables);
+					console.log("Dashboard - Total rows:", totalRows);
+				}
 
 				// Process users data
-				const users = usersData.users || [];
-				const activeUsers = users.filter(
-					(user: any) => user.status === "active",
-				).length;
+				const users = Array.isArray(usersData) ? usersData : [];
+
+				if (process.env.NODE_ENV === "development") {
+					console.log("Dashboard - Users data:", users);
+				}
+				// Pentru moment, considerăm toți utilizatorii ca fiind activi
+				// În viitor, putem adăuga un câmp status în baza de date
+				const activeUsers = users.length;
 
 				// Get plan limits based on subscription
 				const getPlanLimits = () => {
@@ -192,16 +203,23 @@ export const useDashboardData = () => {
 						isOverMemoryLimit: memoryInfo.isOverLimit,
 					},
 					databaseData: {
-						databases: databases.map((db: any) => ({
-							name: db.name,
-							tables: db.tables?.length || 0,
-							rows: db.totalRows || 0,
-							size: `${((db.totalRows || 0) * 0.001).toFixed(2)} MB`,
-							usage: Math.min(
-								((db.tables?.length || 0) / planLimits.tables) * 100,
-								100,
-							),
-						})),
+						databases: databases.map((db: any) => {
+							const dbRows =
+								db.tables?.reduce(
+									(acc: number, table: any) => acc + (table.rows?.length || 0),
+									0,
+								) || 0;
+							return {
+								name: db.name,
+								tables: db.tables?.length || 0,
+								rows: dbRows,
+								size: `${(dbRows * 0.001).toFixed(2)} MB`,
+								usage: Math.min(
+									((db.tables?.length || 0) / planLimits.tables) * 100,
+									100,
+								),
+							};
+						}),
 						totalUsage: databases.length,
 						limit: planLimits.databases,
 					},
@@ -212,7 +230,7 @@ export const useDashboardData = () => {
 							email: user.email,
 							role: user.role,
 							lastActive: "2 hours ago", // Mock data
-							status: Math.random() > 0.7 ? "online" : "offline",
+							status: "online", // Pentru moment, toți sunt online
 						})),
 						activeUsers,
 						totalUsers: users.length,

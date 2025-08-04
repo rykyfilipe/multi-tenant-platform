@@ -2,7 +2,7 @@
 
 "use client";
 
-import { FormEvent, useCallback, useMemo } from "react";
+import { FormEvent, useCallback, useMemo, useEffect } from "react";
 import { CellSchema, Column, Row, Table } from "@/types/database";
 import { Button } from "../../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -71,7 +71,16 @@ const createReferenceData = (tables: Table[] | null) => {
 	const referenceData: Record<number, { id: number; displayValue: string }[]> =
 		{};
 
-	if (!tables) return referenceData;
+	if (!tables || tables.length === 0) {
+		if (process.env.NODE_ENV === "development") {
+			console.log("createReferenceData - No tables provided");
+		}
+		return referenceData;
+	}
+
+	if (process.env.NODE_ENV === "development") {
+		console.log("createReferenceData - Processing tables:", tables.length);
+	}
 
 	// Pentru fiecare tabel, creează o listă de opțiuni disponibile
 	tables.forEach((table) => {
@@ -162,6 +171,14 @@ const createReferenceData = (tables: Table[] | null) => {
 
 		// Folosește ID-ul tabelului ca și cheie
 		referenceData[table.id] = options;
+
+		if (process.env.NODE_ENV === "development") {
+			console.log(
+				`createReferenceData - Table ${table.name} (ID: ${table.id}):`,
+				options.length,
+				"options",
+			);
+		}
 	});
 
 	return referenceData;
@@ -169,6 +186,19 @@ const createReferenceData = (tables: Table[] | null) => {
 
 export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
+
+	// Debug pentru referenceData
+	useEffect(() => {
+		if (process.env.NODE_ENV === "development") {
+			console.log("AddRowForm - Tables:", tables);
+			console.log("AddRowForm - ReferenceData:", referenceData);
+			console.log("AddRowForm - All columns:", columns);
+			console.log(
+				"AddRowForm - Columns with reference type:",
+				columns?.filter((col) => col.type === "reference") || [],
+			);
+		}
+	}, [tables, referenceData, columns]);
 
 	// Optimized cell update function
 	const updateCell = useCallback(
@@ -198,7 +228,7 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 	// Form validation
 	const formValidation = useMemo(() => {
 		const errors: string[] = [];
-		const requiredColumns = columns.filter((col) => col.required);
+		const requiredColumns = columns?.filter((col) => col.required) || [];
 
 		// Check required fields
 		requiredColumns.forEach((col) => {
@@ -209,7 +239,7 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 		});
 
 		// Check type validation
-		columns.forEach((col) => {
+		columns?.forEach((col) => {
 			const cellValue = getCellValue(col.id);
 			if (cellValue.trim() && !validateCellValue(cellValue, col.type)) {
 				errors.push(`${col.name} must be a valid ${col.type}`);
@@ -225,6 +255,10 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 	// Render field based on column type
 	const renderField = useCallback(
 		(column: Column) => {
+			if (!column) {
+				console.warn("AddRowForm - Column is null or undefined");
+				return null;
+			}
 			const cellValue = getCellValue(column.id);
 			const hasError = formValidation.errors.some((error) =>
 				error.includes(column.name),
@@ -291,8 +325,19 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 					);
 
 				case "reference":
-					// Aici este fix-ul principal - folosim referenceTableId
-					const options = referenceData[column.referenceTableId ?? -1] ?? [];
+					// Verificăm dacă avem referenceTableId
+					if (!column.referenceTableId) {
+						return (
+							<div key={`field-${column.id}`} className={divClassName}>
+								{commonLabelJSX}
+								<div className='p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800'>
+									⚠️ Reference table not configured for this column
+								</div>
+							</div>
+						);
+					}
+
+					const options = referenceData[column.referenceTableId] ?? [];
 					const referencedTable = tables?.find(
 						(t) => t.id === column.referenceTableId,
 					);
@@ -332,8 +377,11 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 							{/* Debug info - poți să o ștergi după testare */}
 							{process.env.NODE_ENV === "development" && (
 								<div className='text-xs text-muted-foreground'>
-									Table: {referencedTable?.name} (ID: {column.referenceTableId}
-									), Options: {options.length}
+									Table:{" "}
+									{referencedTable?.name ||
+										`Unknown (ID: ${column.referenceTableId})`}
+									, Options: {options.length}, ReferenceTableId:{" "}
+									{column.referenceTableId}
 								</div>
 							)}
 						</div>
@@ -369,7 +417,7 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 
 			// Format cell values according to their types
 			const formattedCells = cells.map((cell) => {
-				const column = columns.find((col) => col.id === cell.columnId);
+				const column = columns?.find((col) => col.id === cell.columnId);
 				if (column) {
 					return {
 						...cell,
@@ -415,7 +463,11 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 				<form onSubmit={handleSubmit} className='space-y-6'>
 					{/* Form Fields */}
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-						{columns.map(renderField)}
+						{columns?.map(renderField) || (
+							<div className='col-span-full text-center text-muted-foreground'>
+								No columns available
+							</div>
+						)}
 					</div>
 
 					{/* Validation Errors */}
@@ -446,7 +498,7 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 						</Button>
 						<Button
 							type='submit'
-							disabled={!formValidation.isValid || columns.length === 0}
+							disabled={!formValidation.isValid || !columns?.length}
 							className='min-w-[120px]'>
 							Add Row
 						</Button>

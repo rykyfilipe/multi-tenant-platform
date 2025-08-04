@@ -52,15 +52,28 @@ export function EditableCell({
 	};
 
 	const renderValue = () => {
-		if (fieldName === "referenceTableId" && referenceOptions?.length) {
-			const option = referenceOptions.find(
-				(opt) => opt.value === column[fieldName],
-			);
-			return (
-				option?.label ||
-				(column[fieldName] && `ID: ${column[fieldName]}`) ||
-				"-"
-			);
+		if (fieldName === "referenceTableId") {
+			// Dacă coloana nu este de tip reference, afișează un mesaj
+			if (column.type !== "reference") {
+				return "Not applicable";
+			}
+
+			// Dacă este de tip reference, afișează numele tabelei
+			if (referenceOptions?.length) {
+				const option = referenceOptions.find(
+					(opt) => opt.value === column[fieldName],
+				);
+				return (
+					option?.label ||
+					(column[fieldName]
+						? `Unknown Table (ID: ${column[fieldName]})`
+						: "No table selected")
+				);
+			}
+
+			return column[fieldName]
+				? `Unknown Table (ID: ${column[fieldName]})`
+				: "No table selected";
 		}
 
 		if (fieldType === "boolean") {
@@ -79,6 +92,20 @@ export function EditableCell({
 	};
 
 	if (isEditing) {
+		// Dacă încercăm să edităm referenceTableId pentru o coloană care nu este de tip reference, nu permitem editarea
+		if (fieldName === "referenceTableId" && column.type !== "reference") {
+			return (
+				<div className='flex items-center w-full gap-2'>
+					<div className='flex-1 p-2 bg-muted rounded text-sm text-muted-foreground'>
+						Not applicable for this column type
+					</div>
+					<Button variant='ghost' size='sm' onClick={onCancel}>
+						✕
+					</Button>
+				</div>
+			);
+		}
+
 		return (
 			<div className='flex items-center w-full gap-2'>
 				{Array.isArray(fieldType) || fieldName === "referenceTableId" ? (
@@ -137,7 +164,17 @@ export function EditableCell({
 	}
 
 	return (
-		<div className='cursor-pointer w-full' onClick={onStartEdit}>
+		<div
+			className={`w-full ${
+				fieldName === "referenceTableId" && column.type !== "reference"
+					? "cursor-not-allowed opacity-50"
+					: "cursor-pointer"
+			}`}
+			onClick={
+				fieldName === "referenceTableId" && column.type !== "reference"
+					? undefined
+					: onStartEdit
+			}>
 			<p className='max-w-[100px] truncate'>{renderValue()}</p>
 		</div>
 	);

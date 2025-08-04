@@ -29,7 +29,7 @@ function AddDatabaseForm({ setShowForm }: Props) {
 
 		setLoading(true);
 		try {
-			const response = await fetch(`/api/tenants/${tenantId}/database`, {
+			const response = await fetch(`/api/tenants/${tenantId}/databases`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

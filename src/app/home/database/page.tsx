@@ -8,7 +8,7 @@ import { TableGrid } from "@/components/database/TableGrid";
 import DatabaseSelector from "@/components/database/DatabaseSelector";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
-import { DatabaseProvider, useDatabase } from "@/contexts/DatabaseContext";
+import { useDatabase } from "@/contexts/DatabaseContext";
 import TourProv from "@/contexts/TourProvider";
 import Tour, { StepType, useTour } from "@reactour/tour";
 import { Plus } from "lucide-react";
@@ -148,11 +148,9 @@ function Page() {
 	];
 
 	return (
-		<DatabaseProvider>
-			<TourProv steps={steps}>
-				<DatabaseContent />
-			</TourProv>
-		</DatabaseProvider>
+		<TourProv steps={steps}>
+			<DatabaseContent />
+		</TourProv>
 	);
 }
 

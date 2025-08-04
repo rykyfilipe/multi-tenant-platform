@@ -8,7 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Database, Table, Users, Key, Globe, Settings } from "lucide-react";
+import {
+	Database,
+	Table,
+	Users,
+	Key,
+	Globe,
+	Settings,
+	HardDrive,
+} from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 
 interface PlanLimits {
@@ -17,6 +25,7 @@ interface PlanLimits {
 	users: number;
 	apiTokens: number;
 	publicTables: number;
+	storage: number;
 }
 
 interface CurrentCounts {
@@ -25,6 +34,13 @@ interface CurrentCounts {
 	users: number;
 	apiTokens: number;
 	publicTables: number;
+	storage: {
+		used: number;
+		total: number;
+		percentage: number;
+		isNearLimit: boolean;
+		isOverLimit: boolean;
+	};
 }
 
 const PLAN_LIMITS: Record<string, PlanLimits> = {
@@ -34,6 +50,7 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
 		users: 2,
 		apiTokens: 1,
 		publicTables: 0,
+		storage: 1,
 	},
 	Pro: {
 		databases: 1,
@@ -41,6 +58,7 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
 		users: 5,
 		apiTokens: 3,
 		publicTables: 2,
+		storage: 10,
 	},
 	Enterprise: {
 		databases: 10,
@@ -48,6 +66,7 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
 		users: 20,
 		apiTokens: 10,
 		publicTables: 10,
+		storage: 100,
 	},
 };
 
@@ -57,6 +76,7 @@ const LIMIT_ICONS = {
 	users: Users,
 	apiTokens: Key,
 	publicTables: Globe,
+	storage: HardDrive,
 };
 
 const LIMIT_LABELS = {
@@ -65,6 +85,7 @@ const LIMIT_LABELS = {
 	users: "Users",
 	apiTokens: "API Tokens",
 	publicTables: "Public Tables",
+	storage: "Storage",
 };
 
 export default function PlanLimitsDisplay() {
@@ -77,22 +98,51 @@ export default function PlanLimitsDisplay() {
 	const currentPlan = session?.subscription?.plan || "Starter";
 	const planLimits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.Starter;
 
-	const { token } = useApp();
+	const { token, tenant } = useApp();
 
 	useEffect(() => {
 		async function fetchCounts() {
 			try {
-				const response = await fetch("/api/user/limits", {
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-				});
-				if (response.ok) {
-					const data = await response.json();
-					setCurrentCounts(data);
+				const [limitsResponse, memoryResponse] = await Promise.all([
+					fetch("/api/user/limits", {
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+					}),
+					fetch(`/api/tenants/${tenant?.id}/memory`, {
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}),
+				]);
+
+				if (limitsResponse.ok && memoryResponse.ok) {
+					const limitsData = await limitsResponse.json();
+					const memoryData = await memoryResponse.json();
+
+					const memoryInfo = memoryData.success
+						? memoryData.data
+						: {
+								usedGB: 0,
+								limitGB: planLimits.storage,
+								percentage: 0,
+								isNearLimit: false,
+								isOverLimit: false,
+						  };
+
+					setCurrentCounts({
+						...limitsData,
+						storage: {
+							used: memoryInfo.usedGB,
+							total: memoryInfo.limitGB,
+							percentage: memoryInfo.percentage,
+							isNearLimit: memoryInfo.isNearLimit,
+							isOverLimit: memoryInfo.isOverLimit,
+						},
+					});
 				} else {
-					console.error("Failed to fetch limits:", response.status);
+					console.error("Failed to fetch limits:", limitsResponse.status);
 				}
 			} catch (error) {
 				console.error("Error fetching limits:", error);
@@ -101,10 +151,10 @@ export default function PlanLimitsDisplay() {
 			}
 		}
 
-		if (session?.user?.id) {
+		if (session?.user?.id && token && tenant) {
 			fetchCounts();
 		}
-	}, [session?.user?.id]);
+	}, [session?.user?.id, token, tenant, planLimits.storage]);
 
 	if (loading) {
 		return (
@@ -151,13 +201,94 @@ export default function PlanLimitsDisplay() {
 				<h4 className='text-md font-medium text-gray-900'>Resource Usage</h4>
 				<div className='space-y-4'>
 					{Object.entries(planLimits).map(([key, limit]) => {
+						if (key === "storage") {
+							const storageData = currentCounts?.storage;
+							if (!storageData) return null;
+
+							const percentage = storageData.percentage;
+							const Icon = LIMIT_ICONS[key as keyof typeof LIMIT_ICONS];
+							const isAtLimit = storageData.isOverLimit;
+							const isNearLimit = storageData.isNearLimit;
+
+							return (
+								<div
+									key={key}
+									className='p-4 border rounded-lg hover:shadow-sm transition-shadow'>
+									<div className='flex items-center justify-between mb-3'>
+										<div className='flex items-center space-x-3'>
+											<div
+												className={`p-2 rounded-lg ${
+													isAtLimit
+														? "bg-red-100"
+														: isNearLimit
+														? "bg-yellow-100"
+														: "bg-blue-100"
+												}`}>
+												<Icon
+													className={`w-4 h-4 ${
+														isAtLimit
+															? "text-red-600"
+															: isNearLimit
+															? "text-yellow-600"
+															: "text-blue-600"
+													}`}
+												/>
+											</div>
+											<div>
+												<span className='text-sm font-medium text-gray-900'>
+													{LIMIT_LABELS[key as keyof PlanLimits]}
+												</span>
+												<p className='text-xs text-gray-500'>
+													Used {storageData.used.toFixed(3)} of{" "}
+													{storageData.total} GB
+												</p>
+											</div>
+										</div>
+										<div className='text-right'>
+											<span
+												className={`text-sm font-semibold ${
+													isAtLimit
+														? "text-red-600"
+														: isNearLimit
+														? "text-yellow-600"
+														: "text-gray-900"
+												}`}>
+												{storageData.used.toFixed(3)} / {storageData.total} GB
+											</span>
+										</div>
+									</div>
+									<Progress
+										value={percentage}
+										className='h-2'
+										style={{
+											backgroundColor: isAtLimit
+												? "#fef2f2"
+												: isNearLimit
+												? "#fffbeb"
+												: "#f3f4f6",
+										}}
+									/>
+									{isAtLimit && (
+										<div className='mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700'>
+											⚠️ Storage limit exceeded. Upgrade your plan for more
+											storage.
+										</div>
+									)}
+									{isNearLimit && !isAtLimit && (
+										<div className='mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700'>
+											⚠️ Getting close to your storage limit. Consider upgrading
+											your plan.
+										</div>
+									)}
+								</div>
+							);
+						}
+
 						const current = currentCounts?.[key as keyof CurrentCounts] || 0;
 						const percentage = limit > 0 ? (current / limit) * 100 : 0;
 						const Icon = LIMIT_ICONS[key as keyof typeof LIMIT_ICONS];
 						const isAtLimit = current >= limit;
 						const isNearLimit = percentage >= 80;
-
-						// Debug logging removed for production
 
 						return (
 							<div
