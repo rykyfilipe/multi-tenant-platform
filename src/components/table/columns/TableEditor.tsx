@@ -156,7 +156,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 
 	const handleSaveCellWrapper = (
 		columnId: string,
-		fieldName: keyof CreateColumnRequest,
+		fieldName: keyof Column,
 		value: any,
 	) => {
 		handleSaveCell(

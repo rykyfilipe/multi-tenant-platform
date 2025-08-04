@@ -1,18 +1,18 @@
 /** @format */
 import { useState } from "react";
-import { Column, ColumnSchema } from "@/types/database";
+import { Column } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 
 function useColumnsTableEditor() {
 	const { user } = useApp();
 	const [editingCell, setEditingCell] = useState<{
 		columnId: string;
-		fieldName: keyof ColumnSchema;
+		fieldName: keyof Column;
 	} | null>(null);
 
 	const handleCancelEdit = () => setEditingCell(null);
 
-	const handleEditCell = (columnId: string, fieldName: keyof ColumnSchema) => {
+	const handleEditCell = (columnId: string, fieldName: keyof Column) => {
 		if (user.role !== "VIEWER") setEditingCell({ columnId, fieldName });
 	};
 
@@ -21,7 +21,7 @@ function useColumnsTableEditor() {
 
 	const handleSaveCell = async (
 		columnId: string,
-		fieldName: keyof ColumnSchema,
+		fieldName: keyof Column,
 		value: any,
 		columns: Column[],
 		setColumns: (cols: Column[]) => void,
