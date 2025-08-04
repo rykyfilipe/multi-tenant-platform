@@ -40,21 +40,23 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Cancel the subscription at period end
-		const canceledSubscription = await stripe.subscriptions.update(
+		const canceledSubscription = (await stripe.subscriptions.update(
 			subscriptionId,
 			{
 				cancel_at_period_end: true,
 			},
-		);
+		)) as Stripe.Subscription & { current_period_end?: number };
 
 		// Update the user's subscription status in the database
+		const currentPeriodEnd = canceledSubscription.current_period_end
+			? new Date(canceledSubscription.current_period_end * 1000)
+			: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now as fallback
+
 		await prisma.user.update({
 			where: { id: user.id },
 			data: {
 				subscriptionStatus: "canceled",
-				subscriptionCurrentPeriodEnd: new Date(
-					canceledSubscription.current_period_end * 1000,
-				),
+				subscriptionCurrentPeriodEnd: currentPeriodEnd,
 			},
 		});
 
