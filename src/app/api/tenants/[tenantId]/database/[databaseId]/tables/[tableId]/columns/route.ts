@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth";
 import { z } from "zod";
 import { colExists } from "@/lib/utils";
+import { Column } from "@/types/database";
 
 // === VALIDARE ===
 const ColumnSchema = z.object({
@@ -108,9 +109,15 @@ export async function POST(
 			);
 		}
 
+		// Transform Prisma columns to match the expected Column interface
+		const transformedColumns: Column[] = table.columns.map((col) => ({
+			...col,
+			referenceTableId: col.referenceTableId ?? undefined,
+		}));
+
 		// Verificăm dacă coloanele există deja
 		for (const column of parsedData.columns) {
-			if (colExists(table.columns, column.name)) {
+			if (colExists(transformedColumns, column)) {
 				return NextResponse.json(
 					{ error: `Column "${column.name}" already exists` },
 					{ status: 409 },

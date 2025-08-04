@@ -14,7 +14,6 @@ import {
 export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
-	
 ) {
 	try {
 		const session = await getServerSession(authOptions);
@@ -61,7 +60,7 @@ export async function GET(
 
 export async function POST(
 	request: NextRequest,
-	{ params }: { params: { tenantId: string } },
+	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
 	try {
 		const session = await getServerSession(authOptions);
@@ -69,8 +68,10 @@ export async function POST(
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const tenantId = parseInt(params.tenantId);
-		if (isNaN(tenantId)) {
+		const { tenantId } = await params;
+
+		const tenantIdInt = parseInt(tenantId);
+		if (isNaN(tenantIdInt)) {
 			return NextResponse.json({ error: "Invalid tenant ID" }, { status: 400 });
 		}
 
@@ -80,13 +81,13 @@ export async function POST(
 			include: { tenant: true },
 		});
 
-		if (!user || user.tenantId !== tenantId) {
+		if (!user || user.tenantId !== tenantIdInt) {
 			return NextResponse.json({ error: "Access denied" }, { status: 403 });
 		}
 
 		// Update storage usage
-		const memoryUsage = await updateTenantMemoryUsage(tenantId);
-		const limitCheck = await checkMemoryLimit(tenantId);
+		const memoryUsage = await updateTenantMemoryUsage(tenantIdInt);
+		const limitCheck = await checkMemoryLimit(tenantIdInt);
 
 		return NextResponse.json({
 			success: true,
