@@ -1,7 +1,7 @@
 /** @format */
 // Storage tracking service for tenant data usage
 
-import { prisma } from "./prisma";
+import prisma from "./prisma";
 
 export interface MemoryUsage {
 	usedGB: number;

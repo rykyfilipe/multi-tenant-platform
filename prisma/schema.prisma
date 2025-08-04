@@ -9,104 +9,84 @@ datasource db {
 }
 
 model Tenant {
-  id      Int    @id @default(autoincrement())
-  name    String @unique
-  adminId Int    @unique
-  admin   User   @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Cascade)
-  users   User[] @relation("TenantUsers")
-
-  logoUrl   String?
-  theme     String?
-  timezone  String?
-  language  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyEmail String?
-  phone        String?
-  website      String?
-  address      String?
-
-  // Memory usage tracking
-  memoryUsedGB Float @default(0.0) // Memory used in GB
-  memoryLimitGB Float @default(1.0) // Memory limit in GB based on plan
-  lastMemoryUpdate DateTime @default(now())
-
-  databases Database[]
-
-  tablePermissions  TablePermission[]
+  id                Int                @id @default(autoincrement())
+  name              String             @unique
+  adminId           Int                @unique
+  address           String?
+  companyEmail      String?
+  createdAt         DateTime           @default(now())
+  language          String?
+  logoUrl           String?
+  phone             String?
+  theme             String?
+  timezone          String?
+  updatedAt         DateTime           @updatedAt
+  website           String?
   columnPermissions ColumnPermission[]
+  databases         Database[]
+  tablePermissions  TablePermission[]
+  admin             User               @relation("TenantAdmin", fields: [adminId], references: [id])
+  users             User[]             @relation("TenantUsers")
 }
 
 model User {
-  id        Int    @id @default(autoincrement())
-  email     String @unique
-  firstName String
-  lastName  String
-  password  String?
-  role      Role
-
-  accounts Account[] // ← necesar pt OAuth
-  sessions Session[]
-
-  tenantId Int?
-  tenant   Tenant? @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
-
-  adminOf           Tenant?            @relation("TenantAdmin")
-  apiTokens         ApiToken[]
-  tablePermissions  TablePermission[]
-  columnPermissions ColumnPermission[]
-
-  // Stripe subscription fields
-  stripeCustomerId        String?
-  stripeSubscriptionId    String?
-  subscriptionStatus      String?
-  subscriptionPlan        String?
+  id                           Int                @id @default(autoincrement())
+  email                        String             @unique
+  firstName                    String
+  lastName                     String
+  password                     String?
+  role                         Role
+  tenantId                     Int?
+  stripeCustomerId             String?
+  stripeSubscriptionId         String?
   subscriptionCurrentPeriodEnd DateTime?
+  subscriptionPlan             String?
+  subscriptionStatus           String?
+  accounts                     Account[]
+  apiTokens                    ApiToken[]
+  columnPermissions            ColumnPermission[]
+  sessions                     Session[]
+  tablePermissions             TablePermission[]
+  adminOf                      Tenant?            @relation("TenantAdmin")
+  tenant                       Tenant?            @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Database {
-  id       Int     @id @default(autoincrement())
-  name     String  @default("Main Database")
-  tenantId Int
-  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tables   Table[]
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
   createdAt DateTime @default(now())
+  name      String   @default("Main Database")
   updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tables    Table[]
 }
 
 model Table {
-  id         Int      @id @default(autoincrement())
-  name       String
-  databaseId Int
-  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
-
-  description String
-  isPublic    Boolean @default(false)
-  columns     Column[]
-  rows        Row[]
-
-  referencedByColumns Column[] @relation("ReferenceColumnTable")
-
-  tablePermissions  TablePermission[]
-  columnPermissions ColumnPermission[]
+  id                  Int                @id @default(autoincrement())
+  databaseId          Int
+  name                String
+  description         String
+  isPublic            Boolean            @default(false)
+  referencedByColumns Column[]           @relation("ReferenceColumnTable")
+  columns             Column[]
+  columnPermissions   ColumnPermission[]
+  rows                Row[]
+  database            Database           @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  tablePermissions    TablePermission[]
 }
 
 model Column {
-  id            Int     @id @default(autoincrement())
-  name          String
-  type          String
-  required      Boolean @default(false)
-  primary       Boolean @default(false)
-  autoIncrement Boolean @default(false)
-  tableId       Int
-  table         Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
-
-  cells Cell[]
-
-  referenceTableId Int?
-  referenceTable   Table? @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id], onDelete: SetNull)
-
+  id                Int                @id @default(autoincrement())
+  name              String
+  type              String
+  required          Boolean            @default(false)
+  primary           Boolean            @default(false)
+  autoIncrement     Boolean            @default(false)
+  tableId           Int
+  referenceTableId  Int?
+  cells             Cell[]
+  referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
+  table             Table              @relation(fields: [tableId], references: [id], onDelete: Cascade)
   columnPermissions ColumnPermission[]
 }
 
@@ -114,29 +94,21 @@ model Row {
   id        Int      @id @default(autoincrement())
   tableId   Int
   createdAt DateTime @default(now())
-  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
   cells     Cell[]
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
 }
 
 model Cell {
-  id       Int  @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   rowId    Int
   columnId Int
   value    Json
-
-  row    Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
-  column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
-}
-
-enum Role {
-  ADMIN
-  EDITOR
-  VIEWER
+  column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  row      Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
 }
 
 model ApiToken {
   id        String    @id @default(cuid())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   tokenHash String    @unique
   name      String?
@@ -144,28 +116,24 @@ model ApiToken {
   createdAt DateTime  @default(now())
   expiresAt DateTime?
   revoked   Boolean   @default(false)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model TablePermission {
-  id Int @id @default(autoincrement())
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  tableId Int
-  table   Table @relation(fields: [tableId], references: [id], onDelete: Cascade)
-
-  tenantId Int
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  canRead   Boolean @default(false)
-  canEdit   Boolean @default(false)
-  canDelete Boolean @default(false)
-
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tableId   Int
+  tenantId  Int
+  canRead   Boolean  @default(false)
+  canEdit   Boolean  @default(false)
+  canDelete Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, tableId])
   @@index([tenantId])
@@ -174,25 +142,19 @@ model TablePermission {
 }
 
 model ColumnPermission {
-  id Int @id @default(autoincrement())
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  columnId Int
-  column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
-
-  tableId Int
-  table   Table @relation(fields: [tableId], references: [id], onDelete: Cascade)
-
-  tenantId Int
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  canRead Boolean @default(false)
-  canEdit Boolean @default(false)
-
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  columnId  Int
+  tenantId  Int
+  canRead   Boolean  @default(false)
+  canEdit   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  tableId   Int
+  column    Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, columnId])
   @@index([tenantId])
@@ -203,7 +165,6 @@ model ColumnPermission {
 model Account {
   id                Int     @id @default(autoincrement())
   userId            Int
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   type              String
   provider          String
   providerAccountId String
@@ -214,6 +175,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -222,8 +184,8 @@ model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       Int
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -232,4 +194,10 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
 }
