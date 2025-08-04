@@ -284,7 +284,10 @@ export default function PlanLimitsDisplay() {
 							);
 						}
 
-						const current = currentCounts?.[key as keyof CurrentCounts] || 0;
+						const current =
+							(currentCounts?.[
+								key as keyof Omit<CurrentCounts, "storage">
+							] as number) || 0;
 						const percentage = limit > 0 ? (current / limit) * 100 : 0;
 						const Icon = LIMIT_ICONS[key as keyof typeof LIMIT_ICONS];
 						const isAtLimit = current >= limit;
