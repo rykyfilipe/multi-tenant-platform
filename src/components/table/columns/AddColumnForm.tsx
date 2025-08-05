@@ -2,7 +2,7 @@
 
 "use client";
 
-import { FormEvent, useCallback, useMemo } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { CreateColumnRequest, Table, Column } from "@/types/database";
 import { Button } from "../../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -22,6 +22,7 @@ import {
 	PROPERTY_LABELS,
 	PROPERTY_DESCRIPTIONS,
 } from "@/lib/columnTypes";
+import { X, Plus } from "lucide-react";
 
 interface Props {
 	newColumn: CreateColumnRequest | null;
@@ -51,6 +52,8 @@ export default function AddColumnForm({
 }: Props) {
 	if (!tables) return null;
 
+	const [newOption, setNewOption] = useState("");
+
 	const currentColumn = useMemo(
 		() =>
 			newColumn || {
@@ -59,6 +62,7 @@ export default function AddColumnForm({
 				required: false,
 				primary: false,
 				referenceTableId: undefined,
+				customOptions: [],
 			},
 		[newColumn],
 	);
@@ -86,6 +90,21 @@ export default function AddColumnForm({
 		},
 		[updateColumn],
 	);
+
+	const handleAddCustomOption = useCallback(() => {
+		if (newOption.trim() && currentColumn.customOptions) {
+			const updatedOptions = [...currentColumn.customOptions, newOption.trim()];
+			updateColumn("customOptions", updatedOptions);
+			setNewOption("");
+		}
+	}, [newOption, currentColumn.customOptions, updateColumn]);
+
+	const handleRemoveCustomOption = useCallback((index: number) => {
+		if (currentColumn.customOptions) {
+			const updatedOptions = currentColumn.customOptions.filter((_, i) => i !== index);
+			updateColumn("customOptions", updatedOptions);
+		}
+	}, [currentColumn.customOptions, updateColumn]);
 
 	const renderBooleanField = useCallback(
 		(field: FieldMeta) => {
@@ -186,6 +205,66 @@ export default function AddColumnForm({
 		[currentColumn, handleStringChange],
 	);
 
+	const renderCustomOptionsField = useCallback(() => {
+		return (
+			<div className='space-y-3 col-span-2'>
+				<Label className='text-sm font-medium'>
+					Custom Options
+					<span className='text-destructive ml-1'>*</span>
+				</Label>
+				<div className='space-y-2'>
+					<div className='flex gap-2'>
+						<Input
+							type='text'
+							value={newOption}
+							onChange={(e) => setNewOption(e.target.value)}
+							placeholder='Enter option value'
+							className='flex-1'
+							onKeyPress={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									handleAddCustomOption();
+								}
+							}}
+						/>
+						<Button
+							type='button'
+							variant='outline'
+							size='sm'
+							onClick={handleAddCustomOption}
+							disabled={!newOption.trim()}
+						>
+							<Plus className='w-4 h-4' />
+						</Button>
+					</div>
+					
+					{currentColumn.customOptions && currentColumn.customOptions.length > 0 && (
+						<div className='space-y-2'>
+							<p className='text-xs text-muted-foreground'>Added options:</p>
+							<div className='flex flex-wrap gap-2'>
+								{currentColumn.customOptions.map((option, index) => (
+									<div
+										key={index}
+										className='flex items-center gap-1 bg-secondary px-2 py-1 rounded-md text-sm'
+									>
+										<span>{option}</span>
+										<button
+											type='button'
+											onClick={() => handleRemoveCustomOption(index)}
+											className='text-muted-foreground hover:text-destructive'
+										>
+											<X className='w-3 h-3' />
+										</button>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+		);
+	}, [newOption, currentColumn.customOptions, handleAddCustomOption, handleRemoveCustomOption]);
+
 	const columnSchemaMeta: FieldMeta[] = useMemo(() => {
 		const base: FieldMeta[] = [
 			{
@@ -270,12 +349,17 @@ export default function AddColumnForm({
 		const hasValidPrimaryKey = !(
 			currentColumn.primary && existingColumns.some((col) => col.primary)
 		);
+		const hasValidCustomOptions = 
+			currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.customArray
+				? currentColumn.customOptions && currentColumn.customOptions.length > 0
+				: true;
 
 		return (
 			hasValidName &&
 			hasValidType &&
 			hasValidReference &&
 			hasValidPrimaryKey &&
+			hasValidCustomOptions &&
 			hasAvailableReferenceTables
 		);
 	}, [currentColumn, existingColumns, hasAvailableReferenceTables]);
@@ -296,12 +380,25 @@ export default function AddColumnForm({
 					{columnSchemaMeta.map(renderField)}
 				</div>
 
+				{/* Custom Options Field for customArray type */}
+				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.customArray && 
+					renderCustomOptionsField()}
+
 				{/* Validation Warnings */}
 				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link &&
 					!hasAvailableReferenceTables && (
 						<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
 							<p className='text-sm text-amber-800'>
 								⚠️ No tables with primary keys available for linking
+							</p>
+						</div>
+					)}
+
+				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.customArray &&
+					(!currentColumn.customOptions || currentColumn.customOptions.length === 0) && (
+						<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+							<p className='text-sm text-amber-800'>
+								⚠️ Please add at least one option for the custom dropdown
 							</p>
 						</div>
 					)}

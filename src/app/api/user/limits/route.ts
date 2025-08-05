@@ -20,7 +20,6 @@ export async function GET(request: Request) {
 
 	try {
 		const currentCounts = await getCurrentCounts(userId);
-		console.log("Current counts for user", userId, ":", currentCounts);
 		return NextResponse.json(currentCounts);
 	} catch (error) {
 		console.error("Error fetching user limits:", error);

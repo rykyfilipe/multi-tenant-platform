@@ -29,7 +29,11 @@ interface Props {
 }
 
 // Type validation utilities
-const validateCellValue = (value: string, type: string): boolean => {
+const validateCellValue = (
+	value: string,
+	type: string,
+	column?: Column,
+): boolean => {
 	switch (type) {
 		case USER_FRIENDLY_COLUMN_TYPES.number:
 			return !isNaN(Number(value)) && value.trim() !== "";
@@ -39,6 +43,12 @@ const validateCellValue = (value: string, type: string): boolean => {
 			return !isNaN(Date.parse(value));
 		case USER_FRIENDLY_COLUMN_TYPES.link:
 			return value.trim() !== ""; // Pentru link-uri, acceptăm orice string valid
+		case USER_FRIENDLY_COLUMN_TYPES.customArray:
+			// Pentru customArray, verificăm că valoarea există în opțiunile definite
+			if (column?.customOptions && column.customOptions.length > 0) {
+				return column.customOptions.includes(value);
+			}
+			return false; // Dacă nu sunt opțiuni definite, nu este valid
 		case USER_FRIENDLY_COLUMN_TYPES.text:
 		default:
 			return true;
@@ -55,6 +65,8 @@ const formatCellValue = (value: any, type: string): any => {
 			return new Date(value).toISOString();
 		case USER_FRIENDLY_COLUMN_TYPES.link:
 			return String(value); // Pentru link-uri, păstrăm ca string
+		case USER_FRIENDLY_COLUMN_TYPES.customArray:
+			return String(value); // Pentru customArray, păstrăm ca string
 		case USER_FRIENDLY_COLUMN_TYPES.text:
 		default:
 			return value;
@@ -232,7 +244,7 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 		// Check type validation
 		columns?.forEach((col) => {
 			const cellValue = getCellValue(col.id);
-			if (cellValue.trim() && !validateCellValue(cellValue, col.type)) {
+			if (cellValue.trim() && !validateCellValue(cellValue, col.type, col)) {
 				errors.push(`${col.name} must be a valid ${col.type}`);
 			}
 		});
@@ -384,6 +396,39 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 									, Options: {options.length}
 								</div>
 							)}
+						</div>
+					);
+
+				case "customArray":
+					// Verificăm dacă avem customOptions
+					if (!column.customOptions || column.customOptions.length === 0) {
+						return (
+							<div key={`field-${column.id}`} className={divClassName}>
+								{commonLabelJSX}
+								<div className='p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800'>
+									⚠️ No custom options defined for this column
+								</div>
+							</div>
+						);
+					}
+
+					return (
+						<div key={`field-${column.id}`} className={divClassName}>
+							{commonLabelJSX}
+							<Select
+								value={cellValue}
+								onValueChange={(val) => updateCell(column.id, val)}>
+								<SelectTrigger className={hasError ? "border-destructive" : ""}>
+									<SelectValue placeholder='Select an option' />
+								</SelectTrigger>
+								<SelectContent>
+									{column.customOptions.map((option) => (
+										<SelectItem key={option} value={option}>
+											{option}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
 					);
 

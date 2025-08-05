@@ -167,17 +167,19 @@ export const useDashboardData = () => {
 					subscription?.subscriptionPlan || null,
 				);
 
+				console.log("planLimits", planLimits);
+
 				// Get memory data
 				const memoryInfo = memoryData.success
 					? memoryData.data
 					: {
 							usedGB: 0,
-							limitGB: planLimits.storage,
+							limitGB: planLimits.storage / 1024,
 							percentage: 0,
 							isNearLimit: false,
 							isOverLimit: false,
 					  };
-
+				console.log("memoryInfo", memoryInfo);
 				// Create dashboard data
 				const dashboardData: DashboardData = {
 					stats: {
@@ -188,7 +190,7 @@ export const useDashboardData = () => {
 						activeUsers,
 						subscriptionStatus:
 							subscription?.subscriptionStatus || "no_subscription",
-						planName: subscription?.subscriptionPlan || "Free",
+						planName: subscription?.subscriptionPlan || "Starter",
 						memoryUsedGB: memoryInfo.usedGB,
 						memoryLimitGB: memoryInfo.limitGB,
 						memoryPercentage: memoryInfo.percentage,
@@ -230,8 +232,8 @@ export const useDashboardData = () => {
 					},
 					usageData: {
 						storage: {
-							used: Math.round(totalRows * 0.001 * 100) / 100,
-							total: planLimits.storage,
+							used: memoryInfo.usedGB,
+							total: memoryInfo.limitGB,
 							unit: "GB",
 						},
 						tables: {
@@ -240,7 +242,7 @@ export const useDashboardData = () => {
 						},
 						rows: {
 							used: totalRows,
-							total: planLimits.tables * 10000, // Mock limit
+							total: planLimits.rows, // Use actual plan limit
 						},
 						databases: {
 							used: databases.length,

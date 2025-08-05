@@ -11,7 +11,8 @@ export interface PlanLimits {
 	users: number;
 	apiTokens: number;
 	publicTables: number;
-	storage: number; // in GB
+	storage: number; // in MB
+	rows: number; // total rows across all tables
 }
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
@@ -21,7 +22,8 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		users: 2,
 		apiTokens: 1,
 		publicTables: 0,
-		storage: 1,
+		storage: 100, // 100 MB
+		rows: 10000, // 10.000 rows
 	},
 	Pro: {
 		databases: 5,
@@ -29,15 +31,17 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		users: 10,
 		apiTokens: 5,
 		publicTables: 2,
-		storage: 10,
+		storage: 1024, // 1 GB
+		rows: 100000, // 100.000 rows
 	},
-	Enterprise: {
+	Business: {
 		databases: 999,
 		tables: 999,
 		users: 999,
 		apiTokens: 10,
 		publicTables: 10,
-		storage: 100,
+		storage: 5120, // 5 GB
+		rows: 1000000, // 1.000.000 rows
 	},
 };
 
@@ -48,7 +52,7 @@ export const PLAN_FEATURES: Record<
 		tables: number | string;
 		users: number | string;
 		storage: string;
-		memory: string;
+		rows: string;
 		price: string;
 	}
 > = {
@@ -56,24 +60,24 @@ export const PLAN_FEATURES: Record<
 		databases: 1,
 		tables: 5,
 		users: 2,
-		storage: "1GB",
-		memory: "1GB",
+		storage: "100 MB",
+		rows: "10.000 rows",
 		price: "$0/month",
 	},
 	Pro: {
 		databases: 5,
 		tables: 25,
 		users: 10,
-		storage: "10GB",
-		memory: "10GB",
+		storage: "1 GB",
+		rows: "100.000 rows",
 		price: "$29/month",
 	},
-	Enterprise: {
+	Business: {
 		databases: "Unlimited",
 		tables: "Unlimited",
 		users: "Unlimited",
-		storage: "100GB",
-		memory: "100GB",
+		storage: "5 GB",
+		rows: "1.000.000 rows",
 		price: "$99/month",
 	},
 };
@@ -88,4 +92,8 @@ export const getPlanFeatures = (plan: string | null) => {
 
 export const getMemoryLimitForPlan = (plan: string | null): number => {
 	return getPlanLimits(plan).storage;
+};
+
+export const getRowsLimitForPlan = (plan: string | null): number => {
+	return getPlanLimits(plan).rows;
 };

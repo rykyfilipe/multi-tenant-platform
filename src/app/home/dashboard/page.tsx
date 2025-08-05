@@ -14,17 +14,24 @@ import {
 	Activity,
 	AlertCircle,
 	RefreshCw,
+	Settings,
+	FileText,
+	ExternalLink,
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import DatabaseChart from "@/components/dashboard/DatabaseChart";
 import UserActivityChart from "@/components/dashboard/UserActivityChart";
 import DataUsageChart from "@/components/dashboard/DataUsageChart";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useApp } from "@/contexts/AppContext";
 
 function DashboardPage() {
 	const { data: session } = useSession();
 	const { data, loading, error } = useDashboardData();
-
+	const { user } = useApp();
+	console.log(data);
 	if (!session) return null;
 
 	if (loading) {
@@ -204,11 +211,64 @@ function DashboardPage() {
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4'>
-								{/* Quick action buttons would go here */}
-								<div className='text-sm text-muted-foreground text-center py-4'>
-									Quick actions coming soon...
-								</div>
+							<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4'>
+								<Link href='/home/database'>
+									<Button
+										variant='outline'
+										className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
+										<Database className='w-5 h-5' />
+										<span>View Database</span>
+										<span className='text-xs text-muted-foreground'>
+											Access your organization's data
+										</span>
+									</Button>
+								</Link>
+								<Link href='/home/users'>
+									<Button
+										variant='outline'
+										className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
+										<Users className='w-5 h-5' />
+										<span>Manage Users</span>
+										<span className='text-xs text-muted-foreground'>
+											Add, remove, or edit team members
+										</span>
+									</Button>
+								</Link>
+								<Link href='/home/public-api'>
+									<Button
+										variant='outline'
+										className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
+										<FileText className='w-5 h-5' />
+										<span>API Documentation</span>
+										<span className='text-xs text-muted-foreground'>
+											View and manage API tokens
+										</span>
+									</Button>
+								</Link>
+								<Link href='/home/settings'>
+									<Button
+										variant='outline'
+										className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
+										<Settings className='w-5 h-5' />
+										<span>Settings</span>
+										<span className='text-xs text-muted-foreground'>
+											Configure account preferences
+										</span>
+									</Button>
+								</Link>
+								{user?.role === "ADMIN" && (
+									<Link href='/home/tenant'>
+										<Button
+											variant='outline'
+											className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
+											<ExternalLink className='w-5 h-5' />
+											<span>Organization</span>
+											<span className='text-xs text-muted-foreground'>
+												Manage organization settings
+											</span>
+										</Button>
+									</Link>
+								)}
 							</div>
 						</CardContent>
 					</Card>

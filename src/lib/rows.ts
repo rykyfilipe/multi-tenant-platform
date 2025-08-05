@@ -8,6 +8,7 @@ type Column = {
 	name: string;
 	type: string;
 	required: boolean;
+	customOptions?: string[];
 };
 
 type CellInput = {
@@ -92,6 +93,25 @@ export async function createRowWithCells(
 					value = "";
 				} else {
 					value = date.toISOString();
+				}
+				break;
+
+			case USER_FRIENDLY_COLUMN_TYPES.customArray:
+				// Pentru customArray, verificăm că valoarea există în opțiunile definite
+				if (col.customOptions && col.customOptions.length > 0) {
+					if (!col.customOptions.includes(String(cell.value))) {
+						if (col.required) {
+							throw new Error(`Column '${col.name}' must be one of: ${col.customOptions.join(", ")}`);
+						}
+						value = "";
+					} else {
+						value = String(cell.value);
+					}
+				} else {
+					if (col.required) {
+						throw new Error(`Column '${col.name}' has no custom options defined`);
+					}
+					value = "";
 				}
 				break;
 

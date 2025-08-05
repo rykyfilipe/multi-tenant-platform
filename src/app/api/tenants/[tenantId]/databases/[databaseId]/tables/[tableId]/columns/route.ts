@@ -14,11 +14,19 @@ import { Column } from "@/types/database";
 // === VALIDARE ===
 const ColumnSchema = z.object({
 	name: z.string().min(1, "Name is mandatory"),
-	type: z.enum(["string", "boolean", "number", "date", "reference"]),
+	type: z.enum([
+		"string",
+		"boolean",
+		"number",
+		"date",
+		"reference",
+		"customArray",
+	]),
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
 	referenceTableId: z.number().optional(), // doar pt type "reference"
+	customOptions: z.array(z.string()).optional(), // doar pt type "customArray"
 });
 
 const ColumnsSchema = z.object({
@@ -42,6 +50,8 @@ const getDefaultValue = (
 				return new Date().toISOString();
 			case "reference":
 				return null; // referințele încep goale
+			case "customArray":
+				return null; // customArray începe gol
 			default:
 				return "";
 		}
@@ -78,7 +88,7 @@ export async function POST(
 	try {
 		const body = await request.json();
 		const parsedData = ColumnsSchema.parse(body);
-		console.log("Parsed Data:", parsedData);
+
 
 		// Verificăm că baza de date există și aparține tenant-ului
 		const database = await prisma.database.findFirst({
@@ -167,6 +177,18 @@ export async function POST(
 					);
 				}
 			}
+
+			// Verificăm că coloanele customArray au opțiuni definite
+			if (column.type === "customArray") {
+				if (!column.customOptions || column.customOptions.length === 0) {
+					return NextResponse.json(
+						{
+							error: `Column "${column.name}" of type customArray must have at least one custom option defined.`,
+						},
+						{ status: 400 },
+					);
+				}
+			}
 		}
 
 		// Creăm coloanele
@@ -179,6 +201,7 @@ export async function POST(
 					required: columnData.required || false,
 					primary: columnData.primary || false,
 					referenceTableId: columnData.referenceTableId || null,
+					customOptions: columnData.customOptions || undefined,
 					tableId: Number(tableId),
 				},
 			});

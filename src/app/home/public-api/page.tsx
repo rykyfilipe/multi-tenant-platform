@@ -80,7 +80,7 @@ const ApiTokensPage = () => {
 			}
 
 			const result = await res.json();
-			console.log(result);
+	
 			setTokens((prev) => [...prev, result]);
 			setShowCreateModal(false);
 			showAlert("API token created successfully", "success");

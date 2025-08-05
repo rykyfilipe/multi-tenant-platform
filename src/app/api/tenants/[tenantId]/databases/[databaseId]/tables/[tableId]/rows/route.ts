@@ -7,6 +7,7 @@ import {
 	getUserFromRequest,
 	verifyLogin,
 } from "@/lib/auth";
+import { checkPlanLimit } from "@/lib/planLimits";
 import { z } from "zod";
 
 const RowSchema = z.object({
@@ -91,6 +92,30 @@ export async function POST(
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
+		// Verificăm limita de rânduri pentru planul utilizatorului
+		const currentRowCount = await prisma.row.count({
+			where: { table: { database: { tenantId: Number(tenantId) } } },
+		});
+
+		const rowsToAdd = isBulkImport ? parsedData.rows.length : 1;
+		const rowLimitCheck = await checkPlanLimit(
+			userId,
+			"rows",
+			currentRowCount + rowsToAdd,
+		);
+
+		if (!rowLimitCheck.allowed) {
+			return NextResponse.json(
+				{
+					error: "Row limit exceeded",
+					details: `You have ${currentRowCount} rows and are trying to add ${rowsToAdd} more. Your plan allows ${rowLimitCheck.limit} rows total.`,
+					limit: rowLimitCheck.limit,
+					current: currentRowCount,
+				},
+				{ status: 403 },
+			);
+		}
+
 		// Funcție helper pentru procesarea celulelor
 		const processCells = async (cells: any[], rowId: number) => {
 			const processedCells = [];
@@ -99,7 +124,12 @@ export async function POST(
 			for (const cell of cells) {
 				const column = table.columns.find((col) => col.id === cell.columnId);
 
-				if (column && column.type === "reference" && column.referenceTableId && cell.value) {
+				if (
+					column &&
+					column.type === "reference" &&
+					column.referenceTableId &&
+					cell.value
+				) {
 					// Pentru coloanele de referință, validăm că cheia primară există
 					const referenceTable = await prisma.table.findUnique({
 						where: { id: column.referenceTableId },
@@ -117,7 +147,9 @@ export async function POST(
 								const refPrimaryKeyCell = refRow.cells.find(
 									(refCell) => refCell.columnId === refPrimaryKeyColumn.id,
 								);
-								return refPrimaryKeyCell && refPrimaryKeyCell.value === cell.value;
+								return (
+									refPrimaryKeyCell && refPrimaryKeyCell.value === cell.value
+								);
 							});
 
 							if (!referenceRow) {
@@ -155,11 +187,16 @@ export async function POST(
 				});
 
 				// Procesăm celulele
-				const { processedCells, validationErrors } = await processCells(rowData.cells, row.id);
+				const { processedCells, validationErrors } = await processCells(
+					rowData.cells,
+					row.id,
+				);
 
 				// Adăugăm erorile de validare la lista totală
 				if (validationErrors.length > 0) {
-					allValidationErrors.push(`Row ${row.id}: ${validationErrors.join(", ")}`);
+					allValidationErrors.push(
+						`Row ${row.id}: ${validationErrors.join(", ")}`,
+					);
 				}
 
 				// Salvăm celulele valide
@@ -187,12 +224,12 @@ export async function POST(
 			// Dacă există erori de validare, le returnăm împreună cu rândurile create
 			if (allValidationErrors.length > 0) {
 				return NextResponse.json(
-					{ 
-						rows: createdRows, 
+					{
+						rows: createdRows,
 						warnings: allValidationErrors,
-						message: "Import completed with validation warnings"
-					}, 
-					{ status: 207 } // 207 Multi-Status
+						message: "Import completed with validation warnings",
+					},
+					{ status: 207 }, // 207 Multi-Status
 				);
 			}
 
@@ -206,19 +243,22 @@ export async function POST(
 			});
 
 			// Procesăm celulele
-			const { processedCells, validationErrors } = await processCells(parsedData.cells, row.id);
+			const { processedCells, validationErrors } = await processCells(
+				parsedData.cells,
+				row.id,
+			);
 
 			// Dacă există erori de validare, returnăm eroarea
 			if (validationErrors.length > 0) {
 				// Ștergem rândul creat dacă există erori
 				await prisma.row.delete({ where: { id: row.id } });
-				
+
 				return NextResponse.json(
-					{ 
-						error: "Validation failed", 
-						details: validationErrors 
-					}, 
-					{ status: 400 }
+					{
+						error: "Validation failed",
+						details: validationErrors,
+					},
+					{ status: 400 },
 				);
 			}
 

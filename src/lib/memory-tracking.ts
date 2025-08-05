@@ -119,8 +119,18 @@ export const updateTenantMemoryUsage = async (
 		// Calculate current storage usage
 		const calculation = await calculateMemoryUsage(tenantId);
 
-		// Get storage limit based on plan
-		const memoryLimitGB = getMemoryLimitForPlan(tenant.admin?.subscriptionPlan);
+		// Get storage limit based on plan (convert MB to GB)
+		const memoryLimitMB = getMemoryLimitForPlan(tenant.admin?.subscriptionPlan);
+		const memoryLimitGB = memoryLimitMB / 1024; // Convert MB to GB
+		
+		// Debug logging for plan limits
+		if (process.env.NODE_ENV === "development") {
+			console.log("Memory tracking debug:", {
+				plan: tenant.admin?.subscriptionPlan,
+				memoryLimitMB,
+				memoryLimitGB,
+			});
+		}
 
 		// Update tenant storage usage
 		const updatedTenant = await prisma.tenant.update({

@@ -29,6 +29,7 @@ export interface Column {
 	primary: boolean;
 	tableId: number;
 	referenceTableId?: number;
+	customOptions?: string[]; // Opțiuni pentru tipul customArray
 }
 
 export interface Row {
@@ -67,4 +68,5 @@ export interface CreateColumnRequest {
 	required?: boolean;
 	primary?: boolean;
 	referenceTableId?: number;
+	customOptions?: string[]; // Opțiuni pentru tipul customArray
 }

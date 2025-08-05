@@ -62,8 +62,7 @@ export async function GET(
 			},
 		});
 
-		console.log("Fetched table permissions:", tablePermissions.length);
-		console.log("Fetched column permissions:", columnsPermissions.length);
+
 
 		return NextResponse.json(
 			{ tablePermissions, columnsPermissions },
@@ -112,8 +111,7 @@ export async function PATCH(
 				{ status: 400 },
 			);
 		}
-		console.log("Updating permissions for user:", columnsPermissions);
-		console.log("Table Permissions:", tablePermissions);
+
 
 		// Update table permissions
 		for (const permission of tablePermissions) {

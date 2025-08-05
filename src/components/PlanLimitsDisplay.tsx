@@ -34,6 +34,7 @@ interface CurrentCounts {
 		isNearLimit: boolean;
 		isOverLimit: boolean;
 	};
+	rows: number;
 }
 
 const LIMIT_ICONS = {
@@ -43,6 +44,7 @@ const LIMIT_ICONS = {
 	apiTokens: Key,
 	publicTables: Globe,
 	storage: HardDrive,
+	rows: Table,
 };
 
 const LIMIT_LABELS = {
@@ -52,6 +54,7 @@ const LIMIT_LABELS = {
 	apiTokens: "API Tokens",
 	publicTables: "Public Tables",
 	storage: "Storage",
+	rows: "Rows",
 };
 
 export default function PlanLimitsDisplay() {
@@ -91,7 +94,7 @@ export default function PlanLimitsDisplay() {
 						? memoryData.data
 						: {
 								usedGB: 0,
-								limitGB: planLimits.storage,
+								limitGB: planLimits.storage / 1024, // Convert MB to GB
 								percentage: 0,
 								isNearLimit: false,
 								isOverLimit: false,

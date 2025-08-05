@@ -2,14 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-
-interface PlanLimits {
-	databases: number;
-	tables: number;
-	users: number;
-	apiTokens: number;
-	publicTables: number;
-}
+import { PLAN_LIMITS } from "@/lib/planConstants";
+import type { PlanLimits } from "@/lib/planConstants";
 
 interface CurrentCounts {
 	databases: number;
@@ -17,6 +11,8 @@ interface CurrentCounts {
 	users: number;
 	apiTokens: number;
 	publicTables: number;
+	storage: number;
+	rows: number;
 }
 
 interface LimitCheck {
@@ -33,30 +29,6 @@ export function usePlanLimits() {
 	const [loading, setLoading] = useState(true);
 
 	const currentPlan = session?.subscription?.plan || "Starter";
-
-	const PLAN_LIMITS: Record<string, PlanLimits> = {
-		Starter: {
-			databases: 1,
-			tables: 5,
-			users: 2,
-			apiTokens: 1,
-			publicTables: 0,
-		},
-		Pro: {
-			databases: 5,
-			tables: 25,
-			users: 10,
-			apiTokens: 5,
-			publicTables: 2,
-		},
-		Enterprise: {
-			databases: 999,
-			tables: 999,
-			users: 999,
-			apiTokens: 10,
-			publicTables: 10,
-		},
-	};
 
 	const planLimits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.Starter;
 

@@ -7,6 +7,7 @@ import {
 	getUserFromRequest,
 	verifyLogin,
 } from "@/lib/auth";
+import { checkPlanLimit } from "@/lib/planLimits";
 import { z } from "zod";
 
 const TablePublicSchema = z.object({
@@ -67,6 +68,30 @@ export async function PATCH(
 
 		if (!table) {
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		// Verificăm limita de tabele publice dacă încercăm să facem tabela publică
+		if (parsedData.isPublic && !table.isPublic) {
+			const currentPublicTableCount = await prisma.table.count({
+				where: {
+					database: { tenantId: Number(tenantId) },
+					isPublic: true,
+				},
+			});
+
+			const publicTableLimitCheck = await checkPlanLimit(userId, "publicTables", currentPublicTableCount + 1);
+
+			if (!publicTableLimitCheck.allowed) {
+				return NextResponse.json(
+					{
+						error: "Public table limit exceeded",
+						details: `You have ${currentPublicTableCount} public tables and your plan allows ${publicTableLimitCheck.limit} public tables.`,
+						limit: publicTableLimitCheck.limit,
+						current: currentPublicTableCount,
+					},
+					{ status: 403 },
+				);
+			}
 		}
 
 		// Actualizăm setarea publică a tabelei

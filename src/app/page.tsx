@@ -126,7 +126,7 @@ const DataHubLandingPage = () => {
 
 	const plans = [
 		{
-			name: "Starter",
+			name: "Free",
 			price: "Free",
 			period: "",
 			description: "Perfect for individuals and small projects",
@@ -135,6 +135,8 @@ const DataHubLandingPage = () => {
 				"5 tables",
 				"2 users",
 				"1 API token",
+				"100 MB storage",
+				"10.000 rows",
 				"Basic user management",
 				"API access (limited)",
 				"Community support",
@@ -153,6 +155,8 @@ const DataHubLandingPage = () => {
 				"25 tables",
 				"10 users",
 				"5 API tokens",
+				"1 GB storage",
+				"100.000 rows",
 				"2 public tables",
 				"Advanced user permissions",
 				"Full API access",
@@ -162,7 +166,7 @@ const DataHubLandingPage = () => {
 			popular: true,
 		},
 		{
-			name: "Enterprise",
+			name: "Business",
 			price: "$99",
 			period: "/month",
 			description: "For large teams and organizations",
@@ -171,6 +175,8 @@ const DataHubLandingPage = () => {
 				"Unlimited tables",
 				"Unlimited users",
 				"10 API tokens",
+				"5 GB storage",
+				"1.000.000 rows",
 				"10 public tables",
 				"Everything in Pro",
 				"Advanced security features",

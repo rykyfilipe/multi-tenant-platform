@@ -32,10 +32,6 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
-		console.log("Tables API - Tenant ID:", tenantId);
-		console.log("Tables API - User ID:", userId);
-		console.log("Tables API - Role:", role);
-
 		if (role === "ADMIN") {
 			// Pentru admin, returnăm toate tabelele din tenant
 			const tables = await prisma.table.findMany({
@@ -50,12 +46,12 @@ export async function GET(
 				},
 			});
 
-			console.log("Tables API - Found tables:", tables.length);
+	
 			return NextResponse.json(tables, { status: 200 });
 		}
 
 		// Pentru utilizatorii non-admin, returnăm doar tabelele la care au acces
-		console.log("Tables API - Fetching permissions for non-admin user");
+
 
 		const tablePermissions = await prisma.tablePermission.findMany({
 			where: {
@@ -76,13 +72,13 @@ export async function GET(
 			},
 		});
 
-		console.log("Tables API - Found permissions:", tablePermissions.length);
+
 
 		const accessibleTables = tablePermissions
 			.filter((permission) => permission.canRead)
 			.map((permission) => permission.table);
 
-		console.log("Tables API - Accessible tables:", accessibleTables.length);
+
 		return NextResponse.json(accessibleTables, { status: 200 });
 	} catch (error) {
 		console.error("Error fetching tables:", error);

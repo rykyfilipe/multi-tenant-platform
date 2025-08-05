@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import DeleteAccountButton from "./DeleteAccountButton";
+import { signOut } from "next-auth/react";
 
 interface Props {
 	user: User;
@@ -155,7 +156,7 @@ function BasicSettings({ user }: Props) {
 						: "Account deleted successfully. You will be logged out.";
 				showAlert(message, "success");
 				setTimeout(() => {
-					window.location.href = "/";
+					signOut({ callbackUrl: "/" });
 				}, 2000);
 			}
 		} catch (error) {

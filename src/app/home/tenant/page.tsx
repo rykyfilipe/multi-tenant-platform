@@ -54,8 +54,7 @@ function Page() {
 				const users = await usersRes.json();
 				const database = await databaseRes.json();
 
-				console.log("database", database);
-				console.log("users", users);
+				
 
 				setTenantStats({
 					users: users.length || 0,

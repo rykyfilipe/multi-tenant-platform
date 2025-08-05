@@ -1,7 +1,7 @@
 /** @format */
 
 import prisma from "./prisma";
-import { PLAN_LIMITS } from "./planConstants";
+import { PLAN_LIMITS, getRowsLimitForPlan } from "./planConstants";
 import type { PlanLimits } from "./planConstants";
 
 // Re-export for backward compatibility
@@ -23,13 +23,13 @@ export async function checkPlanLimit(
 		});
 
 		if (!user || user.subscriptionStatus !== "active") {
-			// Default to Starter plan if no subscription
-			const starterLimit = PLAN_LIMITS.Starter[limitType];
-			return {
-				allowed: currentCount < starterLimit,
-				limit: starterLimit,
-				current: currentCount,
-			};
+					// Default to Starter plan if no subscription
+		const starterLimit = PLAN_LIMITS.Starter[limitType];
+		return {
+			allowed: currentCount < starterLimit,
+			limit: starterLimit,
+			current: currentCount,
+		};
 		}
 
 		const planLimits = PLAN_LIMITS[user.subscriptionPlan || "Starter"];
@@ -69,10 +69,11 @@ export async function getCurrentCounts(
 				apiTokens: 0,
 				publicTables: 0,
 				storage: 0,
+				rows: 0,
 			};
 		}
 
-		const [databases, tables, users, apiTokens, publicTables] =
+		const [databases, tables, users, apiTokens, publicTables, rows] =
 			await Promise.all([
 				prisma.database.count({ where: { tenantId: user.tenantId } }),
 				prisma.table.count({
@@ -86,6 +87,9 @@ export async function getCurrentCounts(
 						isPublic: true,
 					},
 				}),
+				prisma.row.count({
+					where: { table: { database: { tenantId: user.tenantId } } },
+				}),
 			]);
 
 		// Raw counts calculated for tenant
@@ -97,6 +101,7 @@ export async function getCurrentCounts(
 			apiTokens,
 			publicTables,
 			storage: 0, // Storage is calculated separately in memory tracking
+			rows,
 		};
 	} catch (error) {
 		console.error("Error getting current counts:", error);
@@ -107,6 +112,7 @@ export async function getCurrentCounts(
 			apiTokens: 0,
 			publicTables: 0,
 			storage: 0,
+			rows: 0,
 		};
 	}
 }
@@ -119,6 +125,8 @@ export function getPlanFeatures(plan: string): string[] {
 		`${limits.tables} table${limits.tables > 1 ? "s" : ""}`,
 		`${limits.users} user${limits.users > 1 ? "s" : ""}`,
 		`${limits.apiTokens} API token${limits.apiTokens > 1 ? "s" : ""}`,
+		`${limits.storage} MB storage`,
+		`${limits.rows.toLocaleString()} rows`,
 	];
 
 	if (limits.publicTables > 0) {
@@ -136,7 +144,7 @@ export function getPlanFeatures(plan: string): string[] {
 		features.push("Advanced data management");
 		features.push("Public data sharing");
 		features.push("Custom integrations");
-	} else if (plan === "Enterprise") {
+	} else if (plan === "Business") {
 		features.push("Everything in Pro");
 		features.push("Advanced security features");
 		features.push("24/7 priority support");

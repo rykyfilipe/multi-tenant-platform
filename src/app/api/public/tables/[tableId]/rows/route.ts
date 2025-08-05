@@ -44,7 +44,7 @@ export async function POST(
 
 		// Fetch table and columns
 		const table = await prisma.table.findUnique({
-			where: { 
+			where: {
 				id: tableId,
 				isPublic: true, // Doar tabelele publice
 			},
@@ -52,7 +52,10 @@ export async function POST(
 		});
 
 		if (!table) {
-			return NextResponse.json({ error: "Table not found or not public" }, { status: 404 });
+			return NextResponse.json(
+				{ error: "Table not found or not public" },
+				{ status: 404 },
+			);
 		}
 
 		const { columns } = table;
@@ -94,6 +97,17 @@ export async function POST(
 						.parse(value);
 				} else if (baseType === "reference") {
 					z.number().int().parse(value);
+				} else if (baseType === "customArray") {
+					// Validare pentru customArray - valoarea trebuie să fie una din opțiunile definite
+					if (col.customOptions && col.customOptions.length > 0) {
+						if (!col.customOptions.includes(value)) {
+							throw new Error(
+								`Value must be one of: ${col.customOptions.join(", ")}`,
+							);
+						}
+					} else {
+						throw new Error("No custom options defined for this column");
+					}
 				} else {
 					throw new Error(`Unsupported type: ${baseType}`);
 				}

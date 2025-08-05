@@ -205,7 +205,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 		window.location.href = "/?downgrade=true";
 	};
 
-			const planFeatures = getPlanFeaturesLocal(subscription.subscriptionPlan);
+	const planFeatures = getPlanFeaturesLocal(subscription.subscriptionPlan);
 	const isActive = subscription.subscriptionStatus === "active";
 	const isCanceled = subscription.subscriptionStatus === "canceled";
 
@@ -410,7 +410,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 								<div className='flex items-center gap-2'>
 									<HardDrive className='w-4 h-4 text-primary' />
 									<span className='text-sm text-foreground'>
-										{planFeatures.memory} Storage
+										{planFeatures.rows} Rows
 									</span>
 								</div>
 							</div>
@@ -440,7 +440,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 									Upgrade Plan
 								</Button>
 
-								{subscription.subscriptionPlan !== "Starter" && (
+								{subscription.subscriptionPlan !== "Free" && (
 									<>
 										<Button
 											onClick={() => setShowDowngradeDialog(true)}
@@ -460,7 +460,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 									</>
 								)}
 
-								{subscription.subscriptionPlan === "Starter" && (
+								{subscription.subscriptionPlan === "Free" && (
 									<div className='flex-1 flex items-center justify-center p-3 bg-muted/50 rounded-md border border-dashed'>
 										<div className='text-center'>
 											<Info className='w-4 h-4 mx-auto mb-1 text-muted-foreground' />
@@ -580,17 +580,17 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 								<li>• 5 Databases</li>
 								<li>• 25 Tables</li>
 								<li>• 10 Users</li>
-								<li>• 10GB Storage</li>
+								<li>• 1 GB Storage</li>
 								<li>• Priority Support</li>
 							</ul>
 						</div>
 						<div className='p-4 border rounded-lg'>
-							<h4 className='font-medium mb-2'>Enterprise Plan - $99/month</h4>
+							<h4 className='font-medium mb-2'>Business Plan - $99/month</h4>
 							<ul className='space-y-1 text-sm text-muted-foreground'>
 								<li>• Unlimited Databases</li>
 								<li>• Unlimited Tables</li>
 								<li>• Unlimited Users</li>
-								<li>• 100GB Storage</li>
+								<li>• 5 GB Storage</li>
 								<li>• 24/7 Support</li>
 							</ul>
 						</div>
@@ -621,12 +621,12 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 					</DialogHeader>
 					<div className='space-y-4'>
 						<div className='p-4 border rounded-lg'>
-							<h4 className='font-medium mb-2'>Starter Plan - $9/month</h4>
+							<h4 className='font-medium mb-2'>Starter Plan - $0/month</h4>
 							<ul className='space-y-1 text-sm text-muted-foreground'>
 								<li>• 1 Database</li>
 								<li>• 5 Tables</li>
 								<li>• 2 Users</li>
-								<li>• 1GB Storage</li>
+								<li>• 100 MB Storage</li>
 								<li>• Email Support</li>
 							</ul>
 						</div>

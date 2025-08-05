@@ -22,28 +22,14 @@ const tenantSchema = z.object({
 });
 
 export async function GET(request: Request) {
-	// Debug logging
-	if (process.env.NODE_ENV === "development") {
-		const authHeader = request.headers.get("Authorization");
-		console.log("🔍 API Debug:", {
-			hasAuthHeader: !!authHeader,
-			authHeaderStart: authHeader?.substring(0, 20) + "...",
-		});
-	}
 	const logged = verifyLogin(request);
 	if (!logged) {
-		if (process.env.NODE_ENV === "development") {
-			console.log("❌ verifyLogin failed");
-		}
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
 	const userResult = await getUserFromRequest(request);
 
 	if (userResult instanceof NextResponse) {
-		if (process.env.NODE_ENV === "development") {
-			console.log("❌ getUserFromRequest failed");
-		}
 		return userResult;
 	}
 
@@ -58,7 +44,7 @@ export async function GET(request: Request) {
 				},
 			},
 		});
-		console.log(tenant);
+
 
 		if (!tenant)
 			return NextResponse.json({ error: "No tenant found" }, { status: 404 });

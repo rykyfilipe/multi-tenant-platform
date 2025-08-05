@@ -217,6 +217,27 @@ export function EditableCell({
 					</Select>
 				) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
 					referenceSelect
+				) : column.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
+					<Select
+						value={String(value || "")}
+						onValueChange={(v) => setValue(v)}>
+						<SelectTrigger>
+							<SelectValue placeholder="Select an option" />
+						</SelectTrigger>
+						<SelectContent>
+							{column.customOptions && column.customOptions.length > 0 ? (
+								column.customOptions.map((option) => (
+									<SelectItem key={option} value={option}>
+										{option}
+									</SelectItem>
+								))
+							) : (
+								<SelectItem disabled value='no-options'>
+									No options available
+								</SelectItem>
+							)}
+						</SelectContent>
+					</Select>
 				) : (
 					<Input
 						className='w-max'
@@ -252,7 +273,14 @@ export function EditableCell({
 		display = value === true ? "True" : "False";
 	} else if (column.type === "date") {
 		display = new Date(value).toLocaleDateString();
-			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
+	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+		// Pentru coloanele customArray, verificăm dacă valoarea există în opțiunile definite
+		if (column.customOptions && column.customOptions.includes(value)) {
+			display = String(value);
+		} else {
+			display = `⚠️ Invalid: ${value}`;
+		}
+	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
 		// Pentru coloanele de referință, verificăm dacă valoarea există în tabelul de referință
 		const referenceTable = tables?.find(
 			(t) => t.id === column.referenceTableId,
