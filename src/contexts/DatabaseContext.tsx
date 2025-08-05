@@ -217,21 +217,20 @@ export const DatabaseProvider = ({
 					Authorization: `Bearer ${token}`,
 				},
 			});
-			
+
 			if (limitsResponse.ok) {
 				const limitsData = await limitsResponse.json();
 				const currentTables = limitsData.tables || 0;
-				const { data: session } = await import("next-auth/react");
-				const currentPlan = session?.subscription?.plan || "Starter";
-				
+				const currentPlan = user?.subscription?.plan || "Starter";
+
 				// Import plan constants
 				const { PLAN_LIMITS } = await import("@/lib/planConstants");
 				const planLimits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.Starter;
-				
+
 				if (currentTables >= planLimits.tables) {
 					showAlert(
 						`You've reached the limit of ${planLimits.tables} tables for your ${currentPlan} plan. Please upgrade to create more tables.`,
-						"warning"
+						"warning",
 					);
 					return;
 				}
