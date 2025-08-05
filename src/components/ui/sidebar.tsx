@@ -108,7 +108,18 @@ function SidebarProvider({
 		};
 
 		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+
+		// Add custom event listener for mobile trigger
+		const handleToggleSidebar = () => {
+			toggleSidebar();
+		};
+
+		window.addEventListener("toggle-sidebar", handleToggleSidebar);
+
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("toggle-sidebar", handleToggleSidebar);
+		};
 	}, [toggleSidebar]);
 
 	// We add a state so that we can do data-state="expanded" or "collapsed".
@@ -260,19 +271,18 @@ function SidebarTrigger({
 		<Button
 			data-sidebar='trigger'
 			data-slot='sidebar-trigger'
-			variant='ghost'
+			variant='outline'
 			size='icon'
 			className={cn(
-				"size-7",
-				className,
 				"flex items-center justify-center cursor-pointer",
+				className,
 			)}
 			onClick={(event) => {
 				onClick?.(event);
 				toggleSidebar();
 			}}
 			{...props}>
-			<PanelLeftIcon />
+			<PanelLeftIcon className="h-4 w-4" />
 			<span className='sr-only'>Toggle Sidebar</span>
 		</Button>
 	);

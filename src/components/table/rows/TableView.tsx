@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { Table, Row, Column } from "@/types/database";
+import { Table, Row, Column, Cell } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Database, Trash2 } from "lucide-react";
 import { Button } from "../../ui/button";
