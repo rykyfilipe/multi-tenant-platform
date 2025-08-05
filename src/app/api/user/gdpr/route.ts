@@ -50,8 +50,6 @@ export async function GET(request: NextRequest) {
 				firstName: user.firstName,
 				lastName: user.lastName,
 				role: user.role,
-				createdAt: user.createdAt,
-				updatedAt: user.updatedAt,
 			},
 			subscription: {
 				plan: user.subscriptionPlan,
@@ -60,18 +58,20 @@ export async function GET(request: NextRequest) {
 				stripeCustomerId: user.stripeCustomerId,
 				stripeSubscriptionId: user.stripeSubscriptionId,
 			},
-			tenant: user.tenant ? {
-				id: user.tenant.id,
-				name: user.tenant.name,
-				address: user.tenant.address,
-				companyEmail: user.tenant.companyEmail,
-				phone: user.tenant.phone,
-				website: user.tenant.website,
-				createdAt: user.tenant.createdAt,
-				updatedAt: user.tenant.updatedAt,
-			} : null,
+			tenant: user.tenant
+				? {
+						id: user.tenant.id,
+						name: user.tenant.name,
+						address: user.tenant.address,
+						companyEmail: user.tenant.companyEmail,
+						phone: user.tenant.phone,
+						website: user.tenant.website,
+						createdAt: user.tenant.createdAt,
+						updatedAt: user.tenant.updatedAt,
+				  }
+				: null,
 			databases: user.tenant?.databases || [],
-			apiTokens: user.apiTokens.map(token => ({
+			apiTokens: user.apiTokens.map((token) => ({
 				id: token.id,
 				name: token.name,
 				scopes: token.scopes,
@@ -195,4 +195,4 @@ export async function PATCH(request: NextRequest) {
 			{ status: 500 },
 		);
 	}
-} 
+}
