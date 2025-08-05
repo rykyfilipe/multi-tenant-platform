@@ -36,7 +36,12 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Fetch the invoice to verify it belongs to the user
-		const invoice = await stripe.invoices.retrieve(invoiceId);
+		const invoice = (await stripe.invoices.retrieve(
+			invoiceId,
+		)) as Stripe.Invoice & {
+			payment_intent?: string;
+			subscription?: string;
+		};
 
 		if (invoice.customer !== user.stripeCustomerId) {
 			return NextResponse.json(
@@ -69,9 +74,17 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
+		// Check if invoice has a payment intent
+		if (!invoice.payment_intent) {
+			return NextResponse.json(
+				{ error: "Invoice does not have an associated payment intent" },
+				{ status: 400 },
+			);
+		}
+
 		// Check if refund already exists
 		const existingRefunds = await stripe.refunds.list({
-			payment_intent: invoice.payment_intent as string,
+			payment_intent: invoice.payment_intent,
 		});
 
 		if (existingRefunds.data.length > 0) {
@@ -83,7 +96,7 @@ export async function POST(request: NextRequest) {
 
 		// Process the refund
 		const refund = await stripe.refunds.create({
-			payment_intent: invoice.payment_intent as string,
+			payment_intent: invoice.payment_intent,
 			reason: reason || "requested_by_customer",
 			metadata: {
 				user_email: session.user.email,
