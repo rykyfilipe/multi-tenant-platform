@@ -29,7 +29,11 @@ setInterval(() => {
 
 export function getClientIdentifier(request: NextRequest): string {
 	// Use IP address as primary identifier
-	const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown";
+	const ip =
+		request.headers.get("x-forwarded-for") ||
+		request.headers.get("x-real-ip") ||
+		request.headers.get("cf-connecting-ip") ||
+		"unknown";
 
 	// For authenticated users, also include user ID for better tracking
 	const authHeader = request.headers.get("authorization");
