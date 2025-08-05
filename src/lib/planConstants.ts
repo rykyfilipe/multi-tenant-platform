@@ -41,21 +41,24 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 	},
 };
 
-export const PLAN_FEATURES: Record<string, {
-	databases: number | string;
-	tables: number | string;
-	users: number | string;
-	storage: string;
-	memory: string;
-	price: string;
-}> = {
+export const PLAN_FEATURES: Record<
+	string,
+	{
+		databases: number | string;
+		tables: number | string;
+		users: number | string;
+		storage: string;
+		memory: string;
+		price: string;
+	}
+> = {
 	Starter: {
 		databases: 1,
 		tables: 5,
 		users: 2,
 		storage: "1GB",
 		memory: "1GB",
-		price: "$9/month",
+		price: "$0/month",
 	},
 	Pro: {
 		databases: 5,
@@ -85,4 +88,4 @@ export const getPlanFeatures = (plan: string | null) => {
 
 export const getMemoryLimitForPlan = (plan: string | null): number => {
 	return getPlanLimits(plan).storage;
-}; 
+};
