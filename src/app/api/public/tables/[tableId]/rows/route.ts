@@ -100,6 +100,10 @@ export async function POST(
 				} else if (baseType === "customArray") {
 					// Validare pentru customArray - valoarea trebuie să fie una din opțiunile definite
 					if (col.customOptions && col.customOptions.length > 0) {
+						// Ensure value is a string before checking
+						if (typeof value !== "string") {
+							throw new Error("Value must be a string for customArray type");
+						}
 						if (!col.customOptions.includes(value)) {
 							throw new Error(
 								`Value must be one of: ${col.customOptions.join(", ")}`,
