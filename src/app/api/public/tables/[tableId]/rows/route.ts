@@ -44,12 +44,15 @@ export async function POST(
 
 		// Fetch table and columns
 		const table = await prisma.table.findUnique({
-			where: { id: tableId },
+			where: { 
+				id: tableId,
+				isPublic: true, // Doar tabelele publice
+			},
 			include: { columns: true },
 		});
 
 		if (!table) {
-			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+			return NextResponse.json({ error: "Table not found or not public" }, { status: 404 });
 		}
 
 		const { columns } = table;

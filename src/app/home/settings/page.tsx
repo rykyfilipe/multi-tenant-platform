@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useApp } from "@/contexts/AppContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import {
 	Card,
 	CardContent,
@@ -27,11 +28,13 @@ import BasicSettings from "@/components/settings/user/BasicSettings";
 import PasswordSetter from "@/components/settings/user/PasswordSetter";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 import PlanLimitsDisplay from "@/components/PlanLimitsDisplay";
+import GDPRRights from "@/components/settings/user/GDPRRights";
 
 function Page() {
 	const { data: session } = useSession();
 	const { user } = useApp();
 	const { subscription, loading: subscriptionLoading } = useSubscription();
+	const { data: dashboardData, loading: dashboardLoading } = useDashboardData();
 	const [activeTab, setActiveTab] = useState("profile");
 
 	if (!user || !session) return null;
@@ -103,6 +106,12 @@ function Page() {
 											label: "Usage",
 											icon: BarChart3,
 											description: "Resource limits",
+										},
+										{
+											id: "privacy",
+											label: "Privacy",
+											icon: Shield,
+											description: "GDPR rights & data",
 										},
 									].map((item) => (
 										<button
@@ -261,7 +270,12 @@ function Page() {
 														Databases
 													</p>
 													<p className='text-2xl font-bold text-foreground'>
-														1/1
+														{dashboardLoading
+															? "..."
+															: `${dashboardData?.stats.totalDatabases || 0}/${
+																	dashboardData?.usageData?.databases?.total ||
+																	1
+															  }`}
 													</p>
 												</div>
 											</div>
@@ -279,7 +293,11 @@ function Page() {
 														Tables
 													</p>
 													<p className='text-2xl font-bold text-foreground'>
-														1/1
+														{dashboardLoading
+															? "..."
+															: `${dashboardData?.stats.totalTables || 0}/${
+																	dashboardData?.usageData?.tables?.total || 1
+															  }`}
 													</p>
 												</div>
 											</div>
@@ -295,13 +313,33 @@ function Page() {
 												<div>
 													<p className='text-sm text-muted-foreground'>Users</p>
 													<p className='text-2xl font-bold text-foreground'>
-														1/2
+														{dashboardLoading
+															? "..."
+															: `${dashboardData?.stats.totalUsers || 0}/${
+																	dashboardData?.usageData?.users?.total || 2
+															  }`}
 													</p>
 												</div>
 											</div>
 										</CardContent>
 									</Card>
 								</div>
+							</div>
+						)}
+
+						{/* Privacy Tab */}
+						{activeTab === "privacy" && (
+							<div className='space-y-6'>
+								<div>
+									<h2 className='text-2xl font-semibold text-foreground mb-2'>
+										Privacy & GDPR Rights
+									</h2>
+									<p className='text-muted-foreground'>
+										Manage your data and exercise your GDPR rights.
+									</p>
+								</div>
+
+								<GDPRRights />
 							</div>
 						)}
 					</div>

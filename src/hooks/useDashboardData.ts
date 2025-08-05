@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { getPlanLimits } from "@/lib/planConstants";
 
 interface DashboardData {
 	stats: {
@@ -57,6 +58,10 @@ interface DashboardData {
 			total: number;
 		};
 		databases: {
+			used: number;
+			total: number;
+		};
+		users: {
 			used: number;
 			total: number;
 		};
@@ -158,20 +163,7 @@ export const useDashboardData = () => {
 				const activeUsers = users.length;
 
 				// Get plan limits based on subscription
-				const getPlanLimits = () => {
-					switch (subscription?.subscriptionPlan) {
-						case "Starter":
-							return { databases: 1, tables: 5, users: 2, storage: 1 };
-						case "Pro":
-							return { databases: 5, tables: 25, users: 10, storage: 10 };
-						case "Enterprise":
-							return { databases: 999, tables: 999, users: 999, storage: 100 };
-						default:
-							return { databases: 1, tables: 1, users: 1, storage: 0.1 };
-					}
-				};
-
-				const planLimits = getPlanLimits();
+				const planLimits = getPlanLimits(subscription?.subscriptionPlan);
 
 				// Get memory data
 				const memoryInfo = memoryData.success
@@ -251,6 +243,10 @@ export const useDashboardData = () => {
 						databases: {
 							used: databases.length,
 							total: planLimits.databases,
+						},
+						users: {
+							used: users.length,
+							total: planLimits.users,
 						},
 						memory: {
 							used: memoryInfo.usedGB,

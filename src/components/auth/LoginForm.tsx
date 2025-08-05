@@ -10,7 +10,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 
-function LoginForm({ closeForm }: { closeForm: (x: boolean) => void }) {
+interface LoginFormProps {
+	closeForm: (x: boolean) => void;
+	showForgotPassword: () => void;
+}
+
+function LoginForm({ closeForm, showForgotPassword }: LoginFormProps) {
 	const { showAlert } = useApp();
 
 	const [email, setEmail] = useState("");
@@ -73,6 +78,14 @@ function LoginForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 					onChange={(e) => setPassword(e.target.value)}
 					required
 				/>
+				<div className='text-right mt-1'>
+					<button
+						type='button'
+						onClick={showForgotPassword}
+						className='text-sm text-purple-600 hover:text-purple-700 underline'>
+						Forgot Password?
+					</button>
+				</div>
 			</div>
 			<Button
 				type='submit'

@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import Link from "next/link";
 import { Table } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
@@ -15,10 +16,21 @@ function TableCard({ table }: { table: Table }) {
 	const { handleDeleteTable } = useDatabase();
 	const { user, token, tenant, showAlert } = useApp();
 	const { handleApiError } = usePlanLimitError();
+	const { checkLimit, currentPlan } = usePlanLimits();
 	const [isUpdatingPublic, setIsUpdatingPublic] = useState(false);
 
 	const handleTogglePublic = async () => {
 		if (!token || !tenant) return;
+
+		// Verifică limita de tabele publice
+		const publicTableLimit = checkLimit("publicTables");
+		if (!table.isPublic && !publicTableLimit.allowed) {
+			showAlert(
+				`You've reached the limit of ${publicTableLimit.limit} public tables for your ${currentPlan} plan. Please upgrade to make more tables public.`,
+				"warning"
+			);
+			return;
+		}
 
 		setIsUpdatingPublic(true);
 		try {
@@ -113,10 +125,12 @@ function TableCard({ table }: { table: Table }) {
 							variant='outline'
 							size='sm'
 							onClick={handleTogglePublic}
-							disabled={isUpdatingPublic}
+							disabled={isUpdatingPublic || (!table.isPublic && !checkLimit("publicTables").allowed)}
 							className={`text-xs ${
 								table.isPublic
 									? "text-orange-600 hover:text-orange-700 border-orange-200"
+									: !checkLimit("publicTables").allowed
+									? "text-gray-400 border-gray-200 opacity-50"
 									: "text-blue-600 hover:text-blue-700 border-blue-200"
 							}`}>
 							{table.isPublic ? (

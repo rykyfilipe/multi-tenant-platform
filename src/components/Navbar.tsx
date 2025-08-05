@@ -102,16 +102,18 @@ export function AppSidebar() {
 
 	return (
 		<Sidebar className='border-r border-border/20 bg-background'>
-			<SidebarHeader className='p-6 border-b border-border/20'>
-				<div className='flex items-center space-x-3'>
-					<div className='w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center'>
-						<Database className='w-4 h-4 text-primary' />
+			<SidebarHeader className='p-4 sm:p-6 border-b border-border/20'>
+				<div className='flex items-center space-x-2 sm:space-x-3'>
+					<div className='w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 rounded-lg flex items-center justify-center'>
+						<Database className='w-3 h-3 sm:w-4 sm:h-4 text-primary' />
 					</div>
-					<span className='text-lg font-semibold text-foreground'>YDV</span>
+					<span className='text-base sm:text-lg font-semibold text-foreground'>
+						YDV
+					</span>
 				</div>
 			</SidebarHeader>
 
-			<SidebarContent className='p-4'>
+			<SidebarContent className='p-2 sm:p-4'>
 				<SidebarMenu>
 					{navigationItems.map((item) => {
 						const isActive = pathname === item.url;
@@ -126,9 +128,11 @@ export function AppSidebar() {
 									}`}>
 									<Link
 										href={item.url}
-										className=' flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors'>
-										<item.icon className='w-5 h-5' />
-										<span className='text-sm font-medium'>{item.title}</span>
+										className='flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors'>
+										<item.icon className='w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0' />
+										<span className='text-xs sm:text-sm font-medium truncate'>
+											{item.title}
+										</span>
 									</Link>
 								</SidebarMenuButton>
 							</SidebarMenuItem>
@@ -137,12 +141,12 @@ export function AppSidebar() {
 				</SidebarMenu>
 			</SidebarContent>
 
-			<SidebarFooter className='p-4 border-t border-border/20'>
-				<div className='space-y-3'>
+			<SidebarFooter className='p-2 sm:p-4 border-t border-border/20'>
+				<div className='space-y-2 sm:space-y-3'>
 					{/* User Profile */}
 					{session?.user && (
-						<div className='flex items-center space-x-3 p-3 bg-muted/30 rounded-lg'>
-							<Avatar className='w-8 h-8'>
+						<div className='flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-muted/30 rounded-lg'>
+							<Avatar className='w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0'>
 								<AvatarImage src={session.user.image || undefined} />
 								<AvatarFallback className='text-xs font-medium'>
 									{session.user.firstName?.[0]}
@@ -150,10 +154,10 @@ export function AppSidebar() {
 								</AvatarFallback>
 							</Avatar>
 							<div className='flex-1 min-w-0'>
-								<p className='text-sm font-medium text-foreground truncate'>
+								<p className='text-xs sm:text-sm font-medium text-foreground truncate'>
 									{session.user.firstName} {session.user.lastName}
 								</p>
-								<p className='text-xs text-muted-foreground truncate'>
+								<p className='text-xs text-muted-foreground truncate hidden sm:block'>
 									{session.user.email}
 								</p>
 							</div>
@@ -161,24 +165,24 @@ export function AppSidebar() {
 					)}
 
 					{/* Actions */}
-					<div className='flex space-x-2'>
+					<div className='flex space-x-1 sm:space-x-2'>
 						<Button
 							onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
 							variant='ghost'
 							size='sm'
-							className='flex-1'>
+							className='flex-1 h-8 sm:h-9'>
 							{theme === "dark" ? (
-								<Sun className='w-4 h-4' />
+								<Sun className='w-3 h-3 sm:w-4 sm:h-4' />
 							) : (
-								<Moon className='w-4 h-4' />
+								<Moon className='w-3 h-3 sm:w-4 sm:h-4' />
 							)}
 						</Button>
 						<Button
 							onClick={() => (window.location.href = "/")}
 							variant='ghost'
 							size='sm'
-							className='flex-1'>
-							<LogOut className='w-4 h-4' />
+							className='flex-1 h-8 sm:h-9'>
+							<LogOut className='w-3 h-3 sm:w-4 sm:h-4' />
 						</Button>
 					</div>
 				</div>

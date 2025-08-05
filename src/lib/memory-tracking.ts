@@ -2,6 +2,7 @@
 // Storage tracking service for tenant data usage
 
 import prisma from "./prisma";
+import { getMemoryLimitForPlan } from "./planConstants";
 
 export interface MemoryUsage {
 	usedGB: number;
@@ -86,18 +87,10 @@ export const calculateMemoryUsage = async (
 
 /**
  * Get storage limits based on subscription plan
+ * @deprecated Use getMemoryLimitForPlan from planConstants instead
  */
-export const getMemoryLimitForPlan = (plan: string | null): number => {
-	switch (plan) {
-		case "Starter":
-			return 1.0; // 1 GB
-		case "Pro":
-			return 10.0; // 10 GB
-		case "Enterprise":
-			return 100.0; // 100 GB
-		default:
-			return 0.1; // 100 MB for free tier
-	}
+export const getMemoryLimitForPlanLegacy = (plan: string | null): number => {
+	return getMemoryLimitForPlan(plan);
 };
 
 /**

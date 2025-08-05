@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
-import { Table2, X } from "lucide-react";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { Table2, X, AlertTriangle } from "lucide-react";
 import { SheetDescription } from "../ui/sheet";
 
 interface TableBasicsFormProps {
@@ -30,6 +32,7 @@ export function TableBasicsForm({
 }: TableBasicsFormProps) {
 	const { validateTableName } = useDatabase();
 	const { showAlert } = useApp();
+	const { checkLimit, currentPlan } = usePlanLimits();
 
 	return (
 		<div className='space-y-6'>
@@ -46,6 +49,32 @@ export function TableBasicsForm({
 					Define the basic information for your table
 				</p>
 			</div>
+
+			{/* Plan Limit Info */}
+			{(() => {
+				const tableLimit = checkLimit("tables");
+				return (
+					<div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+						<div className="flex items-center justify-between mb-2">
+							<div className="flex items-center gap-2">
+								<Table2 className="w-4 h-4 text-blue-600" />
+								<span className="text-sm font-medium text-blue-900">
+									Table Limit
+								</span>
+							</div>
+							<Badge variant={tableLimit.allowed ? "default" : "destructive"} className="text-xs">
+								{tableLimit.current} / {tableLimit.limit}
+							</Badge>
+						</div>
+						<p className="text-xs text-blue-700">
+							{tableLimit.allowed 
+								? `You can create ${tableLimit.limit - tableLimit.current} more table(s)`
+								: "You've reached your plan limit. Upgrade to create more tables."
+							}
+						</p>
+					</div>
+				);
+			})()}
 
 			<form onSubmit={onSubmit} className='space-y-6'>
 				<div className='space-y-3'>
@@ -94,8 +123,10 @@ export function TableBasicsForm({
 				<div className='flex space-x-3 pt-6'>
 					<Button
 						type='submit'
-						disabled={loading}
-						className='add-table flex-1 h-11 rounded-lg shadow-sm hover:shadow-md transition-all duration-200'>
+						disabled={loading || !checkLimit("tables").allowed}
+						className={`add-table flex-1 h-11 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ${
+							!checkLimit("tables").allowed ? "opacity-50" : ""
+						}`}>
 						{loading ? "Creating..." : "Create Table"}
 					</Button>
 					<Button

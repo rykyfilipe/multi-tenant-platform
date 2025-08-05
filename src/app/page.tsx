@@ -12,20 +12,11 @@ import {
 	BarChart3,
 	Check,
 	Menu,
-	X,
 	ArrowRight,
-	Star,
-	UserCircle,
-	Building2,
-	Lock,
 	Globe,
-	TrendingUp,
-	Clock,
-	Headphones,
 	AlertTriangle,
 	LogOut,
 } from "lucide-react";
-import AuthForm from "@/components/auth/AuthForm";
 import AuthModal from "@/components/auth/AuthModal";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -47,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { redirectToCheckout } from "@/lib/stripe";
+import { ContactForm } from "@/components/ContactForm";
 
 const DataHubLandingPage = () => {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -140,7 +132,7 @@ const DataHubLandingPage = () => {
 			description: "Perfect for individuals and small projects",
 			features: [
 				"1 database",
-				"1 table",
+				"5 tables",
 				"2 users",
 				"1 API token",
 				"Basic user management",
@@ -153,20 +145,18 @@ const DataHubLandingPage = () => {
 		},
 		{
 			name: "Pro",
-			price: "$20",
+			price: "$29",
 			period: "/month",
 			description: "Most popular for teams and businesses",
 			features: [
-				"1 database",
-				"5 tables",
-				"5 users",
-				"3 API tokens",
+				"5 databases",
+				"25 tables",
+				"10 users",
+				"5 API tokens",
 				"2 public tables",
 				"Advanced user permissions",
 				"Full API access",
 				"Priority support",
-				"Advanced data management",
-				"Public data sharing",
 			],
 			priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
 			popular: true,
@@ -177,18 +167,14 @@ const DataHubLandingPage = () => {
 			period: "/month",
 			description: "For large teams and organizations",
 			features: [
-				"10 databases",
-				"50 tables",
-				"20 users",
+				"Unlimited databases",
+				"Unlimited tables",
+				"Unlimited users",
 				"10 API tokens",
 				"10 public tables",
 				"Everything in Pro",
 				"Advanced security features",
-				"24/7 priority support",
-				"Custom branding",
 				"Advanced analytics",
-				"White-label options",
-				"SLA guarantee",
 			],
 			priceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID,
 			popular: false,
@@ -290,7 +276,9 @@ const DataHubLandingPage = () => {
 														alt='User'
 													/>
 													<AvatarFallback className='text-xs'>
-														{(session.user as any)?.firstName?.[0] || session.user?.name?.[0] || "U"}
+														{(session.user as any)?.firstName?.[0] ||
+															session.user?.name?.[0] ||
+															"U"}
 														{(session.user as any)?.lastName?.[0] || ""}
 													</AvatarFallback>
 												</Avatar>
@@ -303,8 +291,11 @@ const DataHubLandingPage = () => {
 											<div className='flex items-center justify-start gap-2 p-2'>
 												<div className='flex flex-col space-y-1 leading-none'>
 													<p className='font-medium'>
-														{(session.user as any)?.firstName && (session.user as any)?.lastName
-															? `${(session.user as any).firstName} ${(session.user as any).lastName}`
+														{(session.user as any)?.firstName &&
+														(session.user as any)?.lastName
+															? `${(session.user as any).firstName} ${
+																	(session.user as any).lastName
+															  }`
 															: session.user?.name || "User"}
 													</p>
 													{session.user?.email && (
@@ -597,6 +588,9 @@ const DataHubLandingPage = () => {
 				</div>
 			</section>
 
+			{/* Contact Section */}
+			<ContactForm />
+
 			{/* Footer */}
 			<footer className='border-t border-border bg-card py-12 px-4 sm:px-6 lg:px-8'>
 				<div className='max-w-7xl mx-auto'>
@@ -642,12 +636,16 @@ const DataHubLandingPage = () => {
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a
+										href='#'
+										className='hover:text-foreground line-through opacity-50'>
 										API
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a
+										href='#'
+										className='hover:text-foreground line-through opacity-50'>
 										Documentation
 									</a>
 								</li>
@@ -657,22 +655,28 @@ const DataHubLandingPage = () => {
 							<h3 className='font-semibold mb-4'>Company</h3>
 							<ul className='space-y-2 text-sm text-muted-foreground'>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a
+										href='#'
+										className='hover:text-foreground line-through opacity-50'>
 										About
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a
+										href='#'
+										className='hover:text-foreground line-through opacity-50'>
 										Blog
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a
+										href='#'
+										className='hover:text-foreground line-through opacity-50'>
 										Careers
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a href='#contact' className='hover:text-foreground'>
 										Contact
 									</a>
 								</li>
@@ -682,23 +686,37 @@ const DataHubLandingPage = () => {
 							<h3 className='font-semibold mb-4'>Support</h3>
 							<ul className='space-y-2 text-sm text-muted-foreground'>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a
+										href='#'
+										className='hover:text-foreground line-through opacity-50'>
 										Help Center
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a
+										href='#'
+										className='hover:text-foreground line-through opacity-50'>
 										Status
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
-										Security
+									<a href='/docs/terms' className='hover:text-foreground'>
+										Terms
 									</a>
 								</li>
 								<li>
-									<a href='#' className='hover:text-foreground'>
+									<a href='/docs/privacy' className='hover:text-foreground'>
 										Privacy
+									</a>
+								</li>
+								<li>
+									<a href='/docs/cookies' className='hover:text-foreground'>
+										Cookies
+									</a>
+								</li>
+								<li>
+									<a href='/docs/refund' className='hover:text-foreground'>
+										Refund Policy
 									</a>
 								</li>
 							</ul>

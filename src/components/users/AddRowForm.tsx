@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "@radix-ui/react-label";
+import { Badge } from "../ui/badge";
 import {
 	Select,
 	SelectContent,
@@ -15,6 +16,8 @@ import {
 	SelectValue,
 } from "../ui/select";
 import { Role, UserSchema } from "@/types/user";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { Users } from "lucide-react";
 
 interface Props {
 	onAdd: (e: FormEvent) => void;
@@ -34,6 +37,8 @@ const userFieldTypes: Record<keyof UserSchema, FieldType> = {
 
 export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 	if (!newUser) return null;
+	
+	const { checkLimit, currentPlan } = usePlanLimits();
 
 	const validateField = (key: keyof UserSchema, value: any): boolean => {
 		const type = userFieldTypes[key];
@@ -176,6 +181,32 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 				</p>
 			</div>
 
+			{/* Plan Limit Info */}
+			{(() => {
+				const userLimit = checkLimit("users");
+				return (
+					<div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+						<div className="flex items-center justify-between mb-2">
+							<div className="flex items-center gap-2">
+								<Users className="w-4 h-4 text-blue-600" />
+								<span className="text-sm font-medium text-blue-900">
+									User Limit
+								</span>
+							</div>
+							<Badge variant={userLimit.allowed ? "default" : "destructive"} className="text-xs">
+								{userLimit.current} / {userLimit.limit}
+							</Badge>
+						</div>
+						<p className="text-xs text-blue-700">
+							{userLimit.allowed 
+								? `You can add ${userLimit.limit - userLimit.current} more user(s)`
+								: "You've reached your plan limit. Upgrade to add more users."
+							}
+						</p>
+					</div>
+				);
+			})()}
+
 			{/* Form */}
 			<form onSubmit={handleSubmit} className='space-y-6'>
 				<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -212,8 +243,8 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 					</Button>
 					<Button
 						type='submit'
-						disabled={!formValidation.isValid}
-						className='px-6'>
+						disabled={!formValidation.isValid || !checkLimit("users").allowed}
+						className={`px-6 ${!checkLimit("users").allowed ? "opacity-50" : ""}`}>
 						Add User
 					</Button>
 				</div>

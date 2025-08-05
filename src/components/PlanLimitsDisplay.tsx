@@ -18,15 +18,8 @@ import {
 	HardDrive,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-
-interface PlanLimits {
-	databases: number;
-	tables: number;
-	users: number;
-	apiTokens: number;
-	publicTables: number;
-	storage: number;
-}
+import { PLAN_LIMITS } from "@/lib/planConstants";
+import type { PlanLimits } from "@/lib/planConstants";
 
 interface CurrentCounts {
 	databases: number;
@@ -42,33 +35,6 @@ interface CurrentCounts {
 		isOverLimit: boolean;
 	};
 }
-
-const PLAN_LIMITS: Record<string, PlanLimits> = {
-	Starter: {
-		databases: 1,
-		tables: 1,
-		users: 2,
-		apiTokens: 1,
-		publicTables: 0,
-		storage: 1,
-	},
-	Pro: {
-		databases: 1,
-		tables: 5,
-		users: 5,
-		apiTokens: 3,
-		publicTables: 2,
-		storage: 10,
-	},
-	Enterprise: {
-		databases: 10,
-		tables: 50,
-		users: 20,
-		apiTokens: 10,
-		publicTables: 10,
-		storage: 100,
-	},
-};
 
 const LIMIT_ICONS = {
 	databases: Database,

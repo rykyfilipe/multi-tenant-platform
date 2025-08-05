@@ -3,12 +3,16 @@
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-export const JWT_SECRET: Secret = process.env.JWT_SECRET || (() => {
-	throw new Error("JWT_SECRET environment variable is required");
-})();
-export const PUBLIC_JWT_SECRET = process.env.PUBLIC_JWT_SECRET || (() => {
-	throw new Error("PUBLIC_JWT_SECRET environment variable is required");
-})();
+export const JWT_SECRET: Secret =
+	process.env.JWT_SECRET ||
+	(() => {
+		throw new Error("JWT_SECRET environment variable is required");
+	})();
+export const PUBLIC_JWT_SECRET =
+	process.env.PUBLIC_JWT_SECRET ||
+	(() => {
+		throw new Error("PUBLIC_JWT_SECRET environment variable is required");
+	})();
 import { Account, User } from "next-auth";
 
 import GoogleProvider from "next-auth/providers/google";
@@ -428,3 +432,5 @@ export async function getPublicUserFromRequest(
 
 	return { userId, role };
 }
+
+

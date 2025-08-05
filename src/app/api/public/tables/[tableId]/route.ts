@@ -38,6 +38,7 @@ export async function GET(
 		const table = await prisma.table.findUnique({
 			where: {
 				id: parseInt(tableId),
+				isPublic: true, // Doar tabelele publice
 			},
 			include: {
 				columns: true,
@@ -50,7 +51,10 @@ export async function GET(
 		});
 
 		if (!table) {
-			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+			return NextResponse.json(
+				{ error: "Table not found or not public" },
+				{ status: 404 },
+			);
 		}
 
 		// Creează un map pentru id -> nume coloană

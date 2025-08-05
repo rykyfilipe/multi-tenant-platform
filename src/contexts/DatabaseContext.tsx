@@ -209,6 +209,36 @@ export const DatabaseProvider = ({
 			);
 			return console.error("Table description is required");
 		}
+
+		// Verifică limita de tabele
+		try {
+			const limitsResponse = await fetch("/api/user/limits", {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+			
+			if (limitsResponse.ok) {
+				const limitsData = await limitsResponse.json();
+				const currentTables = limitsData.tables || 0;
+				const { data: session } = await import("next-auth/react");
+				const currentPlan = session?.subscription?.plan || "Starter";
+				
+				// Import plan constants
+				const { PLAN_LIMITS } = await import("@/lib/planConstants");
+				const planLimits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.Starter;
+				
+				if (currentTables >= planLimits.tables) {
+					showAlert(
+						`You've reached the limit of ${planLimits.tables} tables for your ${currentPlan} plan. Please upgrade to create more tables.`,
+						"warning"
+					);
+					return;
+				}
+			}
+		} catch (error) {
+			console.error("Error checking table limits:", error);
+		}
 		try {
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables`,

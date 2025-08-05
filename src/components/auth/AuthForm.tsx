@@ -6,10 +6,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
+import ForgotPasswordForm from "./ForgotPasswordForm";
 import OAuthGoogleLogin from "./OuthGoogle";
 
 function AuthForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 	const [tab, setTab] = useState("login");
+	const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+	const showLoginForm = () => {
+		setShowForgotPassword(false);
+		setTab("login");
+	};
+
+	if (showForgotPassword) {
+		return (
+			<div>
+				<h2 className='text-2xl font-bold text-center mb-6'>Forgot Password</h2>
+				<ForgotPasswordForm
+					closeForm={closeForm}
+					showLoginForm={showLoginForm}
+				/>
+			</div>
+		);
+	}
 
 	return (
 		<div>
@@ -34,7 +53,10 @@ function AuthForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 				<OAuthGoogleLogin />
 
 				<TabsContent value='login'>
-					<LoginForm closeForm={closeForm} />
+					<LoginForm
+						closeForm={closeForm}
+						showForgotPassword={() => setShowForgotPassword(true)}
+					/>
 				</TabsContent>
 
 				<TabsContent value='register'>

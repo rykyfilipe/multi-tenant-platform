@@ -40,38 +40,47 @@ export function TableView({
 	const { user } = useApp();
 	return (
 		<Card className='shadow-lg'>
-			<CardHeader>
-				<div className='flex items-center gap-2'>
-					<Database />
-					<CardTitle>Table Data</CardTitle>
-					<span className='ml-auto'>
+			<CardHeader className='pb-4'>
+				<div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4'>
+					<div className='flex items-center gap-2'>
+						<Database className='w-5 h-5 sm:w-6 sm:h-6' />
+						<CardTitle className='text-lg sm:text-xl'>Table Data</CardTitle>
+					</div>
+					<span className='text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-md self-start sm:self-auto'>
 						{rows.length} row{rows.length !== 1 && "s"}
 					</span>
 				</div>
 			</CardHeader>
-			<CardContent>
+			<CardContent className='p-0 sm:p-6'>
 				<div
-					className='overflow-auto'
+					className='overflow-auto w-full'
 					style={{
 						scrollbarWidth: "none",
 						msOverflowStyle: "none",
 					}}>
-					<table className='w-full'>
+					<table className='w-full min-w-full'>
 						<thead>
-							<tr>
+							<tr className='bg-muted/20'>
 								{columns.map((col) => (
-									<th className='text-start' key={col.name}>
+									<th
+										className='text-start p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20'
+										key={col.name}>
 										{col.name}
 									</th>
 								))}
+								{user.role !== "VIEWER" && (
+									<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-16'>
+										Actions
+									</th>
+								)}
 							</tr>
 						</thead>
 						<tbody>
 							{rows.length === 0 ? (
 								<tr>
 									<td
-										colSpan={table.columns?.length ?? 0 + 1}
-										className='text-center py-8'>
+										colSpan={columns.length + (user.role !== "VIEWER" ? 1 : 0)}
+										className='text-center py-8 sm:py-12 text-sm sm:text-base text-muted-foreground'>
 										No data yet.
 									</td>
 								</tr>
@@ -83,7 +92,9 @@ export function TableView({
 									}
 
 									return (
-										<tr key={row.id} className='row-row'>
+										<tr
+											key={row.id}
+											className='row-row hover:bg-muted/30 transition-colors border-b border-border/10'>
 											{columns.map((col) => {
 												// Skip columns without valid ID
 												if (!col || col.id === undefined || col.id === null) {
@@ -104,7 +115,9 @@ export function TableView({
 													};
 
 													return (
-														<td key={`${row.id}-${col.id}-empty`}>
+														<td
+															key={`${row.id}-${col.id}-empty`}
+															className='p-3 sm:p-4'>
 															<EditableCell
 																columns={columns}
 																cell={virtualCell}
@@ -139,14 +152,16 @@ export function TableView({
 													return (
 														<td
 															key={`${row.id}-${col.id}-invalid`}
-															className='text-red-400 italic'>
+															className='text-red-400 italic p-3 sm:p-4 text-sm'>
 															Invalid Cell
 														</td>
 													);
 												}
 
 												return (
-													<td key={`${row.id}-${col.id}-${cell.id}`}>
+													<td
+														key={`${row.id}-${col.id}-${cell.id}`}
+														className='p-3 sm:p-4'>
 														<EditableCell
 															columns={columns}
 															cell={cell}
@@ -176,12 +191,13 @@ export function TableView({
 												);
 											})}
 											{user.role !== "VIEWER" && (
-												<td>
+												<td className='p-3 sm:p-4 text-center'>
 													<Button
 														variant='ghost'
 														size='sm'
-														onClick={() => onDeleteRow(String(row.id))}>
-														<Trash2 />
+														onClick={() => onDeleteRow(String(row.id))}
+														className='h-8 w-8 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50'>
+														<Trash2 className='w-4 h-4' />
 													</Button>
 												</td>
 											)}

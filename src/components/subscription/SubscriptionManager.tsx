@@ -55,6 +55,7 @@ import {
 import { format } from "date-fns";
 import { useApp } from "@/contexts/AppContext";
 import BillingHistory from "./BillingHistory";
+import { getPlanFeatures } from "@/lib/planConstants";
 
 interface SubscriptionData {
 	stripeCustomerId: string | null;
@@ -113,45 +114,8 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 		}
 	};
 
-	const getPlanFeatures = (plan: string | null) => {
-		switch (plan) {
-			case "Starter":
-				return {
-					databases: 1,
-					tables: 5,
-					users: 2,
-					storage: "1GB",
-					memory: "1GB",
-					price: "$9/month",
-				};
-			case "Pro":
-				return {
-					databases: 5,
-					tables: 25,
-					users: 10,
-					storage: "10GB",
-					memory: "10GB",
-					price: "$29/month",
-				};
-			case "Enterprise":
-				return {
-					databases: "Unlimited",
-					tables: "Unlimited",
-					users: "Unlimited",
-					storage: "100GB",
-					memory: "100GB",
-					price: "$99/month",
-				};
-			default:
-				return {
-					databases: 1,
-					tables: 1,
-					users: 1,
-					storage: "100MB",
-					memory: "100MB",
-					price: "Free",
-				};
-		}
+	const getPlanFeaturesLocal = (plan: string | null) => {
+		return getPlanFeatures(plan);
 	};
 
 	const handleManageSubscription = async () => {
@@ -241,7 +205,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 		window.location.href = "/?downgrade=true";
 	};
 
-	const planFeatures = getPlanFeatures(subscription.subscriptionPlan);
+			const planFeatures = getPlanFeaturesLocal(subscription.subscriptionPlan);
 	const isActive = subscription.subscriptionStatus === "active";
 	const isCanceled = subscription.subscriptionStatus === "canceled";
 

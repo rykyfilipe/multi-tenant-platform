@@ -44,6 +44,7 @@ export async function GET(request: Request) {
 				database: {
 					tenantId: user?.tenantId ?? 0,
 				},
+				isPublic: true, // Doar tabelele publice
 			},
 		});
 		return NextResponse.json(tables);

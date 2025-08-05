@@ -47,12 +47,18 @@ export async function PATCH(
 
 		// Fetch table and columns
 		const table = await prisma.table.findUnique({
-			where: { id: tableIdNum },
+			where: {
+				id: tableIdNum,
+				isPublic: true, // Doar tabelele publice
+			},
 			include: { columns: true },
 		});
 
 		if (!table) {
-			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+			return NextResponse.json(
+				{ error: "Table not found or not public" },
+				{ status: 404 },
+			);
 		}
 
 		// Check if row exists
@@ -211,12 +217,18 @@ export async function DELETE(
 
 		// Fetch table and columns
 		const table = await prisma.table.findUnique({
-			where: { id: tableIdNum },
+			where: {
+				id: tableIdNum,
+				isPublic: true, // Doar tabelele publice
+			},
 			include: { columns: true },
 		});
 
 		if (!table) {
-			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+			return NextResponse.json(
+				{ error: "Table not found or not public" },
+				{ status: 404 },
+			);
 		}
 
 		// Check if row exists

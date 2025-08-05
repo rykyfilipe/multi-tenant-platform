@@ -6,7 +6,6 @@ import React, { useEffect, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 import { ApiHeader } from "@/components/public-api/ApiHeader";
-import { NewTokenAlert } from "@/components/public-api/NewTokenAlert";
 import { TokensList } from "@/components/public-api/TokensList";
 import { ApiDocumentation } from "@/components/public-api/ApiDocumentation";
 import { CreateTokenModal } from "@/components/public-api/CreateTokenModal";
@@ -34,10 +33,7 @@ const ApiTokensPage = () => {
 	const [tokens, setTokens] = useState<ApiToken[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [showCreateModal, setShowCreateModal] = useState(false);
-	const [newTokenData, setNewTokenData] = useState<{
-		token: string;
-		name: string;
-	} | null>(null);
+
 	const [visibleTokens, setVisibleTokens] = useState<Set<string>>(new Set());
 
 	const { token, showAlert } = useApp();
@@ -86,7 +82,6 @@ const ApiTokensPage = () => {
 			const result = await res.json();
 			console.log(result);
 			setTokens((prev) => [...prev, result]);
-			setNewTokenData({ token: result.tokenHash, name: tokenData.name });
 			setShowCreateModal(false);
 			showAlert("API token created successfully", "success");
 		} catch (err: any) {
@@ -142,14 +137,7 @@ const ApiTokensPage = () => {
 			/>
 
 			{/* Main Content */}
-			<div className='p-6 max-w-7xl mx-auto space-y-6'>
-				{/* New Token Alert */}
-				<NewTokenAlert
-					tokenData={newTokenData}
-					onCopy={copyToClipboard}
-					onDismiss={() => setNewTokenData(null)}
-				/>
-
+			<div className='p-4 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6'>
 				{/* Tokens List */}
 				<TokensList
 					tokens={tokens}

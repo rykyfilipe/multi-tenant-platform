@@ -32,51 +32,53 @@ function DashboardPage() {
 			<div className='h-full bg-background'>
 				{/* Header */}
 				<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
-					<div className='flex items-center justify-between px-6 py-4'>
-						<div className='flex items-center space-x-4'>
-							<div>
-								<h1 className='text-xl font-semibold text-foreground'>
+					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 gap-3'>
+						<div className='flex items-center space-x-3 sm:space-x-4'>
+							<div className='min-w-0 flex-1'>
+								<h1 className='text-lg sm:text-xl font-semibold text-foreground truncate'>
 									Dashboard
 								</h1>
-								<p className='text-sm text-muted-foreground'>
+								<p className='text-xs sm:text-sm text-muted-foreground truncate'>
 									Overview of your data and usage statistics
 								</p>
 							</div>
 						</div>
-						<div className='flex items-center space-x-3'>
+						<div className='flex items-center space-x-2 sm:space-x-3'>
 							<RefreshCw className='w-4 h-4 animate-spin text-muted-foreground' />
-							<span className='text-sm text-muted-foreground'>Loading...</span>
+							<span className='text-xs sm:text-sm text-muted-foreground'>
+								Loading...
+							</span>
 						</div>
 					</div>
 				</div>
 
 				{/* Loading Content */}
-				<div className='p-6 max-w-7xl mx-auto'>
-					<div className='space-y-6'>
+				<div className='p-4 sm:p-6 max-w-7xl mx-auto'>
+					<div className='space-y-4 sm:space-y-6'>
 						{/* Stats Loading */}
-						<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+						<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6'>
 							{[1, 2, 3, 4].map((i) => (
 								<Card key={i} className='dashboard-card'>
 									<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-										<Skeleton className='h-4 w-32' />
+										<Skeleton className='h-4 w-24 sm:w-32' />
 										<Skeleton className='h-4 w-4' />
 									</CardHeader>
 									<CardContent>
-										<Skeleton className='h-8 w-16 mb-2' />
-										<Skeleton className='h-3 w-24' />
+										<Skeleton className='h-6 sm:h-8 w-12 sm:w-16 mb-2' />
+										<Skeleton className='h-3 w-20 sm:w-24' />
 									</CardContent>
 								</Card>
 							))}
 						</div>
 
 						{/* Charts Loading */}
-						<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+						<div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6'>
 							{[1, 2].map((i) => (
 								<Card key={i} className='dashboard-card'>
 									<CardHeader>
-										<Skeleton className='h-6 w-40' />
+										<Skeleton className='h-5 sm:h-6 w-32 sm:w-40' />
 									</CardHeader>
-									<CardContent className='space-y-4'>
+									<CardContent className='space-y-3 sm:space-y-4'>
 										<Skeleton className='h-4 w-full' />
 										<Skeleton className='h-4 w-3/4' />
 										<Skeleton className='h-4 w-1/2' />
@@ -95,13 +97,13 @@ function DashboardPage() {
 			<div className='h-full bg-background'>
 				{/* Header */}
 				<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
-					<div className='flex items-center justify-between px-6 py-4'>
-						<div className='flex items-center space-x-4'>
-							<div>
-								<h1 className='text-xl font-semibold text-foreground'>
+					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 gap-3'>
+						<div className='flex items-center space-x-3 sm:space-x-4'>
+							<div className='min-w-0 flex-1'>
+								<h1 className='text-lg sm:text-xl font-semibold text-foreground truncate'>
 									Dashboard
 								</h1>
-								<p className='text-sm text-muted-foreground'>
+								<p className='text-xs sm:text-sm text-muted-foreground truncate'>
 									Overview of your data and usage statistics
 								</p>
 							</div>
@@ -110,7 +112,7 @@ function DashboardPage() {
 				</div>
 
 				{/* Error Content */}
-				<div className='p-6 max-w-7xl mx-auto'>
+				<div className='p-4 sm:p-6 max-w-7xl mx-auto'>
 					<Alert variant='destructive'>
 						<AlertCircle className='h-4 w-4' />
 						<AlertDescription>{error}</AlertDescription>
@@ -124,13 +126,13 @@ function DashboardPage() {
 		return (
 			<div className='h-full bg-background'>
 				<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
-					<div className='flex items-center justify-between px-6 py-4'>
-						<div className='flex items-center space-x-4'>
-							<div>
-								<h1 className='text-xl font-semibold text-foreground'>
+					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 gap-3'>
+						<div className='flex items-center space-x-3 sm:space-x-4'>
+							<div className='min-w-0 flex-1'>
+								<h1 className='text-lg sm:text-xl font-semibold text-foreground truncate'>
 									Dashboard
 								</h1>
-								<p className='text-sm text-muted-foreground'>
+								<p className='text-xs sm:text-sm text-muted-foreground truncate'>
 									Overview of your data and usage statistics
 								</p>
 							</div>
@@ -138,7 +140,7 @@ function DashboardPage() {
 					</div>
 				</div>
 
-				<div className='p-6 max-w-7xl mx-auto'>
+				<div className='p-4 sm:p-6 max-w-7xl mx-auto'>
 					<Alert>
 						<AlertCircle className='h-4 w-4' />
 						<AlertDescription>
@@ -155,32 +157,34 @@ function DashboardPage() {
 		<div className='h-full bg-background'>
 			{/* Header */}
 			<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
-				<div className='flex items-center justify-between px-6 py-4'>
-					<div className='flex items-center space-x-4'>
-						<div>
-							<h1 className='text-xl font-semibold text-foreground'>
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 gap-3'>
+					<div className='flex items-center space-x-3 sm:space-x-4'>
+						<div className='min-w-0 flex-1'>
+							<h1 className='text-lg sm:text-xl font-semibold text-foreground truncate'>
 								Dashboard
 							</h1>
-							<p className='text-sm text-muted-foreground'>
+							<p className='text-xs sm:text-sm text-muted-foreground truncate'>
 								Overview of your data and usage statistics
 							</p>
 						</div>
 					</div>
-					<div className='flex items-center space-x-3'>
+					<div className='flex items-center space-x-2 sm:space-x-3'>
 						<div className='w-2 h-2 rounded-full bg-green-500 animate-pulse'></div>
-						<span className='text-sm text-muted-foreground'>Live Data</span>
+						<span className='text-xs sm:text-sm text-muted-foreground'>
+							Live Data
+						</span>
 					</div>
 				</div>
 			</div>
 
 			{/* Main Content */}
-			<div className='p-6 max-w-7xl mx-auto'>
-				<div className='space-y-6'>
+			<div className='p-4 sm:p-6 max-w-7xl mx-auto'>
+				<div className='space-y-4 sm:space-y-6'>
 					{/* Stats Overview */}
 					<DashboardStats stats={data.stats} />
 
 					{/* Charts Grid */}
-					<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+					<div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6'>
 						{/* Database Usage Chart */}
 						<DatabaseChart data={data.databaseData} />
 
@@ -194,54 +198,17 @@ function DashboardPage() {
 					{/* Quick Actions */}
 					<Card className='dashboard-card'>
 						<CardHeader>
-							<CardTitle className='flex items-center gap-2'>
-								<Activity className='h-5 w-5' />
+							<CardTitle className='flex items-center gap-2 text-base sm:text-lg'>
+								<Activity className='h-4 w-4 sm:h-5 sm:w-5' />
 								Quick Actions
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-								<a
-									href='/home/database'
-									className='p-4 rounded-lg bg-card/50 border border-border/20 hover:bg-card/70 transition-colors cursor-pointer'>
-									<div className='flex items-center gap-3'>
-										<Database className='h-5 w-5 text-primary' />
-										<div>
-											<p className='font-medium'>Manage Databases</p>
-											<p className='text-sm text-muted-foreground'>
-												Create and manage your databases
-											</p>
-										</div>
-									</div>
-								</a>
-
-								<a
-									href='/home/users'
-									className='p-4 rounded-lg bg-card/50 border border-border/20 hover:bg-card/70 transition-colors cursor-pointer'>
-									<div className='flex items-center gap-3'>
-										<Users className='h-5 w-5 text-primary' />
-										<div>
-											<p className='font-medium'>Manage Users</p>
-											<p className='text-sm text-muted-foreground'>
-												Add and manage team members
-											</p>
-										</div>
-									</div>
-								</a>
-
-								<a
-									href='/home/settings'
-									className='p-4 rounded-lg bg-card/50 border border-border/20 hover:bg-card/70 transition-colors cursor-pointer'>
-									<div className='flex items-center gap-3'>
-										<BarChart3 className='h-5 w-5 text-primary' />
-										<div>
-											<p className='font-medium'>View Analytics</p>
-											<p className='text-sm text-muted-foreground'>
-												Detailed usage analytics
-											</p>
-										</div>
-									</div>
-								</a>
+							<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4'>
+								{/* Quick action buttons would go here */}
+								<div className='text-sm text-muted-foreground text-center py-4'>
+									Quick actions coming soon...
+								</div>
 							</div>
 						</CardContent>
 					</Card>

@@ -1,38 +1,12 @@
 /** @format */
 
 import prisma from "./prisma";
+import { PLAN_LIMITS } from "./planConstants";
+import type { PlanLimits } from "./planConstants";
 
-export interface PlanLimits {
-	databases: number;
-	tables: number;
-	users: number;
-	apiTokens: number;
-	publicTables: number;
-}
-
-export const PLAN_LIMITS: Record<string, PlanLimits> = {
-	Starter: {
-		databases: 1,
-		tables: 1,
-		users: 2,
-		apiTokens: 1,
-		publicTables: 0,
-	},
-	Pro: {
-		databases: 5,
-		tables: 5,
-		users: 5,
-		apiTokens: 3,
-		publicTables: 2,
-	},
-	Enterprise: {
-		databases: 10,
-		tables: 50,
-		users: 20,
-		apiTokens: 10,
-		publicTables: 10,
-	},
-};
+// Re-export for backward compatibility
+export { PLAN_LIMITS };
+export type { PlanLimits };
 
 export async function checkPlanLimit(
 	userId: number,
@@ -94,6 +68,7 @@ export async function getCurrentCounts(
 				users: 0,
 				apiTokens: 0,
 				publicTables: 0,
+				storage: 0,
 			};
 		}
 
@@ -121,6 +96,7 @@ export async function getCurrentCounts(
 			users,
 			apiTokens,
 			publicTables,
+			storage: 0, // Storage is calculated separately in memory tracking
 		};
 	} catch (error) {
 		console.error("Error getting current counts:", error);
@@ -130,6 +106,7 @@ export async function getCurrentCounts(
 			users: 0,
 			apiTokens: 0,
 			publicTables: 0,
+			storage: 0,
 		};
 	}
 }
