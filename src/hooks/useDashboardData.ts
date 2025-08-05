@@ -125,7 +125,7 @@ export const useDashboardData = () => {
 				const databases = Array.isArray(databasesData) ? databasesData : [];
 
 				if (process.env.NODE_ENV === "development") {
-					console.log("Dashboard - Databases data:", databases);
+					// Dashboard databases data loaded
 				}
 
 				const totalTables = databases.reduce(
@@ -144,15 +144,14 @@ export const useDashboardData = () => {
 				}, 0);
 
 				if (process.env.NODE_ENV === "development") {
-					console.log("Dashboard - Total tables:", totalTables);
-					console.log("Dashboard - Total rows:", totalRows);
+					// Dashboard totals calculated
 				}
 
 				// Process users data
 				const users = Array.isArray(usersData) ? usersData : [];
 
 				if (process.env.NODE_ENV === "development") {
-					console.log("Dashboard - Users data:", users);
+					// Dashboard users data loaded
 				}
 				// Pentru moment, considerăm toți utilizatorii ca fiind activi
 				// În viitor, putem adăuga un câmp status în baza de date

@@ -34,7 +34,7 @@ const validateCellValue = (value: string, type: string): boolean => {
 		case "date":
 			return !isNaN(Date.parse(value));
 		case "reference":
-			return value.trim() !== "" && !isNaN(Number(value));
+			return value.trim() !== ""; // Pentru referințe, acceptăm orice string valid
 		case "string":
 		default:
 			return true;
@@ -50,7 +50,7 @@ const formatCellValue = (value: any, type: string): any => {
 		case "date":
 			return new Date(value).toISOString();
 		case "reference":
-			return Number(value);
+			return String(value); // Pentru referințe, păstrăm ca string
 		case "string":
 		default:
 			return value;
@@ -73,13 +73,13 @@ const createReferenceData = (tables: Table[] | null) => {
 
 	if (!tables || tables.length === 0) {
 		if (process.env.NODE_ENV === "development") {
-			console.log("createReferenceData - No tables provided");
+			// No tables provided for reference data
 		}
 		return referenceData;
 	}
 
 	if (process.env.NODE_ENV === "development") {
-		console.log("createReferenceData - Processing tables:", tables.length);
+		// Processing tables for reference data
 	}
 
 	// Pentru fiecare tabel, creează o listă de opțiuni disponibile
@@ -187,18 +187,7 @@ const createReferenceData = (tables: Table[] | null) => {
 export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
 
-	// Debug pentru referenceData
-	useEffect(() => {
-		if (process.env.NODE_ENV === "development") {
-			console.log("AddRowForm - Tables:", tables);
-			console.log("AddRowForm - ReferenceData:", referenceData);
-			console.log("AddRowForm - All columns:", columns);
-			console.log(
-				"AddRowForm - Columns with reference type:",
-				columns?.filter((col) => col.type === "reference") || [],
-			);
-		}
-	}, [tables, referenceData, columns]);
+	// Reference data loaded
 
 	// Optimized cell update function
 	const updateCell = useCallback(
@@ -357,16 +346,26 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 								</SelectTrigger>
 								<SelectContent className='max-w-[400px]'>
 									{options.length > 0 ? (
-										options.map((opt) => (
-											<SelectItem
-												key={opt.id}
-												value={String(opt.id)}
-												className='max-w-[380px] truncate'>
-												<span className='truncate' title={opt.displayValue}>
-													{opt.displayValue}
-												</span>
-											</SelectItem>
-										))
+										options.map((opt) => {
+											// Extragem valoarea cheii primare din displayValue
+											let primaryKeyValue = opt.displayValue;
+											if (opt.displayValue.startsWith("#")) {
+												primaryKeyValue = opt.displayValue
+													.substring(1)
+													.split(" • ")[0];
+											}
+
+											return (
+												<SelectItem
+													key={opt.id}
+													value={primaryKeyValue}
+													className='max-w-[380px] truncate'>
+													<span className='truncate' title={opt.displayValue}>
+														{opt.displayValue}
+													</span>
+												</SelectItem>
+											);
+										})
 									) : (
 										<SelectItem disabled value='no-options'>
 											No {referencedTable?.name || "options"} available
@@ -374,14 +373,13 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 									)}
 								</SelectContent>
 							</Select>
-							{/* Debug info - poți să o ștergi după testare */}
+							{/* Reference table info */}
 							{process.env.NODE_ENV === "development" && (
 								<div className='text-xs text-muted-foreground'>
 									Table:{" "}
 									{referencedTable?.name ||
 										`Unknown (ID: ${column.referenceTableId})`}
-									, Options: {options.length}, ReferenceTableId:{" "}
-									{column.referenceTableId}
+									, Options: {options.length}
 								</div>
 							)}
 						</div>

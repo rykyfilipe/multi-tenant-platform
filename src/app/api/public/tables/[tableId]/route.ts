@@ -59,22 +59,41 @@ export async function GET(
 			columnMap.set(column.id, column.name);
 		}
 
+		// Găsim cheia primară a tabelului
+		const primaryKeyColumn = table.columns.find((col) => col.primary);
+
 		// Transformă rândurile
-		const transformedRows = table.rows.map((row) => {
-			const rowData: Record<string, any> = {
-				id: row.id,
-				createdAt: row.createdAt,
-			};
+		const transformedRows = await Promise.all(
+			table.rows.map(async (row) => {
+				const rowData: Record<string, any> = {
+					id: row.id,
+					createdAt: row.createdAt,
+				};
 
-			for (const cell of row.cells) {
-				const columnName = columnMap.get(cell.columnId);
-				if (columnName) {
-					rowData[columnName] = cell.value;
+				// Adăugăm valoarea cheii primare dacă există
+				if (primaryKeyColumn) {
+					const primaryKeyCell = row.cells.find(
+						(cell) => cell.columnId === primaryKeyColumn.id,
+					);
+					if (primaryKeyCell) {
+						rowData[primaryKeyColumn.name] = primaryKeyCell.value;
+					}
 				}
-			}
 
-			return rowData;
-		});
+				for (const cell of row.cells) {
+					const column = table.columns.find((col) => col.id === cell.columnId);
+					const columnName = columnMap.get(cell.columnId);
+
+					if (columnName && column) {
+						// Pentru coloanele de referință, valoarea este deja cheia primară
+						// Pentru coloanele normale, păstrăm valoarea originală
+						rowData[columnName] = cell.value;
+					}
+				}
+
+				return rowData;
+			}),
+		);
 
 		// Structură user-friendly
 		const result = {

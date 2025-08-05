@@ -21,6 +21,7 @@ interface Props {
 	setNewColumn: (col: CreateColumnRequest | null) => void;
 	onAdd: (e: FormEvent) => void;
 	tables: Table[] | null;
+	existingColumns?: Column[];
 }
 
 type FieldType = "string" | "boolean" | readonly string[];
@@ -39,6 +40,7 @@ export default function AddColumnForm({
 	setNewColumn,
 	onAdd,
 	tables,
+	existingColumns = [],
 }: Props) {
 	if (!tables) return null;
 
@@ -213,13 +215,20 @@ export default function AddColumnForm({
 
 		// Dacă e de tip "reference", adaugă un câmp nou
 		if (currentColumn.type === "reference") {
+			// Filtrăm tabelele care au cheie primară definită
+			const tablesWithPrimaryKey = tables.filter(
+				(table) => table.columns && table.columns.some((col) => col.primary),
+			);
+
 			base.push({
 				key: "referenceTableId",
-				type: tables.map((t) => t.id.toString()) as readonly string[],
+				type: tablesWithPrimaryKey.map((t) =>
+					t.id.toString(),
+				) as readonly string[],
 				required: true,
 				label: "Reference Table",
 				placeholder: "Select a table to reference",
-				referenceOptions: tables.map((t) => ({
+				referenceOptions: tablesWithPrimaryKey.map((t) => ({
 					value: t.id,
 					label: t.name,
 				})),
@@ -246,9 +255,26 @@ export default function AddColumnForm({
 				? currentColumn.referenceTableId !== undefined &&
 				  currentColumn.referenceTableId !== null
 				: true;
+		const hasValidPrimaryKey = !(
+			currentColumn.primary && existingColumns.some((col) => col.primary)
+		);
+		const hasAvailableReferenceTables =
+			currentColumn.type === "reference"
+				? tables &&
+				  tables.filter(
+						(table) =>
+							table.columns && table.columns.some((col) => col.primary),
+				  ).length > 0
+				: true;
 
-		return hasValidName && hasValidType && hasValidReference;
-	}, [currentColumn]);
+		return (
+			hasValidName &&
+			hasValidType &&
+			hasValidReference &&
+			hasValidPrimaryKey &&
+			hasAvailableReferenceTables
+		);
+	}, [currentColumn, existingColumns, tables]);
 
 	return (
 		<div className='space-y-6'>
@@ -283,13 +309,38 @@ export default function AddColumnForm({
 					</div>
 				)}
 
-				{currentColumn.type === "reference" && !currentColumn.referenceTableId && (
-					<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
-						<p className='text-sm text-amber-800'>
-							⚠️ Please select a reference table for this column
-						</p>
-					</div>
-				)}
+				{currentColumn.primary &&
+					existingColumns.some((col) => col.primary) && (
+						<div className='p-3 bg-red-50 border border-red-200 rounded-lg'>
+							<p className='text-sm text-red-800'>
+								⚠️ This table already has a primary key. Only one primary key is
+								allowed per table.
+							</p>
+						</div>
+					)}
+
+				{currentColumn.type === "reference" &&
+					!currentColumn.referenceTableId && (
+						<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+							<p className='text-sm text-amber-800'>
+								⚠️ Please select a reference table for this column
+							</p>
+						</div>
+					)}
+
+				{currentColumn.type === "reference" &&
+					tables &&
+					tables.filter(
+						(table) =>
+							table.columns && table.columns.some((col) => col.primary),
+					).length === 0 && (
+						<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+							<p className='text-sm text-blue-800'>
+								💡 No tables with primary keys available for reference. Tables
+								must have a primary key defined before they can be referenced.
+							</p>
+						</div>
+					)}
 
 				<div className='flex justify-end space-x-3 pt-4'>
 					<Button

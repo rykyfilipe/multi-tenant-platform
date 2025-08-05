@@ -3,9 +3,12 @@
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-export const JWT_SECRET: Secret = process.env.JWT_SECRET || "secret";
-export const PUBLIC_JWT_SECRET =
-	process.env.PUBLIC_JWT_SECRET || "public-secret";
+export const JWT_SECRET: Secret = process.env.JWT_SECRET || (() => {
+	throw new Error("JWT_SECRET environment variable is required");
+})();
+export const PUBLIC_JWT_SECRET = process.env.PUBLIC_JWT_SECRET || (() => {
+	throw new Error("PUBLIC_JWT_SECRET environment variable is required");
+})();
 import { Account, User } from "next-auth";
 
 import GoogleProvider from "next-auth/providers/google";
@@ -15,7 +18,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
 import prisma from "@/lib/prisma";
 
-export const 	authOptions = {
+export const authOptions = {
 	providers: [
 		GoogleProvider({
 			clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -304,12 +307,11 @@ export async function isAdmin(request: Request): Promise<boolean> {
 export function verifyLogin(request: Request): boolean {
 	const token = request.headers.get("Authorization")?.split(" ")[1];
 
-	console.log("token", token);
-	console.log("JWT_SECRET", JWT_SECRET);
+	// Token verification logging removed for security
 
 	if (!token) {
 		if (process.env.NODE_ENV === "development") {
-			console.log("❌ verifyLogin: No token found");
+			// No token found
 		}
 		return false;
 	}
@@ -317,12 +319,12 @@ export function verifyLogin(request: Request): boolean {
 	try {
 		const decoded = jwt.verify(token, JWT_SECRET);
 		if (process.env.NODE_ENV === "development") {
-			console.log("✅ verifyLogin: Token verified successfully", { decoded });
+			// Token verified successfully
 		}
 		return !!decoded;
 	} catch (error) {
 		if (process.env.NODE_ENV === "development") {
-			console.log("❌ verifyLogin: Token verification failed", { error });
+			// Token verification failed
 		}
 		return false;
 	}

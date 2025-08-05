@@ -86,6 +86,7 @@ export const DatabaseProvider = ({
 		setLoading(true);
 
 		if (!tenant || !user || !token) return;
+
 		try {
 			const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
 				headers: { Authorization: `Bearer ${token}` },
@@ -226,10 +227,21 @@ export const DatabaseProvider = ({
 				return;
 			}
 
+			// Fetch baza de date actualizată (cu tabele noi)
+			const dbResponse = await fetch(
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			);
+			if (dbResponse.ok) {
+				const updatedDb = await dbResponse.json();
+				setSelectedDatabase(updatedDb);
+			}
+
 			setShowAddTableModal(false);
 			setName("");
 			setDescription("");
-			fetchDatabases();
 			showAlert(
 				"Table created successfully! You can now add columns and data.",
 				"success",

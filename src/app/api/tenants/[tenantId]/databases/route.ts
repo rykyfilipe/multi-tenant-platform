@@ -103,7 +103,7 @@ export async function GET(
 		const databases = Array.from(databasesMap.values());
 		return NextResponse.json(databases, { status: 200 });
 	} catch (error) {
-		console.error(error);
+		// Database fetch error
 		return NextResponse.json(
 			{ error: "Failed to fetch databases" },
 			{ status: 500 },
@@ -206,7 +206,7 @@ export async function POST(
 
 		return NextResponse.json(newDatabase, { status: 201 });
 	} catch (error) {
-		console.error(error);
+		// Database creation error
 		return NextResponse.json(
 			{ error: "Failed to create database" },
 			{ status: 500 },
@@ -261,9 +261,9 @@ export async function DELETE(
 
 		return NextResponse.json({ message: "Database deleted!" }, { status: 200 });
 	} catch (error) {
-		console.error(error);
+		// Database deletion error
 		return NextResponse.json(
-			{ error: "Failed to fetch databases" },
+			{ error: "Failed to delete database" },
 			{ status: 500 },
 		);
 	}

@@ -19,7 +19,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		publicTables: 0,
 	},
 	Pro: {
-		databases: 1,
+		databases: 5,
 		tables: 5,
 		users: 5,
 		apiTokens: 3,
@@ -113,13 +113,7 @@ export async function getCurrentCounts(
 				}),
 			]);
 
-		console.log("Raw counts for tenant", user.tenantId, ":", {
-			databases,
-			tables,
-			users,
-			apiTokens,
-			publicTables,
-		});
+		// Raw counts calculated for tenant
 
 		return {
 			databases,

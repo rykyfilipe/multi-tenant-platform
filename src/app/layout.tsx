@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/contexts/AppContext";
 import AlertMessage from "@/components/alert";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Fonturi Google
 const geistSans = Geist({
@@ -140,11 +141,13 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
 				suppressHydrationWarning>
 				<Providers>
-					<AppProvider>
-						<AlertMessage />
-						{children}
-						<Analytics />
-					</AppProvider>
+					<ErrorBoundary>
+						<AppProvider>
+							<AlertMessage />
+							{children}
+							<Analytics />
+						</AppProvider>
+					</ErrorBoundary>
 				</Providers>
 			</body>
 		</html>

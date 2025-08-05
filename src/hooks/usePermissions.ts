@@ -33,7 +33,7 @@ export const usePermissions = (userId: string) => {
 
 			if (response.ok) {
 				const data = await response.json();
-				console.log("Permissions data received:", data);
+				// Permissions data received
 				setPermissions({
 					tablePermissions: data.tablePermissions || [],
 					columnsPermissions: data.columnsPermissions || [],
@@ -76,7 +76,7 @@ export const usePermissions = (userId: string) => {
 
 			if (response.ok) {
 				const result = await response.json();
-				console.log("Permissions save result:", result);
+				// Permissions saved successfully
 				showAlert("Permissions saved successfully", "success");
 				return true;
 			} else {
@@ -116,7 +116,7 @@ export const useTables = () => {
 
 		try {
 			setLoading(true);
-			console.log("useTables - Fetching tables for tenant:", tenant.id);
+			// Fetching tables for tenant
 
 			const response = await fetch(
 				`/api/tenants/${tenant.id}/databases/tables`,
@@ -130,7 +130,7 @@ export const useTables = () => {
 
 			if (response.ok) {
 				const data = await response.json();
-				console.log("useTables - Received tables:", data?.length || 0);
+				// Received tables data
 				setTables(data || []);
 			} else {
 				const errorText = await response.text();

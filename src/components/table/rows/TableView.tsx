@@ -94,13 +94,42 @@ export function TableView({
 													(cell) => cell && cell.columnId === col.id,
 												);
 
-												// If no cell exists for this column, render an empty cell
+												// If no cell exists for this column, create a virtual cell for editing
 												if (!cell) {
+													const virtualCell: Cell = {
+														id: 0, // Virtual ID
+														rowId: row.id,
+														columnId: col.id,
+														value: null,
+													};
+
 													return (
-														<td
-															key={`${row.id}-${col.id}-empty`}
-															className='text-gray-400 italic'>
-															Empty
+														<td key={`${row.id}-${col.id}-empty`}>
+															<EditableCell
+																columns={columns}
+																cell={virtualCell}
+																tables={tables}
+																isEditing={
+																	editingCell?.rowId === String(row.id) &&
+																	Number(editingCell.columnId) === col.id
+																}
+																onStartEdit={() => {
+																	onEditCell(
+																		String(row.id),
+																		String(col.id),
+																		"virtual",
+																	);
+																}}
+																onSave={(val) => {
+																	onSaveCell(
+																		String(col.id),
+																		String(row.id),
+																		"virtual",
+																		val,
+																	);
+																}}
+																onCancel={onCancelEdit}
+															/>
 														</td>
 													);
 												}

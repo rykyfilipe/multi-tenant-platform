@@ -122,7 +122,7 @@ export function EditableCell({
 	let referenceSelect: JSX.Element | null = null;
 	if (column.type === "reference") {
 		const options = referenceData[column.referenceTableId ?? -1] ?? [];
-		
+
 		const referencedTable = tables?.find(
 			(t) => t.id === column.referenceTableId,
 		);
@@ -131,24 +131,54 @@ export function EditableCell({
 			<div className='flex flex-col gap-1'>
 				<Select
 					value={value ? String(value) : ""}
-					onValueChange={(val) => setValue(Number(val))}>
+					onValueChange={(val) => setValue(val)}>
 					<SelectTrigger>
 						<SelectValue
 							placeholder={`Select ${referencedTable?.name || "reference"}`}
 						/>
 					</SelectTrigger>
 					<SelectContent className='max-w-[400px]'>
-						{options.length > 0 ? (
-							options.map((opt) => (
+						{/* Opțiunea pentru valoarea curentă dacă nu există în lista de opțiuni */}
+						{value &&
+							!options.some((opt) => {
+								let primaryKeyValue = opt.displayValue;
+								if (opt.displayValue.startsWith("#")) {
+									primaryKeyValue = opt.displayValue
+										.substring(1)
+										.split(" • ")[0];
+								}
+								return primaryKeyValue === value;
+							}) && (
 								<SelectItem
-									key={opt.id}
-									value={String(opt.id)}
-									className='truncate max-w-[380px]'>
-									<span className='truncate' title={opt.displayValue}>
-										{opt.displayValue}
+									value={String(value)}
+									className='truncate max-w-[380px] text-red-600'>
+									<span className='truncate' title={`Invalid: ${value}`}>
+										⚠️ Invalid: {value}
 									</span>
 								</SelectItem>
-							))
+							)}
+
+						{options.length > 0 ? (
+							options.map((opt) => {
+								// Extragem valoarea cheii primare din displayValue
+								let primaryKeyValue = opt.displayValue;
+								if (opt.displayValue.startsWith("#")) {
+									primaryKeyValue = opt.displayValue
+										.substring(1)
+										.split(" • ")[0];
+								}
+
+								return (
+									<SelectItem
+										key={opt.id}
+										value={primaryKeyValue}
+										className='truncate max-w-[380px]'>
+										<span className='truncate' title={opt.displayValue}>
+											{opt.displayValue}
+										</span>
+									</SelectItem>
+								);
+							})
 						) : (
 							<SelectItem disabled value='no-options'>
 								No {referencedTable?.name || "options"} available
@@ -216,34 +246,70 @@ export function EditableCell({
 	let display: string;
 
 	if (value == null || value === "") {
-		display = "Empty";
+		display = "Double-click to add value";
 	} else if (column.type === "boolean") {
 		display = value === true ? "True" : "False";
 	} else if (column.type === "date") {
 		display = new Date(value).toLocaleDateString();
 	} else if (column.type === "reference" && column.referenceTableId) {
+		// Pentru coloanele de referință, verificăm dacă valoarea există în tabelul de referință
 		const referenceTable = tables?.find(
 			(t) => t.id === column.referenceTableId,
 		);
-		const referencedRow = referenceTable?.rows?.find(
-			(row: Row) => row.id === Number(value),
-		);
 
-		display = "";
-		if (Array.isArray(referencedRow?.cells)) {
-			referencedRow.cells.forEach((cell) => {
-				display += `${cell.value} • `;
-			});
+		if (referenceTable && referenceTable.columns) {
+			const refPrimaryKeyColumn = referenceTable.columns.find(
+				(col) => col.primary,
+			);
+
+			if (refPrimaryKeyColumn && referenceTable.rows) {
+				// Căutăm rândul cu cheia primară specificată
+				const referenceRow = referenceTable.rows.find((refRow) => {
+					if (!refRow.cells) return false;
+					const refPrimaryKeyCell = refRow.cells.find(
+						(refCell) => refCell.columnId === refPrimaryKeyColumn.id,
+					);
+					return refPrimaryKeyCell && refPrimaryKeyCell.value === value;
+				});
+
+				if (referenceRow) {
+					// Valoarea există, afișăm cheia primară
+					display = String(value);
+				} else {
+					// Valoarea nu există, afișăm un mesaj de eroare și permitem editarea
+					display = `⚠️ Invalid: ${value}`;
+				}
+			} else {
+				// Nu există cheie primară în tabelul de referință
+				display = `⚠️ No primary key in ${referenceTable.name}`;
+			}
+		} else {
+			// Tabelul de referință nu există - afișăm valoarea normal
+			display = String(value);
 		}
 	} else {
 		display = String(value);
 	}
 
+	// Determinăm stilul în funcție de tipul de afișare
+	const getDisplayStyle = () => {
+		if (display === "Double-click to add value") {
+			return "text-gray-400 italic  rounded px-2 py-1 cursor-pointer hover:translate-y-[-1px] transition-colors";
+		} else if (display.startsWith("⚠️")) {
+			return "text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1";
+		}
+		return "cursor-pointer hover:translate-y-[-1px] rounded px-1 transition-colors";
+	};
+
 	return (
 		<div
 			onDoubleClick={onStartEdit}
-			title='Double-click to edit'
-			className={` ${display === "Empty" && "text-gray-500 italic"} `}>
+			title={
+				value == null || value === ""
+					? "Double-click to add value"
+					: "Double-click to edit"
+			}
+			className={`${getDisplayStyle()}`}>
 			<p className='max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis'>
 				{display}
 			</p>

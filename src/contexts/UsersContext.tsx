@@ -52,7 +52,10 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 		fetchUsers();
 	}, [token, tenantId]);
 
-	const handleAddUser = async () => {};
+	const handleAddUser = async () => {
+		// TODO: Implement user addition functionality
+		showAlert("User addition not yet implemented", "info");
+	};
 	const handleUpdateUser = async (user: User) => {
 		if (loading || !token || !tenantId) return;
 

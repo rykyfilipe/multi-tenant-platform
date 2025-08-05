@@ -11,7 +11,7 @@ const securityHeaders = {
 	"X-XSS-Protection": "1; mode=block",
 	"Strict-Transport-Security": "max-age=31536000; includeSubDomains",
 	"Content-Security-Policy":
-		"default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com https://va.vercel-scripts.com; frame-src https://js.stripe.com;",
+		"default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com https://va.vercel-scripts.com https://vercel.live; frame-src https://js.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self';",
 };
 
 export async function middleware(request: NextRequest) {

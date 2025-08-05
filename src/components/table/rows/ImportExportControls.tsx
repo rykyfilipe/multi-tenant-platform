@@ -19,9 +19,11 @@ interface Props {
 
 // Funcție pentru crearea datelor de referință (similar cu EditableCell)
 const createReferenceData = (tables: Table[] | null) => {
-	const referenceData: Record<number, { id: number; displayValue: string }[]> = {};
+	const referenceData: Record<number, { id: number; displayValue: string }[]> =
+		{};
 	if (!tables) return referenceData;
 
+	// Nu mai este nevoie să filtrăm tabelele, deoarece salvăm direct valorile cheilor primare
 	tables.forEach((table) => {
 		const options: { id: number; displayValue: string }[] = [];
 		if (Array.isArray(table.rows) && table.rows.length > 0) {
@@ -50,7 +52,9 @@ const createReferenceData = (tables: Table[] | null) => {
 
 								if (column.type === "date") {
 									try {
-										formattedValue = new Date(formattedValue).toLocaleDateString("ro-RO");
+										formattedValue = new Date(
+											formattedValue,
+										).toLocaleDateString("ro-RO");
 									} catch {
 										// fallback la valoarea brută
 									}
@@ -97,19 +101,25 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			if (!tenant || !token) return;
 
 			try {
-				const response = await fetch(
-					`/api/tenants/${tenant.id}/databases/tables`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-							"Content-Type": "application/json",
-						},
+				const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "application/json",
 					},
-				);
+				});
 
 				if (response.ok) {
-					const data = await response.json();
-					setTables(data || []);
+					const databases = await response.json();
+					// Extragem toate tabelele din toate bazele de date
+					const allTables = databases.flatMap((db: any) =>
+						db.tables
+							? db.tables.map((table: any) => ({
+									...table,
+									databaseId: db.id,
+							  }))
+							: [],
+					);
+					setTables(allTables || []);
 				}
 			} catch (error) {
 				console.error("Failed to fetch tables for export:", error);
@@ -121,34 +131,21 @@ function ImportExportControls({ columns, rows, table }: Props) {
 
 	const handleExport = () => {
 		const headers = columns.map((col) => col.name);
-		
+
 		// Creăm datele de referință pentru toate tabelele
 		const referenceData = createReferenceData(tables);
-		
+
 		const csvRows = [
 			headers.join(";"),
 			...rows.map((row) => {
 				const rowData = columns.map((col) => {
 					const cell = row.cells?.find((c) => c.columnId === col.id);
 					let value = cell?.value ?? "";
-					
-					// Pentru coloanele de tip "reference", înlocuim ID-ul cu numele
-					if (col.type === "reference" && col.referenceTableId && value) {
-						const referencedTableData = referenceData[col.referenceTableId];
-						if (referencedTableData) {
-							const referencedRow = referencedTableData.find(
-								(refRow) => refRow.id === Number(value)
-							);
-							if (referencedRow) {
-								value = referencedRow.displayValue;
-							} else {
-								value = `Unknown Row (ID: ${value})`;
-							}
-						} else {
-							value = `Unknown Table (ID: ${col.referenceTableId})`;
-						}
-					}
-					
+
+					// Pentru coloanele de tip "reference", valoarea este deja cheia primară
+					// Nu mai este nevoie de procesare suplimentară
+					// value = cell?.value ?? ""; (deja setat mai sus)
+
 					return JSON.stringify(value);
 				});
 				return rowData.join(";");
@@ -199,7 +196,16 @@ function ImportExportControls({ columns, rows, table }: Props) {
 					const col = columns.find((c) => c.name === header[i]);
 					if (!col) return null;
 
-					// Validare tip
+					// Pentru coloanele de referință, valoarea este cheia primară
+					// Nu mai este nevoie de procesare specială pe server
+					if (col.type === "reference") {
+						return {
+							columnId: col.id,
+							value,
+						};
+					}
+
+					// Validare tip pentru coloanele normale
 					const isValidType =
 						(col.type === "number" && typeof value === "number") ||
 						(col.type === "string" && typeof value === "string") ||
@@ -232,7 +238,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			}
 
 			const res = await fetch(
-				`/api/tenants/${tenantId}/databases/tables/${table.id}/rows`,
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows`,
 				{
 					method: "POST",
 					headers: {
@@ -244,14 +250,36 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			);
 
 			if (!res.ok) {
-				const { error } = await res.json();
-				showAlert("Import failed: " + error, "error");
+				const errorData = await res.json();
+				if (res.status === 400) {
+					// Eroare de validare pentru single row
+					const errorMessage = errorData.details
+						? `Validation failed: ${errorData.details.join(", ")}`
+						: errorData.error || "Import failed";
+					showAlert(errorMessage, "error");
+				} else {
+					showAlert(
+						"Import failed: " + (errorData.error || "Unknown error"),
+						"error",
+					);
+				}
 			} else {
 				const data = await res.json();
-				showAlert(
-					`Successfully imported ${data.rows?.length || 0} rows!`,
-					"success",
-				);
+
+				if (res.status === 207) {
+					// Import cu avertismente (status 207 Multi-Status)
+					const warningMessage = data.warnings
+						? `Import completed with warnings: ${data.warnings.join("; ")}`
+						: data.message || "Import completed with warnings";
+					showAlert(warningMessage, "warning");
+				} else {
+					// Import complet reușit
+					showAlert(
+						`Successfully imported ${data.rows?.length || 0} rows!`,
+						"success",
+					);
+				}
+
 				// Refresh the table data
 				window.location.reload();
 			}

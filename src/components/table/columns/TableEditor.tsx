@@ -117,7 +117,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			if (!response.ok) throw new Error("Failed to add column");
 
 			const data = await response.json();
-			console.log(data);
+			// Data received
 
 			showAlert(
 				"Column added successfully! You can now start adding data.",
@@ -199,34 +199,12 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			const seen = localStorage.getItem("columns-editor-tour-seen");
 			if (!seen) {
 				localStorage.setItem("columns-editor-tour-seen", "true");
-				if (!columns || columns.length === 0)
-					setColumns([
-						{
-							id: 99,
-							name: "demo",
-							type: "string",
-							required: false,
-							primary: false,
-							autoIncrement: true,
-							tableId: table.id,
-						},
-					]);
+				// Demo column creation removed for production
 				startTour();
 			}
 		}, 3000);
 	}, [loading]);
-	useEffect(() => {
-		if (currentStep === 3) {
-			setTimeout(() => {
-				setColumns(
-					columns?.filter((col) => col.name !== "demo" && col.id !== 99) ||
-						null,
-				);
-
-				setIsOpen(false);
-			}, 5000);
-		}
-	}, [currentStep]);
+	// Demo column cleanup removed for production
 	return (
 		<div className='space-y-6'>
 			{/* Header Actions */}
@@ -262,6 +240,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 						newColumn={newColumn}
 						onAdd={handleAdd}
 						tables={tables}
+						existingColumns={columns}
 					/>
 				</div>
 			)}

@@ -49,15 +49,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 				id: Number(session.user.id),
 			});
 
-			// Debug logging
-			if (process.env.NODE_ENV === "development") {
-				console.log("🔍 Session Debug:", {
-					hasSession: !!session,
-					hasCustomJWT: !!session.customJWT,
-					customJWTLength: session.customJWT?.length || 0,
-					userId: session.user?.id,
-				});
-			}
+			// Debug logging removed for production
 
 			setToken(session.customJWT || "");
 		}
@@ -65,28 +57,20 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		setLoading(false);
 	}, [session]);
 
-	// Configuration check (only in development)
+	// Configuration validation
 	useEffect(() => {
-		if (process.env.NODE_ENV === "development") {
-			// Simple configuration check
-			const issues: string[] = [];
-			const warnings: string[] = [];
+		const requiredEnvVars = [
+			"NEXTAUTH_SECRET",
+			"JWT_SECRET",
+			"PUBLIC_JWT_SECRET",
+		];
 
-			if (!process.env.NEXT_PUBLIC_NEXTAUTH_SECRET) {
-				issues.push("Missing NEXTAUTH_SECRET");
-			}
-			if (!process.env.NEXT_PUBLIC_JWT_SECRET) {
-				issues.push("Missing JWT_SECRET");
-			}
-			if (!process.env.NEXT_PUBLIC_PUBLIC_JWT_SECRET) {
-				issues.push("Missing PUBLIC_JWT_SECRET");
-			}
+		const missingVars = requiredEnvVars.filter(
+			(varName) => !process.env[varName],
+		);
 
-			if (issues.length > 0) {
-				console.error("❌ Configuration Issues:", issues);
-			} else {
-				console.log("✅ Configuration looks good!");
-			}
+		if (missingVars.length > 0) {
+			console.error("Missing required environment variables:", missingVars);
 		}
 	}, []);
 
@@ -94,40 +78,17 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		if (!token) return;
 		const fetchTenant = async () => {
 			try {
-				if (process.env.NODE_ENV === "development") {
-					console.log("🔍 API Request Debug:", {
-						hasToken: !!token,
-						tokenLength: token?.length || 0,
-						tokenStart: token?.substring(0, 20) + "...",
-					});
-				}
-
 				const response = await fetch("/api/tenants", {
 					headers: { Authorization: `Bearer ${token}` },
 				});
 
-				if (process.env.NODE_ENV === "development") {
-					console.log("🔍 API Response Debug:", {
-						status: response.status,
-						statusText: response.statusText,
-						ok: response.ok,
-					});
-				}
-
 				if (!response.ok) {
-					if (process.env.NODE_ENV === "development") {
-						const errorText = await response.text();
-						console.error("❌ API Error:", errorText);
-					}
 					return;
 				}
 
 				const data = await response.json();
 				setTenant(data);
 			} catch (error) {
-				if (process.env.NODE_ENV === "development") {
-					console.error("❌ Fetch Error:", error);
-				}
 				showAlert("Failed to load tenant", "error");
 			} finally {
 				setLoading(false);

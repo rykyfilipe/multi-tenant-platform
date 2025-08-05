@@ -38,6 +38,73 @@ function useRowsTableEditor() {
 		) => void,
 	) => {
 		try {
+			// Pentru celulele virtuale (care nu există încă), creăm o celulă nouă
+			if (cellId === "virtual") {
+				const url = `/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}/cell`;
+				const requestBody = {
+					columnId: parseInt(columnId),
+					value,
+				};
+
+				// Creating virtual cell
+
+				const response = await fetch(url, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify(requestBody),
+				});
+
+				// Response received
+
+				if (!response.ok) {
+					let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+					try {
+						const errorData = await response.json();
+						errorMessage =
+							errorData.error ||
+							errorData.message ||
+							errorData.details ||
+							errorMessage;
+						// Error data received
+					} catch (parseError) {
+						try {
+							const textError = await response.text();
+							errorMessage = textError || errorMessage;
+							// Error text received
+						} catch (textParseError) {
+							console.error("Could not parse error response:", textParseError);
+						}
+					}
+					throw new Error(errorMessage);
+				}
+
+				let newCell;
+				try {
+					newCell = await response.json();
+				} catch (parseError) {
+					console.error("Could not parse success response:", parseError);
+					throw new Error("Invalid response format");
+				}
+
+				// Actualizăm rândurile cu noua celulă
+				const updatedRows = rows.map((row) => {
+					if (row.id.toString() !== rowId) return row;
+					return {
+						...row,
+						cells: [...(row.cells || []), newCell],
+					};
+				});
+
+				setRows(updatedRows);
+				setEditingCell(null);
+				showAlert("Data cell created successfully", "success");
+				return;
+			}
+
+			// Pentru celulele existente, actualizăm valoarea
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}/cell/${cellId}`,
 				{

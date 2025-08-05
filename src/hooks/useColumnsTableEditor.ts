@@ -65,8 +65,7 @@ function useColumnsTableEditor() {
 			}
 
 			if (process.env.NODE_ENV === "development") {
-				console.log("Column update - Field:", fieldName, "Value:", value);
-				console.log("Column update - Update data:", updateData);
+				// Column update initiated
 			}
 
 			const response = await fetch(
@@ -89,7 +88,7 @@ function useColumnsTableEditor() {
 
 			const updatedColumnData = await response.json();
 			if (process.env.NODE_ENV === "development") {
-				console.log("Column update - Response:", updatedColumnData);
+				// Column update completed
 			}
 
 			// Actualizăm state-ul cu datele de la server

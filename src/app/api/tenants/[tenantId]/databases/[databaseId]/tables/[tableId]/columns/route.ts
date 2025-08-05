@@ -125,6 +125,42 @@ export async function POST(
 			}
 		}
 
+		// Verificăm dacă există deja o cheie primară în tabelă
+		const existingPrimaryKey = table.columns.find(col => col.primary);
+		const newPrimaryKey = parsedData.columns.find(col => col.primary);
+		
+		if (existingPrimaryKey && newPrimaryKey) {
+			return NextResponse.json(
+				{ error: "Table already has a primary key. Only one primary key is allowed per table." },
+				{ status: 409 },
+			);
+		}
+
+		// Verificăm că tabelele de referință au cheie primară definită
+		for (const column of parsedData.columns) {
+			if (column.type === "reference" && column.referenceTableId) {
+				const referenceTable = await prisma.table.findUnique({
+					where: { id: column.referenceTableId },
+					include: { columns: true },
+				});
+
+				if (!referenceTable) {
+					return NextResponse.json(
+						{ error: `Reference table with ID ${column.referenceTableId} not found.` },
+						{ status: 404 },
+					);
+				}
+
+				const hasPrimaryKey = referenceTable.columns.some(col => col.primary);
+				if (!hasPrimaryKey) {
+					return NextResponse.json(
+						{ error: `Table "${referenceTable.name}" must have a primary key defined before it can be referenced.` },
+						{ status: 400 },
+					);
+				}
+			}
+		}
+
 		// Creăm coloanele
 		const createdColumns = [];
 		for (const columnData of parsedData.columns) {

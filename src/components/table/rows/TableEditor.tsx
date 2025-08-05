@@ -30,17 +30,7 @@ export default function TableEditor({
 	rows,
 	setRows,
 }: Props) {
-	// Debug pentru columns
-	useEffect(() => {
-		if (process.env.NODE_ENV === "development") {
-			console.log("TableEditor - Columns:", columns);
-			console.log("TableEditor - Columns length:", columns?.length || 0);
-			console.log(
-				"TableEditor - Reference columns:",
-				columns?.filter((col) => col.type === "reference") || [],
-			);
-		}
-	}, [columns]);
+	// Columns loaded
 	if (!rows || !columns) return;
 
 	const { showAlert, token, user, tenant } = useApp();
@@ -282,7 +272,7 @@ export default function TableEditor({
 			if (data && data.tables) {
 				setTables(data.tables || []);
 				if (process.env.NODE_ENV === "development") {
-					console.log("TableEditor - Fetched tables:", data.tables);
+					// Tables fetched successfully
 				}
 			}
 		} catch (error) {
