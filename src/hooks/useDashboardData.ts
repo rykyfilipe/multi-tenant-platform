@@ -163,7 +163,9 @@ export const useDashboardData = () => {
 				const activeUsers = users.length;
 
 				// Get plan limits based on subscription
-				const planLimits = getPlanLimits(subscription?.subscriptionPlan);
+				const planLimits = getPlanLimits(
+					subscription?.subscriptionPlan || null,
+				);
 
 				// Get memory data
 				const memoryInfo = memoryData.success
