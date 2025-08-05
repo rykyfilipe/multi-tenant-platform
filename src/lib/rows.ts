@@ -1,6 +1,7 @@
 /** @format */
 
 import prisma from "@/lib/prisma";
+import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 
 type Column = {
 	id: number;
@@ -47,7 +48,7 @@ export async function createRowWithCells(
 		let value: string;
 
 		switch (col.type) {
-			case "number":
+			case USER_FRIENDLY_COLUMN_TYPES.number:
 				const num = Number(cell.value);
 				if (isNaN(num)) {
 					if (col.required) {
@@ -59,7 +60,7 @@ export async function createRowWithCells(
 				}
 				break;
 
-			case "boolean":
+			case USER_FRIENDLY_COLUMN_TYPES.yesNo:
 				if (
 					cell.value === "true" ||
 					cell.value === true ||
@@ -76,13 +77,13 @@ export async function createRowWithCells(
 					value = "false";
 				} else {
 					if (col.required) {
-						throw new Error(`Column '${col.name}' requires a valid boolean`);
+						throw new Error(`Column '${col.name}' requires a valid yes/no value`);
 					}
 					value = "";
 				}
 				break;
 
-			case "date":
+			case USER_FRIENDLY_COLUMN_TYPES.date:
 				const date = new Date(cell.value);
 				if (isNaN(date.getTime())) {
 					if (col.required) {
@@ -94,7 +95,8 @@ export async function createRowWithCells(
 				}
 				break;
 
-			case "string":
+			case USER_FRIENDLY_COLUMN_TYPES.text:
+			case USER_FRIENDLY_COLUMN_TYPES.link:
 			default:
 				value =
 					cell.value !== undefined && cell.value !== null

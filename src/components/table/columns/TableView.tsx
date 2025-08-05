@@ -7,8 +7,9 @@ import { Database, Trash2 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
 import { useMemo } from "react";
+import { USER_FRIENDLY_COLUMN_TYPES, COLUMN_TYPE_LABELS, PROPERTY_LABELS } from "@/lib/columnTypes";
 
-type FieldType = "string" | "boolean" | "date" | string[];
+type FieldType = "string" | "boolean" | "date" | readonly string[];
 
 interface Props {
 	columns: Column[];
@@ -48,7 +49,7 @@ export function TableView({
 			},
 			{
 				key: "type",
-				type: ["string", "number", "boolean", "date", "reference"],
+				type: Object.values(USER_FRIENDLY_COLUMN_TYPES) as readonly string[],
 				required: true,
 				label: "Data Type",
 			},
@@ -56,30 +57,24 @@ export function TableView({
 				key: "required",
 				type: "boolean",
 				required: false,
-				label: "Required",
+				label: PROPERTY_LABELS.required,
 			},
 			{
 				key: "primary",
 				type: "boolean",
 				required: false,
-				label: "Primary Key",
-			},
-			{
-				key: "autoIncrement",
-				type: "boolean",
-				required: false,
-				label: "Auto Increment",
+				label: PROPERTY_LABELS.primary,
 			},
 		];
 
-		// Adaugă câmpul referenceTableId doar dacă există coloane de tip reference
-		const hasReferenceColumns = columns.some((col) => col.type === "reference");
+		// Adaugă câmpul referenceTableId doar dacă există coloane de tip link
+		const hasReferenceColumns = columns.some((col) => col.type === USER_FRIENDLY_COLUMN_TYPES.link);
 		if (hasReferenceColumns) {
 			base.push({
 				key: "referenceTableId",
 				type: tables?.map((t) => t.id.toString()) || [],
 				required: false,
-				label: "Reference Table",
+				label: "Link to Table",
 				referenceOptions: tables?.map((t) => ({
 					value: t.id,
 					label: t.name,

@@ -15,6 +15,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../ui/select";
+import {
+	USER_FRIENDLY_COLUMN_TYPES,
+	COLUMN_TYPE_LABELS,
+} from "@/lib/columnTypes";
 
 interface Props {
 	columns: Column[];
@@ -27,15 +31,15 @@ interface Props {
 // Type validation utilities
 const validateCellValue = (value: string, type: string): boolean => {
 	switch (type) {
-		case "number":
+		case USER_FRIENDLY_COLUMN_TYPES.number:
 			return !isNaN(Number(value)) && value.trim() !== "";
-		case "boolean":
+		case USER_FRIENDLY_COLUMN_TYPES.yesNo:
 			return ["true", "false"].includes(value.toLowerCase());
-		case "date":
+		case USER_FRIENDLY_COLUMN_TYPES.date:
 			return !isNaN(Date.parse(value));
-		case "reference":
-			return value.trim() !== ""; // Pentru referințe, acceptăm orice string valid
-		case "string":
+		case USER_FRIENDLY_COLUMN_TYPES.link:
+			return value.trim() !== ""; // Pentru link-uri, acceptăm orice string valid
+		case USER_FRIENDLY_COLUMN_TYPES.text:
 		default:
 			return true;
 	}
@@ -43,15 +47,15 @@ const validateCellValue = (value: string, type: string): boolean => {
 
 const formatCellValue = (value: any, type: string): any => {
 	switch (type) {
-		case "number":
+		case USER_FRIENDLY_COLUMN_TYPES.number:
 			return Number(value);
-		case "boolean":
+		case USER_FRIENDLY_COLUMN_TYPES.yesNo:
 			return value.toLowerCase() === "true";
-		case "date":
+		case USER_FRIENDLY_COLUMN_TYPES.date:
 			return new Date(value).toISOString();
-		case "reference":
-			return String(value); // Pentru referințe, păstrăm ca string
-		case "string":
+		case USER_FRIENDLY_COLUMN_TYPES.link:
+			return String(value); // Pentru link-uri, păstrăm ca string
+		case USER_FRIENDLY_COLUMN_TYPES.text:
 		default:
 			return value;
 	}
@@ -96,8 +100,6 @@ const createReferenceData = (tables: Table[] | null) => {
 					const sortedColumns = [...(table.columns || [])].sort((a, b) => {
 						if (a.primary && !b.primary) return -1;
 						if (!a.primary && b.primary) return 1;
-						if (a.autoIncrement && !b.autoIncrement) return -1;
-						if (!a.autoIncrement && b.autoIncrement) return 1;
 						return a.name.localeCompare(b.name);
 					});
 
@@ -124,14 +126,14 @@ const createReferenceData = (tables: Table[] | null) => {
 								}
 
 								// Formatează datele pentru o citire mai ușoară
-								if (column.type === "date") {
+								if (column.type === USER_FRIENDLY_COLUMN_TYPES.date) {
 									try {
 										const date = new Date(value);
 										formattedValue = date.toLocaleDateString("ro-RO");
 									} catch (e) {
 										formattedValue = value;
 									}
-								} else if (column.type === "boolean") {
+								} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo) {
 									formattedValue = value === "true" ? "✓" : "✗";
 								}
 

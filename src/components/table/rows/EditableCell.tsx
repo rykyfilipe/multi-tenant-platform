@@ -12,6 +12,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../ui/select";
+import { USER_FRIENDLY_COLUMN_TYPES, COLUMN_TYPE_LABELS } from "@/lib/columnTypes";
 import { Button } from "../../ui/button";
 
 interface Props {
@@ -120,7 +121,7 @@ export function EditableCell({
 	};
 
 	let referenceSelect: JSX.Element | null = null;
-	if (column.type === "reference") {
+			if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 		const options = referenceData[column.referenceTableId ?? -1] ?? [];
 
 		const referencedTable = tables?.find(
@@ -214,15 +215,15 @@ export function EditableCell({
 							<SelectItem value='false'>False</SelectItem>
 						</SelectContent>
 					</Select>
-				) : column.type === "reference" ? (
+				) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
 					referenceSelect
 				) : (
 					<Input
 						className='w-max'
 						type={
-							column.type === "date"
+							column.type === USER_FRIENDLY_COLUMN_TYPES.date
 								? "date"
-								: column.type === "number"
+								: column.type === USER_FRIENDLY_COLUMN_TYPES.number
 								? "number"
 								: "text"
 						}
@@ -251,7 +252,7 @@ export function EditableCell({
 		display = value === true ? "True" : "False";
 	} else if (column.type === "date") {
 		display = new Date(value).toLocaleDateString();
-	} else if (column.type === "reference" && column.referenceTableId) {
+			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
 		// Pentru coloanele de referință, verificăm dacă valoarea există în tabelul de referință
 		const referenceTable = tables?.find(
 			(t) => t.id === column.referenceTableId,

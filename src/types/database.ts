@@ -27,7 +27,6 @@ export interface Column {
 	type: string;
 	required: boolean;
 	primary: boolean;
-	autoIncrement: boolean;
 	tableId: number;
 	referenceTableId?: number;
 }
@@ -67,6 +66,5 @@ export interface CreateColumnRequest {
 	type: string;
 	required?: boolean;
 	primary?: boolean;
-	autoIncrement?: boolean;
 	referenceTableId?: number;
 }

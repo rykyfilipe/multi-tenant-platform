@@ -15,6 +15,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../ui/select";
+import {
+	USER_FRIENDLY_COLUMN_TYPES,
+	COLUMN_TYPE_LABELS,
+	COLUMN_TYPE_DESCRIPTIONS,
+	PROPERTY_LABELS,
+	PROPERTY_DESCRIPTIONS,
+} from "@/lib/columnTypes";
 
 interface Props {
 	newColumn: CreateColumnRequest | null;
@@ -48,10 +55,9 @@ export default function AddColumnForm({
 		() =>
 			newColumn || {
 				name: "",
-				type: "string" as const,
+				type: USER_FRIENDLY_COLUMN_TYPES.text,
 				required: false,
 				primary: false,
-				autoIncrement: false,
 				referenceTableId: undefined,
 			},
 		[newColumn],
@@ -140,7 +146,9 @@ export default function AddColumnForm({
 										typeof option === "string" ? option : String(option.value)
 									}>
 									{typeof option === "string"
-										? option.charAt(0).toUpperCase() + option.slice(1)
+										? COLUMN_TYPE_LABELS[
+												option as keyof typeof COLUMN_TYPE_LABELS
+										  ] || option.charAt(0).toUpperCase() + option.slice(1)
 										: option.label}
 								</SelectItem>
 							))}
@@ -189,7 +197,7 @@ export default function AddColumnForm({
 			},
 			{
 				key: "type",
-				type: ["string", "number", "boolean", "date", "reference"] as const,
+				type: Object.values(USER_FRIENDLY_COLUMN_TYPES) as readonly string[],
 				required: true,
 				label: "Data Type",
 			},
@@ -197,24 +205,18 @@ export default function AddColumnForm({
 				key: "required",
 				type: "boolean",
 				required: false,
-				label: "Required",
+				label: PROPERTY_LABELS.required,
 			},
 			{
 				key: "primary",
 				type: "boolean",
 				required: false,
-				label: "Primary Key",
-			},
-			{
-				key: "autoIncrement",
-				type: "boolean",
-				required: false,
-				label: "Auto Increment",
+				label: PROPERTY_LABELS.primary,
 			},
 		];
 
-		// Dacă e de tip "reference", adaugă un câmp nou
-		if (currentColumn.type === "reference") {
+		// Dacă e de tip "link", adaugă un câmp nou
+		if (currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 			// Filtrăm tabelele care au cheie primară definită
 			const tablesWithPrimaryKey = tables.filter(
 				(table) => table.columns && table.columns.some((col) => col.primary),
@@ -247,25 +249,27 @@ export default function AddColumnForm({
 		[renderBooleanField, renderEnumField, renderStringField],
 	);
 
+	const hasAvailableReferenceTables = useMemo(() => {
+		return currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link
+			? tables &&
+					tables.filter(
+						(table) =>
+							table.columns && table.columns.some((col) => col.primary),
+					).length > 0
+			: true;
+	}, [currentColumn.type, tables]);
+
 	const isFormValid = useMemo(() => {
 		const hasValidName = currentColumn.name.trim().length > 0;
 		const hasValidType = currentColumn.type.length > 0;
 		const hasValidReference =
-			currentColumn.type === "reference"
+			currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link
 				? currentColumn.referenceTableId !== undefined &&
 				  currentColumn.referenceTableId !== null
 				: true;
 		const hasValidPrimaryKey = !(
 			currentColumn.primary && existingColumns.some((col) => col.primary)
 		);
-		const hasAvailableReferenceTables =
-			currentColumn.type === "reference"
-				? tables &&
-				  tables.filter(
-						(table) =>
-							table.columns && table.columns.some((col) => col.primary),
-				  ).length > 0
-				: true;
 
 		return (
 			hasValidName &&
@@ -274,7 +278,7 @@ export default function AddColumnForm({
 			hasValidPrimaryKey &&
 			hasAvailableReferenceTables
 		);
-	}, [currentColumn, existingColumns, tables]);
+	}, [currentColumn, existingColumns, hasAvailableReferenceTables]);
 
 	return (
 		<div className='space-y-6'>
@@ -293,13 +297,14 @@ export default function AddColumnForm({
 				</div>
 
 				{/* Validation Warnings */}
-				{currentColumn.autoIncrement && currentColumn.type !== "number" && (
-					<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
-						<p className='text-sm text-amber-800'>
-							⚠️ Auto increment is typically used with number types
-						</p>
-					</div>
-				)}
+				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link &&
+					!hasAvailableReferenceTables && (
+						<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+							<p className='text-sm text-amber-800'>
+								⚠️ No tables with primary keys available for linking
+							</p>
+						</div>
+					)}
 
 				{currentColumn.primary && currentColumn.required === false && (
 					<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
@@ -319,16 +324,16 @@ export default function AddColumnForm({
 						</div>
 					)}
 
-				{currentColumn.type === "reference" &&
+				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link &&
 					!currentColumn.referenceTableId && (
 						<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
 							<p className='text-sm text-amber-800'>
-								⚠️ Please select a reference table for this column
+								⚠️ Please select a table to link to
 							</p>
 						</div>
 					)}
 
-				{currentColumn.type === "reference" &&
+				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link &&
 					tables &&
 					tables.filter(
 						(table) =>
@@ -336,8 +341,8 @@ export default function AddColumnForm({
 					).length === 0 && (
 						<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
 							<p className='text-sm text-blue-800'>
-								💡 No tables with primary keys available for reference. Tables
-								must have a primary key defined before they can be referenced.
+								💡 No tables with primary keys available for linking. Tables
+								must have a primary key defined before they can be linked.
 							</p>
 						</div>
 					)}

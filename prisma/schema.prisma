@@ -84,7 +84,6 @@ model Column {
   type              String
   required          Boolean            @default(false)
   primary           Boolean            @default(false)
-  autoIncrement     Boolean            @default(false)
   tableId           Int
   referenceTableId  Int?
   cells             Cell[]

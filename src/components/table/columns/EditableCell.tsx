@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Column } from "@/types/database";
 
-type FieldType = "string" | "boolean" | "date" | string[];
+type FieldType = "string" | "boolean" | "date" | readonly string[];
 
 interface Props {
 	column: Column;
