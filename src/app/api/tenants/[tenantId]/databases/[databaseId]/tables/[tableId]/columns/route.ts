@@ -52,7 +52,11 @@ const getDefaultValue = (
 // === ROUTA POST ===
 export async function POST(
 	request: NextRequest,
-	{ params }: { params: Promise<{ tenantId: string; databaseId: string; tableId: string }> },
+	{
+		params,
+	}: {
+		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
+	},
 ) {
 	const { tenantId, databaseId, tableId } = await params;
 	const logged = verifyLogin(request);
@@ -78,9 +82,9 @@ export async function POST(
 
 		// Verificăm că baza de date există și aparține tenant-ului
 		const database = await prisma.database.findFirst({
-			where: { 
+			where: {
 				id: Number(databaseId),
-				tenantId: Number(tenantId) 
+				tenantId: Number(tenantId),
 			},
 		});
 
@@ -103,10 +107,7 @@ export async function POST(
 		});
 
 		if (!table) {
-			return NextResponse.json(
-				{ error: "Table not found" },
-				{ status: 404 },
-			);
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
 		// Transform Prisma columns to match the expected Column interface
@@ -126,12 +127,15 @@ export async function POST(
 		}
 
 		// Verificăm dacă există deja o cheie primară în tabelă
-		const existingPrimaryKey = table.columns.find(col => col.primary);
-		const newPrimaryKey = parsedData.columns.find(col => col.primary);
-		
+		const existingPrimaryKey = table.columns.find((col) => col.primary);
+		const newPrimaryKey = parsedData.columns.find((col) => col.primary);
+
 		if (existingPrimaryKey && newPrimaryKey) {
 			return NextResponse.json(
-				{ error: "Table already has a primary key. Only one primary key is allowed per table." },
+				{
+					error:
+						"Table already has a primary key. Only one primary key is allowed per table.",
+				},
 				{ status: 409 },
 			);
 		}
@@ -146,15 +150,19 @@ export async function POST(
 
 				if (!referenceTable) {
 					return NextResponse.json(
-						{ error: `Reference table with ID ${column.referenceTableId} not found.` },
+						{
+							error: `Reference table with ID ${column.referenceTableId} not found.`,
+						},
 						{ status: 404 },
 					);
 				}
 
-				const hasPrimaryKey = referenceTable.columns.some(col => col.primary);
+				const hasPrimaryKey = referenceTable.columns.some((col) => col.primary);
 				if (!hasPrimaryKey) {
 					return NextResponse.json(
-						{ error: `Table "${referenceTable.name}" must have a primary key defined before it can be referenced.` },
+						{
+							error: `Table "${referenceTable.name}" must have a primary key defined before it can be referenced.`,
+						},
 						{ status: 400 },
 					);
 				}
@@ -170,7 +178,6 @@ export async function POST(
 					type: columnData.type,
 					required: columnData.required || false,
 					primary: columnData.primary || false,
-					autoIncrement: columnData.autoIncrement || false,
 					referenceTableId: columnData.referenceTableId || null,
 					tableId: Number(tableId),
 				},
@@ -210,7 +217,11 @@ export async function POST(
 // === ROUTA GET ===
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: Promise<{ tenantId: string; databaseId: string; tableId: string }> },
+	{
+		params,
+	}: {
+		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
+	},
 ) {
 	const { tenantId, databaseId, tableId } = await params;
 	const logged = verifyLogin(request);
@@ -232,9 +243,9 @@ export async function GET(
 	try {
 		// Verificăm că baza de date există și aparține tenant-ului
 		const database = await prisma.database.findFirst({
-			where: { 
+			where: {
 				id: Number(databaseId),
-				tenantId: Number(tenantId) 
+				tenantId: Number(tenantId),
 			},
 		});
 
@@ -256,10 +267,7 @@ export async function GET(
 		});
 
 		if (!table) {
-			return NextResponse.json(
-				{ error: "Table not found" },
-				{ status: 404 },
-			);
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
 		// Verificăm permisiunile pentru utilizatorii non-admin
@@ -273,10 +281,7 @@ export async function GET(
 			});
 
 			if (!permission) {
-				return NextResponse.json(
-					{ error: "Access denied" },
-					{ status: 403 },
-				);
+				return NextResponse.json({ error: "Access denied" }, { status: 403 });
 			}
 		}
 
@@ -288,4 +293,4 @@ export async function GET(
 			{ status: 500 },
 		);
 	}
-} 
+}
