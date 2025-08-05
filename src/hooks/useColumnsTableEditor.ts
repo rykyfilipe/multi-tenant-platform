@@ -56,8 +56,7 @@ function useColumnsTableEditor() {
 				updateData[fieldName] = value ? Number(value) : null;
 			} else if (
 				fieldName === "required" ||
-				fieldName === "primary" ||
-				fieldName === "autoIncrement"
+				fieldName === "primary" 
 			) {
 				updateData[fieldName] = Boolean(value);
 			} else {
