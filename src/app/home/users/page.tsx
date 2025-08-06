@@ -4,6 +4,7 @@
 
 import { UsersLoadingState } from "@/components/ui/loading-states";
 import TableEditor from "@/components/users/TableEditor";
+import { InvitationsList } from "@/components/users/InvitationsList";
 import { useApp } from "@/contexts/AppContext";
 import { UsersProvider, useUsers } from "@/contexts/UsersContext";
 
@@ -16,12 +17,12 @@ export default function UsersPage() {
 }
 
 function UsersContent() {
-	const { loading } = useApp();
+	const { loading, tenant } = useApp();
 	const { users, setUsers } = useUsers();
 
 	if (loading) return <UsersLoadingState />;
 	if (!loading && !users) return <UsersLoadingState />;
-	
+
 	return (
 		<div className='h-full bg-background'>
 			{/* Header */}
@@ -46,8 +47,9 @@ function UsersContent() {
 			</div>
 
 			{/* Main Content */}
-			<div className='p-6 max-w-7xl mx-auto'>
+			<div className='p-6 max-w-7xl mx-auto space-y-6'>
 				<TableEditor users={users} setUsers={setUsers} />
+				<InvitationsList tenantId={tenant?.id || 0} />
 			</div>
 		</div>
 	);

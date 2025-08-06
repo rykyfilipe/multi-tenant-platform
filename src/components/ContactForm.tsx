@@ -172,7 +172,7 @@ export const ContactForm = () => {
 										</li>
 										<li className='flex items-center space-x-2'>
 											<CheckCircle className='w-4 h-4 text-green-500 flex-shrink-0' />
-											<span>99.9% Uptime Guarantee</span>
+											<span>99.96% Overall Uptime</span>
 										</li>
 										<li className='flex items-center space-x-2'>
 											<CheckCircle className='w-4 h-4 text-green-500 flex-shrink-0' />

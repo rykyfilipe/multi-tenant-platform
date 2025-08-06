@@ -29,7 +29,6 @@ export default function TableEditor({ users, setUsers }: Props) {
 		firstName: "",
 		lastName: "",
 		role: Role.VIEWER,
-		password: "",
 	});
 
 	if (!token || !user || !users) return;
@@ -57,18 +56,23 @@ export default function TableEditor({ users, setUsers }: Props) {
 			}
 
 			const data = await response.json();
-			showAlert("User added successfully! They can now access the platform.", "success");
-			setUsers([...(users || []), data.user as User]);
+			showAlert(
+				"Invitation sent successfully! The user will receive an email to complete their account setup.",
+				"success",
+			);
+			// Don't add to users list since it's just an invitation
 			setNewUser({
 				email: "",
 				firstName: "",
 				lastName: "",
 				role: Role.VIEWER,
-				password: "",
 			});
 			setShowForm(false);
 		} catch (error) {
-			showAlert("Failed to add user. Please check the information and try again.", "error");
+			showAlert(
+				"Failed to add user. Please check the information and try again.",
+				"error",
+			);
 		}
 	}
 
@@ -88,9 +92,9 @@ export default function TableEditor({ users, setUsers }: Props) {
 				(user) => user.id !== Number(userId),
 			);
 			setUsers(updatedUsers);
-					showAlert("User removed successfully", "success");
-	} catch (error) {
-		showAlert("Failed to remove user. Please try again.", "error");
+			showAlert("User removed successfully", "success");
+		} catch (error) {
+			showAlert("Failed to remove user. Please try again.", "error");
 		}
 	};
 
@@ -108,10 +112,9 @@ export default function TableEditor({ users, setUsers }: Props) {
 			<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
 				<div className='flex items-center space-x-3'>
 					{user.role === "ADMIN" && (
-						<Button 
+						<Button
 							onClick={() => setShowForm((prev) => !prev)}
-							className='flex items-center space-x-2'
-						>
+							className='flex items-center space-x-2'>
 							{showForm ? <X className='w-4 h-4' /> : <span>Add User</span>}
 						</Button>
 					)}

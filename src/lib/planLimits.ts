@@ -1,6 +1,7 @@
 /** @format */
 
 import prisma from "./prisma";
+import { cachedOperations } from "./cached-operations";
 import { PLAN_LIMITS, getRowsLimitForPlan } from "./planConstants";
 import type { PlanLimits } from "./planConstants";
 
@@ -14,13 +15,7 @@ export async function checkPlanLimit(
 	currentCount: number = 0,
 ): Promise<{ allowed: boolean; limit: number; current: number }> {
 	try {
-		const user = await prisma.user.findUnique({
-			where: { id: userId },
-			select: {
-				subscriptionPlan: true,
-				subscriptionStatus: true,
-			},
-		});
+		const user = await cachedOperations.getUser(userId);
 
 		if (!user || user.subscriptionStatus !== "active") {
 					// Default to Starter plan if no subscription
@@ -56,10 +51,7 @@ export async function getCurrentCounts(
 	userId: number,
 ): Promise<Record<keyof PlanLimits, number>> {
 	try {
-		const user = await prisma.user.findUnique({
-			where: { id: userId },
-			select: { tenantId: true },
-		});
+		const user = await cachedOperations.getUser(userId);
 
 		if (!user?.tenantId) {
 			return {
@@ -74,23 +66,7 @@ export async function getCurrentCounts(
 		}
 
 		const [databases, tables, users, apiTokens, publicTables, rows] =
-			await Promise.all([
-				prisma.database.count({ where: { tenantId: user.tenantId } }),
-				prisma.table.count({
-					where: { database: { tenantId: user.tenantId } },
-				}),
-				prisma.user.count({ where: { tenantId: user.tenantId } }),
-				prisma.apiToken.count({ where: { userId } }),
-				prisma.table.count({
-					where: {
-						database: { tenantId: user.tenantId },
-						isPublic: true,
-					},
-				}),
-				prisma.row.count({
-					where: { table: { database: { tenantId: user.tenantId } } },
-				}),
-			]);
+			await cachedOperations.getCounts(user.tenantId, userId);
 
 		// Raw counts calculated for tenant
 

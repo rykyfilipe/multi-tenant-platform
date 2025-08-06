@@ -10,10 +10,14 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
+import {
+	sendInvitationEmail,
+	generateInvitationToken,
+	generateInvitationUrl,
+} from "@/lib/email";
 
 const userSchema = z.object({
 	email: z.string().email(),
-	password: z.string().min(8),
 	firstName: z.string().min(4),
 	lastName: z.string().min(4),
 	role: z.enum(["VIEWER", "ADMIN", "EDITOR"]).default("VIEWER"),
@@ -135,74 +139,89 @@ export async function POST(
 			);
 		}
 
-		// Hash the password
-		const hashedPassword = await hashPassword(parsedData.password);
+		// Check for existing invitation
+		const existingInvitation = await prisma.invitation.findFirst({
+			where: {
+				email: parsedData.email,
+				tenantId: Number(tenantId),
+				accepted: false,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
 
-		// Create user in the database
-		const user = await prisma.user.create({
+		if (existingInvitation) {
+			return NextResponse.json(
+				{ error: "An invitation has already been sent to this email address" },
+				{ status: 400 },
+			);
+		}
+
+		// Get admin user info for email
+		const adminUser = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { firstName: true, lastName: true },
+		});
+
+		// Get tenant info for email
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: Number(tenantId) },
+			select: { name: true },
+		});
+
+		// Generate invitation token
+		const invitationToken = generateInvitationToken();
+		const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+		// Create invitation in database
+		const invitation = await prisma.invitation.create({
 			data: {
 				email: parsedData.email,
-				password: hashedPassword,
 				firstName: parsedData.firstName,
 				lastName: parsedData.lastName,
 				role: parsedData.role,
-				tenant: {
-					connect: {
-						id: Number(tenantId),
-					},
-				},
+				tenantId: Number(tenantId),
+				token: invitationToken,
+				expiresAt,
 			},
 		});
 
-		const tables = await prisma.table.findMany({
-			where: {
-				database: {
-					tenantId: Number(tenantId),
-				},
-			},
-			include: {
-				columns: true,
-			},
+		// Send invitation email
+		const invitationUrl = generateInvitationUrl(invitationToken);
+		const emailSent = await sendInvitationEmail({
+			email: parsedData.email,
+			firstName: parsedData.firstName,
+			lastName: parsedData.lastName,
+			role: parsedData.role,
+			tenantName: tenant?.name || "Your Organization",
+			adminName: `${adminUser?.firstName} ${adminUser?.lastName}`,
+			invitationUrl,
 		});
 
-		// Creează permisiuni pentru fiecare tabel
-		const tablePermissions = await Promise.all(
-			tables.map((table) => {
-				return prisma.tablePermission.create({
-					data: {
-						tenantId: Number(tenantId),
-						userId: user.id,
-						tableId: table.id,
-						canDelete: false,
-						canRead: true,
-						canEdit: false,
-					},
-				});
-			}),
-		);
-
-		// Creează permisiuni pentru fiecare coloană din tabel
-		const columnPermissions = await Promise.all(
-			tables.flatMap((table) =>
-				table.columns.map((column) =>
-					prisma.columnPermission.create({
-						data: {
-							tenantId: Number(tenantId),
-							userId: user.id,
-							columnId: column.id,
-							canRead: true,
-							canEdit: false,
-							tableId: table?.id,
-						},
-					}),
-				),
-			),
-		);
-
-		const { password, tenantId: t, ...safeUser } = user;
+		if (!emailSent) {
+			// If email failed, delete the invitation
+			await prisma.invitation.delete({
+				where: { id: invitation.id },
+			});
+			return NextResponse.json(
+				{ error: "Failed to send invitation email. Please try again." },
+				{ status: 500 },
+			);
+		}
 
 		const response = NextResponse.json(
-			{ message: "User registered successfully", user: safeUser },
+			{
+				message: "Invitation sent successfully",
+				invitation: {
+					id: invitation.id,
+					email: invitation.email,
+					firstName: invitation.firstName,
+					lastName: invitation.lastName,
+					role: invitation.role,
+					expiresAt: invitation.expiresAt,
+				},
+			},
 			{ status: 201 },
 		);
 

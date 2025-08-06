@@ -1,7 +1,7 @@
 /** @format */
 
 import { getPublicUserFromRequest, verifyPublicToken } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { cachedOperations } from "@/lib/cached-operations";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -19,10 +19,8 @@ export async function GET(request: Request) {
 	const { userId, role } = userResult;
 
 	try {
-		const token = await prisma.apiToken.findFirst({
-			where: { userId: userId },
-			select: { scopes: true },
-		});
+		const tokens = await cachedOperations.getApiTokens(userId);
+		const token = tokens.find(t => !t.revoked);
 
 		if (!token || !token.scopes.includes("tables:read")) {
 			return NextResponse.json(
@@ -31,22 +29,13 @@ export async function GET(request: Request) {
 			);
 		}
 
-		const user = await prisma.user.findUnique({
-			where: { id: userId },
-		});
+		const user = await cachedOperations.getUser(userId);
 
 		if (!user) {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
 
-		const tables = await prisma.table.findMany({
-			where: {
-				database: {
-					tenantId: user?.tenantId ?? 0,
-				},
-				isPublic: true, // Doar tabelele publice
-			},
-		});
+		const tables = await cachedOperations.getPublicTables(user?.tenantId ?? 0);
 		return NextResponse.json(tables);
 	} catch (error) {
 		return NextResponse.json(

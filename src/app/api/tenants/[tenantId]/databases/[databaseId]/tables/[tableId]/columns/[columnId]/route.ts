@@ -11,7 +11,7 @@ import { z } from "zod";
 
 const ColumnUpdateSchema = z.object({
 	name: z.string().optional(),
-	type: z.enum(["string", "boolean", "number", "date", "reference"]).optional(),
+	type: z.enum(["string", "text", "boolean", "number", "date", "reference", "customArray"]).transform((type) => type === "text" ? "string" : type).optional(),
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),

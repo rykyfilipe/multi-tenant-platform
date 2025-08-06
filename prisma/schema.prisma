@@ -30,6 +30,7 @@ model Tenant {
   tablePermissions  TablePermission[]
   admin             User               @relation("TenantAdmin", fields: [adminId], references: [id])
   users             User[]             @relation("TenantUsers")
+  invitations       Invitation[]
 }
 
 model User {
@@ -197,6 +198,24 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  firstName String
+  lastName  String
+  role      Role
+  tenantId  Int
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  accepted  Boolean  @default(false)
+  
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
 }
 
 enum Role {

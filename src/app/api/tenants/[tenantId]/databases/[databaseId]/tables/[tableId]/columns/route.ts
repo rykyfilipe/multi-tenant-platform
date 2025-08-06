@@ -16,12 +16,13 @@ const ColumnSchema = z.object({
 	name: z.string().min(1, "Name is mandatory"),
 	type: z.enum([
 		"string",
+		"text", // Accept both "string" and "text" for compatibility
 		"boolean",
 		"number",
 		"date",
 		"reference",
 		"customArray",
-	]),
+	]).transform((type) => type === "text" ? "string" : type), // Transform "text" to "string"
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
@@ -41,6 +42,7 @@ const getDefaultValue = (
 	if (required) {
 		switch (columnType) {
 			case "string":
+			case "text": // Handle both "string" and "text"
 				return "";
 			case "number":
 				return 0;

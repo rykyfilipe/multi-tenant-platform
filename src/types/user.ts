@@ -19,5 +19,4 @@ export interface UserSchema {
 	lastName: string;
 	email: string;
 	role: Role;
-	password: string;
 }
