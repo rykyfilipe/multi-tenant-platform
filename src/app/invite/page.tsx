@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
 	Card,
@@ -28,7 +28,7 @@ interface Invitation {
 	expiresAt: string;
 }
 
-export default function InvitePage() {
+function InvitePageContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const token = searchParams.get("token");
@@ -266,5 +266,28 @@ export default function InvitePage() {
 				</CardContent>
 			</Card>
 		</div>
+	);
+}
+
+function LoadingFallback() {
+	return (
+		<div className='min-h-screen bg-background flex items-center justify-center p-4'>
+			<Card className='w-full max-w-md'>
+				<CardHeader className='text-center'>
+					<CardTitle>Loading...</CardTitle>
+					<CardDescription>
+						Please wait while we load the invitation page.
+					</CardDescription>
+				</CardHeader>
+			</Card>
+		</div>
+	);
+}
+
+export default function InvitePage() {
+	return (
+		<Suspense fallback={<LoadingFallback />}>
+			<InvitePageContent />
+		</Suspense>
 	);
 }
