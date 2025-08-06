@@ -64,7 +64,7 @@ export default function PlanLimitNotification({
 		}, 10000);
 
 		return () => clearTimeout(timer);
-	}, [onClose]);
+	}, []);
 
 	if (!isVisible) return null;
 

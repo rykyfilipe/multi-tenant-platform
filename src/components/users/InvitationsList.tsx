@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } from "react";
 import {
 	Card,
 	CardContent,
@@ -31,17 +31,20 @@ interface InvitationsListProps {
 	tenantId: number;
 }
 
-export function InvitationsList({ tenantId }: InvitationsListProps) {
+export interface InvitationsListRef {
+	refresh: () => void;
+}
+
+export const InvitationsList = forwardRef<
+	InvitationsListRef,
+	InvitationsListProps
+>(function InvitationsList({ tenantId }, ref) {
 	const [invitations, setInvitations] = useState<Invitation[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const { showAlert, token } = useApp();
 
-	useEffect(() => {
-		fetchInvitations();
-	}, [tenantId]);
-
-	const fetchInvitations = async () => {
+	const fetchInvitations = useCallback(async () => {
 		try {
 			const response = await fetch(`/api/tenants/${tenantId}/invitations`, {
 				headers: {
@@ -60,7 +63,16 @@ export function InvitationsList({ tenantId }: InvitationsListProps) {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [tenantId, token]);
+
+	useEffect(() => {
+		fetchInvitations();
+	}, [fetchInvitations]);
+
+	// Expose refresh function to parent component
+	useImperativeHandle(ref, () => ({
+		refresh: fetchInvitations,
+	}));
 
 	const deleteInvitation = async (invitationId: string) => {
 		try {
@@ -198,4 +210,4 @@ export function InvitationsList({ tenantId }: InvitationsListProps) {
 			</CardContent>
 		</Card>
 	);
-}
+});

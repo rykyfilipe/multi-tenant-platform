@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 
@@ -15,14 +15,20 @@ import { X } from "lucide-react";
 interface Props {
 	users: User[] | null;
 	setUsers: (users: User[]) => void;
+	onInvitationSent?: () => void;
 }
 
-export default function TableEditor({ users, setUsers }: Props) {
+export default function TableEditor({
+	users,
+	setUsers,
+	onInvitationSent,
+}: Props) {
 	if (!users) return;
 
 	const { showAlert, token, user, tenant } = useApp();
 	const { handleApiError } = usePlanLimitError();
 	const [showForm, setShowForm] = useState(false);
+	const [serverError, setServerError] = useState<string | null>(null);
 	const tenantId = tenant?.id;
 	const [newUser, setNewUser] = useState<UserSchema | null>({
 		email: "",
@@ -36,10 +42,31 @@ export default function TableEditor({ users, setUsers }: Props) {
 	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
 		useUsersEditor();
 
+	// Clear server error when user data changes (user starts typing)
+	useEffect(() => {
+		if (serverError && newUser) {
+			// Only clear error if user is actively typing (not on initial load)
+			const hasUserData =
+				newUser.email || newUser.firstName || newUser.lastName;
+			if (hasUserData) {
+				// Add a small delay to allow user to see the error first
+				const timer = setTimeout(() => {
+					setServerError(null);
+				}, 5000); // 5 seconds delay
+
+				return () => clearTimeout(timer);
+			}
+		}
+	}, [newUser?.email, newUser?.firstName, newUser?.lastName, serverError]);
+
 	async function handleAdd(e: FormEvent) {
 		e.preventDefault();
 
 		if (!token) return console.error("No token available");
+
+		// Clear any previous server errors
+		setServerError(null);
+
 		try {
 			const response = await fetch(`/api/tenants/${tenantId}/users`, {
 				method: "POST",
@@ -51,7 +78,28 @@ export default function TableEditor({ users, setUsers }: Props) {
 			});
 
 			if (!response.ok) {
-				handleApiError(response);
+				// Try to parse the error response
+				let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+				try {
+					const errorData = await response.json();
+					errorMessage =
+						errorData.error ||
+						errorData.message ||
+						errorData.details ||
+						errorMessage;
+				} catch (parseError) {
+					try {
+						const textError = await response.text();
+						errorMessage = textError || errorMessage;
+					} catch (textParseError) {
+						console.error("Could not parse error response:", textParseError);
+					}
+				}
+
+				// Set server error to show validation errors
+				setServerError(errorMessage);
+				// Don't call handleApiError here as we want to show errors in the form
 				return;
 			}
 
@@ -68,11 +116,30 @@ export default function TableEditor({ users, setUsers }: Props) {
 				role: Role.VIEWER,
 			});
 			setShowForm(false);
+			// Clear server error on success
+			setServerError(null);
+
+			// Trigger refresh of invitations list
+			if (onInvitationSent) {
+				onInvitationSent();
+			}
 		} catch (error) {
-			showAlert(
-				"Failed to add user. Please check the information and try again.",
-				"error",
-			);
+			let errorMessage =
+				"Failed to add user. Please check the information and try again.";
+
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			} else if (typeof error === "string") {
+				errorMessage = error;
+			} else if (error && typeof error === "object" && "message" in error) {
+				errorMessage = (error as any).message;
+			}
+
+			// Set server error if not already set
+			if (!serverError) {
+				setServerError(errorMessage);
+			}
+			showAlert(errorMessage, "error");
 		}
 	}
 
@@ -113,7 +180,11 @@ export default function TableEditor({ users, setUsers }: Props) {
 				<div className='flex items-center space-x-3'>
 					{user.role === "ADMIN" && (
 						<Button
-							onClick={() => setShowForm((prev) => !prev)}
+							onClick={() => {
+								setShowForm((prev) => !prev);
+								// Clear server error when toggling form
+								setServerError(null);
+							}}
 							className='flex items-center space-x-2'>
 							{showForm ? <X className='w-4 h-4' /> : <span>Add User</span>}
 						</Button>
@@ -133,6 +204,7 @@ export default function TableEditor({ users, setUsers }: Props) {
 						newUser={newUser}
 						setNewUser={setNewUser}
 						onAdd={handleAdd}
+						serverError={serverError}
 					/>
 				</div>
 			)}

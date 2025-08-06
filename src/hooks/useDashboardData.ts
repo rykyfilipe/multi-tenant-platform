@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { getPlanLimits } from "@/lib/planConstants";
@@ -177,7 +177,6 @@ export const useDashboardData = () => {
 							limitGB: planLimits.storage / 1024,
 							percentage: 0,
 							isNearLimit: false,
-							isOverLimit: false,
 					  };
 				console.log("memoryInfo", memoryInfo);
 				// Create dashboard data
@@ -263,16 +262,18 @@ export const useDashboardData = () => {
 				};
 
 				setData(dashboardData);
-			} catch (err) {
-				console.error("Error fetching dashboard data:", err);
-				setError("Failed to load dashboard data");
+			} catch (error) {
+				console.error("Error fetching dashboard data:", error);
+				setError(error instanceof Error ? error.message : "Unknown error");
 			} finally {
 				setLoading(false);
 			}
 		};
 
-		fetchDashboardData();
-	}, [token, tenant, subscription]);
+		if (token && tenant) {
+			fetchDashboardData();
+		}
+	}, [token, tenant, subscription]); // Remove fetchDashboardData from dependencies
 
 	return { data, loading, error };
 };

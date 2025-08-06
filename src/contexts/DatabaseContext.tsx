@@ -2,7 +2,13 @@
 
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+	createContext,
+	useContext,
+	useState,
+	useEffect,
+	useCallback,
+} from "react";
 import { Table, Database } from "@/types/database";
 import { useApp } from "./AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
@@ -70,29 +76,23 @@ export const DatabaseProvider = ({
 	const [showAddTableModal, setShowAddTableModal] = useState(false);
 	const [showAddDatabaseModal, setShowAddDatabaseModal] = useState(false);
 
-	useEffect(() => {
-		fetchDatabases();
-	}, [token, user, tenant]);
-
-	useEffect(() => {
-		if (selectedDatabase) {
-			setTables(selectedDatabase.tables || []);
-		} else {
-			setTables(null);
-		}
-	}, [selectedDatabase]);
-
-	const fetchDatabases = async () => {
+	const fetchDatabases = useCallback(async () => {
 		setLoading(true);
 
-		if (!tenant || !user || !token) return;
+		if (!tenant || !user || !token) {
+			setLoading(false);
+			return;
+		}
 
 		try {
 			const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
-			if (!response.ok) throw new Error("Failed to fetch databases");
+			if (!response.ok) {
+				throw new Error("Failed to fetch databases");
+			}
+
 			const data = await response.json();
 
 			if (!data || data.length === 0) {
@@ -111,6 +111,7 @@ export const DatabaseProvider = ({
 				}
 			}
 		} catch (error) {
+			console.error("Error fetching databases:", error);
 			showAlert(
 				"Failed to load databases. Please refresh the page and try again.",
 				"error",
@@ -118,7 +119,21 @@ export const DatabaseProvider = ({
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [tenant, user, token, showAlert, selectedDatabase]);
+
+	useEffect(() => {
+		if (token && user && tenant && !databases) {
+			fetchDatabases();
+		}
+	}, [token, user, tenant, fetchDatabases, databases]);
+
+	useEffect(() => {
+		if (selectedDatabase) {
+			setTables(selectedDatabase.tables || []);
+		} else {
+			setTables(null);
+		}
+	}, [selectedDatabase]);
 
 	const handleSelectDatabase = (database: Database) => {
 		setSelectedDatabase(database);

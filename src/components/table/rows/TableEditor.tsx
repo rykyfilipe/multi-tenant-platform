@@ -7,6 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { AddRowForm } from "./AddRowForm";
 import { TableView } from "./TableView";
+import { TableFilters } from "./TableFilters";
 import useRowsTableEditor from "@/hooks/useRowsTableEditor";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -38,6 +39,8 @@ export default function TableEditor({
 	const tenantId = tenant?.id;
 	const [showForm, setShowForm] = useState(false);
 	const [tables, setTables] = useState<Table[] | null>(null);
+	const [filteredRows, setFilteredRows] = useState<Row[]>(rows || []);
+	const [serverError, setServerError] = useState<string | null>(null);
 	if (!token || !user) return;
 
 	const [cells, setCells] = useState<any[]>([]);
@@ -45,10 +48,27 @@ export default function TableEditor({
 	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
 		useRowsTableEditor();
 
+	// Clear server error when cells change (user starts typing)
+	useEffect(() => {
+		if (serverError && cells.length > 0) {
+			// Only clear error if user is actively typing (not on initial load)
+			// Add a small delay to allow user to see the error first
+			const timer = setTimeout(() => {
+				setServerError(null);
+			}, 2000); // 2 seconds delay
+
+			return () => clearTimeout(timer);
+		}
+	}, [cells, serverError]);
+
 	async function handleAdd(e: FormEvent) {
 		e.preventDefault();
 
 		if (!token) return console.error("No token available");
+
+		// Clear any previous server errors
+		setServerError(null);
+
 		try {
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows`,
@@ -82,12 +102,16 @@ export default function TableEditor({
 					}
 				}
 
+				// Set server error to show validation errors
+				setServerError(errorMessage);
 				throw new Error(errorMessage);
 			}
 
 			const data = await response.json();
 			showAlert("Data row added successfully!", "success");
-			setRows([...(rows || []), data]);
+			const newRows = [...(rows || []), data];
+			setRows(newRows);
+			setFilteredRows(newRows);
 			setTables((prev: any) =>
 				prev?.map((t: any) => {
 					if (t.id === table.id) {
@@ -101,6 +125,8 @@ export default function TableEditor({
 			);
 
 			setCells([]);
+			// Clear server error on success
+			setServerError(null);
 		} catch (error: any) {
 			// Gestionează diferite tipuri de erori
 			let errorMessage = "An unexpected error occurred";
@@ -113,6 +139,10 @@ export default function TableEditor({
 				errorMessage = error.message;
 			}
 
+			// Set server error if not already set
+			if (!serverError) {
+				setServerError(errorMessage);
+			}
 			showAlert(errorMessage, "error");
 		}
 	}
@@ -154,6 +184,7 @@ export default function TableEditor({
 			}
 			const updatedRows: Row[] = rows.filter((col) => col.id !== Number(rowId));
 			setRows(updatedRows);
+			setFilteredRows(updatedRows);
 			showAlert("Data row removed successfully", "success");
 		} catch (error: any) {
 			// Gestionează diferite tipuri de erori
@@ -191,69 +222,54 @@ export default function TableEditor({
 		);
 	};
 	useEffect(() => {
-		fetchTables();
+		if (tenant?.id && selectedDatabase?.id && token && user) {
+			fetchTables();
+		}
 	}, [tenant?.id, selectedDatabase?.id, token, user]);
 
-	// Refresh data when columns change
+	// Update filtered rows when rows change
 	useEffect(() => {
-		if (columns && columns.length > 0) {
-			// Refetch table data to get updated rows with new column cells
-			const refreshTableData = async () => {
-				if (!token || !tenant?.id || !selectedDatabase?.id) return;
+		setFilteredRows(rows || []);
+	}, [rows]);
 
-				const maxRetries = 3;
-				let retryCount = 0;
+	// Refresh data when columns change - only when columns are actually added/removed
+	useEffect(() => {
+		if (columns && columns.length > 0 && token && tenant?.id && selectedDatabase?.id) {
+			// Only refresh if we have rows and columns don't match
+			if (rows && rows.length > 0) {
+				const needsRefresh = rows.some((row) => {
+					if (!row.cells || !Array.isArray(row.cells)) return true;
+					return !columns.every((col) =>
+						row.cells!.some((cell) => cell.columnId === col.id)
+					);
+				});
 
-				const attemptRefresh = async (): Promise<boolean> => {
-					try {
-						const res = await fetch(
-							`/api/tenants/${tenant.id}/databases/${selectedDatabase.id}/tables/${table.id}`,
-							{
-								method: "GET",
-								headers: { Authorization: `Bearer ${token}` },
-							},
-						);
-						if (res.ok) {
-							const data = await res.json();
-							const newRows = data.rows || [];
-
-							// Check if all rows have cells for all columns
-							const allRowsHaveAllCells = newRows.every((row: any) => {
-								if (!row.cells || !Array.isArray(row.cells)) return false;
-								return columns.every((col) =>
-									row.cells.some((cell: any) => cell.columnId === col.id),
-								);
-							});
-
-							if (allRowsHaveAllCells || retryCount >= maxRetries) {
+				if (needsRefresh) {
+					const refreshTableData = async () => {
+						try {
+							const res = await fetch(
+								`/api/tenants/${tenant.id}/databases/${selectedDatabase.id}/tables/${table.id}`,
+								{
+									method: "GET",
+									headers: { Authorization: `Bearer ${token}` },
+								},
+							);
+							if (res.ok) {
+								const data = await res.json();
+								const newRows = data.rows || [];
 								setRows(newRows);
-								return true;
+								setFilteredRows(newRows);
 							}
+						} catch (error) {
+							console.error("Error refreshing table data:", error);
 						}
-					} catch (error) {
-						console.error("Error refreshing table data:", error);
-					}
-					return false;
-				};
+					};
 
-				// Try to refresh with retries
-				while (retryCount < maxRetries) {
-					const success = await attemptRefresh();
-					if (success) break;
-
-					retryCount++;
-					if (retryCount < maxRetries) {
-						// Wait before retrying (exponential backoff)
-						await new Promise((resolve) =>
-							setTimeout(resolve, 1000 * retryCount),
-						);
-					}
+					refreshTableData();
 				}
-			};
-
-			refreshTableData();
+			}
 		}
-	}, [columns, token, tenant?.id, selectedDatabase?.id, table.id]);
+	}, [columns?.length, token, tenant?.id, selectedDatabase?.id, table.id, rows?.length]);
 
 	const fetchTables = async () => {
 		if (!tenant || !user || !token || !selectedDatabase?.id) return;
@@ -287,9 +303,13 @@ export default function TableEditor({
 		<div className='space-y-6'>
 			{/* Header Actions */}
 			<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-				<div className='flex items-center justify-between w-full space-x-3'>
+				<div className='flex items-center  w-full space-x-3'>
 					<Button
-						onClick={() => setShowForm((prev) => !prev)}
+						onClick={() => {
+							setShowForm((prev) => !prev);
+							// Clear server error when toggling form
+							setServerError(null);
+						}}
 						className={
 							user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
 						}>
@@ -316,21 +336,24 @@ export default function TableEditor({
 			{/* Add Row Form */}
 			{showForm && (
 				<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg p-6'>
-					{process.env.NODE_ENV === "development" && (
-						<div className='mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs'>
-							Debug - Columns: {columns?.length || 0}, Reference columns:{" "}
-							{columns?.filter((col) => col.type === "reference").length || 0}
-						</div>
-					)}
 					<AddRowForm
 						columns={columns}
 						cells={cells}
 						setCells={setCells}
 						onAdd={handleAdd}
 						tables={tables}
+						serverError={serverError}
 					/>
 				</div>
 			)}
+
+			{/* Filters */}
+			<TableFilters
+				columns={columns}
+				rows={rows}
+				tables={tables}
+				onFilterChange={setFilteredRows}
+			/>
 
 			{/* Rows Table */}
 			<div className='table-content'>
@@ -338,7 +361,7 @@ export default function TableEditor({
 					tables={tables}
 					table={table}
 					columns={columns}
-					rows={rows}
+					rows={filteredRows}
 					editingCell={editingCell}
 					onEditCell={handleEditCell}
 					onSaveCell={handleSaveCellWrapper}

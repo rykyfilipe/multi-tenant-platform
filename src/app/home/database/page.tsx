@@ -184,7 +184,7 @@ function DatabaseContent() {
 			localStorage.setItem("database-tour-seen", "true");
 			startTour();
 		}
-	}, [loading]);
+	}, []);
 
 	return (
 		<div className='h-full bg-background'>

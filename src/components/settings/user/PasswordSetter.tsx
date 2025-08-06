@@ -86,7 +86,7 @@ function PasswordSetter({ user }: Props) {
 	// Fixed useEffect with proper dependency array
 	useEffect(() => {
 		fetchPassword();
-	}, [fetchPassword]);
+	}, []);
 
 	const setUserPassword = useCallback(async () => {
 		if (!token) {

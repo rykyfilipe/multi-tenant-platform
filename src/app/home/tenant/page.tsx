@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
 	Building2,
 	Settings,
@@ -34,47 +34,37 @@ function Page() {
 		users: 0,
 		tables: 0,
 		databases: 0,
+		storage: 0,
 	});
 
 	// Fetch tenant statistics
-	const fetchTenantStats = async () => {
-		if (!token || !tenant) return;
-
+	const fetchTenantStats = useCallback(async () => {
+		if (!tenant || !token) return;
+		
 		try {
-			const [usersRes, databaseRes] = await Promise.all([
-				fetch(`/api/tenants/${tenant.id}/users`, {
-					headers: { Authorization: `Bearer ${token}` },
-				}),
-				fetch(`/api/tenants/${tenant.id}/databases`, {
-					headers: { Authorization: `Bearer ${token}` },
-				}),
-			]);
+			const response = await fetch(`/api/tenants/${tenant.id}/memory`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
 
-			if (usersRes.ok && databaseRes.ok) {
-				const users = await usersRes.json();
-				const database = await databaseRes.json();
-
-				
-
-				setTenantStats({
-					users: users.length || 0,
-					tables: database?.reduce(
-						(acc: number, db: any) => acc + (db.tables?.length || 0),
-						0,
-					),
-					databases: database ? 1 : 0,
-				});
+			if (response.ok) {
+				const data = await response.json();
+				if (data.success) {
+					setTenantStats(prev => ({
+						...prev,
+						storage: data.data.usedGB,
+					}));
+				}
 			}
 		} catch (error) {
 			console.error("Failed to fetch tenant stats:", error);
 		}
-	};
+	}, [tenant, token]);
 
 	useEffect(() => {
-		if (tenant) {
+		if (tenant && token && tenantStats.storage === 0) {
 			fetchTenantStats();
 		}
-	}, [tenant, token]);
+	}, [tenant, fetchTenantStats, token, tenantStats.storage]);
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {

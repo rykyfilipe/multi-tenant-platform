@@ -42,8 +42,11 @@ function useTable(id: string) {
 			}
 		};
 
-		fetchTable();
-	}, [id, tenantId, databaseId, token, userId]);
+		// Only fetch if we don't have the table data or if the ID changed
+		if (!table || table.id.toString() !== id) {
+			fetchTable();
+		}
+	}, [id, tenantId, databaseId, token, userId, table]);
 
 	return {
 		table,

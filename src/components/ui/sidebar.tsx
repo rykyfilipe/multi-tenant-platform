@@ -97,30 +97,16 @@ function SidebarProvider({
 
 	// Adds a keyboard shortcut to toggle the sidebar.
 	React.useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (
-				event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-				(event.metaKey || event.ctrlKey)
-			) {
-				event.preventDefault();
-				toggleSidebar();
+		const down = (e: KeyboardEvent) => {
+			if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+				e.preventDefault();
+				setOpen((open) => !open);
 			}
 		};
 
-		window.addEventListener("keydown", handleKeyDown);
-
-		// Add custom event listener for mobile trigger
-		const handleToggleSidebar = () => {
-			toggleSidebar();
-		};
-
-		window.addEventListener("toggle-sidebar", handleToggleSidebar);
-
-		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("toggle-sidebar", handleToggleSidebar);
-		};
-	}, [toggleSidebar]);
+		document.addEventListener("keydown", down);
+		return () => document.removeEventListener("keydown", down);
+	}, []);
 
 	// We add a state so that we can do data-state="expanded" or "collapsed".
 	// This makes it easier to style the sidebar with Tailwind classes.

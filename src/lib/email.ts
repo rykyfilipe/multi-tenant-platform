@@ -14,7 +14,7 @@ const smtpConfig = {
 	},
 };
 
-const transporter = nodemailer.createTransporter(smtpConfig);
+const transporter = nodemailer.createTransport(smtpConfig);
 
 export interface InvitationData {
 	email: string;

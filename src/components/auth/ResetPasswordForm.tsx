@@ -39,7 +39,7 @@ function ResetPasswordForm() {
 		setEmail(emailParam);
 		setValidating(false);
 		setTokenValid(true);
-	}, [searchParams, router, showAlert]);
+	}, [searchParams, router]);
 
 	const validatePasswords = () => {
 		if (newPassword.length < 6) {

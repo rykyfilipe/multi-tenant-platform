@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 import { ApiHeader } from "@/components/public-api/ApiHeader";
@@ -40,14 +40,18 @@ const ApiTokensPage = () => {
 	const { handleApiError } = usePlanLimitError();
 
 	// Fetch user tokens
-	const fetchTokens = async () => {
-		if (!token) return;
+	const fetchTokens = useCallback(async () => {
 		setLoading(true);
 		try {
 			const res = await fetch("/api/public/tokens", {
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			if (!res.ok) throw new Error("Failed to fetch tokens");
+
+			if (!res.ok) {
+				handleApiError(res);
+				return;
+			}
+
 			const data = await res.json();
 			setTokens(data);
 		} catch (err: any) {
@@ -55,11 +59,13 @@ const ApiTokensPage = () => {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [token, handleApiError, showAlert]);
 
 	useEffect(() => {
-		fetchTokens();
-	}, [token]);
+		if (token && tokens.length === 0) {
+			fetchTokens();
+		}
+	}, [fetchTokens, token, tokens.length]);
 
 	// Generate new token
 	const createToken = async (tokenData: CreateTokenRequest) => {

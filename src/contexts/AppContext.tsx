@@ -5,7 +5,13 @@
 import { Tenant } from "@/types/tenant";
 import { User } from "@/types/user";
 import { useSession } from "next-auth/react";
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+	createContext,
+	useContext,
+	useState,
+	useEffect,
+	useCallback,
+} from "react";
 
 interface AppContextType {
 	token: string | null;
@@ -44,18 +50,31 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
 	useEffect(() => {
 		if (session) {
-			setUser({
-				...session.user,
-				id: Number(session.user.id),
-			});
+			try {
+				// Only update if user data has actually changed
+				const newUserId = Number(session.user.id);
+				const newToken = session.customJWT || "";
 
-			// Debug logging removed for production
-
-			setToken(session.customJWT || "");
+				if (user?.id !== newUserId || token !== newToken) {
+					setUser({
+						...session.user,
+						id: newUserId,
+					});
+					setToken(newToken);
+					console.log("session updated", session);
+				}
+			} catch (error) {
+				console.error("Error setting session data:", error);
+			}
+		} else {
+			if (user || token) {
+				setUser(null);
+				setToken(null);
+			}
 		}
 
 		setLoading(false);
-	}, [session]);
+	}, [session, user?.id, token]);
 
 	// Configuration validation
 	useEffect(() => {
@@ -74,31 +93,38 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		}
 	}, []);
 
-	useEffect(() => {
-		if (!token) return;
-		const fetchTenant = async () => {
-			try {
-				const response = await fetch("/api/tenants", {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-
-				if (!response.ok) {
-					return;
-				}
-
-				const data = await response.json();
-				setTenant(data);
-			} catch (error) {
-				showAlert("Failed to load tenant", "error");
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		if (token) {
-			fetchTenant();
+	const fetchTenant = useCallback(async () => {
+		if (!token) {
+			setLoading(false);
+			return;
 		}
-	}, [token, user]);
+
+		try {
+			const response = await fetch("/api/tenants", {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+
+			if (!response.ok) {
+				console.error("Failed to fetch tenant:", response.status);
+				return;
+			}
+
+			const data = await response.json();
+			setTenant(data);
+		} catch (error) {
+			console.error("Error fetching tenant:", error);
+		} finally {
+			setLoading(false);
+		}
+	}, [token]);
+
+	useEffect(() => {
+		if (token && !tenant) {
+			fetchTenant();
+		} else if (!token) {
+			setLoading(false);
+		}
+	}, [token, fetchTenant, tenant]);
 
 	const showAlert = (
 		message: string,

@@ -9,6 +9,7 @@ import {
 	useContext,
 	useEffect,
 	useState,
+	useCallback,
 } from "react";
 import { useApp } from "./AppContext";
 
@@ -27,30 +28,38 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 
 	const [users, setUsers] = useState<User[] | null>(null);
 
+	const fetchUsers = useCallback(async () => {
+		if (!tenantId || !token) {
+			setLoading(false);
+			return;
+		}
+
+		setLoading(true);
+		try {
+			const response = await fetch(`/api/tenants/${tenantId}/users`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			if (!response.ok) throw new Error("Could not fetch users");
+			const data = await response.json();
+
+			setUsers(data);
+			showAlert("Users data loaded successfully", "success");
+		} catch (e) {
+			console.error("Error fetching users:", e);
+			setUsers([]);
+			showAlert("Failed to load users. Please refresh the page.", "error");
+		} finally {
+			setLoading(false);
+		}
+	}, [tenantId, token, showAlert]);
+
 	useEffect(() => {
-		if (loading || !token || !tenantId) return;
-
-		const fetchUsers = async () => {
-			setLoading(true);
-			try {
-				const response = await fetch(`/api/tenants/${tenantId}/users`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				if (!response.ok) throw new Error("Could not fetch users");
-				const data = await response.json();
-
-				setUsers(data);
-				showAlert("Users data loaded successfully", "success");
-			} catch (e) {
-				setLoading(false);
-				showAlert("Failed to load users. Please refresh the page.", "error");
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchUsers();
-	}, [token, tenantId]);
+		if (token && tenantId && !loading && !users) {
+			fetchUsers();
+		} else if (!token || !tenantId) {
+			setLoading(false);
+		}
+	}, [token, tenantId, loading, fetchUsers, users]);
 
 	const handleAddUser = async () => {
 		// TODO: Implement user addition functionality

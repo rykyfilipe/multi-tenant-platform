@@ -1,7 +1,8 @@
 /** @format */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useApp } from "@/contexts/AppContext";
 import { PLAN_LIMITS } from "@/lib/planConstants";
 import type { PlanLimits } from "@/lib/planConstants";
 
@@ -23,6 +24,7 @@ interface LimitCheck {
 
 export function usePlanLimits() {
 	const { data: session } = useSession();
+	const { token } = useApp();
 	const [currentCounts, setCurrentCounts] = useState<CurrentCounts | null>(
 		null,
 	);
@@ -32,25 +34,58 @@ export function usePlanLimits() {
 
 	const planLimits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.Starter;
 
-	useEffect(() => {
-		async function fetchCounts() {
-			try {
-				const response = await fetch("/api/user/limits");
-				if (response.ok) {
-					const data = await response.json();
-					setCurrentCounts(data);
-				}
-			} catch (error) {
-				console.error("Error fetching limits:", error);
-			} finally {
-				setLoading(false);
-			}
+	const fetchCounts = useCallback(async () => {
+		if (!session?.user?.id || !token) {
+			setLoading(false);
+			return;
 		}
 
-		if (session?.user?.id) {
-			fetchCounts();
+		try {
+			const response = await fetch("/api/user/limits", {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+			if (response.ok) {
+				const data = await response.json();
+				setCurrentCounts(data);
+			} else {
+				console.error("Failed to fetch limits:", response.status);
+				// Set default counts on error
+				setCurrentCounts({
+					databases: 0,
+					tables: 0,
+					users: 0,
+					apiTokens: 0,
+					publicTables: 0,
+					storage: 0,
+					rows: 0,
+				});
+			}
+		} catch (error) {
+			console.error("Error fetching limits:", error);
+			// Set default counts on error
+			setCurrentCounts({
+				databases: 0,
+				tables: 0,
+				users: 0,
+				apiTokens: 0,
+				publicTables: 0,
+				storage: 0,
+				rows: 0,
+			});
+		} finally {
+			setLoading(false);
 		}
-	}, [session?.user?.id]);
+	}, [session?.user?.id, token]);
+
+	useEffect(() => {
+		if (session?.user?.id && token && !currentCounts) {
+			fetchCounts();
+		} else if (!session?.user?.id || !token) {
+			setLoading(false);
+		}
+	}, [session?.user?.id, token, fetchCounts, currentCounts]);
 
 	const checkLimit = (limitType: keyof PlanLimits): LimitCheck => {
 		const current = currentCounts?.[limitType] || 0;

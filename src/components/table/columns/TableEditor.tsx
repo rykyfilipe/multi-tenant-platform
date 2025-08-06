@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, useCallback } from "react";
 import { Table, CreateColumnRequest, Column } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import AddColumnForm from "./AddColumnForm";
@@ -158,11 +158,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		);
 	};
 
-	useEffect(() => {
-		fetchDatabase();
-	}, []);
-
-	const fetchDatabase = async () => {
+	const fetchDatabase = useCallback(async () => {
 		if (!tenant || !user || !token) return;
 		try {
 			const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
@@ -186,7 +182,13 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				"error",
 			);
 		}
-	};
+	}, [tenant, user, token, table.id, showAlert]);
+
+	useEffect(() => {
+		if (tenant && user && token && !tables) {
+			fetchDatabase();
+		}
+	}, [fetchDatabase, tenant, user, token, tables]);
 	const { setIsOpen, setCurrentStep, isOpen, currentStep } = useTour();
 
 	const startTour = () => {
@@ -203,12 +205,12 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				startTour();
 			}
 		}, 3000);
-	}, [loading]);
+	}, []);
 	// Demo column cleanup removed for production
 	return (
 		<div className='space-y-6'>
 			{/* Header Actions */}
-			<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
+			<div className='flex flex-col sm:flex-row  items-start sm:items-center gap-4'>
 				<div className='flex items-center space-x-3'>
 					<Button
 						onClick={() => setShowForm((prev) => !prev)}

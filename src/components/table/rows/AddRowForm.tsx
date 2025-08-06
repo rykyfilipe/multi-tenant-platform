@@ -26,6 +26,7 @@ interface Props {
 	cells: CellSchema[];
 	setCells: (cells: CellSchema[]) => void;
 	tables: Table[] | null;
+	serverError?: string | null; // Add server error prop
 }
 
 // Type validation utilities
@@ -198,7 +199,14 @@ const createReferenceData = (tables: Table[] | null) => {
 	return referenceData;
 };
 
-export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
+export function AddRowForm({
+	columns,
+	onAdd,
+	cells,
+	setCells,
+	tables,
+	serverError,
+}: Props) {
 	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
 
 	// Reference data loaded
@@ -228,32 +236,35 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 		[cells],
 	);
 
-	// Form validation
+	// Form validation - only show errors when there's a server error
 	const formValidation = useMemo(() => {
 		const errors: string[] = [];
 		const requiredColumns = columns?.filter((col) => col.required) || [];
 
-		// Check required fields
-		requiredColumns.forEach((col) => {
-			const cellValue = getCellValue(col.id);
-			if (!cellValue.trim()) {
-				errors.push(`${col.name} is required`);
-			}
-		});
+		// Only validate if there's a server error
+		if (serverError) {
+			// Check required fields
+			requiredColumns.forEach((col) => {
+				const cellValue = getCellValue(col.id);
+				if (!cellValue.trim()) {
+					errors.push(`${col.name} is required`);
+				}
+			});
 
-		// Check type validation
-		columns?.forEach((col) => {
-			const cellValue = getCellValue(col.id);
-			if (cellValue.trim() && !validateCellValue(cellValue, col.type, col)) {
-				errors.push(`${col.name} must be a valid ${col.type}`);
-			}
-		});
+			// Check type validation
+			columns?.forEach((col) => {
+				const cellValue = getCellValue(col.id);
+				if (cellValue.trim() && !validateCellValue(cellValue, col.type, col)) {
+					errors.push(`${col.name} must be a valid ${col.type}`);
+				}
+			});
+		}
 
 		return {
 			isValid: errors.length === 0,
 			errors,
 		};
-	}, [columns, getCellValue]);
+	}, [columns, getCellValue, serverError]);
 
 	// Render field based on column type
 	const renderField = useCallback(
@@ -456,10 +467,6 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 		(e: FormEvent) => {
 			e.preventDefault();
 
-			if (!formValidation.isValid) {
-				return;
-			}
-
 			// Format cell values according to their types
 			const formattedCells = cells.map((cell) => {
 				const column = columns?.find((col) => col.id === cell.columnId);
@@ -478,7 +485,7 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 			// Call parent submit handler
 			onAdd(e);
 		},
-		[formValidation.isValid, cells, columns, setCells, onAdd],
+		[cells, columns, setCells, onAdd],
 	);
 
 	// Clear form handler
@@ -515,8 +522,8 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 						)}
 					</div>
 
-					{/* Validation Errors */}
-					{formValidation.errors.length > 0 && (
+					{/* Validation Errors - only show when there's a server error */}
+					{serverError && formValidation.errors.length > 0 && (
 						<div className='p-3 bg-destructive/10 border border-destructive/20 rounded-md'>
 							<p className='text-sm font-medium text-destructive mb-2'>
 								Please fix the following errors:
@@ -543,7 +550,7 @@ export function AddRowForm({ columns, onAdd, cells, setCells, tables }: Props) {
 						</Button>
 						<Button
 							type='submit'
-							disabled={!formValidation.isValid || !columns?.length}
+							disabled={!columns?.length}
 							className='min-w-[120px]'>
 							Add Row
 						</Button>

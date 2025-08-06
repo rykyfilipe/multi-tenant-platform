@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
 	Card,
 	CardContent,
@@ -60,13 +60,7 @@ const BillingHistory: React.FC<BillingHistoryProps> = ({ customerId }) => {
 	const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
 	const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
-	useEffect(() => {
-		if (customerId) {
-			fetchInvoices();
-		}
-	}, [customerId]);
-
-	const fetchInvoices = async () => {
+	const fetchInvoices = useCallback(async () => {
 		if (!customerId) return;
 
 		setLoading(true);
@@ -91,7 +85,13 @@ const BillingHistory: React.FC<BillingHistoryProps> = ({ customerId }) => {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [customerId, showAlert]);
+
+	useEffect(() => {
+		if (customerId) {
+			fetchInvoices();
+		}
+	}, [customerId, fetchInvoices]);
 
 	const handleDownloadInvoice = async (invoice: Invoice) => {
 		if (!invoice.pdf_url) {

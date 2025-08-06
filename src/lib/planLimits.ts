@@ -18,13 +18,13 @@ export async function checkPlanLimit(
 		const user = await cachedOperations.getUser(userId);
 
 		if (!user || user.subscriptionStatus !== "active") {
-					// Default to Starter plan if no subscription
-		const starterLimit = PLAN_LIMITS.Starter[limitType];
-		return {
-			allowed: currentCount < starterLimit,
-			limit: starterLimit,
-			current: currentCount,
-		};
+			// Default to Starter plan if no subscription
+			const starterLimit = PLAN_LIMITS.Starter[limitType];
+			return {
+				allowed: currentCount < starterLimit,
+				limit: starterLimit,
+				current: currentCount,
+			};
 		}
 
 		const planLimits = PLAN_LIMITS[user.subscriptionPlan || "Starter"];
@@ -65,20 +65,32 @@ export async function getCurrentCounts(
 			};
 		}
 
-		const [databases, tables, users, apiTokens, publicTables, rows] =
-			await cachedOperations.getCounts(user.tenantId, userId);
+		try {
+			const [databases, tables, users, apiTokens, publicTables, rows] =
+				await cachedOperations.getCounts(user.tenantId, userId);
 
-		// Raw counts calculated for tenant
-
-		return {
-			databases,
-			tables,
-			users,
-			apiTokens,
-			publicTables,
-			storage: 0, // Storage is calculated separately in memory tracking
-			rows,
-		};
+			return {
+				databases,
+				tables,
+				users,
+				apiTokens,
+				publicTables,
+				storage: 0, // Storage is calculated separately in memory tracking
+				rows,
+			};
+		} catch (error) {
+			console.error("Error getting counts from cached operations:", error);
+			// Return default counts on error
+			return {
+				databases: 0,
+				tables: 0,
+				users: 0,
+				apiTokens: 0,
+				publicTables: 0,
+				storage: 0,
+				rows: 0,
+			};
+		}
 	} catch (error) {
 		console.error("Error getting current counts:", error);
 		return {

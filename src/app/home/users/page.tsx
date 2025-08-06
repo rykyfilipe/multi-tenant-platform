@@ -4,9 +4,13 @@
 
 import { UsersLoadingState } from "@/components/ui/loading-states";
 import TableEditor from "@/components/users/TableEditor";
-import { InvitationsList } from "@/components/users/InvitationsList";
+import {
+	InvitationsList,
+	InvitationsListRef,
+} from "@/components/users/InvitationsList";
 import { useApp } from "@/contexts/AppContext";
 import { UsersProvider, useUsers } from "@/contexts/UsersContext";
+import { useRef } from "react";
 
 export default function UsersPage() {
 	return (
@@ -19,6 +23,7 @@ export default function UsersPage() {
 function UsersContent() {
 	const { loading, tenant } = useApp();
 	const { users, setUsers } = useUsers();
+	const invitationsListRef = useRef<InvitationsListRef>(null);
 
 	if (loading) return <UsersLoadingState />;
 	if (!loading && !users) return <UsersLoadingState />;
@@ -48,8 +53,12 @@ function UsersContent() {
 
 			{/* Main Content */}
 			<div className='p-6 max-w-7xl mx-auto space-y-6'>
-				<TableEditor users={users} setUsers={setUsers} />
-				<InvitationsList tenantId={tenant?.id || 0} />
+				<TableEditor
+					users={users}
+					setUsers={setUsers}
+					onInvitationSent={() => invitationsListRef.current?.refresh()}
+				/>
+				<InvitationsList ref={invitationsListRef} tenantId={tenant?.id || 0} />
 			</div>
 		</div>
 	);

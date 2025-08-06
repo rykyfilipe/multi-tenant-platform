@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
 interface SubscriptionData {
@@ -19,7 +19,7 @@ export const useSubscription = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	const fetchSubscription = async () => {
+	const fetchSubscription = useCallback(async () => {
 		if (!session?.user?.id) {
 			setLoading(false);
 			return;
@@ -29,7 +29,11 @@ export const useSubscription = () => {
 			setLoading(true);
 			setError(null);
 
-			const response = await fetch("/api/user/subscription");
+			const response = await fetch("/api/user/subscription", {
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
 
 			if (!response.ok) {
 				throw new Error("Failed to fetch subscription");
@@ -45,18 +49,18 @@ export const useSubscription = () => {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [session?.user?.id]);
 
 	useEffect(() => {
 		if (status === "loading") return;
 
-		if (status === "authenticated") {
+		if (status === "authenticated" && !subscription) {
 			fetchSubscription();
-		} else {
+		} else if (status !== "authenticated") {
 			setLoading(false);
 			setSubscription(null);
 		}
-	}, [session, status]);
+	}, [status, fetchSubscription, subscription]);
 
 	const refetch = () => {
 		fetchSubscription();

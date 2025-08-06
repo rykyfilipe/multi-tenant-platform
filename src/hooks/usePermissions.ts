@@ -1,7 +1,7 @@
 /** @format */
 
 // hooks/usePermissions.ts
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
 import {
 	Permissions,
@@ -16,11 +16,15 @@ export const usePermissions = (userId: string) => {
 	const [error, setError] = useState<string | null>(null);
 	const { tenant, token, user, showAlert } = useApp();
 
-	const fetchPermissions = async () => {
-		if (!tenant || !token || !user) return;
+	const fetchPermissions = useCallback(async () => {
+		if (!tenant || !token || !user || !userId) {
+			setLoading(false);
+			return;
+		}
 
 		try {
 			setLoading(true);
+
 			const response = await fetch(
 				`/api/tenants/${tenant.id}/users/${userId}/permisions`,
 				{
@@ -33,27 +37,24 @@ export const usePermissions = (userId: string) => {
 
 			if (response.ok) {
 				const data = await response.json();
-				// Permissions data received
-				setPermissions({
-					tablePermissions: data.tablePermissions || [],
-					columnsPermissions: data.columnsPermissions || [],
-				});
-				showAlert("Permissions loaded successfully", "success");
+				setPermissions(data || null);
 			} else {
 				const errorText = await response.text();
-				console.error("Permissions fetch failed:", response.status, errorText);
+				console.error(
+					"usePermissions - Failed to load permissions:",
+					response.status,
+					errorText,
+				);
 				throw new Error(`Failed to load permissions: ${response.status}`);
 			}
 		} catch (err) {
+			console.error("usePermissions - Error:", err);
 			setError(err instanceof Error ? err.message : "Unknown error");
-			showAlert(
-				"Failed to load permissions. Please refresh the page.",
-				"error",
-			);
+			setPermissions(null);
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [tenant, token, user, userId, showAlert]);
 
 	const savePermissions = async () => {
 		if (!permissions || !tenant || !token) return;
@@ -91,8 +92,12 @@ export const usePermissions = (userId: string) => {
 	};
 
 	useEffect(() => {
-		fetchPermissions();
-	}, [token, user, tenant, userId]);
+		if (token && user && tenant && userId && !permissions) {
+			fetchPermissions();
+		} else if (!token || !user || !tenant || !userId) {
+			setLoading(false);
+		}
+	}, [token, user, tenant, userId, fetchPermissions, permissions]);
 
 	return {
 		permissions,
@@ -111,12 +116,14 @@ export const useTables = () => {
 	const [error, setError] = useState<string | null>(null);
 	const { tenant, token, user, showAlert } = useApp();
 
-	const fetchTables = async () => {
-		if (!tenant || !token || !user) return;
+	const fetchTables = useCallback(async () => {
+		if (!tenant || !token || !user) {
+			setLoading(false);
+			return;
+		}
 
 		try {
 			setLoading(true);
-			// Fetching tables for tenant
 
 			const response = await fetch(
 				`/api/tenants/${tenant.id}/databases/tables`,
@@ -130,7 +137,6 @@ export const useTables = () => {
 
 			if (response.ok) {
 				const data = await response.json();
-				// Received tables data
 				setTables(data || []);
 			} else {
 				const errorText = await response.text();
@@ -144,15 +150,19 @@ export const useTables = () => {
 		} catch (err) {
 			console.error("useTables - Error:", err);
 			setError(err instanceof Error ? err.message : "Unknown error");
-			showAlert("Failed to load tables. Please refresh the page.", "error");
+			setTables([]);
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [tenant, token, user, showAlert]);
 
 	useEffect(() => {
-		fetchTables();
-	}, [token, user, tenant]);
+		if (token && user && tenant && !tables) {
+			fetchTables();
+		} else if (!token || !user || !tenant) {
+			setLoading(false);
+		}
+	}, [token, user, tenant, fetchTables, tables]);
 
 	return {
 		tables,

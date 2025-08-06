@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -69,61 +69,66 @@ export default function PlanLimitsDisplay() {
 
 	const { token, tenant } = useApp();
 
-	useEffect(() => {
-		async function fetchCounts() {
-			try {
-				const [limitsResponse, memoryResponse] = await Promise.all([
-					fetch("/api/user/limits", {
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-					}),
-					fetch(`/api/tenants/${tenant?.id}/memory`, {
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-					}),
-				]);
-
-				if (limitsResponse.ok && memoryResponse.ok) {
-					const limitsData = await limitsResponse.json();
-					const memoryData = await memoryResponse.json();
-
-					const memoryInfo = memoryData.success
-						? memoryData.data
-						: {
-								usedGB: 0,
-								limitGB: planLimits.storage / 1024, // Convert MB to GB
-								percentage: 0,
-								isNearLimit: false,
-								isOverLimit: false,
-						  };
-
-					setCurrentCounts({
-						...limitsData,
-						storage: {
-							used: memoryInfo.usedGB,
-							total: memoryInfo.limitGB,
-							percentage: memoryInfo.percentage,
-							isNearLimit: memoryInfo.isNearLimit,
-							isOverLimit: memoryInfo.isOverLimit,
-						},
-					});
-				} else {
-					console.error("Failed to fetch limits:", limitsResponse.status);
-				}
-			} catch (error) {
-				console.error("Error fetching limits:", error);
-			} finally {
-				setLoading(false);
-			}
+	const fetchCounts = useCallback(async () => {
+		if (!token || !tenant?.id) {
+			setLoading(false);
+			return;
 		}
 
-		if (session?.user?.id && token && tenant) {
+		try {
+			const [limitsResponse, memoryResponse] = await Promise.all([
+				fetch("/api/user/limits", {
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+				}),
+				fetch(`/api/tenants/${tenant.id}/memory`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}),
+			]);
+
+			if (limitsResponse.ok && memoryResponse.ok) {
+				const limitsData = await limitsResponse.json();
+				const memoryData = await memoryResponse.json();
+
+				const memoryInfo = memoryData.success
+					? memoryData.data
+					: {
+							usedGB: 0,
+							limitGB: planLimits.storage / 1024, // Convert MB to GB
+							percentage: 0,
+							isNearLimit: false,
+							isOverLimit: false,
+					  };
+
+				setCurrentCounts({
+					...limitsData,
+					storage: {
+						used: memoryInfo.usedGB,
+						total: memoryInfo.limitGB,
+						percentage: memoryInfo.percentage,
+						isNearLimit: memoryInfo.isNearLimit,
+						isOverLimit: memoryInfo.isOverLimit,
+					},
+				});
+			} else {
+				console.error("Failed to fetch limits:", limitsResponse.status);
+			}
+		} catch (error) {
+			console.error("Error fetching limits:", error);
+		} finally {
+			setLoading(false);
+		}
+	}, [token, tenant?.id, planLimits.storage]);
+
+	useEffect(() => {
+		if (token && tenant?.id && !currentCounts) {
 			fetchCounts();
 		}
-	}, [session?.user?.id, token, tenant, planLimits.storage]);
+	}, [token, tenant?.id, fetchCounts, currentCounts]);
 
 	if (loading) {
 		return (

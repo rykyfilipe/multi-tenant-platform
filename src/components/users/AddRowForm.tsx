@@ -23,6 +23,7 @@ interface Props {
 	onAdd: (e: FormEvent) => void;
 	newUser: UserSchema | null;
 	setNewUser: React.Dispatch<React.SetStateAction<UserSchema | null>>;
+	serverError?: string | null; // Add server error prop
 }
 
 type FieldType = "string" | "number" | "boolean" | "date" | "role";
@@ -34,7 +35,7 @@ const userFieldTypes: Record<keyof UserSchema, FieldType> = {
 	role: "role",
 };
 
-export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
+export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 	if (!newUser) return null;
 
 	const { checkLimit, currentPlan } = usePlanLimits();
@@ -52,20 +53,41 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 				return Object.values(Role).includes(value);
 			case "string":
 			default:
+				// Match backend validation: email must be valid, firstName/lastName must be min 4 chars
+				if (key === "email") {
+					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+					return typeof value === "string" && emailRegex.test(value);
+				} else if (key === "firstName" || key === "lastName") {
+					return typeof value === "string" && value.trim().length >= 4;
+				}
 				return typeof value === "string" && value.trim() !== "";
 		}
 	};
 
 	const formValidation = useMemo(() => {
 		const errors: string[] = [];
-		(Object.keys(userFieldTypes) as (keyof UserSchema)[]).forEach((key) => {
-			const val = newUser[key];
-			if (!validateField(key, val)) {
-				errors.push(`Field "${key}" is invalid or missing`);
-			}
-		});
+		// Only validate if there's a server error
+		if (serverError) {
+			(Object.keys(userFieldTypes) as (keyof UserSchema)[]).forEach((key) => {
+				const val = newUser[key];
+				if (!validateField(key, val)) {
+					// Provide specific error messages
+					if (key === "email") {
+						errors.push("Email must be a valid email address");
+					} else if (key === "firstName") {
+						errors.push("First name must be at least 4 characters long");
+					} else if (key === "lastName") {
+						errors.push("Last name must be at least 4 characters long");
+					} else if (key === "role") {
+						errors.push("Please select a valid role");
+					} else {
+						errors.push(`Field "${key}" is invalid or missing`);
+					}
+				}
+			});
+		}
 		return { isValid: errors.length === 0, errors };
-	}, [newUser]);
+	}, [newUser, serverError]);
 
 	const handleChange = (key: keyof UserSchema, value: any) => {
 		setNewUser((prev) =>
@@ -85,14 +107,13 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 
 	const handleSubmit = (e: FormEvent) => {
 		e.preventDefault();
-		if (!formValidation.isValid) return;
 		onAdd(e);
 	};
 
 	const renderField = (key: keyof UserSchema) => {
 		const type = userFieldTypes[key];
 		const value = newUser[key];
-		const error = !validateField(key, value);
+		const error = serverError && !validateField(key, value);
 
 		const labelClass = error ? "text-destructive" : "";
 		const inputClass = error ? "border-destructive" : "";
@@ -217,8 +238,8 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 					)}
 				</div>
 
-				{/* Validation Errors */}
-				{!formValidation.isValid && (
+				{/* Validation Errors - only show when there's a server error */}
+				{serverError && !formValidation.isValid && (
 					<div className='p-3 bg-destructive/10 border border-destructive/20 rounded-md'>
 						<p className='text-sm font-medium text-destructive mb-2'>
 							Please fix the following errors:
@@ -245,7 +266,7 @@ export function AddRowForm({ newUser, setNewUser, onAdd }: Props) {
 					</Button>
 					<Button
 						type='submit'
-						disabled={!formValidation.isValid || !checkLimit("users").allowed}
+						disabled={!checkLimit("users").allowed}
 						className={`px-6 ${
 							!checkLimit("users").allowed ? "opacity-50" : ""
 						}`}>
