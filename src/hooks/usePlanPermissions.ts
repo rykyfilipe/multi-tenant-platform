@@ -3,10 +3,11 @@
 import { useSession } from "next-auth/react";
 import { useApp } from "@/contexts/AppContext";
 import { useState, useEffect, useCallback } from "react";
-import { 
-	checkPlanPermission, 
+import {
+	checkPlanPermission,
 	checkPlanAndLimitPermission,
-	RoleRestrictions 
+	RoleRestrictions,
+	PlanLimits,
 } from "@/lib/planConstants";
 
 export const usePlanPermissions = () => {
@@ -84,18 +85,26 @@ export const usePlanPermissions = () => {
 	// Verifică dacă o permisiune este disponibilă și dacă limita nu a fost atinsă
 	const canWithLimit = (
 		permission: keyof RoleRestrictions,
-		limitType: keyof typeof currentCounts
+		limitType: keyof PlanLimits,
 	): { allowed: boolean; reason?: string } => {
 		const current = currentCounts?.[limitType] || 0;
-		return checkPlanAndLimitPermission(currentPlan, permission, current, limitType);
+		return checkPlanAndLimitPermission(
+			currentPlan,
+			permission,
+			current,
+			limitType,
+		);
 	};
 
 	// Funcții helper pentru permisiuni specifice
-	const canCreateDatabase = () => canWithLimit("canCreateDatabases", "databases");
+	const canCreateDatabase = () =>
+		canWithLimit("canCreateDatabases", "databases");
 	const canCreateTable = () => canWithLimit("canCreateTables", "tables");
 	const canCreateUser = () => canWithLimit("canCreateUsers", "users");
-	const canCreateApiToken = () => canWithLimit("canCreateApiTokens", "apiTokens");
-	const canMakeTablePublic = () => canWithLimit("canMakeTablesPublic", "publicTables");
+	const canCreateApiToken = () =>
+		canWithLimit("canCreateApiTokens", "apiTokens");
+	const canMakeTablePublic = () =>
+		canWithLimit("canMakeTablesPublic", "publicTables");
 	const canManagePermissions = () => can("canManagePermissions");
 	const canDeleteData = () => can("canDeleteData");
 	const canExportData = () => can("canExportData");
@@ -120,4 +129,4 @@ export const usePlanPermissions = () => {
 		canViewAnalytics,
 		refetch: fetchCounts,
 	};
-}; 
+};
