@@ -256,4 +256,10 @@ export const cachedOperations = {
 	clearAllCache: () => {
 		// No-op for now
 	},
+
+	// Generic cache invalidation method
+	invalidate: (pattern: string) => {
+		// No-op for now - placeholder for future cache implementation
+		console.log(`Cache invalidation requested for pattern: ${pattern}`);
+	},
 };
