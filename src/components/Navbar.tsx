@@ -39,7 +39,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { useTheme } from "next-themes";
 
-const navigationItems = [
+const getNavigationItems = (userRole?: string) => [
 	{
 		title: "Analytics",
 		url: "/home/dashboard",
@@ -53,10 +53,13 @@ const navigationItems = [
 		description: "Manage your organization",
 	},
 	{
-		title: "User Management",
+		title: userRole === "ADMIN" ? "User Management" : "Team Members",
 		url: "/home/users",
 		icon: Users,
-		description: "Team members and permissions",
+		description:
+			userRole === "ADMIN"
+				? "Team members and permissions"
+				: "View your team members",
 	},
 	{
 		title: "Database",
@@ -79,7 +82,7 @@ const navigationItems = [
 ];
 
 export function AppSidebar() {
-	const { setToken, setUser } = useApp();
+	const { setToken, setUser, user } = useApp();
 	const router = useRouter();
 	const pathname = usePathname();
 	const { data: session } = useSession();
@@ -115,7 +118,7 @@ export function AppSidebar() {
 
 			<SidebarContent className='p-2 sm:p-4'>
 				<SidebarMenu>
-					{navigationItems.map((item) => {
+					{getNavigationItems(user?.role).map((item) => {
 						const isActive = pathname === item.url;
 						return (
 							<SidebarMenuItem key={item.title}>

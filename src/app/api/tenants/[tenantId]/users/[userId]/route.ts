@@ -142,6 +142,11 @@ export async function DELETE(
 	if (!isMember)
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+	// Only admins can delete other users (self-deletion is allowed for all users)
+	if (Number(userIdToDelete) !== userId && role !== "ADMIN") {
+		return NextResponse.json({ error: "Unauthorized - Only admins can delete other users" }, { status: 401 });
+	}
+
 	try {
 		const user = await prisma.user.findUnique({
 			where: {

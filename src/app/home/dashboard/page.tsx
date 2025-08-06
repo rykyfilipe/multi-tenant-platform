@@ -228,9 +228,13 @@ function DashboardPage() {
 										variant='outline'
 										className='h-auto p-4 flex flex-col items-center gap-2 w-full'>
 										<Users className='w-5 h-5' />
-										<span>Manage Users</span>
+										<span>
+											{user?.role === "ADMIN" ? "Manage Users" : "View Team"}
+										</span>
 										<span className='text-xs text-muted-foreground'>
-											Add, remove, or edit team members
+											{user?.role === "ADMIN"
+												? "Add, remove, or edit team members"
+												: "View your team members and their roles"}
 										</span>
 									</Button>
 								</Link>

@@ -18,12 +18,39 @@ import {
 	TablePermission,
 	ColumnPermission,
 } from "@/types/permissions";
+import { useApp } from "@/contexts/AppContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Shield } from "lucide-react";
 
 export default function PermissionsManager() {
+	const { user } = useApp();
 	const params = useParams();
 	const userId = Array.isArray(params.userId)
 		? params.userId[0]
 		: params.userId;
+
+	// Check if user is admin
+	if (user?.role !== "ADMIN") {
+		return (
+			<div className='h-full bg-background'>
+				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+					<div className='text-center py-12'>
+						<Card className='max-w-md mx-auto'>
+							<CardHeader>
+								<div className='mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4'>
+									<Shield className='w-6 h-6 text-red-600' />
+								</div>
+								<CardTitle className='text-red-600'>Access Denied</CardTitle>
+								<CardDescription>
+									Only administrators can manage user permissions.
+								</CardDescription>
+							</CardHeader>
+						</Card>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	if (!userId) {
 		return (

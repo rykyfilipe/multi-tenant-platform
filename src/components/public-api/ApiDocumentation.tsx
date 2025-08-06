@@ -101,7 +101,7 @@ export const ApiDocumentation = () => {
 									<div className='bg-gray-900 text-gray-100 p-3 sm:p-4 rounded-lg font-mono text-xs sm:text-sm overflow-x-auto'>
 										<div className='text-yellow-300'>
 											curl -X GET
-											"multi-tenant-platform-nu.vercel.app/api/public/tables?page=1&limit=20"
+											"ydv.digital/api/public/tables?page=1&limit=20"
 										</div>
 										<div className='text-gray-300 ml-2 sm:ml-4'>
 											-H "Authorization: Bearer YOUR_API_TOKEN"
@@ -143,8 +143,7 @@ export const ApiDocumentation = () => {
 												</h4>
 												<div className='bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto'>
 													<div className='text-yellow-300'>
-														curl -X GET
-														"multi-tenant-platform-nu.vercel.app/api/public/tables/table123"
+														curl -X GET "ydv.digital/api/public/tables/table123"
 													</div>
 													<div className='text-gray-300 ml-4'>
 														-H "Authorization: Bearer YOUR_API_TOKEN"
@@ -223,7 +222,7 @@ export const ApiDocumentation = () => {
 												<div className='bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto'>
 													<div className='text-yellow-300'>
 														curl -X POST
-														"multi-tenant-platform-nu.vercel.app/api/public/tables/table123/rows"
+														"ydv.digital/api/public/tables/table123/rows"
 													</div>
 													<div className='text-gray-300 ml-4'>
 														-H "Authorization: Bearer YOUR_API_TOKEN"
@@ -290,7 +289,7 @@ export const ApiDocumentation = () => {
 												<div className='bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto'>
 													<div className='text-yellow-300'>
 														curl -X PATCH
-														"multi-tenant-platform-nu.vercel.app/api/public/tables/table123/rows/row12"
+														"ydv.digital/api/public/tables/table123/rows/row12"
 													</div>
 													<div className='text-gray-300 ml-4'>
 														-H "Authorization: Bearer YOUR_API_TOKEN"
@@ -354,7 +353,7 @@ export const ApiDocumentation = () => {
 												<div className='bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto'>
 													<div className='text-yellow-300'>
 														curl -X DELETE
-														"multi-tenant-platform-nu.vercel.app/api/public/tables/table123/rows/row12"
+														"ydv.digital/api/public/tables/table123/rows/row12"
 													</div>
 													<div className='text-gray-300 ml-4'>
 														-H "Authorization: Bearer YOUR_API_TOKEN"

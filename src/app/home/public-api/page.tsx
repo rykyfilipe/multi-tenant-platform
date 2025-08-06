@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 import { ApiHeader } from "@/components/public-api/ApiHeader";
@@ -33,14 +33,16 @@ const ApiTokensPage = () => {
 	const [tokens, setTokens] = useState<ApiToken[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [showCreateModal, setShowCreateModal] = useState(false);
-
 	const [visibleTokens, setVisibleTokens] = useState<Set<string>>(new Set());
+	const hasFetched = useRef(false);
 
 	const { token, showAlert } = useApp();
 	const { handleApiError } = usePlanLimitError();
 
 	// Fetch user tokens
 	const fetchTokens = useCallback(async () => {
+		if (loading || hasFetched.current) return; // Prevent multiple requests
+
 		setLoading(true);
 		try {
 			const res = await fetch("/api/public/tokens", {
@@ -54,18 +56,30 @@ const ApiTokensPage = () => {
 
 			const data = await res.json();
 			setTokens(data);
+			hasFetched.current = true; // Mark as fetched
 		} catch (err: any) {
 			showAlert(err.message || "Unknown error", "error");
 		} finally {
 			setLoading(false);
 		}
-	}, [token, handleApiError, showAlert]);
+	}, [token, handleApiError, showAlert, loading]);
 
 	useEffect(() => {
-		if (token && tokens.length === 0) {
+		if (token) {
+			hasFetched.current = false; // Reset when token changes
 			fetchTokens();
+		} else {
+			// Clear tokens when no token (user logged out)
+			setTokens([]);
+			hasFetched.current = false;
 		}
-	}, [fetchTokens, token, tokens.length]);
+	}, [token]);
+
+	// Refresh tokens list
+	const refreshTokens = useCallback(() => {
+		hasFetched.current = false;
+		fetchTokens();
+	}, [fetchTokens]);
 
 	// Generate new token
 	const createToken = async (tokenData: CreateTokenRequest) => {
@@ -86,7 +100,7 @@ const ApiTokensPage = () => {
 			}
 
 			const result = await res.json();
-	
+
 			setTokens((prev) => [...prev, result]);
 			setShowCreateModal(false);
 			showAlert("API token created successfully", "success");
@@ -105,11 +119,12 @@ const ApiTokensPage = () => {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			if (!res.ok) throw new Error("Failed to revoke token");
-			setTokens((prev) =>
-				prev.map((t) => (t.id === tokenId ? { ...t, revoked: true } : t)),
-			);
+
+			// Refresh the tokens list to get updated data
+			refreshTokens();
+			showAlert("Token revoked successfully", "success");
 		} catch (err: any) {
-			showAlert(err.message || "Unknown error");
+			showAlert(err.message || "Unknown error", "error");
 		}
 	};
 
