@@ -61,6 +61,7 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 
 				if (res?.ok) {
 					showAlert("Account created successfully! Welcome to YDV.", "success");
+					closeForm(true);
 				} else {
 					showAlert(
 						"Account created but login failed. Please log in manually.",

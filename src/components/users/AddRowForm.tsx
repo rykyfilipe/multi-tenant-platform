@@ -17,6 +17,7 @@ import {
 } from "../ui/select";
 import { Role, UserSchema } from "@/types/user";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { usePlanPermissions } from "@/hooks/usePlanPermissions";
 import { Users } from "lucide-react";
 
 interface Props {
@@ -39,6 +40,7 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 	if (!newUser) return null;
 
 	const { checkLimit, currentPlan } = usePlanLimits();
+	const { canCreateUser } = usePlanPermissions();
 
 	const validateField = (key: keyof UserSchema, value: any): boolean => {
 		const type = userFieldTypes[key];
@@ -204,27 +206,47 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 			{/* Plan Limit Info */}
 			{(() => {
 				const userLimit = checkLimit("users");
+				const userPermission = canCreateUser();
+
 				return (
-					<div className='p-3 bg-blue-50 rounded-lg border border-blue-200'>
+					<div
+						className={`p-3 rounded-lg border ${
+							userPermission.allowed
+								? "bg-blue-50 border-blue-200"
+								: "bg-orange-50 border-orange-200"
+						}`}>
 						<div className='flex items-center justify-between mb-2'>
 							<div className='flex items-center gap-2'>
-								<Users className='w-4 h-4 text-blue-600' />
-								<span className='text-sm font-medium text-blue-900'>
+								<Users
+									className={`w-4 h-4 ${
+										userPermission.allowed ? "text-blue-600" : "text-orange-600"
+									}`}
+								/>
+								<span
+									className={`text-sm font-medium ${
+										userPermission.allowed ? "text-blue-900" : "text-orange-900"
+									}`}>
 									User Limit
 								</span>
 							</div>
 							<Badge
-								variant={userLimit.allowed ? "default" : "destructive"}
+								variant={userPermission.allowed ? "default" : "destructive"}
 								className='text-xs'>
 								{userLimit.current} / {userLimit.limit}
 							</Badge>
 						</div>
-						<p className='text-xs text-blue-700'>
-							{userLimit.allowed
-								? `You can add ${
-										userLimit.limit - userLimit.current
-								  } more user(s)`
-								: "You've reached your plan limit. Upgrade to add more users."}
+						<p
+							className={`text-xs ${
+								userPermission.allowed ? "text-blue-700" : "text-orange-700"
+							}`}>
+							{userPermission.allowed
+								? userLimit.allowed
+									? `You can add ${
+											userLimit.limit - userLimit.current
+									  } more user(s)`
+									: "You've reached your plan limit. Upgrade to add more users."
+								: userPermission.reason ||
+								  "User creation not available in your plan"}
 						</p>
 					</div>
 				);
@@ -266,10 +288,8 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 					</Button>
 					<Button
 						type='submit'
-						disabled={!checkLimit("users").allowed}
-						className={`px-6 ${
-							!checkLimit("users").allowed ? "opacity-50" : ""
-						}`}>
+						disabled={!canCreateUser().allowed}
+						className={`px-6 ${!canCreateUser().allowed ? "opacity-50" : ""}`}>
 						Send Invitation
 					</Button>
 				</div>

@@ -6,6 +6,7 @@ import {
 	verifyLogin,
 } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { checkPlanPermission } from "@/lib/planConstants";
 
 import { NextResponse } from "next/server";
 export async function GET(
@@ -30,6 +31,29 @@ export async function GET(
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
 	if (!isMember || role !== "ADMIN")
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+	// Verificăm permisiunea de plan pentru gestionarea permisiunilor
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: { subscriptionPlan: true },
+	});
+
+	if (!user) {
+		return NextResponse.json({ error: "User not found" }, { status: 404 });
+	}
+
+	// Verifică dacă planul permite gestionarea permisiunilor
+	if (!checkPlanPermission(user.subscriptionPlan, "canManagePermissions")) {
+		return NextResponse.json(
+			{
+				error:
+					"Permission management is not available in your current plan. Upgrade to Pro or Business to manage user permissions.",
+				plan: "permissions",
+			},
+			{ status: 403 },
+		);
+	}
+
 	try {
 		const tablePermissions = await prisma.tablePermission.findMany({
 			where: {
@@ -61,8 +85,6 @@ export async function GET(
 				},
 			},
 		});
-
-
 
 		return NextResponse.json(
 			{ tablePermissions, columnsPermissions },
@@ -111,7 +133,6 @@ export async function PATCH(
 				{ status: 400 },
 			);
 		}
-
 
 		// Update table permissions
 		for (const permission of tablePermissions) {

@@ -38,7 +38,7 @@ function LoginForm({ closeForm, showForgotPassword }: LoginFormProps) {
 					"Welcome back! You have been successfully logged in.",
 					"success",
 				);
-				closeForm(false);
+				closeForm(true);
 			} else {
 				showAlert(
 					"Login failed. Please check your credentials and try again.",

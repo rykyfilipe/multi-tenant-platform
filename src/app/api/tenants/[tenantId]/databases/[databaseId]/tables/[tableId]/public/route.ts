@@ -8,6 +8,7 @@ import {
 	verifyLogin,
 } from "@/lib/auth";
 import { checkPlanLimit } from "@/lib/planLimits";
+import { checkPlanPermission } from "@/lib/planConstants";
 import { z } from "zod";
 
 const TablePublicSchema = z.object({
@@ -68,6 +69,27 @@ export async function PATCH(
 
 		if (!table) {
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		// Verificăm permisiunea de plan pentru tabele publice
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { subscriptionPlan: true },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
+
+		// Verifică dacă planul permite crearea tabelelor publice
+		if (parsedData.isPublic && !checkPlanPermission(user.subscriptionPlan, "canMakeTablesPublic")) {
+			return NextResponse.json(
+				{
+					error: "Public tables are not available in your current plan. Upgrade to Pro or Business to make tables public.",
+					plan: "publicTables",
+				},
+				{ status: 403 },
+			);
 		}
 
 		// Verificăm limita de tabele publice dacă încercăm să facem tabela publică

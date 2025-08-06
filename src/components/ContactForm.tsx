@@ -126,7 +126,7 @@ export const ContactForm = () => {
 									<div>
 										<h3 className='font-semibold text-foreground'>Email</h3>
 										<p className='text-sm text-muted-foreground'>
-											contact@ydv.com
+											contact@ydv.digital
 										</p>
 										<p className='text-xs text-muted-foreground mt-1'>
 											We typically respond within 24 hours

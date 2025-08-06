@@ -15,6 +15,19 @@ export interface PlanLimits {
 	rows: number; // total rows across all tables
 }
 
+export interface RoleRestrictions {
+	canCreateDatabases: boolean;
+	canCreateTables: boolean;
+	canCreateUsers: boolean;
+	canCreateApiTokens: boolean;
+	canMakeTablesPublic: boolean;
+	canManagePermissions: boolean;
+	canDeleteData: boolean;
+	canExportData: boolean;
+	canImportData: boolean;
+	canViewAnalytics: boolean;
+}
+
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
 	Starter: {
 		databases: 1,
@@ -42,6 +55,45 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		publicTables: 10,
 		storage: 5120, // 5 GB
 		rows: 1000000, // 1.000.000 rows
+	},
+};
+
+export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
+	Starter: {
+		canCreateDatabases: false, // Doar 1 database permis
+		canCreateTables: true,
+		canCreateUsers: false, // Doar 2 utilizatori permis
+		canCreateApiTokens: false, // Doar 1 token permis
+		canMakeTablesPublic: false, // 0 public tables permis
+		canManagePermissions: false, // Doar pentru Pro+
+		canDeleteData: true,
+		canExportData: true,
+		canImportData: true,
+		canViewAnalytics: false, // Doar pentru Pro+
+	},
+	Pro: {
+		canCreateDatabases: true,
+		canCreateTables: true,
+		canCreateUsers: true,
+		canCreateApiTokens: true,
+		canMakeTablesPublic: true,
+		canManagePermissions: true,
+		canDeleteData: true,
+		canExportData: true,
+		canImportData: true,
+		canViewAnalytics: true,
+	},
+	Business: {
+		canCreateDatabases: true,
+		canCreateTables: true,
+		canCreateUsers: true,
+		canCreateApiTokens: true,
+		canMakeTablesPublic: true,
+		canManagePermissions: true,
+		canDeleteData: true,
+		canExportData: true,
+		canImportData: true,
+		canViewAnalytics: true,
 	},
 };
 
@@ -90,10 +142,52 @@ export const getPlanFeatures = (plan: string | null) => {
 	return PLAN_FEATURES[plan || "Starter"] || PLAN_FEATURES.Starter;
 };
 
+export const getRoleRestrictions = (plan: string | null): RoleRestrictions => {
+	return ROLE_RESTRICTIONS[plan || "Starter"] || ROLE_RESTRICTIONS.Starter;
+};
+
 export const getMemoryLimitForPlan = (plan: string | null): number => {
 	return getPlanLimits(plan).storage;
 };
 
 export const getRowsLimitForPlan = (plan: string | null): number => {
 	return getPlanLimits(plan).rows;
+};
+
+// Funcție pentru verificarea permisiunilor bazate pe plan și rol
+export const checkPlanPermission = (
+	plan: string | null,
+	permission: keyof RoleRestrictions
+): boolean => {
+	const restrictions = getRoleRestrictions(plan);
+	return restrictions[permission];
+};
+
+// Funcție pentru verificarea permisiunilor bazate pe plan, rol și limitări
+export const checkPlanAndLimitPermission = (
+	plan: string | null,
+	permission: keyof RoleRestrictions,
+	currentCount: number,
+	limitType: keyof PlanLimits
+): { allowed: boolean; reason?: string } => {
+	const restrictions = getRoleRestrictions(plan);
+	const limits = getPlanLimits(plan);
+	
+	// Verifică dacă permisiunea este activă pentru plan
+	if (!restrictions[permission]) {
+		return { 
+			allowed: false, 
+			reason: `This feature is not available in your current plan. Upgrade to Pro or Business to access this feature.` 
+		};
+	}
+	
+	// Verifică dacă limita a fost atinsă
+	if (currentCount >= limits[limitType]) {
+		return { 
+			allowed: false, 
+			reason: `Plan limit exceeded. You can only have ${limits[limitType]} ${limitType}. Upgrade your plan to add more.` 
+		};
+	}
+	
+	return { allowed: true };
 };

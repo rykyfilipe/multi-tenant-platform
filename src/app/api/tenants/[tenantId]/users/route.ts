@@ -10,6 +10,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
+import { checkPlanPermission } from "@/lib/planConstants";
 import {
 	sendInvitationEmail,
 	generateInvitationToken,
@@ -105,6 +106,27 @@ export async function POST(
 	try {
 		const body = await request.json();
 		const parsedData = userSchema.parse(body);
+
+		// Verificăm permisiunea de plan pentru crearea utilizatorilor
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { subscriptionPlan: true },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
+
+		// Verifică dacă planul permite crearea utilizatorilor
+		if (!checkPlanPermission(user.subscriptionPlan, "canCreateUsers")) {
+			return NextResponse.json(
+				{
+					error: "User creation is not available in your current plan. Upgrade to Pro or Business to invite team members.",
+					plan: "users",
+				},
+				{ status: 403 },
+			);
+		}
 
 		// Verificăm limitele planului pentru utilizatori
 		const currentCounts = await getCurrentCounts(userId);

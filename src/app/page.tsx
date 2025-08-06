@@ -16,6 +16,14 @@ import {
 	Globe,
 	AlertTriangle,
 	LogOut,
+	Monitor,
+	Building2,
+	FileText,
+	Store,
+	Calendar,
+	Truck,
+	CreditCard,
+	ChartBar,
 } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 import { useSession, signOut } from "next-auth/react";
@@ -84,6 +92,99 @@ const DataHubLandingPage = () => {
 			setIsLoading(false);
 		}
 	};
+
+	const useCases = [
+		{
+			icon: <Monitor className='w-8 h-8' />,
+			title: "Content Management System (CMS)",
+			description:
+				"Store and manage content, articles, products, and media metadata. Your frontend CMS can fetch and display content through our API.",
+			features: [
+				"Content database",
+				"Media metadata",
+				"SEO data storage",
+				"Content scheduling",
+				"Multi-language content",
+			],
+			color: "from-blue-500/20 to-cyan-500/20",
+			iconColor: "text-blue-600",
+		},
+		{
+			icon: <Building2 className='w-8 h-8' />,
+			title: "Admin Panel & Dashboard",
+			description:
+				"Store user data, permissions, settings, and analytics data. Your admin dashboard can read and manage this data through our secure API.",
+			features: [
+				"User data storage",
+				"Permission management",
+				"Analytics data",
+				"System configuration",
+				"Audit trail data",
+			],
+			color: "from-purple-500/20 to-pink-500/20",
+			iconColor: "text-purple-600",
+		},
+		{
+			icon: <Store className='w-8 h-8' />,
+			title: "Business Management",
+			description:
+				"Store all your business data - customers, orders, inventory, and financial records. Your business applications can access this data via API.",
+			features: [
+				"Customer database",
+				"Order data storage",
+				"Inventory tracking",
+				"Financial records",
+				"Business reporting data",
+			],
+			color: "from-green-500/20 to-emerald-500/20",
+			iconColor: "text-green-600",
+		},
+		{
+			icon: <Truck className='w-8 h-8' />,
+			title: "Logistics & Supply Chain",
+			description:
+				"Store logistics data - shipments, warehouses, inventory, and delivery information. Your logistics apps can track and manage operations via API.",
+			features: [
+				"Shipment data",
+				"Warehouse information",
+				"Inventory tracking",
+				"Route data",
+				"Delivery schedules",
+			],
+			color: "from-orange-500/20 to-red-500/20",
+			iconColor: "text-orange-600",
+		},
+		{
+			icon: <Calendar className='w-8 h-8' />,
+			title: "Project Management",
+			description:
+				"Store project data, tasks, team assignments, and progress tracking. Your project management tools can sync with this data through API.",
+			features: [
+				"Project data storage",
+				"Task information",
+				"Team assignments",
+				"Time tracking data",
+				"Progress metrics",
+			],
+			color: "from-indigo-500/20 to-blue-500/20",
+			iconColor: "text-indigo-600",
+		},
+		{
+			icon: <ChartBar className='w-8 h-8' />,
+			title: "Data Analytics & Reporting",
+			description:
+				"Store analytics data, metrics, and reporting information. Your analytics dashboards and reporting tools can fetch this data via API.",
+			features: [
+				"Analytics data storage",
+				"Metrics collection",
+				"Reporting data",
+				"Data export via API",
+				"Real-time data access",
+			],
+			color: "from-teal-500/20 to-cyan-500/20",
+			iconColor: "text-teal-600",
+		},
+	];
 
 	const features = [
 		{
@@ -450,140 +551,73 @@ const DataHubLandingPage = () => {
 				</div>
 			</section>
 
-			{/* Performance Statistics Section */}
-			<section className='py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-purple-50'>
+			{/* Use Cases Section */}
+			<section className='py-24 px-4 sm:px-6 lg:px-8 bg-muted/20'>
 				<div className='max-w-7xl mx-auto'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-							Platform Performance
+					<div className='text-center mb-20'>
+						<h2 className='text-4xl md:text-5xl font-bold text-foreground mb-6'>
+							Manage Your Data
 						</h2>
-						<p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
-							Real-time metrics and statistics from our production environment
+						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
+							YDV provides the data management for your applications or
+							business. Create and manage your data structure, then connect any
+							frontend application through our powerful REST API.
 						</p>
 					</div>
 
-					<div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
-						<div className='text-center p-6 bg-white rounded-xl shadow-lg border border-border/20'>
-							<div className='text-3xl font-bold text-green-600 mb-2'>
-								99.96%
-							</div>
-							<div className='text-sm text-muted-foreground'>
-								Overall Uptime
-							</div>
-							<div className='text-xs text-muted-foreground mt-1'>
-								Calculated from 6 services
-							</div>
-						</div>
-
-						<div className='text-center p-6 bg-white rounded-xl shadow-lg border border-border/20'>
-							<div className='text-3xl font-bold text-blue-600 mb-2'>25ms</div>
-							<div className='text-sm text-muted-foreground'>
-								Database Response
-							</div>
-							<div className='text-xs text-muted-foreground mt-1'>
-								PostgreSQL + Prisma
-							</div>
-						</div>
-
-						<div className='text-center p-6 bg-white rounded-xl shadow-lg border border-border/20'>
-							<div className='text-3xl font-bold text-purple-600 mb-2'>
-								120ms
-							</div>
-							<div className='text-sm text-muted-foreground'>API Response</div>
-							<div className='text-xs text-muted-foreground mt-1'>
-								With rate limiting
-							</div>
-						</div>
-
-						<div className='text-center p-6 bg-white rounded-xl shadow-lg border border-border/20'>
-							<div className='text-3xl font-bold text-orange-600 mb-2'>
-								99.99%
-							</div>
-							<div className='text-sm text-muted-foreground'>
-								Data Integrity
-							</div>
-							<div className='text-xs text-muted-foreground mt-1'>
-								Zero data loss
-							</div>
-						</div>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
+						{useCases.map((useCase, index) => (
+							<Card
+								key={index}
+								className='professional-card hover:scale-105 transition-all duration-500 group'>
+								<CardHeader>
+									<div
+										className={`p-4 bg-gradient-to-br ${useCase.color} rounded-2xl w-fit mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+										<div className={useCase.iconColor}>{useCase.icon}</div>
+									</div>
+									<CardTitle className='text-2xl font-bold'>
+										{useCase.title}
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<CardDescription className='text-base leading-relaxed mb-6'>
+										{useCase.description}
+									</CardDescription>
+									<div className='space-y-2'>
+										{useCase.features.map((feature, featureIndex) => (
+											<div
+												key={featureIndex}
+												className='flex items-center text-sm'>
+												<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+												<span className='text-muted-foreground'>{feature}</span>
+											</div>
+										))}
+									</div>
+								</CardContent>
+							</Card>
+						))}
 					</div>
 
-					<div className='mt-12 grid grid-cols-1 md:grid-cols-3 gap-6'>
-						<div className='bg-white p-6 rounded-xl shadow-lg border border-border/20'>
-							<h3 className='font-semibold text-foreground mb-4 flex items-center gap-2'>
-								<Database className='w-5 h-5 text-blue-500' />
-								Database Performance
+					<div className='text-center mt-16'>
+						<div className='bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8 border border-border/20'>
+							<h3 className='text-2xl font-bold text-foreground mb-4'>
+								Powerful Data Backend
 							</h3>
-							<div className='space-y-3'>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>Uptime</span>
-									<span className='font-semibold text-green-600'>99.99%</span>
-								</div>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Response Time
-									</span>
-									<span className='font-semibold text-blue-600'>25ms</span>
-								</div>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Query Success Rate
-									</span>
-									<span className='font-semibold text-green-600'>99.97%</span>
-								</div>
-							</div>
-						</div>
-
-						<div className='bg-white p-6 rounded-xl shadow-lg border border-border/20'>
-							<h3 className='font-semibold text-foreground mb-4 flex items-center gap-2'>
-								<Zap className='w-5 h-5 text-purple-500' />
-								API Performance
-							</h3>
-							<div className='space-y-3'>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>Uptime</span>
-									<span className='font-semibold text-green-600'>99.97%</span>
-								</div>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Response Time
-									</span>
-									<span className='font-semibold text-purple-600'>120ms</span>
-								</div>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Success Rate
-									</span>
-									<span className='font-semibold text-green-600'>99.95%</span>
-								</div>
-							</div>
-						</div>
-
-						<div className='bg-white p-6 rounded-xl shadow-lg border border-border/20'>
-							<h3 className='font-semibold text-foreground mb-4 flex items-center gap-2'>
-								<Shield className='w-5 h-5 text-green-500' />
-								Security Metrics
-							</h3>
-							<div className='space-y-3'>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Auth Uptime
-									</span>
-									<span className='font-semibold text-green-600'>99.96%</span>
-								</div>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Response Time
-									</span>
-									<span className='font-semibold text-green-600'>95ms</span>
-								</div>
-								<div className='flex justify-between items-center'>
-									<span className='text-sm text-muted-foreground'>
-										Security Score
-									</span>
-									<span className='font-semibold text-green-600'>A+</span>
-								</div>
-							</div>
+							<p className='text-lg text-muted-foreground mb-6 max-w-2xl mx-auto'>
+								YDV's intuitive interface lets you design your data structure
+								without coding. Then use our REST API to connect any frontend
+								application - websites, mobile apps, or custom dashboards.
+							</p>
+							<Button
+								size='lg'
+								onClick={() => {
+									if (!session) setShowLoginModal(true);
+									else router.push("home/dashboard");
+								}}
+								className='text-lg px-8 py-3'>
+								Start Managing Data
+								<ArrowRight className='ml-2 w-5 h-5' />
+							</Button>
 						</div>
 					</div>
 				</div>
@@ -598,7 +632,7 @@ const DataHubLandingPage = () => {
 						</h2>
 						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
 							From creating custom tables to managing team permissions, our
-							platform gives you complete control over your data.
+							platform gives you complete control over your data backend.
 						</p>
 					</div>
 
@@ -789,11 +823,6 @@ const DataHubLandingPage = () => {
 								<li>
 									<a href='/docs/about' className='hover:text-foreground'>
 										About
-									</a>
-								</li>
-								<li>
-									<a href='/docs/blog' className='hover:text-foreground'>
-										Blog
 									</a>
 								</li>
 								<li>

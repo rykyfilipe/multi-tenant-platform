@@ -19,18 +19,26 @@ import {
 	ColumnPermission,
 } from "@/types/permissions";
 import { useApp } from "@/contexts/AppContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Shield } from "lucide-react";
+import { usePlanPermissions } from "@/hooks/usePlanPermissions";
 
 export default function PermissionsManager() {
 	const { user } = useApp();
+	const { canManagePermissions } = usePlanPermissions();
 	const params = useParams();
 	const userId = Array.isArray(params.userId)
 		? params.userId[0]
 		: params.userId;
 
-	// Check if user is admin
-	if (user?.role !== "ADMIN") {
+	// Check if user is admin and has permission to manage permissions
+	if (user?.role !== "ADMIN" || !canManagePermissions()) {
 		return (
 			<div className='h-full bg-background'>
 				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
@@ -42,7 +50,9 @@ export default function PermissionsManager() {
 								</div>
 								<CardTitle className='text-red-600'>Access Denied</CardTitle>
 								<CardDescription>
-									Only administrators can manage user permissions.
+									{user?.role !== "ADMIN"
+										? "Only administrators can manage user permissions."
+										: "Permission management is not available in your current plan. Upgrade to Pro or Business to manage user permissions."}
 								</CardDescription>
 							</CardHeader>
 						</Card>

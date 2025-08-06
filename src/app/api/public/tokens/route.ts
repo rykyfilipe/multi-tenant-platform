@@ -9,6 +9,7 @@ import {
 	getUserFromRequest,
 } from "@/lib/auth";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
+import { checkPlanPermission } from "@/lib/planConstants";
 
 export async function GET(request: Request) {
 	const logged = verifyLogin(request);
@@ -64,6 +65,27 @@ export async function POST(request: Request) {
 	try {
 		const body = await request.json();
 		const { name, scopes, expiresIn } = body;
+
+		// Verificăm permisiunea de plan pentru crearea API tokens
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { subscriptionPlan: true },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
+
+		// Verifică dacă planul permite crearea API tokens
+		if (!checkPlanPermission(user.subscriptionPlan, "canCreateApiTokens")) {
+			return NextResponse.json(
+				{
+					error: "API token creation is not available in your current plan. Upgrade to Pro or Business to create API tokens.",
+					plan: "apiTokens",
+				},
+				{ status: 403 },
+			);
+		}
 
 		// Verificăm limitele planului pentru API tokens
 		const currentCounts = await getCurrentCounts(userId);

@@ -7,13 +7,25 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
-export default function OAuthGoogleLogin() {
+interface OAuthGoogleLoginProps {
+	closeForm: (x: boolean) => void;
+}
+
+export default function OAuthGoogleLogin({ closeForm }: OAuthGoogleLoginProps) {
 	const [loading, setLoading] = useState(false);
 
 	const handleGoogleSignIn = async () => {
 		setLoading(true);
 		try {
-			await signIn("google", { callbackUrl: "/" });
+			const result = await signIn("google", { 
+				redirect: false,
+				callbackUrl: "/" 
+			});
+			
+			// Dacă autentificarea a fost cu succes, închide formularul
+			if (result?.ok) {
+				closeForm(true);
+			}
 		} catch (error) {
 			console.error("Google sign in error:", error);
 		} finally {

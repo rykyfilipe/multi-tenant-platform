@@ -166,9 +166,9 @@ export default function AboutPage() {
 						<p className='text-sm'>
 							<strong>Email:</strong>{" "}
 							<a
-								href='mailto:contact@ydv.com'
+								href='mailto:contact@ydv.digital'
 								className='text-primary hover:underline'>
-								contact@ydv.com
+								contact@ydv.digital
 							</a>
 						</p>
 						<p className='text-sm'>

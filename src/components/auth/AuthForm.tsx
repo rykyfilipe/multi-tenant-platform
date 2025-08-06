@@ -50,7 +50,7 @@ function AuthForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 					</TabsTrigger>
 				</TabsList>
 
-				<OAuthGoogleLogin />
+				<OAuthGoogleLogin closeForm={closeForm} />
 
 				<TabsContent value='login'>
 					<LoginForm

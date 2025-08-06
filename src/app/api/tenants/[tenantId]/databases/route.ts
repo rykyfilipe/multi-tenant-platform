@@ -8,6 +8,7 @@ import {
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
+import { checkPlanPermission } from "@/lib/planConstants";
 import { z } from "zod";
 
 const createDatabaseSchema = z.object({
@@ -154,6 +155,27 @@ export async function POST(
 		if (!tenant || tenant.adminId !== userId) {
 			return NextResponse.json(
 				{ error: "Tenant not found or you are not the admin of this tenant" },
+				{ status: 403 },
+			);
+		}
+
+		// Verificăm permisiunea de plan pentru crearea bazelor de date
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { subscriptionPlan: true },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
+
+		// Verifică dacă planul permite crearea bazelor de date
+		if (!checkPlanPermission(user.subscriptionPlan, "canCreateDatabases")) {
+			return NextResponse.json(
+				{
+					error: "Database creation is not available in your current plan. Upgrade to Pro or Business to create multiple databases.",
+					plan: "databases",
+				},
 				{ status: 403 },
 			);
 		}
