@@ -142,9 +142,24 @@ function ImportExportControls({ columns, rows, table }: Props) {
 					const cell = row.cells?.find((c) => c.columnId === col.id);
 					let value = cell?.value ?? "";
 
-					// Pentru coloanele de tip "reference", valoarea este deja cheia primară
-					// Nu mai este nevoie de procesare suplimentară
-					// value = cell?.value ?? ""; (deja setat mai sus)
+					// Formatare specială pentru diferite tipuri de coloane
+					if (col.type === "date" && value) {
+						try {
+							const date = new Date(value);
+							if (!isNaN(date.getTime())) {
+								// Formatare pentru Excel - YYYY-MM-DD
+								value = date.toISOString().split('T')[0];
+							}
+						} catch {
+							// Fallback la valoarea originală dacă parsarea eșuează
+						}
+					} else if (col.type === "boolean") {
+						// Pentru boolean, exportăm ca "Yes"/"No" pentru lizibilitate
+						value = value === "true" || value === true ? "Yes" : "No";
+					} else if (col.type === "reference") {
+						// Pentru coloanele de tip "reference", valoarea este deja cheia primară
+						// Nu mai este nevoie de procesare suplimentară
+					}
 
 					return JSON.stringify(value);
 				});
