@@ -117,12 +117,6 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Log the refund request
-		console.log(`Refund processed for user ${session.user.email}:`, {
-			invoiceId,
-			refundId: refund.id,
-			amount: refund.amount,
-			reason,
-		});
 
 		return NextResponse.json({
 			success: true,

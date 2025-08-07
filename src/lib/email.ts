@@ -96,7 +96,6 @@ export async function sendInvitationEmail(
 		await transporter.sendMail(mailOptions);
 		return true;
 	} catch (error) {
-		console.error("Error sending invitation email:", error);
 		return false;
 	}
 }

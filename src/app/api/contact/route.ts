@@ -114,7 +114,6 @@ export async function POST(request: NextRequest) {
 		try {
 			await contactTransporter.verify();
 			await noReplyTransporter.verify();
-			console.log("SMTP connections verified successfully");
 		} catch (verifyError) {
 			console.error("SMTP verification failed:", verifyError);
 			return NextResponse.json(

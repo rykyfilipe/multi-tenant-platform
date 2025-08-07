@@ -62,11 +62,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 					};
 					setUser(updatedUser);
 					setToken(newToken);
-					console.log("session updated", session);
-					console.log("updatedUser:", updatedUser);
 				}
 			} catch (error) {
-				console.error("Error setting session data:", error);
+				// Error setting session data
 			}
 		} else {
 			if (user || token) {
@@ -91,7 +89,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		);
 
 		if (missingVars.length > 0) {
-			console.error("Missing required environment variables:", missingVars);
+			// Missing required environment variables
 		}
 	}, []);
 
@@ -107,14 +105,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 			});
 
 			if (!response.ok) {
-				console.error("Failed to fetch tenant:", response.status);
 				return;
 			}
 
 			const data = await response.json();
 			setTenant(data);
 		} catch (error) {
-			console.error("Error fetching tenant:", error);
+			// Error fetching tenant
 		} finally {
 			setLoading(false);
 		}

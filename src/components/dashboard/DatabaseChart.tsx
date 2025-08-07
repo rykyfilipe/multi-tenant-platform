@@ -41,7 +41,7 @@ const DatabaseChart: React.FC<DatabaseChartProps> = ({ data }) => {
 					</div>
 					<Progress value={usagePercentage} className="h-2" />
 					<p className="text-xs text-muted-foreground">
-						{usagePercentage.toFixed(1)}% of plan limit
+						{(usagePercentage || 0).toFixed(1)}% of plan limit
 					</p>
 				</div>
 

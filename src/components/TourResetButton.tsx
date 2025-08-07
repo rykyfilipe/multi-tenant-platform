@@ -30,7 +30,6 @@ export default function TourResetButton({
 		// Show success message
 		if (typeof window !== "undefined") {
 			// You can integrate this with your alert system
-			console.log("All tours have been reset!");
 		}
 	};
 

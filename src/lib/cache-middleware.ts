@@ -95,7 +95,7 @@ export function withCacheInvalidation<T extends any[], R>(
       try {
         invalidateCallback(null as any, ...args);
       } catch (invalidateError) {
-        console.error('Cache invalidation failed:', invalidateError);
+        // Cache invalidation failed
       }
       throw error;
     }

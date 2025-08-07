@@ -26,8 +26,6 @@ export const calculateMemoryUsage = async (
 	tenantId: number,
 ): Promise<MemoryCalculation> => {
 	try {
-		console.log(`[DEBUG] Starting calculation for tenant ${tenantId}`);
-
 		// Get all databases for the tenant
 		const databases = await prisma.database.findMany({
 			where: { tenantId },
@@ -45,8 +43,6 @@ export const calculateMemoryUsage = async (
 			},
 		});
 
-		console.log(`[DEBUG] Found ${databases.length} databases`);
-
 		let totalRows = 0;
 		let totalColumns = 0;
 		let totalTables = 0;
@@ -54,16 +50,10 @@ export const calculateMemoryUsage = async (
 
 		// Calculate totals
 		for (const database of databases) {
-			console.log(`[DEBUG] Processing database: ${database.name}`);
-
 			for (const table of database.tables) {
 				totalTables++;
 				totalColumns += table.columns.length;
 				totalRows += table.rows.length;
-
-				console.log(
-					`[DEBUG] Table: ${table.name} - ${table.rows.length} rows, ${table.columns.length} columns`,
-				);
 			}
 		}
 
@@ -93,11 +83,6 @@ export const calculateMemoryUsage = async (
 				);
 			}
 		} catch (sqlError) {
-			console.error(
-				`[ERROR] SQL query failed, falling back to JSON calculation:`,
-				sqlError,
-			);
-
 			// Fallback to JSON calculation if SQL fails
 			for (const database of databases) {
 				for (const table of database.tables) {
@@ -112,10 +97,6 @@ export const calculateMemoryUsage = async (
 			}
 		}
 
-		console.log(
-			`[DEBUG] Raw counts - Rows: ${totalRows}, Columns: ${totalColumns}, Tables: ${totalTables}, Bytes: ${totalBytes}`,
-		);
-
 		// Convert to MB
 		const estimatedSizeMB = totalBytes / (1024 * 1024);
 
@@ -126,15 +107,8 @@ export const calculateMemoryUsage = async (
 			estimatedSizeMB: Math.round(estimatedSizeMB * 1000) / 1000, // Round to 3 decimal places
 		};
 
-		console.log(
-			`[DEBUG] Final result: ${result.estimatedSizeMB} MB (${(
-				result.estimatedSizeMB * 1024
-			).toFixed(1)} KB)`,
-		);
-
 		return result;
 	} catch (error) {
-		console.error("Error calculating storage usage:", error);
 		return {
 			totalRows: 0,
 			totalColumns: 0,
@@ -240,15 +214,8 @@ export const calculateActualDatabaseSize = async (
 			estimatedSizeMB: Math.round(estimatedSizeMB * 100) / 100,
 		};
 
-		console.log(
-			`[TEMP] Actual size result: ${result.estimatedSizeMB} MB (${(
-				result.estimatedSizeMB * 1024
-			).toFixed(1)} KB)`,
-		);
-
 		return result;
 	} catch (error) {
-		console.error("Error calculating actual database size:", error);
 		return {
 			totalRows: 0,
 			totalColumns: 0,
@@ -316,7 +283,6 @@ export const updateTenantMemoryUsage = async (
 
 		return result;
 	} catch (error) {
-		console.error("Error updating tenant storage usage:", error);
 		throw error;
 	}
 };
@@ -350,7 +316,6 @@ export const getTenantMemoryUsage = async (
 
 		return result;
 	} catch (error) {
-		console.error("Error getting tenant storage usage:", error);
 		throw error;
 	}
 };
@@ -375,7 +340,6 @@ export const checkMemoryLimit = async (
 			warningThreshold,
 		};
 	} catch (error) {
-		console.error("Error checking storage limit:", error);
 		return {
 			isNearLimit: false,
 			isOverLimit: false,

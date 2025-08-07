@@ -6,7 +6,6 @@ import { loadStripe } from "@stripe/stripe-js";
 export const getStripe = () => {
 	const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 	if (!publishableKey) {
-		console.error("Stripe publishable key is not set");
 		return null;
 	}
 	return loadStripe(publishableKey);
@@ -36,7 +35,6 @@ export const createCheckoutSession = async (
 		const { sessionId } = await response.json();
 		return sessionId;
 	} catch (error) {
-		console.error("Error creating checkout session:", error);
 		throw error;
 	}
 };
@@ -61,7 +59,6 @@ export const redirectToCheckout = async (priceId: string, planName: string) => {
 			throw error;
 		}
 	} catch (error) {
-		console.error("Error redirecting to checkout:", error);
 		throw error;
 	}
 };

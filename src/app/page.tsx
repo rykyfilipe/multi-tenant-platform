@@ -90,7 +90,6 @@ const DataHubLandingPage = () => {
 		try {
 			await redirectToCheckout(priceId, planName);
 		} catch (error) {
-			console.error("Checkout error:", error);
 			alert(
 				"Failed to start checkout. Please check your Stripe configuration and try again.",
 			);

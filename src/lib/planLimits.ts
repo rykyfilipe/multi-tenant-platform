@@ -36,7 +36,6 @@ export async function checkPlanLimit(
 			current: currentCount,
 		};
 	} catch (error) {
-		console.error("Error checking plan limit:", error);
 		// Default to Starter plan on error
 		const starterLimit = PLAN_LIMITS.Starter[limitType];
 		return {
@@ -79,7 +78,6 @@ export async function getCurrentCounts(
 				rows,
 			};
 		} catch (error) {
-			console.error("Error getting counts from cached operations:", error);
 			// Return default counts on error
 			return {
 				databases: 0,
@@ -92,7 +90,6 @@ export async function getCurrentCounts(
 			};
 		}
 	} catch (error) {
-		console.error("Error getting current counts:", error);
 		return {
 			databases: 0,
 			tables: 0,

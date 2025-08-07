@@ -13,11 +13,11 @@ export const updateMemoryAfterDataChange = async (tenantId: number) => {
 			try {
 				await updateTenantMemoryUsage(tenantId);
 			} catch (error) {
-				console.error("Error updating storage usage:", error);
+				// Error updating storage usage
 			}
 		}, 1000); // Delay by 1 second to ensure data is committed
 	} catch (error) {
-		console.error("Error scheduling storage update:", error);
+		// Error scheduling storage update
 	}
 };
 

@@ -9,7 +9,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.user.findUnique({ where: { id: userId } });
 		} catch (error) {
-			console.error("Error getting user:", error);
 			return null;
 		}
 	},
@@ -18,7 +17,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.user.findUnique({ where: { email } });
 		} catch (error) {
-			console.error("Error getting user by email:", error);
 			return null;
 		}
 	},
@@ -28,7 +26,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.tenant.findUnique({ where: { id: tenantId } });
 		} catch (error) {
-			console.error("Error getting tenant:", error);
 			return null;
 		}
 	},
@@ -37,7 +34,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.tenant.findUnique({ where: { adminId } });
 		} catch (error) {
-			console.error("Error getting tenant by admin:", error);
 			return null;
 		}
 	},
@@ -47,7 +43,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.database.findMany({ where: { tenantId } });
 		} catch (error) {
-			console.error("Error getting databases:", error);
 			return [];
 		}
 	},
@@ -58,7 +53,6 @@ export const cachedOperations = {
 				where: { id: databaseId, tenantId },
 			});
 		} catch (error) {
-			console.error("Error getting database:", error);
 			return null;
 		}
 	},
@@ -68,7 +62,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.table.findMany({ where: { databaseId } });
 		} catch (error) {
-			console.error("Error getting tables:", error);
 			return [];
 		}
 	},
@@ -79,7 +72,6 @@ export const cachedOperations = {
 				where: { id: tableId, databaseId },
 			});
 		} catch (error) {
-			console.error("Error getting table:", error);
 			return null;
 		}
 	},
@@ -93,7 +85,6 @@ export const cachedOperations = {
 				},
 			});
 		} catch (error) {
-			console.error("Error getting public tables:", error);
 			return [];
 		}
 	},
@@ -103,7 +94,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.column.findMany({ where: { tableId } });
 		} catch (error) {
-			console.error("Error getting columns:", error);
 			return [];
 		}
 	},
@@ -114,7 +104,6 @@ export const cachedOperations = {
 				where: { id: columnId, tableId },
 			});
 		} catch (error) {
-			console.error("Error getting column:", error);
 			return null;
 		}
 	},
@@ -127,7 +116,6 @@ export const cachedOperations = {
 				include: includeCells ? { cells: true } : undefined,
 			});
 		} catch (error) {
-			console.error("Error getting rows:", error);
 			return [];
 		}
 	},
@@ -139,7 +127,6 @@ export const cachedOperations = {
 				include: { cells: true },
 			});
 		} catch (error) {
-			console.error("Error getting row:", error);
 			return null;
 		}
 	},
@@ -151,7 +138,6 @@ export const cachedOperations = {
 				where: { userId, tenantId },
 			});
 		} catch (error) {
-			console.error("Error getting table permissions:", error);
 			return [];
 		}
 	},
@@ -162,7 +148,6 @@ export const cachedOperations = {
 				where: { userId, tenantId },
 			});
 		} catch (error) {
-			console.error("Error getting column permissions:", error);
 			return [];
 		}
 	},
@@ -189,7 +174,6 @@ export const cachedOperations = {
 
 			return [databases, tables, users, apiTokens, publicTables, rows];
 		} catch (error) {
-			console.error("Error getting counts:", error);
 			return [0, 0, 0, 0, 0, 0];
 		}
 	},
@@ -199,7 +183,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.apiToken.findMany({ where: { userId } });
 		} catch (error) {
-			console.error("Error getting API tokens:", error);
 			return [];
 		}
 	},
@@ -208,7 +191,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.apiToken.findUnique({ where: { tokenHash } });
 		} catch (error) {
-			console.error("Error getting API token:", error);
 			return null;
 		}
 	},
@@ -218,7 +200,6 @@ export const cachedOperations = {
 		try {
 			return await prisma.user.findMany({ where: { tenantId } });
 		} catch (error) {
-			console.error("Error getting users:", error);
 			return [];
 		}
 	},
@@ -260,6 +241,5 @@ export const cachedOperations = {
 	// Generic cache invalidation method
 	invalidate: (pattern: string) => {
 		// No-op for now - placeholder for future cache implementation
-		console.log(`Cache invalidation requested for pattern: ${pattern}`);
 	},
 };

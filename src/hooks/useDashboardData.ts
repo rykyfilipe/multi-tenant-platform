@@ -132,10 +132,10 @@ export const useDashboardData = () => {
 						},
 					);
 					if (recalcResponse.ok) {
-						console.log("🔄 [AUTO] Memory recalculated on page load");
+						// Memory recalculated successfully
 					}
 				} catch (recalcError) {
-					console.log("⚠️ [AUTO] Memory recalculation failed:", recalcError);
+					// Memory recalculation failed
 				}
 
 				// Check if all responses are ok
@@ -273,7 +273,6 @@ export const useDashboardData = () => {
 
 				setData(dashboardData);
 			} catch (error) {
-				console.error("Error fetching dashboard data:", error);
 				setError(error instanceof Error ? error.message : "Unknown error");
 			} finally {
 				setLoading(false);

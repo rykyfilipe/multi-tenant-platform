@@ -12,17 +12,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
-	console.log("=== WEBHOOK RECEIVED ===");
-	console.log("Request method:", request.method);
-	console.log("Request URL:", request.url);
-
 	try {
 		const body = await request.text();
-		console.log("Request body length:", body.length);
 
 		const headersList = await headers();
 		const signature = headersList.get("stripe-signature");
-		console.log("Stripe signature present:", !!signature);
 
 		if (!signature) {
 			console.error("No stripe signature found");
@@ -33,13 +27,10 @@ export async function POST(request: NextRequest) {
 
 		try {
 			event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-			console.log("Event constructed successfully");
 		} catch (err) {
 			console.error("Webhook signature verification failed:", err);
 			return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
 		}
-
-		console.log(`Processing webhook event: ${event.type}`);
 
 		switch (event.type) {
 			case "checkout.session.completed":
@@ -69,7 +60,7 @@ export async function POST(request: NextRequest) {
 				break;
 
 			default:
-				console.log(`Unhandled event type: ${event.type}`);
+				// Unhandled event type
 		}
 
 		return NextResponse.json({ received: true });
@@ -99,7 +90,6 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 	const planName = subscription.metadata?.planName;
 
 	if (!userId) {
-		console.error("No userId found in subscription metadata");
 		return;
 	}
 
@@ -110,7 +100,6 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 	});
 
 	if (!adminUser || !adminUser.tenantId) {
-		console.error("Admin user not found or not associated with a tenant");
 		return;
 	}
 
@@ -122,8 +111,6 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 	const currentPeriodEnd = subscriptionWithPeriod.current_period_end
 		? new Date(subscriptionWithPeriod.current_period_end * 1000)
 		: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
-
-	console.log(`Current period end: ${currentPeriodEnd.toISOString()}`);
 
 	// Update all users in the tenant with the new subscription status
 	await prisma.user.updateMany({
@@ -143,8 +130,6 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 			stripeSubscriptionId: subscription.id,
 		},
 	});
-
-	console.log(`Updated all users in tenant ${adminUser.tenantId} to ${planName} plan`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -159,7 +144,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 	});
 
 	if (!adminUser || !adminUser.tenantId) {
-		console.error("Admin user not found or not associated with a tenant");
 		return;
 	}
 
@@ -180,16 +164,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 			subscriptionCurrentPeriodEnd: currentPeriodEnd,
 		},
 	});
-
-	console.log(`Updated all users in tenant ${adminUser.tenantId} to canceled status`);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 	// Handle successful payment
-	console.log("Payment succeeded for invoice:", invoice.id);
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
 	// Handle failed payment
-	console.log("Payment failed for invoice:", invoice.id);
 }

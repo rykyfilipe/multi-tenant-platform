@@ -213,8 +213,8 @@ export default function PlanLimitsDisplay() {
 													{LIMIT_LABELS[key as keyof PlanLimits]}
 												</span>
 												<p className='text-xs text-gray-500'>
-													Used {storageData.used.toFixed(3)} of{" "}
-													{storageData.total} GB
+													Used {(storageData.used || 0).toFixed(3)} of{" "}
+													{storageData.total || 0} GB
 												</p>
 											</div>
 										</div>
@@ -227,7 +227,7 @@ export default function PlanLimitsDisplay() {
 														? "text-yellow-600"
 														: "text-gray-900"
 												}`}>
-												{storageData.used.toFixed(3)} / {storageData.total} GB
+												{(storageData.used || 0).toFixed(3)} / {storageData.total || 0} GB
 											</span>
 										</div>
 									</div>

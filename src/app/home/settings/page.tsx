@@ -66,10 +66,8 @@ function Page() {
 		}
 	};
 
-	console.log("Settings page user:", user);
-
 	useEffect(() => {
-		console.log("User changed:", user);
+		// User changed
 	}, [user]);
 
 	const currentPlan = subscription?.subscriptionPlan || "Starter";

@@ -101,7 +101,7 @@ export function handleApiError(error: unknown): NextResponse {
 
 	// Log unexpected errors in development
 	if (process.env.NODE_ENV === "development") {
-		console.error("Unexpected error:", error);
+		// Unexpected error logged
 	}
 
 	// Return generic error for production

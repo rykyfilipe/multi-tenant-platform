@@ -8,7 +8,7 @@ const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
 if (!cloudName || !apiKey || !apiSecret) {
-  console.warn('Cloudinary configuration is missing. Image uploads will be disabled.');
+  // Cloudinary configuration is missing. Image uploads will be disabled.
 }
 
 cloudinary.config({

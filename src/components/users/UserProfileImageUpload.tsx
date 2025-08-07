@@ -33,10 +33,10 @@ export function UserProfileImageUpload({
 	userName,
 	onImageUpdate,
 }: UserProfileImageUploadProps) {
-	console.log("UserProfileImageUpload props:", { userId, currentImage, userName });
-
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(
+		currentImage || null,
+	);
 	const [uploading, setUploading] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState(false);
@@ -288,4 +288,4 @@ export function UserProfileImageUpload({
 			</CardContent>
 		</Card>
 	);
-} 
+}

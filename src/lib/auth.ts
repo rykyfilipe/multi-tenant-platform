@@ -80,7 +80,6 @@ export const authOptions = {
 						image: user.profileImage || undefined,
 					};
 				} catch (error) {
-					console.error("Error in authorize:", error);
 					return null;
 				}
 			},
@@ -135,7 +134,6 @@ export const authOptions = {
 						});
 					}
 				} catch (error) {
-					console.error("Error creating/checking user:", error);
 					return false; // Prevent sign in on error
 				}
 			}
@@ -192,7 +190,7 @@ export const authOptions = {
 							token.customJWT = generateToken(payload, "7d");
 						}
 					} catch (error) {
-						console.error("Error fetching Google user data:", error);
+						// Error fetching Google user data
 					}
 				}
 
@@ -206,7 +204,7 @@ export const authOptions = {
 
 						token.customJWT = generateToken(payload, "7d");
 					} catch (error) {
-						console.error("Error regenerating token:", error);
+						// Error regenerating token
 					}
 				}
 
@@ -231,7 +229,7 @@ export const authOptions = {
 							token.profileImage = dbUser.profileImage || undefined;
 						}
 					} catch (error) {
-						console.error("Error fetching subscription data:", error);
+						// Error fetching subscription data
 					}
 				}
 

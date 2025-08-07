@@ -77,15 +77,20 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 					<div className='space-y-2'>
 						<div className='flex items-center justify-between'>
 							<span className='text-sm text-muted-foreground'>
-								{data.memory.used < 1 
-									? `${(data.memory.used * 1024).toFixed(1)} / ${(data.memory.total * 1024).toFixed(0)} KB`
-									: data.memory.used < 1024
-									? `${data.memory.used.toFixed(1)} / ${data.memory.total.toFixed(0)} MB`
-									: `${(data.memory.used / 1024).toFixed(2)} / ${(data.memory.total / 1024).toFixed(1)} GB`
-								}
+								{(data.memory.used || 0) < 1
+									? `${((data.memory.used || 0) * 1024).toFixed(1)} / ${(
+											(data.memory.total || 0) * 1024
+									  ).toFixed(0)} KB`
+									: (data.memory.used || 0) < 1024
+									? `${(data.memory.used || 0).toFixed(1)} / ${(
+											data.memory.total || 0
+									  ).toFixed(0)} MB`
+									: `${((data.memory.used || 0) / 1024).toFixed(2)} / ${(
+											(data.memory.total || 0) / 1024
+									  ).toFixed(1)} GB`}
 							</span>
 							<span className='text-sm font-medium'>
-								{memoryPercentage.toFixed(1)}%
+								{(memoryPercentage || 0).toFixed(1)}%
 							</span>
 						</div>
 						<Progress
@@ -123,7 +128,7 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 								{data.tables.total.toLocaleString()}
 							</span>
 							<span className='text-sm font-medium'>
-								{tablesPercentage.toFixed(1)}%
+								{(tablesPercentage || 0).toFixed(1)}%
 							</span>
 						</div>
 						<Progress
@@ -151,7 +156,7 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 								{data.rows.total.toLocaleString()}
 							</span>
 							<span className='text-sm font-medium'>
-								{rowsPercentage.toFixed(1)}%
+								{(rowsPercentage || 0).toFixed(1)}%
 							</span>
 						</div>
 						<Progress
@@ -178,7 +183,7 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 								{data.databases.used} / {data.databases.total}
 							</span>
 							<span className='text-sm font-medium'>
-								{databasesPercentage.toFixed(1)}%
+								{(databasesPercentage || 0).toFixed(1)}%
 							</span>
 						</div>
 						<Progress

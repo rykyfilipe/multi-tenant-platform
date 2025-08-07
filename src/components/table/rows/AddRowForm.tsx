@@ -188,11 +188,7 @@ const createReferenceData = (tables: Table[] | null) => {
 		referenceData[table.id] = options;
 
 		if (process.env.NODE_ENV === "development") {
-			console.log(
-				`createReferenceData - Table ${table.name} (ID: ${table.id}):`,
-				options.length,
-				"options",
-			);
+			// Development logging
 		}
 	});
 
@@ -269,10 +265,9 @@ export function AddRowForm({
 	// Render field based on column type
 	const renderField = useCallback(
 		(column: Column) => {
-			if (!column) {
-				console.warn("AddRowForm - Column is null or undefined");
-				return null;
-			}
+					if (!column) {
+			return null;
+		}
 			const cellValue = getCellValue(column.id);
 			const hasError = formValidation.errors.some((error) =>
 				error.includes(column.name),

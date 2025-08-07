@@ -20,9 +20,7 @@ export async function POST(request: NextRequest) {
 
 		const { priceId, planName } = await request.json();
 
-		console.log(
-			`Creating checkout session for user ${session.user.id} - ${planName} plan`,
-		);
+		// Creating checkout session
 
 		if (!priceId) {
 			return NextResponse.json(
@@ -75,11 +73,8 @@ export async function POST(request: NextRequest) {
 			},
 		});
 
-		console.log(`Checkout session created: ${checkoutSession.id}`);
-
 		return NextResponse.json({ sessionId: checkoutSession.id });
 	} catch (error) {
-		console.error("Error creating checkout session:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },
