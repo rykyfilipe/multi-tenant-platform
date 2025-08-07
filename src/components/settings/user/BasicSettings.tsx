@@ -66,10 +66,10 @@ function BasicSettings({ user }: Props) {
 	const handleSave = async (field: EditableField) => {
 		if (field) {
 			await updateField(field, editedValues[field]);
-			setUser((prev: any) => ({
-				...prev,
+			setUser({
+				...user,
 				[field]: editedValues[field],
-			}));
+			});
 			setEditingField(null);
 		}
 	};

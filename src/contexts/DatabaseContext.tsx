@@ -12,6 +12,7 @@ import {
 import { Table, Database } from "@/types/database";
 import { useApp } from "./AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
+import { useSession } from "next-auth/react";
 
 interface DatabaseContextType {
 	token: string | null;
@@ -61,6 +62,7 @@ export const DatabaseProvider = ({
 }) => {
 	const { token, user, loading, showAlert, tenant, setLoading } = useApp();
 	const { handleApiError } = usePlanLimitError();
+	const { data: session } = useSession();
 	const tenantId = tenant?.id;
 
 	const [databases, setDatabases] = useState<Database[] | null>(null);
@@ -236,7 +238,7 @@ export const DatabaseProvider = ({
 			if (limitsResponse.ok) {
 				const limitsData = await limitsResponse.json();
 				const currentTables = limitsData.tables || 0;
-				const currentPlan = user?.subscription?.plan || "Starter";
+				const currentPlan = session?.subscription?.plan || "Starter";
 
 				// Import plan constants
 				const { PLAN_LIMITS } = await import("@/lib/planConstants");
