@@ -240,7 +240,7 @@ export const authOptions = {
 
 				return token;
 			} catch (error) {
-				console.error("Error in JWT callback:", error);
+				// Error in JWT callback
 				return token;
 			}
 		},
@@ -276,7 +276,7 @@ export const authOptions = {
 
 				return session;
 			} catch (error) {
-				console.error("Error in session callback:", error);
+				// Error in session callback
 				return session;
 			}
 		},

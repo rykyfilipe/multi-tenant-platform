@@ -57,6 +57,26 @@ const LIMIT_LABELS = {
 	rows: "Rows",
 };
 
+// Helper function to format storage display
+const formatStorageDisplay = (used: number, total: number) => {
+	if (used < 1) {
+		return {
+			used: `${(used * 1024).toFixed(1)} KB`,
+			total: `${(total * 1024).toFixed(0)} KB`,
+		};
+	} else if (used < 1024) {
+		return {
+			used: `${used.toFixed(1)} MB`,
+			total: `${total.toFixed(0)} MB`,
+		};
+	} else {
+		return {
+			used: `${(used / 1024).toFixed(2)} GB`,
+			total: `${(total / 1024).toFixed(1)} GB`,
+		};
+	}
+};
+
 export default function PlanLimitsDisplay() {
 	const { data: session } = useSession();
 	const [currentCounts, setCurrentCounts] = useState<CurrentCounts | null>(
@@ -97,8 +117,8 @@ export default function PlanLimitsDisplay() {
 				const memoryInfo = memoryData.success
 					? memoryData.data
 					: {
-							usedGB: 0,
-							limitGB: planLimits.storage / 1024, // Convert MB to GB
+							usedMB: 0,
+							limitMB: planLimits.storage, // Already in MB
 							percentage: 0,
 							isNearLimit: false,
 							isOverLimit: false,
@@ -107,8 +127,8 @@ export default function PlanLimitsDisplay() {
 				setCurrentCounts({
 					...limitsData,
 					storage: {
-						used: memoryInfo.usedGB,
-						total: memoryInfo.limitGB,
+						used: memoryInfo.usedMB,
+						total: memoryInfo.limitMB,
 						percentage: memoryInfo.percentage,
 						isNearLimit: memoryInfo.isNearLimit,
 						isOverLimit: memoryInfo.isOverLimit,
@@ -183,6 +203,10 @@ export default function PlanLimitsDisplay() {
 							const Icon = LIMIT_ICONS[key as keyof typeof LIMIT_ICONS];
 							const isAtLimit = storageData.isOverLimit;
 							const isNearLimit = storageData.isNearLimit;
+							const storageDisplay = formatStorageDisplay(
+								storageData.used || 0,
+								storageData.total || 0,
+							);
 
 							return (
 								<div
@@ -213,8 +237,7 @@ export default function PlanLimitsDisplay() {
 													{LIMIT_LABELS[key as keyof PlanLimits]}
 												</span>
 												<p className='text-xs text-gray-500'>
-													Used {(storageData.used || 0).toFixed(3)} of{" "}
-													{storageData.total || 0} GB
+													Used {storageDisplay.used} of {storageDisplay.total}
 												</p>
 											</div>
 										</div>
@@ -227,7 +250,7 @@ export default function PlanLimitsDisplay() {
 														? "text-yellow-600"
 														: "text-gray-900"
 												}`}>
-												{(storageData.used || 0).toFixed(3)} / {storageData.total || 0} GB
+												{storageDisplay.used} / {storageDisplay.total}
 											</span>
 										</div>
 									</div>

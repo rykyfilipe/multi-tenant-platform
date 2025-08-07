@@ -58,7 +58,7 @@ function Page() {
 				if (memoryData.success) {
 					setTenantStats((prev) => ({
 						...prev,
-						storage: memoryData.data.usedGB,
+						storage: memoryData.data.usedMB,
 						users: limitsData.users,
 						databases: limitsData.databases,
 						tables: limitsData.tables,
