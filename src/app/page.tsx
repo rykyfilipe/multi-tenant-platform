@@ -77,7 +77,9 @@ const DataHubLandingPage = () => {
 		}
 
 		if (!isAdmin) {
-			alert("Only administrators can modify subscription plans. Please contact your administrator.");
+			alert(
+				"Only administrators can modify subscription plans. Please contact your administrator.",
+			);
 			return;
 		}
 
@@ -917,11 +919,11 @@ const DataHubLandingPage = () => {
 											disabled={
 												isCurrentPlan ||
 												(!plan.priceId && plan.name !== "Starter") ||
-												(!isAdmin && plan.name !== "Starter")
+												(!isAdmin && plan.name !== "Starter" && !!session)
 											}>
 											{isCurrentPlan
 												? "Current Plan"
-												: !isAdmin && plan.name !== "Starter"
+												: !isAdmin && plan.name !== "Starter" && session
 												? "Admin Only"
 												: plan.name === "Starter"
 												? "Get Started Free"

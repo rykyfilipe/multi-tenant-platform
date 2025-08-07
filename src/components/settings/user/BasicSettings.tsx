@@ -87,7 +87,7 @@ function BasicSettings({ user }: Props) {
 		<div className='space-y-2'>
 			<Label className='text-sm font-medium text-gray-700'>{label}</Label>
 			{editingField === field ? (
-				<div className='flex items-center gap-2'>
+				<div className='flex items-center gap-2 md:flex-col'>
 					<Input
 						autoFocus
 						value={editedValues[field!]}
@@ -170,7 +170,7 @@ function BasicSettings({ user }: Props) {
 	return (
 		<div className='space-y-6'>
 			{/* Personal Information */}
-			<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+			<div className='grid grid-cols-1 max-lg:grid-cols-2 gap-6'>
 				{renderField("First Name", "firstName")}
 				{renderField("Last Name", "lastName")}
 			</div>
