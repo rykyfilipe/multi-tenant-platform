@@ -37,7 +37,7 @@ import TourResetButton from "@/components/TourResetButton";
 
 function Page() {
 	const { data: session } = useSession();
-	const { user, setUser, showAlert } = useApp();
+	const { user, setUser, showAlert, loading } = useApp();
 	const { subscription, loading: subscriptionLoading } = useSubscription();
 	const { data: dashboardData, loading: dashboardLoading } = useDashboardData();
 	const [activeTab, setActiveTab] = useState("profile");
@@ -68,6 +68,18 @@ function Page() {
 
 	const currentPlan = subscription?.subscriptionPlan || "Starter";
 	const isSubscribed = subscription?.subscriptionStatus === "active";
+
+	// Show loading state if session is not available, user data is not available, or still loading
+	if (!session || loading || !user) {
+		return (
+			<div className='h-full bg-background flex items-center justify-center'>
+				<div className='text-center'>
+					<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4'></div>
+					<p className='text-muted-foreground'>Loading settings...</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<TourProv
@@ -214,9 +226,13 @@ function Page() {
 											</CardHeader>
 											<CardContent>
 												<ProfileImageUpload
-													userId={user?.id?.toString() || ""}
-													currentImage={user?.profileImage}
-													userName={`${user?.firstName} ${user?.lastName}`}
+													userId={user.id.toString()}
+													currentImage={user.profileImage}
+													userName={
+														`${user.firstName || ""} ${
+															user.lastName || ""
+														}`.trim() || "User"
+													}
 													onImageUpdate={handleImageUpdate}
 												/>
 											</CardContent>
