@@ -373,7 +373,13 @@ export async function GET(
 			},
 		});
 
-		return NextResponse.json(rows);
+		// Sortăm coloanele după ordine în aplicație
+		const sortedRows = rows.map((row) => ({
+			...row,
+			cells: row.cells.sort((a, b) => a.column.order - b.column.order),
+		}));
+
+		return NextResponse.json(sortedRows);
 	} catch (error) {
 		console.error("Error fetching rows:", error);
 		return NextResponse.json(

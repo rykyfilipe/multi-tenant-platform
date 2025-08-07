@@ -57,7 +57,7 @@ export async function sendInvitationEmail(
             <h2 style="color: #333; margin-top: 0;">You've been invited!</h2>
             
             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-              Hello ${firstName} ${lastName},
+              Hello${firstName && lastName ? ` ${firstName} ${lastName}` : ""},
             </p>
             
             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">

@@ -444,6 +444,7 @@ export function AddRowForm({
 					);
 
 				case "string":
+				case "text":
 				default:
 					return (
 						<div key={`field-${column.id}`} className={divClassName}>

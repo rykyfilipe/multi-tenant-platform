@@ -27,6 +27,8 @@ import {
 	Filter,
 	SortAsc,
 	SortDesc,
+	Bookmark,
+	RotateCcw,
 } from "lucide-react";
 
 export default function HelpCenterPage() {
@@ -54,10 +56,11 @@ export default function HelpCenterPage() {
 
 			{/* Main Content */}
 			<Tabs defaultValue='getting-started' className='space-y-6'>
-				<TabsList className='grid w-full grid-cols-2 lg:grid-cols-6'>
+				<TabsList className='grid w-full grid-cols-2 lg:grid-cols-7'>
 					<TabsTrigger value='getting-started'>Getting Started</TabsTrigger>
 					<TabsTrigger value='databases'>Databases</TabsTrigger>
 					<TabsTrigger value='tables'>Tables</TabsTrigger>
+					<TabsTrigger value='filters'>Filters</TabsTrigger>
 					<TabsTrigger value='users'>Users & Permissions</TabsTrigger>
 					<TabsTrigger value='api'>API & Integration</TabsTrigger>
 					<TabsTrigger value='advanced'>Advanced</TabsTrigger>
@@ -329,7 +332,9 @@ export default function HelpCenterPage() {
 										</div>
 										<div className='flex items-center gap-2'>
 											<Filter className='w-4 h-4 text-purple-500' />
-											<span className='text-sm'>Filter and sort data</span>
+											<span className='text-sm'>
+												Advanced filtering and search
+											</span>
 										</div>
 										<div className='flex items-center gap-2'>
 											<Upload className='w-4 h-4 text-orange-500' />
@@ -348,6 +353,245 @@ export default function HelpCenterPage() {
 									table public, click the globe icon on the table card and
 									toggle the visibility setting.
 								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* Filters */}
+				<TabsContent value='filters' className='space-y-6'>
+					<Card>
+						<CardHeader>
+							<CardTitle className='flex items-center gap-2'>
+								<Filter className='w-5 h-5' />
+								Advanced Data Filtering
+							</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-6'>
+							<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+								<div className='space-y-4'>
+									<h3 className='text-lg font-semibold'>
+										Getting Started with Filters
+									</h3>
+									<div className='space-y-3'>
+										<div className='flex items-center gap-2'>
+											<Filter className='w-4 h-4 text-blue-500' />
+											<span className='text-sm'>
+												Click the "Filters" button in the top-right corner
+											</span>
+										</div>
+										<div className='flex items-center gap-2'>
+											<Plus className='w-4 h-4 text-green-500' />
+											<span className='text-sm'>
+												Add new filters by clicking "Add Filter"
+											</span>
+										</div>
+										<div className='flex items-center gap-2'>
+											<Search className='w-4 h-4 text-purple-500' />
+											<span className='text-sm'>
+												Use global search to find data across all columns
+											</span>
+										</div>
+										<div className='flex items-center gap-2'>
+											<Bookmark className='w-4 h-4 text-orange-500' />
+											<span className='text-sm'>
+												Save filter presets for quick access
+											</span>
+										</div>
+									</div>
+								</div>
+
+								<div className='space-y-4'>
+									<h3 className='text-lg font-semibold'>Filter Features</h3>
+									<div className='space-y-3'>
+										<div className='flex items-center gap-2'>
+											<Search className='w-4 h-4 text-blue-500' />
+											<span className='text-sm'>
+												Global search across all columns
+											</span>
+										</div>
+										<div className='flex items-center gap-2'>
+											<Filter className='w-4 h-4 text-green-500' />
+											<span className='text-sm'>
+												Multiple filter conditions
+											</span>
+										</div>
+										<div className='flex items-center gap-2'>
+											<Bookmark className='w-4 h-4 text-purple-500' />
+											<span className='text-sm'>
+												Save and load filter presets
+											</span>
+										</div>
+										<div className='flex items-center gap-2'>
+											<RotateCcw className='w-4 h-4 text-orange-500' />
+											<span className='text-sm'>
+												Quick filter reset and clear
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div className='space-y-6'>
+								<h3 className='text-lg font-semibold'>
+									Filter Operators by Data Type
+								</h3>
+
+								{/* Text Filters */}
+								<div className='space-y-4'>
+									<h4 className='text-md font-semibold text-blue-600'>
+										Text Filters
+									</h4>
+									<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+										<div className='space-y-2'>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Contains</span>
+												<Badge variant='outline'>Text contains value</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Does not contain</span>
+												<Badge variant='outline'>Text excludes value</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Equals</span>
+												<Badge variant='outline'>Exact match</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Does not equal</span>
+												<Badge variant='outline'>Not exact match</Badge>
+											</div>
+										</div>
+										<div className='space-y-2'>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Starts with</span>
+												<Badge variant='outline'>Text begins with</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Ends with</span>
+												<Badge variant='outline'>Text ends with</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Matches regex</span>
+												<Badge variant='outline'>Regular expression</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Is empty/not empty</span>
+												<Badge variant='outline'>Null value check</Badge>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								{/* Number Filters */}
+								<div className='space-y-4'>
+									<h4 className='text-md font-semibold text-green-600'>
+										Number Filters
+									</h4>
+									<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+										<div className='space-y-2'>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Equals</span>
+												<Badge variant='outline'>Exact number</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Greater than</span>
+												<Badge variant='outline'>Above value</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Greater than or equal</span>
+												<Badge variant='outline'>Above or equal</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Less than</span>
+												<Badge variant='outline'>Below value</Badge>
+											</div>
+										</div>
+										<div className='space-y-2'>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Less than or equal</span>
+												<Badge variant='outline'>Below or equal</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Between</span>
+												<Badge variant='outline'>Range (inclusive)</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Not between</span>
+												<Badge variant='outline'>Outside range</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Is empty/not empty</span>
+												<Badge variant='outline'>Null value check</Badge>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								{/* Date Filters */}
+								<div className='space-y-4'>
+									<h4 className='text-md font-semibold text-purple-600'>
+										Date Filters
+									</h4>
+									<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+										<div className='space-y-2'>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Equals</span>
+												<Badge variant='outline'>Exact date</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Before</span>
+												<Badge variant='outline'>Earlier than</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>After</span>
+												<Badge variant='outline'>Later than</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Between</span>
+												<Badge variant='outline'>Date range</Badge>
+											</div>
+										</div>
+										<div className='space-y-2'>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Today</span>
+												<Badge variant='outline'>Current date</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Yesterday</span>
+												<Badge variant='outline'>Previous day</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>This week/month/year</span>
+												<Badge variant='outline'>Current period</Badge>
+											</div>
+											<div className='flex items-center justify-between'>
+												<span className='text-sm'>Is empty/not empty</span>
+												<Badge variant='outline'>Null value check</Badge>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div className='bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg'>
+								<h4 className='font-semibold text-blue-800 mb-2'>
+									Filter Tips
+								</h4>
+								<div className='text-blue-700 text-sm space-y-2'>
+									<p>• Use multiple filters to create complex queries</p>
+									<p>
+										• Save frequently used filters as presets for quick access
+									</p>
+									<p>• Use regex patterns for advanced text matching</p>
+									<p>
+										• Date filters like "Today" and "This week" update
+										automatically
+									</p>
+									<p>
+										• Combine global search with column filters for precise
+										results
+									</p>
+								</div>
 							</div>
 						</CardContent>
 					</Card>
@@ -630,6 +874,17 @@ export default function HelpCenterPage() {
 								Yes, you can import data from CSV and JSON files. Go to the
 								table view and use the import functionality to upload your data
 								files.
+							</p>
+						</div>
+						<div className='border-b border-border pb-4'>
+							<h4 className='font-semibold mb-2'>
+								How do I use advanced filtering?
+							</h4>
+							<p className='text-sm text-muted-foreground'>
+								Click the "Filters" button in the top-right corner of any table
+								view. You can add multiple filters, use global search, save
+								presets, and apply different operators based on data types
+								(text, numbers, dates).
 							</p>
 						</div>
 						<div className='border-b border-border pb-4'>

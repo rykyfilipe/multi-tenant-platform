@@ -120,6 +120,11 @@ export const useDashboardData = () => {
 					},
 				});
 
+				// Check if all responses are ok
+				if (!databasesResponse.ok || !usersResponse.ok || !memoryResponse.ok) {
+					throw new Error("Failed to fetch dashboard data");
+				}
+
 				const [databasesData, usersData, memoryData] = await Promise.all([
 					databasesResponse.json(),
 					usersResponse.json(),
@@ -160,7 +165,8 @@ export const useDashboardData = () => {
 				}
 				// Pentru moment, considerăm toți utilizatorii ca fiind activi
 				// În viitor, putem adăuga un câmp status în baza de date
-				const activeUsers = users.length;
+				// Include administratorul curent în calcul (API-ul îl exclude din listă)
+				const activeUsers = users.length + 1;
 
 				// Get plan limits based on subscription
 				const planLimits = getPlanLimits(
@@ -184,7 +190,7 @@ export const useDashboardData = () => {
 					stats: {
 						totalDatabases: databases.length,
 						totalTables,
-						totalUsers: users.length,
+						totalUsers: users.length + 1, // Include administratorul curent
 						totalRows,
 						activeUsers,
 						subscriptionStatus:
@@ -227,7 +233,7 @@ export const useDashboardData = () => {
 							status: "online", // Pentru moment, toți sunt online
 						})),
 						activeUsers,
-						totalUsers: users.length,
+						totalUsers: users.length + 1, // Include administratorul curent
 					},
 					usageData: {
 						storage: {
@@ -248,7 +254,7 @@ export const useDashboardData = () => {
 							total: planLimits.databases,
 						},
 						users: {
-							used: users.length,
+							used: users.length + 1, // Include administratorul curent
 							total: planLimits.users,
 						},
 						memory: {

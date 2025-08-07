@@ -11,6 +11,9 @@ import { ApiDocumentation } from "@/components/public-api/ApiDocumentation";
 import { CreateTokenModal } from "@/components/public-api/CreateTokenModal";
 import { ApiLoadingState } from "@/components/ui/loading-states";
 import Loading from "@/components/loading";
+import TourProv from "@/contexts/TourProvider";
+import { useTour } from "@reactour/tour";
+import { publicApiTourSteps, tourUtils } from "@/lib/tour-config";
 
 type ApiToken = {
 	id: string;
@@ -38,6 +41,24 @@ const ApiTokensPage = () => {
 
 	const { token, showAlert } = useApp();
 	const { handleApiError } = usePlanLimitError();
+	const { setIsOpen, setCurrentStep } = useTour();
+
+	const startTour = () => {
+		setCurrentStep(0);
+		setIsOpen(true);
+	};
+
+	useEffect(() => {
+		const hasSeenTour = tourUtils.isTourSeen("public-api");
+		if (!hasSeenTour && !loading && tokens.length > 0) {
+			// Start tour after data is loaded
+			const timer = setTimeout(() => {
+				startTour();
+			}, 1000);
+			
+			return () => clearTimeout(timer);
+		}
+	}, [loading, tokens]);
 
 	// Fetch user tokens
 	const fetchTokens = useCallback(async () => {
@@ -99,13 +120,12 @@ const ApiTokensPage = () => {
 				return;
 			}
 
-			const result = await res.json();
-
-			setTokens((prev) => [...prev, result]);
+			const newToken = await res.json();
+			setTokens((prev) => [...prev, newToken]);
 			setShowCreateModal(false);
 			showAlert("API token created successfully", "success");
 		} catch (err: any) {
-			showAlert(err.message || "Unknown error", "error");
+			showAlert(err.message || "Failed to create token", "error");
 		} finally {
 			setLoading(false);
 		}
@@ -118,16 +138,24 @@ const ApiTokensPage = () => {
 				method: "DELETE",
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			if (!res.ok) throw new Error("Failed to revoke token");
 
-			// Refresh the tokens list to get updated data
-			refreshTokens();
+			if (!res.ok) {
+				handleApiError(res);
+				return;
+			}
+
+			setTokens((prev) =>
+				prev.map((token) =>
+					token.id === tokenId ? { ...token, revoked: true } : token,
+				),
+			);
 			showAlert("Token revoked successfully", "success");
 		} catch (err: any) {
-			showAlert(err.message || "Unknown error", "error");
+			showAlert(err.message || "Failed to revoke token", "error");
 		}
 	};
 
+	// Toggle token visibility
 	const toggleTokenVisibility = (tokenId: string) => {
 		setVisibleTokens((prev) => {
 			const newSet = new Set(prev);
@@ -140,48 +168,81 @@ const ApiTokensPage = () => {
 		});
 	};
 
+	// Copy to clipboard
 	const copyToClipboard = (text: string) => {
 		navigator.clipboard.writeText(text);
+		showAlert("Copied to clipboard", "success");
 	};
 
 	if (loading && tokens.length === 0) {
-		return <Loading message='API tokens' />;
+		return <ApiLoadingState />;
 	}
 
 	return (
-		<div className='h-full bg-background'>
-			{/* Header */}
-			<ApiHeader
-				onCreateToken={() => setShowCreateModal(true)}
-				loading={loading}
-				tokenCount={tokens.length}
-			/>
+		<TourProv
+			steps={publicApiTourSteps}
+			onTourComplete={() => {
+				tourUtils.markTourSeen("public-api");
+			}}
+			onTourSkip={() => {
+				tourUtils.markTourSeen("public-api");
+			}}>
+			<div className='h-full bg-background'>
+				{/* Header */}
+				<div className='api-header border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
+					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 gap-4'>
+						<div>
+							<h1 className='text-xl font-semibold text-foreground'>
+								Public API
+							</h1>
+							<p className='text-sm text-muted-foreground'>
+								Manage API tokens and access documentation
+							</p>
+						</div>
+						<div className='flex items-center space-x-2'>
+							<button
+								onClick={refreshTokens}
+								className='text-sm text-muted-foreground hover:text-foreground transition-colors'>
+								Refresh
+							</button>
+						</div>
+					</div>
+				</div>
 
-			{/* Main Content */}
-			<div className='p-4 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6'>
-				{/* Tokens List */}
-				<TokensList
-					tokens={tokens}
-					loading={loading}
-					visibleTokens={visibleTokens}
-					onCreateToken={() => setShowCreateModal(true)}
-					onToggleTokenVisibility={toggleTokenVisibility}
-					onCopyToken={copyToClipboard}
-					onRevokeToken={revokeToken}
-				/>
+				{/* Main Content */}
+				<div className='p-6 max-w-7xl mx-auto'>
+					<div className='space-y-6'>
+						{/* API Header Component */}
+						<ApiHeader />
 
-				{/* API Documentation */}
-				<ApiDocumentation />
+						{/* Tokens Section */}
+						<div className='tokens-list'>
+							<TokensList
+								tokens={tokens}
+								onRevoke={revokeToken}
+								onToggleVisibility={toggleTokenVisibility}
+								onCopy={copyToClipboard}
+								visibleTokens={visibleTokens}
+								onCreateNew={() => setShowCreateModal(true)}
+							/>
+						</div>
+
+						{/* API Documentation */}
+						<div className='api-documentation'>
+							<ApiDocumentation />
+						</div>
+					</div>
+				</div>
 
 				{/* Create Token Modal */}
-				{showCreateModal && (
-					<CreateTokenModal
-						onClose={() => setShowCreateModal(false)}
-						onCreate={createToken}
-					/>
-				)}
+				<CreateTokenModal
+					isOpen={showCreateModal}
+					onClose={() => setShowCreateModal(false)}
+					onCreate={createToken}
+					loading={loading}
+				/>
 			</div>
-		</div>
+		</TourProv>
 	);
 };
 

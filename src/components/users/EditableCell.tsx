@@ -13,7 +13,6 @@ import {
 } from "../ui/select";
 import { Button } from "../ui/button";
 import { Role, User } from "@/types/user";
-import { fi } from "date-fns/locale";
 import { useApp } from "@/contexts/AppContext";
 
 interface Props {
@@ -139,9 +138,8 @@ export function EditableCell({
 
 	return (
 		<div
-			onDoubleClick={onStartEdit}
-			title='Double-click to edit'
-			className={`cursor-pointer select-none hover:bg-muted/30 px-2 py-1 rounded transition-colors ${
+			title='User information is read-only'
+			className={`select-none px-2 py-1 rounded transition-colors ${
 				display === "Empty" ? "text-muted-foreground italic" : "text-foreground"
 			}`}>
 			{display}

@@ -77,6 +77,7 @@ export const authOptions = {
 						name: `${user.firstName} ${user.lastName}`,
 						role: user.role,
 						tenantId: user.tenantId?.toString() ?? null,
+						image: user.profileImage || undefined,
 					};
 				} catch (error) {
 					console.error("Error in authorize:", error);
@@ -158,6 +159,7 @@ export const authOptions = {
 					token.lastName = user.lastName;
 					token.role = user.role;
 					token.tenantId = user.tenantId;
+					token.profileImage = (user as any).profileImage || undefined;
 
 					const payload = {
 						userId: Number(user.id),
@@ -180,6 +182,7 @@ export const authOptions = {
 							token.lastName = dbUser.lastName;
 							token.role = dbUser.role;
 							token.tenantId = dbUser.tenantId?.toString() ?? null;
+							token.profileImage = dbUser.profileImage || undefined;
 
 							const payload = {
 								userId: dbUser.id,
@@ -216,6 +219,7 @@ export const authOptions = {
 								subscriptionStatus: true,
 								subscriptionPlan: true,
 								subscriptionCurrentPeriodEnd: true,
+								profileImage: true,
 							},
 						});
 
@@ -224,6 +228,7 @@ export const authOptions = {
 							token.subscriptionPlan = dbUser.subscriptionPlan;
 							token.subscriptionCurrentPeriodEnd =
 								dbUser.subscriptionCurrentPeriodEnd;
+							token.profileImage = dbUser.profileImage || undefined;
 						}
 					} catch (error) {
 						console.error("Error fetching subscription data:", error);
@@ -255,6 +260,7 @@ export const authOptions = {
 							token.firstName && token.lastName
 								? `${token.firstName} ${token.lastName}`
 								: token.name || token.email || "",
+						image: (token.profileImage as string) || undefined,
 					};
 					session.accessToken = (token.accessToken as string) || "";
 					session.customJWT = (token.customJWT as string) || "";

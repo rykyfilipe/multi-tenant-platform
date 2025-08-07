@@ -2,7 +2,13 @@
 
 "use client";
 
-import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } from "react";
+import {
+	useState,
+	useEffect,
+	useImperativeHandle,
+	forwardRef,
+	useCallback,
+} from "react";
 import {
 	Card,
 	CardContent,
@@ -172,7 +178,7 @@ export const InvitationsList = forwardRef<
 							key={invitation.id}
 							className='flex items-center justify-between p-4 border rounded-lg'>
 							<div className='flex-1'>
-								<div className='flex items-center gap-3 mb-2'>
+								<div className='flex items-center gap-3 mb-2 flex-col sm:flex-row'>
 									<div>
 										<p className='font-medium'>
 											{invitation.firstName} {invitation.lastName}
@@ -181,8 +187,10 @@ export const InvitationsList = forwardRef<
 											{invitation.email}
 										</p>
 									</div>
-									<Badge variant='outline'>{invitation.role}</Badge>
-									{getStatusBadge(invitation)}
+									<div className='flex items-center gap-2'>
+										<Badge variant='outline'>{invitation.role}</Badge>
+										{getStatusBadge(invitation)}
+									</div>
 								</div>
 								<div className='flex items-center gap-4 text-xs text-muted-foreground'>
 									<span>

@@ -41,6 +41,7 @@ model User {
   password                     String?
   role                         Role
   tenantId                     Int?
+  profileImage                 String?
   stripeCustomerId             String?
   stripeSubscriptionId         String?
   subscriptionCurrentPeriodEnd DateTime?
@@ -88,6 +89,7 @@ model Column {
   tableId           Int
   referenceTableId  Int?
   customOptions     String[]           @default([])
+  order             Int                @default(0)
   cells             Cell[]
   referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
   table             Table              @relation(fields: [tableId], references: [id], onDelete: Cascade)

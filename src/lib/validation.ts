@@ -237,6 +237,7 @@ export function validateInput(
 				schema = tenantNameSchema;
 				break;
 			case "string":
+			case "text":
 				schema = stringValueSchema;
 				break;
 			case "number":

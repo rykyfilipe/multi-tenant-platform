@@ -10,10 +10,8 @@ import {
 	BarChart3,
 	Building2,
 	Zap,
-	Home,
 	LogOut,
 	User,
-	Shield,
 	Sun,
 	Moon,
 } from "lucide-react";

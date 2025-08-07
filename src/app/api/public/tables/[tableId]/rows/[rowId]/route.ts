@@ -88,7 +88,7 @@ export async function PATCH(
 
 			const baseType = col.type;
 			try {
-				if (baseType === "string") {
+				if (baseType === "string" || baseType === "text") {
 					z.string().min(1).parse(value);
 				} else if (baseType === "number") {
 					z.number().parse(value);

@@ -22,12 +22,13 @@ const ColumnSchema = z.object({
 		"date",
 		"reference",
 		"customArray",
-	]).transform((type) => type === "text" ? "string" : type), // Transform "text" to "string"
+	]), // Remove the transform - keep "text" as "text"
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
 	referenceTableId: z.number().optional(), // doar pt type "reference"
 	customOptions: z.array(z.string()).optional(), // doar pt type "customArray"
+	order: z.number().optional(), // Ordinea coloanei
 });
 
 const ColumnsSchema = z.object({
@@ -90,7 +91,6 @@ export async function POST(
 	try {
 		const body = await request.json();
 		const parsedData = ColumnsSchema.parse(body);
-
 
 		// Verificăm că baza de date există și aparține tenant-ului
 		const database = await prisma.database.findFirst({
@@ -195,7 +195,12 @@ export async function POST(
 
 		// Creăm coloanele
 		const createdColumns = [];
-		for (const columnData of parsedData.columns) {
+		for (let i = 0; i < parsedData.columns.length; i++) {
+			const columnData = parsedData.columns[i];
+			
+			// Calculăm ordinea - fie folosim ordinea specificată, fie o calculăm automat
+			const order = columnData.order !== undefined ? columnData.order : table.columns.length + i;
+			
 			const column = await prisma.column.create({
 				data: {
 					name: columnData.name,
@@ -204,6 +209,7 @@ export async function POST(
 					primary: columnData.primary || false,
 					referenceTableId: columnData.referenceTableId || null,
 					customOptions: columnData.customOptions || undefined,
+					order: order,
 					tableId: Number(tableId),
 				},
 			});
@@ -310,7 +316,9 @@ export async function GET(
 			}
 		}
 
-		return NextResponse.json(table.columns);
+		// Sortăm coloanele după ordine
+		const sortedColumns = table.columns.sort((a, b) => a.order - b.order);
+		return NextResponse.json(sortedColumns);
 	} catch (error) {
 		console.error("Error fetching columns:", error);
 		return NextResponse.json(

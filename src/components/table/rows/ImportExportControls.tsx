@@ -208,7 +208,8 @@ function ImportExportControls({ columns, rows, table }: Props) {
 					// Validare tip pentru coloanele normale
 					const isValidType =
 						(col.type === "number" && typeof value === "number") ||
-						(col.type === "string" && typeof value === "string") ||
+						((col.type === "string" || col.type === "text") &&
+							typeof value === "string") ||
 						(col.type === "boolean" && typeof value === "boolean") ||
 						(col.type === "date" && !isNaN(Date.parse(value)));
 

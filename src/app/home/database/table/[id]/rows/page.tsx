@@ -8,8 +8,8 @@ import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import TourProv from "@/contexts/TourProvider";
 import useTable from "@/hooks/useTable";
-import { StepType } from "@reactour/tour";
 import { useParams } from "next/navigation";
+import { tourUtils } from "@/lib/tour-config";
 
 function Page() {
 	const params = useParams();
@@ -37,82 +37,15 @@ function Page() {
 	if (!table)
 		return <div className='p-4 text-red-500'>Failed to load table.</div>;
 
-	const steps: StepType[] = [
-		{
-			selector: ".add-row-button",
-			content: (
-				<div>
-					<h3 className='text-lg font-semibold mb-2'>Add Row Button</h3>
-					<p>Click this button to add a new row to the table.</p>
-				</div>
-			),
-			position: "bottom",
-			styles: {
-				popover: (base) => ({
-					...base,
-					borderRadius: "12px",
-					boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-				}),
-			},
-		},
-		{
-			selector: ".columns-button",
-			content: (
-				<div>
-					<h3 className='text-lg font-semibold mb-2'>Columns Editor</h3>
-					<p>Click this button to manage table's columns</p>
-				</div>
-			),
-			position: "top",
-			styles: {
-				popover: (base) => ({
-					...base,
-					borderRadius: "12px",
-					boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-				}),
-			},
-		},
-		{
-			selector: ".table-content",
-			content: (
-				<div>
-					<h3 className='text-lg font-semibold mb-2'>Rows Editor</h3>
-					<p>
-						This area displays all your table rows. You can view, edit, and
-						manage each row.
-					</p>
-				</div>
-			),
-			position: "top",
-			styles: {
-				popover: (base) => ({
-					...base,
-					borderRadius: "12px",
-					boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-				}),
-			},
-		},
-		{
-			selector: ".row-row",
-			content: (
-				<div>
-					<h3 className='text-lg font-semibold mb-2'>Editable row</h3>
-					<p>You can edit each cell by double click over it</p>
-				</div>
-			),
-			position: "top",
-			styles: {
-				popover: (base) => ({
-					...base,
-					borderRadius: "12px",
-					boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-				}),
-			},
-		},
-	];
-
 	return (
-		<TourProv steps={steps}>
+		<TourProv
+			steps={tourUtils.getRowsEditorTourSteps(true)} // Always show rows for now
+			onTourComplete={() => {
+				tourUtils.markTourSeen("rows-editor");
+			}}
+			onTourSkip={() => {
+				tourUtils.markTourSeen("rows-editor");
+			}}>
 			<div className='h-full bg-background p-4'>
 				<TableEditor
 					table={table}

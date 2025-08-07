@@ -54,7 +54,11 @@ export async function GET(
 					databaseId: Number(databaseId),
 				},
 				include: {
-					columns: true,
+					columns: {
+						orderBy: {
+							order: "asc",
+						},
+					},
 					rows: {
 						include: {
 							cells: true,
@@ -89,7 +93,11 @@ export async function GET(
 			include: {
 				table: {
 					include: {
-						columns: true,
+						columns: {
+							orderBy: {
+								order: "asc",
+							},
+						},
 						rows: {
 							include: {
 								cells: true,

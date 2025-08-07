@@ -14,16 +14,14 @@ import {
 	Menu,
 	ArrowRight,
 	Globe,
-	AlertTriangle,
 	LogOut,
 	Monitor,
 	Building2,
-	FileText,
 	Store,
 	Calendar,
 	Truck,
-	CreditCard,
 	ChartBar,
+	Filter,
 } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 import { useSession, signOut } from "next-auth/react";
@@ -204,6 +202,12 @@ const DataHubLandingPage = () => {
 			title: "Dynamic Schema Builder",
 			description:
 				"Create and modify database schemas without coding. Support for all major data types.",
+		},
+		{
+			icon: <Filter className='w-6 h-6' />,
+			title: "Advanced Data Filtering",
+			description:
+				"Powerful filtering with 20+ operators including regex, date ranges, and smart presets.",
 		},
 		{
 			icon: <Zap className='w-6 h-6' />,
@@ -616,6 +620,173 @@ const DataHubLandingPage = () => {
 								}}
 								className='text-lg px-8 py-3'>
 								Start Managing Data
+								<ArrowRight className='ml-2 w-5 h-5' />
+							</Button>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* Advanced Filtering Section */}
+			<section className='py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50/50 to-purple-50/50'>
+				<div className='max-w-7xl mx-auto'>
+					<div className='text-center mb-16'>
+						<h2 className='text-4xl md:text-5xl font-bold text-foreground mb-6'>
+							Advanced Data Filtering
+						</h2>
+						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
+							Find exactly what you need with our powerful filtering system.
+							From simple text searches to complex date ranges and regex
+							patterns.
+						</p>
+					</div>
+
+					<div className='grid grid-cols-1 md:grid-cols-3 gap-8 mb-12'>
+						<Card className='professional-card hover:scale-105 transition-all duration-500'>
+							<CardHeader>
+								<div className='p-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl w-fit mb-6 shadow-lg'>
+									<Filter className='w-6 h-6 text-blue-600' />
+								</div>
+								<CardTitle className='text-2xl font-bold'>
+									Text Filters
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className='text-base leading-relaxed mb-4'>
+									Advanced text filtering with 9 different operators
+								</CardDescription>
+								<div className='space-y-2'>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Contains & Does not contain
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Starts with & Ends with
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Regular expressions
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Empty/Non-empty checks
+										</span>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						<Card className='professional-card hover:scale-105 transition-all duration-500'>
+							<CardHeader>
+								<div className='p-4 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-2xl w-fit mb-6 shadow-lg'>
+									<BarChart3 className='w-6 h-6 text-green-600' />
+								</div>
+								<CardTitle className='text-2xl font-bold'>
+									Number Filters
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className='text-base leading-relaxed mb-4'>
+									Comprehensive numeric filtering with range support
+								</CardDescription>
+								<div className='space-y-2'>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Greater/Less than
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Between & Not between
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Equals & Not equals
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Null value detection
+										</span>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						<Card className='professional-card hover:scale-105 transition-all duration-500'>
+							<CardHeader>
+								<div className='p-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl w-fit mb-6 shadow-lg'>
+									<Calendar className='w-6 h-6 text-purple-600' />
+								</div>
+								<CardTitle className='text-2xl font-bold'>
+									Date Filters
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className='text-base leading-relaxed mb-4'>
+									Smart date filtering with automatic period detection
+								</CardDescription>
+								<div className='space-y-2'>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Today, Yesterday
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											This week/month/year
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Before/After dates
+										</span>
+									</div>
+									<div className='flex items-center text-sm'>
+										<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
+										<span className='text-muted-foreground'>
+											Date range filtering
+										</span>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+
+					<div className='text-center'>
+						<div className='bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8 border border-border/20'>
+							<h3 className='text-2xl font-bold text-foreground mb-4'>
+								Smart Filter Features
+							</h3>
+							<p className='text-lg text-muted-foreground mb-6 max-w-2xl mx-auto'>
+								Save filter presets, use global search, and combine multiple
+								conditions to find exactly what you need. Our filtering system
+								adapts to your data types automatically.
+							</p>
+							<Button
+								size='lg'
+								onClick={() => {
+									if (!session) setShowLoginModal(true);
+									else router.push("home/dashboard");
+								}}
+								className='text-lg px-8 py-3'>
+								Try Advanced Filtering
 								<ArrowRight className='ml-2 w-5 h-5' />
 							</Button>
 						</div>

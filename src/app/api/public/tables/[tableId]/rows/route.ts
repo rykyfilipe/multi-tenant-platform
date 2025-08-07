@@ -83,7 +83,7 @@ export async function POST(
 			const baseType = col.type;
 			try {
 				// Validare avansată în funcție de tip
-				if (baseType === "string") {
+				if (baseType === "string" || baseType === "text") {
 					z.string().min(1).parse(value);
 				} else if (baseType === "number") {
 					z.number().parse(value);

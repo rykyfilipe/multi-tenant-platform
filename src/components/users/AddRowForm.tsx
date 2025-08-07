@@ -27,12 +27,10 @@ interface Props {
 	serverError?: string | null; // Add server error prop
 }
 
-type FieldType = "string" | "number" | "boolean" | "date" | "role";
+type FieldType = "string" | "text" | "number" | "boolean" | "date" | "role";
 
 const userFieldTypes: Record<keyof UserSchema, FieldType> = {
 	email: "string",
-	firstName: "string",
-	lastName: "string",
 	role: "role",
 };
 
@@ -54,13 +52,12 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 			case "role":
 				return Object.values(Role).includes(value);
 			case "string":
+			case "text":
 			default:
-				// Match backend validation: email must be valid, firstName/lastName must be min 4 chars
+				// Match backend validation: email must be valid
 				if (key === "email") {
 					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 					return typeof value === "string" && emailRegex.test(value);
-				} else if (key === "firstName" || key === "lastName") {
-					return typeof value === "string" && value.trim().length >= 4;
 				}
 				return typeof value === "string" && value.trim() !== "";
 		}
@@ -76,10 +73,6 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 					// Provide specific error messages
 					if (key === "email") {
 						errors.push("Email must be a valid email address");
-					} else if (key === "firstName") {
-						errors.push("First name must be at least 4 characters long");
-					} else if (key === "lastName") {
-						errors.push("Last name must be at least 4 characters long");
 					} else if (key === "role") {
 						errors.push("Please select a valid role");
 					} else {
@@ -159,6 +152,7 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 					</div>
 				);
 			case "string":
+			case "text":
 			default:
 				return (
 					<div key={key} className='space-y-2'>
@@ -199,7 +193,7 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 					Invite New Team Member
 				</h3>
 				<p className='text-sm text-muted-foreground'>
-					Send an invitation email to add a new team member
+					Send an invitation email with role assignment to add a new team member
 				</p>
 			</div>
 
@@ -283,7 +277,7 @@ export function AddRowForm({ newUser, setNewUser, onAdd, serverError }: Props) {
 						type='button'
 						variant='outline'
 						onClick={() => setNewUser(null)}
-						className='px-6'>
+						className='px-4'>
 						Cancel
 					</Button>
 					<Button

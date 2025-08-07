@@ -6,9 +6,10 @@ import { Table, CreateColumnRequest, Column } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import AddColumnForm from "./AddColumnForm";
 import { TableView } from "./TableView";
+import { ColumnOrderManager } from "./ColumnOrderManager";
 import useColumnsTableEditor from "@/hooks/useColumnsTableEditor";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Move } from "lucide-react";
 import Link from "next/link";
 import { useTour } from "@reactour/tour";
 
@@ -26,6 +27,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	const tenantId = tenant?.id;
 	if (!token || !user) return;
 	const [showForm, setShowForm] = useState(false);
+	const [showOrderManager, setShowOrderManager] = useState(false);
 
 	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
 
@@ -225,13 +227,24 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 						</span>
 					)}
 				</div>
-				<Link
-					href={`/home/database/table/${table.id}/rows`}
-					className='rows-button'>
-					<Button variant='outline' size='sm'>
-						Manage Rows
+				<div className='flex items-center space-x-2'>
+					<Button
+						variant='outline'
+						size='sm'
+						onClick={() => setShowOrderManager(true)}
+						disabled={user.role === "VIEWER"}
+						className='order-columns-button'>
+						<Move className='w-4 h-4 mr-2' />
+						Column Order
 					</Button>
-				</Link>
+					<Link
+						href={`/home/database/table/${table.id}/rows`}
+						className='rows-button'>
+						<Button variant='outline' size='sm'>
+							Manage Rows
+						</Button>
+					</Link>
+				</div>
 			</div>
 
 			{/* Add Column Form */}
@@ -259,6 +272,16 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 					onDeleteColumn={handleDeleteWrapper}
 				/>
 			</div>
+
+			{/* Column Order Manager Modal */}
+			{showOrderManager && (
+				<ColumnOrderManager
+					columns={columns || []}
+					setColumns={setColumns}
+					table={table}
+					onClose={() => setShowOrderManager(false)}
+				/>
+			)}
 		</div>
 	);
 }

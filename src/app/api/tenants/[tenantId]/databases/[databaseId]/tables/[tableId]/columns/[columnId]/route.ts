@@ -11,11 +11,22 @@ import { z } from "zod";
 
 const ColumnUpdateSchema = z.object({
 	name: z.string().optional(),
-	type: z.enum(["string", "text", "boolean", "number", "date", "reference", "customArray"]).transform((type) => type === "text" ? "string" : type).optional(),
+	type: z
+		.enum([
+			"string",
+			"text",
+			"boolean",
+			"number",
+			"date",
+			"reference",
+			"customArray",
+		])
+		.optional(), // Remove the transform
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
 	autoIncrement: z.boolean().optional(),
 	referenceTableId: z.number().optional(),
+	order: z.number().optional(),
 });
 
 export async function PATCH(
@@ -110,6 +121,8 @@ export async function PATCH(
 			updateData.autoIncrement = parsedData.autoIncrement;
 		if (parsedData.referenceTableId !== undefined)
 			updateData.referenceTableId = parsedData.referenceTableId;
+		if (parsedData.order !== undefined)
+			updateData.order = parsedData.order;
 
 		const updatedColumn = await prisma.column.update({
 			where: {

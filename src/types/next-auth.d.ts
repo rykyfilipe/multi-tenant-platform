@@ -41,6 +41,7 @@ declare module "next-auth" {
 		lastName: string;
 		role: Role;
 		tenantId?: string | null;
+		image?: string;
 	}
 }
 
@@ -51,6 +52,7 @@ declare module "next-auth/jwt" {
 		lastName?: string;
 		role?: Role;
 		tenantId?: string | null;
+		profileImage?: string;
 		accessToken?: string;
 		customJWT?: string;
 		subscriptionStatus?: string | null;

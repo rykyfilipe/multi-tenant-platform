@@ -19,8 +19,6 @@ import {
 
 const userSchema = z.object({
 	email: z.string().email(),
-	firstName: z.string().min(4),
-	lastName: z.string().min(4),
 	role: z.enum(["VIEWER", "ADMIN", "EDITOR"]).default("VIEWER"),
 });
 
@@ -59,6 +57,7 @@ export async function GET(
 				firstName: true,
 				lastName: true,
 				role: true,
+				profileImage: true,
 			},
 		});
 
@@ -200,8 +199,8 @@ export async function POST(
 		const invitation = await prisma.invitation.create({
 			data: {
 				email: parsedData.email,
-				firstName: parsedData.firstName,
-				lastName: parsedData.lastName,
+				firstName: "", // Will be filled by user during registration
+				lastName: "", // Will be filled by user during registration
 				role: parsedData.role,
 				tenantId: Number(tenantId),
 				token: invitationToken,
@@ -213,8 +212,8 @@ export async function POST(
 		const invitationUrl = generateInvitationUrl(invitationToken);
 		const emailSent = await sendInvitationEmail({
 			email: parsedData.email,
-			firstName: parsedData.firstName,
-			lastName: parsedData.lastName,
+			firstName: "", // Will be filled by user during registration
+			lastName: "", // Will be filled by user during registration
 			role: parsedData.role,
 			tenantName: tenant?.name || "Your Organization",
 			adminName: `${adminUser?.firstName} ${adminUser?.lastName}`,
@@ -238,8 +237,6 @@ export async function POST(
 				invitation: {
 					id: invitation.id,
 					email: invitation.email,
-					firstName: invitation.firstName,
-					lastName: invitation.lastName,
 					role: invitation.role,
 					expiresAt: invitation.expiresAt,
 				},

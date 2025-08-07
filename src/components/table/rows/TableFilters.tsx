@@ -18,6 +18,12 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import {
 	Filter,
@@ -31,6 +37,7 @@ import {
 	Bookmark,
 	PanelRightClose,
 	PanelRightOpen,
+	Info,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -122,15 +129,22 @@ export function TableFilters({
 					{ value: "equals", label: "Equals" },
 					{ value: "starts_with", label: "Starts with" },
 					{ value: "ends_with", label: "Ends with" },
+					{ value: "not_contains", label: "Does not contain" },
+					{ value: "not_equals", label: "Does not equal" },
+					{ value: "regex", label: "Matches regex" },
 					{ value: "is_empty", label: "Is empty" },
 					{ value: "is_not_empty", label: "Is not empty" },
 				];
 			case USER_FRIENDLY_COLUMN_TYPES.number:
 				return [
 					{ value: "equals", label: "Equals" },
+					{ value: "not_equals", label: "Does not equal" },
 					{ value: "greater_than", label: "Greater than" },
+					{ value: "greater_than_or_equal", label: "Greater than or equal" },
 					{ value: "less_than", label: "Less than" },
+					{ value: "less_than_or_equal", label: "Less than or equal" },
 					{ value: "between", label: "Between" },
+					{ value: "not_between", label: "Not between" },
 					{ value: "is_empty", label: "Is empty" },
 					{ value: "is_not_empty", label: "Is not empty" },
 				];
@@ -143,27 +157,39 @@ export function TableFilters({
 			case USER_FRIENDLY_COLUMN_TYPES.date:
 				return [
 					{ value: "equals", label: "Equals" },
+					{ value: "not_equals", label: "Does not equal" },
 					{ value: "before", label: "Before" },
 					{ value: "after", label: "After" },
 					{ value: "between", label: "Between" },
+					{ value: "not_between", label: "Not between" },
+					{ value: "today", label: "Today" },
+					{ value: "yesterday", label: "Yesterday" },
+					{ value: "this_week", label: "This week" },
+					{ value: "this_month", label: "This month" },
+					{ value: "this_year", label: "This year" },
 					{ value: "is_empty", label: "Is empty" },
 					{ value: "is_not_empty", label: "Is not empty" },
 				];
 			case USER_FRIENDLY_COLUMN_TYPES.link:
 				return [
 					{ value: "equals", label: "Equals" },
+					{ value: "not_equals", label: "Does not equal" },
 					{ value: "is_empty", label: "Is empty" },
 					{ value: "is_not_empty", label: "Is not empty" },
 				];
 			case USER_FRIENDLY_COLUMN_TYPES.customArray:
 				return [
 					{ value: "equals", label: "Equals" },
+					{ value: "not_equals", label: "Does not equal" },
+					{ value: "contains", label: "Contains" },
+					{ value: "not_contains", label: "Does not contain" },
 					{ value: "is_empty", label: "Is empty" },
 					{ value: "is_not_empty", label: "Is not empty" },
 				];
 			default:
 				return [
 					{ value: "equals", label: "Equals" },
+					{ value: "not_equals", label: "Does not equal" },
 					{ value: "is_empty", label: "Is empty" },
 					{ value: "is_not_empty", label: "Is not empty" },
 				];
@@ -177,6 +203,23 @@ export function TableFilters({
 
 		switch (column.type) {
 			case USER_FRIENDLY_COLUMN_TYPES.text:
+				if (filter.operator === "regex") {
+					return (
+						<div className='space-y-2'>
+							<Input
+								placeholder='Enter regex pattern...'
+								value={filter.value || ""}
+								onChange={(e) =>
+									updateFilter(filter.columnId, "value", e.target.value)
+								}
+								className='w-full'
+							/>
+							<p className='text-xs text-muted-foreground'>
+								Use regex patterns like: ^start, end$, [0-9]+, etc.
+							</p>
+						</div>
+					);
+				}
 				return (
 					<Input
 						placeholder='Enter value...'
@@ -189,7 +232,10 @@ export function TableFilters({
 				);
 
 			case USER_FRIENDLY_COLUMN_TYPES.number:
-				if (filter.operator === "between") {
+				if (
+					filter.operator === "between" ||
+					filter.operator === "not_between"
+				) {
 					return (
 						<div className='flex flex-col gap-2 '>
 							<Input
@@ -243,7 +289,27 @@ export function TableFilters({
 				);
 
 			case USER_FRIENDLY_COLUMN_TYPES.date:
-				if (filter.operator === "between") {
+				// Handle operators that don't require user input
+				if (
+					[
+						"today",
+						"yesterday",
+						"this_week",
+						"this_month",
+						"this_year",
+					].includes(filter.operator)
+				) {
+					return (
+						<div className='text-sm text-muted-foreground p-2 bg-muted/20 rounded border'>
+							No input required for this filter
+						</div>
+					);
+				}
+
+				if (
+					filter.operator === "between" ||
+					filter.operator === "not_between"
+				) {
 					return (
 						<div className='flex flex-col gap-2'>
 							<Popover>
@@ -401,6 +467,46 @@ export function TableFilters({
 		);
 	};
 
+	// Check if operator requires a value
+	const operatorRequiresValue = (operator: string) => {
+		return ![
+			"today",
+			"yesterday",
+			"this_week",
+			"this_month",
+			"this_year",
+		].includes(operator);
+	};
+
+	// Get operator description
+	const getOperatorDescription = (operator: string) => {
+		const descriptions: Record<string, string> = {
+			contains: "Text contains the specified value",
+			not_contains: "Text does not contain the specified value",
+			equals: "Exact match",
+			not_equals: "Not equal to the specified value",
+			starts_with: "Text starts with the specified value",
+			ends_with: "Text ends with the specified value",
+			regex: "Matches regular expression pattern",
+			greater_than: "Greater than the specified number",
+			greater_than_or_equal: "Greater than or equal to the specified number",
+			less_than: "Less than the specified number",
+			less_than_or_equal: "Less than or equal to the specified number",
+			between: "Between two values (inclusive)",
+			not_between: "Outside the range of two values",
+			before: "Date is before the specified date",
+			after: "Date is after the specified date",
+			today: "Date is today",
+			yesterday: "Date is yesterday",
+			this_week: "Date is in the current week",
+			this_month: "Date is in the current month",
+			this_year: "Date is in the current year",
+			is_empty: "Field is empty or null",
+			is_not_empty: "Field has a value",
+		};
+		return descriptions[operator] || "";
+	};
+
 	// Add new filter
 	const addFilter = () => {
 		const firstColumn = columns[0];
@@ -411,7 +517,9 @@ export function TableFilters({
 			columnName: firstColumn.name,
 			columnType: firstColumn.type,
 			operator: getOperators(firstColumn.type)[0].value,
-			value: null,
+			value: operatorRequiresValue(getOperators(firstColumn.type)[0].value)
+				? null
+				: undefined,
 		};
 
 		setFilters((prev) => [...prev, newFilter]);
@@ -492,8 +600,15 @@ export function TableFilters({
 							?.toString()
 							.toLowerCase()
 							.includes(filter.value?.toLowerCase());
+					case "not_contains":
+						return !cellValue
+							?.toString()
+							.toLowerCase()
+							.includes(filter.value?.toLowerCase());
 					case "equals":
 						return cellValue === filter.value;
+					case "not_equals":
+						return cellValue !== filter.value;
 					case "starts_with":
 						return cellValue
 							?.toString()
@@ -504,10 +619,21 @@ export function TableFilters({
 							?.toString()
 							.toLowerCase()
 							.endsWith(filter.value?.toLowerCase());
+					case "regex":
+						try {
+							const regex = new RegExp(filter.value, "i");
+							return regex.test(cellValue?.toString() || "");
+						} catch {
+							return false;
+						}
 					case "greater_than":
 						return Number(cellValue) > Number(filter.value);
+					case "greater_than_or_equal":
+						return Number(cellValue) >= Number(filter.value);
 					case "less_than":
 						return Number(cellValue) < Number(filter.value);
+					case "less_than_or_equal":
+						return Number(cellValue) <= Number(filter.value);
 					case "before":
 						return new Date(cellValue) < new Date(filter.value);
 					case "after":
@@ -527,6 +653,59 @@ export function TableFilters({
 							);
 						}
 						return true;
+					case "not_between":
+						if (column.type === USER_FRIENDLY_COLUMN_TYPES.number) {
+							const numValue = Number(cellValue);
+							return (
+								numValue < Number(filter.value) ||
+								numValue > Number(filter.secondValue)
+							);
+						} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.date) {
+							const dateValue = new Date(cellValue);
+							return (
+								dateValue < new Date(filter.value) ||
+								dateValue > new Date(filter.secondValue)
+							);
+						}
+						return true;
+					case "today":
+						const today = new Date();
+						const cellDate = new Date(cellValue);
+						return (
+							cellDate.getDate() === today.getDate() &&
+							cellDate.getMonth() === today.getMonth() &&
+							cellDate.getFullYear() === today.getFullYear()
+						);
+					case "yesterday":
+						const yesterday = new Date();
+						yesterday.setDate(yesterday.getDate() - 1);
+						const cellDateYesterday = new Date(cellValue);
+						return (
+							cellDateYesterday.getDate() === yesterday.getDate() &&
+							cellDateYesterday.getMonth() === yesterday.getMonth() &&
+							cellDateYesterday.getFullYear() === yesterday.getFullYear()
+						);
+					case "this_week":
+						const now = new Date();
+						const startOfWeek = new Date(now);
+						startOfWeek.setDate(now.getDate() - now.getDay());
+						startOfWeek.setHours(0, 0, 0, 0);
+						const endOfWeek = new Date(startOfWeek);
+						endOfWeek.setDate(startOfWeek.getDate() + 6);
+						endOfWeek.setHours(23, 59, 59, 999);
+						const cellDateWeek = new Date(cellValue);
+						return cellDateWeek >= startOfWeek && cellDateWeek <= endOfWeek;
+					case "this_month":
+						const currentMonth = new Date();
+						const cellDateMonth = new Date(cellValue);
+						return (
+							cellDateMonth.getMonth() === currentMonth.getMonth() &&
+							cellDateMonth.getFullYear() === currentMonth.getFullYear()
+						);
+					case "this_year":
+						const currentYear = new Date().getFullYear();
+						const cellDateYear = new Date(cellValue);
+						return cellDateYear.getFullYear() === currentYear;
 					case "is_empty":
 						return (
 							cellValue === null || cellValue === undefined || cellValue === ""
@@ -761,6 +940,9 @@ export function TableFilters({
 																	(col) => col.id === Number(value),
 																);
 																if (newColumn) {
+																	const newOperator = getOperators(
+																		newColumn.type,
+																	)[0].value;
 																	setFilters((prev) =>
 																		prev.map((f) =>
 																			f.columnId === filter.columnId
@@ -769,10 +951,12 @@ export function TableFilters({
 																						columnId: newColumn.id,
 																						columnName: newColumn.name,
 																						columnType: newColumn.type,
-																						operator: getOperators(
-																							newColumn.type,
-																						)[0].value,
-																						value: null,
+																						operator: newOperator,
+																						value: operatorRequiresValue(
+																							newOperator,
+																						)
+																							? null
+																							: undefined,
 																						secondValue: null,
 																				  }
 																				: f,
@@ -797,16 +981,51 @@ export function TableFilters({
 														{/* Operator Selection */}
 														<Select
 															value={filter.operator}
-															onValueChange={(value) =>
-																updateFilter(filter.columnId, "operator", value)
-															}>
+															onValueChange={(value) => {
+																updateFilter(
+																	filter.columnId,
+																	"operator",
+																	value,
+																);
+																// Clear value if operator doesn't require it
+																if (!operatorRequiresValue(value)) {
+																	updateFilter(
+																		filter.columnId,
+																		"value",
+																		undefined,
+																	);
+																	updateFilter(
+																		filter.columnId,
+																		"secondValue",
+																		null,
+																	);
+																}
+															}}>
 															<SelectTrigger className='w-full'>
 																<SelectValue />
 															</SelectTrigger>
 															<SelectContent>
 																{getOperators(filter.columnType).map((op) => (
 																	<SelectItem key={op.value} value={op.value}>
-																		{op.label}
+																		<div className='flex items-center justify-between w-full'>
+																			<span>{op.label}</span>
+																			{getOperatorDescription(op.value) && (
+																				<TooltipProvider>
+																					<Tooltip>
+																						<TooltipTrigger asChild>
+																							<Info className='w-3 h-3 text-muted-foreground ml-2' />
+																						</TooltipTrigger>
+																						<TooltipContent>
+																							<p className='max-w-xs'>
+																								{getOperatorDescription(
+																									op.value,
+																								)}
+																							</p>
+																						</TooltipContent>
+																					</Tooltip>
+																				</TooltipProvider>
+																			)}
+																		</div>
 																	</SelectItem>
 																))}
 															</SelectContent>

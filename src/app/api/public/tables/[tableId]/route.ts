@@ -41,7 +41,11 @@ export async function GET(
 				isPublic: true, // Doar tabelele publice
 			},
 			include: {
-				columns: true,
+				columns: {
+					orderBy: {
+						order: "asc",
+					},
+				},
 				rows: {
 					include: {
 						cells: true,

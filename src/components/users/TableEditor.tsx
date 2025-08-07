@@ -6,7 +6,6 @@ import { useApp } from "@/contexts/AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
 
 import { Role, User, UserSchema } from "@/types/user";
-import useUsersEditor from "@/hooks/useUsersEditor";
 import { TableView } from "./TableView";
 import { AddRowForm } from "./AddRowForm";
 import { Button } from "../ui/button";
@@ -32,22 +31,16 @@ export default function TableEditor({
 	const tenantId = tenant?.id;
 	const [newUser, setNewUser] = useState<UserSchema | null>({
 		email: "",
-		firstName: "",
-		lastName: "",
 		role: Role.VIEWER,
 	});
 
 	if (!token || !user || !users) return;
 
-	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
-		useUsersEditor();
-
 	// Clear server error when user data changes (user starts typing)
 	useEffect(() => {
 		if (serverError && newUser) {
 			// Only clear error if user is actively typing (not on initial load)
-			const hasUserData =
-				newUser.email || newUser.firstName || newUser.lastName;
+			const hasUserData = newUser.email;
 			if (hasUserData) {
 				// Add a small delay to allow user to see the error first
 				const timer = setTimeout(() => {
@@ -57,7 +50,7 @@ export default function TableEditor({
 				return () => clearTimeout(timer);
 			}
 		}
-	}, [newUser?.email, newUser?.firstName, newUser?.lastName, serverError]);
+	}, [newUser?.email, serverError]);
 
 	async function handleAdd(e: FormEvent) {
 		e.preventDefault();
@@ -111,8 +104,6 @@ export default function TableEditor({
 			// Don't add to users list since it's just an invitation
 			setNewUser({
 				email: "",
-				firstName: "",
-				lastName: "",
 				role: Role.VIEWER,
 			});
 			setShowForm(false);
@@ -165,14 +156,6 @@ export default function TableEditor({
 		}
 	};
 
-	const handleSaveCellWrapper = (
-		userId: string,
-		fieldName: keyof User,
-		value: any,
-	) => {
-		handleSaveCell(userId, fieldName, users, setUsers, value, token, showAlert);
-	};
-
 	return (
 		<div className='space-y-6'>
 			{/* Header Actions */}
@@ -211,14 +194,7 @@ export default function TableEditor({
 
 			{/* Users Table */}
 			<div className='table-content'>
-				<TableView
-					users={users}
-					editingCell={editingCell}
-					onEditCell={handleEditCell}
-					onSaveCell={handleSaveCellWrapper}
-					onCancelEdit={handleCancelEdit}
-					onDeleteRow={handleDelete}
-				/>
+				<TableView users={users} onDeleteRow={handleDelete} />
 			</div>
 		</div>
 	);

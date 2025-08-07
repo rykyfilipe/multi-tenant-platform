@@ -30,6 +30,7 @@ export interface Column {
 	tableId: number;
 	referenceTableId?: number;
 	customOptions?: string[]; // Opțiuni pentru tipul customArray
+	order: number; // Ordinea coloanei în tabel
 }
 
 export interface Row {
@@ -69,4 +70,5 @@ export interface CreateColumnRequest {
 	primary?: boolean;
 	referenceTableId?: number;
 	customOptions?: string[]; // Opțiuni pentru tipul customArray
+	order?: number;
 }

@@ -6,6 +6,7 @@ export interface User {
 	firstName: string;
 	lastName: string;
 	role: Role;
+	profileImage?: string;
 }
 
 export enum Role {
@@ -15,8 +16,6 @@ export enum Role {
 }
 
 export interface UserSchema {
-	firstName: string;
-	lastName: string;
 	email: string;
 	role: Role;
 }
