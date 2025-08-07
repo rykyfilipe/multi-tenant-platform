@@ -5,8 +5,9 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { usePlanLimitError } from "@/hooks/usePlanLimitError";
-import { TableView } from "@/components/users/TableView";
-import { InvitationsList } from "@/components/users/InvitationsList";
+import { UserManagementGrid } from "@/components/users/UserManagementGrid";
+import { InvitationManagementList } from "@/components/users/InvitationManagementList";
+import { InvitationCreationForm } from "@/components/users/InvitationCreationForm";
 import { UsersLoadingState } from "@/components/ui/loading-states";
 import TourProv from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
@@ -39,6 +40,7 @@ const UsersPage = () => {
 	const [invitations, setInvitations] = useState<Invitation[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [invitationsLoading, setInvitationsLoading] = useState(false);
+	const [showInviteForm, setShowInviteForm] = useState(false);
 	const hasFetched = useRef(false);
 
 	const { token, showAlert, user: currentUser, tenant } = useApp();
@@ -217,7 +219,10 @@ const UsersPage = () => {
 
 	return (
 		<TourProv
-			steps={tourUtils.getUsersTourSteps(users.length > 0, invitations.length > 0)}
+			steps={tourUtils.getUsersTourSteps(
+				users.length > 0,
+				invitations.length > 0,
+			)}
 			onTourComplete={() => {
 				tourUtils.markTourSeen("users");
 			}}
@@ -244,6 +249,14 @@ const UsersPage = () => {
 								className='flex items-center gap-2'>
 								<Users className='w-4 h-4' />
 								Refresh
+							</Button>
+							<Button
+								variant='default'
+								size='sm'
+								onClick={() => setShowInviteForm(!showInviteForm)}
+								className='flex items-center gap-2'>
+								<Plus className='w-4 h-4' />
+								{showInviteForm ? "Cancel" : "Invite User"}
 							</Button>
 						</div>
 					</div>
@@ -293,15 +306,31 @@ const UsersPage = () => {
 							</Card>
 						</div>
 
+						{/* Invitation Creation Form */}
+						{showInviteForm && tenant && (
+							<div className='invitation-creation-section flex justify-center py-8'>
+								<InvitationCreationForm
+									tenantId={tenant.id}
+									onInvitationCreated={() => {
+										fetchInvitations();
+										setShowInviteForm(false);
+									}}
+								/>
+							</div>
+						)}
+
 						{/* Users Table */}
 						<div className='users-table'>
-							<TableView users={users as User[]} onDeleteRow={deleteUser} />
+							<UserManagementGrid
+								users={users as User[]}
+								onDeleteRow={deleteUser}
+							/>
 						</div>
 
 						{/* Invitations List */}
 						{tenant && (
 							<div className='invitations-section'>
-								<InvitationsList tenantId={tenant.id} />
+								<InvitationManagementList tenantId={tenant.id} />
 							</div>
 						)}
 					</div>

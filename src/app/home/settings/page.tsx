@@ -29,7 +29,7 @@ import PasswordSetter from "@/components/settings/user/PasswordSetter";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 import PlanLimitsDisplay from "@/components/PlanLimitsDisplay";
 import GDPRRights from "@/components/settings/user/GDPRRights";
-import { ProfileImageUpload } from "@/components/users/ProfileImageUpload";
+import { UserProfileImageUpload } from "@/components/users/UserProfileImageUpload";
 import TourProv from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
 import { settingsTourSteps, tourUtils } from "@/lib/tour-config";
@@ -231,8 +231,8 @@ function Page() {
 												</CardDescription>
 											</CardHeader>
 											<CardContent>
-												<ProfileImageUpload
-													userId={user.id.toString()}
+												<UserProfileImageUpload
+													userId={user.id}
 													currentImage={user.profileImage}
 													userName={
 														`${user.firstName || ""} ${

@@ -33,18 +33,18 @@ interface Invitation {
 	accepted: boolean;
 }
 
-interface InvitationsListProps {
+interface InvitationManagementListProps {
 	tenantId: number;
 }
 
-export interface InvitationsListRef {
+export interface InvitationManagementListRef {
 	refresh: () => void;
 }
 
-export const InvitationsList = forwardRef<
-	InvitationsListRef,
-	InvitationsListProps
->(function InvitationsList({ tenantId }, ref) {
+export const InvitationManagementList = forwardRef<
+	InvitationManagementListRef,
+	InvitationManagementListProps
+>(function InvitationManagementList({ tenantId }, ref) {
 	const [invitations, setInvitations] = useState<Invitation[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
@@ -218,4 +218,4 @@ export const InvitationsList = forwardRef<
 			</CardContent>
 		</Card>
 	);
-});
+}); 

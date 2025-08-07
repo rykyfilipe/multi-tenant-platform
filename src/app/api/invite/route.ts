@@ -7,13 +7,16 @@ import { hashPassword } from "@/lib/auth";
 
 const acceptInvitationSchema = z.object({
 	token: z.string(),
+	firstName: z.string().min(2, "First name must be at least 2 characters"),
+	lastName: z.string().min(2, "Last name must be at least 2 characters"),
 	password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
-		const { token, password } = acceptInvitationSchema.parse(body);
+		const { token, firstName, lastName, password } =
+			acceptInvitationSchema.parse(body);
 
 		// Find the invitation
 		const invitation = await prisma.invitation.findUnique({
@@ -61,8 +64,8 @@ export async function POST(request: NextRequest) {
 		const user = await prisma.user.create({
 			data: {
 				email: invitation.email,
-				firstName: invitation.firstName,
-				lastName: invitation.lastName,
+				firstName: firstName,
+				lastName: lastName,
 				password: hashedPassword,
 				role: invitation.role,
 				tenantId: invitation.tenantId,
@@ -188,8 +191,8 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json({
 			invitation: {
 				email: invitation.email,
-				firstName: invitation.firstName,
-				lastName: invitation.lastName,
+				firstName: "", // Will be filled by user
+				lastName: "", // Will be filled by user
 				role: invitation.role,
 				tenantName: invitation.tenant.name,
 				expiresAt: invitation.expiresAt,

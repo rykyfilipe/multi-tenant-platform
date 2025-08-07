@@ -34,6 +34,8 @@ function InvitePageContent() {
 	const token = searchParams.get("token");
 
 	const [invitation, setInvitation] = useState<Invitation | null>(null);
+	const [firstName, setFirstName] = useState("");
+	const [lastName, setLastName] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -72,6 +74,12 @@ function InvitePageContent() {
 			return;
 		}
 
+		if (!firstName.trim() || !lastName.trim()) {
+			setError("First name and last name are required");
+			setLoading(false);
+			return;
+		}
+
 		if (password.length < 8) {
 			setError("Password must be at least 8 characters long");
 			setLoading(false);
@@ -86,6 +94,8 @@ function InvitePageContent() {
 				},
 				body: JSON.stringify({
 					token,
+					firstName: firstName.trim(),
+					lastName: lastName.trim(),
 					password,
 				}),
 			});
@@ -182,12 +192,6 @@ function InvitePageContent() {
 					{/* Invitation Details */}
 					<div className='space-y-3'>
 						<div className='flex items-center justify-between'>
-							<span className='text-sm text-muted-foreground'>Name:</span>
-							<span className='text-sm font-medium'>
-								{invitation.firstName} {invitation.lastName}
-							</span>
-						</div>
-						<div className='flex items-center justify-between'>
 							<span className='text-sm text-muted-foreground'>Email:</span>
 							<span className='text-sm font-medium'>{invitation.email}</span>
 						</div>
@@ -213,8 +217,32 @@ function InvitePageContent() {
 						</div>
 					</div>
 
-					{/* Password Form */}
+					{/* Account Setup Form */}
 					<form onSubmit={handleAcceptInvitation} className='space-y-4'>
+						<div className='space-y-2'>
+							<Label htmlFor='firstName'>First Name</Label>
+							<Input
+								id='firstName'
+								type='text'
+								value={firstName}
+								onChange={(e) => setFirstName(e.target.value)}
+								placeholder='Enter your first name'
+								required
+							/>
+						</div>
+
+						<div className='space-y-2'>
+							<Label htmlFor='lastName'>Last Name</Label>
+							<Input
+								id='lastName'
+								type='text'
+								value={lastName}
+								onChange={(e) => setLastName(e.target.value)}
+								placeholder='Enter your last name'
+								required
+							/>
+						</div>
+
 						<div className='space-y-2'>
 							<Label htmlFor='password'>Create Password</Label>
 							<Input

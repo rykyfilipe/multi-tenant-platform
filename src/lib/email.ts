@@ -17,34 +17,28 @@ const smtpConfig = {
 const transporter = nodemailer.createTransport(smtpConfig);
 
 export interface InvitationData {
-	email: string;
+	to?: string;
+	email?: string;
 	firstName: string;
 	lastName: string;
 	role: string;
 	tenantName: string;
-	adminName: string;
 	invitationUrl: string;
+	adminName?: string;
 }
 
 export async function sendInvitationEmail(
 	invitationData: InvitationData,
 ): Promise<boolean> {
-	try {
-		const {
-			email,
-			firstName,
-			lastName,
-			role,
-			tenantName,
-			adminName,
-			invitationUrl,
-		} = invitationData;
+			try {
+			const { to, email, firstName, lastName, role, tenantName, invitationUrl } =
+				invitationData;
 
 		const mailOptions = {
 			from: `"YDV Platform" <${
 				process.env.SMTP_MAIL_NO_REPLY || process.env.SMTP_USER
 			}>`,
-			to: email,
+			to: to || email,
 			subject: `You've been invited to join ${tenantName} on YDV Platform`,
 			html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -61,7 +55,7 @@ export async function sendInvitationEmail(
             </p>
             
             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-              <strong>${adminName}</strong> has invited you to join <strong>${tenantName}</strong> on the YDV Platform.
+              You have been invited to join <strong>${tenantName}</strong> on the YDV Platform.
             </p>
             
             <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -69,7 +63,6 @@ export async function sendInvitationEmail(
               <ul style="color: #666; margin: 0; padding-left: 20px;">
                 <li><strong>Role:</strong> ${role}</li>
                 <li><strong>Organization:</strong> ${tenantName}</li>
-                <li><strong>Invited by:</strong> ${adminName}</li>
               </ul>
             </div>
             
