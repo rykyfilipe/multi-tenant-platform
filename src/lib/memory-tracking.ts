@@ -5,8 +5,8 @@ import prisma from "./prisma";
 import { getMemoryLimitForPlan } from "./planConstants";
 
 export interface MemoryUsage {
-	usedGB: number;
-	limitGB: number;
+	usedMB: number;
+	limitMB: number;
 	percentage: number;
 	lastUpdate: Date;
 }
@@ -15,14 +15,139 @@ export interface MemoryCalculation {
 	totalRows: number;
 	totalColumns: number;
 	totalTables: number;
-	estimatedSizeGB: number;
+	estimatedSizeMB: number;
 }
 
 /**
- * Calculate storage usage based on data size
- * Formula: (rows * columns * avg_cell_size) / (1024^3) for GB
+ * Calculate storage usage based on actual data size using PostgreSQL pg_column_size
+ * Formula: Sum of actual column sizes from database using pg_column_size
  */
 export const calculateMemoryUsage = async (
+	tenantId: number,
+): Promise<MemoryCalculation> => {
+	try {
+		console.log(`[DEBUG] Starting calculation for tenant ${tenantId}`);
+
+		// Get all databases for the tenant
+		const databases = await prisma.database.findMany({
+			where: { tenantId },
+			include: {
+				tables: {
+					include: {
+						columns: true,
+						rows: {
+							include: {
+								cells: true,
+							},
+						},
+					},
+				},
+			},
+		});
+
+		console.log(`[DEBUG] Found ${databases.length} databases`);
+
+		let totalRows = 0;
+		let totalColumns = 0;
+		let totalTables = 0;
+		let totalBytes = 0;
+
+		// Calculate totals
+		for (const database of databases) {
+			console.log(`[DEBUG] Processing database: ${database.name}`);
+
+			for (const table of database.tables) {
+				totalTables++;
+				totalColumns += table.columns.length;
+				totalRows += table.rows.length;
+
+				console.log(
+					`[DEBUG] Table: ${table.name} - ${table.rows.length} rows, ${table.columns.length} columns`,
+				);
+			}
+		}
+
+		// Get exact cell sizes using PostgreSQL pg_column_size
+		try {
+			// Query to get the exact size of all cell values using pg_column_size
+			const cellSizeQuery = `
+				SELECT 
+					SUM(pg_column_size(c."value")) as total_cell_bytes,
+					COUNT(c."value") as total_cells
+				FROM "Cell" c
+				INNER JOIN "Row" r ON c."rowId" = r.id
+				INNER JOIN "Table" t ON r."tableId" = t.id
+				INNER JOIN "Database" d ON t."databaseId" = d.id
+				WHERE d."tenantId" = $1
+			`;
+
+			const result = await prisma.$queryRawUnsafe(cellSizeQuery, tenantId);
+
+			if (result && Array.isArray(result) && result.length > 0) {
+				const sizeData = result[0] as any;
+				totalBytes = Number(sizeData.total_cell_bytes) || 0; // Convert BigInt to Number
+				const totalCells = Number(sizeData.total_cells) || 0; // Convert BigInt to Number
+
+				console.log(
+					`[DEBUG] pg_column_size result - Total bytes: ${totalBytes}, Total cells: ${totalCells}`,
+				);
+			}
+		} catch (sqlError) {
+			console.error(
+				`[ERROR] SQL query failed, falling back to JSON calculation:`,
+				sqlError,
+			);
+
+			// Fallback to JSON calculation if SQL fails
+			for (const database of databases) {
+				for (const table of database.tables) {
+					for (const row of table.rows) {
+						for (const cell of row.cells) {
+							const jsonString = JSON.stringify(cell.value);
+							const cellBytes = Buffer.byteLength(jsonString, "utf8");
+							totalBytes += cellBytes;
+						}
+					}
+				}
+			}
+		}
+
+		console.log(
+			`[DEBUG] Raw counts - Rows: ${totalRows}, Columns: ${totalColumns}, Tables: ${totalTables}, Bytes: ${totalBytes}`,
+		);
+
+		// Convert to MB
+		const estimatedSizeMB = totalBytes / (1024 * 1024);
+
+		const result = {
+			totalRows,
+			totalColumns,
+			totalTables,
+			estimatedSizeMB: Math.round(estimatedSizeMB * 1000) / 1000, // Round to 3 decimal places
+		};
+
+		console.log(
+			`[DEBUG] Final result: ${result.estimatedSizeMB} MB (${(
+				result.estimatedSizeMB * 1024
+			).toFixed(1)} KB)`,
+		);
+
+		return result;
+	} catch (error) {
+		console.error("Error calculating storage usage:", error);
+		return {
+			totalRows: 0,
+			totalColumns: 0,
+			totalTables: 0,
+			estimatedSizeMB: 0,
+		};
+	}
+};
+
+/**
+ * Calculate actual database size using PostgreSQL native functions
+ */
+export const calculateActualDatabaseSize = async (
 	tenantId: number,
 ): Promise<MemoryCalculation> => {
 	try {
@@ -46,7 +171,7 @@ export const calculateMemoryUsage = async (
 		let totalRows = 0;
 		let totalColumns = 0;
 		let totalTables = 0;
-		let totalCells = 0;
+		let totalBytes = 0;
 
 		// Calculate totals
 		for (const database of databases) {
@@ -54,33 +179,81 @@ export const calculateMemoryUsage = async (
 				totalTables++;
 				totalColumns += table.columns.length;
 				totalRows += table.rows.length;
+			}
+		}
 
-				// Count cells
-				for (const row of table.rows) {
-					totalCells += row.cells.length;
+		// Try to get actual table sizes from PostgreSQL
+		try {
+			// Get the database name from the first database
+			if (databases.length > 0) {
+				const dbName = databases[0].name;
+
+				// Query to get actual table sizes
+				const sizeQuery = `
+					SELECT 
+						pg_size_pretty(pg_total_relation_size('"${dbName}"'::regclass)) as size_pretty,
+						pg_total_relation_size('"${dbName}"'::regclass) as size_bytes
+					FROM pg_tables 
+					WHERE tablename = '${dbName}'
+				`;
+
+				console.log(`[TEMP] Trying to get actual size for database: ${dbName}`);
+
+				// Execute raw query
+				const result = await prisma.$queryRawUnsafe(sizeQuery);
+				console.log(`[TEMP] Raw size query result:`, result);
+
+				if (result && Array.isArray(result) && result.length > 0) {
+					const sizeData = result[0] as any;
+					totalBytes = sizeData.size_bytes || 0;
+					console.log(
+						`[TEMP] Actual database size: ${sizeData.size_pretty} (${totalBytes} bytes)`,
+					);
+				}
+			}
+		} catch (sizeError) {
+			console.log(
+				`[TEMP] Could not get actual size, falling back to calculation:`,
+				sizeError,
+			);
+
+			// Fallback to cell calculation
+			for (const database of databases) {
+				for (const table of database.tables) {
+					for (const row of table.rows) {
+						for (const cell of row.cells) {
+							const jsonString = JSON.stringify(cell.value);
+							const cellBytes = Buffer.byteLength(jsonString, "utf8");
+							totalBytes += cellBytes;
+						}
+					}
 				}
 			}
 		}
 
-		// Estimate storage usage
-		// Average cell size: ~100 bytes (including overhead)
-		const avgCellSizeBytes = 100;
-		const totalBytes = totalCells * avgCellSizeBytes;
-		const estimatedSizeGB = totalBytes / (1024 * 1024 * 1024);
+		const estimatedSizeMB = totalBytes / (1024 * 1024);
 
-		return {
+		const result = {
 			totalRows,
 			totalColumns,
 			totalTables,
-			estimatedSizeGB: Math.round(estimatedSizeGB * 1000) / 1000, // Round to 3 decimal places
+			estimatedSizeMB: Math.round(estimatedSizeMB * 100) / 100,
 		};
+
+		console.log(
+			`[TEMP] Actual size result: ${result.estimatedSizeMB} MB (${(
+				result.estimatedSizeMB * 1024
+			).toFixed(1)} KB)`,
+		);
+
+		return result;
 	} catch (error) {
-		console.error("Error calculating storage usage:", error);
+		console.error("Error calculating actual database size:", error);
 		return {
 			totalRows: 0,
 			totalColumns: 0,
 			totalTables: 0,
-			estimatedSizeGB: 0,
+			estimatedSizeMB: 0,
 		};
 	}
 };
@@ -119,37 +292,29 @@ export const updateTenantMemoryUsage = async (
 		// Calculate current storage usage
 		const calculation = await calculateMemoryUsage(tenantId);
 
-		// Get storage limit based on plan (convert MB to GB)
+		// Get storage limit based on plan (already in MB)
 		const memoryLimitMB = getMemoryLimitForPlan(tenant.admin?.subscriptionPlan);
-		const memoryLimitGB = memoryLimitMB / 1024; // Convert MB to GB
-		
-		// Debug logging for plan limits
-		if (process.env.NODE_ENV === "development") {
-			console.log("Memory tracking debug:", {
-				plan: tenant.admin?.subscriptionPlan,
-				memoryLimitMB,
-				memoryLimitGB,
-			});
-		}
 
-		// Update tenant storage usage
+		// Update tenant storage usage (store in MB)
 		const updatedTenant = await prisma.tenant.update({
 			where: { id: tenantId },
 			data: {
-				memoryUsedGB: calculation.estimatedSizeGB,
-				memoryLimitGB,
+				memoryUsedGB: calculation.estimatedSizeMB, // Store MB value directly
+				memoryLimitGB: memoryLimitMB, // Store MB value directly
 				lastMemoryUpdate: new Date(),
 			},
 		});
 
-		const percentage = (calculation.estimatedSizeGB / memoryLimitGB) * 100;
+		const percentage = (calculation.estimatedSizeMB / memoryLimitMB) * 100;
 
-		return {
-			usedGB: calculation.estimatedSizeGB,
-			limitGB: memoryLimitGB,
+		const result = {
+			usedMB: calculation.estimatedSizeMB,
+			limitMB: memoryLimitMB,
 			percentage: Math.min(percentage, 100), // Cap at 100%
 			lastUpdate: updatedTenant.lastMemoryUpdate || new Date(),
 		};
+
+		return result;
 	} catch (error) {
 		console.error("Error updating tenant storage usage:", error);
 		throw error;
@@ -171,14 +336,19 @@ export const getTenantMemoryUsage = async (
 			throw new Error("Tenant not found");
 		}
 
-		const percentage = (tenant.memoryUsedGB / tenant.memoryLimitGB) * 100;
+		// Read stored MB values directly (no conversion needed)
+		const usedMB = tenant.memoryUsedGB; // Already in MB
+		const limitMB = tenant.memoryLimitGB; // Already in MB
+		const percentage = (usedMB / limitMB) * 100;
 
-		return {
-			usedGB: tenant.memoryUsedGB,
-			limitGB: tenant.memoryLimitGB,
+		const result = {
+			usedMB,
+			limitMB,
 			percentage: Math.min(percentage, 100),
 			lastUpdate: tenant.lastMemoryUpdate || new Date(),
 		};
+
+		return result;
 	} catch (error) {
 		console.error("Error getting tenant storage usage:", error);
 		throw error;

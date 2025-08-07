@@ -7,6 +7,7 @@ export interface User {
 	lastName: string;
 	role: Role;
 	profileImage?: string;
+	tenantId?: string | null;
 }
 
 export enum Role {

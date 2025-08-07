@@ -12,6 +12,19 @@ const nextConfig: NextConfig = {
 			managedPaths: [],
 			immutablePaths: [],
 		};
+
+		// Exclude problematic system directories
+		config.watchOptions = {
+			...(config.watchOptions || {}),
+			ignored: [
+				"**/node_modules",
+				"**/.git",
+				"**/C:/Users/**/Application Data",
+				"**/C:/Users/**/AppData",
+				"**/C:/ProgramData",
+			],
+		};
+
 		return config;
 	},
 };

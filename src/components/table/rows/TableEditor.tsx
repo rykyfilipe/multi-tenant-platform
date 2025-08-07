@@ -7,7 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { AddRowForm } from "./AddRowForm";
 import { TableView } from "./TableView";
-import { TableFilters } from "./TableFilters";
+import { TableFilters, FilterToggleButton } from "./TableFilters";
 import useRowsTableEditor from "@/hooks/useRowsTableEditor";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -31,6 +31,8 @@ export default function TableEditor({
 	rows,
 	setRows,
 }: Props) {
+	const [showSidebar, setShowSidebar] = useState(false);
+	const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 	// Columns loaded
 	if (!rows || !columns) return;
 
@@ -234,13 +236,19 @@ export default function TableEditor({
 
 	// Refresh data when columns change - only when columns are actually added/removed
 	useEffect(() => {
-		if (columns && columns.length > 0 && token && tenant?.id && selectedDatabase?.id) {
+		if (
+			columns &&
+			columns.length > 0 &&
+			token &&
+			tenant?.id &&
+			selectedDatabase?.id
+		) {
 			// Only refresh if we have rows and columns don't match
 			if (rows && rows.length > 0) {
 				const needsRefresh = rows.some((row) => {
 					if (!row.cells || !Array.isArray(row.cells)) return true;
 					return !columns.every((col) =>
-						row.cells!.some((cell) => cell.columnId === col.id)
+						row.cells!.some((cell) => cell.columnId === col.id),
 					);
 				});
 
@@ -269,7 +277,14 @@ export default function TableEditor({
 				}
 			}
 		}
-	}, [columns?.length, token, tenant?.id, selectedDatabase?.id, table.id, rows?.length]);
+	}, [
+		columns?.length,
+		token,
+		tenant?.id,
+		selectedDatabase?.id,
+		table.id,
+		rows?.length,
+	]);
 
 	const fetchTables = async () => {
 		if (!tenant || !user || !token || !selectedDatabase?.id) return;
@@ -329,6 +344,11 @@ export default function TableEditor({
 					</Link>
 				</div>
 				<div className='flex items-center space-x-3'>
+					<FilterToggleButton
+						showSidebar={showSidebar}
+						setShowSidebar={setShowSidebar}
+						activeFiltersCount={activeFiltersCount}
+					/>
 					<ImportExportControls rows={rows} columns={columns} table={table} />
 				</div>
 			</div>
@@ -353,6 +373,10 @@ export default function TableEditor({
 				rows={rows}
 				tables={tables}
 				onFilterChange={setFilteredRows}
+				showToggleButton={false}
+				showSidebar={showSidebar}
+				setShowSidebar={setShowSidebar}
+				onActiveFiltersChange={setActiveFiltersCount}
 			/>
 
 			{/* Rows Table */}

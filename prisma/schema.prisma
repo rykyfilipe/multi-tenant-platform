@@ -23,7 +23,7 @@ model Tenant {
   updatedAt         DateTime           @updatedAt
   website           String?
   memoryUsedGB      Float              @default(0)
-  memoryLimitGB     Float              @default(0.098)
+  memoryLimitGB     Float              @default(0.1)
   lastMemoryUpdate  DateTime?
   columnPermissions ColumnPermission[]
   databases         Database[]

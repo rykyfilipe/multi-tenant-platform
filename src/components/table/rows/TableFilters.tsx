@@ -57,6 +57,41 @@ interface TableFiltersProps {
 	rows: Row[];
 	tables: Table[] | null;
 	onFilterChange: (filteredRows: Row[]) => void;
+	showToggleButton?: boolean;
+	showSidebar?: boolean;
+	setShowSidebar?: (show: boolean) => void;
+	onActiveFiltersChange?: (count: number) => void;
+}
+
+// Export the toggle button as a separate component
+export function FilterToggleButton({
+	showSidebar,
+	setShowSidebar,
+	activeFiltersCount,
+}: {
+	showSidebar: boolean;
+	setShowSidebar: (show: boolean) => void;
+	activeFiltersCount: number;
+}) {
+	return (
+		<Button
+			variant='outline'
+			size='sm'
+			onClick={() => setShowSidebar(!showSidebar)}
+			className='shadow-sm bg-background/95 backdrop-blur-sm border-border/50'>
+			{showSidebar ? (
+				<PanelRightClose className='w-4 h-4' />
+			) : (
+				<PanelRightOpen className='w-4 h-4' />
+			)}
+			<span className='ml-2'>Filters</span>
+			{activeFiltersCount > 0 && (
+				<Badge variant='secondary' className='ml-2'>
+					{activeFiltersCount}
+				</Badge>
+			)}
+		</Button>
+	);
 }
 
 export function TableFilters({
@@ -64,10 +99,21 @@ export function TableFilters({
 	rows,
 	tables,
 	onFilterChange,
+	showToggleButton = true,
+	showSidebar: externalShowSidebar,
+	setShowSidebar: externalSetShowSidebar,
+	onActiveFiltersChange,
 }: TableFiltersProps) {
 	const [filters, setFilters] = useState<FilterConfig[]>([]);
-	const [showSidebar, setShowSidebar] = useState(false);
 	const [globalSearch, setGlobalSearch] = useState("");
+	const [internalShowSidebar, setInternalShowSidebar] = useState(false);
+
+	// Use external state if provided, otherwise use internal state
+	const showSidebar =
+		externalShowSidebar !== undefined
+			? externalShowSidebar
+			: internalShowSidebar;
+	const setShowSidebar = externalSetShowSidebar || setInternalShowSidebar;
 	const [filterPresets, setFilterPresets] = useState<
 		{ name: string; filters: FilterConfig[]; globalSearch: string }[]
 	>([]);
@@ -728,28 +774,24 @@ export function TableFilters({
 		onFilterChange(filteredRows);
 	}, [filteredRows, onFilterChange]);
 
+	// Update active filters count
+	useEffect(() => {
+		const activeFiltersCount = filters.length + (globalSearch ? 1 : 0);
+		onActiveFiltersChange?.(activeFiltersCount);
+	}, [filters, globalSearch, onActiveFiltersChange]);
+
 	const activeFiltersCount = filters.length + (globalSearch ? 1 : 0);
 
 	return (
 		<>
-			{/* Toggle Button - Fixed Position */}
-			<Button
-				variant='outline'
-				size='sm'
-				onClick={() => setShowSidebar(!showSidebar)}
-				className='fixed top-4 right-4 z-50 shadow-lg bg-background/95 backdrop-blur-sm border-border/50'>
-				{showSidebar ? (
-					<PanelRightClose className='w-4 h-4' />
-				) : (
-					<PanelRightOpen className='w-4 h-4' />
-				)}
-				<span className='ml-2'>Filters</span>
-				{activeFiltersCount > 0 && (
-					<Badge variant='secondary' className='ml-2'>
-						{activeFiltersCount}
-					</Badge>
-				)}
-			</Button>
+			{/* Toggle Button - Inline Position */}
+			{showToggleButton && (
+				<FilterToggleButton
+					showSidebar={showSidebar}
+					setShowSidebar={setShowSidebar}
+					activeFiltersCount={activeFiltersCount}
+				/>
+			)}
 
 			{/* Sidebar */}
 			<div

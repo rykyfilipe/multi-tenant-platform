@@ -94,6 +94,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 	const { tenant, token, showAlert, user } = useApp();
 	const tenantId = tenant?.id;
 	const [tables, setTables] = useState<Table[] | null>(null);
+	const [isImporting, setIsImporting] = useState(false);
 
 	// Fetch tables pentru referințe
 	useMemo(() => {
@@ -148,7 +149,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 							const date = new Date(value);
 							if (!isNaN(date.getTime())) {
 								// Formatare pentru Excel - YYYY-MM-DD
-								value = date.toISOString().split('T')[0];
+								value = date.toISOString().split("T")[0];
 							}
 						} catch {
 							// Fallback la valoarea originală dacă parsarea eșuează
@@ -159,6 +160,9 @@ function ImportExportControls({ columns, rows, table }: Props) {
 					} else if (col.type === "reference") {
 						// Pentru coloanele de tip "reference", valoarea este deja cheia primară
 						// Nu mai este nevoie de procesare suplimentară
+					} else if (col.type === "customArray") {
+						// Pentru customArray, exportăm valoarea exactă (fără JSON.stringify suplimentar)
+						// Valoarea este deja în formatul corect
 					}
 
 					return JSON.stringify(value);
@@ -182,6 +186,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
+		setIsImporting(true);
 		try {
 			const text = await file.text();
 			const lines = text.split("\n").filter(Boolean);
@@ -221,12 +226,27 @@ function ImportExportControls({ columns, rows, table }: Props) {
 					}
 
 					// Validare tip pentru coloanele normale
-					const isValidType =
-						(col.type === "number" && typeof value === "number") ||
-						((col.type === "string" || col.type === "text") &&
-							typeof value === "string") ||
-						(col.type === "boolean" && typeof value === "boolean") ||
-						(col.type === "date" && !isNaN(Date.parse(value)));
+					let isValidType = false;
+
+					if (col.type === "number" && typeof value === "number") {
+						isValidType = true;
+					} else if (
+						(col.type === "string" || col.type === "text") &&
+						typeof value === "string"
+					) {
+						isValidType = true;
+					} else if (col.type === "boolean" && typeof value === "boolean") {
+						isValidType = true;
+					} else if (col.type === "date" && !isNaN(Date.parse(value))) {
+						isValidType = true;
+					} else if (col.type === "customArray" && typeof value === "string") {
+						// Pentru customArray, verificăm că valoarea există în opțiunile definite
+						if (col.customOptions && col.customOptions.length > 0) {
+							isValidType = col.customOptions.includes(value);
+						} else {
+							isValidType = true; // Dacă nu sunt opțiuni definite, acceptăm orice string
+						}
+					}
 
 					if (!isValidType) return null;
 
@@ -301,6 +321,8 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			}
 		} catch (err) {
 			showAlert("Failed to import data. Please try again.", "error");
+		} finally {
+			setIsImporting(false);
 		}
 	};
 
@@ -313,10 +335,13 @@ function ImportExportControls({ columns, rows, table }: Props) {
 	};
 	const [open, setOpen] = useState(false);
 	return (
-		<div className='absolute right-3 bottom-3 flex items-center gap-2'>
+		<div className='flex items-center gap-2'>
 			<Button
-				className='rounded-br-none rounded-tr-none rounded-l-2xl'
-				onClick={handleExport}>
+				onClick={handleExport}
+				disabled={isImporting}
+				variant='outline'
+				size='sm'
+				className='flex items-center gap-2'>
 				Export
 			</Button>
 
@@ -329,10 +354,22 @@ function ImportExportControls({ columns, rows, table }: Props) {
 								onMouseLeave={() => setOpen(false)}>
 								<Button
 									asChild
-									className='rounded-bl-none rounded-tl-none rounded-r-2xl bg-white text-black hover:bg-black/5'>
-									<span className='flex items-center gap-1'>
-										Import
-										<Info className='w-4 h-4 text-muted-foreground' />
+									disabled={isImporting}
+									variant='outline'
+									size='sm'
+									className='flex items-center gap-2'>
+									<span className='flex items-center gap-2'>
+										{isImporting ? (
+											<>
+												<div className='w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin'></div>
+												Importing...
+											</>
+										) : (
+											<>
+												Import
+												<Info className='w-4 h-4 text-muted-foreground' />
+											</>
+										)}
 									</span>
 								</Button>
 							</div>
@@ -348,8 +385,16 @@ function ImportExportControls({ columns, rows, table }: Props) {
 						accept='.csv'
 						className='hidden'
 						onChange={handleImport}
+						disabled={isImporting}
 					/>
 				</label>
+			)}
+
+			{isImporting && (
+				<div className='flex items-center gap-2 text-sm text-muted-foreground ml-2'>
+					<div className='w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin'></div>
+					Importing...
+				</div>
 			)}
 		</div>
 	);

@@ -24,8 +24,8 @@ interface DashboardStatsProps {
 		activeUsers: number;
 		subscriptionStatus: string;
 		planName: string;
-		memoryUsedGB: number;
-		memoryLimitGB: number;
+		memoryUsedMB: number;
+		memoryLimitMB: number;
 		memoryPercentage: number;
 		isNearMemoryLimit: boolean;
 		isOverMemoryLimit: boolean;
@@ -122,10 +122,18 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 				</CardHeader>
 				<CardContent className='px-4 sm:px-6'>
 					<div className='text-2xl font-bold'>
-						{stats.memoryUsedGB.toFixed(3)} GB
+						{stats.memoryUsedMB < 1 
+							? `${(stats.memoryUsedMB * 1024).toFixed(1)} KB`
+							: stats.memoryUsedMB < 1024
+							? `${stats.memoryUsedMB.toFixed(1)} MB`
+							: `${(stats.memoryUsedMB / 1024).toFixed(2)} GB`
+						}
 					</div>
 					<p className='text-xs text-muted-foreground'>
-						{stats.memoryPercentage.toFixed(1)}% of {stats.memoryLimitGB} GB
+						{stats.memoryPercentage.toFixed(1)}% of{" "}
+						{stats.memoryLimitMB < 1024
+							? `${stats.memoryLimitMB.toFixed(0)} MB`
+							: `${(stats.memoryLimitMB / 1024).toFixed(1)} GB`}{" "}
 						limit
 					</p>
 					{stats.isOverMemoryLimit && (

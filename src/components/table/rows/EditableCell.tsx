@@ -12,7 +12,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../ui/select";
-import { USER_FRIENDLY_COLUMN_TYPES, COLUMN_TYPE_LABELS } from "@/lib/columnTypes";
+import {
+	USER_FRIENDLY_COLUMN_TYPES,
+	COLUMN_TYPE_LABELS,
+} from "@/lib/columnTypes";
 import { Button } from "../../ui/button";
 
 interface Props {
@@ -121,7 +124,7 @@ export function EditableCell({
 	};
 
 	let referenceSelect: JSX.Element | null = null;
-			if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+	if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 		const options = referenceData[column.referenceTableId ?? -1] ?? [];
 
 		const referencedTable = tables?.find(
@@ -222,7 +225,7 @@ export function EditableCell({
 						value={String(value || "")}
 						onValueChange={(v) => setValue(v)}>
 						<SelectTrigger>
-							<SelectValue placeholder="Select an option" />
+							<SelectValue placeholder='Select an option' />
 						</SelectTrigger>
 						<SelectContent>
 							{column.customOptions && column.customOptions.length > 0 ? (
@@ -280,7 +283,10 @@ export function EditableCell({
 		} else {
 			display = `⚠️ Invalid: ${value}`;
 		}
-	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
+	} else if (
+		column.type === USER_FRIENDLY_COLUMN_TYPES.link &&
+		column.referenceTableId
+	) {
 		// Pentru coloanele de referință, verificăm dacă valoarea există în tabelul de referință
 		const referenceTable = tables?.find(
 			(t) => t.id === column.referenceTableId,
@@ -339,7 +345,7 @@ export function EditableCell({
 					: "Double-click to edit"
 			}
 			className={`${getDisplayStyle()}`}>
-			<p className='max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis'>
+			<p className='max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis select-none'>
 				{display}
 			</p>
 		</div>

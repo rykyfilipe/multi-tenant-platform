@@ -8,6 +8,7 @@ import {
 	verifyLogin,
 } from "@/lib/auth";
 import { checkPlanLimit } from "@/lib/planLimits";
+import { updateMemoryAfterRowChange } from "@/lib/memory-middleware";
 import { z } from "zod";
 
 const RowSchema = z.object({
@@ -124,6 +125,23 @@ export async function POST(
 			for (const cell of cells) {
 				const column = table.columns.find((col) => col.id === cell.columnId);
 
+				if (!column) {
+					validationErrors.push(`Unknown column ID: ${cell.columnId}`);
+					continue;
+				}
+
+				// Validare pentru customArray
+				if (column.type === "customArray" && cell.value) {
+					if (column.customOptions && column.customOptions.length > 0) {
+						if (!column.customOptions.includes(String(cell.value))) {
+							validationErrors.push(
+								`Column "${column.name}" must be one of: ${column.customOptions.join(", ")}. Got: "${cell.value}"`
+							);
+							continue;
+						}
+					}
+				}
+
 				if (
 					column &&
 					column.type === "reference" &&
@@ -221,6 +239,9 @@ export async function POST(
 				createdRows.push(createdRow);
 			}
 
+			// Actualizăm memoria după crearea rândurilor
+			await updateMemoryAfterRowChange(Number(tenantId));
+
 			// Dacă există erori de validare, le returnăm împreună cu rândurile create
 			if (allValidationErrors.length > 0) {
 				return NextResponse.json(
@@ -266,6 +287,9 @@ export async function POST(
 			await prisma.cell.createMany({
 				data: processedCells,
 			});
+
+			// Actualizăm memoria după crearea rândului
+			await updateMemoryAfterRowChange(Number(tenantId));
 
 			// Returnăm rândul cu celulele
 			const createdRow = await prisma.row.findUnique({

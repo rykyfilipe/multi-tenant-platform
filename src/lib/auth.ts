@@ -262,6 +262,7 @@ export const authOptions = {
 								: token.name || token.email || "",
 						image: (token.profileImage as string) || undefined,
 						profileImage: (token.profileImage as string) || undefined,
+						tenantId: (token.tenantId as string) || null,
 					};
 					session.accessToken = (token.accessToken as string) || "";
 					session.customJWT = (token.customJWT as string) || "";

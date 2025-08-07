@@ -77,7 +77,12 @@ const DataUsageChart: React.FC<DataUsageChartProps> = ({ data }) => {
 					<div className='space-y-2'>
 						<div className='flex items-center justify-between'>
 							<span className='text-sm text-muted-foreground'>
-								{data.memory.used.toFixed(3)} / {data.memory.total} {data.storage.unit}
+								{data.memory.used < 1 
+									? `${(data.memory.used * 1024).toFixed(1)} / ${(data.memory.total * 1024).toFixed(0)} KB`
+									: data.memory.used < 1024
+									? `${data.memory.used.toFixed(1)} / ${data.memory.total.toFixed(0)} MB`
+									: `${(data.memory.used / 1024).toFixed(2)} / ${(data.memory.total / 1024).toFixed(1)} GB`
+								}
 							</span>
 							<span className='text-sm font-medium'>
 								{memoryPercentage.toFixed(1)}%

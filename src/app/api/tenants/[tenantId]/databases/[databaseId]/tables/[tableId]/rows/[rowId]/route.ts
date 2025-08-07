@@ -6,6 +6,7 @@ import {
 	verifyLogin,
 } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { updateMemoryAfterRowChange } from "@/lib/memory-middleware";
 import { NextResponse } from "next/server";
 
 export async function DELETE(
@@ -92,6 +93,9 @@ export async function DELETE(
 				id: Number(rowId),
 			},
 		});
+
+		// Actualizăm memoria după ștergerea rândului
+		await updateMemoryAfterRowChange(Number(tenantId));
 
 		return NextResponse.json(
 			{ message: "Row deleted successfully" },

@@ -14,8 +14,8 @@ interface DashboardData {
 		activeUsers: number;
 		subscriptionStatus: string;
 		planName: string;
-		memoryUsedGB: number;
-		memoryLimitGB: number;
+		memoryUsedMB: number;
+		memoryLimitMB: number;
 		memoryPercentage: number;
 		isNearMemoryLimit: boolean;
 		isOverMemoryLimit: boolean;
@@ -120,6 +120,24 @@ export const useDashboardData = () => {
 					},
 				});
 
+				// Auto-recalculate memory on each page load
+				try {
+					const recalcResponse = await fetch(
+						`/api/tenants/${tenant.id}/memory/recalculate`,
+						{
+							method: "POST",
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						},
+					);
+					if (recalcResponse.ok) {
+						console.log("🔄 [AUTO] Memory recalculated on page load");
+					}
+				} catch (recalcError) {
+					console.log("⚠️ [AUTO] Memory recalculation failed:", recalcError);
+				}
+
 				// Check if all responses are ok
 				if (!databasesResponse.ok || !usersResponse.ok || !memoryResponse.ok) {
 					throw new Error("Failed to fetch dashboard data");
@@ -133,10 +151,6 @@ export const useDashboardData = () => {
 
 				// Process databases data
 				const databases = Array.isArray(databasesData) ? databasesData : [];
-
-				if (process.env.NODE_ENV === "development") {
-					// Dashboard databases data loaded
-				}
 
 				const totalTables = databases.reduce(
 					(acc: number, db: any) => acc + (db.tables?.length || 0),
@@ -153,16 +167,8 @@ export const useDashboardData = () => {
 					return acc + dbRows;
 				}, 0);
 
-				if (process.env.NODE_ENV === "development") {
-					// Dashboard totals calculated
-				}
-
 				// Process users data
 				const users = Array.isArray(usersData) ? usersData : [];
-
-				if (process.env.NODE_ENV === "development") {
-					// Dashboard users data loaded
-				}
 				// Pentru moment, considerăm toți utilizatorii ca fiind activi
 				// În viitor, putem adăuga un câmp status în baza de date
 				// Include administratorul curent în calcul (API-ul îl exclude din listă)
@@ -173,18 +179,16 @@ export const useDashboardData = () => {
 					subscription?.subscriptionPlan || null,
 				);
 
-				console.log("planLimits", planLimits);
-
 				// Get memory data
 				const memoryInfo = memoryData.success
 					? memoryData.data
 					: {
-							usedGB: 0,
-							limitGB: planLimits.storage / 1024,
+							usedMB: 0,
+							limitMB: planLimits.storage, // Already in MB
 							percentage: 0,
 							isNearLimit: false,
 					  };
-				console.log("memoryInfo", memoryInfo);
+
 				// Create dashboard data
 				const dashboardData: DashboardData = {
 					stats: {
@@ -196,8 +200,8 @@ export const useDashboardData = () => {
 						subscriptionStatus:
 							subscription?.subscriptionStatus || "no_subscription",
 						planName: subscription?.subscriptionPlan || "Starter",
-						memoryUsedGB: memoryInfo.usedGB,
-						memoryLimitGB: memoryInfo.limitGB,
+						memoryUsedMB: memoryInfo.usedMB,
+						memoryLimitMB: memoryInfo.limitMB,
 						memoryPercentage: memoryInfo.percentage,
 						isNearMemoryLimit: memoryInfo.isNearLimit,
 						isOverMemoryLimit: memoryInfo.isOverLimit,
@@ -237,9 +241,9 @@ export const useDashboardData = () => {
 					},
 					usageData: {
 						storage: {
-							used: memoryInfo.usedGB,
-							total: memoryInfo.limitGB,
-							unit: "GB",
+							used: memoryInfo.usedMB,
+							total: memoryInfo.limitMB,
+							unit: "MB",
 						},
 						tables: {
 							used: totalTables,
@@ -258,8 +262,8 @@ export const useDashboardData = () => {
 							total: planLimits.users,
 						},
 						memory: {
-							used: memoryInfo.usedGB,
-							total: memoryInfo.limitGB,
+							used: memoryInfo.usedMB,
+							total: memoryInfo.limitMB,
 							percentage: memoryInfo.percentage,
 							isNearLimit: memoryInfo.isNearLimit,
 							isOverLimit: memoryInfo.isOverLimit,

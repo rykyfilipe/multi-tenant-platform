@@ -7,6 +7,7 @@ import {
 	getUserFromRequest,
 	verifyLogin,
 } from "@/lib/auth";
+import { updateMemoryAfterRowChange } from "@/lib/memory-middleware";
 import { z } from "zod";
 
 const CellUpdateSchema = z.object({
@@ -104,6 +105,9 @@ export async function PATCH(
 				column: true,
 			},
 		});
+
+		// Actualizăm memoria după actualizarea celulei
+		await updateMemoryAfterRowChange(Number(tenantId));
 
 		return NextResponse.json(updatedCell);
 	} catch (error) {

@@ -54,7 +54,6 @@ function DashboardPage() {
 		}
 	}, [loading, data]);
 
-	console.log(data);
 	if (!session) return null;
 
 	if (loading) {
