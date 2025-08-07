@@ -21,7 +21,37 @@ interface Props {
 function TenantSettingsModal({ tenant, onClose }: Props) {
 	const [activeTab, setActiveTab] = useState("general");
 	const [loading, setLoading] = useState(false);
-	const { showAlert, token, setTenant } = useApp();
+	const { showAlert, token, setTenant, user } = useApp();
+
+	// Check if user is admin
+	if (user?.role !== "ADMIN") {
+		return (
+			<Dialog open={true} onOpenChange={onClose}>
+				<DialogContent className='sm:max-w-md'>
+					<DialogHeader>
+						<DialogTitle className='flex items-center gap-2'>
+							<Settings className='w-5 h-5' />
+							Access Denied
+						</DialogTitle>
+					</DialogHeader>
+					<div className='text-center py-8'>
+						<div className='w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+							<Settings className='w-8 h-8 text-red-600' />
+						</div>
+						<h3 className='text-lg font-semibold text-foreground mb-2'>
+							Admin Access Required
+						</h3>
+						<p className='text-muted-foreground mb-6'>
+							Only administrators can modify organization settings. Please contact your administrator for any changes.
+						</p>
+						<Button onClick={onClose} className='w-full'>
+							Close
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+		);
+	}
 
 	const [formData, setFormData] = useState({
 		name: tenant.name,

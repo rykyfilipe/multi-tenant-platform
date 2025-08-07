@@ -26,6 +26,7 @@ import {
 import AuthModal from "@/components/auth/AuthModal";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -55,6 +56,7 @@ const DataHubLandingPage = () => {
 
 	const { data: session } = useSession();
 	const router = useRouter();
+	const { user } = useApp();
 
 	useEffect(() => {
 		setMounted(true);
@@ -66,10 +68,16 @@ const DataHubLandingPage = () => {
 
 	const currentPlan = session?.subscription?.plan;
 	const isSubscribed = session?.subscription?.status === "active";
+	const isAdmin = user?.role === "ADMIN";
 
 	const handleStripeCheckout = async (priceId: string, planName: string) => {
 		if (!session) {
 			setShowLoginModal(true);
+			return;
+		}
+
+		if (!isAdmin) {
+			alert("Only administrators can modify subscription plans. Please contact your administrator.");
 			return;
 		}
 
@@ -909,10 +917,13 @@ const DataHubLandingPage = () => {
 											}}
 											disabled={
 												isCurrentPlan ||
-												(!plan.priceId && plan.name !== "Starter")
+												(!plan.priceId && plan.name !== "Starter") ||
+												(!isAdmin && plan.name !== "Starter")
 											}>
 											{isCurrentPlan
 												? "Current Plan"
+												: !isAdmin && plan.name !== "Starter"
+												? "Admin Only"
 												: plan.name === "Starter"
 												? "Get Started Free"
 												: "Get Started"}

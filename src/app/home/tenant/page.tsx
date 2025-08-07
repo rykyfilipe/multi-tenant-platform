@@ -162,14 +162,20 @@ function Page() {
 						<Badge variant='secondary' className='text-xs'>
 							{user?.role}
 						</Badge>
-						<Button
-							onClick={() => setShowSettings(true)}
-							variant='outline'
-							size='sm'
-							className='gap-2'>
-							<Settings className='w-4 h-4' />
-							Settings
-						</Button>
+						{user?.role === "ADMIN" ? (
+							<Button
+								onClick={() => setShowSettings(true)}
+								variant='outline'
+								size='sm'
+								className='gap-2'>
+								<Settings className='w-4 h-4' />
+								Settings
+							</Button>
+						) : (
+							<div className='text-xs text-muted-foreground px-3 py-2 bg-muted/50 rounded-md border border-dashed'>
+								Only administrators can modify settings
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
@@ -394,16 +400,26 @@ function Page() {
 									</span>
 								</Button>
 							</Link>
-							<Button
-								variant='outline'
-								className='h-auto p-4 flex flex-col items-center gap-2'
-								onClick={() => setShowSettings(true)}>
-								<Settings className='w-5 h-5' />
-								<span>Organization Settings</span>
-								<span className='text-xs text-muted-foreground'>
-									Configure preferences and branding
-								</span>
-							</Button>
+							{user?.role === "ADMIN" ? (
+								<Button
+									variant='outline'
+									className='h-auto p-4 flex flex-col items-center gap-2'
+									onClick={() => setShowSettings(true)}>
+									<Settings className='w-5 h-5' />
+									<span>Organization Settings</span>
+									<span className='text-xs text-muted-foreground'>
+										Configure preferences and branding
+									</span>
+								</Button>
+							) : (
+								<div className='h-auto p-4 flex flex-col items-center gap-2 border border-dashed rounded-lg bg-muted/50'>
+									<Settings className='w-5 h-5 text-muted-foreground' />
+									<span className='text-muted-foreground'>Organization Settings</span>
+									<span className='text-xs text-muted-foreground'>
+										Admin access required
+									</span>
+								</div>
+							)}
 						</div>
 					</CardContent>
 				</Card>

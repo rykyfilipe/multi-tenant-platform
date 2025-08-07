@@ -284,27 +284,59 @@ function Page() {
 											Subscription & Billing
 										</h2>
 										<p className='text-muted-foreground'>
-											Manage your subscription, billing information, and plan
-											upgrades.
+											{user?.role === "ADMIN" 
+												? "Manage your subscription, billing information, and plan upgrades."
+												: "View your current subscription. Only administrators can modify plans."
+											}
 										</p>
 									</div>
 
-									<SubscriptionManager
-										subscription={
-											subscription || {
-												stripeCustomerId: null,
-												stripeSubscriptionId: null,
-												subscriptionStatus: null,
-												subscriptionPlan: null,
-												subscriptionCurrentPeriodEnd: null,
+									{user?.role === "ADMIN" ? (
+										<SubscriptionManager
+											subscription={
+												subscription || {
+													stripeCustomerId: null,
+													stripeSubscriptionId: null,
+													subscriptionStatus: null,
+													subscriptionPlan: null,
+													subscriptionCurrentPeriodEnd: null,
+												}
 											}
-										}
-										onRefresh={() => {
-											// Refresh subscription data
-											window.location.reload();
-										}}
-										isLoading={subscriptionLoading}
-									/>
+											onRefresh={() => {
+												// Refresh subscription data
+												window.location.reload();
+											}}
+											isLoading={subscriptionLoading}
+										/>
+									) : (
+										<Card className='border-border/20 bg-card/50 backdrop-blur-sm'>
+											<CardHeader>
+												<CardTitle className='flex items-center gap-2'>
+													<CreditCard className='w-5 h-5' />
+													Subscription Information
+												</CardTitle>
+												<CardDescription>
+													Current plan and billing status
+												</CardDescription>
+											</CardHeader>
+											<CardContent>
+												<div className='text-center py-8'>
+													<div className='w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+														<CreditCard className='w-8 h-8 text-blue-600' />
+													</div>
+													<h3 className='text-lg font-semibold text-foreground mb-2'>
+														{subscription?.subscriptionPlan || "No Plan"} Plan
+													</h3>
+													<p className='text-muted-foreground mb-4'>
+														Status: {subscription?.subscriptionStatus || "No subscription"}
+													</p>
+													<div className='text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg border border-dashed'>
+														Only administrators can modify subscription plans. Please contact your administrator for any changes.
+													</div>
+												</div>
+											</CardContent>
+										</Card>
+									)}
 								</div>
 							)}
 
