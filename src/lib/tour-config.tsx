@@ -731,11 +731,13 @@ export const usersTourSteps: StepType[] = [
 			<div className='space-y-3'>
 				<h3 className='text-lg font-semibold text-gray-900'>Team Overview</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					View statistics about your team including total members, pending invitations, and administrators.
+					View statistics about your team including total members, pending
+					invitations, and administrators.
 				</p>
 				<div className='bg-purple-50 p-3 rounded-lg'>
 					<p className='text-sm text-purple-700'>
-						📊 <strong>Statistics:</strong> Monitor team growth and activity at a glance.
+						📊 <strong>Statistics:</strong> Monitor team growth and activity at
+						a glance.
 					</p>
 				</div>
 			</div>
@@ -928,23 +930,30 @@ export const tourUtils = {
 	},
 
 	// Helper function to check if element exists
-	elementExists: (selector: string) => {
+	elementExists: (selector: string | Element) => {
 		if (typeof window !== "undefined") {
-			return document.querySelector(selector) !== null;
+			if (typeof selector === "string") {
+				return document.querySelector(selector) !== null;
+			} else {
+				return selector !== null;
+			}
 		}
 		return false;
 	},
 
 	// Helper function to get conditional tour steps
-	getConditionalTourSteps: (baseSteps: StepType[], conditionalSteps: StepType[]) => {
+	getConditionalTourSteps: (
+		baseSteps: StepType[],
+		conditionalSteps: StepType[],
+	) => {
 		const availableSteps = [...baseSteps];
-		
-		conditionalSteps.forEach(step => {
+
+		conditionalSteps.forEach((step) => {
 			if (tourUtils.elementExists(step.selector)) {
 				availableSteps.push(step);
 			}
 		});
-		
+
 		return availableSteps;
 	},
 
@@ -955,7 +964,9 @@ export const tourUtils = {
 
 	// Helper function to get columns editor tour steps based on content
 	getColumnsEditorTourSteps: (hasColumns: boolean) => {
-		return hasColumns ? columnsEditorTourStepsWithColumns : columnsEditorTourSteps;
+		return hasColumns
+			? columnsEditorTourStepsWithColumns
+			: columnsEditorTourSteps;
 	},
 
 	// Helper function to get rows editor tour steps based on content

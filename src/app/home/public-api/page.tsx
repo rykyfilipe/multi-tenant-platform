@@ -213,17 +213,22 @@ const ApiTokensPage = () => {
 				<div className='p-6 max-w-7xl mx-auto'>
 					<div className='space-y-6'>
 						{/* API Header Component */}
-						<ApiHeader />
+						<ApiHeader 
+							onCreateToken={() => setShowCreateModal(true)}
+							loading={loading}
+							tokenCount={tokens.length}
+						/>
 
 						{/* Tokens Section */}
 						<div className='tokens-list'>
 							<TokensList
 								tokens={tokens}
-								onRevoke={revokeToken}
-								onToggleVisibility={toggleTokenVisibility}
-								onCopy={copyToClipboard}
+								loading={loading}
 								visibleTokens={visibleTokens}
-								onCreateNew={() => setShowCreateModal(true)}
+								onCreateToken={() => setShowCreateModal(true)}
+								onToggleTokenVisibility={toggleTokenVisibility}
+								onCopyToken={copyToClipboard}
+								onRevokeToken={revokeToken}
 							/>
 						</div>
 
@@ -235,12 +240,12 @@ const ApiTokensPage = () => {
 				</div>
 
 				{/* Create Token Modal */}
-				<CreateTokenModal
-					isOpen={showCreateModal}
-					onClose={() => setShowCreateModal(false)}
-					onCreate={createToken}
-					loading={loading}
-				/>
+				{showCreateModal && (
+					<CreateTokenModal
+						onClose={() => setShowCreateModal(false)}
+						onCreate={createToken}
+					/>
+				)}
 			</div>
 		</TourProv>
 	);

@@ -214,6 +214,7 @@ function Page() {
 											</CardHeader>
 											<CardContent>
 												<ProfileImageUpload
+													userId={user?.id?.toString() || ""}
 													currentImage={user?.profileImage}
 													userName={`${user?.firstName} ${user?.lastName}`}
 													onImageUpdate={handleImageUpdate}
@@ -411,7 +412,7 @@ function Page() {
 											</CardDescription>
 										</CardHeader>
 										<CardContent>
-											<GDPRRights user={user} />
+											<GDPRRights />
 										</CardContent>
 									</Card>
 								</div>
