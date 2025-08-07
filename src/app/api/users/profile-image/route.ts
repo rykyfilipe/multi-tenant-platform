@@ -85,19 +85,19 @@ export async function POST(request: NextRequest) {
 		const uploadResult = await uploadImage(buffer, fileName, "profiles");
 
 		// Get the current user's profile image to delete the old one
-		const currentUser = await prisma.user.findUnique({
+		const userWithProfileImage = await prisma.user.findUnique({
 			where: { id: parseInt(userId) },
 			select: { profileImage: true },
 		});
 
 		// Delete old profile image from Cloudinary if it exists
 		if (
-			currentUser?.profileImage &&
-			currentUser.profileImage.includes("cloudinary")
+			userWithProfileImage?.profileImage &&
+			userWithProfileImage.profileImage.includes("cloudinary")
 		) {
 			try {
 				// Extract public_id from the URL
-				const urlParts = currentUser.profileImage.split("/");
+				const urlParts = userWithProfileImage.profileImage.split("/");
 				const publicId = urlParts[urlParts.length - 1].split(".")[0];
 				await deleteImage(publicId);
 			} catch (error) {
@@ -118,22 +118,20 @@ export async function POST(request: NextRequest) {
 		});
 	} catch (error) {
 		console.error("Profile image upload error:", error);
-		
+
 		// Provide more specific error messages
 		let errorMessage = "Failed to upload profile image";
 		if (error instanceof Error) {
-			if (error.message.includes('Cloudinary is not configured')) {
-				errorMessage = "Image upload service is not configured. Please contact support.";
-			} else if (error.message.includes('Upload failed')) {
+			if (error.message.includes("Cloudinary is not configured")) {
+				errorMessage =
+					"Image upload service is not configured. Please contact support.";
+			} else if (error.message.includes("Upload failed")) {
 				errorMessage = "Image upload failed. Please try again.";
 			} else {
 				errorMessage = error.message;
 			}
 		}
-		
-		return NextResponse.json(
-			{ error: errorMessage },
-			{ status: 500 },
-		);
+
+		return NextResponse.json({ error: errorMessage }, { status: 500 });
 	}
 }
