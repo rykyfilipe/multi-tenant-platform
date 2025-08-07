@@ -27,7 +27,7 @@ function TableCard({ table }: { table: Table }) {
 		if (!table.isPublic && !publicTableLimit.allowed) {
 			showAlert(
 				`You've reached the limit of ${publicTableLimit.limit} public tables for your ${currentPlan} plan. Please upgrade to make more tables public.`,
-				"warning"
+				"warning",
 			);
 			return;
 		}
@@ -85,7 +85,7 @@ function TableCard({ table }: { table: Table }) {
 						)}
 					</div>
 					<Link href={`/home/database/table/${table.id}/columns`}>
-						{user.role !== "VIEWER" && (
+						{user?.role !== "VIEWER" && (
 							<Button
 								variant='ghost'
 								size='icon'
@@ -117,15 +117,18 @@ function TableCard({ table }: { table: Table }) {
 				<div className='flex gap-2'>
 					<Link href={`/home/database/table/${table.id}/rows`}>
 						<Button variant='outline' size='sm' className='rows-button text-xs'>
-							{user.role === "VIEWER" ? "View" : "Edit"} rows
+							{user?.role === "VIEWER" ? "View" : "Edit"} rows
 						</Button>
 					</Link>
-					{user.role !== "VIEWER" && (
+					{user?.role !== "VIEWER" && (
 						<Button
 							variant='outline'
 							size='sm'
 							onClick={handleTogglePublic}
-							disabled={isUpdatingPublic || (!table.isPublic && !checkLimit("publicTables").allowed)}
+							disabled={
+								isUpdatingPublic ||
+								(!table.isPublic && !checkLimit("publicTables").allowed)
+							}
 							className={`text-xs ${
 								table.isPublic
 									? "text-orange-600 hover:text-orange-700 border-orange-200"
@@ -141,7 +144,7 @@ function TableCard({ table }: { table: Table }) {
 						</Button>
 					)}
 				</div>
-				{user.role !== "VIEWER" && (
+				{user?.role !== "VIEWER" && (
 					<Button
 						size='sm'
 						variant='destructive'
