@@ -23,6 +23,7 @@ export function ProfileImageUpload({
 	userName,
 	onImageUpdate,
 }: ProfileImageUploadProps) {
+	console.log("ProfileImageUpload props:", { userId, currentImage, userName });
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [isUploading, setIsUploading] = useState(false);

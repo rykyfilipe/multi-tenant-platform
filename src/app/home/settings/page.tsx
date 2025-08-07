@@ -66,6 +66,12 @@ function Page() {
 		}
 	};
 
+	console.log("Settings page user:", user);
+
+	useEffect(() => {
+		console.log("User changed:", user);
+	}, [user]);
+
 	const currentPlan = subscription?.subscriptionPlan || "Starter";
 	const isSubscribed = subscription?.subscriptionStatus === "active";
 

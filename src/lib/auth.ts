@@ -261,6 +261,7 @@ export const authOptions = {
 								? `${token.firstName} ${token.lastName}`
 								: token.name || token.email || "",
 						image: (token.profileImage as string) || undefined,
+						profileImage: (token.profileImage as string) || undefined,
 					};
 					session.accessToken = (token.accessToken as string) || "";
 					session.customJWT = (token.customJWT as string) || "";

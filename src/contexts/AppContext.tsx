@@ -24,8 +24,8 @@ interface AppContextType {
 	alertMessage: string;
 	alertType: "success" | "error" | "warning" | "info";
 	isAlertVisible: boolean;
-	user: any;
-	setUser: (user: any) => void;
+	user: User | null;
+	setUser: (user: User | null) => void;
 	setLoading: (x: boolean) => void;
 	loading: boolean;
 	tenant: Tenant | null;
@@ -56,12 +56,14 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 				const newToken = session.customJWT || "";
 
 				if (user?.id !== newUserId || token !== newToken) {
-					setUser({
+					const updatedUser = {
 						...session.user,
 						id: newUserId,
-					});
+					};
+					setUser(updatedUser);
 					setToken(newToken);
 					console.log("session updated", session);
+					console.log("updatedUser:", updatedUser);
 				}
 			} catch (error) {
 				console.error("Error setting session data:", error);

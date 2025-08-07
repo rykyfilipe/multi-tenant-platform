@@ -42,6 +42,7 @@ declare module "next-auth" {
 		role: Role;
 		tenantId?: string | null;
 		image?: string;
+		profileImage?: string;
 	}
 }
 
