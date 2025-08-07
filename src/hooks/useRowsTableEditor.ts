@@ -15,7 +15,7 @@ function useRowsTableEditor() {
 	const handleCancelEdit = () => setEditingCell(null);
 
 	const handleEditCell = (rowId: string, columnId: string, cellId: string) => {
-		if (user.role === "VIEWER") return;
+		if (user?.role === "VIEWER") return;
 		setEditingCell({ rowId, columnId, cellId });
 	};
 

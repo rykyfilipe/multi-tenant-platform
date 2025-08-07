@@ -320,7 +320,7 @@ function ImportExportControls({ columns, rows, table }: Props) {
 				Export
 			</Button>
 
-			{user.role !== "VIEWER" && (
+			{user?.role !== "VIEWER" && (
 				<label htmlFor='import-csv'>
 					<Popover open={open}>
 						<PopoverTrigger asChild>

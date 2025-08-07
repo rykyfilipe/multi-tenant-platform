@@ -13,7 +13,7 @@ function useColumnsTableEditor() {
 	const handleCancelEdit = () => setEditingCell(null);
 
 	const handleEditCell = (columnId: string, fieldName: keyof Column) => {
-		if (user.role !== "VIEWER") setEditingCell({ columnId, fieldName });
+		if (user?.role !== "VIEWER") setEditingCell({ columnId, fieldName });
 	};
 
 	const { tenant } = useApp();

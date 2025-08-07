@@ -68,7 +68,7 @@ export function TableView({
 										{col.name}
 									</th>
 								))}
-								{user.role !== "VIEWER" && (
+								{user?.role !== "VIEWER" && (
 									<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-16'>
 										Actions
 									</th>
@@ -79,7 +79,7 @@ export function TableView({
 							{rows.length === 0 ? (
 								<tr>
 									<td
-										colSpan={columns.length + (user.role !== "VIEWER" ? 1 : 0)}
+										colSpan={columns.length + (user?.role !== "VIEWER" ? 1 : 0)}
 										className='text-center py-8 sm:py-12 text-sm sm:text-base text-muted-foreground'>
 										No data yet.
 									</td>
@@ -190,7 +190,7 @@ export function TableView({
 													</td>
 												);
 											})}
-											{user.role !== "VIEWER" && (
+											{user?.role !== "VIEWER" && (
 												<td className='p-3 sm:p-4 text-center'>
 													<Button
 														variant='ghost'
