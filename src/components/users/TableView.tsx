@@ -135,7 +135,7 @@ export function TableView({
 								</div>
 
 								{/* Actions */}
-								{currentUser.role === "ADMIN" && (
+								{currentUser?.role === "ADMIN" && (
 									<div className="flex items-center gap-2 pt-4 border-t border-border/10">
 										<Link href={`/home/users/permisions/${user.id}`} className="flex-1">
 											<Button
