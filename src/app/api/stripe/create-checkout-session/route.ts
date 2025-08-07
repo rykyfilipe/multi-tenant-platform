@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 	apiVersion: "2025-07-30.basil",
@@ -27,6 +28,25 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json(
 				{ error: "Price ID is required" },
 				{ status: 400 },
+			);
+		}
+
+		// Verify the user is an admin
+		const user = await prisma.user.findUnique({
+			where: { email: session.user.email },
+		});
+
+		if (!user) {
+			return NextResponse.json(
+				{ error: "User not found" },
+				{ status: 404 },
+			);
+		}
+
+		if (user.role !== "ADMIN") {
+			return NextResponse.json(
+				{ error: "Only administrators can modify subscription plans" },
+				{ status: 403 },
 			);
 		}
 

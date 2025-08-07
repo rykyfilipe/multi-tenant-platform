@@ -27,12 +27,35 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// Verify the subscription belongs to the current user
+		// Verify the user is an admin and get their tenant
 		const user = await prisma.user.findUnique({
 			where: { email: session.user.email },
+			include: { tenant: true },
 		});
 
-		if (!user || user.stripeSubscriptionId !== subscriptionId) {
+		if (!user) {
+			return NextResponse.json(
+				{ error: "User not found" },
+				{ status: 404 },
+			);
+		}
+
+		if (user.role !== "ADMIN") {
+			return NextResponse.json(
+				{ error: "Only administrators can cancel subscriptions" },
+				{ status: 403 },
+			);
+		}
+
+		if (!user.tenantId) {
+			return NextResponse.json(
+				{ error: "User is not associated with a tenant" },
+				{ status: 400 },
+			);
+		}
+
+		// Verify the subscription belongs to the admin user
+		if (user.stripeSubscriptionId !== subscriptionId) {
 			return NextResponse.json(
 				{ error: "Subscription not found or access denied" },
 				{ status: 403 },
@@ -47,13 +70,13 @@ export async function POST(request: NextRequest) {
 			},
 		)) as Stripe.Subscription & { current_period_end?: number };
 
-		// Update the user's subscription status in the database
+		// Update all users in the tenant with the new subscription status
 		const currentPeriodEnd = canceledSubscription.current_period_end
 			? new Date(canceledSubscription.current_period_end * 1000)
 			: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now as fallback
 
-		await prisma.user.update({
-			where: { id: user.id },
+		await prisma.user.updateMany({
+			where: { tenantId: user.tenantId },
 			data: {
 				subscriptionStatus: "canceled",
 				subscriptionCurrentPeriodEnd: currentPeriodEnd,

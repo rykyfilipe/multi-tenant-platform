@@ -77,7 +77,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 	isLoading = false,
 }) => {
 	const { data: session } = useSession();
-	const { showAlert } = useApp();
+	const { showAlert, user } = useApp();
 	const [isActionLoading, setIsActionLoading] = useState(false);
 	const [showCancelDialog, setShowCancelDialog] = useState(false);
 	const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -208,6 +208,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 	const planFeatures = getPlanFeaturesLocal(subscription.subscriptionPlan);
 	const isActive = subscription.subscriptionStatus === "active";
 	const isCanceled = subscription.subscriptionStatus === "canceled";
+	const isAdmin = user?.role === "ADMIN";
 
 	// Show loading skeleton if data is loading
 	if (isLoading) {
@@ -430,7 +431,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 							{isActionLoading ? "Loading..." : "Manage Billing"}
 						</Button>
 
-						{isActive && (
+						{isActive && isAdmin && (
 							<>
 								<Button
 									onClick={() => setShowUpgradeDialog(true)}
@@ -473,13 +474,35 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 							</>
 						)}
 
-						{isCanceled && (
+						{isActive && !isAdmin && (
+							<div className='flex-1 flex items-center justify-center p-3 bg-muted/50 rounded-md border border-dashed'>
+								<div className='text-center'>
+									<Info className='w-4 h-4 mx-auto mb-1 text-muted-foreground' />
+									<p className='text-xs text-muted-foreground'>
+										Only administrators can modify subscription plans
+									</p>
+								</div>
+							</div>
+						)}
+
+						{isCanceled && isAdmin && (
 							<Button
 								onClick={() => (window.location.href = "/#pricing")}
 								className='flex-1'>
 								<Zap className='w-4 h-4 mr-2' />
 								Reactivate Subscription
 							</Button>
+						)}
+
+						{isCanceled && !isAdmin && (
+							<div className='flex-1 flex items-center justify-center p-3 bg-muted/50 rounded-md border border-dashed'>
+								<div className='text-center'>
+									<Info className='w-4 h-4 mx-auto mb-1 text-muted-foreground' />
+									<p className='text-xs text-muted-foreground'>
+										Contact your administrator to reactivate the subscription
+									</p>
+								</div>
+							</div>
 						)}
 					</div>
 				</CardContent>

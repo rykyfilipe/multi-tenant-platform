@@ -103,6 +103,17 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 		return;
 	}
 
+	// Get the admin user to find their tenant
+	const adminUser = await prisma.user.findUnique({
+		where: { id: parseInt(userId) },
+		include: { tenant: true },
+	});
+
+	if (!adminUser || !adminUser.tenantId) {
+		console.error("Admin user not found or not associated with a tenant");
+		return;
+	}
+
 	// Calculate current period end (30 days from now as fallback)
 	const subscriptionWithPeriod = subscription as Stripe.Subscription & {
 		current_period_end?: number;
@@ -114,25 +125,43 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
 	console.log(`Current period end: ${currentPeriodEnd.toISOString()}`);
 
-	// Update user's subscription status in database
-	const updatedUser = await prisma.user.update({
-		where: { id: parseInt(userId) },
+	// Update all users in the tenant with the new subscription status
+	await prisma.user.updateMany({
+		where: { tenantId: adminUser.tenantId },
 		data: {
-			stripeCustomerId: subscription.customer as string,
-			stripeSubscriptionId: subscription.id,
 			subscriptionStatus: subscription.status,
 			subscriptionPlan: planName,
 			subscriptionCurrentPeriodEnd: currentPeriodEnd,
 		},
 	});
 
-	console.log(`Updated user ${userId} subscription to ${planName} plan`);
+	// Update the admin user's Stripe-specific fields
+	await prisma.user.update({
+		where: { id: parseInt(userId) },
+		data: {
+			stripeCustomerId: subscription.customer as string,
+			stripeSubscriptionId: subscription.id,
+		},
+	});
+
+	console.log(`Updated all users in tenant ${adminUser.tenantId} to ${planName} plan`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 	const userId = subscription.metadata?.userId;
 
 	if (!userId) return;
+
+	// Get the admin user to find their tenant
+	const adminUser = await prisma.user.findUnique({
+		where: { id: parseInt(userId) },
+		include: { tenant: true },
+	});
+
+	if (!adminUser || !adminUser.tenantId) {
+		console.error("Admin user not found or not associated with a tenant");
+		return;
+	}
 
 	// Calculate current period end (30 days from now as fallback)
 	const subscriptionWithPeriod = subscription as Stripe.Subscription & {
@@ -143,14 +172,16 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 		? new Date(subscriptionWithPeriod.current_period_end * 1000)
 		: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
-	// Update user's subscription status to canceled
-	await prisma.user.update({
-		where: { id: parseInt(userId) },
+	// Update all users in the tenant with canceled subscription status
+	await prisma.user.updateMany({
+		where: { tenantId: adminUser.tenantId },
 		data: {
 			subscriptionStatus: "canceled",
 			subscriptionCurrentPeriodEnd: currentPeriodEnd,
 		},
 	});
+
+	console.log(`Updated all users in tenant ${adminUser.tenantId} to canceled status`);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
