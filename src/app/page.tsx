@@ -505,14 +505,15 @@ const DataHubLandingPage = () => {
 						Your Data Your View
 					</Badge>
 					<h1 className='text-5xl md:text-7xl font-bold text-foreground mb-8 leading-tight'>
-						Multi-Tenant
+						Business Data
 						<br />
-						<span className='text-foreground'>Database Platform</span>
+						<span className='text-foreground'>Management Platform</span>
 					</h1>
 					<p className='text-xl text-muted-foreground mb-8 max-w-3xl mx-auto'>
-						Create, manage, and share databases for multiple clients or
-						projects. No coding required - build custom tables, manage users,
-						and access data via API.
+						Gestionează-ți toate datele companiei într-un singur loc. Creează
+						baze de date personalizate, administrează utilizatorii și
+						permisiunile, și conectează orice aplicație prin API-ul nostru
+						puternic — fără cod necesar.
 					</p>
 					<div className='flex flex-col sm:flex-row gap-6 justify-center'>
 						<Button
@@ -537,11 +538,11 @@ const DataHubLandingPage = () => {
 				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
 					<div className='text-center mb-16'>
 						<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-							Why Choose YDV?
+							De ce să alegi YDV?
 						</h2>
 						<p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
-							Built for modern teams who need powerful, secure, and easy-to-use
-							data management.
+							Construit pentru companii moderne care au nevoie de o gestionare
+							puternică, sigură și ușor de folosit a datelor.
 						</p>
 					</div>
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8'>
@@ -569,12 +570,12 @@ const DataHubLandingPage = () => {
 				<div className='max-w-7xl mx-auto'>
 					<div className='text-center mb-20'>
 						<h2 className='text-4xl md:text-5xl font-bold text-foreground mb-6'>
-							Manage Your Data
+							Gestionează-ți Datele de Business
 						</h2>
 						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
-							YDV provides the data management for your applications or
-							business. Create and manage your data structure, then connect any
-							frontend application through our powerful REST API.
+							YDV oferă soluția completă de gestionare a datelor pentru compania
+							ta. Creează și administrează structura datelor, apoi conectează
+							orice aplicație prin API-ul nostru puternic.
 						</p>
 					</div>
 
@@ -614,12 +615,13 @@ const DataHubLandingPage = () => {
 					<div className='text-center mt-16'>
 						<div className='bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8 border border-border/20'>
 							<h3 className='text-2xl font-bold text-foreground mb-4'>
-								Powerful Data Backend
+								Backend Puternic pentru Business
 							</h3>
 							<p className='text-lg text-muted-foreground mb-6 max-w-2xl mx-auto'>
-								YDV's intuitive interface lets you design your data structure
-								without coding. Then use our REST API to connect any frontend
-								application - websites, mobile apps, or custom dashboards.
+								Interfața intuitivă YDV îți permite să proiectezi structura
+								datelor fără cod. Apoi folosește API-ul nostru REST pentru a
+								conecta orice aplicație - site-uri web, aplicații mobile sau
+								dashboard-uri personalizate.
 							</p>
 							<Button
 								size='lg'
@@ -628,7 +630,7 @@ const DataHubLandingPage = () => {
 									else router.push("home/dashboard");
 								}}
 								className='text-lg px-8 py-3'>
-								Start Managing Data
+								Începe să Gestionezi Datele
 								<ArrowRight className='ml-2 w-5 h-5' />
 							</Button>
 						</div>
@@ -808,11 +810,12 @@ const DataHubLandingPage = () => {
 				<div className='max-w-7xl mx-auto'>
 					<div className='text-center mb-20'>
 						<h2 className='text-4xl md:text-5xl font-bold text-foreground mb-6'>
-							Everything you need to manage multiple databases
+							Tot ce ai nevoie pentru a gestiona datele companiei
 						</h2>
 						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
-							From creating custom tables to managing team permissions, our
-							platform gives you complete control over your data backend.
+							De la crearea tabelelor personalizate la gestionarea permisiunilor
+							echipei, platforma noastră îți oferă controlul complet asupra
+							backend-ului de date.
 						</p>
 					</div>
 
@@ -941,17 +944,17 @@ const DataHubLandingPage = () => {
 			<section className='py-20 px-4 sm:px-6 lg:px-8'>
 				<div className='max-w-4xl mx-auto text-center'>
 					<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-						Ready to Transform Your Data Management?
+						Gata să Transformi Gestionarea Datelor Companiei?
 					</h2>
 					<p className='text-xl text-muted-foreground mb-8'>
-						Join thousands of organizations that trust DataHub for their data
-						needs.
+						Alătură-te miilor de organizații care se încred în YDV pentru
+						nevoile lor de date.
 					</p>
 					<Button
 						size='lg'
 						onClick={() => setShowLoginModal(true)}
 						className='text-lg px-8 py-3'>
-						Get Started Now
+						Începe Acum
 						<ArrowRight className='ml-2 w-5 h-5' />
 					</Button>
 				</div>
@@ -972,7 +975,8 @@ const DataHubLandingPage = () => {
 								<span className='text-xl font-bold'>YDV</span>
 							</div>
 							<p className='text-muted-foreground'>
-								Your Data Your View - Multi-Tenant Database Platform.
+								Your Data Your View - Platformă de Gestionare a Datelor de
+								Business.
 							</p>
 						</div>
 						<div>
@@ -1052,7 +1056,7 @@ const DataHubLandingPage = () => {
 						</div>
 					</div>
 					<div className='border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground'>
-						© 2025 YDV. All rights reserved. Multi-Tenant Database Platform.
+						© 2025 YDV. All rights reserved. Business Data Management Platform.
 					</div>
 				</div>
 			</footer>

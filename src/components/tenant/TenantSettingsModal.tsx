@@ -3,7 +3,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, Building2, Palette, Globe, Save, X } from "lucide-react";
+import { Settings, Building2, Palette, Globe, Save, X, Shield, Zap, TrendingUp } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -28,23 +28,25 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 		return (
 			<Dialog open={true} onOpenChange={onClose}>
 				<DialogContent className='sm:max-w-md'>
-					<DialogHeader>
-						<DialogTitle className='flex items-center gap-2'>
-							<Settings className='w-5 h-5' />
-							Access Denied
-						</DialogTitle>
-					</DialogHeader>
-					<div className='text-center py-8'>
-						<div className='w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-							<Settings className='w-8 h-8 text-red-600' />
+					<DialogHeader className='text-center pb-6'>
+						<div className='w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg'>
+							<Shield className='w-10 h-10 text-red-600 dark:text-red-400' />
 						</div>
-						<h3 className='text-lg font-semibold text-foreground mb-2'>
-							Admin Access Required
-						</h3>
-						<p className='text-muted-foreground mb-6'>
-							Only administrators can modify organization settings. Please contact your administrator for any changes.
+						<DialogTitle className='text-xl font-bold tracking-tight'>
+							Access Restricted
+						</DialogTitle>
+						<p className='text-sm text-muted-foreground font-medium'>
+							Administrator privileges required
 						</p>
-						<Button onClick={onClose} className='w-full'>
+					</DialogHeader>
+					<div className='text-center py-6'>
+						<h3 className='text-lg font-semibold text-foreground mb-3'>
+							Enterprise Settings Locked
+						</h3>
+						<p className='text-muted-foreground mb-6 leading-relaxed'>
+							Only enterprise administrators can modify organization settings. Please contact your system administrator for any configuration changes.
+						</p>
+						<Button onClick={onClose} className='w-full h-12 text-base font-semibold shadow-lg'>
 							Close
 						</Button>
 					</div>
@@ -128,35 +130,43 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 
 	return (
 		<Dialog open={true} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto'>
-				<DialogHeader>
-					<DialogTitle className='flex items-center gap-2'>
-						<Settings className='w-5 h-5' />
-						Organization Settings
+			<DialogContent className='sm:max-w-3xl max-h-[90vh] overflow-y-auto'>
+				<DialogHeader className='text-center pb-6'>
+					<div className='p-4 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full w-fit mx-auto mb-4'>
+						<Settings className='w-8 h-8 text-primary' />
+					</div>
+					<DialogTitle className='text-2xl font-bold tracking-tight'>
+						Enterprise Configuration
 					</DialogTitle>
+					<p className='text-sm text-muted-foreground font-medium'>
+						Manage your organization's settings and preferences
+					</p>
 				</DialogHeader>
 
 				<Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-					<TabsList className='grid w-full grid-cols-3'>
-						<TabsTrigger value='general' className='flex items-center gap-2'>
+					<TabsList className='grid w-full grid-cols-3 h-12'>
+						<TabsTrigger value='general' className='flex items-center gap-2 font-semibold'>
 							<Building2 className='w-4 h-4' />
 							General
 						</TabsTrigger>
-						<TabsTrigger value='contact' className='flex items-center gap-2'>
+						<TabsTrigger value='contact' className='flex items-center gap-2 font-semibold'>
 							<Globe className='w-4 h-4' />
 							Contact
 						</TabsTrigger>
-						<TabsTrigger value='appearance' className='flex items-center gap-2'>
+						<TabsTrigger value='appearance' className='flex items-center gap-2 font-semibold'>
 							<Palette className='w-4 h-4' />
 							Appearance
 						</TabsTrigger>
 					</TabsList>
 
-					<form onSubmit={handleSubmit} className='space-y-6 mt-6'>
+					<form onSubmit={handleSubmit} className='space-y-8 mt-8'>
 						{/* General Settings */}
-						<TabsContent value='general' className='space-y-4'>
-							<div className='space-y-2'>
-								<Label htmlFor='name'>Organization Name *</Label>
+						<TabsContent value='general' className='space-y-6'>
+							<div className='space-y-3'>
+								<Label htmlFor='name' className='text-sm font-semibold flex items-center gap-2'>
+									<Shield className='w-4 h-4 text-primary' />
+									Organization Name *
+								</Label>
 								<Input
 									id='name'
 									value={formData.name}
@@ -165,6 +175,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 									}
 									disabled={loading}
 									required
+									className='h-12 text-base font-medium'
 								/>
 							</div>
 
@@ -323,20 +334,20 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 						</TabsContent>
 
 						{/* Action Buttons */}
-						<div className='flex gap-3 pt-4 border-t'>
+						<div className='flex gap-4 pt-6 border-t'>
 							<Button
 								type='button'
 								variant='outline'
 								onClick={onClose}
-								className='flex-1'>
+								className='flex-1 h-12 text-base font-semibold'>
 								Cancel
 							</Button>
 							<Button
 								type='submit'
 								disabled={loading || !formData.name.trim()}
-								className='flex-1 gap-2'>
+								className='flex-1 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 gap-2'>
 								<Save className='w-4 h-4' />
-								{loading ? "Saving..." : "Save Changes"}
+								{loading ? "Saving..." : "Save Configuration"}
 							</Button>
 						</div>
 					</form>

@@ -45,7 +45,7 @@ const getNavigationItems = (userRole?: string) => [
 		description: "Detailed analytics and charts",
 	},
 	{
-		title: "Tenant Management",
+		title: "Organization Management",
 		url: "/home/tenant",
 		icon: Building2,
 		description: "Manage your organization",
