@@ -9,6 +9,7 @@ import { AddRowForm } from "./AddRowForm";
 import { TableView } from "./TableView";
 import { TableFilters, FilterToggleButton } from "./TableFilters";
 import useRowsTableEditor from "@/hooks/useRowsTableEditor";
+import { usePagination } from "@/hooks/usePagination";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import ImportExportControls from "./ImportExportControls";
@@ -46,6 +47,13 @@ export default function TableEditor({
 	if (!token || !user) return;
 
 	const [cells, setCells] = useState<any[]>([]);
+
+	// Pagination hook
+	const pagination = usePagination({
+		data: filteredRows,
+		initialPageSize: 25,
+		initialPage: 1,
+	});
 
 	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
 		useRowsTableEditor();
@@ -232,7 +240,14 @@ export default function TableEditor({
 	// Update filtered rows when rows change
 	useEffect(() => {
 		setFilteredRows(rows || []);
-	}, [rows]);
+		// Reset pagination to first page when rows change
+		pagination.setPage(1);
+	}, [rows, pagination]);
+
+	// Reset pagination when filtered rows change (due to filters)
+	useEffect(() => {
+		pagination.setPage(1);
+	}, [filteredRows.length, pagination]);
 
 	// Refresh data when columns change - only when columns are actually added/removed
 	useEffect(() => {
@@ -385,12 +400,19 @@ export default function TableEditor({
 					tables={tables}
 					table={table}
 					columns={columns}
-					rows={filteredRows}
+					rows={pagination.paginatedData}
 					editingCell={editingCell}
 					onEditCell={handleEditCell}
 					onSaveCell={handleSaveCellWrapper}
 					onCancelEdit={handleCancelEdit}
 					onDeleteRow={handleDelete}
+					currentPage={pagination.currentPage}
+					pageSize={pagination.pageSize}
+					totalPages={pagination.totalPages}
+					totalItems={pagination.totalItems}
+					onPageChange={pagination.setPage}
+					onPageSizeChange={pagination.setPageSize}
+					showPagination={true}
 				/>
 			</div>
 		</div>

@@ -7,6 +7,7 @@ import { Database, Trash2 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
 import { useApp } from "@/contexts/AppContext";
+import { Pagination } from "../../ui/pagination";
 
 interface Props {
 	tables: Table[] | null;
@@ -24,6 +25,15 @@ interface Props {
 	) => void;
 	onCancelEdit: () => void;
 	onDeleteRow: (rowId: string) => void;
+
+	// Pagination props
+	currentPage: number;
+	pageSize: number;
+	totalPages: number;
+	totalItems: number;
+	onPageChange: (page: number) => void;
+	onPageSizeChange?: (pageSize: number) => void;
+	showPagination?: boolean;
 }
 
 export function TableView({
@@ -36,6 +46,13 @@ export function TableView({
 	onSaveCell,
 	onCancelEdit,
 	onDeleteRow,
+	currentPage,
+	pageSize,
+	totalPages,
+	totalItems,
+	onPageChange,
+	onPageSizeChange,
+	showPagination = true,
 }: Props) {
 	const { user } = useApp();
 	return (
@@ -47,7 +64,12 @@ export function TableView({
 						<CardTitle className='text-lg sm:text-xl'>Table Data</CardTitle>
 					</div>
 					<span className='text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-md self-start sm:self-auto'>
-						{rows.length} row{rows.length !== 1 && "s"}
+						{totalItems} row{totalItems !== 1 && "s"}
+						{showPagination && totalPages > 1 && (
+							<span className='ml-2 text-xs'>
+								(Page {currentPage} of {totalPages})
+							</span>
+						)}
 					</span>
 				</div>
 			</CardHeader>
@@ -209,6 +231,20 @@ export function TableView({
 					</table>
 				</div>
 			</CardContent>
+
+			{/* Pagination */}
+			{showPagination && totalPages > 1 && (
+				<div className='border-t border-border/20'>
+					<Pagination
+						currentPage={currentPage}
+						totalPages={totalPages}
+						onPageChange={onPageChange}
+						pageSize={pageSize}
+						totalItems={totalItems}
+						onPageSizeChange={onPageSizeChange}
+					/>
+				</div>
+			)}
 		</Card>
 	);
 }
