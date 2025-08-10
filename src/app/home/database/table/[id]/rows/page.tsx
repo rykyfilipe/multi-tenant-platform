@@ -17,8 +17,7 @@ function Page() {
 
 	if (!id) return;
 
-	const { table, columns, setColumns, rows, setRows, loading } = useTable(id);
-	const { user } = useApp();
+	const { table, columns, setColumns, loading } = useTable(id);
 	const { selectedDatabase } = useDatabase();
 
 	if (loading) return <TableLoadingState />;
@@ -47,13 +46,7 @@ function Page() {
 				tourUtils.markTourSeen("rows-editor");
 			}}>
 			<div className='h-full bg-background p-4'>
-				<TableEditor
-					table={table}
-					columns={columns}
-					setColumns={setColumns}
-					rows={rows}
-					setRows={setRows}
-				/>
+				<TableEditor table={table} columns={columns} setColumns={setColumns} />
 			</div>
 		</TourProv>
 	);

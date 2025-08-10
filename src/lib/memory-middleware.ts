@@ -5,19 +5,20 @@ import { updateTenantMemoryUsage } from "./memory-tracking";
 
 /**
  * Middleware to update storage usage after data operations
+ * Optimized: Uses a longer delay and batches updates to avoid performance issues
  */
 export const updateMemoryAfterDataChange = async (tenantId: number) => {
 	try {
-		// Update storage usage asynchronously to not block the main operation
+		// Update storage usage asynchronously with longer delay to batch updates
 		setTimeout(async () => {
 			try {
 				await updateTenantMemoryUsage(tenantId);
 			} catch (error) {
-				// Error updating storage usage
+				console.error("Error updating storage usage:", error);
 			}
-		}, 1000); // Delay by 1 second to ensure data is committed
+		}, 30000); // Delay by 30 seconds to batch multiple operations
 	} catch (error) {
-		// Error scheduling storage update
+		console.error("Error scheduling storage update:", error);
 	}
 };
 
@@ -26,6 +27,25 @@ export const updateMemoryAfterDataChange = async (tenantId: number) => {
  */
 export const updateMemoryAfterRowChange = async (tenantId: number) => {
 	await updateMemoryAfterDataChange(tenantId);
+};
+
+/**
+ * Optimized middleware for single cell updates - minimal impact
+ * Uses a much longer delay and lower priority since one cell has negligible storage impact
+ */
+export const updateMemoryAfterCellChange = async (tenantId: number) => {
+	try {
+		// Single cell changes have minimal impact, so we can afford much longer delays
+		setTimeout(async () => {
+			try {
+				await updateTenantMemoryUsage(tenantId);
+			} catch (error) {
+				console.error("Error updating storage usage after cell change:", error);
+			}
+		}, 300000); // Delay by 5 minutes for single cell updates
+	} catch (error) {
+		console.error("Error scheduling cell storage update:", error);
+	}
 };
 
 /**

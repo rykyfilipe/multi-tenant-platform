@@ -17,6 +17,8 @@ export interface Table {
 	isPublic: boolean;
 	columns?: Column[];
 	rows?: Row[];
+	columnsCount?: number; // For display purposes
+	rowsCount?: number; // For display purposes
 	createdAt?: string;
 	updatedAt?: string;
 }

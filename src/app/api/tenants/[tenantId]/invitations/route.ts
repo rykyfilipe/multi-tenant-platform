@@ -141,6 +141,9 @@ export async function POST(
 			},
 		});
 
+		// Store role information in the token payload for when user accepts
+		// The role will be applied when the invitation is accepted
+
 		// Send invitation email
 		try {
 			await sendInvitationEmail({

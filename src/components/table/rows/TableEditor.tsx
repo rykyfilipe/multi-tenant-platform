@@ -1,7 +1,14 @@
 /** @format */
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import {
+	FormEvent,
+	useEffect,
+	useState,
+	useCallback,
+	useMemo,
+	memo,
+} from "react";
 import { Table, Row, Column } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
@@ -9,7 +16,8 @@ import { AddRowForm } from "./AddRowForm";
 import { TableView } from "./TableView";
 import { TableFilters, FilterToggleButton } from "./TableFilters";
 import useRowsTableEditor from "@/hooks/useRowsTableEditor";
-import { usePagination } from "@/hooks/usePagination";
+import useTableRows from "@/hooks/useTableRows";
+import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import ImportExportControls from "./ImportExportControls";
@@ -20,43 +28,43 @@ interface Props {
 	table: Table;
 	columns: Column[] | null;
 	setColumns: (cols: Column[] | null) => void;
-
-	rows: Row[] | null;
-	setRows: (cols: Row[] | null) => void;
 }
 
-export default function TableEditor({
+const TableEditor = memo(function TableEditor({
 	table,
 	columns,
 	setColumns,
-	rows,
-	setRows,
 }: Props) {
 	const [showSidebar, setShowSidebar] = useState(false);
 	const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 	// Columns loaded
-	if (!rows || !columns) return;
+	if (!columns) return;
 
 	const { showAlert, token, user, tenant } = useApp();
 	const { selectedDatabase } = useDatabase();
 	const tenantId = tenant?.id;
 	const [showForm, setShowForm] = useState(false);
 	const [tables, setTables] = useState<Table[] | null>(null);
-	const [filteredRows, setFilteredRows] = useState<Row[]>(rows || []);
+	const [filteredRows, setFilteredRows] = useState<Row[]>([]);
 	const [serverError, setServerError] = useState<string | null>(null);
 	if (!token || !user) return;
 
 	const [cells, setCells] = useState<any[]>([]);
 
-	// Pagination hook
-	const pagination = usePagination({
-		data: filteredRows,
-		initialPageSize: 25,
-		initialPage: 1,
-	});
+	// Use server-side pagination hook
+	const {
+		rows: paginatedRows,
+		loading: rowsLoading,
+		error: rowsError,
+		pagination,
+		fetchRows,
+		refetch: refetchRows,
+	} = useTableRows(table.id.toString(), 25);
 
 	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
 		useRowsTableEditor();
+
+	const { refreshAfterChange } = useDatabaseRefresh();
 
 	// Clear server error when cells change (user starts typing)
 	useEffect(() => {
@@ -71,183 +79,218 @@ export default function TableEditor({
 		}
 	}, [cells, serverError]);
 
-	async function handleAdd(e: FormEvent) {
-		e.preventDefault();
+	const handleAdd = useCallback(
+		async (e: FormEvent) => {
+			e.preventDefault();
 
-		if (!token) return console.error("No token available");
+			if (!token) return console.error("No token available");
 
-		// Clear any previous server errors
-		setServerError(null);
-
-		try {
-			const response = await fetch(
-				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ cells: cells }),
-				},
-			);
-
-			if (!response.ok) {
-				// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
-				let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-
-				try {
-					const errorData = await response.json();
-					errorMessage =
-						errorData.error ||
-						errorData.message ||
-						errorData.details ||
-						errorMessage;
-				} catch (parseError) {
-					try {
-						const textError = await response.text();
-						errorMessage = textError || errorMessage;
-					} catch (textParseError) {
-						console.error("Could not parse error response:", textParseError);
-					}
-				}
-
-				// Set server error to show validation errors
-				setServerError(errorMessage);
-				throw new Error(errorMessage);
-			}
-
-			const data = await response.json();
-			showAlert("Data row added successfully!", "success");
-			const newRows = [...(rows || []), data];
-			setRows(newRows);
-			setFilteredRows(newRows);
-			setTables((prev: any) =>
-				prev?.map((t: any) => {
-					if (t.id === table.id) {
-						return {
-							...t,
-							rows: [...(t.rows || []), data],
-						};
-					}
-					return t;
-				}),
-			);
-
-			setCells([]);
-			// Clear server error on success
+			// Clear any previous server errors
 			setServerError(null);
-		} catch (error: any) {
-			// Gestionează diferite tipuri de erori
-			let errorMessage = "An unexpected error occurred";
 
-			if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			} else if (error?.message) {
-				errorMessage = error.message;
-			}
-
-			// Set server error if not already set
-			if (!serverError) {
-				setServerError(errorMessage);
-			}
-			showAlert(errorMessage, "error");
-		}
-	}
-
-	const handleDelete = async (rowId: string) => {
-		try {
-			const response = await fetch(
-				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
+			try {
+				const response = await fetch(
+					`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({ cells: cells }),
 					},
-				},
-			);
+				);
 
-			if (!response.ok) {
-				// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
-				let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+				if (!response.ok) {
+					// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
+					let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
-				try {
-					const errorData = await response.json();
-					errorMessage =
-						errorData.error ||
-						errorData.message ||
-						errorData.details ||
-						errorMessage;
-				} catch (parseError) {
 					try {
-						const textError = await response.text();
-						errorMessage = textError || errorMessage;
-					} catch (textParseError) {
-						console.error("Could not parse error response:", textParseError);
+						const errorData = await response.json();
+						errorMessage =
+							errorData.error ||
+							errorData.message ||
+							errorData.details ||
+							errorMessage;
+					} catch (parseError) {
+						try {
+							const textError = await response.text();
+							errorMessage = textError || errorMessage;
+						} catch (textParseError) {
+							console.error("Could not parse error response:", textParseError);
+						}
 					}
+
+					// Set server error to show validation errors
+					setServerError(errorMessage);
+					throw new Error(errorMessage);
 				}
 
-				throw new Error(errorMessage);
+				const data = await response.json();
+				showAlert("Data row added successfully!", "success");
+
+				// Refetch rows to get updated pagination
+				await refetchRows();
+
+				// Refresh database cache to update row counts
+				await refreshAfterChange();
+
+				setTables((prev: any) =>
+					prev?.map((t: any) => {
+						if (t.id === table.id) {
+							return {
+								...t,
+								rows: [...(t.rows || []), data],
+							};
+						}
+						return t;
+					}),
+				);
+
+				setCells([]);
+				// Clear server error on success
+				setServerError(null);
+			} catch (error: any) {
+				// Gestionează diferite tipuri de erori
+				let errorMessage = "An unexpected error occurred";
+
+				if (error instanceof Error) {
+					errorMessage = error.message;
+				} else if (typeof error === "string") {
+					errorMessage = error;
+				} else if (error?.message) {
+					errorMessage = error.message;
+				}
+
+				// Set server error if not already set
+				if (!serverError) {
+					setServerError(errorMessage);
+				}
+				showAlert(errorMessage, "error");
 			}
-			const updatedRows: Row[] = rows.filter((col) => col.id !== Number(rowId));
-			setRows(updatedRows);
-			setFilteredRows(updatedRows);
-			showAlert("Data row removed successfully", "success");
-		} catch (error: any) {
-			// Gestionează diferite tipuri de erori
-			let errorMessage = "Failed to remove data row. Please try again.";
+		},
+		[
+			token,
+			tenantId,
+			table.databaseId,
+			table.id,
+			cells,
+			showAlert,
+			refetchRows,
+			refreshAfterChange,
+			setTables,
+			serverError,
+		],
+	);
 
-			if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			} else if (error?.message) {
-				errorMessage = error.message;
+	const handleDelete = useCallback(
+		async (rowId: string) => {
+			try {
+				const response = await fetch(
+					`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}`,
+					{
+						method: "DELETE",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+
+				if (!response.ok) {
+					// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
+					let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+					try {
+						const errorData = await response.json();
+						errorMessage =
+							errorData.error ||
+							errorData.message ||
+							errorData.details ||
+							errorMessage;
+					} catch (parseError) {
+						try {
+							const textError = await response.text();
+							errorMessage = textError || errorMessage;
+						} catch (textParseError) {
+							console.error("Could not parse error response:", textParseError);
+						}
+					}
+
+					throw new Error(errorMessage);
+				}
+				// Refetch rows to get updated pagination
+				await refetchRows();
+
+				// Refresh database cache to update row counts
+				await refreshAfterChange();
+
+				showAlert("Data row removed successfully", "success");
+			} catch (error: any) {
+				// Gestionează diferite tipuri de erori
+				let errorMessage = "Failed to remove data row. Please try again.";
+
+				if (error instanceof Error) {
+					errorMessage = error.message;
+				} else if (typeof error === "string") {
+					errorMessage = error;
+				} else if (error?.message) {
+					errorMessage = error.message;
+				}
+
+				showAlert(errorMessage, "error");
 			}
+		},
+		[
+			tenantId,
+			table.databaseId,
+			table.id,
+			token,
+			refetchRows,
+			refreshAfterChange,
+			showAlert,
+		],
+	);
 
-			showAlert(errorMessage, "error");
-		}
-	};
-
-	const handleSaveCellWrapper = (
-		columnId: string,
-		rowId: string,
-		cellId: string,
-		value: any,
-	) => {
-		handleSaveCell(
-			columnId,
-			rowId,
-			cellId,
-			rows,
-			setRows,
-			value,
+	const handleSaveCellWrapper = useCallback(
+		async (columnId: string, rowId: string, cellId: string, value: any) => {
+			await handleSaveCell(
+				columnId,
+				rowId,
+				cellId,
+				paginatedRows,
+				async () => {
+					await refetchRows(); // Refetch instead of setting rows directly
+					await refreshAfterChange(); // Refresh database cache
+				},
+				value,
+				table,
+				token,
+				user,
+				showAlert,
+			);
+		},
+		[
+			handleSaveCell,
+			paginatedRows,
+			refetchRows,
+			refreshAfterChange,
 			table,
 			token,
 			user,
 			showAlert,
-		);
-	};
+		],
+	);
 	useEffect(() => {
 		if (tenant?.id && selectedDatabase?.id && token && user) {
 			fetchTables();
 		}
 	}, [tenant?.id, selectedDatabase?.id, token, user]);
 
-	// Update filtered rows when rows change
+	// Update filtered rows when paginated rows change
 	useEffect(() => {
-		setFilteredRows(rows || []);
-		// Reset pagination to first page when rows change
-		pagination.setPage(1);
-	}, [rows, pagination]);
-
-	// Reset pagination when filtered rows change (due to filters)
-	useEffect(() => {
-		pagination.setPage(1);
-	}, [filteredRows.length, pagination]);
+		setFilteredRows(paginatedRows || []);
+	}, [paginatedRows]);
 
 	// Refresh data when columns change - only when columns are actually added/removed
 	useEffect(() => {
@@ -259,8 +302,8 @@ export default function TableEditor({
 			selectedDatabase?.id
 		) {
 			// Only refresh if we have rows and columns don't match
-			if (rows && rows.length > 0) {
-				const needsRefresh = rows.some((row) => {
+			if (paginatedRows && paginatedRows.length > 0) {
+				const needsRefresh = paginatedRows.some((row) => {
 					if (!row.cells || !Array.isArray(row.cells)) return true;
 					return !columns.every((col) =>
 						row.cells!.some((cell) => cell.columnId === col.id),
@@ -268,27 +311,7 @@ export default function TableEditor({
 				});
 
 				if (needsRefresh) {
-					const refreshTableData = async () => {
-						try {
-							const res = await fetch(
-								`/api/tenants/${tenant.id}/databases/${selectedDatabase.id}/tables/${table.id}`,
-								{
-									method: "GET",
-									headers: { Authorization: `Bearer ${token}` },
-								},
-							);
-							if (res.ok) {
-								const data = await res.json();
-								const newRows = data.rows || [];
-								setRows(newRows);
-								setFilteredRows(newRows);
-							}
-						} catch (error) {
-							console.error("Error refreshing table data:", error);
-						}
-					};
-
-					refreshTableData();
+					refetchRows();
 				}
 			}
 		}
@@ -298,7 +321,8 @@ export default function TableEditor({
 		tenant?.id,
 		selectedDatabase?.id,
 		table.id,
-		rows?.length,
+		paginatedRows?.length,
+		refetchRows,
 	]);
 
 	const fetchTables = async () => {
@@ -364,7 +388,11 @@ export default function TableEditor({
 						setShowSidebar={setShowSidebar}
 						activeFiltersCount={activeFiltersCount}
 					/>
-					<ImportExportControls rows={rows} columns={columns} table={table} />
+					<ImportExportControls
+						rows={paginatedRows}
+						columns={columns}
+						table={table}
+					/>
 				</div>
 			</div>
 
@@ -385,7 +413,7 @@ export default function TableEditor({
 			{/* Filters */}
 			<TableFilters
 				columns={columns}
-				rows={rows}
+				rows={paginatedRows}
 				tables={tables}
 				onFilterChange={setFilteredRows}
 				showToggleButton={false}
@@ -400,21 +428,23 @@ export default function TableEditor({
 					tables={tables}
 					table={table}
 					columns={columns}
-					rows={pagination.paginatedData}
+					rows={filteredRows}
 					editingCell={editingCell}
 					onEditCell={handleEditCell}
 					onSaveCell={handleSaveCellWrapper}
 					onCancelEdit={handleCancelEdit}
 					onDeleteRow={handleDelete}
-					currentPage={pagination.currentPage}
-					pageSize={pagination.pageSize}
-					totalPages={pagination.totalPages}
-					totalItems={pagination.totalItems}
-					onPageChange={pagination.setPage}
-					onPageSizeChange={pagination.setPageSize}
+					currentPage={pagination?.page || 1}
+					pageSize={pagination?.pageSize || 25}
+					totalPages={pagination?.totalPages || 1}
+					totalItems={pagination?.totalRows || 0}
+					onPageChange={(page) => fetchRows(page, pagination?.pageSize || 25)}
+					onPageSizeChange={(pageSize) => fetchRows(1, pageSize)}
 					showPagination={true}
 				/>
 			</div>
 		</div>
 	);
-}
+});
+
+export default TableEditor;

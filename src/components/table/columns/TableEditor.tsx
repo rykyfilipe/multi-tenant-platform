@@ -8,6 +8,7 @@ import AddColumnForm from "./AddColumnForm";
 import { TableView } from "./TableView";
 import { ColumnOrderManager } from "./ColumnOrderManager";
 import useColumnsTableEditor from "@/hooks/useColumnsTableEditor";
+import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
 import { Button } from "@/components/ui/button";
 import { X, Move } from "lucide-react";
 import Link from "next/link";
@@ -83,6 +84,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		handleDeleteColumn,
 	} = useColumnsTableEditor();
 
+	const { refreshAfterChange } = useDatabaseRefresh();
+
 	const validateColumn = () => {
 		return !columns.find((col) => col.name === newColumn?.name);
 	};
@@ -130,6 +133,9 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			const newColumns = Array.isArray(data) ? data : [data];
 			setColumns([...(columns || []), ...newColumns]);
 			setNewColumn(null);
+
+			// Refresh database cache to update column counts
+			await refreshAfterChange();
 		} catch (error) {
 			showAlert(
 				"Failed to add column. Please check your configuration and try again.",
@@ -138,8 +144,17 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		}
 	}
 
-	const handleDeleteWrapper = (columnId: string) => {
-		handleDeleteColumn(columnId, columns, setColumns, table, token, showAlert);
+	const handleDeleteWrapper = async (columnId: string) => {
+		await handleDeleteColumn(
+			columnId,
+			columns,
+			setColumns,
+			table,
+			token,
+			showAlert,
+		);
+		// Refresh database cache to update column counts
+		await refreshAfterChange();
 	};
 
 	const handleSaveCellWrapper = (
@@ -163,28 +178,27 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	const fetchDatabase = useCallback(async () => {
 		if (!tenant || !user || !token) return;
 		try {
-			const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
+			// Fetch the specific database with full table and column details
+			const response = await fetch(
+				`/api/tenants/${tenant.id}/databases/${table.databaseId}`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			);
 
-			if (!response.ok) throw new Error("Failed to fetch databases");
+			if (!response.ok) throw new Error("Failed to fetch database");
 			const data = await response.json();
-			if (data && data.length > 0) {
-				// Găsim baza de date care conține tabela curentă
-				const currentDatabase = data.find((db: any) =>
-					db.tables.some((t: any) => t.id === table.id),
-				);
-				if (currentDatabase) {
-					setTables(currentDatabase.tables || []);
-				}
+			if (data && data.tables) {
+				setTables(data.tables || []);
 			}
 		} catch (error) {
+			console.error("Error fetching database:", error);
 			showAlert(
 				"Failed to load database information. Please refresh the page.",
 				"error",
 			);
 		}
-	}, [tenant, user, token, table.id, showAlert]);
+	}, [tenant, user, token, table.databaseId, showAlert]);
 
 	useEffect(() => {
 		if (tenant && user && token && !tables) {

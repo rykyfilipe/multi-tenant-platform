@@ -35,6 +35,15 @@ export async function GET(
 
 		const { tableId } = await params;
 
+		// Get pagination parameters
+		const url = new URL(request.url);
+		const page = parseInt(url.searchParams.get("page") || "1");
+		const pageSize = parseInt(url.searchParams.get("pageSize") || "25");
+		const validPage = Math.max(1, page);
+		const validPageSize = Math.min(Math.max(1, pageSize), 100);
+		const skip = (validPage - 1) * validPageSize;
+
+		// First, get table with columns only
 		const table = await prisma.table.findUnique({
 			where: {
 				id: parseInt(tableId),
@@ -44,11 +53,6 @@ export async function GET(
 				columns: {
 					orderBy: {
 						order: "asc",
-					},
-				},
-				rows: {
-					include: {
-						cells: true,
 					},
 				},
 			},
@@ -61,55 +65,76 @@ export async function GET(
 			);
 		}
 
-		// Creează un map pentru id -> nume coloană
+		// Get total count for pagination
+		const totalRows = await prisma.row.count({
+			where: { tableId: parseInt(tableId) },
+		});
+
+		console.log(
+			`DEBUG: Table ${tableId} has ${totalRows} total rows, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
+		);
+
+		// Get paginated rows with cells
+		const rows = await prisma.row.findMany({
+			where: { tableId: parseInt(tableId) },
+			include: {
+				cells: {
+					include: {
+						column: true,
+					},
+				},
+			},
+			orderBy: { createdAt: "asc" },
+			skip,
+			take: validPageSize,
+		});
+
+		console.log(`DEBUG: Found ${rows.length} rows for current page`);
+
+		// Optimized column mapping
 		const columnMap = new Map<number, string>();
+		const columnTypeMap = new Map<number, string>();
 		for (const column of table.columns) {
 			columnMap.set(column.id, column.name);
+			columnTypeMap.set(column.id, column.type);
 		}
 
 		// Găsim cheia primară a tabelului
 		const primaryKeyColumn = table.columns.find((col) => col.primary);
 
-		// Transformă rândurile
-		const transformedRows = await Promise.all(
-			table.rows.map(async (row) => {
-				const rowData: Record<string, any> = {
-					id: row.id,
-					createdAt: row.createdAt,
-				};
+		// Optimized row transformation - no Promise.all needed since no async operations
+		const transformedRows = rows.map((row) => {
+			const rowData: Record<string, any> = {
+				id: row.id,
+				createdAt: row.createdAt,
+			};
 
-				// Adăugăm valoarea cheii primare dacă există
-				if (primaryKeyColumn) {
-					const primaryKeyCell = row.cells.find(
-						(cell) => cell.columnId === primaryKeyColumn.id,
-					);
-					if (primaryKeyCell) {
-						rowData[primaryKeyColumn.name] = primaryKeyCell.value;
-					}
+			// Process cells efficiently
+			for (const cell of row.cells) {
+				const columnName = columnMap.get(cell.columnId);
+				if (columnName) {
+					rowData[columnName] = cell.value;
 				}
+			}
 
-				for (const cell of row.cells) {
-					const column = table.columns.find((col) => col.id === cell.columnId);
-					const columnName = columnMap.get(cell.columnId);
+			return rowData;
+		});
 
-					if (columnName && column) {
-						// Pentru coloanele de referință, valoarea este deja cheia primară
-						// Pentru coloanele normale, păstrăm valoarea originală
-						rowData[columnName] = cell.value;
-					}
-				}
-
-				return rowData;
-			}),
-		);
-
-		// Structură user-friendly
+		// Structură user-friendly with pagination metadata
 		const result = {
 			id: table.id,
 			name: table.name,
 			description: table.description,
 			databaseId: table.databaseId,
 			rows: transformedRows,
+			pagination: {
+				page: validPage,
+				pageSize: validPageSize,
+				totalRows,
+				totalPages: Math.ceil(totalRows / validPageSize),
+				hasNextPage: validPage < Math.ceil(totalRows / validPageSize),
+				hasPreviousPage: validPage > 1,
+			},
 		};
 
 		return NextResponse.json(result);

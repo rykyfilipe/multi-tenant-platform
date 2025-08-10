@@ -130,6 +130,7 @@ export const metadata: Metadata = {
 import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "./providers";
 import CookieBanner from "@/components/CookieBanner";
+import { PerformanceDashboard } from "@/components/dev/PerformanceDashboard";
 
 export default function RootLayout({
 	children,
@@ -148,6 +149,7 @@ export default function RootLayout({
 							{children}
 							<Analytics />
 							<CookieBanner />
+							<PerformanceDashboard />
 						</AppProvider>
 					</ErrorBoundary>
 				</Providers>

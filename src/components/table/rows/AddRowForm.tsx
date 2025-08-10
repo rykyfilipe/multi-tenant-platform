@@ -2,7 +2,7 @@
 
 "use client";
 
-import { FormEvent, useCallback, useMemo, useEffect } from "react";
+import { FormEvent, useCallback, useMemo, useEffect, memo } from "react";
 import { CellSchema, Column, Row, Table } from "@/types/database";
 import { Button } from "../../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -19,6 +19,7 @@ import {
 	USER_FRIENDLY_COLUMN_TYPES,
 	COLUMN_TYPE_LABELS,
 } from "@/lib/columnTypes";
+import { SearchableReferenceSelect } from "./SearchableReferenceSelect";
 
 interface Props {
 	columns: Column[];
@@ -195,7 +196,7 @@ const createReferenceData = (tables: Table[] | null) => {
 	return referenceData;
 };
 
-export function AddRowForm({
+export const AddRowForm = memo(function AddRowForm({
 	columns,
 	onAdd,
 	cells,
@@ -265,9 +266,9 @@ export function AddRowForm({
 	// Render field based on column type
 	const renderField = useCallback(
 		(column: Column) => {
-					if (!column) {
-			return null;
-		}
+			if (!column) {
+				return null;
+			}
 			const cellValue = getCellValue(column.id);
 			const hasError = formValidation.errors.some((error) =>
 				error.includes(column.name),
@@ -354,45 +355,14 @@ export function AddRowForm({
 					return (
 						<div key={`field-${column.id}`} className={divClassName}>
 							{commonLabelJSX}
-							<Select
+							<SearchableReferenceSelect
 								value={cellValue}
-								onValueChange={(val) => updateCell(column.id, val)}>
-								<SelectTrigger className={hasError ? "border-destructive" : ""}>
-									<SelectValue
-										placeholder={`Select ${
-											referencedTable?.name || "reference"
-										}`}
-									/>
-								</SelectTrigger>
-								<SelectContent className='max-w-[400px]'>
-									{options.length > 0 ? (
-										options.map((opt) => {
-											// Extragem valoarea cheii primare din displayValue
-											let primaryKeyValue = opt.displayValue;
-											if (opt.displayValue.startsWith("#")) {
-												primaryKeyValue = opt.displayValue
-													.substring(1)
-													.split(" • ")[0];
-											}
-
-											return (
-												<SelectItem
-													key={opt.id}
-													value={primaryKeyValue}
-													className='max-w-[380px] truncate'>
-													<span className='truncate' title={opt.displayValue}>
-														{opt.displayValue}
-													</span>
-												</SelectItem>
-											);
-										})
-									) : (
-										<SelectItem disabled value='no-options'>
-											No {referencedTable?.name || "options"} available
-										</SelectItem>
-									)}
-								</SelectContent>
-							</Select>
+								onValueChange={(val) => updateCell(column.id, val)}
+								options={options}
+								placeholder={`Select ${referencedTable?.name || "reference"}`}
+								hasError={hasError}
+								referencedTableName={referencedTable?.name}
+							/>
 							{/* Reference table info */}
 							{process.env.NODE_ENV === "development" && (
 								<div className='text-xs text-muted-foreground'>
@@ -555,4 +525,4 @@ export function AddRowForm({
 			</CardContent>
 		</Card>
 	);
-}
+});

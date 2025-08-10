@@ -10,6 +10,13 @@ import { NextResponse } from "next/server";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
 import { checkPlanPermission } from "@/lib/planConstants";
 import { z } from "zod";
+import {
+	withApiCache,
+	createCacheKey,
+	createRoleBasedCacheKey,
+	CACHE_DURATIONS,
+} from "@/lib/api-cache-middleware";
+import { Database } from "@/generated/prisma";
 
 const createDatabaseSchema = z.object({
 	name: z
@@ -42,26 +49,63 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
-		if (role === "ADMIN") {
-			const databases = await prisma.database.findMany({
-				where: {
-					tenantId: Number(tenantId),
-				},
-				include: {
-					tenant: true,
-					tables: {
-						include: {
-							columns: true,
-							rows: true,
-						},
-					},
-				},
-				orderBy: {
-					createdAt: "asc",
-				},
-			});
+		const cacheKey = createRoleBasedCacheKey(
+			"databases",
+			Number(tenantId),
+			userId,
+			role,
+		);
 
-			return NextResponse.json(databases, { status: 200 });
+		if (role === "ADMIN") {
+			return await withApiCache(
+				request,
+				{ key: cacheKey, duration: CACHE_DURATIONS.DATABASE_LIST },
+				async () => {
+					// Optimized: Single query with proper joins to avoid N+1
+					const databases = await prisma.database.findMany({
+						where: {
+							tenantId: Number(tenantId),
+						},
+						select: {
+							id: true,
+							name: true,
+							tenantId: true,
+							// Optimized: Only get essential table metadata, not full data
+							tables: {
+								select: {
+									id: true,
+									name: true,
+									description: true,
+									isPublic: true,
+									_count: {
+										select: {
+											columns: true,
+											rows: true,
+										},
+									},
+								},
+							},
+						},
+						orderBy: {
+							createdAt: "asc",
+						},
+					});
+
+					// Optimize table data format for frontend compatibility
+					const optimizedDatabases = databases.map((db: any) => ({
+						...db,
+						tables: db.tables.map((table: any) => ({
+							...table,
+							columnsCount: table._count.columns,
+							rowsCount: table._count.rows,
+							// Remove _count from the response
+							_count: undefined,
+						})),
+					}));
+
+					return optimizedDatabases;
+				},
+			);
 		}
 
 		// Pentru utilizatorii non-admin, returnăm doar bazele de date cu tabelele la care au acces
@@ -76,10 +120,26 @@ export async function GET(
 			},
 			include: {
 				table: {
-					include: {
-						database: true,
-						columns: true,
-						rows: true,
+					select: {
+						id: true,
+						name: true,
+						description: true,
+						isPublic: true,
+						databaseId: true,
+						database: {
+							select: {
+								id: true,
+								name: true,
+								tenantId: true,
+								createdAt: true,
+							},
+						},
+						_count: {
+							select: {
+								columns: true,
+								rows: true,
+							},
+						},
 					},
 				},
 			},
@@ -88,8 +148,8 @@ export async function GET(
 		// Grupăm tabelele pe baze de date
 		const databasesMap = new Map();
 
-		tablePermissions.forEach((permission) => {
-			if (permission.canRead) {
+		tablePermissions.forEach((permission: any) => {
+			if (permission?.canRead && permission?.table?.database) {
 				const database = permission.table.database;
 				if (!databasesMap.has(database.id)) {
 					databasesMap.set(database.id, {
@@ -97,7 +157,14 @@ export async function GET(
 						tables: [],
 					});
 				}
-				databasesMap.get(database.id).tables.push(permission.table);
+				// Transform table data for backwards compatibility
+				const transformedTable = {
+					...permission.table,
+					columns: Array(permission.table._count?.columns || 0).fill(null),
+					rows: Array(permission.table._count?.rows || 0).fill(null),
+				};
+				delete (transformedTable as any)._count; // Remove the count object
+				databasesMap.get(database.id).tables.push(transformedTable);
 			}
 		});
 
@@ -105,6 +172,7 @@ export async function GET(
 		return NextResponse.json(databases, { status: 200 });
 	} catch (error) {
 		// Database fetch error
+		console.error("Error fetching databases:", error);
 		return NextResponse.json(
 			{ error: "Failed to fetch databases" },
 			{ status: 500 },
@@ -173,7 +241,8 @@ export async function POST(
 		if (!checkPlanPermission(user.subscriptionPlan, "canCreateDatabases")) {
 			return NextResponse.json(
 				{
-					error: "Database creation is not available in your current plan. Upgrade to Pro or Business to create multiple databases.",
+					error:
+						"Database creation is not available in your current plan. Upgrade to Pro or Business to create multiple databases.",
 					plan: "databases",
 				},
 				{ status: 403 },

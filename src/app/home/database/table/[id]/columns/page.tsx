@@ -18,7 +18,6 @@ function Page() {
 	if (!id) return;
 
 	const { table, columns, setColumns, loading } = useTable(id);
-	const { user } = useApp();
 	const { selectedDatabase } = useDatabase();
 
 	if (loading) return <TableLoadingState />;

@@ -99,12 +99,17 @@ export default function AddColumnForm({
 		}
 	}, [newOption, currentColumn.customOptions, updateColumn]);
 
-	const handleRemoveCustomOption = useCallback((index: number) => {
-		if (currentColumn.customOptions) {
-			const updatedOptions = currentColumn.customOptions.filter((_, i) => i !== index);
-			updateColumn("customOptions", updatedOptions);
-		}
-	}, [currentColumn.customOptions, updateColumn]);
+	const handleRemoveCustomOption = useCallback(
+		(index: number) => {
+			if (currentColumn.customOptions) {
+				const updatedOptions = currentColumn.customOptions.filter(
+					(_, i) => i !== index,
+				);
+				updateColumn("customOptions", updatedOptions);
+			}
+		},
+		[currentColumn.customOptions, updateColumn],
+	);
 
 	const renderBooleanField = useCallback(
 		(field: FieldMeta) => {
@@ -221,7 +226,7 @@ export default function AddColumnForm({
 							placeholder='Enter option value'
 							className='flex-1'
 							onKeyPress={(e) => {
-								if (e.key === 'Enter') {
+								if (e.key === "Enter") {
 									e.preventDefault();
 									handleAddCustomOption();
 								}
@@ -232,38 +237,41 @@ export default function AddColumnForm({
 							variant='outline'
 							size='sm'
 							onClick={handleAddCustomOption}
-							disabled={!newOption.trim()}
-						>
+							disabled={!newOption.trim()}>
 							<Plus className='w-4 h-4' />
 						</Button>
 					</div>
-					
-					{currentColumn.customOptions && currentColumn.customOptions.length > 0 && (
-						<div className='space-y-2'>
-							<p className='text-xs text-muted-foreground'>Added options:</p>
-							<div className='flex flex-wrap gap-2'>
-								{currentColumn.customOptions.map((option, index) => (
-									<div
-										key={index}
-										className='flex items-center gap-1 bg-secondary px-2 py-1 rounded-md text-sm'
-									>
-										<span>{option}</span>
-										<button
-											type='button'
-											onClick={() => handleRemoveCustomOption(index)}
-											className='text-muted-foreground hover:text-destructive'
-										>
-											<X className='w-3 h-3' />
-										</button>
-									</div>
-								))}
+
+					{currentColumn.customOptions &&
+						currentColumn.customOptions.length > 0 && (
+							<div className='space-y-2'>
+								<p className='text-xs text-muted-foreground'>Added options:</p>
+								<div className='flex flex-wrap gap-2'>
+									{currentColumn.customOptions.map((option, index) => (
+										<div
+											key={index}
+											className='flex items-center gap-1 bg-secondary px-2 py-1 rounded-md text-sm'>
+											<span>{option}</span>
+											<button
+												type='button'
+												onClick={() => handleRemoveCustomOption(index)}
+												className='text-muted-foreground hover:text-destructive'>
+												<X className='w-3 h-3' />
+											</button>
+										</div>
+									))}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 				</div>
 			</div>
 		);
-	}, [newOption, currentColumn.customOptions, handleAddCustomOption, handleRemoveCustomOption]);
+	}, [
+		newOption,
+		currentColumn.customOptions,
+		handleAddCustomOption,
+		handleRemoveCustomOption,
+	]);
 
 	const columnSchemaMeta: FieldMeta[] = useMemo(() => {
 		const base: FieldMeta[] = [
@@ -298,7 +306,15 @@ export default function AddColumnForm({
 		if (currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 			// Filtrăm tabelele care au cheie primară definită
 			const tablesWithPrimaryKey = tables.filter(
-				(table) => table.columns && table.columns.some((col) => col.primary),
+				(table) =>
+					table &&
+					table.columns &&
+					Array.isArray(table.columns) &&
+					table.columns.length > 0 &&
+					// Exclude arrays filled with null values (from backward compatibility)
+					table.columns.some(
+						(col) => col && typeof col === "object" && col.primary,
+					),
 			);
 
 			base.push({
@@ -333,7 +349,14 @@ export default function AddColumnForm({
 			? tables &&
 					tables.filter(
 						(table) =>
-							table.columns && table.columns.some((col) => col.primary),
+							table &&
+							table.columns &&
+							Array.isArray(table.columns) &&
+							table.columns.length > 0 &&
+							// Exclude arrays filled with null values (from backward compatibility)
+							table.columns.some(
+								(col) => col && typeof col === "object" && col.primary,
+							),
 					).length > 0
 			: true;
 	}, [currentColumn.type, tables]);
@@ -349,7 +372,7 @@ export default function AddColumnForm({
 		const hasValidPrimaryKey = !(
 			currentColumn.primary && existingColumns.some((col) => col.primary)
 		);
-		const hasValidCustomOptions = 
+		const hasValidCustomOptions =
 			currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.customArray
 				? currentColumn.customOptions && currentColumn.customOptions.length > 0
 				: true;
@@ -381,7 +404,7 @@ export default function AddColumnForm({
 				</div>
 
 				{/* Custom Options Field for customArray type */}
-				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.customArray && 
+				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.customArray &&
 					renderCustomOptionsField()}
 
 				{/* Validation Warnings */}
@@ -395,7 +418,8 @@ export default function AddColumnForm({
 					)}
 
 				{currentColumn.type === USER_FRIENDLY_COLUMN_TYPES.customArray &&
-					(!currentColumn.customOptions || currentColumn.customOptions.length === 0) && (
+					(!currentColumn.customOptions ||
+						currentColumn.customOptions.length === 0) && (
 						<div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
 							<p className='text-sm text-amber-800'>
 								⚠️ Please add at least one option for the custom dropdown
@@ -434,7 +458,14 @@ export default function AddColumnForm({
 					tables &&
 					tables.filter(
 						(table) =>
-							table.columns && table.columns.some((col) => col.primary),
+							table &&
+							table.columns &&
+							Array.isArray(table.columns) &&
+							table.columns.length > 0 &&
+							// Exclude arrays filled with null values (from backward compatibility)
+							table.columns.some(
+								(col) => col && typeof col === "object" && col.primary,
+							),
 					).length === 0 && (
 						<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
 							<p className='text-sm text-blue-800'>

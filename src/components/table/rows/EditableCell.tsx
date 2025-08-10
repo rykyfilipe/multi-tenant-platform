@@ -17,6 +17,7 @@ import {
 	COLUMN_TYPE_LABELS,
 } from "@/lib/columnTypes";
 import { Button } from "../../ui/button";
+import { SearchableReferenceSelect } from "./SearchableReferenceSelect";
 
 interface Props {
 	columns: Column[];
@@ -133,63 +134,13 @@ export function EditableCell({
 
 		referenceSelect = (
 			<div className='flex flex-col gap-1'>
-				<Select
+				<SearchableReferenceSelect
 					value={value ? String(value) : ""}
-					onValueChange={(val) => setValue(val)}>
-					<SelectTrigger>
-						<SelectValue
-							placeholder={`Select ${referencedTable?.name || "reference"}`}
-						/>
-					</SelectTrigger>
-					<SelectContent className='max-w-[400px]'>
-						{/* Opțiunea pentru valoarea curentă dacă nu există în lista de opțiuni */}
-						{value &&
-							!options.some((opt) => {
-								let primaryKeyValue = opt.displayValue;
-								if (opt.displayValue.startsWith("#")) {
-									primaryKeyValue = opt.displayValue
-										.substring(1)
-										.split(" • ")[0];
-								}
-								return primaryKeyValue === value;
-							}) && (
-								<SelectItem
-									value={String(value)}
-									className='truncate max-w-[380px] text-red-600'>
-									<span className='truncate' title={`Invalid: ${value}`}>
-										⚠️ Invalid: {value}
-									</span>
-								</SelectItem>
-							)}
-
-						{options.length > 0 ? (
-							options.map((opt) => {
-								// Extragem valoarea cheii primare din displayValue
-								let primaryKeyValue = opt.displayValue;
-								if (opt.displayValue.startsWith("#")) {
-									primaryKeyValue = opt.displayValue
-										.substring(1)
-										.split(" • ")[0];
-								}
-
-								return (
-									<SelectItem
-										key={opt.id}
-										value={primaryKeyValue}
-										className='truncate max-w-[380px]'>
-										<span className='truncate' title={opt.displayValue}>
-											{opt.displayValue}
-										</span>
-									</SelectItem>
-								);
-							})
-						) : (
-							<SelectItem disabled value='no-options'>
-								No {referencedTable?.name || "options"} available
-							</SelectItem>
-						)}
-					</SelectContent>
-				</Select>
+					onValueChange={(val) => setValue(val)}
+					options={options}
+					placeholder={`Select ${referencedTable?.name || "reference"}`}
+					referencedTableName={referencedTable?.name}
+				/>
 
 				{process.env.NODE_ENV === "development" && (
 					<div className=' text-xs text-muted-foreground'>

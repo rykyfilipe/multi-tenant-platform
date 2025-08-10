@@ -1,13 +1,27 @@
 /** @format */
 
 import prisma from "./prisma";
+import { cacheHelpers } from "./memory-cache";
+import {
+	withCache,
+	createCacheKey,
+	CACHE_DURATIONS,
+} from "./api-cache-middleware";
 
 // Simplified cached operations without complex cache logic
 export const cachedOperations = {
 	// User operations
 	getUser: async (userId: number) => {
 		try {
-			return await prisma.user.findUnique({ where: { id: userId } });
+			// Check cache first
+			const cached = cacheHelpers.getUser(userId);
+			if (cached) return cached;
+
+			const user = await prisma.user.findUnique({ where: { id: userId } });
+			if (user) {
+				cacheHelpers.setUser(userId, user);
+			}
+			return user;
 		} catch (error) {
 			return null;
 		}
@@ -24,7 +38,17 @@ export const cachedOperations = {
 	// Tenant operations
 	getTenant: async (tenantId: number) => {
 		try {
-			return await prisma.tenant.findUnique({ where: { id: tenantId } });
+			// Check cache first
+			const cached = cacheHelpers.getTenant(tenantId);
+			if (cached) return cached;
+
+			const tenant = await prisma.tenant.findUnique({
+				where: { id: tenantId },
+			});
+			if (tenant) {
+				cacheHelpers.setTenant(tenantId, tenant);
+			}
+			return tenant;
 		} catch (error) {
 			return null;
 		}
@@ -83,6 +107,23 @@ export const cachedOperations = {
 					database: { tenantId },
 					isPublic: true,
 				},
+				select: {
+					id: true,
+					name: true,
+					description: true,
+					isPublic: true,
+					createdAt: true,
+					databaseId: true,
+					_count: {
+						select: {
+							columns: true,
+							rows: true,
+						},
+					},
+				},
+				orderBy: {
+					createdAt: "asc",
+				},
 			});
 		} catch (error) {
 			return [];
@@ -108,8 +149,56 @@ export const cachedOperations = {
 		}
 	},
 
-	// Row operations
-	getRows: async (tableId: number, includeCells: boolean = true) => {
+	// Row operations with pagination support
+	getRows: async (
+		tableId: number,
+		includeCells: boolean = true,
+		page: number = 1,
+		pageSize: number = 25,
+	) => {
+		try {
+			const skip = (page - 1) * pageSize;
+
+			// Get total count and paginated rows in parallel
+			const [totalRows, rows] = await Promise.all([
+				prisma.row.count({ where: { tableId } }),
+				prisma.row.findMany({
+					where: { tableId },
+					include: includeCells ? { cells: true } : undefined,
+					skip,
+					take: pageSize,
+					orderBy: { id: "asc" }, // Consistent ordering for pagination
+				}),
+			]);
+
+			return {
+				data: rows,
+				pagination: {
+					page,
+					pageSize,
+					totalRows,
+					totalPages: Math.ceil(totalRows / pageSize),
+					hasNext: page * pageSize < totalRows,
+					hasPrev: page > 1,
+				},
+			};
+		} catch (error) {
+			return {
+				data: [],
+				pagination: {
+					page: 1,
+					pageSize,
+					totalRows: 0,
+					totalPages: 0,
+					hasNext: false,
+					hasPrev: false,
+				},
+			};
+		}
+	},
+
+	// Legacy method for backwards compatibility
+	getRowsLegacy: async (tableId: number, includeCells: boolean = true) => {
 		try {
 			return await prisma.row.findMany({
 				where: { tableId },
@@ -152,36 +241,93 @@ export const cachedOperations = {
 		}
 	},
 
-	// Count operations
+	// Count operations - optimized with proper aggregation and caching
 	getCounts: async (tenantId: number, userId: number) => {
 		try {
-			const [databases, tables, users, rows] = await Promise.all([
-				prisma.database.count({ where: { tenantId } }),
-				prisma.table.count({ where: { database: { tenantId } } }),
-				prisma.user.count({ where: { tenantId } }),
-				prisma.row.count({ where: { table: { database: { tenantId } } } }),
-			]);
+			// Check cache first
+			const cached = cacheHelpers.getCounts(tenantId, userId);
+			if (cached) return cached;
 
-			const [apiTokens, publicTables] = await Promise.all([
-				prisma.apiToken.count({ where: { userId } }),
-				prisma.table.count({
-					where: {
-						database: { tenantId },
-						isPublic: true,
-					},
-				}),
-			]);
+			// Use a single optimized query to get all counts
+			const result = (await prisma.$queryRaw`
+				SELECT 
+					(SELECT COUNT(*) FROM "Database" WHERE "tenantId" = ${tenantId}) as databases,
+					(SELECT COUNT(*) FROM "Table" t 
+						JOIN "Database" d ON t."databaseId" = d.id 
+						WHERE d."tenantId" = ${tenantId}) as tables,
+					(SELECT COUNT(*) FROM "User" WHERE "tenantId" = ${tenantId}) as users,
+					(SELECT COUNT(*) FROM "ApiToken" WHERE "userId" = ${userId}) as "apiTokens",
+					(SELECT COUNT(*) FROM "Table" t 
+						JOIN "Database" d ON t."databaseId" = d.id 
+						WHERE d."tenantId" = ${tenantId} AND t."isPublic" = true) as "publicTables",
+					(SELECT COUNT(*) FROM "Row" r 
+						JOIN "Table" t ON r."tableId" = t.id 
+						JOIN "Database" d ON t."databaseId" = d.id 
+						WHERE d."tenantId" = ${tenantId}) as rows
+			`) as any[];
 
-			return [databases, tables, users, apiTokens, publicTables, rows];
+			const counts = result[0];
+			const countArray = [
+				Number(counts.databases),
+				Number(counts.tables),
+				Number(counts.users),
+				Number(counts.apiTokens),
+				Number(counts.publicTables),
+				Number(counts.rows),
+			];
+
+			// Cache the result for 5 minutes
+			cacheHelpers.setCounts(tenantId, userId, countArray);
+
+			return countArray;
 		} catch (error) {
-			return [0, 0, 0, 0, 0, 0];
+			console.error("Error in getCounts:", error);
+			// Fallback to individual queries if raw query fails
+			try {
+				const counts = await prisma.$transaction([
+					prisma.database.count({ where: { tenantId } }),
+					prisma.table.count({ where: { database: { tenantId } } }),
+					prisma.user.count({ where: { tenantId } }),
+					prisma.apiToken.count({ where: { userId } }),
+					prisma.table.count({
+						where: {
+							database: { tenantId },
+							isPublic: true,
+						},
+					}),
+					prisma.row.aggregate({
+						where: { table: { database: { tenantId } } },
+						_count: { id: true },
+					}),
+				]);
+
+				return [
+					counts[0],
+					counts[1],
+					counts[2],
+					counts[3],
+					counts[4],
+					counts[5]._count.id,
+				];
+			} catch (fallbackError) {
+				console.error("Fallback count query also failed:", fallbackError);
+				return [0, 0, 0, 0, 0, 0];
+			}
 		}
 	},
 
 	// API Token operations
 	getApiTokens: async (userId: number) => {
 		try {
-			return await prisma.apiToken.findMany({ where: { userId } });
+			// Check cache first
+			const cached = cacheHelpers.getApiTokens(userId);
+			if (cached) return cached;
+
+			const tokens = await prisma.apiToken.findMany({ where: { userId } });
+			if (tokens) {
+				cacheHelpers.setApiTokens(userId, tokens);
+			}
+			return tokens;
 		} catch (error) {
 			return [];
 		}
@@ -204,42 +350,72 @@ export const cachedOperations = {
 		}
 	},
 
-	// Cache invalidation helpers (no-op for now)
+	// Cache invalidation helpers
 	invalidateUserCache: (userId: number) => {
-		// No-op for now
+		cacheHelpers.invalidateUser(userId);
 	},
 
 	invalidateTenantCache: (tenantId: number) => {
-		// No-op for now
+		cacheHelpers.invalidateTenant(tenantId);
+		// Also invalidate counts for all users in this tenant
+		cacheHelpers.invalidateCounts(tenantId);
 	},
 
-	invalidateDatabaseCache: (databaseId: number) => {
-		// No-op for now
+	invalidateDatabaseCache: (databaseId: number, tenantId?: number) => {
+		if (tenantId) {
+			// Invalidate counts when database changes
+			cacheHelpers.invalidateCounts(tenantId);
+		}
 	},
 
-	invalidateTableCache: (tableId: number) => {
-		// No-op for now
+	invalidateTableCache: (tableId: number, tenantId?: number) => {
+		if (tenantId) {
+			// Invalidate counts when table changes
+			cacheHelpers.invalidateCounts(tenantId);
+		}
 	},
 
-	invalidateColumnCache: (columnId: number) => {
-		// No-op for now
+	invalidateColumnCache: (columnId: number, tenantId?: number) => {
+		if (tenantId) {
+			// Columns don't affect counts, but might affect other cached data
+			cacheHelpers.invalidateCounts(tenantId);
+		}
 	},
 
-	invalidateRowCache: (tableId: number) => {
-		// No-op for now
+	invalidateRowCache: (tableId: number, tenantId?: number) => {
+		if (tenantId) {
+			// Invalidate counts when rows change
+			cacheHelpers.invalidateCounts(tenantId);
+			// Also invalidate memory usage
+			cacheHelpers.invalidateMemoryUsage(tenantId);
+		}
 	},
 
 	invalidatePermissionCache: (userId: number, tenantId: number) => {
-		// No-op for now
+		// Permissions don't affect counts directly, but invalidate user cache
+		cacheHelpers.invalidateUser(userId);
 	},
 
-	// Clear all cache (no-op for now)
+	invalidateApiTokenCache: (userId: number) => {
+		cacheHelpers.invalidateApiTokens(userId);
+		// Also need to invalidate counts as API tokens affect limits
+		const user = cacheHelpers.getUser(userId);
+		if (user?.tenantId) {
+			cacheHelpers.invalidateCounts(user.tenantId, userId);
+		}
+	},
+
+	// Clear all cache
 	clearAllCache: () => {
-		// No-op for now
+		cacheHelpers.invalidateUser(-1); // This will clear all user caches
+		cacheHelpers.invalidateTenant(-1); // This will clear all tenant caches
+		// Add more specific clearing as needed
 	},
 
 	// Generic cache invalidation method
 	invalidate: (pattern: string) => {
-		// No-op for now - placeholder for future cache implementation
+		// Use the memory cache pattern invalidation
+		const { memoryCache } = require("./memory-cache");
+		memoryCache.invalidateByPattern(pattern);
 	},
 };

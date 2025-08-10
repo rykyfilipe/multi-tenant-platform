@@ -1,6 +1,7 @@
 /** @format */
 
 import { PrismaClient } from "@/generated/prisma/index";
+import { createPrismaWithPerformanceTracking } from "./performance-monitor";
 
 // Cache interface for different caching strategies
 interface CacheEntry<T> {
@@ -68,6 +69,11 @@ const prisma = new PrismaClient();
 if (process.env.NODE_ENV !== "production") {
   (globalThis as any).prisma = prisma;
 }
+
+// Add performance tracking in development mode
+const trackedPrisma = process.env.NODE_ENV === "development" 
+  ? createPrismaWithPerformanceTracking(prisma)
+  : prisma;
 
 // Cache instance
 const cache = new MemoryCache();
@@ -152,4 +158,4 @@ export const cacheUtils = {
   isEnabled: () => cacheEnabled,
 };
 
-export default prisma;
+export default trackedPrisma;

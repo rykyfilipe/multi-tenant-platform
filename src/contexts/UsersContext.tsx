@@ -34,6 +34,12 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 			return;
 		}
 
+		// Prevent duplicate requests if users are already loaded
+		if (users && users.length >= 0) {
+			setLoading(false);
+			return;
+		}
+
 		setLoading(true);
 		try {
 			const response = await fetch(`/api/tenants/${tenantId}/users`, {
@@ -43,7 +49,7 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 			const data = await response.json();
 
 			setUsers(data);
-			showAlert("Users data loaded successfully", "success");
+			// Remove success alert - it's unnecessary and creates noise
 		} catch (e) {
 			console.error("Error fetching users:", e);
 			setUsers([]);
@@ -51,7 +57,7 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 		} finally {
 			setLoading(false);
 		}
-	}, [tenantId, token, showAlert]);
+	}, [tenantId, token, users, showAlert]); // Add users to prevent unnecessary calls
 
 	useEffect(() => {
 		if (token && tenantId && !loading && !users) {
@@ -89,10 +95,15 @@ export function UsersProvider({ children }: { children: ReactNode }) {
 			const updatedUsers = users?.filter((u) => u.id !== data.id);
 			setUsers([...(updatedUsers || []), data]);
 
-			showAlert(`User ${data.firstName} ${data.lastName} updated successfully`, "success");
+			showAlert(
+				`User ${data.firstName} ${data.lastName} updated successfully`,
+				"success",
+			);
 		} catch (error) {
 			const errorMessage =
-				error instanceof Error ? error.message : "Failed to update user information. Please try again.";
+				error instanceof Error
+					? error.message
+					: "Failed to update user information. Please try again.";
 			showAlert(errorMessage, "error");
 		}
 	};

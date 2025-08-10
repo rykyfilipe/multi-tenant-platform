@@ -10,16 +10,16 @@ import { usePlanLimits } from "@/hooks/usePlanLimits";
 import Link from "next/link";
 import { Table } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 
-function TableCard({ table }: { table: Table }) {
+const TableCard = memo(function TableCard({ table }: { table: Table }) {
 	const { handleDeleteTable } = useDatabase();
 	const { user, token, tenant, showAlert } = useApp();
 	const { handleApiError } = usePlanLimitError();
 	const { checkLimit, currentPlan } = usePlanLimits();
 	const [isUpdatingPublic, setIsUpdatingPublic] = useState(false);
 
-	const handleTogglePublic = async () => {
+	const handleTogglePublic = useCallback(async () => {
 		if (!token || !tenant) return;
 
 		// Verifică limita de tabele publice
@@ -65,7 +65,17 @@ function TableCard({ table }: { table: Table }) {
 		} finally {
 			setIsUpdatingPublic(false);
 		}
-	};
+	}, [
+		token,
+		tenant,
+		table.isPublic,
+		table.databaseId,
+		table.id,
+		checkLimit,
+		showAlert,
+		handleApiError,
+		currentPlan,
+	]);
 
 	return (
 		<Card className='table-card border border-border/20 bg-card/50 backdrop-blur-sm hover:bg-card/80 hover:border-border/40 transition-all duration-300'>
@@ -104,10 +114,14 @@ function TableCard({ table }: { table: Table }) {
 					</p>
 					<div className='flex items-center justify-between text-xs'>
 						<span className='text-muted-foreground'>
-							{Array.isArray(table.columns) ? table.columns.length : 0} columns
+							{table.columnsCount ??
+								(Array.isArray(table.columns) ? table.columns.length : 0)}{" "}
+							columns
 						</span>
 						<span className='text-muted-foreground'>
-							{Array.isArray(table.rows) ? table.rows.length : 0} rows
+							{table.rowsCount ??
+								(Array.isArray(table.rows) ? table.rows.length : 0)}{" "}
+							rows
 						</span>
 					</div>
 				</div>
@@ -156,6 +170,6 @@ function TableCard({ table }: { table: Table }) {
 			</CardFooter>
 		</Card>
 	);
-}
+});
 
 export default TableCard;

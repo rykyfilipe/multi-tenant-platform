@@ -10,7 +10,11 @@ import {
 
 export async function GET(
 	request: Request,
-	{ params }: { params: Promise<{ tenantId: string; databaseId: string; tableId: string }> },
+	{
+		params,
+	}: {
+		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
+	},
 ) {
 	const logged = verifyLogin(request);
 	if (!logged) {
@@ -48,6 +52,11 @@ export async function GET(
 		}
 
 		if (role === "ADMIN") {
+			// Get URL parameters to check if full data is needed
+			const url = new URL(request.url);
+			const includeRows = url.searchParams.get("includeRows") === "true";
+			const includeCells = url.searchParams.get("includeCells") === "true";
+
 			const table = await prisma.table.findFirst({
 				where: {
 					id: Number(tableId),
@@ -59,28 +68,38 @@ export async function GET(
 							order: "asc",
 						},
 					},
-					rows: {
-						include: {
-							cells: true,
-						},
-						orderBy: {
-							createdAt: "asc",
+					rows: includeRows
+						? {
+								include: {
+									cells: includeCells,
+								},
+								orderBy: {
+									createdAt: "asc",
+								},
+						  }
+						: false,
+					_count: {
+						select: {
+							rows: true,
 						},
 					},
 				},
 			});
 
 			if (!table) {
-				return NextResponse.json(
-					{ error: "Table not found" },
-					{ status: 404 },
-				);
+				return NextResponse.json({ error: "Table not found" }, { status: 404 });
 			}
 
 			return NextResponse.json(table);
 		}
 
 		// Pentru utilizatorii non-admin, verificăm permisiunile
+		const url = new URL(request.url);
+		const includeRows = url.searchParams.get("includeRows") === "true";
+		const includeCells = url.searchParams.get("includeCells") === "true";
+		const page = url.searchParams.get("page") || "1";
+		const pageSize = url.searchParams.get("pageSize") || "10";
+
 		const permission = await prisma.tablePermission.findFirst({
 			where: {
 				userId: userId,
@@ -98,12 +117,22 @@ export async function GET(
 								order: "asc",
 							},
 						},
-						rows: {
-							include: {
-								cells: true,
-							},
-							orderBy: {
-								createdAt: "asc",
+						rows:
+							includeRows && page && pageSize
+								? {
+										skip: (Number(page) - 1) * Number(pageSize),
+										take: Number(pageSize),
+										include: {
+											cells: includeCells,
+										},
+										orderBy: {
+											createdAt: "asc",
+										},
+								  }
+								: false,
+						_count: {
+							select: {
+								rows: true,
 							},
 						},
 					},

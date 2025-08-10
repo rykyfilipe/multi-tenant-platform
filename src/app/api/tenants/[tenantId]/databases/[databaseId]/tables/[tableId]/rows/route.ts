@@ -123,7 +123,9 @@ export async function POST(
 			const validationErrors = [];
 
 			for (const cell of cells) {
-				const column = table.columns.find((col) => col.id === cell.columnId);
+				const column = table.columns.find(
+					(col: any) => col.id === cell.columnId,
+				);
 
 				if (!column) {
 					validationErrors.push(`Unknown column ID: ${cell.columnId}`);
@@ -135,7 +137,11 @@ export async function POST(
 					if (column.customOptions && column.customOptions.length > 0) {
 						if (!column.customOptions.includes(String(cell.value))) {
 							validationErrors.push(
-								`Column "${column.name}" must be one of: ${column.customOptions.join(", ")}. Got: "${cell.value}"`
+								`Column "${
+									column.name
+								}" must be one of: ${column.customOptions.join(", ")}. Got: "${
+									cell.value
+								}"`,
 							);
 							continue;
 						}
@@ -156,14 +162,14 @@ export async function POST(
 
 					if (referenceTable) {
 						const refPrimaryKeyColumn = referenceTable.columns.find(
-							(col) => col.primary,
+							(col: any) => col.primary,
 						);
 
 						if (refPrimaryKeyColumn) {
 							// Căutăm rândul cu cheia primară specificată
-							const referenceRow = referenceTable.rows.find((refRow) => {
+							const referenceRow = referenceTable.rows.find((refRow: any) => {
 								const refPrimaryKeyCell = refRow.cells.find(
-									(refCell) => refCell.columnId === refPrimaryKeyColumn.id,
+									(refCell: any) => refCell.columnId === refPrimaryKeyColumn.id,
 								);
 								return (
 									refPrimaryKeyCell && refPrimaryKeyCell.value === cell.value
@@ -381,29 +387,92 @@ export async function GET(
 			}
 		}
 
+		// Get pagination parameters from URL
+		const url = new URL(request.url);
+		const page = parseInt(url.searchParams.get("page") || "1");
+		const pageSize = parseInt(url.searchParams.get("pageSize") || "25");
+
+		console.log(
+			`DEBUG PARAMS: Received page=${url.searchParams.get(
+				"page",
+			)}, pageSize=${url.searchParams.get("pageSize")}`,
+		);
+		const includeCells = url.searchParams.get("includeCells") !== "false"; // Default to true for backwards compatibility
+
+		// Validate pagination parameters
+		const validPage = Math.max(1, page);
+		const validPageSize = Math.min(Math.max(1, pageSize), 100); // Limit page size to 100
+		const skip = (validPage - 1) * validPageSize;
+
+		// Get total count for pagination info
+		const totalRows = await prisma.row.count({
+			where: {
+				tableId: Number(tableId),
+			},
+		});
+
+		console.log(
+			`DEBUG MAIN: Table ${tableId} has ${totalRows} total rows, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
+		);
+
+		// Optimized query with proper indexing support
 		const rows = await prisma.row.findMany({
 			where: {
 				tableId: Number(tableId),
 			},
 			include: {
-				cells: {
-					include: {
-						column: true,
-					},
+				cells: includeCells
+					? {
+							include: {
+								column: {
+									select: {
+										id: true,
+										name: true,
+										type: true,
+										order: true,
+									},
+								},
+							},
+					  }
+					: false,
+			},
+			orderBy: [
+				{
+					id: "asc", // Use primary key for better performance
 				},
-			},
-			orderBy: {
-				createdAt: "asc",
-			},
+			],
+			skip,
+			take: validPageSize,
 		});
 
-		// Sortăm coloanele după ordine în aplicație
-		const sortedRows = rows.map((row) => ({
-			...row,
-			cells: row.cells.sort((a, b) => a.column.order - b.column.order),
-		}));
+		console.log(`DEBUG MAIN: Found ${rows.length} rows for current page`);
 
-		return NextResponse.json(sortedRows);
+		// Sortăm coloanele după ordine în aplicație dacă includem cells
+		const sortedRows = includeCells
+			? rows.map((row: any) => ({
+					...row,
+					cells: row.cells.sort((a: any, b: any) => {
+						// TypeScript assertion: when includeCells is true, cells include column relation
+						const cellA = a as any;
+						const cellB = b as any;
+						return cellA.column.order - cellB.column.order;
+					}),
+			  }))
+			: rows;
+
+		const totalPages = Math.ceil(totalRows / validPageSize);
+
+		return NextResponse.json({
+			data: sortedRows,
+			pagination: {
+				page: validPage,
+				pageSize: validPageSize,
+				totalRows,
+				totalPages,
+				hasNext: validPage < totalPages,
+				hasPrev: validPage > 1,
+			},
+		});
 	} catch (error) {
 		console.error("Error fetching rows:", error);
 		return NextResponse.json(

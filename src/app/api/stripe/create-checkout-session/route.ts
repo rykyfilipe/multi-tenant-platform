@@ -35,10 +35,7 @@ export async function POST(request: NextRequest) {
 		});
 
 		if (!user) {
-			return NextResponse.json(
-				{ error: "User not found" },
-				{ status: 404 },
-			);
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
 
 		if (user.role !== "ADMIN") {
@@ -58,7 +55,7 @@ export async function POST(request: NextRequest) {
 					quantity: 1,
 				},
 			],
-			success_url: `${process.env.NEXTAUTH_URL}/home/analytics?success=true&session_id={CHECKOUT_SESSION_ID}`,
+			success_url: `${process.env.NEXTAUTH_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
 			cancel_url: `${process.env.NEXTAUTH_URL}/?canceled=true`,
 			customer_email: session.user.email,
 			metadata: {

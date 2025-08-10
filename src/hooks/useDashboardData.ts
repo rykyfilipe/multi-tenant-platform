@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { getPlanLimits } from "@/lib/planConstants";
@@ -93,61 +93,50 @@ export const useDashboardData = () => {
 				setLoading(true);
 				setError(null);
 
-				// Fetch databases
-				const databasesResponse = await fetch(
-					`/api/tenants/${tenant.id}/databases`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-					},
-				);
-
-				// Fetch users
-				const usersResponse = await fetch(`/api/tenants/${tenant.id}/users`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
-
-				// Fetch tables and rows data - folosim endpoint-ul corect
-				// Nu mai avem nevoie de acest request separat pentru că datele sunt deja în databasesResponse
-
-				// Fetch memory usage data
-				const memoryResponse = await fetch(`/api/tenants/${tenant.id}/memory`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
-
-				// Auto-recalculate memory on each page load
-				try {
-					const recalcResponse = await fetch(
-						`/api/tenants/${tenant.id}/memory/recalculate`,
-						{
-							method: "POST",
-							headers: {
-								Authorization: `Bearer ${token}`,
-							},
-						},
-					);
-					if (recalcResponse.ok) {
-						// Memory recalculated successfully
-					}
-				} catch (recalcError) {
-					// Memory recalculation failed
-				}
+				// Fetch all data in parallel for better performance
+				const [databasesResponse, usersResponse, memoryResponse] =
+					await Promise.all([
+						fetch(`/api/tenants/${tenant.id}/databases`, {
+							headers: { Authorization: `Bearer ${token}` },
+						}),
+						fetch(`/api/tenants/${tenant.id}/users`, {
+							headers: { Authorization: `Bearer ${token}` },
+						}),
+						fetch(`/api/tenants/${tenant.id}/memory`, {
+							headers: { Authorization: `Bearer ${token}` },
+						}),
+					]);
 
 				// Check if all responses are ok
 				if (!databasesResponse.ok || !usersResponse.ok || !memoryResponse.ok) {
 					throw new Error("Failed to fetch dashboard data");
 				}
 
+				// Parse all responses in parallel
 				const [databasesData, usersData, memoryData] = await Promise.all([
 					databasesResponse.json(),
 					usersResponse.json(),
 					memoryResponse.json(),
 				]);
+
+				// Auto-recalculate memory only if needed (not on every load)
+				// This should be moved to a background task or triggered manually
+				if (memoryData?.success && memoryData?.data?.lastRecalculated) {
+					const lastRecalc = new Date(memoryData.data.lastRecalculated);
+					const now = new Date();
+					const hoursSinceRecalc =
+						(now.getTime() - lastRecalc.getTime()) / (1000 * 60 * 60);
+
+					// Only recalculate if it's been more than 1 hour
+					if (hoursSinceRecalc > 1) {
+						fetch(`/api/tenants/${tenant.id}/memory/recalculate`, {
+							method: "POST",
+							headers: { Authorization: `Bearer ${token}` },
+						}).catch(() => {
+							// Ignore recalculation errors - it's not critical
+						});
+					}
+				}
 
 				// Process databases data
 				const databases = Array.isArray(databasesData) ? databasesData : [];
@@ -282,7 +271,8 @@ export const useDashboardData = () => {
 		if (token && tenant) {
 			fetchDashboardData();
 		}
-	}, [token, tenant, subscription]); // Remove fetchDashboardData from dependencies
+	}, [token, tenant?.id, subscription?.subscriptionPlan]); // Only re-fetch when these specific values change
 
-	return { data, loading, error };
+	// Memoize the return value to prevent unnecessary re-renders
+	return useMemo(() => ({ data, loading, error }), [data, loading, error]);
 };

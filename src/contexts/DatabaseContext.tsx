@@ -45,6 +45,9 @@ interface DatabaseContextType {
 	handleDeleteDatabase: (id: number) => void;
 	handleSelectDatabase: (database: Database) => void;
 
+	// New method to refresh current database data
+	refreshSelectedDatabase: () => Promise<void>;
+
 	loading: boolean;
 
 	validateTableName: (name: string) => boolean;
@@ -79,12 +82,18 @@ export const DatabaseProvider = ({
 	const [showAddDatabaseModal, setShowAddDatabaseModal] = useState(false);
 
 	const fetchDatabases = useCallback(async () => {
-		setLoading(true);
-
 		if (!tenant || !user || !token) {
 			setLoading(false);
 			return;
 		}
+
+		// Prevent duplicate requests if databases are already loaded
+		if (databases && databases.length >= 0) {
+			setLoading(false);
+			return;
+		}
+
+		setLoading(true);
 
 		try {
 			const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
@@ -98,17 +107,13 @@ export const DatabaseProvider = ({
 			const data = await response.json();
 
 			if (!data || data.length === 0) {
-				showAlert(
-					"No databases found. Please create a database to get started.",
-					"info",
-				);
 				setDatabases([]);
 				setSelectedDatabase(null);
 				setTables([]);
 			} else {
 				setDatabases(data);
-				// Selectează prima bază de date ca fiind activă
-				if (!selectedDatabase) {
+				// Only set selected database if none is selected
+				if (!selectedDatabase && data.length > 0) {
 					setSelectedDatabase(data[0]);
 				}
 			}
@@ -121,13 +126,13 @@ export const DatabaseProvider = ({
 		} finally {
 			setLoading(false);
 		}
-	}, [tenant, user, token, showAlert, selectedDatabase]);
+	}, [tenant?.id, user?.id, token, selectedDatabase?.id, showAlert]); // Removed databases.length dependency to prevent loops
 
 	useEffect(() => {
 		if (token && user && tenant && !databases) {
 			fetchDatabases();
 		}
-	}, [token, user, tenant, fetchDatabases, databases]);
+	}, [token, user?.id, tenant?.id, fetchDatabases, databases]); // More specific dependencies
 
 	useEffect(() => {
 		if (selectedDatabase) {
@@ -140,6 +145,34 @@ export const DatabaseProvider = ({
 	const handleSelectDatabase = (database: Database) => {
 		setSelectedDatabase(database);
 	};
+
+	const refreshSelectedDatabase = useCallback(async () => {
+		if (!selectedDatabase || !token || !tenantId) return;
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			);
+
+			if (response.ok) {
+				const updatedDb = await response.json();
+				setSelectedDatabase(updatedDb);
+
+				// Also update in the databases array
+				if (databases) {
+					const updatedDatabases = databases.map((db) =>
+						db.id === updatedDb.id ? updatedDb : db,
+					);
+					setDatabases(updatedDatabases);
+				}
+			}
+		} catch (error) {
+			console.error("Error refreshing selected database:", error);
+		}
+	}, [selectedDatabase, token, tenantId, databases]);
 
 	const handleAddDatabase = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -361,6 +394,7 @@ export const DatabaseProvider = ({
 				handleAddDatabase,
 				handleDeleteDatabase,
 				handleSelectDatabase,
+				refreshSelectedDatabase,
 				loading,
 				validateTableName,
 				validateDatabaseName,

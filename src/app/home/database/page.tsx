@@ -37,7 +37,6 @@ function DatabaseContent() {
 		loading,
 	} = useDatabase();
 
-	const { user } = useApp();
 	const { setIsOpen, setCurrentStep } = useTour();
 
 	const startTour = () => {

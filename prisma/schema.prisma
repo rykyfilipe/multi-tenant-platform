@@ -22,15 +22,15 @@ model Tenant {
   timezone          String?
   updatedAt         DateTime           @updatedAt
   website           String?
-  memoryUsedGB      Float              @default(0)
-  memoryLimitGB     Float              @default(0.1)
   lastMemoryUpdate  DateTime?
+  memoryLimitGB     Float              @default(0.1)
+  memoryUsedGB      Float              @default(0)
   columnPermissions ColumnPermission[]
   databases         Database[]
+  invitations       Invitation[]
   tablePermissions  TablePermission[]
   admin             User               @relation("TenantAdmin", fields: [adminId], references: [id])
   users             User[]             @relation("TenantUsers")
-  invitations       Invitation[]
 }
 
 model User {
@@ -41,12 +41,12 @@ model User {
   password                     String?
   role                         Role
   tenantId                     Int?
-  profileImage                 String?
   stripeCustomerId             String?
   stripeSubscriptionId         String?
   subscriptionCurrentPeriodEnd DateTime?
   subscriptionPlan             String?
   subscriptionStatus           String?
+  profileImage                 String?
   accounts                     Account[]
   apiTokens                    ApiToken[]
   columnPermissions            ColumnPermission[]
@@ -213,7 +213,6 @@ model Invitation {
   expiresAt DateTime
   createdAt DateTime @default(now())
   accepted  Boolean  @default(false)
-  
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([email])

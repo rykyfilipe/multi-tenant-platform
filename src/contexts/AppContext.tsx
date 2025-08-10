@@ -74,7 +74,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		}
 
 		setLoading(false);
-	}, [session, user?.id, token]);
+	}, [session?.user?.id, session?.customJWT, user?.id, token]); // Add user and token to prevent stale closures
 
 	// Configuration validation
 	useEffect(() => {
@@ -99,6 +99,12 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 			return;
 		}
 
+		// Prevent duplicate requests
+		if (tenant && tenant.adminId) {
+			setLoading(false);
+			return;
+		}
+
 		try {
 			const response = await fetch("/api/tenants", {
 				headers: { Authorization: `Bearer ${token}` },
@@ -109,21 +115,27 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 			}
 
 			const data = await response.json();
-			setTenant(data);
+			// Only update if data has actually changed
+			if (!tenant || tenant.id !== data.id) {
+				setTenant(data);
+			}
 		} catch (error) {
 			// Error fetching tenant
 		} finally {
 			setLoading(false);
 		}
-	}, [token]);
+	}, [token, tenant?.id]); // Add tenant.id to prevent unnecessary calls
 
 	useEffect(() => {
 		if (token && !tenant) {
 			fetchTenant();
+		} else if (!token && tenant) {
+			setTenant(null);
+			setLoading(false);
 		} else if (!token) {
 			setLoading(false);
 		}
-	}, [token, fetchTenant, tenant]);
+	}, [token, tenant, fetchTenant]);
 
 	const showAlert = (
 		message: string,

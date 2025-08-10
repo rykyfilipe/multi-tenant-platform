@@ -175,18 +175,21 @@ export async function GET(
 				},
 				include: {
 					columns: true,
-					rows: {
-						include: {
-							cells: true,
-						},
-						orderBy: {
-							createdAt: "asc",
+					_count: {
+						select: {
+							rows: true,
 						},
 					},
 				},
 			});
 
-			return NextResponse.json(tables);
+			// Transform response to include rows count as empty array for backwards compatibility
+			const transformedTables = tables.map((table: any) => ({
+				...table,
+				rows: Array(table._count.rows).fill(null), // Create array of correct length for counting
+			}));
+
+			return NextResponse.json(transformedTables);
 		}
 
 		const permTables = await prisma.tablePermission.findMany({
@@ -200,9 +203,9 @@ export async function GET(
 				table: {
 					include: {
 						columns: true,
-						rows: {
-							include: {
-								cells: true,
+						_count: {
+							select: {
+								rows: true,
 							},
 						},
 					},
@@ -211,8 +214,11 @@ export async function GET(
 		});
 
 		const tables = permTables
-			.filter((item) => item.canRead)
-			.map((item) => item.table);
+			.filter((item: any) => item.canRead)
+			.map((item: any) => ({
+				...item.table,
+				rows: Array(item.table._count.rows).fill(null), // Create array of correct length for counting
+			}));
 
 		return NextResponse.json(tables);
 	} catch (error) {

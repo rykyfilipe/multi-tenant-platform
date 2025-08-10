@@ -2,12 +2,13 @@
 
 import { Table } from "@/types/database";
 import TableCard from "@/components/database/TableCard";
+import { memo } from "react";
 
 interface TableGridProps {
 	tables: Table[];
 }
 
-export function TableGrid({ tables }: TableGridProps) {
+export const TableGrid = memo(function TableGrid({ tables }: TableGridProps) {
 	return (
 		<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
 			{tables.map((table) => (
@@ -15,4 +16,4 @@ export function TableGrid({ tables }: TableGridProps) {
 			))}
 		</div>
 	);
-}
+});
