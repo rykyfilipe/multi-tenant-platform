@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,8 @@ interface PaymentVerification {
 	createdAt: number;
 }
 
-export default function PaymentSuccessPage() {
+// Separate component that uses useSearchParams
+function PaymentSuccessContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [countdown, setCountdown] = useState(5);
@@ -232,4 +233,36 @@ export default function PaymentSuccessPage() {
 
 	// Fallback - should not reach here
 	return null;
+}
+
+// Loading fallback component
+function PaymentSuccessLoading() {
+	return (
+		<div className='min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4'>
+			<Card className='w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm'>
+				<CardHeader className='text-center pb-4'>
+					<div className='mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4'>
+						<Loader2 className='w-8 h-8 text-blue-600 animate-spin' />
+					</div>
+					<CardTitle className='text-2xl font-bold text-gray-800'>
+						Se încarcă...
+					</CardTitle>
+				</CardHeader>
+				<CardContent className='text-center space-y-4'>
+					<p className='text-gray-600'>
+						Se încarcă pagina de confirmare...
+					</p>
+				</CardContent>
+			</Card>
+		</div>
+	);
+}
+
+// Main page component with Suspense boundary
+export default function PaymentSuccessPage() {
+	return (
+		<Suspense fallback={<PaymentSuccessLoading />}>
+			<PaymentSuccessContent />
+		</Suspense>
+	);
 }
