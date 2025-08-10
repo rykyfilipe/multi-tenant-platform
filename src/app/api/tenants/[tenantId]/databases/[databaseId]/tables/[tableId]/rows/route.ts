@@ -391,35 +391,478 @@ export async function GET(
 		const url = new URL(request.url);
 		const page = parseInt(url.searchParams.get("page") || "1");
 		const pageSize = parseInt(url.searchParams.get("pageSize") || "25");
+		const includeCells = url.searchParams.get("includeCells") !== "false"; // Default to true for backwards compatibility
+
+		// Get filter parameters from URL
+		const globalSearch = url.searchParams.get("globalSearch") || "";
+		const filtersParam = url.searchParams.get("filters") || "[]";
+
+		let filters: any[] = [];
+		try {
+			filters = JSON.parse(filtersParam);
+		} catch (error) {
+			console.warn("Invalid filters parameter, using empty array");
+			filters = [];
+		}
 
 		console.log(
 			`DEBUG PARAMS: Received page=${url.searchParams.get(
 				"page",
-			)}, pageSize=${url.searchParams.get("pageSize")}`,
+			)}, pageSize=${url.searchParams.get(
+				"pageSize",
+			)}, globalSearch="${globalSearch}", filters=${filters.length}`,
 		);
-		const includeCells = url.searchParams.get("includeCells") !== "false"; // Default to true for backwards compatibility
 
 		// Validate pagination parameters
 		const validPage = Math.max(1, page);
 		const validPageSize = Math.min(Math.max(1, pageSize), 100); // Limit page size to 100
 		const skip = (validPage - 1) * validPageSize;
 
-		// Get total count for pagination info
+		// Build where clause for filtering
+		let whereClause: any = {
+			tableId: Number(tableId),
+		};
+
+		// Apply global search if provided
+		if (globalSearch.trim()) {
+			whereClause.cells = {
+				some: {
+					value: {
+						path: ["$"],
+						string_contains: globalSearch.trim(),
+					},
+				},
+			};
+		}
+
+		// Apply column-specific filters
+		if (filters.length > 0) {
+			const filterConditions = filters.map((filter: any) => {
+				const { columnId, operator, value, secondValue } = filter;
+
+				switch (operator) {
+					case "contains":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												string_contains: value,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "not_contains":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											NOT: {
+												value: {
+													path: ["$"],
+													string_contains: value,
+												},
+											},
+										},
+									],
+								},
+							},
+						};
+					case "equals":
+						return {
+							cells: {
+								some: {
+									AND: [{ columnId: Number(columnId) }, { value: value }],
+								},
+							},
+						};
+					case "not_equals":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{ NOT: { value: value } },
+									],
+								},
+							},
+						};
+					case "starts_with":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												string_starts_with: value,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "ends_with":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												string_ends_with: value,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "greater_than":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gt: Number(value),
+											},
+										},
+									],
+								},
+							},
+						};
+					case "greater_than_or_equal":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gte: Number(value),
+											},
+										},
+									],
+								},
+							},
+						};
+					case "less_than":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												lt: Number(value),
+											},
+										},
+									],
+								},
+							},
+						};
+					case "less_than_or_equal":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												lte: Number(value),
+											},
+										},
+									],
+								},
+							},
+						};
+					case "between":
+						if (secondValue !== undefined && secondValue !== null) {
+							return {
+								cells: {
+									some: {
+										AND: [
+											{ columnId: Number(columnId) },
+											{
+												value: {
+													path: ["$"],
+													gte: Number(value),
+													lte: Number(secondValue),
+												},
+											},
+										],
+									},
+								},
+							};
+						}
+						return {};
+					case "not_between":
+						if (secondValue !== undefined && secondValue !== null) {
+							return {
+								cells: {
+									some: {
+										AND: [
+											{ columnId: Number(columnId) },
+											{
+												OR: [
+													{
+														value: {
+															path: ["$"],
+															lt: Number(value),
+														},
+													},
+													{
+														value: {
+															path: ["$"],
+															gt: Number(secondValue),
+														},
+													},
+												],
+											},
+										],
+									},
+								},
+							};
+						}
+						return {};
+					case "before":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												lt: new Date(value),
+											},
+										},
+									],
+								},
+							},
+						};
+					case "after":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gt: new Date(value),
+											},
+										},
+									],
+								},
+							},
+						};
+					case "today":
+						const today = new Date();
+						const startOfDay = new Date(
+							today.getFullYear(),
+							today.getMonth(),
+							today.getDate(),
+						);
+						const endOfDay = new Date(
+							today.getFullYear(),
+							today.getMonth(),
+							today.getDate(),
+							23,
+							59,
+							59,
+							999,
+						);
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gte: startOfDay,
+												lte: endOfDay,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "yesterday":
+						const yesterday = new Date();
+						yesterday.setDate(yesterday.getDate() - 1);
+						const startOfYesterday = new Date(
+							yesterday.getFullYear(),
+							yesterday.getMonth(),
+							yesterday.getDate(),
+						);
+						const endOfYesterday = new Date(
+							yesterday.getFullYear(),
+							yesterday.getMonth(),
+							yesterday.getDate(),
+							23,
+							59,
+							59,
+							999,
+						);
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gte: startOfYesterday,
+												lte: endOfYesterday,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "this_week":
+						const now = new Date();
+						const startOfWeek = new Date(now);
+						startOfWeek.setDate(now.getDate() - now.getDay());
+						startOfWeek.setHours(0, 0, 0, 0);
+						const endOfWeek = new Date(startOfWeek);
+						endOfWeek.setDate(startOfWeek.getDate() + 6);
+						endOfWeek.setHours(23, 59, 59, 999);
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gte: startOfWeek,
+												lte: endOfWeek,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "this_month":
+						const currentMonth = new Date();
+						const startOfMonth = new Date(
+							currentMonth.getFullYear(),
+							currentMonth.getMonth(),
+							1,
+						);
+						const endOfMonth = new Date(
+							currentMonth.getFullYear(),
+							currentMonth.getMonth() + 1,
+							0,
+							23,
+							59,
+							59,
+							999,
+						);
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gte: startOfMonth,
+												lte: endOfMonth,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "this_year":
+						const currentYear = new Date().getFullYear();
+						const startOfYear = new Date(currentYear, 0, 1);
+						const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											value: {
+												path: ["$"],
+												gte: startOfYear,
+												lte: endOfYear,
+											},
+										},
+									],
+								},
+							},
+						};
+					case "is_empty":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											OR: [{ value: null }, { value: "" }],
+										},
+									],
+								},
+							},
+						};
+					case "is_not_empty":
+						return {
+							cells: {
+								some: {
+									AND: [
+										{ columnId: Number(columnId) },
+										{
+											AND: [{ NOT: { value: null } }, { NOT: { value: "" } }],
+										},
+									],
+								},
+							},
+						};
+					default:
+						return {};
+				}
+			});
+
+			// Combine all filter conditions with AND
+			if (filterConditions.length > 0) {
+				whereClause.AND = filterConditions.filter(
+					(condition: any) => Object.keys(condition).length > 0,
+				);
+			}
+		}
+
+		// Get total count for pagination info with filters applied
 		const totalRows = await prisma.row.count({
-			where: {
-				tableId: Number(tableId),
-			},
+			where: whereClause,
 		});
 
 		console.log(
-			`DEBUG MAIN: Table ${tableId} has ${totalRows} total rows, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
+			`DEBUG MAIN: Table ${tableId} has ${totalRows} total rows after filtering, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
 		);
 
-		// Optimized query with proper indexing support
+		// Optimized query with proper indexing support and filters
 		const rows = await prisma.row.findMany({
-			where: {
-				tableId: Number(tableId),
-			},
+			where: whereClause,
 			include: {
 				cells: includeCells
 					? {
