@@ -8,8 +8,11 @@ import { generateToken, hashPassword } from "@/lib/auth";
 const RegisterSchema = z.object({
 	email: z.string().email("Invalid email format"),
 	password: z.string()
-		.min(8, "Password must be at least 8 characters")
-		.regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
+		.min(12, "Password must be at least 12 characters")
+		.regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)")
+		.max(128, "Password too long")
+		.refine(password => !/(.)\1{2,}/.test(password), "Password cannot contain repeated characters (e.g., 'aaa', '111')")
+		.refine(password => !/(.)(.)\1\2/.test(password), "Password cannot contain repeated patterns (e.g., 'abab')"),
 	firstName: z.string().min(2, "First name must be at least 2 characters").max(50, "First name too long"),
 	lastName: z.string().min(2, "Last name must be at least 2 characters").max(50, "Last name too long"),
 	role: z.enum(["VIEWER", "ADMIN"]).default("VIEWER"),

@@ -283,10 +283,50 @@ export const authOptions = {
 	},
 
 	session: {
-		strategy: "jwt" as const, // Explicitly use JWT strategy
-		maxAge: 7 * 24 * 60 * 60, // 7 days
-		updateAge: 7 * 24 * 60 * 60, // 7 days - same as maxAge to prevent frequent updates
+		strategy: "jwt" as const,
+		maxAge: 2 * 60 * 60, // 2 hours - much shorter for security
+		updateAge: 60 * 60, // 1 hour - update session every hour
 	},
+
+	// Enhanced cookie security
+	cookies: {
+		sessionToken: {
+			name: `__Secure-next-auth.session-token`,
+			options: {
+				httpOnly: true,
+				sameSite: "lax",
+				path: "/",
+				secure: process.env.NODE_ENV === "production",
+				maxAge: 2 * 60 * 60, // 2 hours
+			},
+		},
+		callbackUrl: {
+			name: `__Secure-next-auth.callback-url`,
+			options: {
+				sameSite: "lax",
+				path: "/",
+				secure: process.env.NODE_ENV === "production",
+			},
+		},
+		csrfToken: {
+			name: `__Host-next-auth.csrf-token`,
+			options: {
+				httpOnly: true,
+				sameSite: "lax",
+				path: "/",
+				secure: process.env.NODE_ENV === "production",
+			},
+		},
+	},
+
+	// Enhanced JWT configuration
+	jwt: {
+		maxAge: 2 * 60 * 60, // 2 hours
+	},
+
+	// Security settings
+	useSecureCookies: process.env.NODE_ENV === "production",
+	secret: process.env.NEXTAUTH_SECRET,
 
 	debug: process.env.NODE_ENV === "development",
 
@@ -316,14 +356,20 @@ export function generateToken(
 }
 
 export async function hashPassword(password: string): Promise<string> {
-	const salt = await bcrypt.genSalt(10);
-	return bcrypt.hash(password, salt);
+	// Enhanced bcrypt configuration with higher salt rounds for better security
+	const saltRounds = 14; // Increased from 10 to 14 for better security
+	return await bcrypt.hash(password, saltRounds);
 }
 export async function verifyPassword(
 	inputPassword: string,
 	hashedPassword: string,
 ): Promise<boolean> {
-	return bcrypt.compare(inputPassword, hashedPassword);
+	try {
+		return await bcrypt.compare(inputPassword, hashedPassword);
+	} catch (error) {
+		// If verification fails, return false instead of throwing
+		return false;
+	}
 }
 
 export async function isAdmin(request: Request): Promise<boolean> {
