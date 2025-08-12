@@ -9,6 +9,36 @@ import {
 } from "@/lib/auth";
 import { z } from "zod";
 
+// Type definitions
+interface TableColumn {
+	id: number;
+	name: string;
+	type: string;
+	primary?: boolean;
+	referenceTableId?: number;
+}
+
+interface FilterCondition {
+	columnId: number;
+	columnName: string;
+	columnType: string;
+	operator: string;
+	value?: unknown;
+	secondValue?: unknown;
+}
+
+interface WhereClause {
+	tableId: number;
+	cells?: {
+		some: {
+			value: {
+				string_contains: string;
+			};
+		};
+	};
+	AND?: Record<string, unknown>[];
+}
+
 // Schema de validare pentru parametrii de export
 const ExportParamsSchema = z.object({
 	format: z.string().default("csv"),
@@ -33,8 +63,8 @@ const ExportParamsSchema = z.object({
 							columnName: z.string().min(1),
 							columnType: z.string().min(1),
 							operator: z.string().min(1),
-							value: z.any().optional().nullable(),
-							secondValue: z.any().optional().nullable(),
+							value: z.unknown().optional().nullable(),
+							secondValue: z.unknown().optional().nullable(),
 						}),
 					)
 					.parse(parsed);
@@ -46,11 +76,11 @@ const ExportParamsSchema = z.object({
 
 // Clasa pentru construirea query-urilor Prisma optimizate pentru export
 class ExportQueryBuilder {
-	private whereClause: any = {};
-	private tableColumns: any[] = [];
+	private whereClause: WhereClause;
+	private tableColumns: TableColumn[];
 	private tableId: number;
 
-	constructor(tableId: number, tableColumns: any[]) {
+	constructor(tableId: number, tableColumns: TableColumn[]) {
 		this.tableId = tableId;
 		this.tableColumns = tableColumns;
 		this.whereClause = { tableId };
@@ -71,7 +101,7 @@ class ExportQueryBuilder {
 	}
 
 	// Adaugă filtre pentru coloane
-	addColumnFilters(filters: any[]): this {
+	addColumnFilters(filters: FilterCondition[]): this {
 		if (filters.length === 0) return this;
 
 		const validFilters = filters.filter((filter) => this.isValidFilter(filter));
@@ -92,7 +122,7 @@ class ExportQueryBuilder {
 	}
 
 	// Validează un filtru
-	private isValidFilter(filter: any): boolean {
+	private isValidFilter(filter: FilterCondition): boolean {
 		if (!filter.columnId || !filter.operator) return false;
 
 		const column = this.tableColumns.find((col) => col.id === filter.columnId);
@@ -166,7 +196,7 @@ class ExportQueryBuilder {
 	}
 
 	// Validează valorile unui filtru
-	private validateFilterValues(filter: any, columnType: string): boolean {
+	private validateFilterValues(filter: FilterCondition, columnType: string): boolean {
 		const { operator, value, secondValue } = filter;
 
 		const noValueOperators = [
@@ -204,7 +234,7 @@ class ExportQueryBuilder {
 					].includes(operator)
 				) {
 					return (
-						value !== null && value !== undefined && !isNaN(parseFloat(value))
+						value !== null && value !== undefined && !isNaN(parseFloat(value as string))
 					);
 				}
 				if (["between", "not_between"].includes(operator)) {
@@ -213,51 +243,57 @@ class ExportQueryBuilder {
 						value !== undefined &&
 						secondValue !== null &&
 						secondValue !== undefined &&
-						!isNaN(parseFloat(value)) &&
-						!isNaN(parseFloat(secondValue))
+						!isNaN(parseFloat(value as string)) &&
+						!isNaN(parseFloat(secondValue as string))
 					);
 				}
 				break;
+			case "boolean":
+				return true; // Boolean operators don't have specific value validation
 			case "date":
 			case "datetime":
 				if (["equals", "before", "after"].includes(operator)) {
-					return value && !isNaN(new Date(value).getTime());
+					return Boolean(value && !isNaN(new Date(value as string).getTime()));
 				}
 				if (["between", "not_between"].includes(operator)) {
-					return (
+					return Boolean(
 						value &&
 						secondValue &&
-						!isNaN(new Date(value).getTime()) &&
-						!isNaN(new Date(secondValue).getTime())
+						!isNaN(new Date(value as string).getTime()) &&
+						!isNaN(new Date(secondValue as string).getTime())
 					);
 				}
 				break;
+			case "reference":
+				return true; // Reference operators don't have specific value validation
+			case "customArray":
+				return true; // CustomArray operators don't have specific value validation
+			default:
+				return true;
 		}
 
 		return true;
 	}
 
 	// Construiește condiția pentru un filtru
-	private buildFilterCondition(filter: any): any {
+	private buildFilterCondition(filter: FilterCondition): Record<string, unknown> {
 		const { columnId, operator, value, secondValue } = filter;
 		const column = this.tableColumns.find((col) => col.id === columnId);
 		if (!column) return {};
 
-		const columnType = column.type === "reference" ? "text" : column.type;
-
 		switch (operator) {
 			case "contains":
-				return this.buildStringFilter(columnId, "string_contains", value);
+				return this.buildStringFilter(columnId, "contains", value);
 			case "not_contains":
-				return this.buildStringFilter(columnId, "string_contains", value, true);
+				return this.buildStringFilter(columnId, "not_contains", value);
 			case "equals":
-				return this.buildEqualsFilter(columnId, value, columnType);
+				return this.buildEqualsFilter(columnId, value, column.type);
 			case "not_equals":
-				return this.buildNotEqualsFilter(columnId, value, columnType);
+				return this.buildNotEqualsFilter(columnId, value, column.type);
 			case "starts_with":
-				return this.buildStringFilter(columnId, "string_starts_with", value);
+				return this.buildStringFilter(columnId, "starts_with", value);
 			case "ends_with":
-				return this.buildStringFilter(columnId, "string_ends_with", value);
+				return this.buildStringFilter(columnId, "ends_with", value);
 			case "regex":
 				return this.buildRegexFilter(columnId, value);
 
@@ -274,14 +310,14 @@ class ExportQueryBuilder {
 					columnId,
 					value,
 					secondValue,
-					columnType,
+					column.type,
 				);
 			case "not_between":
 				return this.buildNotBetweenFilter(
 					columnId,
 					value,
 					secondValue,
-					columnType,
+					column.type,
 				);
 
 			case "before":
@@ -313,9 +349,9 @@ class ExportQueryBuilder {
 	private buildStringFilter(
 		columnId: number,
 		operator: string,
-		value: any,
+		value: unknown,
 		negate: boolean = false,
-	): any {
+	): Record<string, unknown> {
 		if (!value || value.toString().trim() === "") {
 			return {};
 		}
@@ -335,13 +371,16 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildRegexFilter(columnId: number, value: any): any {
+	private buildRegexFilter(columnId: number, value: unknown): Record<string, unknown> {
+		if (typeof value !== 'string') {
+			return {};
+		}
 		return {
 			cells: {
 				some: {
 					columnId: Number(columnId),
 					value: {
-						string_matches: value.toString().trim(),
+						string_matches: value.trim(),
 					},
 				},
 			},
@@ -350,15 +389,15 @@ class ExportQueryBuilder {
 
 	private buildEqualsFilter(
 		columnId: number,
-		value: any,
+		value: unknown,
 		columnType: string,
-	): any {
+	): Record<string, unknown> {
 		if (columnType === "number") {
 			return {
 				cells: {
 					some: {
 						columnId: Number(columnId),
-						value: { equals: parseFloat(value) },
+						value: { equals: parseFloat(value as string) },
 					},
 				},
 			};
@@ -378,7 +417,7 @@ class ExportQueryBuilder {
 				cells: {
 					some: {
 						columnId: Number(columnId),
-						value: { equals: new Date(value) },
+						value: { equals: new Date(value as string) },
 					},
 				},
 			};
@@ -399,15 +438,15 @@ class ExportQueryBuilder {
 
 	private buildNotEqualsFilter(
 		columnId: number,
-		value: any,
+		value: unknown,
 		columnType: string,
-	): any {
+	): Record<string, unknown> {
 		if (columnType === "number") {
 			return {
 				cells: {
 					none: {
 						columnId: Number(columnId),
-						value: { equals: parseFloat(value) },
+						value: { equals: parseFloat(value as string) },
 					},
 				},
 			};
@@ -429,13 +468,13 @@ class ExportQueryBuilder {
 	private buildNumericFilter(
 		columnId: number,
 		operator: string,
-		value: any,
-	): any {
+		value: unknown,
+	): Record<string, unknown> {
 		return {
 			cells: {
 				some: {
 					columnId: Number(columnId),
-					value: { [operator]: parseFloat(value) },
+					value: { [operator]: parseFloat(value as string) },
 				},
 			},
 		};
@@ -443,18 +482,18 @@ class ExportQueryBuilder {
 
 	private buildBetweenFilter(
 		columnId: number,
-		minValue: any,
-		maxValue: any,
+		minValue: unknown,
+		maxValue: unknown,
 		columnType: string,
-	): any {
+	): Record<string, unknown> {
 		if (columnType === "number") {
 			return {
 				cells: {
 					some: {
 						columnId: Number(columnId),
 						value: {
-							gte: parseFloat(minValue),
-							lte: parseFloat(maxValue),
+							gte: parseFloat(minValue as string),
+							lte: parseFloat(maxValue as string),
 						},
 					},
 				},
@@ -466,8 +505,8 @@ class ExportQueryBuilder {
 					some: {
 						columnId: Number(columnId),
 						value: {
-							gte: new Date(minValue),
-							lte: new Date(maxValue),
+							gte: new Date(minValue as string),
+							lte: new Date(maxValue as string),
 						},
 					},
 				},
@@ -478,18 +517,18 @@ class ExportQueryBuilder {
 
 	private buildNotBetweenFilter(
 		columnId: number,
-		minValue: any,
-		maxValue: any,
+		minValue: unknown,
+		maxValue: unknown,
 		columnType: string,
-	): any {
+	): Record<string, unknown> {
 		if (columnType === "number") {
 			return {
 				cells: {
 					none: {
 						columnId: Number(columnId),
 						value: {
-							gte: parseFloat(minValue),
-							lte: parseFloat(maxValue),
+							gte: parseFloat(minValue as string),
+							lte: parseFloat(maxValue as string),
 						},
 					},
 				},
@@ -501,8 +540,8 @@ class ExportQueryBuilder {
 					none: {
 						columnId: Number(columnId),
 						value: {
-							gte: new Date(minValue),
-							lte: new Date(maxValue),
+							gte: new Date(minValue as string),
+							lte: new Date(maxValue as string),
 						},
 					},
 				},
@@ -511,18 +550,18 @@ class ExportQueryBuilder {
 		return {};
 	}
 
-	private buildDateFilter(columnId: number, operator: string, value: any): any {
+	private buildDateFilter(columnId: number, operator: string, value: unknown): Record<string, unknown> {
 		return {
 			cells: {
 				some: {
 					columnId: Number(columnId),
-					value: { [operator]: new Date(value) },
+					value: { [operator]: new Date(value as string) },
 				},
 			},
 		};
 	}
 
-	private buildTodayFilter(columnId: number): any {
+	private buildTodayFilter(columnId: number): Record<string, unknown> {
 		const today = new Date();
 		const startOfDay = new Date(
 			today.getFullYear(),
@@ -552,7 +591,7 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildYesterdayFilter(columnId: number): any {
+	private buildYesterdayFilter(columnId: number): Record<string, unknown> {
 		const yesterday = new Date();
 		yesterday.setDate(yesterday.getDate() - 1);
 		const startOfDay = new Date(
@@ -583,7 +622,7 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildThisWeekFilter(columnId: number): any {
+	private buildThisWeekFilter(columnId: number): Record<string, unknown> {
 		const now = new Date();
 		const startOfWeek = new Date(now);
 		startOfWeek.setDate(now.getDate() - now.getDay());
@@ -605,7 +644,7 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildThisMonthFilter(columnId: number): any {
+	private buildThisMonthFilter(columnId: number): Record<string, unknown> {
 		const currentMonth = new Date();
 		const startOfMonth = new Date(
 			currentMonth.getFullYear(),
@@ -635,7 +674,7 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildThisYearFilter(columnId: number): any {
+	private buildThisYearFilter(columnId: number): Record<string, unknown> {
 		const currentYear = new Date().getFullYear();
 		const startOfYear = new Date(currentYear, 0, 1);
 		const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59, 999);
@@ -653,7 +692,7 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildEmptyFilter(columnId: number): any {
+	private buildEmptyFilter(columnId: number): Record<string, unknown> {
 		return {
 			cells: {
 				none: {
@@ -664,7 +703,7 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildNotEmptyFilter(columnId: number): any {
+	private buildNotEmptyFilter(columnId: number): Record<string, unknown> {
 		return {
 			cells: {
 				some: {
@@ -676,7 +715,7 @@ class ExportQueryBuilder {
 	}
 
 	// Returnează clauza where finală
-	getWhereClause(): any {
+	getWhereClause(): WhereClause {
 		return this.whereClause;
 	}
 }
@@ -935,8 +974,8 @@ export async function GET(
 
 		// Obține tabelele de referință pentru procesare
 		const referenceTableIds = tableColumns
-			.filter((col: any) => col.referenceTableId)
-			.map((col: any) => col.referenceTableId);
+			.filter((col: TableColumn) => col.referenceTableId)
+			.map((col: TableColumn) => col.referenceTableId);
 
 		const referenceTables = await prisma.table.findMany({
 			where: {
@@ -965,12 +1004,10 @@ export async function GET(
 		});
 
 		// Sortare coloane după ordine în aplicație pentru fiecare rând
-		const sortedRows = filteredRows.map((row: any) => ({
+		const sortedRows = filteredRows.map((row: Record<string, unknown>) => ({
 			...row,
-			cells: row.cells.sort((a: any, b: any) => {
-				const cellA = a as any;
-				const cellB = b as any;
-				return cellA.column.order - cellB.column.order;
+			cells: (row.cells as Array<{ column: { order: number } }>).sort((a, b) => {
+				return a.column.order - b.column.order;
 			}),
 		}));
 

@@ -39,4 +39,25 @@ module.exports = {
 			forceSwcTransforms: true,
 		},
 	}),
+	// Webpack configuration to fix Windows permission issues
+	webpack: (config: any, { isServer }: { isServer: boolean }) => {
+		// Exclude problematic Windows directories
+		config.watchOptions = {
+			poll: 1000,
+			aggregateTimeout: 300,
+			ignored: [
+				'**/node_modules',
+				'**/.git',
+				'**/dist',
+				'**/build',
+				'**/.next',
+				'**/C:/Users/**/Cookies',
+				'**/C:/Users/**/Application Data',
+				'**/C:/Users/**/Local Settings',
+				'**/C:/Users/**/AppData',
+			],
+		};
+		
+		return config;
+	},
 };

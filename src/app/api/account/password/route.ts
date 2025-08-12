@@ -1,7 +1,6 @@
 /** @format */
 
 import {
-	checkUserTenantAccess,
 	getUserFromRequest,
 	hashPassword,
 	verifyLogin,
@@ -22,7 +21,7 @@ export async function GET(request: Request) {
 		return userResult;
 	}
 
-	const { userId, role } = userResult;
+	const { userId } = userResult;
 
 	// Verifică că user-ul curent este admin și membru în tenant
 
@@ -54,7 +53,7 @@ export async function PATCH(request: Request) {
 		return userResult;
 	}
 
-	const { userId, role } = userResult;
+	const { userId } = userResult;
 	const body = await request.json();
 
 	try {
@@ -101,7 +100,7 @@ export async function PATCH(request: Request) {
 			// Hash and update with new password
 			const hashedNewPassword = await hashPassword(body.newPassword);
 
-			const updatedUser = await prisma.user.update({
+			await prisma.user.update({
 				where: { id: userId },
 				data: { password: hashedNewPassword },
 			});
@@ -131,7 +130,7 @@ export async function PATCH(request: Request) {
 			// Hash and set initial password
 			const hashedPassword = await hashPassword(body.password);
 
-			const updatedUser = await prisma.user.update({
+			await prisma.user.update({
 				where: { id: userId },
 				data: { password: hashedPassword },
 			});

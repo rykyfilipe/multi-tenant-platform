@@ -39,7 +39,7 @@ const ColumnsSchema = z.object({
 const getDefaultValue = (
 	columnType: string,
 	required: boolean = false,
-): any => {
+): unknown => {
 	if (required) {
 		switch (columnType) {
 			case "string":
@@ -123,7 +123,7 @@ export async function POST(
 		}
 
 		// Transform Prisma columns to match the expected Column interface
-		const transformedColumns: Column[] = table.columns.map((col) => ({
+		const transformedColumns: Column[] = table.columns.map((col: { referenceTableId: number | null }) => ({
 			...col,
 			referenceTableId: col.referenceTableId ?? undefined,
 		}));
@@ -139,7 +139,7 @@ export async function POST(
 		}
 
 		// Verificăm dacă există deja o cheie primară în tabelă
-		const existingPrimaryKey = table.columns.find((col) => col.primary);
+		const existingPrimaryKey = table.columns.find((col: { primary?: boolean }) => col.primary);
 		const newPrimaryKey = parsedData.columns.find((col) => col.primary);
 
 		if (existingPrimaryKey && newPrimaryKey) {
@@ -169,7 +169,7 @@ export async function POST(
 					);
 				}
 
-				const hasPrimaryKey = referenceTable.columns.some((col) => col.primary);
+				const hasPrimaryKey = referenceTable.columns.some((col: { primary?: boolean }) => col.primary);
 				if (!hasPrimaryKey) {
 					return NextResponse.json(
 						{
@@ -218,15 +218,10 @@ export async function POST(
 
 			// Adăugăm valori implicite pentru coloanele existente
 			if (table.rows.length > 0) {
-				const defaultValue = getDefaultValue(
-					columnData.type,
-					columnData.required,
-				);
-
-				const cells = table.rows.map((row) => ({
+				const cells = table.rows.map((row: { id: number }) => ({
 					rowId: row.id,
 					columnId: column.id,
-					value: defaultValue,
+					value: getDefaultValue(columnData.type, columnData.required),
 				}));
 
 				await prisma.cell.createMany({
@@ -317,7 +312,7 @@ export async function GET(
 		}
 
 		// Sortăm coloanele după ordine
-		const sortedColumns = table.columns.sort((a, b) => a.order - b.order);
+		const sortedColumns = table.columns.sort((a: { order: number }, b: { order: number }) => a.order - b.order);
 		return NextResponse.json(sortedColumns);
 	} catch (error) {
 		console.error("Error fetching columns:", error);

@@ -78,7 +78,7 @@ export async function PATCH(
 
 		// Validate incoming data keys and values
 		for (const [key, value] of Object.entries(body)) {
-			const col = columns.find((c) => c.name === key);
+			const col = columns.find((c: { name: string; type: string }) => c.name === key);
 			if (!col) {
 				return NextResponse.json(
 					{ error: `Unknown column: ${key}` },
@@ -105,9 +105,10 @@ export async function PATCH(
 				} else {
 					throw new Error(`Unsupported type: ${baseType}`);
 				}
-			} catch (err: any) {
+			} catch (err: unknown) {
+				const errorMessage = err instanceof Error ? err.message : 'Validation failed';
 				return NextResponse.json(
-					{ error: `Validation failed for "${key}": ${err.message}` },
+					{ error: `Validation failed for "${key}": ${errorMessage}` },
 					{ status: 400 },
 				);
 			}
@@ -116,7 +117,7 @@ export async function PATCH(
 		// Actualizare celule pentru valorile primite
 		const updatePromises = Object.entries(body).map(
 			async ([columnName, value]) => {
-				const column = columns.find((c) => c.name === columnName)!;
+				const column = columns.find((c: { name: string; id: number }) => c.name === columnName)!;
 
 				// Verificăm dacă celula există deja în rând
 				const existingCell = await prisma.cell.findFirst({
@@ -127,7 +128,7 @@ export async function PATCH(
 					// Actualizare celulă existentă
 					return prisma.cell.update({
 						where: { id: existingCell.id },
-						data: { value: value as any },
+						data: { value: value as unknown },
 					});
 				} else {
 					// Creare celulă nouă (de regulă nu ar trebui să lipsească)
@@ -135,7 +136,7 @@ export async function PATCH(
 						data: {
 							rowId: rowIdNum,
 							columnId: column.id,
-							value: value as any,
+							value: value as unknown,
 						},
 					});
 				}
@@ -162,7 +163,7 @@ export async function PATCH(
 		}
 
 		// Format JSON frumos pentru răspuns
-		const prettyRow: Record<string, any> = {};
+		const prettyRow: Record<string, unknown> = {};
 		for (const cell of updatedRow.cells) {
 			prettyRow[cell.column.name] = cell.value;
 		}
@@ -189,7 +190,7 @@ export async function DELETE(
 	if (userResult instanceof NextResponse) {
 		return userResult;
 	}
-	const { userId, role } = userResult;
+	const { userId } = userResult;
 
 	try {
 		// Verificăm permisiunile utilizatorului

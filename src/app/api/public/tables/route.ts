@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
 	try {
 		const tokens = await cachedOperations.getApiTokens(userId);
-		const token = tokens.find(t => !t.revoked);
+		const token = tokens.find((t: { revoked: boolean }) => !t.revoked);
 
 		if (!token || !token.scopes.includes("tables:read")) {
 			return NextResponse.json(

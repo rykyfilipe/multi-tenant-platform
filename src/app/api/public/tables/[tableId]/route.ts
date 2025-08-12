@@ -18,7 +18,7 @@ export async function GET(
 		return userResult;
 	}
 
-	const { userId, role } = userResult;
+	const { userId } = userResult;
 
 	try {
 		const token = await prisma.apiToken.findFirst({
@@ -93,18 +93,16 @@ export async function GET(
 			columnTypeMap.set(column.id, column.type);
 		}
 
-		// Găsim cheia primară a tabelului
-		const primaryKeyColumn = table.columns.find((col: any) => col.primary);
-
 		// Optimized row transformation - no Promise.all needed since no async operations
-		const transformedRows = rows.map((row: any) => {
-			const rowData: Record<string, any> = {
+		const transformedRows = rows.map((row: Record<string, unknown>) => {
+			const rowData: Record<string, unknown> = {
 				id: row.id,
 				createdAt: row.createdAt,
 			};
 
 			// Process cells efficiently
-			for (const cell of row.cells) {
+			const cells = row.cells as Array<{ columnId: number; value: unknown }>;
+			for (const cell of cells) {
 				const columnName = columnMap.get(cell.columnId);
 				if (columnName) {
 					rowData[columnName] = cell.value;

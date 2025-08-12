@@ -3,6 +3,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+// Zod schemas for input validation
+const emailSchema = z.string().email("Invalid email format");
+const passwordSchema = z.string().min(12, "Password must be at least 12 characters");
+const nameSchema = z.string().min(2, "Name must be at least 2 characters").max(50, "Name too long");
+const databaseNameSchema = z.string().min(1, "Database name required").max(100, "Database name too long");
+const tableNameSchema = z.string().min(1, "Table name required").max(100, "Table name too long");
+const columnNameSchema = z.string().min(1, "Column name required").max(100, "Column name too long");
+const tokenNameSchema = z.string().min(1, "Token name required").max(100, "Token name too long");
+const tenantNameSchema = z.string().min(1, "Tenant name required").max(100, "Tenant name too long");
+
 export interface AppError extends Error {
 	statusCode?: number;
 	code?: string;

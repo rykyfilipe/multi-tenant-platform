@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
 		// Create table permissions
 		await Promise.all(
-			tables.map((table) =>
+			tables.map((table: { id: number; columns: Array<{ id: number }> }) =>
 				prisma.tablePermission.create({
 					data: {
 						tenantId: invitation.tenantId,
@@ -108,8 +108,8 @@ export async function POST(request: NextRequest) {
 
 		// Create column permissions
 		await Promise.all(
-			tables.flatMap((table) =>
-				table.columns.map((column) =>
+			tables.flatMap((table: { id: number; columns: Array<{ id: number }> }) =>
+				table.columns.map((column: { id: number }) =>
 					prisma.columnPermission.create({
 						data: {
 							tenantId: invitation.tenantId,
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
 			data: { accepted: true },
 		});
 
-		const { password: _, ...safeUser } = user;
+		const { password: userPassword, ...safeUser } = user;
 
 		return NextResponse.json(
 			{
@@ -140,10 +140,11 @@ export async function POST(request: NextRequest) {
 			},
 			{ status: 201 },
 		);
-	} catch (error: any) {
+	} catch (error: unknown) {
+		const errorMessage = error instanceof Error ? error.message : "Failed to accept invitation";
 		console.error("Error accepting invitation:", error);
 		return NextResponse.json(
-			{ error: error.message || "Failed to accept invitation" },
+			{ error: errorMessage },
 			{ status: 400 },
 		);
 	}
@@ -198,7 +199,7 @@ export async function GET(request: NextRequest) {
 				expiresAt: invitation.expiresAt,
 			},
 		});
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Error validating invitation:", error);
 		return NextResponse.json(
 			{ error: "Failed to validate invitation" },

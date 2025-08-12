@@ -11,7 +11,7 @@ export async function DELETE(
 		const { tokenId } = await params;
 
 		// Delete the token
-		const deletedToken = await prisma.apiToken.delete({
+		await prisma.apiToken.delete({
 			where: { id: tokenId },
 		});
 		return NextResponse.json({ status: 200 });

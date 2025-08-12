@@ -109,7 +109,7 @@ export async function PATCH(
 		}
 
 		// Actualizăm coloana
-		const updateData: any = {};
+		const updateData: Record<string, unknown> = {};
 
 		if (parsedData.name !== undefined) updateData.name = parsedData.name;
 		if (parsedData.type !== undefined) updateData.type = parsedData.type;

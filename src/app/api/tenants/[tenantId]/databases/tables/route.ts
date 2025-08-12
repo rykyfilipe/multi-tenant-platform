@@ -75,8 +75,8 @@ export async function GET(
 
 
 		const accessibleTables = tablePermissions
-			.filter((permission) => permission.canRead)
-			.map((permission) => permission.table);
+			.filter((permission: { canRead: boolean }) => permission.canRead)
+			.map((permission: { table: unknown }) => permission.table);
 
 
 		return NextResponse.json(accessibleTables, { status: 200 });

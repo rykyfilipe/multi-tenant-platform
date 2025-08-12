@@ -294,7 +294,7 @@ export const authOptions = {
 			name: `__Secure-next-auth.session-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax",
+				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 				maxAge: 2 * 60 * 60, // 2 hours
@@ -303,7 +303,7 @@ export const authOptions = {
 		callbackUrl: {
 			name: `__Secure-next-auth.callback-url`,
 			options: {
-				sameSite: "lax",
+				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 			},
@@ -312,7 +312,7 @@ export const authOptions = {
 			name: `__Host-next-auth.csrf-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax",
+				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 			},

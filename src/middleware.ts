@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
 	const pathname = request.nextUrl.pathname;
 	
 	// Apply different rate limits based on endpoint type
-	let rateLimitConfig = RATE_LIMITS.public;
+	let rateLimitConfig: typeof RATE_LIMITS[keyof typeof RATE_LIMITS] = RATE_LIMITS.public;
 	
 	if (pathname.startsWith('/api/auth/') || pathname.includes('login') || pathname.includes('register')) {
 		rateLimitConfig = RATE_LIMITS.auth;

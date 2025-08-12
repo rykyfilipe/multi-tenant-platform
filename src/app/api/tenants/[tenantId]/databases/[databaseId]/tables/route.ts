@@ -106,7 +106,7 @@ export async function POST(
 		});
 
 		Promise.all(
-			users.map((user) =>
+			users.map((user: { id: number }) =>
 				prisma.tablePermission.create({
 					data: {
 						userId: user.id,

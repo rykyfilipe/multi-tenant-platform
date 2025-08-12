@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 		return userResult;
 	}
 
-	const { userId, role } = userResult;
+	const { userId } = userResult;
 
 	try {
 		const tokens = await prisma.apiToken.findMany({
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 		});
 
 		return NextResponse.json(tokens);
-	} catch (error) {
+	} catch {
 		return NextResponse.json(
 			{ error: "Internal Server Error" },
 			{ status: 500 },
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 		return userResult;
 	}
 
-	const { userId, role } = userResult;
+	const { userId } = userResult;
 
 	try {
 		const body = await request.json();
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 
 		const payload = {
 			userId: userId,
-			role: role,
+			role: "VIEWER", // Default role for API tokens
 		};
 
 		const tokenHash = generateToken(payload, undefined, PUBLIC_JWT_SECRET);
@@ -128,8 +128,8 @@ export async function POST(request: Request) {
 		});
 
 		return NextResponse.json(newToken);
-	} catch (error) {
-		console.error("Error creating API token:", error);
+	} catch {
+		console.error("Error creating API token");
 		return NextResponse.json(
 			{ error: "Internal Server Error" },
 			{ status: 500 },

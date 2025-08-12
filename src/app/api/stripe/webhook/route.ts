@@ -50,13 +50,11 @@ export async function POST(request: NextRequest) {
 				break;
 
 			case "invoice.payment_succeeded":
-				const invoice = event.data.object as Stripe.Invoice;
-				await handlePaymentSucceeded(invoice);
+				await handlePaymentSucceeded();
 				break;
 
 			case "invoice.payment_failed":
-				const failedInvoice = event.data.object as Stripe.Invoice;
-				await handlePaymentFailed(failedInvoice);
+				await handlePaymentFailed();
 				break;
 
 			default:
@@ -166,10 +164,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 	});
 }
 
-async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+async function handlePaymentSucceeded() {
 	// Handle successful payment
 }
 
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
+async function handlePaymentFailed() {
 	// Handle failed payment
 }

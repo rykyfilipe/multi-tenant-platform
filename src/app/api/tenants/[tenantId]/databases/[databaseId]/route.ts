@@ -87,8 +87,8 @@ export async function GET(
 
 		// Construim baza de date cu tabelele la care utilizatorul are acces
 		const accessibleTables = tablePermissions
-			.filter((permission) => permission.canRead)
-			.map((permission) => permission.table);
+			.filter((permission: { canRead: boolean }) => permission.canRead)
+			.map((permission: { table: unknown }) => permission.table);
 
 		if (accessibleTables.length === 0) {
 			return NextResponse.json(

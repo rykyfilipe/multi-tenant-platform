@@ -54,9 +54,10 @@ export async function POST(request: NextRequest) {
 			});
 
 			return NextResponse.json({ url: portalSession.url });
-		} catch (portalError: any) {
+		} catch (portalError: unknown) {
 			// If portal is not configured, provide alternative
-			if (portalError.message.includes("No configuration provided")) {
+			const errorMessage = portalError instanceof Error ? portalError.message : 'Unknown error';
+			if (errorMessage.includes("No configuration provided")) {
 				return NextResponse.json(
 					{
 						error:

@@ -72,7 +72,7 @@ export async function POST(
 
 		// Validare tipuri și valori
 		for (const [key, value] of Object.entries(body)) {
-			const col = columns.find((c) => c.name === key);
+			const col = columns.find((c: { name: string; type: string; customOptions?: string[] }) => c.name === key);
 			if (!col) {
 				return NextResponse.json(
 					{ error: `Unknown column: ${key}` },
@@ -115,9 +115,10 @@ export async function POST(
 				} else {
 					throw new Error(`Unsupported type: ${baseType}`);
 				}
-			} catch (err: any) {
+			} catch (err: unknown) {
+				const errorMessage = err instanceof Error ? err.message : 'Validation failed';
 				return NextResponse.json(
-					{ error: `Validation failed for "${key}": ${err.message}` },
+					{ error: `Validation failed for "${key}": ${errorMessage}` },
 					{ status: 400 },
 				);
 			}
@@ -128,7 +129,7 @@ export async function POST(
 			data: {
 				tableId: table.id,
 				cells: {
-					create: columns.map((col) => ({
+					create: columns.map((col: { id: number; name: string }) => ({
 						columnId: col.id,
 						value: body[col.name] ?? null,
 					})),
@@ -142,7 +143,7 @@ export async function POST(
 		});
 
 		// Răspuns formatat frumos
-		const prettyRow: Record<string, any> = {};
+		const prettyRow: Record<string, unknown> = {};
 		for (const cell of newRow.cells) {
 			prettyRow[cell.column.name] = cell.value;
 		}
