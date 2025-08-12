@@ -22,19 +22,16 @@ function Page() {
 
 	if (loading) return <TableLoadingState />;
 
-	if (!selectedDatabase) {
+	if (!selectedDatabase || !table) {
 		return (
 			<div className='p-4 text-center'>
-				<div className='text-red-500 mb-4'>No database selected</div>
-				<p className='text-muted-foreground'>
-					Please select a database from the dropdown to view this table.
-				</p>
+				<div className='flex items-center justify-center mb-4'>
+					<div className='w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin'></div>
+				</div>
+				<p className='text-muted-foreground'>Loading table data...</p>
 			</div>
 		);
 	}
-
-	if (!table)
-		return <div className='p-4 text-red-500'>Failed to load table.</div>;
 
 	return (
 		<TourProv

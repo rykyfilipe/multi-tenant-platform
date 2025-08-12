@@ -8,178 +8,113 @@ import {
 } from "@/components/ui/popover";
 import { useApp } from "@/contexts/AppContext";
 import { Column, Row, Table } from "@/types/database";
-import { Info } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Info, Download } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface Props {
 	columns: Column[];
 	rows: Row[];
 	table: Table;
+	filters?: any[];
+	globalSearch?: string;
+	onRefresh?: () => void;
 }
 
-// Funcție pentru crearea datelor de referință (similar cu EditableCell)
-const createReferenceData = (tables: Table[] | null) => {
-	const referenceData: Record<number, { id: number; displayValue: string }[]> =
-		{};
-	if (!tables) return referenceData;
-
-	// Nu mai este nevoie să filtrăm tabelele, deoarece salvăm direct valorile cheilor primare
-	tables.forEach((table) => {
-		const options: { id: number; displayValue: string }[] = [];
-		if (Array.isArray(table.rows) && table.rows.length > 0) {
-			table.rows.forEach((row) => {
-				if (
-					Array.isArray(row.cells) &&
-					row.cells.length > 0 &&
-					Array.isArray(table.columns)
-				) {
-					const displayParts: string[] = [];
-
-					let addedColumns = 0;
-					const maxColumns = 3;
-
-					table.columns.forEach((column) => {
-						if (addedColumns >= maxColumns) return;
-
-						if (row.cells) {
-							const cell = row.cells.find((c) => c.columnId === column.id);
-							if (cell?.value != null && cell.value.toString().trim() !== "") {
-								let formattedValue = cell.value.toString().trim();
-
-								if (formattedValue.length > 15) {
-									formattedValue = formattedValue.substring(0, 15) + "...";
-								}
-
-								if (column.type === "date") {
-									try {
-										formattedValue = new Date(
-											formattedValue,
-										).toLocaleDateString("ro-RO");
-									} catch {
-										// fallback la valoarea brută
-									}
-								} else if (column.type === "boolean") {
-									formattedValue = formattedValue === "true" ? "✓" : "✗";
-								}
-
-								if (addedColumns === 0 && column.primary) {
-									displayParts.push(`#${formattedValue}`);
-								} else {
-									displayParts.push(formattedValue);
-								}
-								addedColumns++;
-							}
-						}
-					});
-
-					const displayValue = displayParts.length
-						? displayParts.join(" • ").slice(0, 50)
-						: `Row #${row.id || "unknown"}`;
-
-					options.push({
-						id: row.id || 0,
-						displayValue,
-					});
-				}
-			});
-		}
-
-		referenceData[table.id] = options;
-	});
-
-	return referenceData;
-};
-
-function ImportExportControls({ columns, rows, table }: Props) {
+function ImportExportControls({
+	columns,
+	rows,
+	table,
+	filters,
+	globalSearch,
+	onRefresh,
+}: Props) {
 	const { tenant, token, showAlert, user } = useApp();
 	const tenantId = tenant?.id;
-	const [tables, setTables] = useState<Table[] | null>(null);
 	const [isImporting, setIsImporting] = useState(false);
+	const [isExporting, setIsExporting] = useState(false);
 
-	// Fetch tables pentru referințe
-	useMemo(() => {
-		const fetchTables = async () => {
-			if (!tenant || !token) return;
+	// Handle CSV export
+	const handleExportCSV = async () => {
+		if (!tenantId || !token) {
+			showAlert("Missing authentication information", "error");
+			return;
+		}
 
-			try {
-				const response = await fetch(`/api/tenants/${tenant.id}/databases`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-						"Content-Type": "application/json",
-					},
-				});
+		setIsExporting(true);
+		try {
+			// Build query parameters for export
+			const params = new URLSearchParams({
+				format: "csv",
+				limit: "10000",
+			});
 
-				if (response.ok) {
-					const databases = await response.json();
-					// Extragem toate tabelele din toate bazele de date
-					const allTables = databases.flatMap((db: any) =>
-						db.tables
-							? db.tables.map((table: any) => ({
-									...table,
-									databaseId: db.id,
-							  }))
-							: [],
-					);
-					setTables(allTables || []);
-				}
-			} catch (error) {
-				console.error("Failed to fetch tables for export:", error);
+			if (globalSearch && globalSearch.trim()) {
+				params.append("globalSearch", globalSearch.trim());
 			}
-		};
 
-		fetchTables();
-	}, [tenant, token]);
+			if (filters && filters.length > 0) {
+				params.append("filters", JSON.stringify(filters));
+			}
 
-	const handleExport = () => {
-		const headers = columns.map((col) => col.name);
+			const exportUrl = new URL(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/export`,
+				window.location.origin,
+			);
 
-		// Creăm datele de referință pentru toate tabelele
-		const referenceData = createReferenceData(tables);
+			// Add query parameters
+			exportUrl.search = params.toString();
 
-		const csvRows = [
-			headers.join(";"),
-			...rows.map((row) => {
-				const rowData = columns.map((col) => {
-					const cell = row.cells?.find((c) => c.columnId === col.id);
-					let value = cell?.value ?? "";
+			// Fetch CSV data with timeout
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-					// Formatare specială pentru diferite tipuri de coloane
-					if (col.type === "date" && value) {
-						try {
-							const date = new Date(value);
-							if (!isNaN(date.getTime())) {
-								// Formatare pentru Excel - YYYY-MM-DD
-								value = date.toISOString().split("T")[0];
-							}
-						} catch {
-							// Fallback la valoarea originală dacă parsarea eșuează
-						}
-					} else if (col.type === "boolean") {
-						// Pentru boolean, exportăm ca "Yes"/"No" pentru lizibilitate
-						value = value === "true" || value === true ? "Yes" : "No";
-					} else if (col.type === "reference") {
-						// Pentru coloanele de tip "reference", valoarea este deja cheia primară
-						// Nu mai este nevoie de procesare suplimentară
-					} else if (col.type === "customArray") {
-						// Pentru customArray, exportăm valoarea exactă (fără JSON.stringify suplimentar)
-						// Valoarea este deja în formatul corect
-					}
+			const response = await fetch(exportUrl, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+				signal: controller.signal,
+			});
 
-					return JSON.stringify(value);
-				});
-				return rowData.join(";");
-			}),
-		];
+			clearTimeout(timeoutId);
 
-		const blob = new Blob([csvRows.join("\n")], {
-			type: "text/csv;charset=utf-8;",
-		});
-		const url = window.URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `${table.name}_rows.csv`;
-		a.click();
-		window.URL.revokeObjectURL(url);
+			if (!response.ok) {
+				throw new Error(`Export failed: ${response.status}`);
+			}
+
+			// Get CSV content and create download
+			const csvContent = await response.text();
+
+			// Validate CSV content
+			if (!csvContent || csvContent.trim().length === 0) {
+				throw new Error("Export returned empty content");
+			}
+
+			const blob = new Blob([csvContent], {
+				type: "text/csv;charset=utf-8;",
+			});
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `table_${table.id}_export_${
+				new Date().toISOString().split("T")[0]
+			}.csv`;
+			a.click();
+			window.URL.revokeObjectURL(url);
+
+			showAlert("Export completed successfully!", "success");
+		} catch (error: any) {
+			console.error("Export error:", error);
+			if (error.name === "AbortError") {
+				showAlert(
+					"Export timed out. Please try again with fewer filters.",
+					"error",
+				);
+			} else {
+				showAlert("Export failed. Please try again.", "error");
+			}
+		} finally {
+			setIsExporting(false);
+		}
 	};
 
 	const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,40 +151,6 @@ function ImportExportControls({ columns, rows, table }: Props) {
 					const col = columns.find((c) => c.name === header[i]);
 					if (!col) return null;
 
-					// Pentru coloanele de referință, valoarea este cheia primară
-					// Nu mai este nevoie de procesare specială pe server
-					if (col.type === "reference") {
-						return {
-							columnId: col.id,
-							value,
-						};
-					}
-
-					// Validare tip pentru coloanele normale
-					let isValidType = false;
-
-					if (col.type === "number" && typeof value === "number") {
-						isValidType = true;
-					} else if (
-						(col.type === "string" || col.type === "text") &&
-						typeof value === "string"
-					) {
-						isValidType = true;
-					} else if (col.type === "boolean" && typeof value === "boolean") {
-						isValidType = true;
-					} else if (col.type === "date" && !isNaN(Date.parse(value))) {
-						isValidType = true;
-					} else if (col.type === "customArray" && typeof value === "string") {
-						// Pentru customArray, verificăm că valoarea există în opțiunile definite
-						if (col.customOptions && col.customOptions.length > 0) {
-							isValidType = col.customOptions.includes(value);
-						} else {
-							isValidType = true; // Dacă nu sunt opțiuni definite, acceptăm orice string
-						}
-					}
-
-					if (!isValidType) return null;
-
 					return {
 						columnId: col.id,
 						value,
@@ -273,8 +174,9 @@ function ImportExportControls({ columns, rows, table }: Props) {
 				return;
 			}
 
+			// Folosim noul endpoint de import
 			const res = await fetch(
-				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows`,
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/import`,
 				{
 					method: "POST",
 					headers: {
@@ -288,10 +190,24 @@ function ImportExportControls({ columns, rows, table }: Props) {
 			if (!res.ok) {
 				const errorData = await res.json();
 				if (res.status === 400) {
-					// Eroare de validare pentru single row
-					const errorMessage = errorData.details
-						? `Validation failed: ${errorData.details.join(", ")}`
-						: errorData.error || "Import failed";
+					// Eroare de validare - afișează detalii complete
+					let errorMessage = errorData.error || "Import failed";
+
+					if (errorData.summary) {
+						const summary = errorData.summary;
+						errorMessage = `Import failed: ${summary.totalRows} rows processed, ${summary.validRows} valid, ${summary.invalidRows} invalid`;
+
+						if (errorData.details && errorData.details.length > 0) {
+							errorMessage += `\n\nFirst few errors:\n${errorData.details
+								.slice(0, 3)
+								.join("\n")}`;
+						}
+					} else if (errorData.details) {
+						errorMessage = `Validation failed:\n${errorData.details
+							.slice(0, 5)
+							.join("\n")}`;
+					}
+
 					showAlert(errorMessage, "error");
 				} else {
 					showAlert(
@@ -311,38 +227,73 @@ function ImportExportControls({ columns, rows, table }: Props) {
 				} else {
 					// Import complet reușit
 					showAlert(
-						`Successfully imported ${data.rows?.length || 0} rows!`,
+						`Successfully imported ${data.importedRows || 0} rows!`,
 						"success",
 					);
 				}
 
 				// Refresh the table data
-				window.location.reload();
+				if (onRefresh) {
+					onRefresh();
+				} else {
+					// Fallback la reload dacă nu avem funcția de refresh
+					window.location.reload();
+				}
+
+				// Reset input-ul de fișier pentru a permite importul aceluiași fișier din nou
+				const fileInput = document.getElementById(
+					"import-csv",
+				) as HTMLInputElement;
+				if (fileInput) {
+					fileInput.value = "";
+				}
 			}
-		} catch (err) {
+		} catch (err: any) {
 			showAlert("Failed to import data. Please try again.", "error");
 		} finally {
 			setIsImporting(false);
+
+			// Reset input-ul de fișier în toate cazurile
+			const fileInput = document.getElementById(
+				"import-csv",
+			) as HTMLInputElement;
+			if (fileInput) {
+				fileInput.value = "";
+			}
 		}
 	};
 
 	const safeParse = (val: string): any => {
+		// Curăță valoarea de caractere speciale
+		let cleanVal = val.trim();
+
+		// Elimină caracterele de sfârșit de linie
+		cleanVal = cleanVal.replace(/\r?\n/g, "");
+
+		// Elimină ghilimelele dacă sunt în jurul valorii
+		if (cleanVal.startsWith('"') && cleanVal.endsWith('"')) {
+			cleanVal = cleanVal.slice(1, -1);
+		}
+
 		try {
-			return JSON.parse(val);
+			return JSON.parse(cleanVal);
 		} catch {
-			return val;
+			return cleanVal;
 		}
 	};
+
 	const [open, setOpen] = useState(false);
 	return (
 		<div className='flex items-center gap-2'>
+			{/* CSV Export Button */}
 			<Button
-				onClick={handleExport}
-				disabled={isImporting}
+				onClick={handleExportCSV}
+				disabled={isExporting}
 				variant='outline'
 				size='sm'
 				className='flex items-center gap-2'>
-				Export
+				<Download className='w-4 h-4' />
+				Export CSV
 			</Button>
 
 			{user?.role !== "VIEWER" && (
@@ -388,6 +339,14 @@ function ImportExportControls({ columns, rows, table }: Props) {
 						disabled={isImporting}
 					/>
 				</label>
+			)}
+
+			{/* Show export status */}
+			{isExporting && (
+				<div className='flex items-center gap-2 text-sm text-muted-foreground ml-2'>
+					<div className='w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin'></div>
+					Exporting...
+				</div>
 			)}
 
 			{isImporting && (

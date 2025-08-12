@@ -320,6 +320,50 @@ export async function POST(
 	}
 }
 
+// Function to apply string filters that couldn't be handled by Prisma
+async function applyStringFilters(
+	rows: any[],
+	filters: any[],
+	tableColumns: any[],
+): Promise<any[]> {
+	const stringFilters = filters.filter((filter) => {
+		const column = tableColumns.find((col) => col.id === filter.columnId);
+		if (!column) return false;
+
+		return (
+			["text", "string", "email", "url"].includes(column.type) &&
+			["starts_with", "ends_with", "contains", "not_contains"].includes(
+				filter.operator,
+			)
+		);
+	});
+
+	if (stringFilters.length === 0) return rows;
+
+	return rows.filter((row) => {
+		return stringFilters.every((filter) => {
+			const cell = row.cells?.find((c: any) => c.columnId === filter.columnId);
+			if (!cell || !cell.value) return false;
+
+			const cellValue = String(cell.value);
+			const filterValue = String(filter.value);
+
+			switch (filter.operator) {
+				case "starts_with":
+					return cellValue.toLowerCase().startsWith(filterValue.toLowerCase());
+				case "ends_with":
+					return cellValue.toLowerCase().endsWith(filterValue.toLowerCase());
+				case "contains":
+					return cellValue.toLowerCase().includes(filterValue.toLowerCase());
+				case "not_contains":
+					return !cellValue.toLowerCase().includes(filterValue.toLowerCase());
+				default:
+					return true;
+			}
+		});
+	});
+}
+
 export async function GET(
 	request: NextRequest,
 	{
@@ -372,6 +416,18 @@ export async function GET(
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
+		// Get table columns for filtering
+		const tableColumns = await prisma.column.findMany({
+			where: { tableId: Number(tableId) },
+			select: {
+				id: true,
+				name: true,
+				type: true,
+				order: true,
+			},
+			orderBy: { order: "asc" },
+		});
+
 		// Verificăm permisiunile pentru utilizatorii non-admin
 		if (role !== "ADMIN") {
 			const permission = await prisma.tablePermission.findFirst({
@@ -387,30 +443,24 @@ export async function GET(
 			}
 		}
 
-		// Get pagination parameters from URL
+		// Get pagination and filter parameters from URL
 		const url = new URL(request.url);
 		const page = parseInt(url.searchParams.get("page") || "1");
 		const pageSize = parseInt(url.searchParams.get("pageSize") || "25");
 		const includeCells = url.searchParams.get("includeCells") !== "false"; // Default to true for backwards compatibility
 
-		// Get filter parameters from URL
-		const globalSearch = url.searchParams.get("globalSearch") || "";
-		const filtersParam = url.searchParams.get("filters") || "[]";
-
-		let filters: any[] = [];
-		try {
-			filters = JSON.parse(filtersParam);
-		} catch (error) {
-			console.warn("Invalid filters parameter, using empty array");
-			filters = [];
-		}
+		// Filter parameters
+		const globalSearch = url.searchParams.get("search") || "";
+		const filters = url.searchParams.get("filters") || "";
+		const sortBy = url.searchParams.get("sortBy") || "id";
+		const sortOrder = url.searchParams.get("sortOrder") || "asc";
 
 		console.log(
 			`DEBUG PARAMS: Received page=${url.searchParams.get(
 				"page",
 			)}, pageSize=${url.searchParams.get(
 				"pageSize",
-			)}, globalSearch="${globalSearch}", filters=${filters.length}`,
+			)}, search=${globalSearch}, filters=${filters}`,
 		);
 
 		// Validate pagination parameters
@@ -423,21 +473,19 @@ export async function GET(
 			tableId: Number(tableId),
 		};
 
-		// Apply global search if provided
-		if (globalSearch.trim()) {
-			whereClause.cells = {
-				some: {
-					value: {
-						path: ["$"],
-						string_contains: globalSearch.trim(),
-					},
-				},
-			};
+		// Parse filters from URL parameter
+		let parsedFilters: any[] = [];
+		try {
+			if (filters) {
+				parsedFilters = JSON.parse(decodeURIComponent(filters));
+			}
+		} catch (error) {
+			console.warn("Failed to parse filters:", error);
 		}
 
-		// Apply column-specific filters
-		if (filters.length > 0) {
-			const filterConditions = filters.map((filter: any) => {
+		// Apply column filters
+		if (parsedFilters.length > 0) {
+			const filterConditions = parsedFilters.map((filter: any) => {
 				const { columnId, operator, value, secondValue } = filter;
 
 				switch (operator) {
@@ -445,33 +493,23 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												string_contains: value,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										string_contains: value,
+									},
 								},
 							},
 						};
 					case "not_contains":
 						return {
 							cells: {
-								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											NOT: {
-												value: {
-													path: ["$"],
-													string_contains: value,
-												},
-											},
-										},
-									],
+								none: {
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										string_contains: value,
+									},
 								},
 							},
 						};
@@ -479,18 +517,17 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [{ columnId: Number(columnId) }, { value: value }],
+									columnId: Number(columnId),
+									value: value,
 								},
 							},
 						};
 					case "not_equals":
 						return {
 							cells: {
-								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{ NOT: { value: value } },
-									],
+								none: {
+									columnId: Number(columnId),
+									value: value,
 								},
 							},
 						};
@@ -498,15 +535,10 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												string_starts_with: value,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										not: null, // Ensure the cell has a value
+									},
 								},
 							},
 						};
@@ -514,15 +546,22 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												string_ends_with: value,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										not: null, // Ensure the cell has a value
+									},
+								},
+							},
+						};
+					case "regex":
+						return {
+							cells: {
+								some: {
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										string_matches: value,
+									},
 								},
 							},
 						};
@@ -530,15 +569,10 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gt: Number(value),
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										gt: Number(value),
+									},
 								},
 							},
 						};
@@ -546,15 +580,10 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gte: Number(value),
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										gte: Number(value),
+									},
 								},
 							},
 						};
@@ -562,15 +591,10 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												lt: Number(value),
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										lt: Number(value),
+									},
 								},
 							},
 						};
@@ -578,161 +602,60 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												lte: Number(value),
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										lte: Number(value),
+									},
 								},
 							},
 						};
 					case "between":
-						if (secondValue !== undefined && secondValue !== null) {
-							return {
-								cells: {
-									some: {
-										AND: [
-											{ columnId: Number(columnId) },
-											{
-												value: {
-													path: ["$"],
-													gte: Number(value),
-													lte: Number(secondValue),
-												},
-											},
-										],
-									},
-								},
-							};
-						}
-						return {};
-					case "not_between":
-						if (secondValue !== undefined && secondValue !== null) {
-							return {
-								cells: {
-									some: {
-										AND: [
-											{ columnId: Number(columnId) },
-											{
-												OR: [
-													{
-														value: {
-															path: ["$"],
-															lt: Number(value),
-														},
-													},
-													{
-														value: {
-															path: ["$"],
-															gt: Number(secondValue),
-														},
-													},
-												],
-											},
-										],
-									},
-								},
-							};
-						}
-						return {};
-					case "before":
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												lt: new Date(value),
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										gte: Number(value),
+										lte: Number(secondValue),
+									},
 								},
 							},
 						};
-					case "after":
+					case "not_between":
 						return {
 							cells: {
-								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gt: new Date(value),
-											},
-										},
-									],
+								none: {
+									columnId: Number(columnId),
+									value: {
+										gte: Number(value),
+										lte: Number(secondValue),
+									},
 								},
 							},
 						};
 					case "today":
-						const today = new Date();
-						const startOfDay = new Date(
-							today.getFullYear(),
-							today.getMonth(),
-							today.getDate(),
-						);
-						const endOfDay = new Date(
-							today.getFullYear(),
-							today.getMonth(),
-							today.getDate(),
-							23,
-							59,
-							59,
-							999,
-						);
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gte: startOfDay,
-												lte: endOfDay,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										equals: new Date().toISOString().split("T")[0],
+									},
 								},
 							},
 						};
 					case "yesterday":
 						const yesterday = new Date();
 						yesterday.setDate(yesterday.getDate() - 1);
-						const startOfYesterday = new Date(
-							yesterday.getFullYear(),
-							yesterday.getMonth(),
-							yesterday.getDate(),
-						);
-						const endOfYesterday = new Date(
-							yesterday.getFullYear(),
-							yesterday.getMonth(),
-							yesterday.getDate(),
-							23,
-							59,
-							59,
-							999,
-						);
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gte: startOfYesterday,
-												lte: endOfYesterday,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										equals: yesterday.toISOString().split("T")[0],
+									},
 								},
 							},
 						};
@@ -747,16 +670,12 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gte: startOfWeek,
-												lte: endOfWeek,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										gte: startOfWeek.toISOString(),
+										lte: endOfWeek.toISOString(),
+									},
 								},
 							},
 						};
@@ -771,24 +690,16 @@ export async function GET(
 							currentMonth.getFullYear(),
 							currentMonth.getMonth() + 1,
 							0,
-							23,
-							59,
-							59,
-							999,
 						);
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gte: startOfMonth,
-												lte: endOfMonth,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										gte: startOfMonth.toISOString(),
+										lte: endOfMonth.toISOString(),
+									},
 								},
 							},
 						};
@@ -799,29 +710,23 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											value: {
-												path: ["$"],
-												gte: startOfYear,
-												lte: endOfYear,
-											},
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										path: ["$"],
+										gte: startOfYear.toISOString(),
+										lte: endOfYear.toISOString(),
+									},
 								},
 							},
 						};
 					case "is_empty":
 						return {
 							cells: {
-								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											OR: [{ value: null }, { value: "" }],
-										},
-									],
+								none: {
+									columnId: Number(columnId),
+									value: {
+										not: null,
+									},
 								},
 							},
 						};
@@ -829,12 +734,10 @@ export async function GET(
 						return {
 							cells: {
 								some: {
-									AND: [
-										{ columnId: Number(columnId) },
-										{
-											AND: [{ NOT: { value: null } }, { NOT: { value: "" } }],
-										},
-									],
+									columnId: Number(columnId),
+									value: {
+										not: null,
+									},
 								},
 							},
 						};
@@ -843,12 +746,29 @@ export async function GET(
 				}
 			});
 
-			// Combine all filter conditions with AND
+			// Combine all filter conditions with AND logic
 			if (filterConditions.length > 0) {
-				whereClause.AND = filterConditions.filter(
-					(condition: any) => Object.keys(condition).length > 0,
-				);
+				whereClause = {
+					...whereClause,
+					AND: filterConditions,
+				};
 			}
+		}
+
+		// Apply global search if provided
+		if (globalSearch.trim()) {
+			const searchTerm = globalSearch.trim();
+			whereClause = {
+				...whereClause,
+				cells: {
+					some: {
+						value: {
+							path: ["$"],
+							string_contains: searchTerm,
+						},
+					},
+				},
+			};
 		}
 
 		// Get total count for pagination info with filters applied
@@ -857,8 +777,19 @@ export async function GET(
 		});
 
 		console.log(
-			`DEBUG MAIN: Table ${tableId} has ${totalRows} total rows after filtering, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
+			`DEBUG MAIN: Table ${tableId} has ${totalRows} filtered rows, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
 		);
+
+		// Build orderBy clause
+		let orderByClause: any = {};
+		if (sortBy === "id") {
+			orderByClause.id = sortOrder;
+		} else if (sortBy === "createdAt") {
+			orderByClause.createdAt = sortOrder;
+		} else {
+			// Default to id ordering
+			orderByClause.id = "asc";
+		}
 
 		// Optimized query with proper indexing support and filters
 		const rows = await prisma.row.findMany({
@@ -879,20 +810,33 @@ export async function GET(
 					  }
 					: false,
 			},
-			orderBy: [
-				{
-					id: "asc", // Use primary key for better performance
-				},
-			],
+			orderBy: [orderByClause],
 			skip,
 			take: validPageSize,
 		});
 
 		console.log(`DEBUG MAIN: Found ${rows.length} rows for current page`);
 
+		// Apply string filters that couldn't be handled by Prisma
+		let filteredRows = rows;
+		if (parsedFilters.length > 0) {
+			filteredRows = await applyStringFilters(
+				rows,
+				parsedFilters,
+				tableColumns,
+			);
+		}
+
+		// Recalculate total rows after applying string filters
+		const finalTotalRows = filteredRows.length;
+
+		console.log(
+			`DEBUG MAIN: Found ${rows.length} rows for current page, ${finalTotalRows} after string filtering`,
+		);
+
 		// Sortăm coloanele după ordine în aplicație dacă includem cells
 		const sortedRows = includeCells
-			? rows.map((row: any) => ({
+			? filteredRows.map((row: any) => ({
 					...row,
 					cells: row.cells.sort((a: any, b: any) => {
 						// TypeScript assertion: when includeCells is true, cells include column relation
@@ -901,19 +845,24 @@ export async function GET(
 						return cellA.column.order - cellB.column.order;
 					}),
 			  }))
-			: rows;
+			: filteredRows;
 
-		const totalPages = Math.ceil(totalRows / validPageSize);
+		const totalPages = Math.ceil(finalTotalRows / validPageSize);
 
 		return NextResponse.json({
 			data: sortedRows,
 			pagination: {
 				page: validPage,
 				pageSize: validPageSize,
-				totalRows,
+				totalRows: finalTotalRows,
 				totalPages,
 				hasNext: validPage < totalPages,
 				hasPrev: validPage > 1,
+			},
+			filters: {
+				applied: parsedFilters.length > 0 || globalSearch.trim() !== "",
+				globalSearch,
+				columnFilters: parsedFilters,
 			},
 		});
 	} catch (error) {

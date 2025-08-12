@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, KeyboardEvent, useMemo, JSX } from "react";
+import { useState, KeyboardEvent, useMemo, JSX, memo } from "react";
 import { Cell, Column, Row, Table } from "@/types/database";
 import { Input } from "../../ui/input";
 import {
@@ -100,6 +100,11 @@ const createReferenceData = (tables: Table[] | null) => {
 	return referenceData;
 };
 
+// Memoize reference data pentru a evita recalculări inutile
+const useReferenceData = (tables: Table[] | null) => {
+	return useMemo(() => createReferenceData(tables), [tables]);
+};
+
 export function EditableCell({
 	columns,
 	cell,
@@ -116,7 +121,7 @@ export function EditableCell({
 
 	const [value, setValue] = useState<any>(cell.value);
 	const column = columns?.find((col) => col.id === cell.columnId);
-	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
+	const referenceData = useReferenceData(tables);
 
 	if (!column) return null;
 	const handleKey = (e: KeyboardEvent) => {

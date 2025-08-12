@@ -45,7 +45,6 @@ const TableEditor = memo(function TableEditor({
 	const tenantId = tenant?.id;
 	const [showForm, setShowForm] = useState(false);
 	const [tables, setTables] = useState<Table[] | null>(null);
-	const [filteredRows, setFilteredRows] = useState<Row[]>([]);
 	const [serverError, setServerError] = useState<string | null>(null);
 	if (!token || !user) return;
 
@@ -59,6 +58,9 @@ const TableEditor = memo(function TableEditor({
 		pagination,
 		fetchRows,
 		refetch: refetchRows,
+		applyFilters,
+		globalSearch,
+		filters,
 	} = useTableRows(table.id.toString(), 25);
 
 	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
@@ -288,9 +290,6 @@ const TableEditor = memo(function TableEditor({
 	}, [tenant?.id, selectedDatabase?.id, token, user]);
 
 	// Update filtered rows when paginated rows change
-	useEffect(() => {
-		setFilteredRows(paginatedRows || []);
-	}, [paginatedRows]);
 
 	// Refresh data when columns change - only when columns are actually added/removed
 	useEffect(() => {
@@ -311,7 +310,12 @@ const TableEditor = memo(function TableEditor({
 				});
 
 				if (needsRefresh) {
-					refetchRows();
+					// Use a timeout to avoid infinite loops
+					const timeoutId = setTimeout(() => {
+						refetchRows();
+					}, 100);
+
+					return () => clearTimeout(timeoutId);
 				}
 			}
 		}
@@ -322,7 +326,7 @@ const TableEditor = memo(function TableEditor({
 		selectedDatabase?.id,
 		table.id,
 		paginatedRows?.length,
-		refetchRows,
+		// Removed refetchRows from dependencies to prevent infinite loop
 	]);
 
 	const fetchTables = async () => {
@@ -392,6 +396,9 @@ const TableEditor = memo(function TableEditor({
 						rows={paginatedRows}
 						columns={columns}
 						table={table}
+						globalSearch={globalSearch}
+						filters={filters}
+						onRefresh={refetchRows}
 					/>
 				</div>
 			</div>
@@ -415,11 +422,13 @@ const TableEditor = memo(function TableEditor({
 				columns={columns}
 				rows={paginatedRows}
 				tables={tables}
-				onFilterChange={setFilteredRows}
+				onFilterChange={() => {}} // Required prop but not used for server-side filtering
+				onApplyFilters={applyFilters}
 				showToggleButton={false}
 				showSidebar={showSidebar}
 				setShowSidebar={setShowSidebar}
 				onActiveFiltersChange={setActiveFiltersCount}
+				loading={rowsLoading}
 			/>
 
 			{/* Rows Table */}
@@ -428,7 +437,8 @@ const TableEditor = memo(function TableEditor({
 					tables={tables}
 					table={table}
 					columns={columns}
-					rows={filteredRows}
+					rows={paginatedRows}
+					loading={rowsLoading}
 					editingCell={editingCell}
 					onEditCell={handleEditCell}
 					onSaveCell={handleSaveCellWrapper}

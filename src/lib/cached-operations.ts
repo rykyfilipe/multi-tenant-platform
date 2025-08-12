@@ -400,7 +400,7 @@ export const cachedOperations = {
 		cacheHelpers.invalidateApiTokens(userId);
 		// Also need to invalidate counts as API tokens affect limits
 		const user = cacheHelpers.getUser(userId);
-		if (user?.tenantId) {
+		if (user && typeof user === 'object' && 'tenantId' in user && typeof user.tenantId === 'number') {
 			cacheHelpers.invalidateCounts(user.tenantId, userId);
 		}
 	},

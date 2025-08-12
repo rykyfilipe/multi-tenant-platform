@@ -1,7 +1,7 @@
 /** @format */
 
 import NextAuth, { DefaultUser } from "next-auth";
-import { User } from "./user";
+import { User, Role } from "./user";
 import { JWT as DefaultJWT } from "next-auth/jwt";
 import { ApiToken } from "@/generated/prisma";
 

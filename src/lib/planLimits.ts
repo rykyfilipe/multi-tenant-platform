@@ -65,17 +65,33 @@ export async function getCurrentCounts(
 		}
 
 		try {
-			const [databases, tables, users, apiTokens, publicTables, rows] =
-				await cachedOperations.getCounts(user.tenantId, userId);
+			const counts = await cachedOperations.getCounts(user.tenantId, userId);
 
+			// getCounts returns an array: [databases, tables, users, apiTokens, publicTables, rows]
+			if (Array.isArray(counts) && counts.length === 6) {
+				const [databases, tables, users, apiTokens, publicTables, rows] =
+					counts;
+
+				return {
+					databases,
+					tables,
+					users,
+					apiTokens,
+					publicTables,
+					storage: 0, // Storage is calculated separately in memory tracking
+					rows,
+				};
+			}
+
+			// Fallback if counts is not in expected format
 			return {
-				databases,
-				tables,
-				users,
-				apiTokens,
-				publicTables,
-				storage: 0, // Storage is calculated separately in memory tracking
-				rows,
+				databases: 0,
+				tables: 0,
+				users: 0,
+				apiTokens: 0,
+				publicTables: 0,
+				storage: 0,
+				rows: 0,
 			};
 		} catch (error) {
 			// Return default counts on error

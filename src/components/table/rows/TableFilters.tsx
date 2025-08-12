@@ -33,8 +33,6 @@ import {
 	ChevronDown,
 	ChevronUp,
 	RotateCcw,
-	Save,
-	Bookmark,
 	PanelRightClose,
 	PanelRightOpen,
 	Info,
@@ -44,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 
 interface FilterConfig {
+	id: string; // Unique identifier for each filter
 	columnId: number;
 	columnName: string;
 	columnType: string;
@@ -57,10 +56,15 @@ interface TableFiltersProps {
 	rows: Row[];
 	tables: Table[] | null;
 	onFilterChange: (filteredRows: Row[]) => void;
+	onApplyFilters?: (
+		filters: FilterConfig[],
+		globalSearch: string,
+	) => Promise<void>;
 	showToggleButton?: boolean;
 	showSidebar?: boolean;
 	setShowSidebar?: (show: boolean) => void;
 	onActiveFiltersChange?: (count: number) => void;
+	loading?: boolean;
 }
 
 // Export the toggle button as a separate component
@@ -99,146 +103,134 @@ export function TableFilters({
 	rows,
 	tables,
 	onFilterChange,
+	onApplyFilters,
 	showToggleButton = true,
 	showSidebar: externalShowSidebar,
-	setShowSidebar: externalSetShowSidebar,
+	setShowSidebar: externalSetSidebar,
 	onActiveFiltersChange,
+	loading = false,
 }: TableFiltersProps) {
+	const [showSidebar, setShowSidebar] = useState(externalShowSidebar ?? false);
 	const [filters, setFilters] = useState<FilterConfig[]>([]);
 	const [globalSearch, setGlobalSearch] = useState("");
-	const [internalShowSidebar, setInternalShowSidebar] = useState(false);
 
-	// Use external state if provided, otherwise use internal state
-	const showSidebar =
-		externalShowSidebar !== undefined
-			? externalShowSidebar
-			: internalShowSidebar;
-	const setShowSidebar = externalSetShowSidebar || setInternalShowSidebar;
-	const [filterPresets, setFilterPresets] = useState<
-		{ name: string; filters: FilterConfig[]; globalSearch: string }[]
-	>([]);
-	const [showPresets, setShowPresets] = useState(false);
+	// Use external state if provided
+	useEffect(() => {
+		if (externalShowSidebar !== undefined) {
+			setShowSidebar(externalShowSidebar);
+		}
+	}, [externalShowSidebar]);
 
-	// Get unique values for dropdown filters
+	useEffect(() => {
+		if (externalSetSidebar) {
+			externalSetSidebar(showSidebar);
+		}
+	}, [showSidebar, externalSetSidebar]);
+
+	const applyFilters = async () => {
+		if (onApplyFilters) {
+			await onApplyFilters(filters, globalSearch);
+		}
+	};
+
 	const getUniqueValues = (columnId: number) => {
-		const values = new Set<any>();
+		const values = new Set<string>();
 		rows.forEach((row) => {
 			const cell = row.cells?.find((cell) => cell.columnId === columnId);
-			if (
-				cell &&
-				cell.value !== null &&
-				cell.value !== undefined &&
-				cell.value !== ""
-			) {
-				values.add(cell.value);
+			if (cell?.value !== null && cell?.value !== undefined) {
+				values.add(cell.value.toString());
 			}
 		});
 		return Array.from(values).sort();
 	};
 
-	// Get reference table options for link columns
 	const getReferenceOptions = (column: Column) => {
-		if (
-			column.type !== USER_FRIENDLY_COLUMN_TYPES.link ||
-			!column.referenceTableId
-		) {
+		if (column.type !== "reference" || !column.referenceTableId || !tables) {
 			return [];
 		}
 
-		const referencedTable = tables?.find(
+		const referencedTable = tables.find(
 			(t) => t.id === column.referenceTableId,
 		);
-		if (!referencedTable?.rows) return [];
+		if (!referencedTable) return [];
 
-		return referencedTable.rows.map((row) => {
+		const options: { value: string; label: string }[] = [];
+		referencedTable.rows?.forEach((row) => {
 			const primaryKeyCell = row.cells?.find((cell) => {
-				const col = referencedTable.columns?.find(
-					(c) => c.id === cell.columnId,
+				const refColumn = referencedTable.columns?.find(
+					(col) => col.id === cell.columnId,
 				);
-				return col?.primary;
+				return refColumn?.primary;
 			});
 
-			return {
-				id: row.id,
-				value: primaryKeyCell?.value || row.id,
-				label: primaryKeyCell?.value || `Row ${row.id}`,
-			};
+			if (primaryKeyCell?.value) {
+				options.push({
+					value: primaryKeyCell.value.toString(),
+					label: primaryKeyCell.value.toString(),
+				});
+			}
 		});
+
+		return options;
 	};
 
-	// Get operators based on column type
 	const getOperators = (columnType: string) => {
 		switch (columnType) {
-			case USER_FRIENDLY_COLUMN_TYPES.text:
+			case "string":
+			case "text":
+			case "email":
+			case "url":
 				return [
-					{ value: "contains", label: "Contains" },
-					{ value: "equals", label: "Equals" },
-					{ value: "starts_with", label: "Starts with" },
-					{ value: "ends_with", label: "Ends with" },
-					{ value: "not_contains", label: "Does not contain" },
-					{ value: "not_equals", label: "Does not equal" },
-					{ value: "regex", label: "Matches regex" },
-					{ value: "is_empty", label: "Is empty" },
-					{ value: "is_not_empty", label: "Is not empty" },
+					"contains",
+					"not_contains",
+					"equals",
+					"not_equals",
+					"starts_with",
+					"ends_with",
+					"regex",
+					"is_empty",
+					"is_not_empty",
 				];
-			case USER_FRIENDLY_COLUMN_TYPES.number:
+			case "number":
+			case "integer":
+			case "decimal":
 				return [
-					{ value: "equals", label: "Equals" },
-					{ value: "not_equals", label: "Does not equal" },
-					{ value: "greater_than", label: "Greater than" },
-					{ value: "greater_than_or_equal", label: "Greater than or equal" },
-					{ value: "less_than", label: "Less than" },
-					{ value: "less_than_or_equal", label: "Less than or equal" },
-					{ value: "between", label: "Between" },
-					{ value: "not_between", label: "Not between" },
-					{ value: "is_empty", label: "Is empty" },
-					{ value: "is_not_empty", label: "Is not empty" },
+					"equals",
+					"not_equals",
+					"greater_than",
+					"greater_than_or_equal",
+					"less_than",
+					"less_than_or_equal",
+					"between",
+					"not_between",
+					"is_empty",
+					"is_not_empty",
 				];
-			case USER_FRIENDLY_COLUMN_TYPES.yesNo:
+			case "boolean":
+				return ["equals", "not_equals", "is_empty", "is_not_empty"];
+			case "date":
+			case "datetime":
 				return [
-					{ value: "equals", label: "Equals" },
-					{ value: "is_empty", label: "Is empty" },
-					{ value: "is_not_empty", label: "Is not empty" },
+					"equals",
+					"not_equals",
+					"before",
+					"after",
+					"between",
+					"not_between",
+					"today",
+					"yesterday",
+					"this_week",
+					"this_month",
+					"this_year",
+					"is_empty",
+					"is_not_empty",
 				];
-			case USER_FRIENDLY_COLUMN_TYPES.date:
-				return [
-					{ value: "equals", label: "Equals" },
-					{ value: "not_equals", label: "Does not equal" },
-					{ value: "before", label: "Before" },
-					{ value: "after", label: "After" },
-					{ value: "between", label: "Between" },
-					{ value: "not_between", label: "Not between" },
-					{ value: "today", label: "Today" },
-					{ value: "yesterday", label: "Yesterday" },
-					{ value: "this_week", label: "This week" },
-					{ value: "this_month", label: "This month" },
-					{ value: "this_year", label: "This year" },
-					{ value: "is_empty", label: "Is empty" },
-					{ value: "is_not_empty", label: "Is not empty" },
-				];
-			case USER_FRIENDLY_COLUMN_TYPES.link:
-				return [
-					{ value: "equals", label: "Equals" },
-					{ value: "not_equals", label: "Does not equal" },
-					{ value: "is_empty", label: "Is empty" },
-					{ value: "is_not_empty", label: "Is not empty" },
-				];
-			case USER_FRIENDLY_COLUMN_TYPES.customArray:
-				return [
-					{ value: "equals", label: "Equals" },
-					{ value: "not_equals", label: "Does not equal" },
-					{ value: "contains", label: "Contains" },
-					{ value: "not_contains", label: "Does not contain" },
-					{ value: "is_empty", label: "Is empty" },
-					{ value: "is_not_empty", label: "Is not empty" },
-				];
+			case "reference":
+				return ["equals", "not_equals", "is_empty", "is_not_empty"];
+			case "customArray":
+				return ["equals", "not_equals", "is_empty", "is_not_empty"];
 			default:
-				return [
-					{ value: "equals", label: "Equals" },
-					{ value: "not_equals", label: "Does not equal" },
-					{ value: "is_empty", label: "Is empty" },
-					{ value: "is_not_empty", label: "Is not empty" },
-				];
+				return ["equals", "not_equals", "is_empty", "is_not_empty"];
 		}
 	};
 
@@ -256,7 +248,7 @@ export function TableFilters({
 								placeholder='Enter regex pattern...'
 								value={filter.value || ""}
 								onChange={(e) =>
-									updateFilter(filter.columnId, "value", e.target.value)
+									updateFilter(filter.id, "value", e.target.value)
 								}
 								className='w-full'
 							/>
@@ -270,9 +262,7 @@ export function TableFilters({
 					<Input
 						placeholder='Enter value...'
 						value={filter.value || ""}
-						onChange={(e) =>
-							updateFilter(filter.columnId, "value", e.target.value)
-						}
+						onChange={(e) => updateFilter(filter.id, "value", e.target.value)}
 						className='w-full'
 					/>
 				);
@@ -289,7 +279,7 @@ export function TableFilters({
 								type='number'
 								value={filter.value || ""}
 								onChange={(e) =>
-									updateFilter(filter.columnId, "value", e.target.value)
+									updateFilter(filter.id, "value", e.target.value)
 								}
 								className='w-full'
 							/>
@@ -298,7 +288,7 @@ export function TableFilters({
 								type='number'
 								value={filter.secondValue || ""}
 								onChange={(e) =>
-									updateFilter(filter.columnId, "secondValue", e.target.value)
+									updateFilter(filter.id, "secondValue", e.target.value)
 								}
 								className='w-full'
 							/>
@@ -310,9 +300,7 @@ export function TableFilters({
 						placeholder='Enter number...'
 						type='number'
 						value={filter.value || ""}
-						onChange={(e) =>
-							updateFilter(filter.columnId, "value", e.target.value)
-						}
+						onChange={(e) => updateFilter(filter.id, "value", e.target.value)}
 						className='w-full'
 					/>
 				);
@@ -322,7 +310,7 @@ export function TableFilters({
 					<Select
 						value={filter.value?.toString() || ""}
 						onValueChange={(value) =>
-							updateFilter(filter.columnId, "value", value === "true")
+							updateFilter(filter.id, "value", value === "true")
 						}>
 						<SelectTrigger className='w-full'>
 							<SelectValue placeholder='Select...' />
@@ -377,11 +365,7 @@ export function TableFilters({
 										mode='single'
 										selected={filter.value ? new Date(filter.value) : undefined}
 										onSelect={(date) =>
-											updateFilter(
-												filter.columnId,
-												"value",
-												date?.toISOString(),
-											)
+											updateFilter(filter.id, "value", date?.toISOString())
 										}
 									/>
 								</PopoverContent>
@@ -410,7 +394,7 @@ export function TableFilters({
 										}
 										onSelect={(date) =>
 											updateFilter(
-												filter.columnId,
+												filter.id,
 												"secondValue",
 												date?.toISOString(),
 											)
@@ -441,7 +425,7 @@ export function TableFilters({
 								mode='single'
 								selected={filter.value ? new Date(filter.value) : undefined}
 								onSelect={(date) =>
-									updateFilter(filter.columnId, "value", date?.toISOString())
+									updateFilter(filter.id, "value", date?.toISOString())
 								}
 							/>
 						</PopoverContent>
@@ -453,15 +437,13 @@ export function TableFilters({
 				return (
 					<Select
 						value={filter.value?.toString() || ""}
-						onValueChange={(value) =>
-							updateFilter(filter.columnId, "value", value)
-						}>
+						onValueChange={(value) => updateFilter(filter.id, "value", value)}>
 						<SelectTrigger className='w-full'>
 							<SelectValue placeholder='Select reference...' />
 						</SelectTrigger>
 						<SelectContent>
 							{referenceOptions.map((option) => (
-								<SelectItem key={option.id} value={option.value.toString()}>
+								<SelectItem key={option.value} value={option.value}>
 									{option.label}
 								</SelectItem>
 							))}
@@ -474,9 +456,7 @@ export function TableFilters({
 				return (
 					<Select
 						value={filter.value || ""}
-						onValueChange={(value) =>
-							updateFilter(filter.columnId, "value", value)
-						}>
+						onValueChange={(value) => updateFilter(filter.id, "value", value)}>
 						<SelectTrigger className='w-full'>
 							<SelectValue placeholder='Select option...' />
 						</SelectTrigger>
@@ -495,9 +475,7 @@ export function TableFilters({
 					<Input
 						placeholder='Enter value...'
 						value={filter.value || ""}
-						onChange={(e) =>
-							updateFilter(filter.columnId, "value", e.target.value)
-						}
+						onChange={(e) => updateFilter(filter.id, "value", e.target.value)}
 						className='w-full'
 					/>
 				);
@@ -505,11 +483,18 @@ export function TableFilters({
 	};
 
 	// Update filter value
-	const updateFilter = (columnId: number, field: string, value: any) => {
+	const updateFilter = (filterId: string, field: string, value: any) => {
 		setFilters((prev) =>
-			prev.map((filter) =>
-				filter.columnId === columnId ? { ...filter, [field]: value } : filter,
-			),
+			prev.map((filter) => {
+				if (filter.id === filterId) {
+					// Pentru câmpul value, înlocuiește null cu string gol
+					if (field === "value" && value === null) {
+						return { ...filter, [field]: "" };
+					}
+					return { ...filter, [field]: value };
+				}
+				return filter;
+			}),
 		);
 	};
 
@@ -555,16 +540,21 @@ export function TableFilters({
 
 	// Add new filter
 	const addFilter = () => {
-		const firstColumn = columns[0];
-		if (!firstColumn) return;
+		// Find the first column that doesn't already have a filter
+		const usedColumnIds = filters.map((f) => f.columnId);
+		const availableColumn =
+			columns.find((col) => !usedColumnIds.includes(col.id)) || columns[0];
+
+		if (!availableColumn) return;
 
 		const newFilter: FilterConfig = {
-			columnId: firstColumn.id,
-			columnName: firstColumn.name,
-			columnType: firstColumn.type,
-			operator: getOperators(firstColumn.type)[0].value,
-			value: operatorRequiresValue(getOperators(firstColumn.type)[0].value)
-				? null
+			id: `filter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			columnId: availableColumn.id,
+			columnName: availableColumn.name,
+			columnType: availableColumn.type,
+			operator: getOperators(availableColumn.type)[0],
+			value: operatorRequiresValue(getOperators(availableColumn.type)[0])
+				? "" // Folosește string gol în loc de null
 				: undefined,
 		};
 
@@ -572,47 +562,31 @@ export function TableFilters({
 	};
 
 	// Remove filter
-	const removeFilter = (columnId: number) => {
-		setFilters((prev) => prev.filter((filter) => filter.columnId !== columnId));
+	const removeFilter = (filterId: string) => {
+		setFilters((prev) => prev.filter((filter) => filter.id !== filterId));
 	};
 
 	// Clear all filters
 	const clearAllFilters = () => {
 		setFilters([]);
 		setGlobalSearch("");
-	};
 
-	// Save current filter as preset
-	const saveFilterPreset = () => {
-		const presetName = prompt("Enter a name for this filter preset:");
-		if (presetName && presetName.trim()) {
-			const newPreset = {
-				name: presetName.trim(),
-				filters: [...filters],
-				globalSearch: globalSearch,
-			};
-			setFilterPresets((prev) => [...prev, newPreset]);
+		// Trigger fetch without filters
+		if (onApplyFilters) {
+			onApplyFilters([], "");
 		}
 	};
 
-	// Load filter preset
-	const loadFilterPreset = (preset: {
-		name: string;
-		filters: FilterConfig[];
-		globalSearch: string;
-	}) => {
-		setFilters(preset.filters);
-		setGlobalSearch(preset.globalSearch);
-		setShowPresets(false);
-	};
+	const activeFiltersCount = filters.length + (globalSearch ? 1 : 0);
 
-	// Delete filter preset
-	const deleteFilterPreset = (presetName: string) => {
-		setFilterPresets((prev) => prev.filter((p) => p.name !== presetName));
-	};
-
-	// Apply filters to rows
+	// Apply filters to rows - only for local filtering when server-side is not available
 	const filteredRows = useMemo(() => {
+		// If backend filtering is available, return rows as-is since they're already filtered
+		if (onApplyFilters) {
+			return rows;
+		}
+
+		// Fallback to local filtering if no backend support
 		let result = [...rows];
 
 		// Apply global search
@@ -767,20 +741,18 @@ export function TableFilters({
 		});
 
 		return result;
-	}, [rows, filters, globalSearch, columns]);
+	}, [rows, filters, globalSearch, columns, onApplyFilters]);
 
-	// Update filtered rows when filters change
+	// Update filtered rows when filters change (only for local filtering)
 	useEffect(() => {
-		onFilterChange(filteredRows);
-	}, [filteredRows, onFilterChange]);
+		// REMOVED: Local filtering logic since we use server-side filtering
+		// onFilterChange(filteredRows);
+	}, [filteredRows, onFilterChange, onApplyFilters]);
 
-	// Update active filters count
 	useEffect(() => {
 		const activeFiltersCount = filters.length + (globalSearch ? 1 : 0);
 		onActiveFiltersChange?.(activeFiltersCount);
 	}, [filters, globalSearch, onActiveFiltersChange]);
-
-	const activeFiltersCount = filters.length + (globalSearch ? 1 : 0);
 
 	return (
 		<>
@@ -835,19 +807,24 @@ export function TableFilters({
 									Quick Filters
 								</h4>
 								<div className='flex flex-wrap gap-1'>
-									{columns.slice(0, 3).map((column) => {
+									{columns.slice(0, 3).map((column, columnIndex) => {
 										const uniqueValues = getUniqueValues(column.id).slice(0, 2);
 										if (uniqueValues.length === 0) return null;
 
 										return (
-											<div key={column.id} className='flex flex-wrap gap-1'>
-												{uniqueValues.map((value) => (
+											<div
+												key={`quick-filter-${column.id}-${columnIndex}`}
+												className='flex flex-wrap gap-1'>
+												{uniqueValues.map((value, valueIndex) => (
 													<Button
-														key={`${column.id}-${value}`}
+														key={`quick-filter-${column.id}-${columnIndex}-${value}-${valueIndex}`}
 														variant='outline'
 														size='sm'
 														onClick={() => {
 															const newFilter: FilterConfig = {
+																id: `quick-filter-${Date.now()}-${Math.random()
+																	.toString(36)
+																	.substr(2, 9)}`,
 																columnId: column.id,
 																columnName: column.name,
 																columnType: column.type,
@@ -879,78 +856,14 @@ export function TableFilters({
 										<Button
 											variant='ghost'
 											size='sm'
-											onClick={saveFilterPreset}
-											className='text-xs h-7 px-2 text-muted-foreground hover:text-foreground'>
-											<Save className='w-3 h-3' />
-										</Button>
-									)}
-									{activeFiltersCount > 0 && (
-										<Button
-											variant='ghost'
-											size='sm'
 											onClick={clearAllFilters}
+											disabled={loading}
 											className='text-xs h-7 px-2 text-muted-foreground hover:text-foreground'>
 											<RotateCcw className='w-3 h-3' />
 										</Button>
 									)}
 								</div>
 							</div>
-
-							{/* Filter Presets */}
-							{filterPresets.length > 0 && (
-								<div className='space-y-2'>
-									<Button
-										variant='outline'
-										size='sm'
-										onClick={() => setShowPresets(!showPresets)}
-										className='w-full justify-between'>
-										<div className='flex items-center gap-2'>
-											<Bookmark className='w-4 h-4' />
-											Presets
-										</div>
-										{showPresets ? (
-											<ChevronUp className='w-4 h-4' />
-										) : (
-											<ChevronDown className='w-4 h-4' />
-										)}
-									</Button>
-
-									{showPresets && (
-										<div className='space-y-2 pl-4'>
-											{filterPresets.map((preset) => (
-												<div
-													key={preset.name}
-													className='flex items-center justify-between p-2 border border-border/20 rounded-lg bg-muted/20'>
-													<div className='flex-1 min-w-0'>
-														<h5 className='font-medium text-xs truncate'>
-															{preset.name}
-														</h5>
-														<p className='text-xs text-muted-foreground'>
-															{preset.filters.length} filter(s)
-														</p>
-													</div>
-													<div className='flex items-center gap-1'>
-														<Button
-															variant='outline'
-															size='sm'
-															onClick={() => loadFilterPreset(preset)}
-															className='text-xs h-6 px-2'>
-															Load
-														</Button>
-														<Button
-															variant='ghost'
-															size='sm'
-															onClick={() => deleteFilterPreset(preset.name)}
-															className='text-xs h-6 px-2 text-muted-foreground hover:text-destructive'>
-															<X className='w-3 h-3' />
-														</Button>
-													</div>
-												</div>
-											))}
-										</div>
-									)}
-								</div>
-							)}
 
 							{/* Individual Filters */}
 							<div className='space-y-3'>
@@ -963,7 +876,7 @@ export function TableFilters({
 									</div>
 								) : (
 									<div className='space-y-3'>
-										{filters.map((filter) => {
+										{filters.map((filter, filterIndex) => {
 											const column = columns.find(
 												(col) => col.id === filter.columnId,
 											);
@@ -971,7 +884,7 @@ export function TableFilters({
 
 											return (
 												<div
-													key={filter.columnId}
+													key={filter.id}
 													className='p-3 border border-border/20 rounded-lg bg-muted/20'>
 													<div className='space-y-2'>
 														{/* Column Selection */}
@@ -984,10 +897,10 @@ export function TableFilters({
 																if (newColumn) {
 																	const newOperator = getOperators(
 																		newColumn.type,
-																	)[0].value;
+																	)[0];
 																	setFilters((prev) =>
 																		prev.map((f) =>
-																			f.columnId === filter.columnId
+																			f.id === filter.id
 																				? {
 																						...f,
 																						columnId: newColumn.id,
@@ -997,9 +910,9 @@ export function TableFilters({
 																						value: operatorRequiresValue(
 																							newOperator,
 																						)
-																							? null
+																							? "" // Use empty string instead of null
 																							: undefined,
-																						secondValue: null,
+																						secondValue: "", // Use empty string instead of null
 																				  }
 																				: f,
 																		),
@@ -1024,23 +937,11 @@ export function TableFilters({
 														<Select
 															value={filter.operator}
 															onValueChange={(value) => {
-																updateFilter(
-																	filter.columnId,
-																	"operator",
-																	value,
-																);
+																updateFilter(filter.id, "operator", value);
 																// Clear value if operator doesn't require it
 																if (!operatorRequiresValue(value)) {
-																	updateFilter(
-																		filter.columnId,
-																		"value",
-																		undefined,
-																	);
-																	updateFilter(
-																		filter.columnId,
-																		"secondValue",
-																		null,
-																	);
+																	updateFilter(filter.id, "value", undefined);
+																	updateFilter(filter.id, "secondValue", "");
 																}
 															}}>
 															<SelectTrigger className='w-full'>
@@ -1048,10 +949,10 @@ export function TableFilters({
 															</SelectTrigger>
 															<SelectContent>
 																{getOperators(filter.columnType).map((op) => (
-																	<SelectItem key={op.value} value={op.value}>
+																	<SelectItem key={op} value={op}>
 																		<div className='flex items-center justify-between w-full'>
-																			<span>{op.label}</span>
-																			{getOperatorDescription(op.value) && (
+																			<span>{op}</span>
+																			{getOperatorDescription(op) && (
 																				<TooltipProvider>
 																					<Tooltip>
 																						<TooltipTrigger asChild>
@@ -1059,9 +960,7 @@ export function TableFilters({
 																						</TooltipTrigger>
 																						<TooltipContent>
 																							<p className='max-w-xs'>
-																								{getOperatorDescription(
-																									op.value,
-																								)}
+																								{getOperatorDescription(op)}
 																							</p>
 																						</TooltipContent>
 																					</Tooltip>
@@ -1080,7 +979,8 @@ export function TableFilters({
 														<Button
 															variant='ghost'
 															size='sm'
-															onClick={() => removeFilter(filter.columnId)}
+															onClick={() => removeFilter(filter.id)}
+															disabled={loading}
 															className='w-full text-muted-foreground hover:text-destructive'>
 															<X className='w-4 h-4 mr-2' />
 															Remove Filter
@@ -1096,10 +996,35 @@ export function TableFilters({
 									variant='outline'
 									size='sm'
 									onClick={addFilter}
+									disabled={loading}
 									className='w-full'>
 									Add Filter
 								</Button>
 							</div>
+						</div>
+
+						{/* Filter Actions */}
+						<div className='flex items-center gap-2 p-4 border-t border-border/20'>
+							<Button
+								onClick={applyFilters}
+								disabled={
+									!onApplyFilters ||
+									(filters.length === 0 && !globalSearch.trim()) ||
+									loading
+								}
+								className='flex-1 bg-primary hover:bg-primary/90'>
+								{loading ? (
+									<>
+										<div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2'></div>
+										Applying...
+									</>
+								) : (
+									<>
+										<Filter className='w-4 h-4 mr-2' />
+										Apply Filters
+									</>
+								)}
+							</Button>
 						</div>
 					</div>
 

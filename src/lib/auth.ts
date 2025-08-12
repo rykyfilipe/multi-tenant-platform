@@ -47,7 +47,7 @@ export const authOptions = {
 				}
 
 				try {
-					const user = await prisma.user.findUnique({
+					const user = await prisma.user.findFirst({
 						where: {
 							email: credentials.email,
 						},
@@ -98,7 +98,7 @@ export const authOptions = {
 			if (account?.provider === "google" && user.email) {
 				// Check if user exists in database, create if not
 				try {
-					const existingUser = await prisma.user.findUnique({
+					const existingUser = await prisma.user.findFirst({
 						where: { email: user.email },
 					});
 
@@ -161,7 +161,7 @@ export const authOptions = {
 
 					const payload = {
 						userId: Number(user.id),
-						role: user.role,
+						role: user.role.toString(),
 					};
 
 					token.customJWT = generateToken(payload, "7d");
@@ -170,7 +170,7 @@ export const authOptions = {
 				// For Google OAuth users
 				if (account?.provider === "google" && token.email) {
 					try {
-						const dbUser = await prisma.user.findUnique({
+						const dbUser = await prisma.user.findFirst({
 							where: { email: token.email },
 						});
 
@@ -184,7 +184,7 @@ export const authOptions = {
 
 							const payload = {
 								userId: dbUser.id,
-								role: dbUser.role,
+								role: dbUser.role.toString(),
 							};
 
 							token.customJWT = generateToken(payload, "7d");
@@ -195,11 +195,11 @@ export const authOptions = {
 				}
 
 				// For subsequent calls when user is undefined but we have token data
-				if (!token.customJWT && token.id) {
+				if (!token.customJWT && token.id && token.role) {
 					try {
 						const payload = {
 							userId: Number(token.id),
-							role: token.role,
+							role: token.role.toString(),
 						};
 
 						token.customJWT = generateToken(payload, "7d");
@@ -211,7 +211,7 @@ export const authOptions = {
 				// Fetch subscription data for all cases
 				if (token.id) {
 					try {
-						const dbUser = await prisma.user.findUnique({
+						const dbUser = await prisma.user.findFirst({
 							where: { id: parseInt(token.id as string) },
 							select: {
 								subscriptionStatus: true,
@@ -341,11 +341,9 @@ export async function isAdmin(request: Request): Promise<boolean> {
 export function verifyLogin(request: Request): boolean {
 	const token = request.headers.get("Authorization")?.split(" ")[1];
 
-	// Token verification logging removed for security
-
 	if (!token) {
 		if (process.env.NODE_ENV === "development") {
-			// No token found
+			console.log("verifyLogin - No token found");
 		}
 		return false;
 	}
@@ -353,12 +351,12 @@ export function verifyLogin(request: Request): boolean {
 	try {
 		const decoded = jwt.verify(token, JWT_SECRET);
 		if (process.env.NODE_ENV === "development") {
-			// Token verified successfully
+			console.log("verifyLogin - Token verified successfully:", decoded);
 		}
 		return !!decoded;
 	} catch (error) {
 		if (process.env.NODE_ENV === "development") {
-			// Token verification failed
+			console.log("verifyLogin - Token verification failed:", error);
 		}
 		return false;
 	}

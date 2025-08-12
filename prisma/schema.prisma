@@ -28,6 +28,7 @@ model Tenant {
   columnPermissions ColumnPermission[]
   databases         Database[]
   invitations       Invitation[]
+
   tablePermissions  TablePermission[]
   admin             User               @relation("TenantAdmin", fields: [adminId], references: [id])
   users             User[]             @relation("TenantUsers")
@@ -51,6 +52,7 @@ model User {
   apiTokens                    ApiToken[]
   columnPermissions            ColumnPermission[]
   sessions                     Session[]
+
   tablePermissions             TablePermission[]
   adminOf                      Tenant?            @relation("TenantAdmin")
   tenant                       Tenant?            @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
@@ -77,6 +79,7 @@ model Table {
   columnPermissions   ColumnPermission[]
   rows                Row[]
   database            Database           @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
   tablePermissions    TablePermission[]
 }
 
@@ -218,6 +221,8 @@ model Invitation {
   @@index([email])
   @@index([token])
 }
+
+
 
 enum Role {
   ADMIN

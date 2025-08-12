@@ -8,12 +8,14 @@ import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
 import { useApp } from "@/contexts/AppContext";
 import { Pagination } from "../../ui/pagination";
+import { memo, useMemo } from "react";
 
 interface Props {
 	tables: Table[] | null;
 	table: Table;
 	rows: Row[];
 	columns: Column[];
+	loading?: boolean;
 
 	editingCell: { rowId: string; columnId: string } | null;
 	onEditCell: (rowId: string, columnId: string, cellId: string) => void;
@@ -36,11 +38,12 @@ interface Props {
 	showPagination?: boolean;
 }
 
-export function TableView({
+export const TableView = memo(function TableView({
 	tables,
 	table,
 	rows,
 	columns,
+	loading = false,
 	editingCell,
 	onEditCell,
 	onSaveCell,
@@ -55,6 +58,45 @@ export function TableView({
 	showPagination = true,
 }: Props) {
 	const { user } = useApp();
+
+	// Memoize table header pentru a evita re-render-uri inutile
+	const tableHeader = useMemo(
+		() => (
+			<thead>
+				<tr className='bg-muted/20'>
+					{columns.map((col) => (
+						<th
+							className='text-start p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20'
+							key={col.id}>
+							{col.name}
+						</th>
+					))}
+					{user?.role !== "VIEWER" && (
+						<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-16'>
+							Actions
+						</th>
+					)}
+				</tr>
+			</thead>
+		),
+		[columns, user?.role],
+	);
+
+	// Memoize pagination info pentru a evita re-render-uri inutile
+	const paginationInfo = useMemo(
+		() => (
+			<span className='text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-md self-start sm:self-auto'>
+				{totalItems} row{totalItems !== 1 && "s"}
+				{showPagination && totalPages > 1 && (
+					<span className='ml-2 text-xs'>
+						(Page {currentPage} of {totalPages})
+					</span>
+				)}
+			</span>
+		),
+		[totalItems, showPagination, totalPages, currentPage],
+	);
+
 	return (
 		<Card className='shadow-lg'>
 			<CardHeader className='pb-4'>
@@ -63,14 +105,7 @@ export function TableView({
 						<Database className='w-5 h-5 sm:w-6 sm:h-6' />
 						<CardTitle className='text-lg sm:text-xl'>Table Data</CardTitle>
 					</div>
-					<span className='text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-md self-start sm:self-auto'>
-						{totalItems} row{totalItems !== 1 && "s"}
-						{showPagination && totalPages > 1 && (
-							<span className='ml-2 text-xs'>
-								(Page {currentPage} of {totalPages})
-							</span>
-						)}
-					</span>
+					{paginationInfo}
 				</div>
 			</CardHeader>
 			<CardContent className='p-0 sm:p-6'>
@@ -81,24 +116,20 @@ export function TableView({
 						msOverflowStyle: "none",
 					}}>
 					<table className='w-full min-w-full'>
-						<thead>
-							<tr className='bg-muted/20'>
-								{columns.map((col) => (
-									<th
-										className='text-start p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20'
-										key={col.name}>
-										{col.name}
-									</th>
-								))}
-								{user?.role !== "VIEWER" && (
-									<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-16'>
-										Actions
-									</th>
-								)}
-							</tr>
-						</thead>
+						{tableHeader}
 						<tbody>
-							{rows.length === 0 ? (
+							{loading ? (
+								<tr>
+									<td
+										colSpan={columns.length + (user?.role !== "VIEWER" ? 1 : 0)}
+										className='text-center py-8 sm:py-12 text-sm sm:text-base text-muted-foreground'>
+										<div className='flex items-center justify-center gap-2'>
+											<div className='animate-spin rounded-full h-6 w-6 border-b-2 border-primary'></div>
+											<span>Loading data...</span>
+										</div>
+									</td>
+								</tr>
+							) : rows.length === 0 ? (
 								<tr>
 									<td
 										colSpan={columns.length + (user?.role !== "VIEWER" ? 1 : 0)}
@@ -247,4 +278,4 @@ export function TableView({
 			)}
 		</Card>
 	);
-}
+});

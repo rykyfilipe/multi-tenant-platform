@@ -249,9 +249,7 @@ function PaymentSuccessLoading() {
 					</CardTitle>
 				</CardHeader>
 				<CardContent className='text-center space-y-4'>
-					<p className='text-gray-600'>
-						Se încarcă pagina de confirmare...
-					</p>
+					<p className='text-gray-600'>Se încarcă pagina de confirmare...</p>
 				</CardContent>
 			</Card>
 		</div>
