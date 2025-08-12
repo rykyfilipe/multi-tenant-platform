@@ -6,6 +6,7 @@ import "./globals.css";
 import { AppProvider } from "@/contexts/AppContext";
 import AlertMessage from "@/components/alert";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Fonturi Google
 const geistSans = Geist({
@@ -148,6 +149,7 @@ export default function RootLayout({
 							<AlertMessage />
 							{children}
 							<Analytics />
+							<SpeedInsights />
 							<CookieBanner />
 							<PerformanceDashboard />
 						</AppProvider>
