@@ -75,11 +75,11 @@ class PrismaQueryBuilder {
 
 	// Adaugă global search
 	addGlobalSearch(searchTerm: string): this {
-		if (searchTerm) {
+		if (searchTerm && searchTerm.trim()) {
 			this.whereClause.cells = {
 				some: {
 					value: {
-						string_contains: searchTerm,
+						string_contains: searchTerm.trim(),
 					},
 				},
 			};
@@ -89,31 +89,21 @@ class PrismaQueryBuilder {
 
 	// Adaugă filtre pentru coloane
 	addColumnFilters(filters: FilterConfig[]): this {
-		if (filters.length === 0) return this;
-
-		console.log("Raw filters received:", JSON.stringify(filters, null, 2));
+		if (filters.length === 0) {
+			return this;
+		}
 
 		const validFilters = filters.filter((filter) => this.isValidFilter(filter));
-		console.log(
-			"Valid filters after validation:",
-			validFilters.length,
-			"out of",
-			filters.length,
-		);
 
-		if (validFilters.length === 0) return this;
+		if (validFilters.length === 0) {
+			return this;
+		}
 
 		const filterConditions = validFilters.map((filter) =>
 			this.buildFilterCondition(filter),
 		);
 		const nonEmptyConditions = filterConditions.filter(
 			(condition) => Object.keys(condition).length > 0,
-		);
-
-		console.log(
-			"Filter conditions built:",
-			nonEmptyConditions.length,
-			"conditions",
 		);
 
 		if (nonEmptyConditions.length > 0) {
@@ -126,39 +116,22 @@ class PrismaQueryBuilder {
 	// Validează un filtru
 	private isValidFilter(filter: FilterConfig): boolean {
 		if (!filter.columnId || !filter.operator) {
-			console.log(
-				"Filter validation failed - missing columnId or operator:",
-				filter,
-			);
 			return false;
 		}
 
 		const column = this.tableColumns.find((col) => col.id === filter.columnId);
 		if (!column) {
-			console.log(
-				"Filter validation failed - column not found:",
-				filter.columnId,
-			);
 			return false;
 		}
 
 		// Verifică dacă operatorul este valid pentru tipul de coloană
 		const validOperators = this.getValidOperators(column.type);
 		if (!validOperators.includes(filter.operator)) {
-			console.log(
-				"Filter validation failed - invalid operator:",
-				filter.operator,
-				"for column type:",
-				column.type,
-			);
 			return false;
 		}
 
 		// Verifică dacă valorile sunt valide pentru operator
 		const isValid = this.validateFilterValues(filter, column.type);
-		if (!isValid) {
-			console.log("Filter validation failed - invalid values:", filter);
-		}
 		return isValid;
 	}
 
@@ -373,7 +346,6 @@ class PrismaQueryBuilder {
 				return this.buildNotEmptyFilter(columnId);
 
 			default:
-				console.warn(`Operator not implemented: ${operator}`);
 				return {};
 		}
 	}
@@ -907,11 +879,6 @@ export async function GET(
 
 		const whereClause = queryBuilder.getWhereClause();
 
-		console.log(
-			"Optimized where clause:",
-			JSON.stringify(whereClause, null, 2),
-		);
-
 		// Obține numărul total de rânduri pentru paginare
 		const totalRows = await prisma.row.count({
 			where: whereClause,
@@ -963,9 +930,6 @@ export async function GET(
 			);
 		}
 
-		// Recalculate total rows after applying string filters
-		const finalTotalRows = filteredRows.length;
-
 		// Sortare coloane după ordine în aplicație
 		const sortedRows = validatedParams.includeCells
 			? filteredRows.map((row: any) => ({
@@ -978,7 +942,9 @@ export async function GET(
 			  }))
 			: filteredRows;
 
-		const totalPages = Math.ceil(finalTotalRows / validatedParams.pageSize);
+		// Folosim totalRows calculat înainte de paginare pentru calculul corect al totalPages
+		// Nu recalculăm totalRows după filtrarea string, deoarece aceasta afectează doar pagina curentă
+		const totalPages = Math.ceil(totalRows / validatedParams.pageSize);
 
 		// Răspuns optimizat cu informații complete
 		return NextResponse.json({
@@ -986,7 +952,7 @@ export async function GET(
 			pagination: {
 				page: validatedParams.page,
 				pageSize: validatedParams.pageSize,
-				totalRows: finalTotalRows,
+				totalRows: totalRows,
 				totalPages,
 				hasNext: validatedParams.page < totalPages,
 				hasPrev: validatedParams.page > 1,
@@ -1001,7 +967,7 @@ export async function GET(
 			},
 			performance: {
 				queryTime: Date.now(), // Pentru tracking performanță
-				filteredRows: finalTotalRows,
+				filteredRows: totalRows,
 				originalTableSize: await prisma.row.count({
 					where: { tableId: Number(tableId) },
 				}),

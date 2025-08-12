@@ -193,21 +193,15 @@ export async function POST(
 				name: true,
 				type: true,
 				required: true,
-				customOptions: true,
-				referenceTableId: true,
 				order: true,
 			},
 			orderBy: { order: "asc" },
 		});
 
-		console.log("Table columns:", JSON.stringify(tableColumns, null, 2));
-
 		// Parsare body request
 		const body = await request.json();
-		console.log("Import request body:", JSON.stringify(body, null, 2));
 
 		const validatedData = ImportSchema.parse(body);
-		console.log("Validated data:", JSON.stringify(validatedData, null, 2));
 
 		const { rows } = validatedData;
 		if (!rows || rows.length === 0) {
@@ -216,8 +210,6 @@ export async function POST(
 				{ status: 400 },
 			);
 		}
-
-		console.log(`Processing ${rows.length} rows for import`);
 
 		// Procesare rânduri direct (nu mai este nevoie de parsare CSV)
 		const dataRows = rows;
@@ -229,18 +221,9 @@ export async function POST(
 			const rowData = dataRows[i];
 			const rowIndex = i + 1;
 
-			console.log(
-				`Processing row ${rowIndex}:`,
-				JSON.stringify(rowData, null, 2),
-			);
-
 			try {
 				// Verificare că rândul are celule
 				if (!rowData.cells || !Array.isArray(rowData.cells)) {
-					console.log(
-						`Row ${rowIndex}: Invalid cell structure - cells:`,
-						rowData.cells,
-					);
 					errors.push(`Row ${rowIndex}: Invalid cell structure`);
 					continue;
 				}
@@ -254,7 +237,6 @@ export async function POST(
 				);
 
 				if (!hasValidCells) {
-					console.log(`Row ${rowIndex}: No valid cells found`);
 					warnings.push(`Row ${rowIndex}: Empty row - skipping`);
 					continue;
 				}
@@ -284,17 +266,12 @@ export async function POST(
 				let rowHasValidData = false;
 
 				for (const cell of rowData.cells) {
-					console.log(`Row ${rowIndex}, Cell:`, JSON.stringify(cell, null, 2));
-
 					// Skip empty cells
 					if (
 						cell.value === null ||
 						cell.value === undefined ||
 						cell.value === ""
 					) {
-						console.log(
-							`Row ${rowIndex}: Skipping empty cell for column ${cell.columnId}`,
-						);
 						continue;
 					}
 
@@ -302,42 +279,21 @@ export async function POST(
 						(col: any) => Number(col.id) === Number(cell.columnId),
 					);
 					if (!column) {
-						console.log(
-							`Row ${rowIndex}: Column ID ${Number(
-								cell.columnId,
-							)} not found in table columns`,
-						);
 						errors.push(
 							`Row ${rowIndex}: Unknown column ID ${Number(cell.columnId)}`,
 						);
 						continue;
 					}
 
-					console.log(
-						`Row ${rowIndex}, Column found:`,
-						JSON.stringify(column, null, 2),
-					);
-
 					// Validare tip de date
-					console.log(
-						`Row ${rowIndex}, Column '${column.name}': Validating value '${cell.value}' for type '${column.type}'`,
-					);
-
 					if (
 						!validateCellValue(cell.value, column.type, column.customOptions)
 					) {
-						console.log(
-							`Row ${rowIndex}, Column '${column.name}': Validation failed for value '${cell.value}' and type '${column.type}'`,
-						);
 						errors.push(
 							`Row ${rowIndex}, Column '${column.name}': Invalid value '${cell.value}' for type '${column.type}'`,
 						);
 						continue;
 					}
-
-					console.log(
-						`Row ${rowIndex}, Column '${column.name}': Validation passed`,
-					);
 
 					// Procesare valoare
 					const processedValue = processCellValue(cell.value, column.type);
@@ -349,10 +305,6 @@ export async function POST(
 						processedValue !== null
 					) {
 						try {
-							console.log(
-								`Row ${rowIndex}, Column '${column.name}': Checking reference value '${processedValue}' in table ${column.referenceTableId}`,
-							);
-
 							// Mai întâi găsim coloana primară din tabela referențiată
 							const primaryColumn = await prisma.column.findFirst({
 								where: {
@@ -362,17 +314,7 @@ export async function POST(
 								select: { id: true, name: true },
 							});
 
-							console.log(
-								`Row ${rowIndex}, Column '${column.name}': Primary column found:`,
-								JSON.stringify(primaryColumn, null, 2),
-							);
-
 							if (!primaryColumn) {
-								console.warn(
-									`No primary column found in referenced table ${Number(
-										column.referenceTableId,
-									)}`,
-								);
 								warnings.push(
 									`Row ${rowIndex}, Column '${column.name}': Referenced table has no primary column`,
 								);
@@ -392,15 +334,7 @@ export async function POST(
 									},
 								});
 
-								console.log(
-									`Row ${rowIndex}, Column '${column.name}': Reference search result:`,
-									JSON.stringify(referenceExists, null, 2),
-								);
-
 								if (!referenceExists) {
-									console.warn(
-										`Row ${rowIndex}, Column '${column.name}': Reference value '${processedValue}' not found in referenced table`,
-									);
 									// Pentru moment, să permitem importul cu avertismente în loc de erori
 									warnings.push(
 										`Row ${rowIndex}, Column '${column.name}': Reference value '${processedValue}' not found in referenced table`,
@@ -409,10 +343,6 @@ export async function POST(
 								}
 							}
 						} catch (error) {
-							console.error(
-								`Error checking reference for column ${column.name}:`,
-								error,
-							);
 							warnings.push(
 								`Row ${rowIndex}, Column '${column.name}': Error checking reference value '${processedValue}'`,
 							);
@@ -429,21 +359,13 @@ export async function POST(
 				// Doar adăugăm rândul dacă are cel puțin o celulă validă cu date
 				if (rowHasValidData && validCells.length > 0) {
 					validRows.push({ cells: validCells });
-					console.log(
-						`Row ${rowIndex}: Added to valid rows with ${validCells.length} cells`,
-					);
 				} else {
 					warnings.push(`Row ${rowIndex}: No valid data found - skipping`);
 				}
 			} catch (error) {
-				console.error(`Error processing row ${rowIndex}:`, error);
 				errors.push(`Row ${rowIndex}: Processing error - ${error}`);
 			}
 		}
-
-		console.log(
-			`Processing complete: ${validRows.length} valid rows, ${errors.length} errors, ${warnings.length} warnings`,
-		);
 
 		// Dacă sunt prea multe erori, nu continuăm cu importul
 		if (errors.length > 0 && errors.length >= validRows.length) {
@@ -493,8 +415,6 @@ export async function POST(
 			);
 		}
 
-		console.log(`Starting database import for ${validRows.length} rows`);
-
 		// Import rânduri în baza de date - folosim tranzacție pentru consistență
 		const importedRows: any[] = [];
 		const importErrors: string[] = [];
@@ -506,11 +426,6 @@ export async function POST(
 					const rowIndex = i + 1;
 
 					try {
-						console.log(
-							`Importing row ${rowIndex}:`,
-							JSON.stringify(rowData, null, 2),
-						);
-
 						// Creare rând nou
 						const newRow = await tx.row.create({
 							data: {
@@ -520,8 +435,6 @@ export async function POST(
 								id: true,
 							},
 						});
-
-						console.log(`Created row with ID: ${newRow.id}`);
 
 						// Creare celule pentru rând
 						const createdCells = [];
@@ -534,9 +447,6 @@ export async function POST(
 								},
 							});
 							createdCells.push(createdCell);
-							console.log(
-								`Created cell: column ${cell.columnId}, value: ${cell.value}`,
-							);
 						}
 
 						// Obține rândul complet cu celulele create
@@ -548,20 +458,12 @@ export async function POST(
 						});
 
 						importedRows.push(completeRow);
-						console.log(
-							`Successfully imported row ${rowIndex} with ID ${newRow.id}`,
-						);
 					} catch (error) {
-						console.error(`Failed to import row ${rowIndex}:`, error);
 						importErrors.push(`Row ${rowIndex}: Failed to import - ${error}`);
 						throw error; // Rollback tranzacția
 					}
 				}
 			});
-
-			console.log(
-				`Transaction completed successfully. Imported ${importedRows.length} rows`,
-			);
 		} catch (error) {
 			console.error("Transaction failed:", error);
 			return NextResponse.json(
@@ -617,19 +519,6 @@ export async function POST(
 		} else if (warnings.length > 0 || errors.length > 0) {
 			statusCode = 207; // Success with warnings
 		}
-
-		console.log(
-			"Import completed:",
-			JSON.stringify(
-				{
-					importedRows: importedRows.length,
-					totalRows: rows.length,
-					statusCode,
-				},
-				null,
-				2,
-			),
-		);
 
 		return NextResponse.json(response, { status: statusCode });
 	} catch (error) {

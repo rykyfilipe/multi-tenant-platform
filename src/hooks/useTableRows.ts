@@ -132,14 +132,16 @@ function useTableRows(
 	// Funcția principală de fetch cu optimizări
 	const fetchRows = useCallback(
 		async (
-			page: number = currentPage,
-			pageSize: number = currentPageSize,
+			page: number = 1,
+			pageSize: number = 25,
 			filtersParam: FilterConfig[] = filters,
 			globalSearchParam: string = globalSearch,
 			sortByParam: string = sortBy,
 			sortOrderParam: "asc" | "desc" = sortOrder,
 		) => {
-			if (!token || !userId || !tenantId || !databaseId || !tableId) return;
+			if (!token || !userId || !tenantId || !databaseId || !tableId) {
+				return;
+			}
 
 			// Generează cache key
 			const cacheKey = generateCacheKey(
@@ -154,7 +156,6 @@ function useTableRows(
 			// Verifică cache-ul - ENABLED pentru paginare
 			const cachedData = getCachedData(cacheKey);
 			if (cachedData) {
-				console.log("Using cached data for page:", page);
 				setRows(cachedData.data || []);
 				setPagination(cachedData.pagination || null);
 				setCurrentPage(page);
@@ -256,7 +257,6 @@ function useTableRows(
 					throw new Error("Invalid response format from server");
 				}
 			} catch (err) {
-				console.error("Error fetching rows:", err);
 				setError(err instanceof Error ? err.message : "Unknown error");
 				setRows([]);
 				setPagination(null);

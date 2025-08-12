@@ -433,6 +433,7 @@ const TableEditor = memo(function TableEditor({
 
 			{/* Rows Table */}
 			<div className='table-content'>
+				
 				<TableView
 					tables={tables}
 					table={table}

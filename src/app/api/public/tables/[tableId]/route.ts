@@ -70,10 +70,6 @@ export async function GET(
 			where: { tableId: parseInt(tableId) },
 		});
 
-		console.log(
-			`DEBUG: Table ${tableId} has ${totalRows} total rows, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
-		);
-
 		// Get paginated rows with cells
 		const rows = await prisma.row.findMany({
 			where: { tableId: parseInt(tableId) },
@@ -89,8 +85,6 @@ export async function GET(
 			take: validPageSize,
 		});
 
-		console.log(`DEBUG: Found ${rows.length} rows for current page`);
-
 		// Optimized column mapping
 		const columnMap = new Map<number, string>();
 		const columnTypeMap = new Map<number, string>();
@@ -100,10 +94,10 @@ export async function GET(
 		}
 
 		// Găsim cheia primară a tabelului
-		const primaryKeyColumn = table.columns.find((col) => col.primary);
+		const primaryKeyColumn = table.columns.find((col: any) => col.primary);
 
 		// Optimized row transformation - no Promise.all needed since no async operations
-		const transformedRows = rows.map((row) => {
+		const transformedRows = rows.map((row: any) => {
 			const rowData: Record<string, any> = {
 				id: row.id,
 				createdAt: row.createdAt,

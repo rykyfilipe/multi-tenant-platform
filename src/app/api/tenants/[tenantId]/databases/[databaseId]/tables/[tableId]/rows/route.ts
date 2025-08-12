@@ -455,14 +455,6 @@ export async function GET(
 		const sortBy = url.searchParams.get("sortBy") || "id";
 		const sortOrder = url.searchParams.get("sortOrder") || "asc";
 
-		console.log(
-			`DEBUG PARAMS: Received page=${url.searchParams.get(
-				"page",
-			)}, pageSize=${url.searchParams.get(
-				"pageSize",
-			)}, search=${globalSearch}, filters=${filters}`,
-		);
-
 		// Validate pagination parameters
 		const validPage = Math.max(1, page);
 		const validPageSize = Math.min(Math.max(1, pageSize), 100); // Limit page size to 100
@@ -776,10 +768,6 @@ export async function GET(
 			where: whereClause,
 		});
 
-		console.log(
-			`DEBUG MAIN: Table ${tableId} has ${totalRows} filtered rows, page=${validPage}, pageSize=${validPageSize}, skip=${skip}`,
-		);
-
 		// Build orderBy clause
 		let orderByClause: any = {};
 		if (sortBy === "id") {
@@ -815,8 +803,6 @@ export async function GET(
 			take: validPageSize,
 		});
 
-		console.log(`DEBUG MAIN: Found ${rows.length} rows for current page`);
-
 		// Apply string filters that couldn't be handled by Prisma
 		let filteredRows = rows;
 		if (parsedFilters.length > 0) {
@@ -829,10 +815,6 @@ export async function GET(
 
 		// Recalculate total rows after applying string filters
 		const finalTotalRows = filteredRows.length;
-
-		console.log(
-			`DEBUG MAIN: Found ${rows.length} rows for current page, ${finalTotalRows} after string filtering`,
-		);
 
 		// Sortăm coloanele după ordine în aplicație dacă includem cells
 		const sortedRows = includeCells

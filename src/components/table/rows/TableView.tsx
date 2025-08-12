@@ -83,8 +83,8 @@ export const TableView = memo(function TableView({
 	);
 
 	// Memoize pagination info pentru a evita re-render-uri inutile
-	const paginationInfo = useMemo(
-		() => (
+	const paginationInfo = useMemo(() => {
+		return (
 			<span className='text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-md self-start sm:self-auto'>
 				{totalItems} row{totalItems !== 1 && "s"}
 				{showPagination && totalPages > 1 && (
@@ -93,9 +93,8 @@ export const TableView = memo(function TableView({
 					</span>
 				)}
 			</span>
-		),
-		[totalItems, showPagination, totalPages, currentPage],
-	);
+		);
+	}, [totalItems, showPagination, totalPages, currentPage]);
 
 	return (
 		<Card className='shadow-lg'>
@@ -264,16 +263,22 @@ export const TableView = memo(function TableView({
 			</CardContent>
 
 			{/* Pagination */}
-			{showPagination && totalPages > 1 && (
-				<div className='border-t border-border/20'>
-					<Pagination
-						currentPage={currentPage}
-						totalPages={totalPages}
-						onPageChange={onPageChange}
-						pageSize={pageSize}
-						totalItems={totalItems}
-						onPageSizeChange={onPageSizeChange}
-					/>
+			{showPagination && (
+				<div className='border-t border-border/20 bg-muted/10'>
+					{totalPages > 1 ? (
+						<Pagination
+							currentPage={currentPage}
+							totalPages={totalPages}
+							onPageChange={onPageChange}
+							pageSize={pageSize}
+							totalItems={totalItems}
+							onPageSizeChange={onPageSizeChange}
+						/>
+					) : (
+						<div className='p-4 text-center text-sm text-muted-foreground'>
+							{totalItems === 0 ? "No data available" : "Single page of data"}
+						</div>
+					)}
 				</div>
 			)}
 		</Card>
