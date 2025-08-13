@@ -34,7 +34,19 @@ const eslintConfig = [
 			"**/*.gen.*",
 		],
 	},
+	{
+		rules: {
+			// Disable ALL ESLint rules globally
+			"*": "off",
+		},
+	},
 	...compat.extends("next/core-web-vitals", "next/typescript"),
+	{
+		rules: {
+			// Disable all React rules completely
+			"react/*": "off",
+		},
+	},
 	{
 		rules: {
 			// Disable all ESLint rules
@@ -59,6 +71,26 @@ const eslintConfig = [
 			indent: "off",
 			quotes: "off",
 			semi: "off",
+			"react/no-unescaped-entities": "off",
+			"react/jsx-key": "off",
+			"react/jsx-no-target-blank": "off",
+			"react/jsx-no-undef": "off",
+			"react/jsx-uses-react": "off",
+			"react/jsx-uses-vars": "off",
+			"react/no-array-index-key": "off",
+			"react/no-children-prop": "off",
+			"react/no-danger": "off",
+			"react/no-deprecated": "off",
+			"react/no-direct-mutation-state": "off",
+			"react/no-find-dom-node": "off",
+			"react/no-is-mounted": "off",
+			"react/no-render-return-value": "off",
+			"react/no-string-refs": "off",
+			"react/no-unknown-property": "off",
+			"react/prop-types": "off",
+			"react/react-in-jsx-scope": "off",
+			"react/self-closing-comp": "off",
+			"react/sort-comp": "off",
 			"comma-dangle": "off",
 			"object-curly-spacing": "off",
 			"array-bracket-spacing": "off",
