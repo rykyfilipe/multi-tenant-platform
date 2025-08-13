@@ -296,7 +296,7 @@ export const authOptions = {
 		},
 	},
 	session: {
-		strategy: "jwt",
+		strategy: "jwt" as const,
 		maxAge: 30 * 24 * 60 * 60, // 30 days
 		updateAge: 24 * 60 * 60, // 24 hours
 	},
@@ -305,7 +305,7 @@ export const authOptions = {
 			name: `next-auth.session-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax",
+				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 			},
@@ -313,7 +313,7 @@ export const authOptions = {
 		callbackUrl: {
 			name: `next-auth.callback-url`,
 			options: {
-				sameSite: "lax",
+				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 			},
@@ -322,7 +322,7 @@ export const authOptions = {
 			name: `next-auth.csrf-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax",
+				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 			},
