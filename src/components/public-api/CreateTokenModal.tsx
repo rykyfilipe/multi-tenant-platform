@@ -91,8 +91,7 @@ export const CreateTokenModal = ({
 									: "You've reached your plan limit. Upgrade to create more API tokens."}
 							</p>
 							<p className='text-xs text-orange-700 mt-1'>
-								💡 API tokens can only access public tables. Make sure you have
-								public tables enabled.
+								💡 API tokens provide access to all tables in your tenant through the public API by default.
 							</p>
 						</div>
 					);

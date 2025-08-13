@@ -154,6 +154,17 @@ export const cacheHelpers = {
 	invalidateMemoryUsage: (tenantId: number) => {
 		memoryCache.delete(`memory:${tenantId}`);
 	},
+
+	// Public tables cache with 10 minute TTL
+	setPublicTables: (tenantId: string, tables: any) => {
+		memoryCache.set(`public-tables:${tenantId}`, tables, 600);
+	},
+	getPublicTables: (tenantId: string) => {
+		return memoryCache.get(`public-tables:${tenantId}`);
+	},
+	invalidatePublicTables: (tenantId: string) => {
+		memoryCache.delete(`public-tables:${tenantId}`);
+	},
 };
 
 // Graceful shutdown handler

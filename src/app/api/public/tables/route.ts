@@ -1,104 +1,79 @@
 /** @format */
 
-import { 
-  validateApiToken, 
-  checkApiPermissions, 
-  createApiSuccessResponse, 
-  createApiErrorResponse,
-  validateRequestSize,
-  logApiSecurityEvent
-} from "@/lib/api-security";
-import { enhancedCachedOperations } from "@/lib/api-cache";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { validateJwtToken } from "@/lib/api-security";
 
 export async function GET(request: NextRequest) {
-	const startTime = Date.now();
-	
 	try {
-		// Validate request size
-		if (!validateRequestSize(request)) {
-			return createApiErrorResponse(
-				"Request too large",
-				413,
-				{ maxSize: "10MB" }
+		const authHeader = request.headers.get("authorization");
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
+			return NextResponse.json(
+				{ error: "Missing or invalid authorization header" },
+				{ status: 401 },
 			);
 		}
 
-		// Extract and validate token
-		const token = request.headers.get("Authorization")?.split(" ")[1];
-		if (!token) {
-			return createApiErrorResponse("Missing authorization token", 401);
-		}
+		const token = authHeader.substring(7);
+		const tokenData = await validateJwtToken(token);
 
-		const tokenValidation = await validateApiToken(token);
-		if (!tokenValidation.isValid) {
-			logApiSecurityEvent("invalid_token", { error: tokenValidation.error });
-			return createApiErrorResponse(
-				tokenValidation.error || "Invalid token",
-				401
+		if (!tokenData.isValid) {
+			return NextResponse.json(
+				{ error: "Invalid or expired JWT token" },
+				{ status: 401 },
 			);
 		}
 
-		const { userId, scopes } = tokenValidation;
-
-		// Validate required scopes
-		if (!scopes?.includes("tables:read")) {
-			logApiSecurityEvent("insufficient_scopes", { 
-				userId, 
-				requiredScopes: ["tables:read"],
-				userScopes: scopes 
-			});
-			return createApiErrorResponse(
-				"Forbidden: Insufficient permissions",
-				403,
-				{ requiredScopes: ["tables:read"] }
+		if (!tokenData.userId) {
+			return NextResponse.json(
+				{ error: "Invalid token data" },
+				{ status: 401 },
 			);
 		}
 
-		// Get user information to determine tenant
-		const user = await enhancedCachedOperations.getUser(userId!);
-		if (!user) {
-			return createApiErrorResponse("User not found", 404);
-		}
-
-		if (!user.tenantId) {
-			return createApiErrorResponse("User not associated with any tenant", 400);
-		}
-
-		// Get public tables from cache
-		const tables = await enhancedCachedOperations.getPublicTables(user.tenantId);
-		
-		// Log successful access
-		logApiSecurityEvent("tables_list_access", { 
-			userId, 
-			tenantId: user.tenantId,
-			action: "read",
-			duration: Date.now() - startTime,
-			tablesCount: tables.length
+		// Get user to extract tenant ID
+		const user = await prisma.user.findUnique({
+			where: { id: tokenData.userId },
+			select: { tenantId: true },
 		});
 
-		// Return success response with security headers
-		return createApiSuccessResponse(tables, 200, {
-			cacheControl: "public, max-age=300", // 5 minutes cache
-			requestId: request.headers.get("X-Request-ID"),
-			metadata: {
-				totalTables: tables.length,
-				tenantId: user.tenantId,
-			}
+		if (!user || !user.tenantId) {
+			return NextResponse.json(
+				{ error: "User not associated with any tenant" },
+				{ status: 403 },
+			);
+		}
+
+		// Get all tables for the user's tenant (all tables are public by default)
+		const tables = await prisma.table.findMany({
+			where: {
+				database: {
+					tenantId: user.tenantId,
+				},
+			},
+			select: {
+				id: true,
+				name: true,
+				description: true,
+				database: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
+			},
 		});
 
+		return NextResponse.json({
+			success: true,
+			data: tables,
+			count: tables.length,
+		});
 	} catch (error) {
 		console.error("Error fetching public tables:", error);
-		
-		// Log error for security monitoring
-		logApiSecurityEvent("api_error", { 
-			error: error instanceof Error ? error.message : "Unknown error",
-			path: request.nextUrl.pathname
-		});
-
-		return createApiErrorResponse(
-			"Internal server error",
-			500
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 },
 		);
 	}
 }

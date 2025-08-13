@@ -29,6 +29,7 @@ import {
 	SortDesc,
 	Bookmark,
 	RotateCcw,
+	AlertTriangle,
 } from "lucide-react";
 
 export default function HelpCenterPage() {
@@ -349,9 +350,7 @@ export default function HelpCenterPage() {
 									Important Note
 								</h4>
 								<p className='text-orange-700 text-sm'>
-									Only public tables can be accessed via the API. To make a
-									table public, click the globe icon on the table card and
-									toggle the visibility setting.
+									API access is currently being updated. Please check back later for updated API documentation.
 								</p>
 							</div>
 						</CardContent>
@@ -732,31 +731,17 @@ export default function HelpCenterPage() {
 								</div>
 
 								<div className='space-y-4'>
-									<h3 className='text-lg font-semibold'>API Endpoints</h3>
-									<div className='space-y-3'>
-										<div className='flex items-center justify-between'>
-											<span className='text-sm font-mono'>
-												GET /api/public/tables
-											</span>
-											<Badge variant='outline'>List tables</Badge>
-										</div>
-										<div className='flex items-center justify-between'>
-											<span className='text-sm font-mono'>
-												GET /api/public/tables/:id
-											</span>
-											<Badge variant='outline'>Get table data</Badge>
-										</div>
-										<div className='flex items-center justify-between'>
-											<span className='text-sm font-mono'>
-												POST /api/public/tables/:id/rows
-											</span>
-											<Badge variant='outline'>Add row</Badge>
-										</div>
-										<div className='flex items-center justify-between'>
-											<span className='text-sm font-mono'>
-												PATCH /api/public/tables/:id/rows/:rowId
-											</span>
-											<Badge variant='outline'>Update row</Badge>
+									<h3 className='text-lg font-semibold'>API Status</h3>
+									<div className='bg-green-50 border border-green-200 rounded-lg p-4'>
+										<div className='flex items-start gap-3'>
+											<Globe className='w-5 h-5 text-green-600 mt-0.5 flex-shrink-0' />
+											<div className='text-sm text-green-800'>
+												<p className='font-medium mb-1'>Public API Available</p>
+												<p>
+													All tables in your tenant are now accessible through the public API by default. 
+													No need to make individual tables public anymore - simply use your API token to access any table.
+												</p>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -861,9 +846,7 @@ export default function HelpCenterPage() {
 								How do I make a table public for API access?
 							</h4>
 							<p className='text-sm text-muted-foreground'>
-								Navigate to your database, find the table you want to make
-								public, and click the globe icon on the table card. Toggle the
-								visibility setting to "Public".
+								API access is currently being updated. Please check back later for updated API documentation.
 							</p>
 						</div>
 						<div className='border-b border-border pb-4'>

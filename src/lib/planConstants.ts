@@ -19,7 +19,6 @@ export interface RoleRestrictions {
 	canCreateTables: boolean;
 	canCreateUsers: boolean;
 	canCreateApiTokens: boolean;
-	canMakeTablesPublic: boolean;
 	canManagePermissions: boolean;
 	canDeleteData: boolean;
 	canExportData: boolean;
@@ -59,10 +58,9 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canCreateDatabases: false, // Doar 1 database permis
 		canCreateTables: true,
 		canCreateUsers: false, // Doar 2 utilizatori permis
-		canCreateApiTokens: false, // Doar 1 token permis
-		canMakeTablesPublic: false, // 0 public tables permis
+		canCreateApiTokens: true, // Doar 1 token permis
 		canManagePermissions: false, // Doar pentru Pro+
-		canDeleteData: true,
+		canDeleteData: true,	
 		canExportData: true,
 		canImportData: true,
 		canViewAnalytics: false, // Doar pentru Pro+
@@ -72,7 +70,6 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canCreateTables: true,
 		canCreateUsers: true,
 		canCreateApiTokens: true,
-		canMakeTablesPublic: true,
 		canManagePermissions: true,
 		canDeleteData: true,
 		canExportData: true,
@@ -84,7 +81,6 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canCreateTables: true,
 		canCreateUsers: true,
 		canCreateApiTokens: true,
-		canMakeTablesPublic: true,
 		canManagePermissions: true,
 		canDeleteData: true,
 		canExportData: true,

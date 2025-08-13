@@ -14,7 +14,6 @@ export interface Table {
 	name: string;
 	databaseId: number;
 	description: string;
-	isPublic: boolean;
 	columns?: Column[];
 	rows?: Row[];
 	columnsCount?: number; // For display purposes
@@ -61,7 +60,6 @@ export interface CreateDatabaseRequest {
 export interface CreateTableRequest {
 	name: string;
 	description: string;
-	isPublic?: boolean;
 	columns: CreateColumnRequest[];
 }
 

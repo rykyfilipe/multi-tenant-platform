@@ -76,7 +76,6 @@ export async function GET(
 									id: true,
 									name: true,
 									description: true,
-									isPublic: true,
 									_count: {
 										select: {
 											columns: true,
@@ -120,27 +119,26 @@ export async function GET(
 			},
 			include: {
 				table: {
-					select: {
-						id: true,
-						name: true,
-						description: true,
-						isPublic: true,
-						databaseId: true,
-						database: {
-							select: {
-								id: true,
-								name: true,
-								tenantId: true,
-								createdAt: true,
+											select: {
+							id: true,
+							name: true,
+							description: true,
+							databaseId: true,
+							database: {
+								select: {
+									id: true,
+									name: true,
+									tenantId: true,
+									createdAt: true,
+								},
+							},
+							_count: {
+								select: {
+									columns: true,
+									rows: true,
+								},
 							},
 						},
-						_count: {
-							select: {
-								columns: true,
-								rows: true,
-							},
-						},
-					},
 				},
 			},
 		});

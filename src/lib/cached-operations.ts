@@ -100,36 +100,6 @@ export const cachedOperations = {
 		}
 	},
 
-	getPublicTables: async (tenantId: number) => {
-		try {
-			return await prisma.table.findMany({
-				where: {
-					database: { tenantId },
-					isPublic: true,
-				},
-				select: {
-					id: true,
-					name: true,
-					description: true,
-					isPublic: true,
-					createdAt: true,
-					databaseId: true,
-					_count: {
-						select: {
-							columns: true,
-							rows: true,
-						},
-					},
-				},
-				orderBy: {
-					createdAt: "asc",
-				},
-			});
-		} catch (error) {
-			return [];
-		}
-	},
-
 	// Column operations
 	getColumns: async (tableId: number) => {
 		try {
@@ -317,6 +287,38 @@ export const cachedOperations = {
 				cacheHelpers.setApiTokens(userId, tokens);
 			}
 			return tokens;
+		} catch (error) {
+			return [];
+		}
+	},
+
+	// Public table operations (all tables are public by default)
+	getPublicTables: async (tenantId: string) => {
+		try {
+			const cached = cacheHelpers.getPublicTables(tenantId);
+			if (cached) return cached;
+
+			const tables = await prisma.table.findMany({
+				where: {
+					database: {
+						tenantId: tenantId,
+					},
+				},
+				select: {
+					id: true,
+					name: true,
+					description: true,
+					database: {
+						select: {
+							id: true,
+							name: true,
+						},
+					},
+				},
+			});
+
+			cacheHelpers.setPublicTables(tenantId, tables);
+			return tables;
 		} catch (error) {
 			return [];
 		}

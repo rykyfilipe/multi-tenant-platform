@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import prisma from "./prisma";
 
 // Enhanced API security configurations
 export const API_SECURITY_CONFIG = {
@@ -62,9 +63,6 @@ export async function validateApiToken(token: string): Promise<{
 	error?: string;
 }> {
 	try {
-		const { PrismaClient } = require("@/lib/prisma");
-		const prisma = new PrismaClient();
-
 		const apiToken = await prisma.apiToken.findFirst({
 			where: {
 				tokenHash: token,
@@ -92,6 +90,36 @@ export async function validateApiToken(token: string): Promise<{
 		};
 	} catch (error) {
 		return { isValid: false, error: "Token validation failed" };
+	}
+}
+
+// JWT token validation for public API routes
+export async function validateJwtToken(token: string): Promise<{
+	isValid: boolean;
+	userId?: number;
+	role?: string;
+	error?: string;
+}> {
+	try {
+		const jwt = require("jsonwebtoken");
+		const JWT_SECRET = process.env.PUBLIC_JWT_SECRET || "your-secret-key";
+
+		const decoded = jwt.verify(token, JWT_SECRET) as {
+			userId: number;
+			role: string;
+		};
+
+		if (!decoded.userId || !decoded.role) {
+			return { isValid: false, error: "Invalid token payload" };
+		}
+
+		return {
+			isValid: true,
+			userId: decoded.userId,
+			role: decoded.role,
+		};
+	} catch (error) {
+		return { isValid: false, error: "JWT validation failed" };
 	}
 }
 

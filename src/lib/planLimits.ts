@@ -129,7 +129,6 @@ export function getPlanFeatures(plan: string): string[] {
 		features.push("Full API access");
 		features.push("Priority support");
 		features.push("Advanced data management");
-		features.push("Public data sharing");
 		features.push("Custom integrations");
 	} else if (plan === "Business") {
 		features.push("Everything in Pro");

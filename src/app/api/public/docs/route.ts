@@ -1,255 +1,604 @@
 /** @format */
 
-import {
-	validateApiToken,
-	createApiSuccessResponse,
-	createApiErrorResponse,
-	logApiSecurityEvent,
-} from "@/lib/api-security";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { validateJwtToken } from "@/lib/api-security";
 
 export async function GET(request: NextRequest) {
 	try {
-		// Extract and validate token (optional for documentation)
-		const token = request.headers.get("Authorization")?.split(" ")[1];
-		let userId: number | undefined;
-
-		if (token) {
-			const tokenValidation = await validateApiToken(token);
-			if (tokenValidation.isValid) {
-				userId = tokenValidation.userId;
-			}
+		const authHeader = request.headers.get("authorization");
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
+			return NextResponse.json(
+				{ error: "Missing or invalid authorization header" },
+				{ status: 401 },
+			);
 		}
 
-		// Log access
-		logApiSecurityEvent("api_docs_access", {
-			userId,
-			action: "read",
-		});
+		const token = authHeader.substring(7);
+		const tokenData = await validateJwtToken(token);
 
-		// Comprehensive API documentation
-		const apiDocs = {
-			version: "1.0.0",
-			title: "YDV Public API Documentation",
+		if (!tokenData.isValid) {
+			return NextResponse.json(
+				{ error: "Invalid or expired JWT token" },
+				{ status: 401 },
+			);
+		}
+
+		const documentation = {
+			title: "Multi-Tenant Platform Public API Documentation",
 			description:
-				"Complete API reference for the YDV multi-tenant data management platform",
-			baseUrl: `${request.nextUrl.origin}/api/public`,
+				"Complete API reference for accessing and managing your tenant's data through JWT authentication",
+			version: "2.0.0",
+			baseUrl: "http://localhost:3000/api/public",
 			authentication: {
-				type: "Bearer Token",
-				description:
-					"All API requests require a valid API token in the Authorization header",
-				example: "Authorization: Bearer YOUR_API_TOKEN",
-				scopes: {
-					"tables:read": "Read access to public tables and their data",
-					"rows:write": "Create, update, and delete rows in public tables",
-					"tables:write": "Create and modify public tables (admin only)",
-				},
+				type: "JWT Bearer Token",
+				header: "Authorization: Bearer YOUR_JWT_TOKEN",
+				note: "JWT tokens are automatically generated when users log in and contain userId and role information",
 			},
-			endpoints: {
-				"GET /tables": {
+
+			endpoints: [
+				{
+					method: "GET",
+					path: "/tables",
 					description:
-						"List all public tables accessible to the authenticated user",
-					authentication: "Required",
-					scopes: ["tables:read"],
-					parameters: "None",
+						"List all tables accessible to the authenticated user's tenant",
+					authentication: "Required - JWT Bearer Token",
+					queryParams:
+						"None - tenant ID is automatically extracted from JWT token",
+					request: {
+						headers: {
+							Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"Content-Type": "application/json",
+						},
+					},
 					response: {
-						example: {
-							data: [
-								{
+						success: true,
+						data: [
+							{
+								id: 1,
+								name: "users",
+								description: "User information table",
+								database: {
 									id: 1,
-									name: "Products",
-									description: "Product catalog",
-									isPublic: true,
-									createdAt: "2025-01-01T00:00:00Z",
-									databaseId: 1,
-									_count: {
-										columns: 5,
-										rows: 100,
-									},
+									name: "Main Database",
 								},
-							],
-							metadata: {
-								totalTables: 1,
+							},
+							{
+								id: 2,
+								name: "products",
+								description: "Product catalog",
+								database: {
+									id: 1,
+									name: "Main Database",
+								},
+							},
+						],
+						count: 2,
+					},
+					statusCodes: {
+						"200": "Success - Returns list of tables",
+						"401": "Unauthorized - Invalid or missing JWT token",
+						"403": "Forbidden - User not associated with any tenant",
+						"500": "Internal server error",
+					},
+				},
+				{
+					method: "GET",
+					path: "/tables/{tableId}",
+					description:
+						"Get detailed information about a specific table including column structure",
+					authentication: "Required - JWT Bearer Token",
+					pathParams: {
+						tableId: "number - The ID of the table to retrieve",
+					},
+					request: {
+						headers: {
+							Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"Content-Type": "application/json",
+						},
+						url: "/api/public/tables/1",
+					},
+					response: {
+						success: true,
+						data: {
+							id: 1,
+							name: "users",
+							description: "User information table",
+							database: {
+								id: 1,
+								name: "Main Database",
 								tenantId: 1,
 							},
-						},
-					},
-				},
-				"GET /tables/{tableId}": {
-					description:
-						"Get detailed information about a specific public table including its schema and data",
-					authentication: "Required",
-					scopes: ["tables:read"],
-					parameters: {
-						path: {
-							tableId: "Numeric ID of the table",
-						},
-						query: {
-							page: "Page number (default: 1, max: 1000)",
-							pageSize: "Items per page (default: 25, max: 100)",
-						},
-					},
-					response: {
-						example: {
-							data: {
-								id: 1,
-								name: "Products",
-								description: "Product catalog",
-								databaseId: 1,
-								columns: [
-									{
-										id: 1,
-										name: "name",
-										type: "string",
-										required: true,
-										primary: false,
-										order: 0,
-									},
-								],
-								rows: [
-									{
-										id: 1,
-										createdAt: "2025-01-01T00:00:00Z",
-										name: "Sample Product",
-									},
-								],
-								pagination: {
-									page: 1,
-									pageSize: 25,
-									totalRows: 100,
-									totalPages: 4,
-									hasNextPage: true,
-									hasPreviousPage: false,
+							columns: [
+								{
+									id: 1,
+									name: "id",
+									type: "number",
+									required: true,
+									primary: true,
+									order: 0,
+									customOptions: [],
 								},
-							},
+								{
+									id: 2,
+									name: "name",
+									type: "string",
+									required: true,
+									primary: false,
+									order: 1,
+									customOptions: [],
+								},
+								{
+									id: 3,
+									name: "email",
+									type: "string",
+									required: true,
+									primary: false,
+									order: 2,
+									customOptions: [],
+								},
+							],
 						},
+					},
+					statusCodes: {
+						"200": "Success - Returns table details with columns",
+						"400": "Bad Request - Invalid table ID",
+						"401": "Unauthorized - Invalid or missing JWT token",
+						"403": "Forbidden - User not associated with any tenant",
+						"404": "Not Found - Table not found or not accessible",
+						"500": "Internal server error",
 					},
 				},
-				"POST /tables/{tableId}/rows": {
-					description: "Create a new row in a public table",
-					authentication: "Required",
-					scopes: ["rows:write"],
-					parameters: {
-						path: {
-							tableId: "Numeric ID of the table",
+				{
+					method: "GET",
+					path: "/tables/{tableId}/rows",
+					description:
+						"Get paginated rows from a specific table with optional filtering",
+					authentication: "Required - JWT Bearer Token",
+					pathParams: {
+						tableId: "number - The ID of the table",
+					},
+					queryParams: {
+						page: "number (optional) - Page number for pagination (default: 1)",
+						limit:
+							"number (optional) - Number of rows per page (default: 50, max: 100)",
+					},
+					request: {
+						headers: {
+							Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"Content-Type": "application/json",
 						},
-						body: "JSON object with column names as keys and values matching the column types",
+						url: "/api/public/tables/1/rows?page=1&limit=10",
 					},
 					response: {
-						example: {
+						success: true,
+						data: [
+							{
+								id: 1,
+								name: "John Doe",
+								email: "john@example.com",
+								age: 30,
+								createdAt: "2024-01-01T00:00:00.000Z",
+								updatedAt: "2024-01-01T00:00:00.000Z",
+							},
+							{
+								id: 2,
+								name: "Jane Smith",
+								email: "jane@example.com",
+								age: 25,
+								createdAt: "2024-01-01T00:00:00.000Z",
+								updatedAt: "2024-01-01T00:00:00.000Z",
+							},
+						],
+						pagination: {
+							page: 1,
+							limit: 10,
+							total: 2,
+							totalPages: 1,
+						},
+					},
+					statusCodes: {
+						"200": "Success - Returns paginated rows with pagination info",
+						"400": "Bad Request - Invalid table ID or pagination parameters",
+						"401": "Unauthorized - Invalid or missing JWT token",
+						"403": "Forbidden - User not associated with any tenant",
+						"404": "Not Found - Table not found or not accessible",
+						"500": "Internal server error",
+					},
+				},
+				{
+					method: "POST",
+					path: "/tables/{tableId}/rows",
+					description: "Create a new row in a specific table",
+					authentication: "Required - JWT Bearer Token",
+					pathParams: {
+						tableId: "number - The ID of the table",
+					},
+					request: {
+						headers: {
+							Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"Content-Type": "application/json",
+						},
+						url: "/api/public/tables/1/rows",
+						body: {
 							data: {
-								name: "New Product",
-								price: 29.99,
-								category: "Electronics",
+								name: "New User",
+								email: "newuser@example.com",
+								age: 28,
 							},
 						},
 					},
-				},
-				"PATCH /tables/{tableId}/rows/{rowId}": {
-					description: "Update an existing row in a public table",
-					authentication: "Required",
-					scopes: ["rows:write"],
-					parameters: {
-						path: {
-							tableId: "Numeric ID of the table",
-							rowId: "Numeric ID of the row",
+					response: {
+						success: true,
+						data: {
+							id: 3,
+							name: "New User",
+							email: "newuser@example.com",
+							age: 28,
+							createdAt: "2024-01-01T00:00:00.000Z",
+							updatedAt: "2024-01-01T00:00:00.000Z",
 						},
-						body: "JSON object with column names as keys and new values",
+					},
+					statusCodes: {
+						"201": "Created - Row successfully created",
+						"400":
+							"Bad Request - Invalid data format or missing required fields",
+						"401": "Unauthorized - Invalid or missing JWT token",
+						"403": "Forbidden - User not associated with any tenant",
+						"404": "Not Found - Table not found or not accessible",
+						"500": "Internal server error",
+					},
+					notes: [
+						"All required fields must be provided in the data object",
+						"Column names in data object must match exactly with table column names",
+						"Data types are automatically converted to strings for storage",
+						"Row ID is automatically generated and returned",
+					],
+				},
+				{
+					method: "GET",
+					path: "/tables/{tableId}/rows/{rowId}",
+					description: "Get a specific row from a table by its ID",
+					authentication: "Required - JWT Bearer Token",
+					pathParams: {
+						tableId: "number - The ID of the table",
+						rowId: "number - The ID of the specific row",
+					},
+					request: {
+						headers: {
+							Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"Content-Type": "application/json",
+						},
+						url: "/api/public/tables/1/rows/1",
 					},
 					response: {
-						example: {
+						success: true,
+						data: {
+							id: 1,
+							name: "John Doe",
+							email: "john@example.com",
+							age: 30,
+							createdAt: "2024-01-01T00:00:00.000Z",
+							updatedAt: "2024-01-01T00:00:00.000Z",
+						},
+					},
+					statusCodes: {
+						"200": "Success - Returns the specific row",
+						"400": "Bad Request - Invalid table ID or row ID",
+						"401": "Unauthorized - Invalid or missing JWT token",
+						"403": "Forbidden - User not associated with any tenant",
+						"404": "Not Found - Table or row not found",
+						"500": "Internal server error",
+					},
+				},
+				{
+					method: "PUT",
+					path: "/tables/{tableId}/rows/{rowId}",
+					description:
+						"Update an existing row in a table (full update - replaces all data)",
+					authentication: "Required - JWT Bearer Token",
+					pathParams: {
+						tableId: "number - The ID of the table",
+						rowId: "number - The ID of the row to update",
+					},
+					request: {
+						headers: {
+							Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"Content-Type": "application/json",
+						},
+						url: "/api/public/tables/1/rows/1",
+						body: {
 							data: {
-								name: "Updated Product",
-								price: 39.99,
-								category: "Electronics",
+								name: "John Doe Updated",
+								email: "john.updated@example.com",
+								age: 31,
+							},
+						},
+					},
+					response: {
+						success: true,
+						data: {
+							id: 1,
+							name: "John Doe Updated",
+							email: "john.updated@example.com",
+							age: 31,
+							createdAt: "2024-01-01T00:00:00.000Z",
+							updatedAt: "2024-01-01T00:00:00.000Z",
+						},
+					},
+					statusCodes: {
+						"200": "Success - Row successfully updated",
+						"400":
+							"Bad Request - Invalid data format or missing required fields",
+						"401": "Unauthorized - Invalid or missing JWT token",
+						"403": "Forbidden - User not associated with any tenant",
+						"404": "Not Found - Table or row not found",
+						"500": "Internal server error",
+					},
+					notes: [
+						"This is a full update - all existing data will be replaced",
+						"All required fields must be provided",
+						"Row ID and timestamps cannot be modified",
+						"Operation is atomic - either all fields are updated or none",
+					],
+				},
+				{
+					method: "DELETE",
+					path: "/tables/{tableId}/rows/{rowId}",
+					description: "Delete a specific row from a table",
+					authentication: "Required - JWT Bearer Token",
+					pathParams: {
+						tableId: "number - The ID of the table",
+						rowId: "number - The ID of the row to delete",
+					},
+					request: {
+						headers: {
+							Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"Content-Type": "application/json",
+						},
+						url: "/api/public/tables/1/rows/1",
+					},
+					response: {
+						success: true,
+						message: "Row deleted successfully",
+					},
+					statusCodes: {
+						"200": "Success - Row successfully deleted",
+						"400": "Bad Request - Invalid table ID or row ID",
+						"401": "Unauthorized - Invalid or missing JWT token",
+						"403": "Forbidden - User not associated with any tenant",
+						"404": "Not Found - Table or row not found",
+						"500": "Internal server error",
+					},
+					notes: [
+						"Deletion is permanent and cannot be undone",
+						"All associated cell data is automatically deleted",
+						"Operation is atomic - either the row is deleted or not",
+					],
+				},
+			],
+			examples: {
+				authentication: {
+					description: "How to authenticate with JWT token",
+					note: "JWT tokens are automatically generated when users log in to the platform",
+					example: {
+						headers: {
+							Authorization:
+								"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJWSUVXRVIiLCJpYXQiOjE3NTUwNzQ2NzF9.6HQpBi9i8sWFmR7-I6bfLQALUPQyjd_e3dRVEP0v9qc",
+							"Content-Type": "application/json",
+						},
+					},
+				},
+				createRow: {
+					description: "Complete example of creating a new row",
+					request: {
+						method: "POST",
+						url: "http://localhost:3000/api/public/tables/1/rows",
+						headers: {
+							Authorization: "Bearer YOUR_JWT_TOKEN",
+							"Content-Type": "application/json",
+						},
+						body: {
+							data: {
+								name: "Alice Johnson",
+								email: "alice@example.com",
+								age: 29,
+								department: "Engineering",
+							},
+						},
+					},
+					response: {
+						status: 201,
+						body: {
+							success: true,
+							data: {
+								id: 4,
+								name: "Alice Johnson",
+								email: "alice@example.com",
+								age: 29,
+								department: "Engineering",
+								createdAt: "2024-01-01T00:00:00.000Z",
+								updatedAt: "2024-01-01T00:00:00.000Z",
 							},
 						},
 					},
 				},
-				"DELETE /tables/{tableId}/rows/{rowId}": {
-					description: "Delete a row from a public table",
-					authentication: "Required",
-					scopes: ["rows:write"],
-					parameters: {
-						path: {
-							tableId: "Numeric ID of the table",
-							rowId: "Numeric ID of the row",
+				updateRow: {
+					description: "Complete example of updating an existing row",
+					request: {
+						method: "PUT",
+						url: "http://localhost:3000/api/public/tables/1/rows/4",
+						headers: {
+							Authorization: "Bearer YOUR_JWT_TOKEN",
+							"Content-Type": "application/json",
+						},
+						body: {
+							data: {
+								name: "Alice Johnson-Smith",
+								email: "alice.smith@example.com",
+								age: 30,
+								department: "Senior Engineering",
+							},
 						},
 					},
 					response: {
-						example: {
-							status: 200,
+						status: 200,
+						body: {
+							success: true,
+							data: {
+								id: 4,
+								name: "Alice Johnson-Smith",
+								email: "alice.smith@example.com",
+								age: 30,
+								department: "Senior Engineering",
+								createdAt: "2024-01-01T00:00:00.000Z",
+								updatedAt: "2024-01-01T00:00:00.000Z",
+							},
 						},
 					},
 				},
-			},
-			dataTypes: {
-				string: "Text data, max 10KB",
-				text: "Long text data, max 10KB",
-				number: "Numeric data (integers and decimals)",
-				boolean: "True/false values",
-				date: "ISO 8601 date strings",
-				reference: "Numeric ID referencing another table row",
-				customArray: "Predefined list of allowed values",
-			},
-			rateLimiting: {
-				description: "API requests are rate-limited to ensure fair usage",
-				limits: {
-					"tables:read": "100 requests per minute per token",
-					"rows:write": "100 requests per minute per token",
-					general: "1000 requests per minute per IP",
-				},
-				headers: {
-					"X-RateLimit-Limit": "Maximum requests per window",
-					"X-RateLimit-Remaining": "Remaining requests in current window",
-					"X-RateLimit-Reset": "When the rate limit resets",
+				pagination: {
+					description: "Example of paginated row retrieval",
+					request: {
+						method: "GET",
+						url: "http://localhost:3000/api/public/tables/1/rows?page=2&limit=5",
+						headers: {
+							Authorization: "Bearer YOUR_JWT_TOKEN",
+							"Content-Type": "application/json",
+						},
+					},
+					response: {
+						status: 200,
+						body: {
+							success: true,
+							data: [
+								// Rows 6-10 (assuming 5 rows per page)
+							],
+							pagination: {
+								page: 2,
+								limit: 5,
+								total: 25,
+								totalPages: 5,
+							},
+						},
+					},
 				},
 			},
 			errorHandling: {
-				description: "All errors follow a consistent format",
-				format: {
-					error: "Human-readable error message",
-					timestamp: "ISO 8601 timestamp of when the error occurred",
-					details: "Additional error details when available",
-				},
-				statusCodes: {
-					400: "Bad Request - Invalid parameters or data",
-					401: "Unauthorized - Missing or invalid authentication",
-					403: "Forbidden - Insufficient permissions",
-					404: "Not Found - Resource doesn't exist",
-					413: "Payload Too Large - Request exceeds size limits",
-					429: "Too Many Requests - Rate limit exceeded",
-					500: "Internal Server Error - Server-side error",
-				},
+				commonErrors: [
+					{
+						code: 400,
+						message: "Bad Request",
+						causes: [
+							"Invalid table ID or row ID format",
+							"Missing required fields in request body",
+							"Invalid pagination parameters",
+							"Malformed JSON in request body",
+						],
+						example: {
+							error: "Missing required field: email",
+						},
+					},
+					{
+						code: 401,
+						message: "Unauthorized",
+						causes: [
+							"Missing Authorization header",
+							"Invalid JWT token format",
+							"Expired JWT token",
+							"Invalid JWT signature",
+						],
+						example: {
+							error: "Invalid or expired JWT token",
+						},
+					},
+					{
+						code: 403,
+						message: "Forbidden",
+						causes: [
+							"User not associated with any tenant",
+							"Insufficient permissions for the operation",
+						],
+						example: {
+							error: "User not associated with any tenant",
+						},
+					},
+					{
+						code: 404,
+						message: "Not Found",
+						causes: [
+							"Table not found or not accessible",
+							"Row not found in the specified table",
+							"Database not accessible to user's tenant",
+						],
+						example: {
+							error: "Table not found",
+						},
+					},
+					{
+						code: 500,
+						message: "Internal Server Error",
+						causes: [
+							"Database connection issues",
+							"Unexpected server errors",
+							"Data validation failures",
+						],
+						example: {
+							error: "Internal server error",
+						},
+					},
+				],
 			},
 			bestPractices: [
-				"Always include proper error handling in your applications",
-				"Use pagination for large datasets to improve performance",
-				"Cache responses when appropriate to reduce API calls",
+				"Always include the Authorization header with your JWT token",
+				"Use appropriate HTTP status codes for error handling",
+				"Implement proper pagination for large datasets",
 				"Validate data before sending to the API",
-				"Monitor your API usage and stay within rate limits",
-				"Use HTTPS for all API requests in production",
-				"Store API tokens securely and never expose them in client-side code",
+				"Handle rate limiting gracefully",
+				"Use HTTPS in production environments",
+				"Store JWT tokens securely and don't expose them in client-side code",
+				"Implement proper error handling for all API responses",
 			],
-			support: {
-				documentation: `${request.nextUrl.origin}/docs/api`,
-				help: `${request.nextUrl.origin}/docs/help`,
-				contact: `${request.nextUrl.origin}/#contact`,
+			rateLimiting: {
+				description: "API requests are rate-limited to prevent abuse",
+				limits: {
+					requestsPerMinute: 100,
+					windowSize: "60 seconds",
+					blockDuration: "5 minutes on limit exceeded",
+				},
+				headers: {
+					"X-RateLimit-Limit": "100",
+					"X-RateLimit-Remaining": "95",
+					"X-RateLimit-Reset": "1640995200",
+				},
 			},
+			security: {
+				authentication: "JWT Bearer Token required for all endpoints",
+				authorization: "Users can only access data from their own tenant",
+				dataIsolation:
+					"Multi-tenant architecture ensures complete data separation",
+				https: "Always use HTTPS in production environments",
+			},
+			notes: [
+				"All tables in your tenant are accessible through this API by default",
+				"JWT tokens automatically contain user ID and role information",
+				"Tenant ID is automatically extracted from the authenticated user",
+				"Data is returned in a flattened format where column names become object keys",
+				"Required fields must be provided when creating or updating rows",
+				"Row operations are atomic and will rollback on errors",
+				"Pagination is available for all row listing endpoints",
+				"All timestamps are returned in ISO 8601 format",
+			],
 		};
 
-		return createApiSuccessResponse(apiDocs, 200, {
-			cacheControl: "public, max-age=3600", // 1 hour cache
-			requestId: request.headers.get("X-Request-ID"),
+		return NextResponse.json({
+			success: true,
+			data: documentation,
 		});
 	} catch (error) {
-		console.error("Error generating API documentation:", error);
-
-		logApiSecurityEvent("api_error", {
-			error: error instanceof Error ? error.message : "Unknown error",
-			path: request.nextUrl.pathname,
-		});
-
-		return createApiErrorResponse("Internal server error", 500);
+		console.error("Error fetching API documentation:", error);
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 },
+		);
 	}
 }

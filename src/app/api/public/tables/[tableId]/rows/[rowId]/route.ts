@@ -1,259 +1,311 @@
 /** @format */
 
-import { getPublicUserFromRequest, verifyPublicToken } from "@/lib/auth";
-import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import z from "zod";
+import prisma from "@/lib/prisma";
+import { validateApiToken } from "@/lib/api-security";
 
-export async function PATCH(
-	req: NextRequest,
+export async function GET(
+	request: NextRequest,
 	{ params }: { params: Promise<{ tableId: string; rowId: string }> },
 ) {
-	const isValid = await verifyPublicToken(req);
-	if (!isValid) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
-	const userResult = await getPublicUserFromRequest(req);
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-	const { userId, role } = userResult;
-
 	try {
-		// Verificăm permisiunile utilizatorului
-		const token = await prisma.apiToken.findFirst({
-			where: { userId: userId },
-			select: { scopes: true },
-		});
-
-		if (!token || !token.scopes.includes("rows:write")) {
+		const authHeader = request.headers.get("authorization");
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
 			return NextResponse.json(
-				{ error: "Forbidden: Insufficient permissions" },
-				{ status: 403 },
+				{ error: "Missing or invalid authorization header" },
+				{ status: 401 },
 			);
 		}
-		const { tableId, rowId } = await params;
-		const tableIdNum = parseInt(tableId);
-		const rowIdNum = parseInt(rowId);
-		const body = await req.json();
 
-		if (isNaN(tableIdNum) || isNaN(rowIdNum)) {
+		const token = authHeader.substring(7);
+		const tokenData = await validateApiToken(token);
+
+		if (!tokenData.isValid) {
 			return NextResponse.json(
-				{ error: "Invalid tableId or rowId" },
+				{ error: "Invalid or expired API token" },
+				{ status: 401 },
+			);
+		}
+
+		const tableId = parseInt((await params).tableId);
+		const rowId = parseInt((await params).rowId);
+
+		if (isNaN(tableId) || isNaN(rowId)) {
+			return NextResponse.json(
+				{ error: "Invalid table ID or row ID" },
 				{ status: 400 },
 			);
 		}
 
-		// Fetch table and columns
-		const table = await prisma.table.findUnique({
+		// Get the specific row (all tables are public by default)
+		const row = await prisma.row.findFirst({
 			where: {
-				id: tableIdNum,
-				isPublic: true, // Doar tabelele publice
+				id: rowId,
+				tableId: tableId,
 			},
-			include: { columns: true },
-		});
-
-		if (!table) {
-			return NextResponse.json(
-				{ error: "Table not found or not public" },
-				{ status: 404 },
-			);
-		}
-
-		// Check if row exists
-		const existingRow = await prisma.row.findUnique({
-			where: { id: rowIdNum },
-			include: { cells: true },
-		});
-
-		if (!existingRow || existingRow.tableId !== tableIdNum) {
-			return NextResponse.json(
-				{ error: "Row not found in the specified table" },
-				{ status: 404 },
-			);
-		}
-
-		const { columns } = table;
-
-		// Validate incoming data keys and values
-		for (const [key, value] of Object.entries(body)) {
-			const col = columns.find((c: { name: string; type: string }) => c.name === key);
-			if (!col) {
-				return NextResponse.json(
-					{ error: `Unknown column: ${key}` },
-					{ status: 400 },
-				);
-			}
-
-			const baseType = col.type;
-			try {
-				if (baseType === "string" || baseType === "text") {
-					z.string().min(1).parse(value);
-				} else if (baseType === "number") {
-					z.number().parse(value);
-				} else if (baseType === "boolean") {
-					z.boolean().parse(value);
-				} else if (baseType === "date") {
-					z.string()
-						.refine((v) => !isNaN(Date.parse(v)), {
-							message: "Invalid date format",
-						})
-						.parse(value);
-				} else if (baseType === "reference") {
-					z.number().int().parse(value);
-				} else {
-					throw new Error(`Unsupported type: ${baseType}`);
-				}
-			} catch (err: unknown) {
-				const errorMessage = err instanceof Error ? err.message : 'Validation failed';
-				return NextResponse.json(
-					{ error: `Validation failed for "${key}": ${errorMessage}` },
-					{ status: 400 },
-				);
-			}
-		}
-
-		// Actualizare celule pentru valorile primite
-		const updatePromises = Object.entries(body).map(
-			async ([columnName, value]) => {
-				const column = columns.find((c: { name: string; id: number }) => c.name === columnName)!;
-
-				// Verificăm dacă celula există deja în rând
-				const existingCell = await prisma.cell.findFirst({
-					where: { rowId: rowIdNum, columnId: column.id },
-				});
-
-				if (existingCell) {
-					// Actualizare celulă existentă
-					return prisma.cell.update({
-						where: { id: existingCell.id },
-						data: { value: value as unknown },
-					});
-				} else {
-					// Creare celulă nouă (de regulă nu ar trebui să lipsească)
-					return prisma.cell.create({
-						data: {
-							rowId: rowIdNum,
-							columnId: column.id,
-							value: value as unknown,
-						},
-					});
-				}
-			},
-		);
-
-		await Promise.all(updatePromises);
-
-		// Returnăm rândul actualizat, inclusiv celulele și coloanele
-		const updatedRow = await prisma.row.findUnique({
-			where: { id: rowIdNum },
-			include: {
+			select: {
+				id: true,
 				cells: {
-					include: { column: true },
+					select: {
+						id: true,
+						value: true,
+						column: {
+							select: {
+								id: true,
+								name: true,
+								type: true,
+							},
+						},
+					},
 				},
+				createdAt: true,
+				updatedAt: true,
 			},
 		});
 
-		if (!updatedRow) {
-			return NextResponse.json(
-				{ error: "Failed to retrieve updated row" },
-				{ status: 500 },
-			);
+		if (!row) {
+			return NextResponse.json({ error: "Row not found" }, { status: 404 });
 		}
 
-		// Format JSON frumos pentru răspuns
-		const prettyRow: Record<string, unknown> = {};
-		for (const cell of updatedRow.cells) {
-			prettyRow[cell.column.name] = cell.value;
-		}
+		// Transform the response
+		const rowData: any = {
+			id: row.id,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+		};
 
-		return NextResponse.json(prettyRow, { status: 200 });
-	} catch (err) {
-		console.error("Error updating row:", err);
+		row.cells.forEach((cell: any) => {
+			rowData[cell.column.name] = cell.value;
+		});
+
+		return NextResponse.json({
+			success: true,
+			data: rowData,
+		});
+	} catch (error) {
+		console.error("Error fetching row:", error);
 		return NextResponse.json(
-			{ error: "Internal Server Error" },
+			{ error: "Internal server error" },
 			{ status: 500 },
 		);
 	}
 }
-export async function DELETE(
-	req: NextRequest,
+
+export async function PUT(
+	request: NextRequest,
 	{ params }: { params: Promise<{ tableId: string; rowId: string }> },
 ) {
-	const isValid = await verifyPublicToken(req);
-	if (!isValid) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
-	const userResult = await getPublicUserFromRequest(req);
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-	const { userId } = userResult;
-
 	try {
-		// Verificăm permisiunile utilizatorului
-		const token = await prisma.apiToken.findFirst({
-			where: { userId: userId },
-			select: { scopes: true },
-		});
-
-		if (!token || !token.scopes.includes("rows:write")) {
+		const authHeader = request.headers.get("authorization");
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
 			return NextResponse.json(
-				{ error: "Forbidden: Insufficient permissions" },
-				{ status: 403 },
+				{ error: "Missing or invalid authorization header" },
+				{ status: 401 },
 			);
 		}
-		const { tableId, rowId } = await params;
-		const tableIdNum = parseInt(tableId);
-		const rowIdNum = parseInt(rowId);
 
-		if (isNaN(tableIdNum) || isNaN(rowIdNum)) {
+		const token = authHeader.substring(7);
+		const tokenData = await validateApiToken(token);
+
+		if (!tokenData.isValid) {
 			return NextResponse.json(
-				{ error: "Invalid tableId or rowId" },
+				{ error: "Invalid or expired API token" },
+				{ status: 401 },
+			);
+		}
+
+		const tableId = parseInt((await params).tableId);
+		const rowId = parseInt((await params).rowId);
+
+		if (isNaN(tableId) || isNaN(rowId)) {
+			return NextResponse.json(
+				{ error: "Invalid table ID or row ID" },
 				{ status: 400 },
 			);
 		}
 
-		// Fetch table and columns
+		const body = await request.json();
+		const { data } = body;
+
+		if (!data || typeof data !== "object") {
+			return NextResponse.json(
+				{ error: "Invalid data format" },
+				{ status: 400 },
+			);
+		}
+
+		// Get table columns to validate data
 		const table = await prisma.table.findUnique({
-			where: {
-				id: tableIdNum,
-				isPublic: true, // Doar tabelele publice
+			where: { id: tableId },
+			select: {
+				columns: {
+					select: {
+						id: true,
+						name: true,
+						type: true,
+						isRequired: true,
+					},
+				},
 			},
-			include: { columns: true },
 		});
 
 		if (!table) {
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		// Check if row exists
+		const existingRow = await prisma.row.findFirst({
+			where: {
+				id: rowId,
+				tableId: tableId,
+			},
+		});
+
+		if (!existingRow) {
+			return NextResponse.json({ error: "Row not found" }, { status: 404 });
+		}
+
+		// Validate required fields
+		const requiredColumns = table.columns.filter((col: any) => col.isRequired);
+		for (const col of requiredColumns) {
+			if (!(col.name in data)) {
+				return NextResponse.json(
+					{ error: `Missing required field: ${col.name}` },
+					{ status: 400 },
+				);
+			}
+		}
+
+		// Update the row by updating its cells
+		await prisma.$transaction(async (tx: any) => {
+			// Delete existing cells
+			await tx.cell.deleteMany({
+				where: { rowId },
+			});
+
+			// Create new cells
+			await tx.cell.createMany({
+				data: Object.entries(data).map(([columnName, value]) => {
+					const column = table.columns.find(
+						(col: any) => col.name === columnName,
+					);
+					if (!column) {
+						throw new Error(`Unknown column: ${columnName}`);
+					}
+					return {
+						rowId,
+						columnId: column.id,
+						value: value?.toString() || "",
+					};
+				}),
+			});
+		});
+
+		// Get the updated row
+		const updatedRow = await prisma.row.findFirst({
+			where: { id: rowId },
+			select: {
+				id: true,
+				cells: {
+					select: {
+						id: true,
+						value: true,
+						column: {
+							select: {
+								id: true,
+								name: true,
+								type: true,
+							},
+						},
+					},
+				},
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
+
+		// Transform the response
+		const rowData: any = {
+			id: updatedRow!.id,
+			createdAt: updatedRow!.createdAt,
+			updatedAt: updatedRow!.updatedAt,
+		};
+
+		updatedRow!.cells.forEach((cell: any) => {
+			rowData[cell.column.name] = cell.value;
+		});
+
+		return NextResponse.json({
+			success: true,
+			data: rowData,
+		});
+	} catch (error) {
+		console.error("Error updating row:", error);
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 },
+		);
+	}
+}
+
+export async function DELETE(
+	request: NextRequest,
+	{ params }: { params: Promise<{ tableId: string; rowId: string }> },
+) {
+	try {
+		const authHeader = request.headers.get("authorization");
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
 			return NextResponse.json(
-				{ error: "Table not found or not public" },
-				{ status: 404 },
+				{ error: "Missing or invalid authorization header" },
+				{ status: 401 },
+			);
+		}
+
+		const token = authHeader.substring(7);
+		const tokenData = await validateApiToken(token);
+
+		if (!tokenData.isValid) {
+			return NextResponse.json(
+				{ error: "Invalid or expired API token" },
+				{ status: 401 },
+			);
+		}
+
+		const tableId = parseInt((await params).tableId);
+		const rowId = parseInt((await params).rowId);
+
+		if (isNaN(tableId) || isNaN(rowId)) {
+			return NextResponse.json(
+				{ error: "Invalid table ID or row ID" },
+				{ status: 400 },
 			);
 		}
 
 		// Check if row exists
-		const existingRow = await prisma.row.findUnique({
-			where: { id: rowIdNum },
+		const existingRow = await prisma.row.findFirst({
+			where: {
+				id: rowId,
+				tableId: tableId,
+			},
 		});
 
-		if (!existingRow || existingRow.tableId !== tableIdNum) {
-			return NextResponse.json(
-				{ error: "Row not found in the specified table" },
-				{ status: 404 },
-			);
+		if (!existingRow) {
+			return NextResponse.json({ error: "Row not found" }, { status: 404 });
 		}
 
-		// Delete the row and its associated cells
+		// Delete the row (cells will be deleted automatically due to cascade)
 		await prisma.row.delete({
-			where: { id: rowIdNum },
+			where: { id: rowId },
 		});
 
-		return NextResponse.json({ status: 200 });
-	} catch (err) {
-		console.error("Error updating row:", err);
+		return NextResponse.json({
+			success: true,
+			message: "Row deleted successfully",
+		});
+	} catch (error) {
+		console.error("Error deleting row:", error);
 		return NextResponse.json(
-			{ error: "Internal Server Error" },
+			{ error: "Internal server error" },
 			{ status: 500 },
 		);
 	}

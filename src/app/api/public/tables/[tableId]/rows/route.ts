@@ -1,68 +1,370 @@
 /** @format */
 
-import { getPublicUserFromRequest, verifyPublicToken } from "@/lib/auth";
-import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import prisma from "@/lib/prisma";
+import { validateJwtToken } from "@/lib/api-security";
 
-export async function POST(
-	req: NextRequest,
+export async function GET(
+	request: NextRequest,
 	{ params }: { params: Promise<{ tableId: string }> },
 ) {
-	const isValid = await verifyPublicToken(req);
-	if (!isValid) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
-	const userResult = await getPublicUserFromRequest(req);
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-	const { userId, role } = userResult;
-
 	try {
-		// Verificăm permisiunile utilizatorului
-		const token = await prisma.apiToken.findFirst({
-			where: { userId: userId },
-			select: { scopes: true },
+		const authHeader = request.headers.get("authorization");
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
+			return NextResponse.json(
+				{ error: "Missing or invalid authorization header" },
+				{ status: 401 },
+			);
+		}
+
+		const token = authHeader.substring(7);
+		const tokenData = await validateJwtToken(token);
+
+		if (!tokenData.isValid) {
+			return NextResponse.json(
+				{ error: "Invalid or expired JWT token" },
+				{ status: 401 },
+			);
+		}
+
+		if (!tokenData.userId) {
+			return NextResponse.json(
+				{ error: "Invalid token data" },
+				{ status: 401 },
+			);
+		}
+
+		const tableId = parseInt((await params).tableId);
+		if (isNaN(tableId)) {
+			return NextResponse.json({ error: "Invalid table ID" }, { status: 400 });
+		}
+
+		// Get user to extract tenant ID for security
+		const user = await prisma.user.findUnique({
+			where: { id: tokenData.userId },
+			select: { tenantId: true },
 		});
 
-		if (!token || !token.scopes.includes("rows:write")) {
+		if (!user || !user.tenantId) {
 			return NextResponse.json(
-				{ error: "Forbidden: Insufficient permissions" },
+				{ error: "User not associated with any tenant" },
 				{ status: 403 },
 			);
 		}
 
-		const { tableId: id } = await params;
-		const tableId = parseInt(id);
-		const body = await req.json();
-
-		if (isNaN(tableId)) {
-			return NextResponse.json({ error: "Invalid tableId" }, { status: 400 });
-		}
-
-		// Fetch table and columns
-		const table = await prisma.table.findUnique({
+		// Verify table belongs to user's tenant
+		const table = await prisma.table.findFirst({
 			where: {
 				id: tableId,
-				isPublic: true, // Doar tabelele publice
+				database: {
+					tenantId: user.tenantId,
+				},
 			},
-			include: { columns: true },
+			select: { id: true },
 		});
 
 		if (!table) {
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		const { searchParams } = new URL(request.url);
+		const page = parseInt(searchParams.get("page") || "1");
+		const limit = parseInt(searchParams.get("limit") || "50");
+		const offset = (page - 1) * limit;
+		const filtersParam = searchParams.get("filters");
+		const sortBy = searchParams.get("sortBy");
+		const sortOrder = searchParams.get("sortOrder") || "asc";
+
+		// Parse filters if provided
+		let filters: Record<string, any> = {};
+		if (filtersParam) {
+			try {
+				filters = JSON.parse(filtersParam);
+			} catch (error) {
+				return NextResponse.json(
+					{ error: "Invalid filters format. Must be valid JSON" },
+					{ status: 400 },
+				);
+			}
+		}
+
+		// Build where clause for filtering
+		let whereClause: any = { tableId };
+
+		// Apply filters if any
+		if (Object.keys(filters).length > 0) {
+			// Get table columns to validate filter fields
+			const tableColumns = await prisma.column.findMany({
+				where: { tableId },
+				select: { id: true, name: true, type: true },
+			});
+
+			const columnNames = tableColumns.map((col: any) => col.name);
+			const validFilters: Record<string, any> = {};
+
+			// Process each filter
+			for (const [columnName, filterConfig] of Object.entries(filters)) {
+				if (!columnNames.includes(columnName)) {
+					continue; // Skip invalid column names
+				}
+
+				const config = filterConfig as any;
+				const { operator, value } = config;
+
+				if (!operator || value === undefined) {
+					continue;
+				}
+
+				// Build filter condition based on operator
+				switch (operator) {
+					case "equals":
+						validFilters[columnName] = { equals: value };
+						break;
+					case "not_equals":
+						validFilters[columnName] = { not: value };
+						break;
+					case "contains":
+						validFilters[columnName] = { contains: value, mode: "insensitive" };
+						break;
+					case "not_contains":
+						validFilters[columnName] = {
+							not: { contains: value, mode: "insensitive" },
+						};
+						break;
+					case "starts_with":
+						validFilters[columnName] = {
+							startsWith: value,
+							mode: "insensitive",
+						};
+						break;
+					case "ends_with":
+						validFilters[columnName] = { endsWith: value, mode: "insensitive" };
+						break;
+					case "gt":
+						validFilters[columnName] = { gt: value };
+						break;
+					case "gte":
+						validFilters[columnName] = { gte: value };
+						break;
+					case "lt":
+						validFilters[columnName] = { lt: value };
+						break;
+					case "lte":
+						validFilters[columnName] = { lte: value };
+						break;
+					case "between":
+						if (Array.isArray(value) && value.length === 2) {
+							validFilters[columnName] = { gte: value[0], lte: value[1] };
+						}
+						break;
+					case "in":
+						if (Array.isArray(value)) {
+							validFilters[columnName] = { in: value };
+						}
+						break;
+					case "not_in":
+						if (Array.isArray(value)) {
+							validFilters[columnName] = { notIn: value };
+						}
+						break;
+					case "is_null":
+						if (value === true) {
+							validFilters[columnName] = null;
+						}
+						break;
+					case "is_not_null":
+						if (value === true) {
+							validFilters[columnName] = { not: null };
+						}
+						break;
+				}
+			}
+
+			// Apply filters to cells
+			if (Object.keys(validFilters).length > 0) {
+				whereClause.cells = {
+					some: {
+						column: {
+							name: { in: Object.keys(validFilters) },
+						},
+						value: validFilters,
+					},
+				};
+			}
+		}
+
+		// Build order by clause
+		let orderBy: any = { createdAt: "desc" };
+		if (sortBy) {
+			// Validate sort column exists
+			const tableColumns = await prisma.column.findMany({
+				where: { tableId },
+				select: { name: true },
+			});
+
+			const columnNames = tableColumns.map((col: any) => col.name);
+			if (columnNames.includes(sortBy)) {
+				orderBy = { [sortBy]: sortOrder === "desc" ? "desc" : "asc" };
+			}
+		}
+
+		// Get rows from the table with filtering and pagination
+		const [rows, totalCount] = await Promise.all([
+			prisma.row.findMany({
+				where: whereClause,
+				select: {
+					id: true,
+					cells: {
+						select: {
+							id: true,
+							value: true,
+							column: {
+								select: {
+									id: true,
+									name: true,
+									type: true,
+								},
+							},
+						},
+					},
+					createdAt: true,
+					updatedAt: true,
+				},
+				orderBy: orderBy,
+				skip: offset,
+				take: limit,
+			}),
+			prisma.row.count({
+				where: whereClause,
+			}),
+		]);
+
+		// Transform rows to a more API-friendly format
+		const transformedRows = rows.map((row: any) => {
+			const rowData: any = {
+				id: row.id,
+				createdAt: row.createdAt,
+				updatedAt: row.updatedAt,
+			};
+
+			// Convert cells to key-value pairs
+			row.cells.forEach((cell: any) => {
+				rowData[cell.column.name] = cell.value;
+			});
+
+			return rowData;
+		});
+
+		return NextResponse.json({
+			success: true,
+			data: transformedRows,
+			pagination: {
+				page,
+				limit,
+				total: totalCount,
+				totalPages: Math.ceil(totalCount / limit),
+			},
+			filters: filtersParam ? JSON.parse(filtersParam) : null,
+			sorting: {
+				sortBy: sortBy || "createdAt",
+				sortOrder: sortOrder,
+			},
+		});
+	} catch (error) {
+		console.error("Error fetching table rows:", error);
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 },
+		);
+	}
+}
+
+export async function POST(
+	request: NextRequest,
+	{ params }: { params: Promise<{ tableId: string }> },
+) {
+	try {
+		const authHeader = request.headers.get("authorization");
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
 			return NextResponse.json(
-				{ error: "Table not found or not public" },
-				{ status: 404 },
+				{ error: "Missing or invalid authorization header" },
+				{ status: 401 },
 			);
 		}
 
-		const { columns } = table;
+		const token = authHeader.substring(7);
+		const tokenData = await validateJwtToken(token);
 
-		// Validare coloane lipsă (dacă sunt required)
-		for (const col of columns) {
-			if (col.required && !(col.name in body)) {
+		if (!tokenData.isValid) {
+			return NextResponse.json(
+				{ error: "Invalid or expired JWT token" },
+				{ status: 401 },
+			);
+		}
+
+		if (!tokenData.userId) {
+			return NextResponse.json(
+				{ error: "Invalid token data" },
+				{ status: 401 },
+			);
+		}
+
+		const tableId = parseInt((await params).tableId);
+		if (isNaN(tableId)) {
+			return NextResponse.json({ error: "Invalid table ID" }, { status: 400 });
+		}
+
+		// Get user to extract tenant ID for security
+		const user = await prisma.user.findUnique({
+			where: { id: tokenData.userId },
+			select: { tenantId: true },
+		});
+
+		if (!user || !user.tenantId) {
+			return NextResponse.json(
+				{ error: "User not associated with any tenant" },
+				{ status: 403 },
+			);
+		}
+
+		const body = await request.json();
+		const { data } = body;
+
+		if (!data || typeof data !== "object") {
+			return NextResponse.json(
+				{ error: "Invalid data format" },
+				{ status: 400 },
+			);
+		}
+
+		// Get table columns to validate data
+		const table = await prisma.table.findUnique({
+			where: { id: tableId },
+			select: {
+				columns: {
+					select: {
+						id: true,
+						name: true,
+						type: true,
+						required: true,
+						user: true,
+					},
+				},
+			},
+		});
+
+		if (!table) {
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		if (table.user !== user.tenantId) {
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		// Validate required fields
+		const requiredColumns = table.columns.filter((col: any) => col.isRequired);
+		for (const col of requiredColumns) {
+			if (!(col.name in data)) {
 				return NextResponse.json(
 					{ error: `Missing required field: ${col.name}` },
 					{ status: 400 },
@@ -70,89 +372,65 @@ export async function POST(
 			}
 		}
 
-		// Validare tipuri și valori
-		for (const [key, value] of Object.entries(body)) {
-			const col = columns.find((c: { name: string; type: string; customOptions?: string[] }) => c.name === key);
-			if (!col) {
-				return NextResponse.json(
-					{ error: `Unknown column: ${key}` },
-					{ status: 400 },
-				);
-			}
-
-			const baseType = col.type;
-			try {
-				// Validare avansată în funcție de tip
-				if (baseType === "string" || baseType === "text") {
-					z.string().min(1).parse(value);
-				} else if (baseType === "number") {
-					z.number().parse(value);
-				} else if (baseType === "boolean") {
-					z.boolean().parse(value);
-				} else if (baseType === "date") {
-					z.string()
-						.refine((v) => !isNaN(Date.parse(v)), {
-							message: "Invalid date format",
-						})
-						.parse(value);
-				} else if (baseType === "reference") {
-					z.number().int().parse(value);
-				} else if (baseType === "customArray") {
-					// Validare pentru customArray - valoarea trebuie să fie una din opțiunile definite
-					if (col.customOptions && col.customOptions.length > 0) {
-						// Ensure value is a string before checking
-						if (typeof value !== "string") {
-							throw new Error("Value must be a string for customArray type");
-						}
-						if (!col.customOptions.includes(value)) {
-							throw new Error(
-								`Value must be one of: ${col.customOptions.join(", ")}`,
-							);
-						}
-					} else {
-						throw new Error("No custom options defined for this column");
-					}
-				} else {
-					throw new Error(`Unsupported type: ${baseType}`);
-				}
-			} catch (err: unknown) {
-				const errorMessage = err instanceof Error ? err.message : 'Validation failed';
-				return NextResponse.json(
-					{ error: `Validation failed for "${key}": ${errorMessage}` },
-					{ status: 400 },
-				);
-			}
-		}
-
-		// Creăm row și cells
-		const newRow = await prisma.row.create({
+		// Create the row
+		const row = await prisma.row.create({
 			data: {
-				tableId: table.id,
+				tableId,
 				cells: {
-					create: columns.map((col: { id: number; name: string }) => ({
-						columnId: col.id,
-						value: body[col.name] ?? null,
-					})),
+					create: Object.entries(data).map(([columnName, value]) => {
+						const column = table.columns.find(
+							(col: any) => col.name === columnName,
+						);
+						if (!column) {
+							throw new Error(`Unknown column: ${columnName}`);
+						}
+						return {
+							columnId: column.id,
+							value: value?.toString() || "",
+						};
+					}),
 				},
 			},
-			include: {
+			select: {
+				id: true,
 				cells: {
-					include: { column: true },
+					select: {
+						id: true,
+						value: true,
+						column: {
+							select: {
+								id: true,
+								name: true,
+								type: true,
+							},
+						},
+					},
 				},
 			},
 		});
 
-		// Răspuns formatat frumos
-		const prettyRow: Record<string, unknown> = {};
-		for (const cell of newRow.cells) {
-			prettyRow[cell.column.name] = cell.value;
-		}
+		// Transform the response
+		const rowData: any = {
+			id: row.id,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+		};
 
-		return NextResponse.json(prettyRow, { status: 201 });
-	} catch (err) {
-		console.error("Error creating row:", err);
+		row.cells.forEach((cell: any) => {
+			rowData[cell.column.name] = cell.value;
+		});
+
 		return NextResponse.json(
-			{ error: "Internal Server Error" },
+			{
+				success: true,
+				data: rowData,
+			},
+			{ status: 201 },
+		);
+	} catch (error) {
+		console.error("Error creating row:", error);
+		return NextResponse.json(
+			{ error: "Internal server error" },
 			{ status: 500 },
 		);
 	}
