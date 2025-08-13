@@ -193,18 +193,22 @@ export async function GET(
 			}
 		}
 
-		// Build order by clause
+		// Build order by clause - default to createdAt
 		let orderBy: any = { createdAt: "desc" };
+		let needsPostSorting = false;
+		let sortColumnId: string | null = null;
+
 		if (sortBy) {
-			// Validate sort column exists
-			const tableColumns = await prisma.column.findMany({
-				where: { tableId },
-				select: { name: true },
+			// Validate sort column exists and get its ID
+			const sortColumn = await prisma.column.findFirst({
+				where: { tableId, name: sortBy },
+				select: { id: true, name: true },
 			});
 
-			const columnNames = tableColumns.map((col: any) => col.name);
-			if (columnNames.includes(sortBy)) {
-				orderBy = { [sortBy]: sortOrder === "desc" ? "desc" : "asc" };
+			if (sortColumn) {
+				sortColumnId = sortColumn.id;
+				// For dynamic columns, we'll need to sort after fetching
+				needsPostSorting = true;
 			}
 		}
 
@@ -214,6 +218,8 @@ export async function GET(
 				where: whereClause,
 				select: {
 					id: true,
+					createdAt: true,
+					updatedAt: true,
 					cells: {
 						select: {
 							id: true,
@@ -227,12 +233,10 @@ export async function GET(
 							},
 						},
 					},
-					createdAt: true,
-					updatedAt: true,
 				},
 				orderBy: orderBy,
-				skip: offset,
-				take: limit,
+				// Remove skip/take for now to sort all rows properly
+				// We'll apply pagination after sorting
 			}),
 			prisma.row.count({
 				where: whereClause,
@@ -240,7 +244,7 @@ export async function GET(
 		]);
 
 		// Transform rows to a more API-friendly format
-		const transformedRows = rows.map((row: any) => {
+		let transformedRows = rows.map((row: any) => {
 			const rowData: any = {
 				id: row.id,
 				createdAt: row.createdAt,
@@ -254,6 +258,31 @@ export async function GET(
 
 			return rowData;
 		});
+
+		// Apply sorting if needed
+		if (needsPostSorting && sortColumnId && sortBy) {
+			transformedRows.sort((a: any, b: any) => {
+				const aValue = a[sortBy] || "";
+				const bValue = b[sortBy] || "";
+
+				// Handle numeric values
+				const aNum = parseFloat(aValue);
+				const bNum = parseFloat(bValue);
+
+				if (!isNaN(aNum) && !isNaN(bNum)) {
+					return sortOrder === "desc" ? bNum - aNum : aNum - bNum;
+				}
+
+				// Handle string values
+				const comparison = aValue.toString().localeCompare(bValue.toString());
+				return sortOrder === "desc" ? -comparison : comparison;
+			});
+		}
+
+		// Apply pagination after sorting
+		const startIndex = offset;
+		const endIndex = startIndex + limit;
+		const paginatedRows = transformedRows.slice(startIndex, endIndex);
 
 		return NextResponse.json({
 			success: true,
@@ -347,7 +376,12 @@ export async function POST(
 						name: true,
 						type: true,
 						required: true,
-						user: true,
+						referenceTableId: true,
+					},
+				},
+				database: {
+					select: {
+						tenantId: true,
 					},
 				},
 			},
@@ -357,18 +391,92 @@ export async function POST(
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
-		if (table.user !== user.tenantId) {
+		// Verify table belongs to user's tenant
+		if (table.database.tenantId !== user.tenantId) {
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
 		// Validate required fields
-		const requiredColumns = table.columns.filter((col: any) => col.isRequired);
+		const requiredColumns = table.columns.filter((col: any) => col.required);
 		for (const col of requiredColumns) {
 			if (!(col.name in data)) {
 				return NextResponse.json(
 					{ error: `Missing required field: ${col.name}` },
 					{ status: 400 },
 				);
+			}
+		}
+
+		// Validate reference columns
+		const referenceColumns = table.columns.filter(
+			(col: any) => col.type === "reference" && col.referenceTableId,
+		);
+		for (const col of referenceColumns) {
+			if (
+				data[col.name] !== undefined &&
+				data[col.name] !== null &&
+				data[col.name] !== ""
+			) {
+				// For reference columns, validate that the referenced row exists
+				const referenceTable = await prisma.table.findUnique({
+					where: { id: col.referenceTableId },
+					select: {
+						id: true,
+						name: true,
+						columns: {
+							select: {
+								id: true,
+								name: true,
+								primary: true,
+							},
+						},
+					},
+				});
+
+				if (!referenceTable) {
+					return NextResponse.json(
+						{ error: `Reference table not found for column: ${col.name}` },
+						{ status: 400 },
+					);
+				}
+
+				// Find the primary key column
+				const primaryKeyColumn = referenceTable.columns.find(
+					(refCol: any) => refCol.primary,
+				);
+				if (!primaryKeyColumn) {
+					return NextResponse.json(
+						{
+							error: `Primary key column not found in reference table: ${referenceTable.name}`,
+						},
+						{ status: 400 },
+					);
+				}
+
+				// Check if the referenced row exists
+				const referencedRow = await prisma.row.findFirst({
+					where: {
+						tableId: col.referenceTableId,
+						cells: {
+							some: {
+								columnId: primaryKeyColumn.id,
+								value: data[col.name],
+							},
+						},
+					},
+					select: { id: true },
+				});
+
+				if (!referencedRow) {
+					return NextResponse.json(
+						{
+							error: `Reference value "${data[col.name]}" not found in table "${
+								referenceTable.name
+							}" for column "${col.name}"`,
+						},
+						{ status: 400 },
+					);
+				}
 			}
 		}
 

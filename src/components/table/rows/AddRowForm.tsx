@@ -66,7 +66,7 @@ const formatCellValue = (value: any, type: string): any => {
 		case USER_FRIENDLY_COLUMN_TYPES.date:
 			return new Date(value).toISOString();
 		case USER_FRIENDLY_COLUMN_TYPES.link:
-			return String(value); // Pentru link-uri, păstrăm ca string
+			return value; // Pentru coloanele de tip reference, păstrăm valoarea originală
 		case USER_FRIENDLY_COLUMN_TYPES.customArray:
 			return String(value); // Pentru customArray, păstrăm ca string
 		case USER_FRIENDLY_COLUMN_TYPES.text:
@@ -86,8 +86,10 @@ const formatDateForInput = (value: string): string => {
 
 // Funcție optimizată pentru crearea datelor de referință - afișează tot rândul (compact)
 const createReferenceData = (tables: Table[] | null) => {
-	const referenceData: Record<number, { id: number; displayValue: string }[]> =
-		{};
+	const referenceData: Record<
+		number,
+		{ id: number; displayValue: string; primaryKeyValue: any }[]
+	> = {};
 
 	if (!tables || tables.length === 0) {
 		if (process.env.NODE_ENV === "development") {
@@ -102,13 +104,18 @@ const createReferenceData = (tables: Table[] | null) => {
 
 	// Pentru fiecare tabel, creează o listă de opțiuni disponibile
 	tables.forEach((table) => {
-		const options: { id: number; displayValue: string }[] = [];
+		const options: {
+			id: number;
+			displayValue: string;
+			primaryKeyValue: any;
+		}[] = [];
 
 		if (Array.isArray(table.rows) && table.rows.length > 0) {
 			table.rows.forEach((row) => {
 				if (Array.isArray(row.cells) && row.cells.length > 0) {
 					// Creează un string cu valorile importante din rând
 					const displayParts: string[] = [];
+					let primaryKeyValue: any = null;
 
 					// Sortează coloanele pentru o afișare consistentă (primary key primul)
 					const sortedColumns = [...(table.columns || [])].sort((a, b) => {
@@ -131,6 +138,11 @@ const createReferenceData = (tables: Table[] | null) => {
 						if (cell && cell.value !== undefined && cell.value !== null) {
 							const value = cell.value.toString().trim();
 							if (value !== "") {
+								// Salvează valoarea cheii primare pentru referință
+								if (column.primary) {
+									primaryKeyValue = cell.value; // Valoarea originală, nu string-ul formatat
+								}
+
 								// Formatează valoarea pentru afișare (mai compact)
 								let formattedValue = value;
 
@@ -180,6 +192,7 @@ const createReferenceData = (tables: Table[] | null) => {
 					options.push({
 						id: row.id,
 						displayValue: displayValue,
+						primaryKeyValue: primaryKeyValue,
 					});
 				}
 			});

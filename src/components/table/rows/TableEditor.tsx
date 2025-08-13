@@ -131,12 +131,16 @@ const TableEditor = memo(function TableEditor({
 				const data = await response.json();
 				showAlert("Data row added successfully!", "success");
 
-				// Refetch rows to get updated pagination
-				await refetchRows();
+				// Clear form cells
+				setCells([]);
+
+				// Clear server error on success
+				setServerError(null);
 
 				// Refresh database cache to update row counts
 				await refreshAfterChange();
 
+				// Update tables state to include the new row
 				setTables((prev: any) =>
 					prev?.map((t: any) => {
 						if (t.id === table.id) {
@@ -149,9 +153,15 @@ const TableEditor = memo(function TableEditor({
 					}),
 				);
 
-				setCells([]);
-				// Clear server error on success
-				setServerError(null);
+				// Force refresh of current page to show the new row
+				// If we're on the first page, refetch to show the new row
+				// If we're on other pages, go back to first page to show the new row
+				if (pagination?.page === 1) {
+					await refetchRows();
+				} else {
+					// Go to first page to show the new row
+					await fetchRows(1, pagination?.pageSize || 25);
+				}
 			} catch (error: any) {
 				// Gestionează diferite tipuri de erori
 				let errorMessage = "An unexpected error occurred";
@@ -177,8 +187,9 @@ const TableEditor = memo(function TableEditor({
 			table.databaseId,
 			table.id,
 			cells,
-			showAlert,
 			refetchRows,
+			fetchRows,
+			pagination,
 			refreshAfterChange,
 			setTables,
 			serverError,
@@ -433,7 +444,6 @@ const TableEditor = memo(function TableEditor({
 
 			{/* Rows Table */}
 			<div className='table-content'>
-				
 				<TableView
 					tables={tables}
 					table={table}

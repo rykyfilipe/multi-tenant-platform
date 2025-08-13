@@ -11,13 +11,13 @@ import { cn } from "@/lib/utils";
 interface ReferenceOption {
 	id: number;
 	displayValue: string;
-	primaryKeyValue: string;
+	primaryKeyValue: any;
 }
 
 interface SearchableReferenceSelectProps {
 	value: string;
 	onValueChange: (value: string) => void;
-	options: { id: number; displayValue: string }[];
+	options: { id: number; displayValue: string; primaryKeyValue: any }[];
 	placeholder?: string;
 	className?: string;
 	hasError?: boolean;
@@ -42,16 +42,10 @@ export function SearchableReferenceSelect({
 
 	// Transform options to include primary key value
 	const transformedOptions: ReferenceOption[] = useMemo(() => {
-		return options.map((opt) => {
-			let primaryKeyValue = opt.displayValue;
-			if (opt.displayValue.startsWith("#")) {
-				primaryKeyValue = opt.displayValue.substring(1).split(" • ")[0];
-			}
-			return {
-				...opt,
-				primaryKeyValue,
-			};
-		});
+		return options.map((opt) => ({
+			...opt,
+			primaryKeyValue: opt.primaryKeyValue,
+		}));
 	}, [options]);
 
 	// Filter options based on search term
@@ -141,7 +135,7 @@ export function SearchableReferenceSelect({
 	}, [highlightedIndex]);
 
 	const selectOption = (option: ReferenceOption) => {
-		onValueChange(option.primaryKeyValue);
+		onValueChange(option.primaryKeyValue?.toString() || "");
 		setIsOpen(false);
 		setSearchTerm("");
 		setHighlightedIndex(-1);

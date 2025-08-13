@@ -64,6 +64,8 @@ export async function POST(
 			isBulkImport = false;
 		}
 
+		console.log(parsedData);
+
 		// Verificăm că baza de date există și aparține tenant-ului
 		const database = await prisma.database.findFirst({
 			where: {
