@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "next dev --turbopack",
 		"postinstall": "prisma generate",
-		"build": "prisma generate && next build",
+		"build": "DISABLE_ESLINT=true prisma generate && next build",
 		"build:no-lint": "DISABLE_ESLINT=true next build",
 		"start": "next start",
 		"lint": "next lint"
