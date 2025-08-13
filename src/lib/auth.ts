@@ -167,7 +167,7 @@ export const authOptions = {
 			user?: User;
 		}) {
 			try {
-				if (user) {
+				if (user && user.role) {
 					token.id = user.id;
 					token.email = user.email;
 					token.firstName = user.firstName;
@@ -190,7 +190,7 @@ export const authOptions = {
 							where: { email: token.email },
 						});
 
-						if (dbUser) {
+						if (dbUser && dbUser.role) {
 							token.id = dbUser.id.toString();
 							token.firstName = dbUser.firstName;
 							token.lastName = dbUser.lastName;
@@ -223,7 +223,7 @@ export const authOptions = {
 					}
 				}
 
-				if (token.id) {
+				if (token.id && token.role) {
 					try {
 						const dbUser = await prisma.user.findFirst({
 							where: { id: parseInt(token.id as string) },
@@ -260,7 +260,7 @@ export const authOptions = {
 		},
 		async session({ session, token }: { session: Session; token: JWT }) {
 			try {
-				if (token) {
+				if (token && token.role) {
 					session.user = {
 						id: (token.id as string) || "",
 						email: (token.email as string) || "",
