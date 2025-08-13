@@ -257,9 +257,6 @@ export const cachedOperations = {
 						WHERE d."tenantId" = ${tenantId}) as tables,
 					(SELECT COUNT(*) FROM "User" WHERE "tenantId" = ${tenantId}) as users,
 					(SELECT COUNT(*) FROM "ApiToken" WHERE "userId" = ${userId}) as "apiTokens",
-					(SELECT COUNT(*) FROM "Table" t 
-						JOIN "Database" d ON t."databaseId" = d.id 
-						WHERE d."tenantId" = ${tenantId} AND t."isPublic" = true) as "publicTables",
 					(SELECT COUNT(*) FROM "Row" r 
 						JOIN "Table" t ON r."tableId" = t.id 
 						JOIN "Database" d ON t."databaseId" = d.id 
@@ -272,7 +269,6 @@ export const cachedOperations = {
 				Number(counts.tables),
 				Number(counts.users),
 				Number(counts.apiTokens),
-				Number(counts.publicTables),
 				Number(counts.rows),
 			];
 
@@ -289,12 +285,6 @@ export const cachedOperations = {
 					prisma.table.count({ where: { database: { tenantId } } }),
 					prisma.user.count({ where: { tenantId } }),
 					prisma.apiToken.count({ where: { userId } }),
-					prisma.table.count({
-						where: {
-							database: { tenantId },
-							isPublic: true,
-						},
-					}),
 					prisma.row.aggregate({
 						where: { table: { database: { tenantId } } },
 						_count: { id: true },
@@ -306,12 +296,11 @@ export const cachedOperations = {
 					counts[1],
 					counts[2],
 					counts[3],
-					counts[4],
-					counts[5]._count.id,
+					counts[4]._count.id,
 				];
 			} catch (fallbackError) {
 				console.error("Fallback count query also failed:", fallbackError);
-				return [0, 0, 0, 0, 0, 0];
+				return [0, 0, 0, 0, 0];
 			}
 		}
 	},
@@ -400,7 +389,12 @@ export const cachedOperations = {
 		cacheHelpers.invalidateApiTokens(userId);
 		// Also need to invalidate counts as API tokens affect limits
 		const user = cacheHelpers.getUser(userId);
-		if (user && typeof user === 'object' && 'tenantId' in user && typeof user.tenantId === 'number') {
+		if (
+			user &&
+			typeof user === "object" &&
+			"tenantId" in user &&
+			typeof user.tenantId === "number"
+		) {
 			cacheHelpers.invalidateCounts(user.tenantId, userId);
 		}
 	},

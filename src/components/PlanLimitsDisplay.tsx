@@ -26,7 +26,6 @@ interface CurrentCounts {
 	tables: number;
 	users: number;
 	apiTokens: number;
-	publicTables: number;
 	storage: {
 		used: number;
 		total: number;
@@ -42,7 +41,6 @@ const LIMIT_ICONS = {
 	tables: Table,
 	users: Users,
 	apiTokens: Key,
-	publicTables: Globe,
 	storage: HardDrive,
 	rows: Table,
 };
@@ -52,7 +50,6 @@ const LIMIT_LABELS = {
 	tables: "Tables",
 	users: "Users",
 	apiTokens: "API Tokens",
-	publicTables: "Public Tables",
 	storage: "Storage",
 	rows: "Rows",
 };

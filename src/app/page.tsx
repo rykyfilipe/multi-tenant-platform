@@ -102,22 +102,18 @@ const DataHubLandingPage = () => {
 
 	const useCases = [
 		{
-			icon: <Monitor className='w-8 h-8' />,
-			title: "Content Management System (CMS)",
+			icon: <Store className='w-8 h-8' />,
+			iconColor: "text-orange-600",
+			color: "from-orange-500/20 to-red-500/20",
+			title: "Content Management",
 			description:
 				"Store and manage content, articles, products, and media metadata. Your frontend CMS can fetch and display content through our API.",
-			features: [
-				"Content database",
-				"Media metadata",
-				"SEO data storage",
-				"Content scheduling",
-				"Multi-language content",
-			],
-			color: "from-blue-500/20 to-cyan-500/20",
-			iconColor: "text-blue-600",
+			features: ["Content database", "Media metadata", "SEO data storage"],
 		},
 		{
-			icon: <Building2 className='w-8 h-8' />,
+			icon: <Users className='w-8 h-8' />,
+			iconColor: "text-blue-600",
+			color: "from-blue-500/20 to-cyan-500/20",
 			title: "Admin Panel & Dashboard",
 			description:
 				"Store user data, permissions, settings, and analytics data. Your admin dashboard can read and manage this data through our secure API.",
@@ -125,71 +121,64 @@ const DataHubLandingPage = () => {
 				"User data storage",
 				"Permission management",
 				"Analytics data",
-				"System configuration",
 				"Audit trail data",
 			],
-			color: "from-purple-500/20 to-pink-500/20",
-			iconColor: "text-purple-600",
 		},
 		{
-			icon: <Store className='w-8 h-8' />,
-			title: "Business Management",
+			icon: <Building2 className='w-8 h-8' />,
+			iconColor: "text-green-600",
+			color: "from-green-500/20 to-emerald-500/20",
+			title: "Business Operations",
 			description:
 				"Store all your business data - customers, orders, inventory, and financial records. Your business applications can access this data via API.",
 			features: [
 				"Customer database",
 				"Order data storage",
-				"Inventory tracking",
-				"Financial records",
+				"Inventory management",
 				"Business reporting data",
 			],
-			color: "from-green-500/20 to-emerald-500/20",
-			iconColor: "text-green-600",
 		},
 		{
 			icon: <Truck className='w-8 h-8' />,
+			iconColor: "text-purple-600",
+			color: "from-purple-500/20 to-pink-500/20",
 			title: "Logistics & Supply Chain",
 			description:
 				"Store logistics data - shipments, warehouses, inventory, and delivery information. Your logistics apps can track and manage operations via API.",
 			features: [
 				"Shipment data",
-				"Warehouse information",
-				"Inventory tracking",
+				"Warehouse management",
 				"Route data",
-				"Delivery schedules",
+				"Delivery tracking",
 			],
-			color: "from-orange-500/20 to-red-500/20",
-			iconColor: "text-orange-600",
 		},
 		{
 			icon: <Calendar className='w-8 h-8' />,
+			iconColor: "text-indigo-600",
+			color: "from-indigo-500/20 to-blue-500/20",
 			title: "Project Management",
 			description:
 				"Store project data, tasks, team assignments, and progress tracking. Your project management tools can sync with this data through API.",
 			features: [
 				"Project data storage",
-				"Task information",
-				"Team assignments",
+				"Task management",
 				"Time tracking data",
-				"Progress metrics",
+				"Team collaboration",
 			],
-			color: "from-indigo-500/20 to-blue-500/20",
-			iconColor: "text-indigo-600",
 		},
 		{
-			icon: <ChartBar className='w-8 h-8' />,
+			icon: <ChartBar className='w-6 h-6' />,
+			iconColor: "text-teal-600",
+			color: "from-teal-500/20 to-green-500/20",
 			title: "Data Analytics & Reporting",
 			description:
 				"Store analytics data, metrics, and reporting information. Your analytics dashboards and reporting tools can fetch this data via API.",
 			features: [
 				"Analytics data storage",
-				"Metrics collection",
 				"Reporting data",
 				"Data export via API",
 				"Real-time data access",
 			],
-			color: "from-teal-500/20 to-cyan-500/20",
-			iconColor: "text-teal-600",
 		},
 	];
 
@@ -207,8 +196,8 @@ const DataHubLandingPage = () => {
 				"Granular role-based access control with detailed permissions and audit trails.",
 		},
 		{
-			icon: <BarChart3 className='w-6 h-6' />,
-			title: "Dynamic Schema Builder",
+			icon: <Settings className='w-6 h-6' />,
+			title: "No-Code Schema Builder",
 			description:
 				"Create and modify database schemas without coding. Support for all major data types.",
 		},
@@ -232,7 +221,7 @@ const DataHubLandingPage = () => {
 		},
 		{
 			icon: <Globe className='w-6 h-6' />,
-			title: "RESTful API",
+			title: "REST API & SDK",
 			description:
 				"Full-featured REST API with comprehensive documentation and SDK support.",
 		},
@@ -240,61 +229,48 @@ const DataHubLandingPage = () => {
 
 	const plans = [
 		{
-			name: "Free",
+			name: "Starter",
 			price: "Free",
-			period: "",
+			period: "/month",
 			description: "Perfect for individuals and small projects",
 			features: [
 				"1 database",
-				"5 tables",
-				"2 users",
-				"1 API token",
-				"100 MB storage",
-				"10.000 rows",
+				"Up to 1,000 rows",
 				"Basic user management",
 				"API access (limited)",
 				"Community support",
 				"Data import/export",
 			],
-			priceId: null,
 			popular: false,
 		},
 		{
 			name: "Pro",
 			price: "$29",
 			period: "/month",
-			description: "Most popular for teams and businesses",
+			description: "Ideal for growing businesses and teams",
 			features: [
 				"5 databases",
-				"25 tables",
-				"10 users",
-				"5 API tokens",
-				"1 GB storage",
-				"100.000 rows",
-				"2 public tables",
+				"Up to 100,000 rows",
 				"Advanced user permissions",
 				"Full API access",
 				"Priority support",
+				"Advanced analytics",
 			],
 			priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
 			popular: true,
 		},
 		{
-			name: "Business",
+			name: "Enterprise",
 			price: "$99",
 			period: "/month",
-			description: "For large teams and organizations",
+			description: "For large organizations with complex needs",
 			features: [
 				"Unlimited databases",
-				"Unlimited tables",
-				"Unlimited users",
-				"10 API tokens",
-				"5 GB storage",
-				"1.000.000 rows",
-				"10 public tables",
-				"Everything in Pro",
+				"Unlimited rows",
+				"Custom integrations",
 				"Advanced security features",
 				"Advanced analytics",
+				"Dedicated support",
 			],
 			priceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID,
 			popular: false,
@@ -510,10 +486,9 @@ const DataHubLandingPage = () => {
 						<span className='text-foreground'>Management Platform</span>
 					</h1>
 					<p className='text-xl text-muted-foreground mb-8 max-w-3xl mx-auto'>
-						Gestionează-ți toate datele companiei într-un singur loc. Creează
-						baze de date personalizate, administrează utilizatorii și
-						permisiunile, și conectează orice aplicație prin API-ul nostru
-						puternic — fără cod necesar.
+						Manage all your company data in one place. Create custom databases,
+						manage users and permissions, and connect any application through
+						our powerful API — no code required.
 					</p>
 					<div className='flex flex-col sm:flex-row gap-6 justify-center'>
 						<Button
@@ -523,12 +498,6 @@ const DataHubLandingPage = () => {
 							Get Started
 							<ArrowRight className='ml-2 w-5 h-5' />
 						</Button>
-						{/* <Button
-							variant='outline'
-							size='lg'
-							className='text-lg px-12 py-5 bg-card/80 shadow-inner hover:shadow-lg hover:bg-card transition-all duration-300'>
-							Watch Demo
-						</Button> */}
 					</div>
 				</div>
 			</section>
@@ -538,11 +507,11 @@ const DataHubLandingPage = () => {
 				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
 					<div className='text-center mb-16'>
 						<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-							De ce să alegi YDV?
+							Why Choose YDV?
 						</h2>
 						<p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
-							Construit pentru companii moderne care au nevoie de o gestionare
-							puternică, sigură și ușor de folosit a datelor.
+							Built for modern companies that need powerful, secure, and
+							easy-to-use data management.
 						</p>
 					</div>
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8'>
@@ -570,12 +539,12 @@ const DataHubLandingPage = () => {
 				<div className='max-w-7xl mx-auto'>
 					<div className='text-center mb-20'>
 						<h2 className='text-4xl md:text-5xl font-bold text-foreground mb-6'>
-							Gestionează-ți Datele de Business
+							Manage Your Business Data
 						</h2>
 						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
-							YDV oferă soluția completă de gestionare a datelor pentru compania
-							ta. Creează și administrează structura datelor, apoi conectează
-							orice aplicație prin API-ul nostru puternic.
+							YDV provides the complete data management solution for your
+							company. Create and manage data structures, then connect any
+							application through our powerful API.
 						</p>
 					</div>
 
@@ -615,13 +584,12 @@ const DataHubLandingPage = () => {
 					<div className='text-center mt-16'>
 						<div className='bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8 border border-border/20'>
 							<h3 className='text-2xl font-bold text-foreground mb-4'>
-								Backend Puternic pentru Business
+								Powerful Backend for Business
 							</h3>
 							<p className='text-lg text-muted-foreground mb-6 max-w-2xl mx-auto'>
-								Interfața intuitivă YDV îți permite să proiectezi structura
-								datelor fără cod. Apoi folosește API-ul nostru REST pentru a
-								conecta orice aplicație - site-uri web, aplicații mobile sau
-								dashboard-uri personalizate.
+								YDV's intuitive interface lets you design data structures
+								without code. Then use our REST API to connect any application -
+								websites, mobile apps, or custom dashboards.
 							</p>
 							<Button
 								size='lg'
@@ -630,7 +598,7 @@ const DataHubLandingPage = () => {
 									else router.push("home/dashboard");
 								}}
 								className='text-lg px-8 py-3'>
-								Începe să Gestionezi Datele
+								Start Managing Data
 								<ArrowRight className='ml-2 w-5 h-5' />
 							</Button>
 						</div>
@@ -810,12 +778,11 @@ const DataHubLandingPage = () => {
 				<div className='max-w-7xl mx-auto'>
 					<div className='text-center mb-20'>
 						<h2 className='text-4xl md:text-5xl font-bold text-foreground mb-6'>
-							Tot ce ai nevoie pentru a gestiona datele companiei
+							Everything you need to manage your company data
 						</h2>
 						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
-							De la crearea tabelelor personalizate la gestionarea permisiunilor
-							echipei, platforma noastră îți oferă controlul complet asupra
-							backend-ului de date.
+							From creating custom tables to managing team permissions, our
+							platform gives you complete control over your data backend.
 						</p>
 					</div>
 
@@ -909,7 +876,7 @@ const DataHubLandingPage = () => {
 											}
 											onClick={() => {
 												if (isCurrentPlan) {
-													return; // Nu face nimic dacă este planul curent
+													return; // Do nothing if it's the current plan
 												}
 												if (plan.name === "Starter") {
 													router.push("home/dashboard");
@@ -944,17 +911,16 @@ const DataHubLandingPage = () => {
 			<section className='py-20 px-4 sm:px-6 lg:px-8'>
 				<div className='max-w-4xl mx-auto text-center'>
 					<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-						Gata să Transformi Gestionarea Datelor Companiei?
+						Ready to Transform Your Company's Data Management?
 					</h2>
 					<p className='text-xl text-muted-foreground mb-8'>
-						Alătură-te miilor de organizații care se încred în YDV pentru
-						nevoile lor de date.
+						Join thousands of organizations that trust YDV for their data needs.
 					</p>
 					<Button
 						size='lg'
 						onClick={() => setShowLoginModal(true)}
 						className='text-lg px-8 py-3'>
-						Începe Acum
+						Get Started Now
 						<ArrowRight className='ml-2 w-5 h-5' />
 					</Button>
 				</div>
@@ -975,8 +941,7 @@ const DataHubLandingPage = () => {
 								<span className='text-xl font-bold'>YDV</span>
 							</div>
 							<p className='text-muted-foreground'>
-								Your Data Your View - Platformă de Gestionare a Datelor de
-								Business.
+								Your Data Your View - Business Data Management Platform.
 							</p>
 						</div>
 						<div>

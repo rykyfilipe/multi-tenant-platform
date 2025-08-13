@@ -30,7 +30,6 @@ export async function GET(request: Request) {
 				tables: 0,
 				users: 0,
 				apiTokens: 0,
-				publicTables: 0,
 				storage: 0,
 				rows: 0,
 			});

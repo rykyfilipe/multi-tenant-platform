@@ -18,7 +18,6 @@ export const usePlanPermissions = () => {
 		tables: number;
 		users: number;
 		apiTokens: number;
-		publicTables: number;
 		storage: number;
 		rows: number;
 	} | null>(null);
@@ -48,7 +47,6 @@ export const usePlanPermissions = () => {
 					tables: 0,
 					users: 0,
 					apiTokens: 0,
-					publicTables: 0,
 					storage: 0,
 					rows: 0,
 				});
@@ -60,7 +58,6 @@ export const usePlanPermissions = () => {
 				tables: 0,
 				users: 0,
 				apiTokens: 0,
-				publicTables: 0,
 				storage: 0,
 				rows: 0,
 			});
@@ -103,8 +100,7 @@ export const usePlanPermissions = () => {
 	const canCreateUser = () => canWithLimit("canCreateUsers", "users");
 	const canCreateApiToken = () =>
 		canWithLimit("canCreateApiTokens", "apiTokens");
-	const canMakeTablePublic = () =>
-		canWithLimit("canMakeTablesPublic", "publicTables");
+	const canMakeTablePublic = () => can("canMakeTablesPublic");
 	const canManagePermissions = () => can("canManagePermissions");
 	const canDeleteData = () => can("canDeleteData");
 	const canExportData = () => can("canExportData");

@@ -17,18 +17,13 @@ export default function OAuthGoogleLogin({ closeForm }: OAuthGoogleLoginProps) {
 	const handleGoogleSignIn = async () => {
 		setLoading(true);
 		try {
-			const result = await signIn("google", {
-				redirect: false,
-				callbackUrl: "/",
+			console.log("Starting Google sign in...");
+			await signIn("google", {
+				callbackUrl: "/home/dashboard",
 			});
-
-			// Dacă autentificarea a fost cu succes, închide formularul
-			if (result?.ok) {
-				closeForm(true);
-			}
 		} catch (error) {
-			// Google sign in error
-		} finally {
+			console.error("Google sign in exception:", error);
+			alert("Eroare la autentificarea cu Google. Te rugăm să încerci din nou.");
 			setLoading(false);
 		}
 	};

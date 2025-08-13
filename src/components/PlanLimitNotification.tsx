@@ -31,7 +31,6 @@ const PLAN_ICONS = {
 	tables: Table,
 	users: Users,
 	apiTokens: Key,
-	publicTables: Globe,
 };
 
 const PLAN_LABELS = {
@@ -39,7 +38,6 @@ const PLAN_LABELS = {
 	tables: "Tables",
 	users: "Users",
 	apiTokens: "API Tokens",
-	publicTables: "Public Tables",
 };
 
 export default function PlanLimitNotification({

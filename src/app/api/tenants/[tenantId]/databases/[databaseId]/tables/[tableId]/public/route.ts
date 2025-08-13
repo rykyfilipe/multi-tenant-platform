@@ -82,38 +82,17 @@ export async function PATCH(
 		}
 
 		// Verifică dacă planul permite crearea tabelelor publice
-		if (parsedData.isPublic && !checkPlanPermission(user.subscriptionPlan, "canMakeTablesPublic")) {
+		if (
+			parsedData.isPublic &&
+			!checkPlanPermission(user.subscriptionPlan, "canMakeTablesPublic")
+		) {
 			return NextResponse.json(
 				{
-					error: "Public tables are not available in your current plan. Upgrade to Pro or Business to make tables public.",
-					plan: "publicTables",
+					error:
+						"Public tables are not available in your current plan. Upgrade to Pro or Business to make tables public.",
 				},
 				{ status: 403 },
 			);
-		}
-
-		// Verificăm limita de tabele publice dacă încercăm să facem tabela publică
-		if (parsedData.isPublic && !table.isPublic) {
-			const currentPublicTableCount = await prisma.table.count({
-				where: {
-					database: { tenantId: Number(tenantId) },
-					isPublic: true,
-				},
-			});
-
-			const publicTableLimitCheck = await checkPlanLimit(userId, "publicTables", currentPublicTableCount + 1);
-
-			if (!publicTableLimitCheck.allowed) {
-				return NextResponse.json(
-					{
-						error: "Public table limit exceeded",
-						details: `You have ${currentPublicTableCount} public tables and your plan allows ${publicTableLimitCheck.limit} public tables.`,
-						limit: publicTableLimitCheck.limit,
-						current: currentPublicTableCount,
-					},
-					{ status: 403 },
-				);
-			}
 		}
 
 		// Actualizăm setarea publică a tabelei

@@ -62,6 +62,8 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 				if (res?.ok) {
 					showAlert("Account created successfully! Welcome to YDV.", "success");
 					closeForm(true);
+					// Redirect to dashboard after successful registration and login
+					window.location.href = "/home/dashboard";
 				} else {
 					showAlert(
 						"Account created but login failed. Please log in manually.",

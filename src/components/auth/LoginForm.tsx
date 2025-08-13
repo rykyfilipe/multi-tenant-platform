@@ -39,6 +39,8 @@ function LoginForm({ closeForm, showForgotPassword }: LoginFormProps) {
 					"success",
 				);
 				closeForm(true);
+				// Redirect to dashboard after successful login
+				window.location.href = "/home/dashboard";
 			} else {
 				showAlert(
 					"Login failed. Please check your credentials and try again.",
@@ -46,6 +48,7 @@ function LoginForm({ closeForm, showForgotPassword }: LoginFormProps) {
 				);
 			}
 		} catch (error: any) {
+			console.error("Login error:", error);
 			showAlert(
 				"An unexpected error occurred during login. Please try again.",
 				"error",

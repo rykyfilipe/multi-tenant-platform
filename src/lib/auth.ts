@@ -80,12 +80,25 @@ export const authOptions = {
 						image: user.profileImage || undefined,
 					};
 				} catch (error) {
+					console.error("Credentials auth error:", error);
 					return null;
 				}
 			},
 		}),
 	],
+	pages: {
+		signIn: "/",
+		signOut: "/",
+		error: "/",
+	},
 	callbacks: {
+		async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+			// Allows relative callback URLs
+			if (url.startsWith("/")) return `${baseUrl}${url}`;
+			// Allows callback URLs on the same origin
+			else if (new URL(url).origin === baseUrl) return url;
+			return baseUrl;
+		},
 		async signIn({
 			user,
 			account,
@@ -96,7 +109,6 @@ export const authOptions = {
 			profile?: any;
 		}) {
 			if (account?.provider === "google" && user.email) {
-				// Check if user exists in database, create if not
 				try {
 					const existingUser = await prisma.user.findFirst({
 						where: { email: user.email },
@@ -109,13 +121,13 @@ export const authOptions = {
 								email: user.email,
 								firstName: user.name?.split(" ")[0] || "",
 								lastName: user.name?.split(" ").slice(1).join(" ") || "",
-								password: "", // OAuth users don't need password
-								role: "ADMIN", // Set default role
+								password: "",
+								role: "ADMIN",
 								subscriptionStatus: "active",
 								subscriptionPlan: "Starter",
 								subscriptionCurrentPeriodEnd: new Date(
 									Date.now() + 365 * 24 * 60 * 60 * 1000,
-								), // 1 year from now
+								),
 							},
 						});
 
@@ -127,14 +139,20 @@ export const authOptions = {
 							},
 						});
 
-						const newDatabase = await prisma.database.create({
+						await prisma.database.create({
 							data: {
 								tenantId: newTenant.id,
 							},
 						});
+
+						await prisma.user.update({
+							where: { id: newUser.id },
+							data: { tenantId: newTenant.id },
+						});
 					}
 				} catch (error) {
-					return false; // Prevent sign in on error
+					console.error("Error creating Google OAuth user:", error);
+					return false;
 				}
 			}
 			return true;
@@ -149,7 +167,6 @@ export const authOptions = {
 			user?: User;
 		}) {
 			try {
-				// Initial sign-in handling (user is available)
 				if (user) {
 					token.id = user.id;
 					token.email = user.email;
@@ -159,15 +176,14 @@ export const authOptions = {
 					token.tenantId = user.tenantId;
 					token.profileImage = (user as any).profileImage || undefined;
 
+					// Generate custom JWT for API usage
 					const payload = {
 						userId: Number(user.id),
 						role: user.role.toString(),
 					};
-
 					token.customJWT = generateToken(payload, "7d");
 				}
 
-				// For Google OAuth users
 				if (account?.provider === "google" && token.email) {
 					try {
 						const dbUser = await prisma.user.findFirst({
@@ -182,15 +198,15 @@ export const authOptions = {
 							token.tenantId = dbUser.tenantId?.toString() ?? null;
 							token.profileImage = dbUser.profileImage || undefined;
 
+							// Generate custom JWT for API usage
 							const payload = {
 								userId: dbUser.id,
 								role: dbUser.role.toString(),
 							};
-
 							token.customJWT = generateToken(payload, "7d");
 						}
 					} catch (error) {
-						// Error fetching Google user data
+						console.error("Error fetching Google user data:", error);
 					}
 				}
 
@@ -201,14 +217,12 @@ export const authOptions = {
 							userId: Number(token.id),
 							role: token.role.toString(),
 						};
-
 						token.customJWT = generateToken(payload, "7d");
 					} catch (error) {
-						// Error regenerating token
+						console.error("Error regenerating token:", error);
 					}
 				}
 
-				// Fetch subscription data for all cases
 				if (token.id) {
 					try {
 						const dbUser = await prisma.user.findFirst({
@@ -229,7 +243,7 @@ export const authOptions = {
 							token.profileImage = dbUser.profileImage || undefined;
 						}
 					} catch (error) {
-						// Error fetching subscription data
+						console.error("Error fetching subscription data:", error);
 					}
 				}
 
@@ -240,16 +254,15 @@ export const authOptions = {
 
 				return token;
 			} catch (error) {
-				// Error in JWT callback
+				console.error("JWT callback error:", error);
 				return token;
 			}
 		},
 		async session({ session, token }: { session: Session; token: JWT }) {
 			try {
-				// Add user data from token to session
 				if (token) {
 					session.user = {
-						id: (token.id as string) || token.sub || "",
+						id: (token.id as string) || "",
 						email: (token.email as string) || "",
 						firstName: (token.firstName as string) || "",
 						lastName: (token.lastName as string) || "",
@@ -257,15 +270,16 @@ export const authOptions = {
 						name:
 							token.firstName && token.lastName
 								? `${token.firstName} ${token.lastName}`
-								: token.name || token.email || "",
+								: token.email || "",
 						image: (token.profileImage as string) || undefined,
 						profileImage: (token.profileImage as string) || undefined,
 						tenantId: (token.tenantId as string) || null,
 					};
+
+					// Add custom JWT and access token for API usage
 					session.accessToken = (token.accessToken as string) || "";
 					session.customJWT = (token.customJWT as string) || "";
 
-					// Add subscription data to session
 					session.subscription = {
 						status: (token.subscriptionStatus as string) || null,
 						plan: (token.subscriptionPlan as string) || null,
@@ -276,64 +290,50 @@ export const authOptions = {
 
 				return session;
 			} catch (error) {
-				// Error in session callback
+				console.error("Session callback error:", error);
 				return session;
 			}
 		},
 	},
-
 	session: {
-		strategy: "jwt" as const,
-		maxAge: 2 * 60 * 60, // 2 hours - much shorter for security
-		updateAge: 60 * 60, // 1 hour - update session every hour
+		strategy: "jwt",
+		maxAge: 30 * 24 * 60 * 60, // 30 days
+		updateAge: 24 * 60 * 60, // 24 hours
 	},
-
-	// Enhanced cookie security
 	cookies: {
 		sessionToken: {
-			name: `__Secure-next-auth.session-token`,
+			name: `next-auth.session-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax" as const,
+				sameSite: "lax",
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
-				maxAge: 2 * 60 * 60, // 2 hours
 			},
 		},
 		callbackUrl: {
-			name: `__Secure-next-auth.callback-url`,
+			name: `next-auth.callback-url`,
 			options: {
-				sameSite: "lax" as const,
+				sameSite: "lax",
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 			},
 		},
 		csrfToken: {
-			name: `__Host-next-auth.csrf-token`,
+			name: `next-auth.csrf-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax" as const,
+				sameSite: "lax",
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 			},
 		},
 	},
-
-	// Enhanced JWT configuration
 	jwt: {
-		maxAge: 2 * 60 * 60, // 2 hours
+		maxAge: 30 * 24 * 60 * 60, // 30 days
 	},
-
-	// Security settings
 	useSecureCookies: process.env.NODE_ENV === "production",
 	secret: process.env.NEXTAUTH_SECRET,
-
 	debug: process.env.NODE_ENV === "development",
-
-	pages: {
-		signIn: "/",
-		error: "/",
-	},
 };
 interface JwtPayload {
 	userId: number;

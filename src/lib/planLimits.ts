@@ -58,7 +58,6 @@ export async function getCurrentCounts(
 				tables: 0,
 				users: 0,
 				apiTokens: 0,
-				publicTables: 0,
 				storage: 0,
 				rows: 0,
 			};
@@ -67,17 +66,15 @@ export async function getCurrentCounts(
 		try {
 			const counts = await cachedOperations.getCounts(user.tenantId, userId);
 
-			// getCounts returns an array: [databases, tables, users, apiTokens, publicTables, rows]
-			if (Array.isArray(counts) && counts.length === 6) {
-				const [databases, tables, users, apiTokens, publicTables, rows] =
-					counts;
+			// getCounts returns an array: [databases, tables, users, apiTokens, rows]
+			if (Array.isArray(counts) && counts.length === 5) {
+				const [databases, tables, users, apiTokens, rows] = counts;
 
 				return {
 					databases,
 					tables,
 					users,
 					apiTokens,
-					publicTables,
 					storage: 0, // Storage is calculated separately in memory tracking
 					rows,
 				};
@@ -89,7 +86,6 @@ export async function getCurrentCounts(
 				tables: 0,
 				users: 0,
 				apiTokens: 0,
-				publicTables: 0,
 				storage: 0,
 				rows: 0,
 			};
@@ -100,7 +96,6 @@ export async function getCurrentCounts(
 				tables: 0,
 				users: 0,
 				apiTokens: 0,
-				publicTables: 0,
 				storage: 0,
 				rows: 0,
 			};
@@ -111,7 +106,6 @@ export async function getCurrentCounts(
 			tables: 0,
 			users: 0,
 			apiTokens: 0,
-			publicTables: 0,
 			storage: 0,
 			rows: 0,
 		};
@@ -129,14 +123,6 @@ export function getPlanFeatures(plan: string): string[] {
 		`${limits.storage} MB storage`,
 		`${limits.rows.toLocaleString()} rows`,
 	];
-
-	if (limits.publicTables > 0) {
-		features.push(
-			`${limits.publicTables} public table${
-				limits.publicTables > 1 ? "s" : ""
-			}`,
-		);
-	}
 
 	if (plan === "Pro") {
 		features.push("Advanced user permissions");

@@ -22,16 +22,6 @@ const TableCard = memo(function TableCard({ table }: { table: Table }) {
 	const handleTogglePublic = useCallback(async () => {
 		if (!token || !tenant) return;
 
-		// Verifică limita de tabele publice
-		const publicTableLimit = checkLimit("publicTables");
-		if (!table.isPublic && !publicTableLimit.allowed) {
-			showAlert(
-				`You've reached the limit of ${publicTableLimit.limit} public tables for your ${currentPlan} plan. Please upgrade to make more tables public.`,
-				"warning",
-			);
-			return;
-		}
-
 		setIsUpdatingPublic(true);
 		try {
 			const response = await fetch(
@@ -71,10 +61,8 @@ const TableCard = memo(function TableCard({ table }: { table: Table }) {
 		table.isPublic,
 		table.databaseId,
 		table.id,
-		checkLimit,
 		showAlert,
 		handleApiError,
-		currentPlan,
 	]);
 
 	return (

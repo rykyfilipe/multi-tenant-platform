@@ -11,7 +11,6 @@ interface CurrentCounts {
 	tables: number;
 	users: number;
 	apiTokens: number;
-	publicTables: number;
 	storage: number;
 	rows: number;
 }
@@ -57,7 +56,6 @@ export function usePlanLimits() {
 					tables: 0,
 					users: 0,
 					apiTokens: 0,
-					publicTables: 0,
 					storage: 0,
 					rows: 0,
 				});
@@ -70,7 +68,6 @@ export function usePlanLimits() {
 				tables: 0,
 				users: 0,
 				apiTokens: 0,
-				publicTables: 0,
 				storage: 0,
 				rows: 0,
 			});

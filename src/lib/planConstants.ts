@@ -10,7 +10,6 @@ export interface PlanLimits {
 	tables: number;
 	users: number;
 	apiTokens: number;
-	publicTables: number;
 	storage: number; // in MB
 	rows: number; // total rows across all tables
 }
@@ -34,7 +33,6 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		tables: 5,
 		users: 2,
 		apiTokens: 1,
-		publicTables: 0,
 		storage: 100, // 100 MB
 		rows: 10000, // 10.000 rows
 	},
@@ -43,7 +41,6 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		tables: 25,
 		users: 10,
 		apiTokens: 5,
-		publicTables: 2,
 		storage: 1024, // 1 GB
 		rows: 100000, // 100.000 rows
 	},
@@ -52,7 +49,6 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		tables: 999,
 		users: 999,
 		apiTokens: 10,
-		publicTables: 10,
 		storage: 5120, // 5 GB
 		rows: 1000000, // 1.000.000 rows
 	},
@@ -157,7 +153,7 @@ export const getRowsLimitForPlan = (plan: string | null): number => {
 // Funcție pentru verificarea permisiunilor bazate pe plan și rol
 export const checkPlanPermission = (
 	plan: string | null,
-	permission: keyof RoleRestrictions
+	permission: keyof RoleRestrictions,
 ): boolean => {
 	const restrictions = getRoleRestrictions(plan);
 	return restrictions[permission];
@@ -168,26 +164,26 @@ export const checkPlanAndLimitPermission = (
 	plan: string | null,
 	permission: keyof RoleRestrictions,
 	currentCount: number,
-	limitType: keyof PlanLimits
+	limitType: keyof PlanLimits,
 ): { allowed: boolean; reason?: string } => {
 	const restrictions = getRoleRestrictions(plan);
 	const limits = getPlanLimits(plan);
-	
+
 	// Verifică dacă permisiunea este activă pentru plan
 	if (!restrictions[permission]) {
-		return { 
-			allowed: false, 
-			reason: `This feature is not available in your current plan. Upgrade to Pro or Business to access this feature.` 
+		return {
+			allowed: false,
+			reason: `This feature is not available in your current plan. Upgrade to Pro or Business to access this feature.`,
 		};
 	}
-	
+
 	// Verifică dacă limita a fost atinsă
 	if (currentCount >= limits[limitType]) {
-		return { 
-			allowed: false, 
-			reason: `Plan limit exceeded. You can only have ${limits[limitType]} ${limitType}. Upgrade your plan to add more.` 
+		return {
+			allowed: false,
+			reason: `Plan limit exceeded. You can only have ${limits[limitType]} ${limitType}. Upgrade your plan to add more.`,
 		};
 	}
-	
+
 	return { allowed: true };
 };

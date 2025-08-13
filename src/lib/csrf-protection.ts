@@ -1,7 +1,6 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes, createHmac } from "crypto";
 
 // CSRF token configuration
 const CSRF_SECRET =
@@ -30,16 +29,50 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 /**
+ * Generate random bytes using Web Crypto API
+ */
+async function generateRandomBytes(length: number): Promise<string> {
+	const array = new Uint8Array(length);
+	crypto.getRandomValues(array);
+	return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+		"",
+	);
+}
+
+/**
+ * Create HMAC using Web Crypto API
+ */
+async function createHMAC(message: string, secret: string): Promise<string> {
+	const encoder = new TextEncoder();
+	const keyData = encoder.encode(secret);
+	const messageData = encoder.encode(message);
+
+	const key = await crypto.subtle.importKey(
+		"raw",
+		keyData,
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+
+	const signature = await crypto.subtle.sign("HMAC", key, messageData);
+	return Array.from(new Uint8Array(signature), (byte) =>
+		byte.toString(16).padStart(2, "0"),
+	).join("");
+}
+
+/**
  * Generate a new CSRF token
  */
-export function generateCSRFToken(sessionId: string): string {
-	const randomToken = randomBytes(CSRF_TOKEN_LENGTH).toString("hex");
+export async function generateCSRFToken(sessionId: string): Promise<string> {
+	const randomToken = await generateRandomBytes(CSRF_TOKEN_LENGTH);
 	const expires = Date.now() + CSRF_TOKEN_EXPIRY;
 
 	// Hash the token with the session ID for additional security
-	const hashedToken = createHmac("sha256", CSRF_SECRET)
-		.update(`${randomToken}:${sessionId}:${expires}`)
-		.digest("hex");
+	const hashedToken = await createHMAC(
+		`${randomToken}:${sessionId}:${expires}`,
+		CSRF_SECRET,
+	);
 
 	const fullToken = `${randomToken}.${hashedToken}`;
 
@@ -54,7 +87,10 @@ export function generateCSRFToken(sessionId: string): string {
 /**
  * Validate a CSRF token
  */
-export function validateCSRFToken(token: string, sessionId: string): boolean {
+export async function validateCSRFToken(
+	token: string,
+	sessionId: string,
+): Promise<boolean> {
 	const storedToken = csrfTokens.get(sessionId);
 	if (!storedToken || storedToken.expires < Date.now()) {
 		return false;
@@ -82,9 +118,16 @@ export function getCSRFToken(sessionId: string): string | null {
 /**
  * CSRF protection middleware
  */
-export function csrfProtection(request: NextRequest): NextResponse | null {
+export async function csrfProtection(
+	request: NextRequest,
+): Promise<NextResponse | null> {
 	// Only protect POST, PUT, DELETE, PATCH requests
 	if (!["POST", "PUT", "DELETE", "PATCH"].includes(request.method)) {
+		return null;
+	}
+
+	// Skip CSRF protection for authentication endpoints
+	if (request.nextUrl.pathname.startsWith("/api/auth/")) {
 		return null;
 	}
 
@@ -125,7 +168,7 @@ export function csrfProtection(request: NextRequest): NextResponse | null {
 	}
 
 	// Validate CSRF token
-	if (!validateCSRFToken(csrfToken, sessionId)) {
+	if (!(await validateCSRFToken(csrfToken, sessionId))) {
 		return NextResponse.json(
 			{ error: "CSRF protection: Invalid token" },
 			{ status: 403 },
@@ -138,13 +181,18 @@ export function csrfProtection(request: NextRequest): NextResponse | null {
 /**
  * Generate CSRF token for forms
  */
-export function generateFormCSRFToken(sessionId: string): string {
+export async function generateFormCSRFToken(
+	sessionId: string,
+): Promise<string> {
 	return generateCSRFToken(sessionId);
 }
 
 /**
  * Verify CSRF token for forms
  */
-export function verifyFormCSRFToken(token: string, sessionId: string): boolean {
+export async function verifyFormCSRFToken(
+	token: string,
+	sessionId: string,
+): Promise<boolean> {
 	return validateCSRFToken(token, sessionId);
 }
