@@ -20,6 +20,8 @@ import {
 	COLUMN_TYPE_LABELS,
 } from "@/lib/columnTypes";
 import { SearchableReferenceSelect } from "./SearchableReferenceSelect";
+import { MultipleReferenceSelect } from "./MultipleReferenceSelect";
+import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 
 interface Props {
 	columns: Column[];
@@ -32,23 +34,33 @@ interface Props {
 
 // Type validation utilities
 const validateCellValue = (
-	value: string,
+	value: string | string[],
 	type: string,
 	column?: Column,
 ): boolean => {
 	switch (type) {
 		case USER_FRIENDLY_COLUMN_TYPES.number:
-			return !isNaN(Number(value)) && value.trim() !== "";
+			return (
+				typeof value === "string" &&
+				!isNaN(Number(value)) &&
+				value.trim() !== ""
+			);
 		case USER_FRIENDLY_COLUMN_TYPES.yesNo:
-			return ["true", "false"].includes(value.toLowerCase());
+			return (
+				typeof value === "string" &&
+				["true", "false"].includes(value.toLowerCase())
+			);
 		case USER_FRIENDLY_COLUMN_TYPES.date:
-			return !isNaN(Date.parse(value));
+			return typeof value === "string" && !isNaN(Date.parse(value));
 		case USER_FRIENDLY_COLUMN_TYPES.link:
-			return value.trim() !== ""; // Pentru link-uri, acceptăm orice string valid
+			// For reference columns, always check if array has values (always multiple)
+			return Array.isArray(value) && value.length > 0;
 		case USER_FRIENDLY_COLUMN_TYPES.customArray:
 			// Pentru customArray, verificăm că valoarea există în opțiunile definite
 			if (column?.customOptions && column.customOptions.length > 0) {
-				return column.customOptions.includes(value);
+				return (
+					typeof value === "string" && column.customOptions.includes(value)
+				);
 			}
 			return false; // Dacă nu sunt opțiuni definite, nu este valid
 		case USER_FRIENDLY_COLUMN_TYPES.text:
@@ -57,7 +69,7 @@ const validateCellValue = (
 	}
 };
 
-const formatCellValue = (value: any, type: string): any => {
+const formatCellValue = (value: any, type: string, column?: Column): any => {
 	switch (type) {
 		case USER_FRIENDLY_COLUMN_TYPES.number:
 			return Number(value);
@@ -66,6 +78,10 @@ const formatCellValue = (value: any, type: string): any => {
 		case USER_FRIENDLY_COLUMN_TYPES.date:
 			return new Date(value).toISOString();
 		case USER_FRIENDLY_COLUMN_TYPES.link:
+			// For reference columns, ensure we return an array (always multiple)
+			if (!Array.isArray(value)) {
+				return value ? [value] : [];
+			}
 			return value; // Pentru coloanele de tip reference, păstrăm valoarea originală
 		case USER_FRIENDLY_COLUMN_TYPES.customArray:
 			return String(value); // Pentru customArray, păstrăm ca string
@@ -75,139 +91,17 @@ const formatCellValue = (value: any, type: string): any => {
 	}
 };
 
-const formatDateForInput = (value: string): string => {
-	if (!value) return "";
+const formatDateForInput = (value: string | string[]): string => {
+	if (Array.isArray(value) || !value) return "";
 	try {
 		return new Date(value).toISOString().slice(0, 16);
 	} catch {
-		return value;
+		return "";
 	}
 };
 
-// Funcție optimizată pentru crearea datelor de referință - afișează tot rândul (compact)
-const createReferenceData = (tables: Table[] | null) => {
-	const referenceData: Record<
-		number,
-		{ id: number; displayValue: string; primaryKeyValue: any }[]
-	> = {};
 
-	if (!tables || tables.length === 0) {
-		if (process.env.NODE_ENV === "development") {
-			// No tables provided for reference data
-		}
-		return referenceData;
-	}
 
-	if (process.env.NODE_ENV === "development") {
-		// Processing tables for reference data
-	}
-
-	// Pentru fiecare tabel, creează o listă de opțiuni disponibile
-	tables.forEach((table) => {
-		const options: {
-			id: number;
-			displayValue: string;
-			primaryKeyValue: any;
-		}[] = [];
-
-		if (Array.isArray(table.rows) && table.rows.length > 0) {
-			table.rows.forEach((row) => {
-				if (Array.isArray(row.cells) && row.cells.length > 0) {
-					// Creează un string cu valorile importante din rând
-					const displayParts: string[] = [];
-					let primaryKeyValue: any = null;
-
-					// Sortează coloanele pentru o afișare consistentă (primary key primul)
-					const sortedColumns = [...(table.columns || [])].sort((a, b) => {
-						if (a.primary && !b.primary) return -1;
-						if (!a.primary && b.primary) return 1;
-						return a.name.localeCompare(b.name);
-					});
-
-					// Ia doar primele 2-3 coloane importante
-					const maxColumns =
-						(table.columns?.length || 0) > 3 ? 3 : table.columns?.length || 0;
-					let addedColumns = 0;
-
-					(table.columns || []).forEach((column) => {
-						if (addedColumns >= maxColumns) return;
-
-						const cell = (row.cells || []).find(
-							(c) => c.columnId === column.id,
-						);
-						if (cell && cell.value !== undefined && cell.value !== null) {
-							const value = cell.value.toString().trim();
-							if (value !== "") {
-								// Salvează valoarea cheii primare pentru referință
-								if (column.primary) {
-									primaryKeyValue = cell.value; // Valoarea originală, nu string-ul formatat
-								}
-
-								// Formatează valoarea pentru afișare (mai compact)
-								let formattedValue = value;
-
-								// Limitează lungimea valorilor individuale
-								if (formattedValue.length > 15) {
-									formattedValue = formattedValue.substring(0, 15) + "...";
-								}
-
-								// Formatează datele pentru o citire mai ușoară
-								if (column.type === USER_FRIENDLY_COLUMN_TYPES.date) {
-									try {
-										const date = new Date(value);
-										formattedValue = date.toLocaleDateString("ro-RO");
-									} catch (e) {
-										formattedValue = value;
-									}
-								} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo) {
-									formattedValue = value === "true" ? "✓" : "✗";
-								}
-
-								// Pentru prima coloană (de obicei ID), nu pune numele coloanei
-								if (addedColumns === 0 && column.primary) {
-									displayParts.push(`#${formattedValue}`);
-								} else {
-									displayParts.push(formattedValue);
-								}
-
-								addedColumns++;
-							}
-						}
-					});
-
-					// Creează string-ul final pentru afișare (limitat la 50 caractere)
-					let displayValue = "";
-					if (displayParts.length > 0) {
-						displayValue = displayParts.join(" • ");
-
-						// Limitează lungimea totală
-						if (displayValue.length > 50) {
-							displayValue = displayValue.substring(0, 47) + "...";
-						}
-					} else {
-						// Fallback dacă nu găsim nimic
-						displayValue = `Row #${row.id}`;
-					}
-
-					options.push({
-						id: row.id,
-						displayValue: displayValue,
-						primaryKeyValue: primaryKeyValue,
-					});
-				}
-			});
-		}
-
-		// Folosește ID-ul tabelului ca și cheie
-		referenceData[table.id] = options;
-
-		if (process.env.NODE_ENV === "development") {
-			// Development logging
-		}
-	});
-
-	return referenceData;
-};
 
 export const AddRowForm = memo(function AddRowForm({
 	columns,
@@ -217,33 +111,53 @@ export const AddRowForm = memo(function AddRowForm({
 	tables,
 	serverError,
 }: Props) {
-	const referenceData = useMemo(() => createReferenceData(tables), [tables]);
+	// Optimizare: pentru coloanele de tip reference, folosim doar tabela referențiată
+	const { referenceData } = useOptimizedReferenceData(tables, undefined);
 
-	// Reference data loaded
 
 	// Optimized cell update function
 	const updateCell = useCallback(
-		(columnId: number, value: string) => {
+		(columnId: number, value: string | string[]) => {
 			const updatedCells = cells.filter(
 				(cell: CellSchema) => cell.columnId !== columnId,
 			);
 
-			if (value.trim() !== "") {
-				updatedCells.push({ columnId, value });
+			// For reference columns, check if array is empty (always multiple)
+			const column = columns.find((col) => col.id === columnId);
+			if (column?.type === "reference") {
+				if (Array.isArray(value) && value.length > 0) {
+					updatedCells.push({ columnId, value });
+				}
+			} else {
+				// For single values, check if string is not empty
+				if (typeof value === "string" && value.trim() !== "") {
+					updatedCells.push({ columnId, value });
+				}
 			}
 
 			setCells(updatedCells);
 		},
-		[cells, setCells],
+		[cells, setCells, columns],
 	);
 
 	// Get cell value helper
 	const getCellValue = useCallback(
-		(columnId: number): string => {
+		(columnId: number): string | string[] => {
 			const cell = cells.find((cell) => cell.columnId === columnId);
+			if (!cell) return "";
+
+			// For reference columns, return array (always multiple)
+			const column = columns.find((col) => col.id === columnId);
+			if (column?.type === "reference") {
+				if (Array.isArray(cell.value)) {
+					return cell.value;
+				}
+				return cell.value ? [cell.value] : [];
+			}
+
 			return cell?.value?.toString() ?? "";
 		},
-		[cells],
+		[cells, columns],
 	);
 
 	// Form validation - only show errors when there's a server error
@@ -256,15 +170,31 @@ export const AddRowForm = memo(function AddRowForm({
 			// Check required fields
 			requiredColumns.forEach((col) => {
 				const cellValue = getCellValue(col.id);
-				if (!cellValue.trim()) {
-					errors.push(`${col.name} is required`);
+				if (col.type === "reference") {
+					// For reference columns, check if array has values (always multiple)
+					if (!Array.isArray(cellValue) || cellValue.length === 0) {
+						errors.push(`${col.name} is required`);
+					}
+				} else {
+					// For single values, check if string is not empty
+					if (typeof cellValue === "string" && !cellValue.trim()) {
+						errors.push(`${col.name} is required`);
+					}
 				}
 			});
 
 			// Check type validation
 			columns?.forEach((col) => {
 				const cellValue = getCellValue(col.id);
-				if (cellValue.trim() && !validateCellValue(cellValue, col.type, col)) {
+				if (col.type === "reference") {
+					// Skip validation for reference arrays (always multiple)
+					return;
+				}
+				if (
+					typeof cellValue === "string" &&
+					cellValue.trim() &&
+					!validateCellValue(cellValue, col.type, col)
+				) {
 					errors.push(`${col.name} must be a valid ${col.type}`);
 				}
 			});
@@ -305,7 +235,7 @@ export const AddRowForm = memo(function AddRowForm({
 						<div key={`field-${column.id}`} className={divClassName}>
 							{commonLabelJSX}
 							<Select
-								value={cellValue}
+								value={typeof cellValue === "string" ? cellValue : ""}
 								onValueChange={(val) => updateCell(column.id, val)}>
 								<SelectTrigger className={hasError ? "border-destructive" : ""}>
 									<SelectValue placeholder='Select value' />
@@ -324,7 +254,7 @@ export const AddRowForm = memo(function AddRowForm({
 							{commonLabelJSX}
 							<Input
 								type='number'
-								value={cellValue}
+								value={typeof cellValue === "string" ? cellValue : ""}
 								onChange={(e) => updateCell(column.id, e.target.value)}
 								placeholder={`Enter ${column.name.toLowerCase()}`}
 								className={`w-full ${hasError ? "border-destructive" : ""}`}
@@ -353,7 +283,7 @@ export const AddRowForm = memo(function AddRowForm({
 						return (
 							<div key={`field-${column.id}`} className={divClassName}>
 								{commonLabelJSX}
-								<div className='p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800'>
+								<div className='p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800'>
 									⚠️ Reference table not configured for this column
 								</div>
 							</div>
@@ -368,13 +298,18 @@ export const AddRowForm = memo(function AddRowForm({
 					return (
 						<div key={`field-${column.id}`} className={divClassName}>
 							{commonLabelJSX}
-							<SearchableReferenceSelect
-								value={cellValue}
-								onValueChange={(val) => updateCell(column.id, val)}
+							<MultipleReferenceSelect
+								value={Array.isArray(cellValue) ? cellValue : []}
+								onValueChange={(val) => updateCell(column.id, val as string[])}
 								options={options}
-								placeholder={`Select ${referencedTable?.name || "reference"}`}
+								placeholder={`Select ${referencedTable?.name || "references"}`}
 								hasError={hasError}
 								referencedTableName={referencedTable?.name}
+								isMultiple={true}
+								className='w-full'
+								onValidationChange={(isValid, invalidCount) => {
+									// Handle validation if needed
+								}}
 							/>
 							{/* Reference table info */}
 							{process.env.NODE_ENV === "development" && (
@@ -382,7 +317,7 @@ export const AddRowForm = memo(function AddRowForm({
 									Table:{" "}
 									{referencedTable?.name ||
 										`Unknown (ID: ${column.referenceTableId})`}
-									, Options: {options.length}
+									, Options: {options.length}, Multiple: Always Enabled
 								</div>
 							)}
 						</div>
@@ -394,7 +329,7 @@ export const AddRowForm = memo(function AddRowForm({
 						return (
 							<div key={`field-${column.id}`} className={divClassName}>
 								{commonLabelJSX}
-								<div className='p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800'>
+								<div className='p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800'>
 									⚠️ No custom options defined for this column
 								</div>
 							</div>
@@ -405,7 +340,7 @@ export const AddRowForm = memo(function AddRowForm({
 						<div key={`field-${column.id}`} className={divClassName}>
 							{commonLabelJSX}
 							<Select
-								value={cellValue}
+								value={typeof cellValue === "string" ? cellValue : ""}
 								onValueChange={(val) => updateCell(column.id, val)}>
 								<SelectTrigger className={hasError ? "border-destructive" : ""}>
 									<SelectValue placeholder='Select an option' />
@@ -429,7 +364,7 @@ export const AddRowForm = memo(function AddRowForm({
 							{commonLabelJSX}
 							<Input
 								type='text'
-								value={cellValue}
+								value={typeof cellValue === "string" ? cellValue : ""}
 								onChange={(e) => updateCell(column.id, e.target.value)}
 								placeholder={`Enter ${column.name.toLowerCase()}`}
 								className={`w-full ${hasError ? "border-destructive" : ""}`}
@@ -452,7 +387,7 @@ export const AddRowForm = memo(function AddRowForm({
 				if (column) {
 					return {
 						...cell,
-						value: formatCellValue(cell.value, column.type),
+						value: formatCellValue(cell.value, column.type, column),
 					};
 				}
 				return cell;

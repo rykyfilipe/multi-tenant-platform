@@ -39,8 +39,10 @@ interface UseTableRowsResult {
 		globalSearch?: string,
 		sortBy?: string,
 		sortOrder?: "asc" | "desc",
+		showLoading?: boolean,
 	) => Promise<void>;
 	refetch: () => Promise<void>;
+	silentRefresh: () => Promise<void>;
 	applyFilters: (
 		filters: FilterConfig[],
 		globalSearch: string,
@@ -51,6 +53,7 @@ interface UseTableRowsResult {
 	updateGlobalSearch: (search: string) => void;
 	updateSorting: (sortBy: string, sortOrder: "asc" | "desc") => void;
 	clearFilters: () => void;
+	setRows: (rows: Row[] | ((prevRows: Row[]) => Row[])) => void;
 }
 
 function useTableRows(
@@ -138,6 +141,7 @@ function useTableRows(
 			globalSearchParam: string = globalSearch,
 			sortByParam: string = sortBy,
 			sortOrderParam: "asc" | "desc" = sortOrder,
+			showLoading: boolean = true,
 		) => {
 			if (!token || !userId || !tenantId || !databaseId || !tableId) {
 				return;
@@ -187,7 +191,10 @@ function useTableRows(
 				lastFetchParamsRef.current = ""; // Clear last fetch params to force new fetch
 			}
 
-			setLoading(true);
+			// Only set loading state if showLoading is true
+			if (showLoading) {
+				setLoading(true);
+			}
 			setError(null);
 			lastFetchParamsRef.current = paramsString;
 
@@ -261,7 +268,10 @@ function useTableRows(
 				setRows([]);
 				setPagination(null);
 			} finally {
-				setLoading(false);
+				// Only reset loading state if we set it to true
+				if (showLoading) {
+					setLoading(false);
+				}
 			}
 		},
 		[
@@ -305,6 +315,37 @@ function useTableRows(
 		sortBy,
 		sortOrder,
 		// Removed fetchRows from dependencies
+	]);
+
+	// Silent refresh that doesn't set loading state - useful for background updates
+	const silentRefresh = useCallback(async () => {
+		if (!token || !userId || !tenantId || !databaseId || !tableId) {
+			return;
+		}
+
+		// Use fetchRows with showLoading: false to avoid loading state
+		await fetchRows(
+			currentPage,
+			currentPageSize,
+			filters,
+			globalSearch,
+			sortBy,
+			sortOrder,
+			false, // showLoading: false
+		);
+	}, [
+		token,
+		userId,
+		tenantId,
+		databaseId,
+		tableId,
+		currentPage,
+		currentPageSize,
+		filters,
+		globalSearch,
+		sortBy,
+		sortOrder,
+		fetchRows,
 	]);
 
 	// Aplică filtre cu reset la prima pagină
@@ -393,8 +434,12 @@ function useTableRows(
 			if (isInitialLoadRef.current) {
 				// Use setTimeout to avoid dependency issues
 				const timeoutId = setTimeout(() => {
-					fetchRows(1, initialPageSize);
-					isInitialLoadRef.current = false;
+					// Only set loading state for initial load, not for subsequent operations
+					setLoading(true);
+					fetchRows(1, initialPageSize).finally(() => {
+						setLoading(false);
+						isInitialLoadRef.current = false;
+					});
 				}, 0);
 
 				return () => clearTimeout(timeoutId);
@@ -428,11 +473,13 @@ function useTableRows(
 		sortOrder,
 		fetchRows,
 		refetch,
+		silentRefresh,
 		applyFilters,
 		updateFilters,
 		updateGlobalSearch,
 		updateSorting,
 		clearFilters,
+		setRows,
 	};
 }
 

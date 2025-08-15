@@ -27,7 +27,7 @@ function useRowsTableEditor() {
 		rowId: string,
 		cellId: string,
 		rows: Row[],
-		setRows: (rows: Row[]) => void,
+		onSuccess: (newCell?: any) => void,
 		value: any,
 		table: any,
 		token: string,
@@ -89,18 +89,12 @@ function useRowsTableEditor() {
 					throw new Error("Invalid response format");
 				}
 
-				// Actualizăm rândurile cu noua celulă
-				const updatedRows = rows.map((row) => {
-					if (row.id.toString() !== rowId) return row;
-					return {
-						...row,
-						cells: [...(row.cells || []), newCell],
-					};
-				});
-
-				setRows(updatedRows);
+				// Nu mai facem setRows aici - lăsăm părintele să gestioneze state-ul
 				setEditingCell(null);
 				showAlert("Data cell created successfully", "success");
+
+				// Apelează callback-ul de succes cu noua celulă pentru a actualiza state-ul local
+				onSuccess(newCell);
 				return;
 			}
 
@@ -141,34 +135,21 @@ function useRowsTableEditor() {
 				throw new Error(errorMessage);
 			}
 
-			const updatedRows = rows.map((row) => {
-				if (row.id.toString() !== rowId) return row;
+			// Obținem celula updatată din response
+			let updatedCell;
+			try {
+				updatedCell = await response.json();
+			} catch (parseError) {
+				console.error("Could not parse success response:", parseError);
+				throw new Error("Invalid response format");
+			}
 
-				const updatedCells = row.cells?.map((cell) => {
-					if (cell.id.toString() === cellId) {
-						return { ...cell, value };
-					}
-					return cell;
-				});
-
-				return { ...row, cells: updatedCells };
-			});
-
-			// const updatedTables = tables?.map((t) => {
-			// 	if (t.id === table.id) {
-			// 		return {
-			// 			...t,
-			// 			rows: updatedRows,
-			// 		};
-			// 	}
-			// 	return t;
-			// });
-
-			setRows(updatedRows);
-			// setTables(updatedTables || []);
-
+			// Nu mai facem setRows aici - lăsăm părintele să gestioneze state-ul
 			setEditingCell(null);
 			showAlert("Data cell updated successfully", "success");
+
+			// Apelează callback-ul de succes cu celula updatată pentru a actualiza state-ul local
+			onSuccess(updatedCell);
 		} catch (error: any) {
 			// Gestionează diferite tipuri de erori
 			let errorMessage = "An unexpected error occurred";

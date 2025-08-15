@@ -196,7 +196,10 @@ class ExportQueryBuilder {
 	}
 
 	// Validează valorile unui filtru
-	private validateFilterValues(filter: FilterCondition, columnType: string): boolean {
+	private validateFilterValues(
+		filter: FilterCondition,
+		columnType: string,
+	): boolean {
 		const { operator, value, secondValue } = filter;
 
 		const noValueOperators = [
@@ -234,7 +237,9 @@ class ExportQueryBuilder {
 					].includes(operator)
 				) {
 					return (
-						value !== null && value !== undefined && !isNaN(parseFloat(value as string))
+						value !== null &&
+						value !== undefined &&
+						!isNaN(parseFloat(value as string))
 					);
 				}
 				if (["between", "not_between"].includes(operator)) {
@@ -258,9 +263,9 @@ class ExportQueryBuilder {
 				if (["between", "not_between"].includes(operator)) {
 					return Boolean(
 						value &&
-						secondValue &&
-						!isNaN(new Date(value as string).getTime()) &&
-						!isNaN(new Date(secondValue as string).getTime())
+							secondValue &&
+							!isNaN(new Date(value as string).getTime()) &&
+							!isNaN(new Date(secondValue as string).getTime()),
 					);
 				}
 				break;
@@ -276,7 +281,9 @@ class ExportQueryBuilder {
 	}
 
 	// Construiește condiția pentru un filtru
-	private buildFilterCondition(filter: FilterCondition): Record<string, unknown> {
+	private buildFilterCondition(
+		filter: FilterCondition,
+	): Record<string, unknown> {
 		const { columnId, operator, value, secondValue } = filter;
 		const column = this.tableColumns.find((col) => col.id === columnId);
 		if (!column) return {};
@@ -371,8 +378,11 @@ class ExportQueryBuilder {
 		};
 	}
 
-	private buildRegexFilter(columnId: number, value: unknown): Record<string, unknown> {
-		if (typeof value !== 'string') {
+	private buildRegexFilter(
+		columnId: number,
+		value: unknown,
+	): Record<string, unknown> {
+		if (typeof value !== "string") {
 			return {};
 		}
 		return {
@@ -550,7 +560,11 @@ class ExportQueryBuilder {
 		return {};
 	}
 
-	private buildDateFilter(columnId: number, operator: string, value: unknown): Record<string, unknown> {
+	private buildDateFilter(
+		columnId: number,
+		operator: string,
+		value: unknown,
+	): Record<string, unknown> {
 		return {
 			cells: {
 				some: {
@@ -752,8 +766,29 @@ function generateCSV(rows: any[], columns: any[], tables: any[]): string {
 
 			// Tipuri speciale
 			if (col.type === "reference" && col.referenceTableId) {
-				const refKey = `${col.referenceTableId}-${value}`;
-				value = referenceMap.get(refKey) || value;
+				// Handle multiple reference values (arrays)
+				if (Array.isArray(value)) {
+					// Multiple references - join all values
+					if (value.length === 0) {
+						value = "";
+					} else {
+						const refValues = value
+							.filter((refValue) => refValue != null && refValue !== "")
+							.map((refValue) => {
+								const refKey = `${col.referenceTableId}-${refValue}`;
+								return referenceMap.get(refKey) || refValue;
+							});
+						value = refValues.join(", ");
+					}
+				} else {
+					// Single reference
+					if (value == null || value === "") {
+						value = "";
+					} else {
+						const refKey = `${col.referenceTableId}-${value}`;
+						value = referenceMap.get(refKey) || value;
+					}
+				}
 			} else if (col.type === "date" || col.type === "datetime") {
 				try {
 					value = new Date(value).toLocaleDateString("ro-RO");
@@ -789,7 +824,7 @@ async function applyStringFilters(
 		if (!column) return false;
 
 		return (
-			["text", "string", "email", "url"].includes(column.type) &&
+			["text", "string", "email", "url", "reference"].includes(column.type) &&
 			["starts_with", "ends_with", "contains", "not_contains"].includes(
 				filter.operator,
 			)
@@ -803,7 +838,24 @@ async function applyStringFilters(
 			const cell = row.cells?.find((c: any) => c.columnId === filter.columnId);
 			if (!cell || !cell.value) return false;
 
-			const cellValue = String(cell.value);
+			// Handle multiple reference values (arrays)
+			let cellValue: string;
+			if (Array.isArray(cell.value)) {
+				// For reference columns with multiple values, join them
+				if (cell.value.length === 0) {
+					cellValue = "";
+				} else {
+					cellValue = cell.value
+						.filter((val: any) => val != null && val !== "")
+						.join(", ");
+				}
+			} else {
+				cellValue = String(cell.value);
+			}
+
+			// Skip empty values in filtering
+			if (!cellValue || cellValue.trim() === "") return false;
+
 			const filterValue = String(filter.value);
 
 			switch (filter.operator) {
@@ -1006,9 +1058,11 @@ export async function GET(
 		// Sortare coloane după ordine în aplicație pentru fiecare rând
 		const sortedRows = filteredRows.map((row: Record<string, unknown>) => ({
 			...row,
-			cells: (row.cells as Array<{ column: { order: number } }>).sort((a, b) => {
-				return a.column.order - b.column.order;
-			}),
+			cells: (row.cells as Array<{ column: { order: number } }>).sort(
+				(a, b) => {
+					return a.column.order - b.column.order;
+				},
+			),
 		}));
 
 		// Asigură-te că coloanele sunt sortate corect după ordine

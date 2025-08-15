@@ -220,7 +220,10 @@ export function SearchableReferenceSelect({
 					{/* Options list */}
 					<div
 						ref={dropdownRef}
-						className='max-h-60 overflow-auto p-1'
+						className={cn(
+							'overflow-auto p-1',
+							filteredOptions.length <= 3 ? 'max-h-none' : 'max-h-60'
+						)}
 						role='listbox'>
 						{filteredOptions.length > 0 ? (
 							filteredOptions.map((option, index) => (

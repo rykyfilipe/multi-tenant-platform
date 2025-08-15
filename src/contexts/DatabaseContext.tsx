@@ -21,7 +21,7 @@ interface DatabaseContextType {
 	setDatabases: (databases: Database[]) => void;
 
 	selectedDatabase: Database | null;
-	setSelectedDatabase: (database: Database | null) => void;
+	setSelectedDatabase: (database: Database) => void;
 
 	tables: Table[] | null;
 	setTables: (tables: Table[]) => void;
@@ -44,6 +44,7 @@ interface DatabaseContextType {
 	handleAddDatabase: (e: React.FormEvent) => void;
 	handleDeleteDatabase: (id: number) => void;
 	handleSelectDatabase: (database: Database) => void;
+	fetchTables: () => Promise<void>;
 
 	// New method to refresh current database data
 	refreshSelectedDatabase: () => Promise<void>;
@@ -134,16 +135,48 @@ export const DatabaseProvider = ({
 		}
 	}, [token, user?.id, tenant?.id, fetchDatabases, databases]); // More specific dependencies
 
+	// Fetch tables for the selected database
+	const fetchTables = useCallback(async () => {
+		if (!selectedDatabase || !token || !tenantId) {
+			setTables(null);
+			return;
+		}
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			);
+
+			if (response.ok) {
+				const tablesData = await response.json();
+				setTables(tablesData);
+			} else {
+				console.error("Failed to fetch tables");
+				setTables([]);
+			}
+		} catch (error) {
+			console.error("Error fetching tables:", error);
+			setTables([]);
+		}
+	}, [selectedDatabase, token, tenantId]);
+
+	// Fetch tables when selected database changes
 	useEffect(() => {
 		if (selectedDatabase) {
-			setTables(selectedDatabase.tables || []);
+			fetchTables();
 		} else {
 			setTables(null);
 		}
-	}, [selectedDatabase]);
+	}, [selectedDatabase, fetchTables]);
 
 	const handleSelectDatabase = (database: Database) => {
 		setSelectedDatabase(database);
+		// Fetch tables immediately for the selected database
+		// Note: This will also be triggered by the useEffect, but calling it here
+		// ensures immediate response for better UX
 	};
 
 	const refreshSelectedDatabase = useCallback(async () => {
@@ -204,8 +237,16 @@ export const DatabaseProvider = ({
 			}
 
 			const newDatabase = await response.json();
+
+			// Update local state immediately for better UX
+			setDatabases((prevDatabases) =>
+				prevDatabases ? [...prevDatabases, newDatabase] : [newDatabase],
+			);
+
 			setShowAddDatabaseModal(false);
 			setDatabaseName("");
+
+			// Refresh from server to ensure consistency
 			fetchDatabases();
 			showAlert("Database created successfully!", "success");
 		} catch (error) {
@@ -231,6 +272,17 @@ export const DatabaseProvider = ({
 				throw new Error("Failed to delete database");
 			}
 
+			// Update local state immediately for better UX
+			setDatabases((prevDatabases) =>
+				prevDatabases ? prevDatabases.filter((db) => db.id !== id) : null,
+			);
+
+			// Clear selectedDatabase if it was the deleted one
+			if (selectedDatabase?.id === id) {
+				setSelectedDatabase(null);
+			}
+
+			// Refresh from server to ensure consistency
 			fetchDatabases();
 			showAlert("Database removed successfully", "success");
 		} catch (error) {
@@ -306,6 +358,21 @@ export const DatabaseProvider = ({
 				return;
 			}
 
+			const newTable = await response.json();
+
+			// Update local state immediately for better UX
+			setTables((prevTables) =>
+				prevTables ? [...prevTables, newTable] : [newTable],
+			);
+
+			// Also update selectedDatabase if it contains tables
+			if (selectedDatabase.tables) {
+				setSelectedDatabase({
+					...selectedDatabase,
+					tables: [...selectedDatabase.tables, newTable],
+				});
+			}
+
 			// Fetch baza de date actualizată (cu tabele noi)
 			const dbResponse = await fetch(
 				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}`,
@@ -351,6 +418,24 @@ export const DatabaseProvider = ({
 				throw new Error("Failed to delete table");
 			}
 
+			// Update local state immediately for better UX
+			setTables((prevTables) =>
+				prevTables
+					? prevTables.filter((table) => table.id.toString() !== id)
+					: null,
+			);
+
+			// Also update selectedDatabase if it contains tables
+			if (selectedDatabase.tables) {
+				setSelectedDatabase({
+					...selectedDatabase,
+					tables: selectedDatabase.tables.filter(
+						(table) => table.id.toString() !== id,
+					),
+				});
+			}
+
+			// Refresh from server to ensure consistency
 			fetchDatabases();
 			showAlert("Table removed successfully", "success");
 		} catch (error) {
@@ -398,6 +483,7 @@ export const DatabaseProvider = ({
 				loading,
 				validateTableName,
 				validateDatabaseName,
+				fetchTables,
 			}}>
 			{children}
 		</DatabaseContext.Provider>

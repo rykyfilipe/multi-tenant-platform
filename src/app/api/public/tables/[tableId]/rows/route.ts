@@ -460,7 +460,9 @@ export async function POST(
 						cells: {
 							some: {
 								columnId: primaryKeyColumn.id,
-								value: data[col.name],
+								value: {
+									equals: data[col.name],
+								},
 							},
 						},
 					},

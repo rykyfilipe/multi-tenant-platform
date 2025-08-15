@@ -219,3 +219,88 @@ export async function DELETE(
 		);
 	}
 }
+
+export async function PATCH(
+	request: Request,
+	{
+		params,
+	}: {
+		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
+	},
+) {
+	const logged = verifyLogin(request);
+	if (!logged) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	const userResult = await getUserFromRequest(request);
+
+	if (userResult instanceof NextResponse) {
+		return userResult;
+	}
+
+	const { tenantId, databaseId, tableId } = await params;
+	const { userId, role } = userResult;
+
+	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+
+	if (role !== "ADMIN" || !isMember)
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+	try {
+		// Verificăm că tabela există și aparține bazei de date și tenant-ului
+		const table = await prisma.table.findFirst({
+			where: {
+				id: Number(tableId),
+				databaseId: Number(databaseId),
+				database: {
+					tenantId: Number(tenantId),
+				},
+			},
+		});
+
+		if (!table) {
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		const body = await request.json();
+		const { name, description } = body;
+
+		// Validăm datele
+		if (
+			name !== undefined &&
+			(typeof name !== "string" || name.trim().length === 0)
+		) {
+			return NextResponse.json(
+				{ error: "Name must be a non-empty string" },
+				{ status: 400 },
+			);
+		}
+
+		if (description !== undefined && typeof description !== "string") {
+			return NextResponse.json(
+				{ error: "Description must be a string" },
+				{ status: 400 },
+			);
+		}
+
+		// Actualizăm tabela
+		const updatedTable = await prisma.table.update({
+			where: {
+				id: Number(tableId),
+			},
+			data: {
+				...(name !== undefined && { name: name.trim() }),
+				...(description !== undefined && { description }),
+			},
+		});
+
+		return NextResponse.json(updatedTable);
+	} catch (error) {
+		console.error(error);
+		return NextResponse.json(
+			{ error: "Failed to update table" },
+			{ status: 500 },
+		);
+	}
+}

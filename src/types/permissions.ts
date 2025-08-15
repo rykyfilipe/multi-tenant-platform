@@ -11,8 +11,8 @@ export interface TablePermission {
 	canRead: boolean;
 	canEdit: boolean;
 	canDelete: boolean;
-	createdAt: Date;
-	updatedAt: Date;
+	createdAt: string;
+	updatedAt: string;
 }
 
 export interface ColumnPermission {
@@ -23,8 +23,8 @@ export interface ColumnPermission {
 	columnId: number;
 	canRead: boolean;
 	canEdit: boolean;
-	createdAt: Date;
-	updatedAt: Date;
+	createdAt: string;
+	updatedAt: string;
 }
 
 export interface Permissions {
@@ -35,13 +35,19 @@ export interface Permissions {
 export interface TableInfo {
 	id: number;
 	name: string;
-	description: string;
+	description?: string;
 	columns?: Column[];
 	database?: {
 		id: number;
 		name: string;
 		tenantId: number;
+		createdAt?: string;
+		updatedAt?: string;
 	};
+	// Adăugăm câmpuri suplimentare care pot fi returnate de API
+	createdAt?: string;
+	updatedAt?: string;
+	databaseId?: number;
 }
 
 export type PermissionVariant = "read" | "edit" | "delete" | "default";

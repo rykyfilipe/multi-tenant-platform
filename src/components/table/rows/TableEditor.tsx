@@ -17,12 +17,13 @@ import { TableView } from "./TableView";
 import { TableFilters, FilterToggleButton } from "./TableFilters";
 import useRowsTableEditor from "@/hooks/useRowsTableEditor";
 import useTableRows from "@/hooks/useTableRows";
-import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import ImportExportControls from "./ImportExportControls";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
+import { useTablePermissions } from "@/hooks/useTablePermissions";
 
 interface Props {
 	table: Table;
@@ -38,17 +39,24 @@ const TableEditor = memo(function TableEditor({
 	const [showSidebar, setShowSidebar] = useState(false);
 	const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 	// Columns loaded
-	if (!columns) return;
+	if (!columns) return null;
 
 	const { showAlert, token, user, tenant } = useApp();
-	const { selectedDatabase } = useDatabase();
+	const { selectedDatabase, tables } = useDatabase();
 	const tenantId = tenant?.id;
 	const [showForm, setShowForm] = useState(false);
-	const [tables, setTables] = useState<Table[] | null>(null);
 	const [serverError, setServerError] = useState<string | null>(null);
-	if (!token || !user) return;
+	if (!token || !user) return null;
 
 	const [cells, setCells] = useState<any[]>([]);
+
+	// Verificăm permisiunile utilizatorului
+	const { permissions: userPermissions } = useCurrentUserPermissions();
+	const tablePermissions = useTablePermissions(
+		table.id,
+		userPermissions?.tablePermissions || [],
+		userPermissions?.columnsPermissions || [],
+	);
 
 	// Use server-side pagination hook
 	const {
@@ -58,15 +66,15 @@ const TableEditor = memo(function TableEditor({
 		pagination,
 		fetchRows,
 		refetch: refetchRows,
+		silentRefresh,
 		applyFilters,
 		globalSearch,
 		filters,
+		setRows,
 	} = useTableRows(table.id.toString(), 25);
 
 	const { editingCell, handleCancelEdit, handleEditCell, handleSaveCell } =
 		useRowsTableEditor();
-
-	const { refreshAfterChange } = useDatabaseRefresh();
 
 	// Clear server error when cells change (user starts typing)
 	useEffect(() => {
@@ -87,6 +95,15 @@ const TableEditor = memo(function TableEditor({
 
 			if (!token) return console.error("No token available");
 
+			// Verificăm dacă utilizatorul poate edita tabelul
+			if (!tablePermissions.canEditTable()) {
+				showAlert(
+					"You don't have permission to add rows to this table",
+					"error",
+				);
+				return;
+			}
+
 			// Clear any previous server errors
 			setServerError(null);
 
@@ -99,86 +116,30 @@ const TableEditor = memo(function TableEditor({
 							"Content-Type": "application/json",
 							Authorization: `Bearer ${token}`,
 						},
-						body: JSON.stringify({ cells: cells }),
+						body: JSON.stringify({ cells }),
 					},
 				);
 
-				if (!response.ok) {
-					// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
-					let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+				if (response.ok) {
+					const newRow = await response.json();
+					showAlert("Row added successfully!", "success");
+					setShowForm(false);
+					setCells([]);
 
-					try {
-						const errorData = await response.json();
-						errorMessage =
-							errorData.error ||
-							errorData.message ||
-							errorData.details ||
-							errorMessage;
-					} catch (parseError) {
-						try {
-							const textError = await response.text();
-							errorMessage = textError || errorMessage;
-						} catch (textParseError) {
-							console.error("Could not parse error response:", textParseError);
-						}
-					}
-
-					// Set server error to show validation errors
-					setServerError(errorMessage);
-					throw new Error(errorMessage);
-				}
-
-				const data = await response.json();
-				showAlert("Data row added successfully!", "success");
-
-				// Clear form cells
-				setCells([]);
-
-				// Clear server error on success
-				setServerError(null);
-
-				// Refresh database cache to update row counts
-				await refreshAfterChange();
-
-				// Update tables state to include the new row
-				setTables((prev: any) =>
-					prev?.map((t: any) => {
-						if (t.id === table.id) {
-							return {
-								...t,
-								rows: [...(t.rows || []), data],
-							};
-						}
-						return t;
-					}),
-				);
-
-				// Force refresh of current page to show the new row
-				// If we're on the first page, refetch to show the new row
-				// If we're on other pages, go back to first page to show the new row
-				if (pagination?.page === 1) {
-					await refetchRows();
+					// Use silent refresh to update data without showing loading state
+					// This provides better UX by avoiding the "loading tables" message
+					await silentRefresh();
 				} else {
-					// Go to first page to show the new row
-					await fetchRows(1, pagination?.pageSize || 25);
+					const errorData = await response.json();
+					throw new Error(errorData.error || "Failed to add row");
 				}
 			} catch (error: any) {
-				// Gestionează diferite tipuri de erori
-				let errorMessage = "An unexpected error occurred";
-
-				if (error instanceof Error) {
-					errorMessage = error.message;
-				} else if (typeof error === "string") {
-					errorMessage = error;
-				} else if (error?.message) {
-					errorMessage = error.message;
-				}
-
-				// Set server error if not already set
-				if (!serverError) {
-					setServerError(errorMessage);
-				}
-				showAlert(errorMessage, "error");
+				console.error("Error adding row:", error);
+				setServerError(error.message || "Failed to add row");
+				showAlert(
+					error.message || "Failed to add row. Please try again.",
+					"error",
+				);
 			}
 		},
 		[
@@ -187,56 +148,63 @@ const TableEditor = memo(function TableEditor({
 			table.databaseId,
 			table.id,
 			cells,
-			refetchRows,
-			fetchRows,
-			pagination,
-			refreshAfterChange,
-			setTables,
-			serverError,
+			setRows,
+			showAlert,
+			tablePermissions,
+			silentRefresh,
 		],
 	);
 
 	const handleDelete = useCallback(
 		async (rowId: string) => {
+			if (!token || !tenantId) return;
+
+			// Verificăm dacă utilizatorul poate șterge rânduri
+			if (!tablePermissions.canDeleteTable()) {
+				showAlert(
+					"You don't have permission to delete rows from this table",
+					"error",
+				);
+				return;
+			}
+
 			try {
 				const response = await fetch(
 					`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}`,
 					{
 						method: "DELETE",
 						headers: {
-							"Content-Type": "application/json",
 							Authorization: `Bearer ${token}`,
 						},
 					},
 				);
 
 				if (!response.ok) {
-					// Încearcă să parsezi răspunsul ca JSON pentru a obține mesajul de eroare
-					let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-
-					try {
-						const errorData = await response.json();
-						errorMessage =
-							errorData.error ||
-							errorData.message ||
-							errorData.details ||
-							errorMessage;
-					} catch (parseError) {
-						try {
-							const textError = await response.text();
-							errorMessage = textError || errorMessage;
-						} catch (textParseError) {
-							console.error("Could not parse error response:", textParseError);
-						}
-					}
-
+					const errorData = await response.json();
+					const errorMessage = errorData.error || "Failed to remove data row";
 					throw new Error(errorMessage);
 				}
-				// Refetch rows to get updated pagination
-				await refetchRows();
 
-				// Refresh database cache to update row counts
-				await refreshAfterChange();
+				// Update local state immediately for better UX
+				setRows((prevRows: any[]) =>
+					prevRows.filter((row) => row.id.toString() !== rowId),
+				);
+
+				// Check if we need to adjust pagination after deletion
+				if (pagination && pagination.totalRows > 1) {
+					const newTotalRows = pagination.totalRows - 1;
+					const newTotalPages = Math.ceil(newTotalRows / pagination.pageSize);
+
+					// If current page is now beyond total pages, go to last page
+					if (pagination.page > newTotalPages && newTotalPages > 0) {
+						await fetchRows(newTotalPages, pagination.pageSize);
+					}
+					// No need to refetch - local state is already updated
+				}
+
+				// Use silent refresh to update data without showing loading state
+				// This provides better UX by avoiding the "loading tables" message
+				await silentRefresh();
 
 				showAlert("Data row removed successfully", "success");
 			} catch (error: any) {
@@ -259,9 +227,13 @@ const TableEditor = memo(function TableEditor({
 			table.databaseId,
 			table.id,
 			token,
-			refetchRows,
-			refreshAfterChange,
+			// refreshAfterChange, // This line is removed as per the edit hint
 			showAlert,
+			setRows,
+			pagination,
+			fetchRows,
+			tablePermissions,
+			silentRefresh,
 		],
 	);
 
@@ -273,8 +245,9 @@ const TableEditor = memo(function TableEditor({
 				cellId,
 				paginatedRows,
 				async () => {
-					await refetchRows(); // Refetch instead of setting rows directly
-					await refreshAfterChange(); // Refresh database cache
+					// Use silent refresh to update data without showing loading state
+					// This provides better UX by avoiding the "loading tables" message
+					await silentRefresh();
 				},
 				value,
 				table,
@@ -286,104 +259,49 @@ const TableEditor = memo(function TableEditor({
 		[
 			handleSaveCell,
 			paginatedRows,
-			refetchRows,
-			refreshAfterChange,
+			silentRefresh,
 			table,
 			token,
 			user,
 			showAlert,
 		],
 	);
-	useEffect(() => {
-		if (tenant?.id && selectedDatabase?.id && token && user) {
-			fetchTables();
-		}
-	}, [tenant?.id, selectedDatabase?.id, token, user]);
 
-	// Update filtered rows when paginated rows change
+	// Verificăm dacă utilizatorul are acces la tabel
+	if (!tablePermissions.canReadTable()) {
+		return (
+			<div className='space-y-6'>
+				<div className='text-center py-12'>
+					<div className='text-muted-foreground'>
+						<p className='text-lg font-medium mb-2'>Access Denied</p>
+						<p className='text-sm'>
+							You don't have permission to view this table.
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
-	// Refresh data when columns change - only when columns are actually added/removed
-	useEffect(() => {
-		if (
-			columns &&
-			columns.length > 0 &&
-			token &&
-			tenant?.id &&
-			selectedDatabase?.id
-		) {
-			// Only refresh if we have rows and columns don't match
-			if (paginatedRows && paginatedRows.length > 0) {
-				const needsRefresh = paginatedRows.some((row) => {
-					if (!row.cells || !Array.isArray(row.cells)) return true;
-					return !columns.every((col) =>
-						row.cells!.some((cell) => cell.columnId === col.id),
-					);
-				});
-
-				if (needsRefresh) {
-					// Use a timeout to avoid infinite loops
-					const timeoutId = setTimeout(() => {
-						refetchRows();
-					}, 100);
-
-					return () => clearTimeout(timeoutId);
-				}
-			}
-		}
-	}, [
-		columns?.length,
-		token,
-		tenant?.id,
-		selectedDatabase?.id,
-		table.id,
-		paginatedRows?.length,
-		// Removed refetchRows from dependencies to prevent infinite loop
-	]);
-
-	const fetchTables = async () => {
-		if (!tenant || !user || !token || !selectedDatabase?.id) return;
-		try {
-			const response = await fetch(
-				`/api/tenants/${tenant.id}/databases/${selectedDatabase.id}`,
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				},
-			);
-
-			if (!response.ok) throw new Error("Failed to fetch database");
-			const data = await response.json();
-
-			// API-ul returnează o singură bază de date, nu un array
-			if (data && data.tables) {
-				setTables(data.tables || []);
-				if (process.env.NODE_ENV === "development") {
-					// Tables fetched successfully
-				}
-			}
-		} catch (error) {
-			console.error("Error fetching tables:", error);
-			showAlert(
-				"Failed to load database information. Please refresh the page.",
-				"error",
-			);
-		}
-	};
 	return (
 		<div className='space-y-6'>
 			{/* Header Actions */}
 			<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
 				<div className='flex items-center  w-full space-x-3'>
-					<Button
-						onClick={() => {
-							setShowForm((prev) => !prev);
-							// Clear server error when toggling form
-							setServerError(null);
-						}}
-						className={
-							user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
-						}>
-						{showForm ? <X className='w-4 h-4' /> : "Add Row"}
-					</Button>
+					{/* Butonul Add Row - doar dacă utilizatorul poate edita */}
+					{tablePermissions.canEditTable() && (
+						<Button
+							onClick={() => {
+								setShowForm((prev) => !prev);
+								// Clear server error when toggling form
+								setServerError(null);
+							}}
+							className={
+								user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
+							}>
+							{showForm ? <X className='w-4 h-4' /> : "Add Row"}
+						</Button>
+					)}
 					{showForm && (
 						<span className='text-sm text-muted-foreground'>
 							Fill in the form below to add a new row
@@ -404,8 +322,8 @@ const TableEditor = memo(function TableEditor({
 						activeFiltersCount={activeFiltersCount}
 					/>
 					<ImportExportControls
-						rows={paginatedRows}
-						columns={columns}
+						rows={paginatedRows || []}
+						columns={columns || []}
 						table={table}
 						globalSearch={globalSearch}
 						filters={filters}
@@ -414,15 +332,15 @@ const TableEditor = memo(function TableEditor({
 				</div>
 			</div>
 
-			{/* Add Row Form */}
-			{showForm && (
+			{/* Add Row Form - doar dacă utilizatorul poate edita */}
+			{showForm && tablePermissions.canEditTable() && (
 				<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg p-6'>
 					<AddRowForm
-						columns={columns}
+						columns={columns || []}
 						cells={cells}
 						setCells={setCells}
 						onAdd={handleAdd}
-						tables={tables}
+						tables={tables || []}
 						serverError={serverError}
 					/>
 				</div>
@@ -430,9 +348,9 @@ const TableEditor = memo(function TableEditor({
 
 			{/* Filters */}
 			<TableFilters
-				columns={columns}
-				rows={paginatedRows}
-				tables={tables}
+				columns={columns || []}
+				rows={paginatedRows || []}
+				tables={tables || []}
 				onFilterChange={() => {}} // Required prop but not used for server-side filtering
 				onApplyFilters={applyFilters}
 				showToggleButton={false}
@@ -444,25 +362,36 @@ const TableEditor = memo(function TableEditor({
 
 			{/* Rows Table */}
 			<div className='table-content'>
-				<TableView
-					tables={tables}
-					table={table}
-					columns={columns}
-					rows={paginatedRows}
-					loading={rowsLoading}
-					editingCell={editingCell}
-					onEditCell={handleEditCell}
-					onSaveCell={handleSaveCellWrapper}
-					onCancelEdit={handleCancelEdit}
-					onDeleteRow={handleDelete}
-					currentPage={pagination?.page || 1}
-					pageSize={pagination?.pageSize || 25}
-					totalPages={pagination?.totalPages || 1}
-					totalItems={pagination?.totalRows || 0}
-					onPageChange={(page) => fetchRows(page, pagination?.pageSize || 25)}
-					onPageSizeChange={(pageSize) => fetchRows(1, pageSize)}
-					showPagination={true}
-				/>
+				{rowsLoading ? (
+					<div className='flex items-center justify-center py-12'>
+						<div className='flex items-center gap-2'>
+							<div className='animate-spin rounded-full h-6 w-6 border-b-2 border-primary'></div>
+							<span className='text-muted-foreground'>
+								Loading table data...
+							</span>
+						</div>
+					</div>
+				) : (
+					<TableView
+						tables={tables || []}
+						table={table}
+						columns={columns || []}
+						rows={paginatedRows || []}
+						loading={false}
+						editingCell={editingCell}
+						onEditCell={handleEditCell}
+						onSaveCell={handleSaveCellWrapper}
+						onCancelEdit={handleCancelEdit}
+						onDeleteRow={handleDelete}
+						currentPage={pagination?.page || 1}
+						pageSize={pagination?.pageSize || 25}
+						totalPages={pagination?.totalPages || 1}
+						totalItems={pagination?.totalRows || 0}
+						onPageChange={(page) => fetchRows(page, pagination?.pageSize || 25)}
+						onPageSizeChange={(pageSize) => fetchRows(1, pageSize)}
+						showPagination={true}
+					/>
+				)}
 			</div>
 		</div>
 	);

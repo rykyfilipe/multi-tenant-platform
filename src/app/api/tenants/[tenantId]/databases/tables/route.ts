@@ -42,17 +42,46 @@ export async function GET(
 				},
 				include: {
 					database: true,
-					columns: true,
+					columns: {
+						orderBy: {
+							order: 'asc'
+						}
+					},
 				},
 			});
 
-	
-			return NextResponse.json(tables, { status: 200 });
+			// Serializăm datele pentru a evita probleme cu tipurile Prisma
+			const serializedTables = tables.map(table => ({
+				...table,
+				createdAt: table.createdAt?.toISOString(),
+				updatedAt: table.updatedAt?.toISOString(),
+				columns: table.columns?.map(column => ({
+					...column,
+					createdAt: column.createdAt?.toISOString(),
+					updatedAt: column.updatedAt?.toISOString(),
+				})),
+				database: table.database ? {
+					...table.database,
+					createdAt: table.database.createdAt?.toISOString(),
+					updatedAt: table.database.updatedAt?.toISOString(),
+				} : null,
+			}));
+
+			// Debug logging
+			console.log("API - Admin tables fetched:", {
+				count: serializedTables.length,
+				tables: serializedTables.map(t => ({
+					id: t.id,
+					name: t.name,
+					columnsCount: t.columns?.length || 0,
+					columns: t.columns?.map(c => ({ id: c.id, name: c.name, type: c.type }))
+				}))
+			});
+
+			return NextResponse.json(serializedTables, { status: 200 });
 		}
 
 		// Pentru utilizatorii non-admin, returnăm doar tabelele la care au acces
-
-
 		const tablePermissions = await prisma.tablePermission.findMany({
 			where: {
 				userId: userId,
@@ -66,20 +95,49 @@ export async function GET(
 				table: {
 					include: {
 						database: true,
-						columns: true,
+						columns: {
+							orderBy: {
+								order: 'asc'
+							}
+						},
 					},
 				},
 			},
 		});
 
-
-
 		const accessibleTables = tablePermissions
 			.filter((permission: { canRead: boolean }) => permission.canRead)
 			.map((permission: { table: unknown }) => permission.table);
 
+		// Serializăm datele pentru a evita probleme cu tipurile Prisma
+		const serializedAccessibleTables = accessibleTables.map((table: any) => ({
+			...table,
+			createdAt: table.createdAt?.toISOString(),
+			updatedAt: table.updatedAt?.toISOString(),
+			columns: table.columns?.map((column: any) => ({
+				...column,
+				createdAt: column.createdAt?.toISOString(),
+				updatedAt: column.updatedAt?.toISOString(),
+			})),
+			database: table.database ? {
+				...table.database,
+				createdAt: table.database.createdAt?.toISOString(),
+				updatedAt: table.database.updatedAt?.toISOString(),
+			} : null,
+		}));
 
-		return NextResponse.json(accessibleTables, { status: 200 });
+		// Debug logging
+		console.log("API - Non-admin accessible tables:", {
+			count: serializedAccessibleTables.length,
+			tables: serializedAccessibleTables.map((t: any) => ({
+				id: t.id,
+				name: t.name,
+				columnsCount: t.columns?.length || 0,
+				columns: t.columns?.map((c: any) => ({ id: c.id, name: c.name, type: c.type }))
+			}))
+		});
+
+		return NextResponse.json(serializedAccessibleTables, { status: 200 });
 	} catch (error) {
 		console.error("Error fetching tables:", error);
 		console.error(

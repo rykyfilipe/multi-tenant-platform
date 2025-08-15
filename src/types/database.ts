@@ -32,6 +32,8 @@ export interface Column {
 	referenceTableId?: number;
 	customOptions?: string[]; // Opțiuni pentru tipul customArray
 	order: number; // Ordinea coloanei în tabel
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 export interface Row {

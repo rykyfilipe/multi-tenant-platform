@@ -59,8 +59,21 @@ function validateCellValue(
 			return !isNaN(new Date(value).getTime());
 		case "reference":
 			// Pentru reference, valoarea poate fi orice tip (string, number, etc.)
-			// Validarea se face la nivel de existență în tabela referențiată
-			return true;
+			// Sau poate fi o listă de valori separate cu virgulă
+			console.log(`Validating reference value:`, { value, type: typeof value });
+			if (typeof value === "string" && value.includes(",")) {
+				// Multiple references - validate each individual value
+				const refs = value
+					.split(",")
+					.map((ref) => ref.trim())
+					.filter(Boolean);
+				console.log(`Validated multiple references:`, refs);
+				return refs.length > 0; // Must have at least one valid reference
+			}
+			// Single reference - any non-empty value is valid
+			const isValid = value != null && value !== "";
+			console.log(`Single reference validation result:`, isValid);
+			return isValid;
 		case "customArray":
 			if (customOptions && customOptions.length > 0) {
 				return customOptions.includes(value);
@@ -105,8 +118,19 @@ function processCellValue(value: any, columnType: string): any {
 		case "datetime":
 			return new Date(value);
 		case "reference":
-			// Pentru reference, păstrăm valoarea originală (poate fi string, number, etc.)
-			// Validarea se face la nivel de existență în tabela referențiată
+			// Pentru reference, verificăm dacă valoarea conține multiple referințe separate cu virgulă
+			console.log(`Processing reference value:`, { value, type: typeof value });
+			if (typeof value === "string" && value.includes(",")) {
+				// Multiple references - split by comma and trim whitespace
+				const result = value
+					.split(",")
+					.map((ref) => ref.trim())
+					.filter(Boolean);
+				console.log(`Split multiple references:`, result);
+				return result;
+			}
+			// Single reference - return as is
+			console.log(`Single reference value:`, value);
 			return value;
 		default:
 			return value;
@@ -194,9 +218,12 @@ export async function POST(
 				type: true,
 				required: true,
 				order: true,
+				referenceTableId: true,
 			},
 			orderBy: { order: "asc" },
 		});
+
+		console.log(`Found table columns:`, tableColumns);
 
 		// Parsare body request
 		const body = await request.json();
@@ -210,6 +237,12 @@ export async function POST(
 				{ status: 400 },
 			);
 		}
+
+		console.log(`Import data:`, {
+			totalRows: rows.length,
+			sampleRow: rows[0],
+			sampleCells: rows[0]?.cells,
+		});
 
 		// Procesare rânduri direct (nu mai este nevoie de parsare CSV)
 		const dataRows = rows;
@@ -285,6 +318,13 @@ export async function POST(
 						continue;
 					}
 
+					console.log(`Processing cell for column '${column.name}':`, {
+						columnId: column.id,
+						columnType: column.type,
+						referenceTableId: column.referenceTableId,
+						cellValue: cell.value,
+					});
+
 					// Validare tip de date
 					if (
 						!validateCellValue(cell.value, column.type, column.customOptions)
@@ -298,53 +338,251 @@ export async function POST(
 					// Procesare valoare
 					const processedValue = processCellValue(cell.value, column.type);
 
+					console.log(`Processed value for column '${column.name}':`, {
+						originalValue: cell.value,
+						processedValue,
+						processedValueType: typeof processedValue,
+						isArray: Array.isArray(processedValue),
+					});
+
 					// Validare referințe - doar pentru valori non-null
 					if (
 						column.type === "reference" &&
 						column.referenceTableId !== null &&
+						column.referenceTableId !== undefined &&
 						processedValue !== null
 					) {
+						console.log(
+							`Starting reference validation for column '${column.name}':`,
+							{
+								referenceTableId: column.referenceTableId,
+								referenceTableIdType: typeof column.referenceTableId,
+								processedValue,
+								processedValueType: typeof processedValue,
+								isArray: Array.isArray(processedValue),
+							},
+						);
+
 						try {
+							// Verificăm că referenceTableId este valid
+							console.log(
+								`Raw referenceTableId:`,
+								column.referenceTableId,
+								`Type:`,
+								typeof column.referenceTableId,
+							);
+							console.log(`Column object:`, column);
+
+							if (
+								column.referenceTableId === null ||
+								column.referenceTableId === undefined
+							) {
+								warnings.push(
+									`Row ${rowIndex}, Column '${column.name}': Reference table ID is null or undefined`,
+								);
+								continue;
+							}
+
+							// Verificăm tipul de date
+							if (
+								typeof column.referenceTableId !== "number" &&
+								typeof column.referenceTableId !== "string"
+							) {
+								warnings.push(
+									`Row ${rowIndex}, Column '${
+										column.name
+									}': Reference table ID has invalid type '${typeof column.referenceTableId}'`,
+								);
+								continue;
+							}
+
+							const refTableId = Number(column.referenceTableId);
+							console.log(
+								`Converted refTableId:`,
+								refTableId,
+								`IsNaN:`,
+								isNaN(refTableId),
+							);
+							console.log(
+								`Original value:`,
+								column.referenceTableId,
+								`Converted:`,
+								refTableId,
+							);
+
+							if (isNaN(refTableId) || refTableId <= 0) {
+								warnings.push(
+									`Row ${rowIndex}, Column '${column.name}': Invalid reference table ID '${column.referenceTableId}'`,
+								);
+								continue;
+							}
+
+							// Verificăm că refTableId este un număr valid
+							if (!Number.isInteger(refTableId)) {
+								warnings.push(
+									`Row ${rowIndex}, Column '${column.name}': Reference table ID must be an integer, got '${refTableId}'`,
+								);
+								continue;
+							}
+
+							console.log(
+								`Final refTableId:`,
+								refTableId,
+								`Type:`,
+								typeof refTableId,
+							);
+
 							// Mai întâi găsim coloana primară din tabela referențiată
-							const primaryColumn = await prisma.column.findFirst({
+							const query = {
 								where: {
-									tableId: Number(column.referenceTableId),
+									tableId: refTableId as number,
 									primary: true,
 								},
 								select: { id: true, name: true },
-							});
+							};
+
+							console.log(`Primary column query:`, query);
+
+							const primaryColumn = await prisma.column.findFirst(query);
+
+							console.log(`Found primary column:`, primaryColumn);
 
 							if (!primaryColumn) {
 								warnings.push(
 									`Row ${rowIndex}, Column '${column.name}': Referenced table has no primary column`,
 								);
 							} else {
-								// Căutăm rândul care are valoarea în coloana primară
-								const referenceExists = await prisma.row.findFirst({
-									where: {
-										tableId: Number(column.referenceTableId),
-										cells: {
-											some: {
-												columnId: Number(primaryColumn.id),
-												value: {
-													equals: processedValue,
+								console.log(`Primary column found:`, {
+									id: primaryColumn.id,
+									name: primaryColumn.name,
+									tableId: refTableId,
+								});
+								// Handle multiple reference values (arrays)
+								if (Array.isArray(processedValue)) {
+									// Multiple references - check each one
+									if (processedValue.length === 0) {
+										warnings.push(
+											`Row ${rowIndex}, Column '${column.name}': Empty reference array`,
+										);
+									} else {
+										for (const refValue of processedValue) {
+											if (refValue == null || refValue === "") {
+												warnings.push(
+													`Row ${rowIndex}, Column '${column.name}': Empty reference value in array`,
+												);
+												continue;
+											}
+
+											const referenceQuery = {
+												where: {
+													tableId: refTableId as number,
+													cells: {
+														some: {
+															columnId: Number(primaryColumn.id),
+															value: {
+																equals: refValue,
+															},
+														},
+													},
+												},
+											};
+
+											console.log(`Reference lookup query:`, referenceQuery);
+
+											const referenceExists = await prisma.row.findFirst(
+												referenceQuery,
+											);
+
+											console.log(`Reference lookup for '${refValue}':`, {
+												referenceExists: !!referenceExists,
+												tableId: refTableId,
+												primaryColumnId: primaryColumn.id,
+												query: referenceQuery,
+											});
+
+											if (!referenceExists) {
+												warnings.push(
+													`Row ${rowIndex}, Column '${column.name}': Reference value '${refValue}' not found in referenced table`,
+												);
+											}
+										}
+									}
+								} else {
+									// Single reference - check if exists
+									if (processedValue == null || processedValue === "") {
+										warnings.push(
+											`Row ${rowIndex}, Column '${column.name}': Empty reference value`,
+										);
+									} else {
+										const singleReferenceQuery = {
+											where: {
+												tableId: refTableId as number,
+												cells: {
+													some: {
+														columnId: Number(primaryColumn.id),
+														value: {
+															equals: processedValue,
+														},
+													},
 												},
 											},
-										},
-									},
-								});
+										};
 
-								if (!referenceExists) {
-									// Pentru moment, să permitem importul cu avertismente în loc de erori
-									warnings.push(
-										`Row ${rowIndex}, Column '${column.name}': Reference value '${processedValue}' not found in referenced table`,
-									);
-									// Continuăm cu importul - poate fi o referință validă care nu există încă
+										console.log(
+											`Single reference lookup query:`,
+											singleReferenceQuery,
+										);
+
+										const referenceExists = await prisma.row.findFirst(
+											singleReferenceQuery,
+										);
+
+										console.log(
+											`Single reference lookup for '${processedValue}':`,
+											{
+												referenceExists: !!referenceExists,
+												tableId: refTableId,
+												primaryColumnId: primaryColumn.id,
+												query: {
+													tableId: refTableId as number,
+													cells: {
+														some: {
+															columnId: Number(primaryColumn.id),
+															value: processedValue,
+														},
+													},
+												},
+											},
+										);
+
+										if (!referenceExists) {
+											warnings.push(
+												`Row ${rowIndex}, Column '${column.name}': Reference value '${processedValue}' not found in referenced table`,
+											);
+										}
+									}
 								}
 							}
 						} catch (error) {
+							console.error(
+								`Reference validation error for column '${column.name}':`,
+								{
+									processedValue,
+									error: error instanceof Error ? error.message : String(error),
+									stack: error instanceof Error ? error.stack : undefined,
+									columnDetails: {
+										name: column.name,
+										type: column.type,
+										referenceTableId: column.referenceTableId,
+									},
+								},
+							);
 							warnings.push(
-								`Row ${rowIndex}, Column '${column.name}': Error checking reference value '${processedValue}'`,
+								`Row ${rowIndex}, Column '${
+									column.name
+								}': Error checking reference value '${processedValue}' - ${
+									error instanceof Error ? error.message : String(error)
+								}`,
 							);
 						}
 					}
@@ -421,11 +659,15 @@ export async function POST(
 
 		try {
 			await prisma.$transaction(async (tx: any) => {
+				console.log(`Starting transaction for ${validRows.length} rows`);
+
 				for (let i = 0; i < validRows.length; i++) {
 					const rowData = validRows[i];
 					const rowIndex = i + 1;
 
 					try {
+						console.log(`Processing row ${rowIndex} in transaction`);
+
 						// Creare rând nou
 						const newRow = await tx.row.create({
 							data: {
@@ -435,6 +677,8 @@ export async function POST(
 								id: true,
 							},
 						});
+
+						console.log(`Created row:`, newRow);
 
 						// Creare celule pentru rând
 						const createdCells = [];
@@ -500,6 +744,8 @@ export async function POST(
 			},
 		};
 
+		console.log(`Import response:`, response);
+
 		if (warnings.length > 0) {
 			response.warnings = warnings;
 		}
@@ -520,9 +766,16 @@ export async function POST(
 			statusCode = 207; // Success with warnings
 		}
 
+		console.log(`Final status code:`, statusCode);
+
 		return NextResponse.json(response, { status: statusCode });
 	} catch (error) {
 		console.error("Error importing rows:", error);
+		console.error("Error details:", {
+			name: error instanceof Error ? error.name : "Unknown",
+			message: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 
 		if (error instanceof z.ZodError) {
 			return NextResponse.json(

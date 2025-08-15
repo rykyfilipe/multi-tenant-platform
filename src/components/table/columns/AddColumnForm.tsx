@@ -55,15 +55,15 @@ export default function AddColumnForm({
 	const [newOption, setNewOption] = useState("");
 
 	const currentColumn = useMemo(
-		() =>
-			newColumn || {
-				name: "",
-				type: USER_FRIENDLY_COLUMN_TYPES.text,
-				required: false,
-				primary: false,
-				referenceTableId: undefined,
-				customOptions: [],
-			},
+		() => ({
+			name: newColumn?.name || "",
+			type: newColumn?.type || USER_FRIENDLY_COLUMN_TYPES.text,
+			required: newColumn?.required || false,
+			primary: newColumn?.primary || false,
+			referenceTableId: newColumn?.referenceTableId || undefined,
+			customOptions: newColumn?.customOptions || [],
+			order: newColumn?.order || 0,
+		}),
 		[newColumn],
 	);
 
@@ -115,6 +115,11 @@ export default function AddColumnForm({
 		(field: FieldMeta) => {
 			const value = currentColumn[field.key] as boolean;
 
+			// Check if this is the primary key field and if another column is already primary
+			const isPrimaryKeyField = field.key === "primary";
+			const hasExistingPrimaryKey = existingColumns.some((col) => col.primary);
+			const isDisabled = isPrimaryKeyField && hasExistingPrimaryKey && !value;
+
 			return (
 				<div key={field.key} className='space-y-2'>
 					<Label className='text-sm font-medium'>
@@ -123,19 +128,29 @@ export default function AddColumnForm({
 					</Label>
 					<Select
 						value={String(value)}
-						onValueChange={(val) => handleBooleanChange(field.key, val)}>
-						<SelectTrigger>
+						onValueChange={(val) => handleBooleanChange(field.key, val)}
+						disabled={isDisabled}>
+						<SelectTrigger
+							className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}>
 							<SelectValue placeholder='Select option' />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value='false'>False</SelectItem>
-							<SelectItem value='true'>True</SelectItem>
+							<SelectItem value='true' disabled={isDisabled}>
+								True
+							</SelectItem>
 						</SelectContent>
 					</Select>
+					{isDisabled && (
+						<p className='text-xs text-muted-foreground'>
+							⚠️ Another column is already set as primary key. Only one primary
+							key is allowed per table.
+						</p>
+					)}
 				</div>
 			);
 		},
-		[currentColumn, handleBooleanChange],
+		[currentColumn, handleBooleanChange, existingColumns],
 	);
 
 	const renderEnumField = useCallback(

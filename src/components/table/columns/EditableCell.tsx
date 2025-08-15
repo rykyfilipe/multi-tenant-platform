@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Column } from "@/types/database";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
+import { useTablePermissions } from "@/hooks/useTablePermissions";
 
 type FieldType = "string" | "boolean" | "date" | readonly string[];
 
@@ -25,6 +27,7 @@ interface Props {
 	onSave: (value: any) => void;
 	onCancel: () => void;
 	referenceOptions?: { value: string | number; label: string }[];
+	allColumns: Column[];
 }
 
 export function EditableCell({
@@ -36,12 +39,29 @@ export function EditableCell({
 	onSave,
 	onCancel,
 	referenceOptions,
+	allColumns,
 }: Props) {
 	const [value, setValue] = useState<any>(column[fieldName]);
 
 	useEffect(() => {
 		setValue(column[fieldName]);
 	}, [column, fieldName]);
+
+	// Verificăm permisiunile pentru această coloană
+	const { permissions: userPermissions } = useCurrentUserPermissions();
+	const tablePermissions = useTablePermissions(
+		column.tableId,
+		userPermissions?.tablePermissions || [],
+		userPermissions?.columnsPermissions || []
+	);
+
+	// Verificăm dacă utilizatorul poate citi această coloană
+	if (!tablePermissions.canReadColumn(column.id)) {
+		return <div className='text-gray-400 italic'>Access Denied</div>;
+	}
+
+	// Verificăm dacă utilizatorul poate edita această coloană
+	const canEdit = tablePermissions.canEditColumn(column.id);
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
@@ -53,30 +73,22 @@ export function EditableCell({
 
 	const renderValue = () => {
 		if (fieldName === "referenceTableId") {
-			// Dacă coloana nu este de tip reference, afișează un mesaj
+			// Pentru coloanele de tip reference, afișăm numele tabelului de referință
 			if (column.type !== "reference") {
 				return "Not applicable";
 			}
-
-			// Dacă este de tip reference, afișează numele tabelei
-			if (referenceOptions?.length) {
-				const option = referenceOptions.find(
-					(opt) => opt.value === column[fieldName],
-				);
-				return (
-					option?.label ||
-					(column[fieldName]
-						? `Unknown Table (ID: ${column[fieldName]})`
-						: "No table selected")
-				);
-			}
-
 			return column[fieldName]
 				? `Unknown Table (ID: ${column[fieldName]})`
 				: "No table selected";
 		}
 
 		if (fieldType === "boolean") {
+			if (
+				fieldName === "primary" &&
+				allColumns.some((col) => col.id !== column.id && col.primary)
+			) {
+				return column[fieldName] ? "Yes" : "No (disabled)";
+			}
 			return column[fieldName] ? "Yes" : "No";
 		}
 
@@ -92,6 +104,20 @@ export function EditableCell({
 	};
 
 	if (isEditing) {
+		// Verificăm dacă utilizatorul poate edita această coloană
+		if (!canEdit) {
+			return (
+				<div className='flex items-center w-full gap-2'>
+					<div className='flex-1 p-2 bg-muted rounded text-sm text-muted-foreground'>
+						You don't have permission to edit this column
+					</div>
+					<Button variant='ghost' size='sm' onClick={onCancel}>
+						✕
+					</Button>
+				</div>
+			);
+		}
+
 		// Dacă încercăm să edităm referenceTableId pentru o coloană care nu este de tip reference, nu permitem editarea
 		if (fieldName === "referenceTableId" && column.type !== "reference") {
 			return (
@@ -132,17 +158,34 @@ export function EditableCell({
 						</SelectContent>
 					</Select>
 				) : fieldType === "boolean" ? (
-					<Select
-						value={value?.toString()}
-						onValueChange={(val) => setValue(val === "true")}>
-						<SelectTrigger className='flex-1'>
-							<SelectValue placeholder='Select' />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='true'>Yes</SelectItem>
-							<SelectItem value='false'>No</SelectItem>
-						</SelectContent>
-					</Select>
+					<div className='flex-1 space-y-2'>
+						<Select
+							value={value?.toString()}
+							onValueChange={(val) => setValue(val === "true")}>
+							<SelectTrigger className='flex-1'>
+								<SelectValue placeholder='Select' />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem
+									value='true'
+									disabled={
+										fieldName === "primary" &&
+										allColumns.some(
+											(col) => col.id !== column.id && col.primary,
+										)
+									}>
+									Yes
+								</SelectItem>
+								<SelectItem value='false'>No</SelectItem>
+							</SelectContent>
+						</Select>
+						{fieldName === "primary" &&
+							allColumns.some((col) => col.id !== column.id && col.primary) && (
+								<p className='text-xs text-muted-foreground'>
+									⚠️ Another column is already set as primary key
+								</p>
+							)}
+					</div>
 				) : (
 					<Input
 						value={value || ""}
@@ -166,14 +209,29 @@ export function EditableCell({
 	return (
 		<div
 			className={`w-full ${
-				fieldName === "referenceTableId" && column.type !== "reference"
+				(fieldName === "referenceTableId" && column.type !== "reference") ||
+				(fieldName === "primary" &&
+					allColumns.some((col) => col.id !== column.id && col.primary)) ||
+				!canEdit
 					? "cursor-not-allowed opacity-50"
 					: "cursor-pointer"
 			}`}
 			onClick={
-				fieldName === "referenceTableId" && column.type !== "reference"
+				(fieldName === "referenceTableId" && column.type !== "reference") ||
+				(fieldName === "primary" &&
+					allColumns.some((col) => col.id !== column.id && col.primary)) ||
+				!canEdit
 					? undefined
 					: onStartEdit
+			}
+			title={
+				!canEdit
+					? "You don't have permission to edit this column"
+					: (fieldName === "referenceTableId" && column.type !== "reference") ||
+					  (fieldName === "primary" &&
+							allColumns.some((col) => col.id !== column.id && col.primary))
+					? "This field cannot be edited"
+					: "Click to edit"
 			}>
 			<p className='max-w-[100px] truncate'>{renderValue()}</p>
 		</div>

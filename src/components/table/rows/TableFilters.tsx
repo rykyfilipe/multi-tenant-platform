@@ -40,6 +40,7 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
+import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 
 interface FilterConfig {
 	id: string; // Unique identifier for each filter
@@ -135,39 +136,65 @@ export function TableFilters({
 
 	const getUniqueValues = (columnId: number) => {
 		const values = new Set<string>();
+		if (!Array.isArray(rows)) return Array.from(values).sort();
+
 		rows.forEach((row) => {
-			const cell = row.cells?.find((cell) => cell.columnId === columnId);
-			if (cell?.value !== null && cell?.value !== undefined) {
-				values.add(cell.value.toString());
+			if (row && row.cells && Array.isArray(row.cells)) {
+				const cell = row.cells.find(
+					(cell) => cell && cell.columnId === columnId,
+				);
+				if (cell?.value !== null && cell?.value !== undefined) {
+					values.add(cell.value.toString());
+				}
 			}
 		});
 		return Array.from(values).sort();
 	};
 
 	const getReferenceOptions = (column: Column) => {
-		if (column.type !== "reference" || !column.referenceTableId || !tables) {
+		if (
+			column.type !== "reference" ||
+			!column.referenceTableId ||
+			!tables ||
+			!Array.isArray(tables)
+		) {
 			return [];
 		}
 
 		const referencedTable = tables.find(
-			(t) => t.id === column.referenceTableId,
+			(t) => t && t.id === column.referenceTableId,
 		);
-		if (!referencedTable) return [];
+		if (
+			!referencedTable ||
+			!referencedTable.rows ||
+			!Array.isArray(referencedTable.rows)
+		)
+			return [];
 
 		const options: { value: string; label: string }[] = [];
-		referencedTable.rows?.forEach((row) => {
-			const primaryKeyCell = row.cells?.find((cell) => {
-				const refColumn = referencedTable.columns?.find(
-					(col) => col.id === cell.columnId,
-				);
-				return refColumn?.primary;
-			});
 
-			if (primaryKeyCell?.value) {
-				options.push({
-					value: primaryKeyCell.value.toString(),
-					label: primaryKeyCell.value.toString(),
+		// Optimizare: procesăm doar rândurile cu celule
+		referencedTable.rows.forEach((row) => {
+			if (
+				row &&
+				row.cells &&
+				Array.isArray(row.cells) &&
+				row.cells.length > 0
+			) {
+				const primaryKeyCell = row.cells.find((cell) => {
+					if (!cell) return false;
+					const refColumn = referencedTable.columns?.find(
+						(col) => col && col.id === cell.columnId,
+					);
+					return refColumn?.primary;
 				});
+
+				if (primaryKeyCell?.value) {
+					options.push({
+						value: primaryKeyCell.value.toString(),
+						label: primaryKeyCell.value.toString(),
+					});
+				}
 			}
 		});
 
@@ -593,8 +620,10 @@ export function TableFilters({
 		if (globalSearch.trim()) {
 			const searchTerm = globalSearch.toLowerCase();
 			result = result.filter((row) => {
-				return row.cells?.some((cell) => {
-					const column = columns.find((col) => col.id === cell.columnId);
+				if (!row || !row.cells || !Array.isArray(row.cells)) return false;
+				return row.cells.some((cell) => {
+					if (!cell) return false;
+					const column = columns.find((col) => col && col.id === cell.columnId);
 					if (!column) return false;
 
 					const cellValue = cell.value?.toString().toLowerCase() || "";
@@ -605,12 +634,13 @@ export function TableFilters({
 
 		// Apply column filters
 		filters.forEach((filter) => {
-			const column = columns.find((col) => col.id === filter.columnId);
+			const column = columns.find((col) => col && col.id === filter.columnId);
 			if (!column) return;
 
 			result = result.filter((row) => {
-				const cell = row.cells?.find(
-					(cell) => cell.columnId === filter.columnId,
+				if (!row || !row.cells || !Array.isArray(row.cells)) return false;
+				const cell = row.cells.find(
+					(cell) => cell && cell.columnId === filter.columnId,
 				);
 				const cellValue = cell?.value;
 

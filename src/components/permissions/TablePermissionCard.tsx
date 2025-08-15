@@ -1,7 +1,7 @@
 /** @format */
 
 // components/TablePermissionCard.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, Table } from "lucide-react";
 import { PermissionToggle } from "./PermissionToggle";
 import { ColumnPermissions } from "./ColumnPermissions";
@@ -16,6 +16,17 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 
+	// Debug logging
+	useEffect(() => {
+		console.log("TablePermissionCard - Table data:", {
+			id: table.id,
+			name: table.name,
+			columnsCount: table.columns?.length || 0,
+			columns: table.columns,
+			description: table.description
+		});
+	}, [table]);
+
 	const handleTablePermissionChange = (
 		field: keyof Pick<TablePermission, "canRead" | "canEdit" | "canDelete">,
 		value: boolean,
@@ -23,15 +34,14 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 		onUpdateTablePermission(table.id, field, value);
 	};
 
-	const tableColumns = columnPermissions.filter(
-		(cp) => cp.tableId === table.id,
-	);
-
 	const hasTableAccess =
 		tablePermission?.canRead ||
 		tablePermission?.canEdit ||
 		tablePermission?.canDelete ||
 		false;
+
+	// Numărul real de coloane din tabel
+	const actualColumnCount = table.columns?.length || 0;
 
 	return (
 		<div className='bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow'>
@@ -65,7 +75,7 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 								<ChevronRight className='h-4 w-4' />
 							)}
 							<span className='text-sm font-medium'>
-								{tableColumns.length} columns
+								{actualColumnCount} column{actualColumnCount !== 1 ? 's' : ''}
 							</span>
 						</button>
 					</div>
@@ -97,7 +107,7 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 				{isExpanded && (
 					<ColumnPermissions
 						table={table}
-						columnPermissions={tableColumns}
+						columnPermissions={columnPermissions}
 						onUpdateColumnPermission={onUpdateColumnPermission}
 					/>
 				)}

@@ -137,6 +137,19 @@ export async function POST(
 				columnId: Number(columnId),
 				value: value,
 			},
+			select: {
+				id: true,
+				value: true,
+				rowId: true,
+				columnId: true,
+				column: {
+					select: {
+						id: true,
+						name: true,
+						type: true,
+					},
+				},
+			},
 		});
 
 		return NextResponse.json(newCell, { status: 201 });

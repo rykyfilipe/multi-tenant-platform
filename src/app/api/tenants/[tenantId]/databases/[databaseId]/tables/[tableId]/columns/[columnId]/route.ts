@@ -108,6 +108,27 @@ export async function PATCH(
 			}
 		}
 
+		// Verificăm dacă încercăm să setăm o coloană ca primary key când există deja una
+		if (parsedData.primary === true) {
+			const existingPrimaryKey = await prisma.column.findFirst({
+				where: {
+					tableId: Number(tableId),
+					primary: true,
+					id: { not: Number(columnId) }, // Excludem coloana curentă
+				},
+			});
+
+			if (existingPrimaryKey) {
+				return NextResponse.json(
+					{
+						error:
+							"Table already has a primary key. Only one primary key is allowed per table.",
+					},
+					{ status: 409 },
+				);
+			}
+		}
+
 		// Actualizăm coloana
 		const updateData: Record<string, unknown> = {};
 
@@ -121,8 +142,7 @@ export async function PATCH(
 			updateData.autoIncrement = parsedData.autoIncrement;
 		if (parsedData.referenceTableId !== undefined)
 			updateData.referenceTableId = parsedData.referenceTableId;
-		if (parsedData.order !== undefined)
-			updateData.order = parsedData.order;
+		if (parsedData.order !== undefined) updateData.order = parsedData.order;
 
 		const updatedColumn = await prisma.column.update({
 			where: {

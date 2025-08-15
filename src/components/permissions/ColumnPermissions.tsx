@@ -30,53 +30,88 @@ export const ColumnPermissions: React.FC<ColumnPermissionsProps> = ({
 		onUpdateColumnPermission(table.id, columnId, field, value);
 	};
 
-	if (columnPermissions.length === 0) {
-		return null;
+	// Verificăm dacă tabelul are coloane
+	if (!table.columns || table.columns.length === 0) {
+		return (
+			<div className='mt-6 pt-6 border-t border-gray-200'>
+				<h4 className='text-md font-medium text-gray-900 mb-4 flex items-center'>
+					<Shield className='h-4 w-4 mr-2 text-gray-600' />
+					Column Permissions
+				</h4>
+				<div className='text-sm text-gray-500 italic'>
+					No columns found for this table.
+				</div>
+			</div>
+		);
 	}
 
 	return (
 		<div className='mt-6 pt-6 border-t border-gray-200'>
 			<h4 className='text-md font-medium text-gray-900 mb-4 flex items-center'>
 				<Shield className='h-4 w-4 mr-2 text-gray-600' />
-				Column Permissions
+				Column Permissions ({table.columns.length} columns)
 			</h4>
 			<div className='space-y-4'>
-				{columnPermissions.map((columnPermission) => (
-					<div key={columnPermission.id} className='bg-gray-50 rounded-lg p-4'>
-						<div className='flex items-center justify-between mb-3'>
-							<span className='font-medium text-gray-900 text-sm'>
-								{table.columns?.find((c) => c.id === columnPermission.columnId)
-									?.name || `Column ${columnPermission.columnId}`}
-							</span>
+				{table.columns.map((column) => {
+					// Găsim permisiunea existentă pentru această coloană
+					const existingPermission = columnPermissions.find(
+						(cp) => cp.columnId === column.id && cp.tableId === table.id
+					);
+
+					// Dacă nu există permisiune, o creăm cu valori implicite
+					const columnPermission: ColumnPermission = existingPermission || {
+						id: Date.now() + column.id, // ID temporar
+						userId: 0, // Va fi setat când se salvează
+						tableId: table.id,
+						tenantId: 0, // Va fi setat când se salvează
+						columnId: column.id,
+						canRead: false,
+						canEdit: false,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					};
+
+					return (
+						<div key={column.id} className='bg-gray-50 rounded-lg p-4'>
+							<div className='flex items-center justify-between mb-3'>
+								<div>
+									<span className='font-medium text-gray-900 text-sm'>
+										{column.name}
+									</span>
+									<span className='ml-2 text-xs text-gray-500'>
+										({column.type})
+									</span>
+								</div>
+							</div>
+							<div className='grid grid-cols-2 gap-4'>
+								<PermissionToggle
+									enabled={columnPermission.canRead}
+									onChange={(value) =>
+										handleColumnPermissionChange(
+											column.id,
+											"canRead",
+											value,
+										)
+									}
+									label='Read'
+									variant='read'
+								/>
+								<PermissionToggle
+									enabled={columnPermission.canEdit}
+									onChange={(value) =>
+										handleColumnPermissionChange(
+											column.id,
+											"canEdit",
+											value,
+										)
+									}
+									label='Edit'
+									variant='edit'
+								/>
+							</div>
 						</div>
-						<div className='grid grid-cols-2 gap-4'>
-							<PermissionToggle
-								enabled={columnPermission.canRead}
-								onChange={(value) =>
-									handleColumnPermissionChange(
-										columnPermission.columnId,
-										"canRead",
-										value,
-									)
-								}
-								label='Read'
-								variant='read'
-							/>
-							<PermissionToggle
-								enabled={columnPermission.canEdit}
-								onChange={(value) =>
-									handleColumnPermissionChange(
-										columnPermission.columnId,
-										"canEdit",
-										value,
-									)
-								}
-								label='Edit'
-								variant='edit'
-							/>
-						</div>
-					</div>
-				))}
+					);
+				})}
 			</div>
 		</div>
 	);

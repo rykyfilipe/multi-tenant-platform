@@ -7,7 +7,13 @@ import { Database, Trash2 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
 import { useMemo } from "react";
-import { USER_FRIENDLY_COLUMN_TYPES, COLUMN_TYPE_LABELS, PROPERTY_LABELS } from "@/lib/columnTypes";
+import {
+	USER_FRIENDLY_COLUMN_TYPES,
+	COLUMN_TYPE_LABELS,
+	PROPERTY_LABELS,
+} from "@/lib/columnTypes";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
+import { useTablePermissions } from "@/hooks/useTablePermissions";
 
 type FieldType = "string" | "boolean" | "date" | readonly string[];
 
@@ -39,6 +45,23 @@ export function TableView({
 	onDeleteColumn,
 	tables,
 }: Props) {
+	// Verificăm permisiunile utilizatorului
+	const { permissions: userPermissions } = useCurrentUserPermissions();
+	
+	// Folosim primul tabel pentru a obține tableId (toate coloanele ar trebui să aparțină aceluiași tabel)
+	const tableId = columns.length > 0 ? columns[0].tableId : 0;
+	
+	const tablePermissions = useTablePermissions(
+		tableId,
+		userPermissions?.tablePermissions || [],
+		userPermissions?.columnsPermissions || []
+	);
+
+	// Filtrăm coloanele în funcție de permisiuni
+	const visibleColumns = useMemo(() => {
+		return tablePermissions.getVisibleColumns(columns);
+	}, [columns, tablePermissions]);
+
 	const columnSchemaMeta: FieldMeta[] = useMemo(() => {
 		const base: FieldMeta[] = [
 			{
@@ -67,23 +90,34 @@ export function TableView({
 			},
 		];
 
-		// Adaugă câmpul referenceTableId doar dacă există coloane de tip link
-		const hasReferenceColumns = columns.some((col) => col.type === USER_FRIENDLY_COLUMN_TYPES.link);
-		if (hasReferenceColumns) {
-			base.push({
-				key: "referenceTableId",
-				type: tables?.map((t) => t.id.toString()) || [],
-				required: false,
-				label: "Link to Table",
-				referenceOptions: tables?.map((t) => ({
-					value: t.id,
-					label: t.name,
-				})),
-			});
-		}
+		// Adaugă câmpurile pentru coloanele de tip reference
+		base.push({
+			key: "referenceTableId",
+			type: tables?.map((t) => t.id.toString()) || [],
+			required: false,
+			label: "Link to Table",
+			referenceOptions: tables?.map((t) => ({
+				value: t.id,
+				label: t.name,
+			})),
+		});
 
 		return base;
-	}, [tables, columns]);
+	}, [tables]);
+
+	// Verificăm dacă utilizatorul are acces la tabel
+	if (!tablePermissions.canReadTable()) {
+		return (
+			<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg overflow-hidden'>
+				<div className='p-8 text-center'>
+					<div className='text-muted-foreground'>
+						<p className='text-lg font-medium mb-2'>Access Denied</p>
+						<p className='text-sm'>You don't have permission to view this table.</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg overflow-hidden'>
@@ -98,7 +132,7 @@ export function TableView({
 							Table Columns
 						</h3>
 						<p className='text-xs text-muted-foreground'>
-							{columns.length} column{columns.length !== 1 && "s"}
+							{visibleColumns.length} column{visibleColumns.length !== 1 && "s"}
 						</p>
 					</div>
 				</div>
@@ -118,27 +152,29 @@ export function TableView({
 									{meta.label}
 								</th>
 							))}
-							<th className='text-start p-3 text-xs font-medium text-muted-foreground uppercase tracking-wider w-16'>
-								Actions
-							</th>
+							{tablePermissions.canEditTable() && (
+								<th className='text-start p-3 text-xs font-medium text-muted-foreground uppercase tracking-wider w-16'>
+									Actions
+								</th>
+							)}
 						</tr>
 					</thead>
 					<tbody>
-						{columns.length === 0 ? (
+						{visibleColumns.length === 0 ? (
 							<tr>
 								<td
-									colSpan={columnSchemaMeta.length + 1}
+									colSpan={columnSchemaMeta.length + (tablePermissions.canEditTable() ? 1 : 0)}
 									className='text-center py-12'>
 									<div className='text-muted-foreground'>
-										<p className='text-sm font-medium'>No columns yet</p>
+										<p className='text-sm font-medium'>No columns available</p>
 										<p className='text-xs mt-1'>
-											Add your first column to get started
+											You don't have permission to view any columns in this table
 										</p>
 									</div>
 								</td>
 							</tr>
 						) : (
-							columns.map((column, index) => (
+							visibleColumns.map((column, index) => (
 								<tr
 									key={column.id}
 									className={`${
@@ -162,18 +198,21 @@ export function TableView({
 												}
 												onCancel={onCancelEdit}
 												referenceOptions={meta.referenceOptions}
+												allColumns={visibleColumns}
 											/>
 										</td>
 									))}
-									<td className='p-3'>
-										<Button
-											variant='ghost'
-											size='sm'
-											onClick={() => onDeleteColumn(column.id.toString())}
-											className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10'>
-											<Trash2 className='h-4 w-4' />
-										</Button>
-									</td>
+									{tablePermissions.canEditTable() && (
+										<td className='p-3'>
+											<Button
+												variant='ghost'
+												size='sm'
+												onClick={() => onDeleteColumn(column.id.toString())}
+												className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10'>
+												<Trash2 className='h-4 w-4' />
+											</Button>
+										</td>
+									)}
 								</tr>
 							))
 						)}

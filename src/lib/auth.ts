@@ -396,14 +396,9 @@ export function verifyLogin(request: Request): boolean {
 
 	try {
 		const decoded = jwt.verify(token, JWT_SECRET);
-		if (process.env.NODE_ENV === "development") {
-			console.log("verifyLogin - Token verified successfully:", decoded);
-		}
+
 		return !!decoded;
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			console.log("verifyLogin - Token verification failed:", error);
-		}
 		return false;
 	}
 }

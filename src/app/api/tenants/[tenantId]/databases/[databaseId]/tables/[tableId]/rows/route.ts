@@ -20,10 +20,6 @@ const RowSchema = z.object({
 	),
 });
 
-const BulkRowsSchema = z.object({
-	rows: z.array(RowSchema),
-});
-
 export async function POST(
 	request: NextRequest,
 	{
@@ -52,19 +48,10 @@ export async function POST(
 	try {
 		const body = await request.json();
 
-		// Verificăm dacă este bulk import sau single row
-		let isBulkImport = false;
-		let parsedData: any;
+		// Parse single row data
+		const parsedData = RowSchema.parse(body);
 
-		try {
-			parsedData = BulkRowsSchema.parse(body);
-			isBulkImport = true;
-		} catch {
-			parsedData = RowSchema.parse(body);
-			isBulkImport = false;
-		}
-
-		console.log(parsedData);
+		console.log("Creating single row:", parsedData);
 
 		// Verificăm că baza de date există și aparține tenant-ului
 		const database = await prisma.database.findFirst({
@@ -100,18 +87,17 @@ export async function POST(
 			where: { table: { database: { tenantId: Number(tenantId) } } },
 		});
 
-		const rowsToAdd = isBulkImport ? parsedData.rows.length : 1;
 		const rowLimitCheck = await checkPlanLimit(
 			userId,
 			"rows",
-			currentRowCount + rowsToAdd,
+			currentRowCount + 1,
 		);
 
 		if (!rowLimitCheck.allowed) {
 			return NextResponse.json(
 				{
 					error: "Row limit exceeded",
-					details: `You have ${currentRowCount} rows and are trying to add ${rowsToAdd} more. Your plan allows ${rowLimitCheck.limit} rows total.`,
+					details: `You have ${currentRowCount} rows and are trying to add 1 more. Your plan allows ${rowLimitCheck.limit} rows total.`,
 					limit: rowLimitCheck.limit,
 					current: currentRowCount,
 				},
@@ -123,6 +109,35 @@ export async function POST(
 		const processCells = async (cells: any[], rowId: number) => {
 			const processedCells = [];
 			const validationErrors = [];
+
+			// Verificăm că toate coloanele required au valori
+			const requiredColumns = table.columns.filter((col: any) => col.required);
+			const providedColumnIds = new Set(
+				cells.map((cell: any) => cell.columnId),
+			);
+
+			console.log("Required columns validation:", {
+				requiredColumns: requiredColumns.map((col: any) => ({
+					id: col.id,
+					name: col.name,
+				})),
+				providedColumnIds: Array.from(providedColumnIds),
+				totalColumns: table.columns.length,
+			});
+
+			for (const requiredCol of requiredColumns) {
+				if (!providedColumnIds.has(requiredCol.id)) {
+					validationErrors.push(
+						`Required column "${requiredCol.name}" is missing`,
+					);
+				}
+			}
+
+			// Dacă există erori de validare pentru coloanele required, returnăm erorile
+			if (validationErrors.length > 0) {
+				console.log("Required columns validation failed:", validationErrors);
+				return { processedCells: [], validationErrors };
+			}
 
 			for (const cell of cells) {
 				const column = table.columns.find(
@@ -150,39 +165,166 @@ export async function POST(
 					}
 				}
 
+				// Verificăm că coloanele required au valori
+				if (column.required) {
+					console.log("Validating required column:", {
+						columnName: column.name,
+						columnId: column.id,
+						columnType: column.type,
+						cellValue: cell.value,
+						cellValueType: typeof cell.value,
+						isNull: cell.value === null,
+						isUndefined: cell.value === undefined,
+						isEmptyString: cell.value === "",
+						isEmptyArray: Array.isArray(cell.value) && cell.value.length === 0,
+					});
+
+					if (column.type === "reference") {
+						// Pentru coloanele de tip reference, verificăm că array-ul nu este gol
+						if (!Array.isArray(cell.value) || cell.value.length === 0) {
+							validationErrors.push(
+								`Required column "${column.name}" must have at least one reference selected`,
+							);
+							continue;
+						}
+					} else {
+						// Pentru alte tipuri, verificăm că valoarea nu este goală
+						if (
+							cell.value === null ||
+							cell.value === undefined ||
+							cell.value === ""
+						) {
+							validationErrors.push(
+								`Required column "${column.name}" cannot be empty`,
+							);
+							continue;
+						}
+					}
+				}
+
 				if (
 					column &&
 					column.type === "reference" &&
 					column.referenceTableId &&
 					cell.value
 				) {
-					// Pentru coloanele de referință, validăm că cheia primară există
-					const referenceTable = await prisma.table.findUnique({
-						where: { id: column.referenceTableId },
-						include: { columns: true, rows: { include: { cells: true } } },
+					console.log("Validating reference column:", {
+						columnName: column.name,
+						columnId: column.id,
+						referenceTableId: column.referenceTableId,
+						cellValue: cell.value,
+						cellValueType: typeof cell.value,
+						isArray: Array.isArray(cell.value),
 					});
 
-					if (referenceTable) {
-						const refPrimaryKeyColumn = referenceTable.columns.find(
-							(col: any) => col.primary,
-						);
+					// Pentru coloanele de referință, validăm că valoarea cheii primare există
+					const referenceTable = await prisma.table.findFirst({
+						where: { id: column.referenceTableId },
+						include: {
+							columns: {
+								where: { primary: true },
+								select: { id: true, name: true, type: true },
+							},
+						},
+					});
 
-						if (refPrimaryKeyColumn) {
-							// Căutăm rândul cu cheia primară specificată
-							const referenceRow = referenceTable.rows.find((refRow: any) => {
-								const refPrimaryKeyCell = refRow.cells.find(
-									(refCell: any) => refCell.columnId === refPrimaryKeyColumn.id,
-								);
-								return (
-									refPrimaryKeyCell && refPrimaryKeyCell.value === cell.value
-								);
-							});
+					if (referenceTable && referenceTable.columns.length > 0) {
+						const primaryColumn = referenceTable.columns[0];
 
-							if (!referenceRow) {
-								validationErrors.push(
-									`Reference value "${cell.value}" not found in table "${referenceTable.name}" for column "${column.name}"`,
-								);
-								continue; // Omitem această celulă din procesare
+						// Pentru reference columns, cell.value este întotdeauna un array (always multiple)
+						if (Array.isArray(cell.value)) {
+							// Validăm fiecare valoare a cheii primare din array
+							for (const primaryKeyValue of cell.value) {
+								console.log("Validating reference primary key value:", {
+									primaryKeyValue,
+									primaryKeyValueType: typeof primaryKeyValue,
+									referenceTableName: referenceTable.name,
+									primaryColumnName: primaryColumn.name,
+								});
+
+								// Verificăm dacă există un rând cu această valoare a cheii primare
+								const referenceRow = await prisma.row.findFirst({
+									where: {
+										tableId: column.referenceTableId,
+										cells: {
+											some: {
+												columnId: primaryColumn.id,
+												value: {
+													equals: primaryKeyValue,
+												},
+											},
+										},
+									},
+								});
+
+								if (!referenceRow) {
+									console.log("Reference row not found by primary key value:", {
+										primaryKeyValue,
+										primaryColumnName: primaryColumn.name,
+										referenceTableId: column.referenceTableId,
+									});
+									validationErrors.push(
+										`Reference value "${primaryKeyValue}" not found in table "${referenceTable.name}" for column "${column.name}"`,
+									);
+								} else {
+									console.log("Reference row found by primary key value:", {
+										primaryKeyValue,
+										referenceRowId: referenceRow.id,
+									});
+								}
+							}
+							// Dacă există erori de validare, omitem această celulă
+							if (validationErrors.some((err) => err.includes(column.name))) {
+								continue;
+							}
+						} else {
+							// Pentru single reference values, convertim la array și validăm
+							const primaryKeyValue = cell.value;
+							if (primaryKeyValue) {
+								console.log("Validating single reference primary key value:", {
+									primaryKeyValue,
+									primaryKeyValueType: typeof primaryKeyValue,
+									referenceTableName: referenceTable.name,
+									primaryColumnName: primaryColumn.name,
+								});
+
+								// Verificăm dacă există un rând cu această valoare a cheii primare
+								const referenceRow = await prisma.row.findFirst({
+									where: {
+										tableId: column.referenceTableId,
+										cells: {
+											some: {
+												columnId: primaryColumn.id,
+												value: {
+													equals: primaryKeyValue,
+												},
+											},
+										},
+									},
+								});
+
+								if (!referenceRow) {
+									console.log(
+										"Single reference row not found by primary key value:",
+										{
+											primaryKeyValue,
+											primaryColumnName: primaryColumn.name,
+											referenceTableId: column.referenceTableId,
+										},
+									);
+									validationErrors.push(
+										`Reference value "${primaryKeyValue}" not found in table "${referenceTable.name}" for column "${column.name}"`,
+									);
+									continue; // Omitem această celulă din procesare
+								} else {
+									console.log(
+										"Single reference row found by primary key value:",
+										{
+											primaryKeyValue,
+											referenceRowId: referenceRow.id,
+										},
+									);
+								}
 							}
 						}
 					}
@@ -199,120 +341,61 @@ export async function POST(
 			return { processedCells, validationErrors };
 		};
 
-		if (isBulkImport) {
-			// Bulk import
-			const createdRows = [];
-			const allValidationErrors = [];
+		// Creăm rândul
+		const row = await prisma.row.create({
+			data: {
+				tableId: Number(tableId),
+			},
+		});
 
-			for (const rowData of parsedData.rows) {
-				// Creăm rândul
-				const row = await prisma.row.create({
-					data: {
-						tableId: Number(tableId),
-					},
-				});
+		// Procesăm celulele
+		const { processedCells, validationErrors } = await processCells(
+			parsedData.cells,
+			row.id,
+		);
 
-				// Procesăm celulele
-				const { processedCells, validationErrors } = await processCells(
-					rowData.cells,
-					row.id,
-				);
+		// Dacă există erori de validare, returnăm eroarea
+		if (validationErrors.length > 0) {
+			// Ștergem rândul creat dacă există erori
+			await prisma.row.delete({ where: { id: row.id } });
 
-				// Adăugăm erorile de validare la lista totală
-				if (validationErrors.length > 0) {
-					allValidationErrors.push(
-						`Row ${row.id}: ${validationErrors.join(", ")}`,
-					);
-				}
-
-				// Salvăm celulele valide
-				if (processedCells.length > 0) {
-					await prisma.cell.createMany({
-						data: processedCells,
-					});
-				}
-
-				// Returnăm rândul cu celulele
-				const createdRow = await prisma.row.findUnique({
-					where: { id: row.id },
-					include: {
-						cells: {
-							include: {
-								column: true,
-							},
-						},
-					},
-				});
-
-				createdRows.push(createdRow);
-			}
-
-			// Actualizăm memoria după crearea rândurilor
-			await updateMemoryAfterRowChange(Number(tenantId));
-
-			// Dacă există erori de validare, le returnăm împreună cu rândurile create
-			if (allValidationErrors.length > 0) {
-				return NextResponse.json(
-					{
-						rows: createdRows,
-						warnings: allValidationErrors,
-						message: "Import completed with validation warnings",
-					},
-					{ status: 207 }, // 207 Multi-Status
-				);
-			}
-
-			return NextResponse.json({ rows: createdRows }, { status: 201 });
-		} else {
-			// Single row creation
-			const row = await prisma.row.create({
-				data: {
-					tableId: Number(tableId),
-				},
+			console.error("Row validation failed:", {
+				tableId,
+				rowId: row.id,
+				validationErrors,
+				cells: parsedData.cells,
 			});
 
-			// Procesăm celulele
-			const { processedCells, validationErrors } = await processCells(
-				parsedData.cells,
-				row.id,
+			return NextResponse.json(
+				{
+					error: "Validation failed",
+					details: validationErrors,
+				},
+				{ status: 400 },
 			);
+		}
 
-			// Dacă există erori de validare, returnăm eroarea
-			if (validationErrors.length > 0) {
-				// Ștergem rândul creat dacă există erori
-				await prisma.row.delete({ where: { id: row.id } });
+		// Salvăm celulele
+		await prisma.cell.createMany({
+			data: processedCells,
+		});
 
-				return NextResponse.json(
-					{
-						error: "Validation failed",
-						details: validationErrors,
-					},
-					{ status: 400 },
-				);
-			}
+		// Actualizăm memoria după crearea rândului
+		await updateMemoryAfterRowChange(Number(tenantId));
 
-			// Salvăm celulele
-			await prisma.cell.createMany({
-				data: processedCells,
-			});
-
-			// Actualizăm memoria după crearea rândului
-			await updateMemoryAfterRowChange(Number(tenantId));
-
-			// Returnăm rândul cu celulele
-			const createdRow = await prisma.row.findUnique({
-				where: { id: row.id },
-				include: {
-					cells: {
-						include: {
-							column: true,
-						},
+		// Returnăm rândul cu celulele
+		const createdRow = await prisma.row.findUnique({
+			where: { id: row.id },
+			include: {
+				cells: {
+					include: {
+						column: true,
 					},
 				},
-			});
+			},
+		});
 
-			return NextResponse.json(createdRow, { status: 201 });
-		}
+		return NextResponse.json(createdRow, { status: 201 });
 	} catch (error) {
 		console.error("Error creating row:", error);
 		return NextResponse.json(

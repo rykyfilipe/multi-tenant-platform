@@ -1,18 +1,21 @@
 /** @format */
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState, useCallback } from "react";
+import { FormEvent, useEffect, useState, useCallback, useMemo, memo } from "react";
 import { Table, CreateColumnRequest, Column } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import AddColumnForm from "./AddColumnForm";
 import { TableView } from "./TableView";
 import { ColumnOrderManager } from "./ColumnOrderManager";
+import { TableHeaderEditor } from "../TableHeaderEditor";
 import useColumnsTableEditor from "@/hooks/useColumnsTableEditor";
 import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
 import { Button } from "@/components/ui/button";
 import { X, Move } from "lucide-react";
 import Link from "next/link";
 import { useTour } from "@reactour/tour";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
+import { useTablePermissions } from "@/hooks/useTablePermissions";
 
 interface Props {
 	columns: Column[] | null;
@@ -25,12 +28,21 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 
 	const { showAlert, token, user, tenant, loading } = useApp();
 	const [tables, setTables] = useState<Table[] | null>(null);
+	const [currentTable, setCurrentTable] = useState<Table>(table);
 	const tenantId = tenant?.id;
 	if (!token || !user) return;
 	const [showForm, setShowForm] = useState(false);
 	const [showOrderManager, setShowOrderManager] = useState(false);
 
 	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
+
+	// Verificăm permisiunile utilizatorului
+	const { permissions: userPermissions } = useCurrentUserPermissions();
+	const tablePermissions = useTablePermissions(
+		table.id,
+		userPermissions?.tablePermissions || [],
+		userPermissions?.columnsPermissions || []
+	);
 
 	const columnSchemaMeta = useMemo(
 		() => [
@@ -87,23 +99,37 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 	const { refreshAfterChange } = useDatabaseRefresh();
 
 	const validateColumn = () => {
-		return !columns.find((col) => col.name === newColumn?.name);
+		const nameExists = columns.find((col) => col.name === newColumn?.name);
+		const hasValidReference =
+			newColumn?.type === "reference"
+				? newColumn.referenceTableId !== undefined &&
+				  newColumn.referenceTableId !== null
+				: true;
+		const hasValidPrimaryKey = !(
+			newColumn?.primary && columns.some((col) => col.primary)
+		);
+
+		return !nameExists && hasValidReference && hasValidPrimaryKey;
 	};
 
-	async function handleAdd(e: FormEvent) {
+	const handleAdd = async (e: FormEvent) => {
 		e.preventDefault();
-		if (!newColumn) return;
 
-		if (!token) return console.error("No token available");
-
-		if (!validateColumn()) {
-			showAlert(
-				"A column with this name already exists. Please choose a different name.",
-				"error",
-			);
+		if (!token || !tenantId || !newColumn) {
+			showAlert("Missing required information", "error");
 			return;
 		}
-		// Debug logging removed for production
+
+		// Verificăm dacă utilizatorul poate edita tabelul
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to add columns to this table", "error");
+			return;
+		}
+
+		if (!validateColumn()) {
+			showAlert("Please fix validation errors", "error");
+			return;
+		}
 
 		try {
 			const response = await fetch(
@@ -117,32 +143,32 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 					body: JSON.stringify({ columns: [newColumn] }),
 				},
 			);
-			// Debug logging removed for production
 
-			if (!response.ok) throw new Error("Failed to add column");
+			if (response.ok) {
+				const createdColumns = await response.json();
+				showAlert("Column added successfully!", "success");
+				setNewColumn(null);
+				setShowForm(false);
 
-			const data = await response.json();
-			// Data received
+				// Update local columns state
+				if (setColumns && columns) {
+					setColumns([...columns, ...createdColumns]);
+				}
 
+				// Refresh database cache
+				await refreshAfterChange();
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to add column");
+			}
+		} catch (error: any) {
+			console.error("Error adding column:", error);
 			showAlert(
-				"Column added successfully! You can now start adding data.",
-				"success",
-			);
-
-			// Handle both single column and array of columns
-			const newColumns = Array.isArray(data) ? data : [data];
-			setColumns([...(columns || []), ...newColumns]);
-			setNewColumn(null);
-
-			// Refresh database cache to update column counts
-			await refreshAfterChange();
-		} catch (error) {
-			showAlert(
-				"Failed to add column. Please check your configuration and try again.",
+				error.message || "Failed to add column. Please try again.",
 				"error",
 			);
 		}
-	}
+	};
 
 	const handleDeleteWrapper = async (columnId: string) => {
 		await handleDeleteColumn(
@@ -175,6 +201,12 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 		);
 	};
 
+	const handleTableUpdate = async (updatedTable: Table) => {
+		setCurrentTable(updatedTable);
+		showAlert("Table updated successfully!", "success");
+		await refreshAfterChange();
+	};
+
 	const fetchDatabase = useCallback(async () => {
 		if (!tenant || !user || !token) return;
 		try {
@@ -205,7 +237,7 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			fetchDatabase();
 		}
 	}, [fetchDatabase, tenant, user, token, tables]);
-	const { setIsOpen, setCurrentStep, isOpen, currentStep } = useTour();
+	const { setIsOpen, setCurrentStep } = useTour();
 
 	const startTour = () => {
 		setCurrentStep(0);
@@ -222,19 +254,43 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 			}
 		}, 3000);
 	}, []);
+
+	// Verificăm dacă utilizatorul are acces la tabel
+	if (!tablePermissions.canReadTable()) {
+		return (
+			<div className='space-y-6'>
+				<div className='text-center py-12'>
+					<div className='text-muted-foreground'>
+						<p className='text-lg font-medium mb-2'>Access Denied</p>
+						<p className='text-sm'>You don't have permission to view this table.</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	// Demo column cleanup removed for production
 	return (
 		<div className='space-y-6'>
+			{/* Table Header Editor */}
+			<TableHeaderEditor
+				table={currentTable}
+				onTableUpdate={handleTableUpdate}
+			/>
+
 			{/* Header Actions */}
 			<div className='flex flex-col sm:flex-row  items-start sm:items-center gap-4'>
 				<div className='flex items-center space-x-3'>
-					<Button
-						onClick={() => setShowForm((prev) => !prev)}
-						className={`add-column-button ${
-							user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
-						}`}>
-						{showForm ? <X className='w-4 h-4' /> : "Add Column"}
-					</Button>
+					{/* Butonul Add Column - doar dacă utilizatorul poate edita */}
+					{tablePermissions.canEditTable() && (
+						<Button
+							onClick={() => setShowForm((prev) => !prev)}
+							className={`add-column-button ${
+								user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
+							}`}>
+							{showForm ? <X className='w-4 h-4' /> : "Add Column"}
+						</Button>
+					)}
 					{showForm && (
 						<span className='text-sm text-muted-foreground'>
 							Fill in the form below to add a new column
@@ -242,15 +298,18 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 					)}
 				</div>
 				<div className='flex items-center space-x-2'>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => setShowOrderManager(true)}
-						disabled={user.role === "VIEWER"}
-						className='order-columns-button'>
-						<Move className='w-4 h-4 mr-2' />
-						Column Order
-					</Button>
+					{/* Butonul Column Order - doar dacă utilizatorul poate edita */}
+					{tablePermissions.canEditTable() && (
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => setShowOrderManager(true)}
+							disabled={user.role === "VIEWER"}
+							className='order-columns-button'>
+							<Move className='w-4 h-4 mr-2' />
+							Column Order
+						</Button>
+					)}
 					<Link
 						href={`/home/database/table/${table.id}/rows`}
 						className='rows-button'>
@@ -261,8 +320,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				</div>
 			</div>
 
-			{/* Add Column Form */}
-			{showForm && (
+			{/* Add Column Form - doar dacă utilizatorul poate edita */}
+			{showForm && tablePermissions.canEditTable() && (
 				<div className='border border-border/20 bg-card/50 backdrop-blur-sm rounded-lg p-6'>
 					<AddColumnForm
 						setNewColumn={setNewColumn}
@@ -287,8 +346,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				/>
 			</div>
 
-			{/* Column Order Manager Modal */}
-			{showOrderManager && (
+			{/* Column Order Manager Modal - doar dacă utilizatorul poate edita */}
+			{showOrderManager && tablePermissions.canEditTable() && (
 				<ColumnOrderManager
 					columns={columns || []}
 					setColumns={setColumns}

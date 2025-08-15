@@ -137,6 +137,22 @@ export const useTables = () => {
 
 			if (response.ok) {
 				const data = await response.json();
+				
+				// Debug logging
+				console.log("useTables - Raw API response:", data);
+				console.log("useTables - Tables count:", data?.length || 0);
+				
+				if (data && Array.isArray(data)) {
+					data.forEach((table, index) => {
+						console.log(`Table ${index}:`, {
+							id: table.id,
+							name: table.name,
+							columnsCount: table.columns?.length || 0,
+							columns: table.columns
+						});
+					});
+				}
+				
 				setTables(data || []);
 			} else {
 				const errorText = await response.text();
@@ -207,8 +223,8 @@ export const usePermissionUpdates = (
 					canRead: field === "canRead" ? value : false,
 					canEdit: field === "canEdit" ? value : false,
 					canDelete: field === "canDelete" ? value : false,
-					createdAt: new Date(),
-					updatedAt: new Date(),
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
 				};
 				return {
 					...prev,
@@ -228,14 +244,39 @@ export const usePermissionUpdates = (
 		setPermissions((prev) => {
 			if (!prev) return prev;
 
-			return {
-				...prev,
-				columnsPermissions: prev.columnsPermissions.map((cp) =>
-					cp.tableId === tableId && cp.columnId === columnId
-						? { ...cp, [field]: value }
-						: cp,
-				),
-			};
+			const existingPermission = prev.columnsPermissions.find(
+				(cp) => cp.tableId === tableId && cp.columnId === columnId,
+			);
+
+			if (existingPermission) {
+				// Actualizăm permisiunea existentă
+				return {
+					...prev,
+					columnsPermissions: prev.columnsPermissions.map((cp) =>
+						cp.tableId === tableId && cp.columnId === columnId
+							? { ...cp, [field]: value }
+							: cp,
+					),
+				};
+			} else {
+				// Creăm o nouă permisiune pentru coloană
+				const newColumnPermission: ColumnPermission = {
+					id: Date.now() + columnId, // ID temporar
+					userId: 1, // This should come from context
+					tableId,
+					tenantId: 1, // This should come from context
+					columnId,
+					canRead: field === "canRead" ? value : false,
+					canEdit: field === "canEdit" ? value : false,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+				};
+
+				return {
+					...prev,
+					columnsPermissions: [...prev.columnsPermissions, newColumnPermission],
+				};
+			}
 		});
 		setHasChanges(true);
 	};
