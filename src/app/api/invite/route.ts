@@ -1,0 +1,207 @@
+/** @format */
+
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import prisma from "@/lib/prisma";
+import { hashPassword } from "@/lib/auth";
+
+const acceptInvitationSchema = z.object({
+	token: z.string(),
+	firstName: z.string().min(2, "First name must be at least 2 characters"),
+	lastName: z.string().min(2, "Last name must be at least 2 characters"),
+	password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export async function POST(request: NextRequest) {
+	try {
+		const body = await request.json();
+		const { token, firstName, lastName, password } =
+			acceptInvitationSchema.parse(body);
+
+		// Find the invitation
+		const invitation = await prisma.invitation.findUnique({
+			where: { token },
+			include: { tenant: true },
+		});
+
+		if (!invitation) {
+			return NextResponse.json(
+				{ error: "Invalid or expired invitation token" },
+				{ status: 400 },
+			);
+		}
+
+		if (invitation.accepted) {
+			return NextResponse.json(
+				{ error: "This invitation has already been accepted" },
+				{ status: 400 },
+			);
+		}
+
+		if (invitation.expiresAt < new Date()) {
+			return NextResponse.json(
+				{ error: "This invitation has expired" },
+				{ status: 400 },
+			);
+		}
+
+		// Check if user already exists
+		const existingUser = await prisma.user.findUnique({
+			where: { email: invitation.email },
+		});
+
+		if (existingUser) {
+			return NextResponse.json(
+				{ error: "A user with this email already exists" },
+				{ status: 400 },
+			);
+		}
+
+		// Hash the password
+		const hashedPassword = await hashPassword(password);
+
+		// Create the user
+		const user = await prisma.user.create({
+			data: {
+				email: invitation.email,
+				firstName: firstName,
+				lastName: lastName,
+				password: hashedPassword,
+				role: invitation.role,
+				tenantId: invitation.tenantId,
+				subscriptionStatus: "active",
+				subscriptionPlan: "Free",
+				subscriptionCurrentPeriodEnd: new Date(
+					Date.now() + 365 * 24 * 60 * 60 * 1000,
+				), // 1 year from now
+			},
+		});
+
+		// Get all tables for the tenant to create permissions
+		const tables = await prisma.table.findMany({
+			where: {
+				database: {
+					tenantId: invitation.tenantId,
+				},
+			},
+			include: {
+				columns: true,
+			},
+		});
+
+		// Create table permissions
+		await Promise.all(
+			tables.map((table: { id: number; columns: Array<{ id: number }> }) =>
+				prisma.tablePermission.create({
+					data: {
+						tenantId: invitation.tenantId,
+						userId: user.id,
+						tableId: table.id,
+						canDelete: false,
+						canRead: true,
+						canEdit:
+							invitation.role === "EDITOR" || invitation.role === "ADMIN",
+					},
+				}),
+			),
+		);
+
+		// Create column permissions
+		await Promise.all(
+			tables.flatMap((table: { id: number; columns: Array<{ id: number }> }) =>
+				table.columns.map((column: { id: number }) =>
+					prisma.columnPermission.create({
+						data: {
+							tenantId: invitation.tenantId,
+							userId: user.id,
+							columnId: column.id,
+							canRead: true,
+							canEdit:
+								invitation.role === "EDITOR" || invitation.role === "ADMIN",
+							tableId: table.id,
+						},
+					}),
+				),
+			),
+		);
+
+		// Mark invitation as accepted
+		await prisma.invitation.update({
+			where: { id: invitation.id },
+			data: { accepted: true },
+		});
+
+		const { password: userPassword, ...safeUser } = user;
+
+		return NextResponse.json(
+			{
+				message: "Account created successfully! You can now log in.",
+				user: safeUser,
+			},
+			{ status: 201 },
+		);
+	} catch (error: unknown) {
+		const errorMessage =
+			error instanceof Error ? error.message : "Failed to accept invitation";
+		console.error("Error accepting invitation:", error);
+		return NextResponse.json({ error: errorMessage }, { status: 400 });
+	}
+}
+
+export async function GET(request: NextRequest) {
+	try {
+		const { searchParams } = new URL(request.url);
+		const token = searchParams.get("token");
+
+		if (!token) {
+			return NextResponse.json(
+				{ error: "Invitation token is required" },
+				{ status: 400 },
+			);
+		}
+
+		// Find the invitation
+		const invitation = await prisma.invitation.findUnique({
+			where: { token },
+			include: { tenant: true },
+		});
+
+		if (!invitation) {
+			return NextResponse.json(
+				{ error: "Invalid invitation token" },
+				{ status: 404 },
+			);
+		}
+
+		if (invitation.accepted) {
+			return NextResponse.json(
+				{ error: "This invitation has already been accepted" },
+				{ status: 400 },
+			);
+		}
+
+		if (invitation.expiresAt < new Date()) {
+			return NextResponse.json(
+				{ error: "This invitation has expired" },
+				{ status: 400 },
+			);
+		}
+
+		return NextResponse.json({
+			invitation: {
+				email: invitation.email,
+				firstName: "", // Will be filled by user
+				lastName: "", // Will be filled by user
+				role: invitation.role,
+				tenantName: invitation.tenant.name,
+				expiresAt: invitation.expiresAt,
+			},
+		});
+	} catch (error: unknown) {
+		console.error("Error validating invitation:", error);
+		return NextResponse.json(
+			{ error: "Failed to validate invitation" },
+			{ status: 500 },
+		);
+	}
+}

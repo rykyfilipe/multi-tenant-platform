@@ -1,17 +1,44 @@
 /** @format */
 "use client";
 
-import { Table, Row, Column } from "@/types/database";
+import { Table, Row, Column, Cell } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
-import { Database, Trash2 } from "lucide-react";
+import {
+	Database,
+	Trash2,
+	Table as TableIcon,
+	CheckCircle,
+	AlertTriangle,
+	Clock,
+	ChevronLeft,
+	ChevronRight,
+} from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
 import { useApp } from "@/contexts/AppContext";
+import { Pagination } from "../../ui/pagination";
+import { memo, useMemo, useState, useCallback } from "react";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
+import { useTablePermissions } from "@/hooks/useTablePermissions";
+import { Checkbox } from "../../ui/checkbox";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../../ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface Props {
+	tables: Table[] | null;
 	table: Table;
 	rows: Row[];
 	columns: Column[];
+	loading?: boolean;
 
 	editingCell: { rowId: string; columnId: string } | null;
 	onEditCell: (rowId: string, columnId: string, cellId: string) => void;
@@ -23,115 +50,557 @@ interface Props {
 	) => void;
 	onCancelEdit: () => void;
 	onDeleteRow: (rowId: string) => void;
+	onBulkDelete?: (rowIds: string[]) => void;
+	deletingRows?: Set<string>;
+
+	// Pagination props
+	currentPage: number;
+	pageSize: number;
+	totalPages: number;
+	totalItems: number;
+	onPageChange: (page: number) => void;
+	onPageSizeChange?: (pageSize: number) => void;
+	showPagination?: boolean;
+
+	// Batch editing props
+	hasPendingChange?: (rowId: string, columnId: string) => boolean;
+	getPendingValue?: (rowId: string, columnId: string) => any;
 }
 
-export function TableView({
+export const TableView = memo(function TableView({
+	tables,
 	table,
 	rows,
 	columns,
+	loading = false,
 	editingCell,
 	onEditCell,
 	onSaveCell,
 	onCancelEdit,
 	onDeleteRow,
+	onBulkDelete,
+	deletingRows = new Set(),
+	currentPage,
+	pageSize,
+	totalPages,
+	totalItems,
+	onPageChange,
+	onPageSizeChange,
+	showPagination = true,
+	hasPendingChange,
+	getPendingValue,
 }: Props) {
+	console.log("🔍 TableView props:", {
+		hasPendingChange: !!hasPendingChange,
+		getPendingValue: !!getPendingValue,
+		rowsCount: rows.length,
+	});
 	const { user } = useApp();
-	return (
-		<Card className='shadow-lg'>
-			<CardHeader>
-				<div className='flex items-center gap-2'>
-					<Database />
-					<CardTitle>Table Data</CardTitle>
-					<span className='ml-auto'>
-						{rows.length} row{rows.length !== 1 && "s"}
+	const { permissions: userPermissions } = useCurrentUserPermissions();
+
+	// Row selection state
+	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+	const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+	// Ensure tables and columns are arrays
+	const safeTables = Array.isArray(tables) ? tables : [];
+	const safeColumns = Array.isArray(columns) ? columns : [];
+	const safeRows = Array.isArray(rows) ? rows : [];
+
+	// Additional safety check for rows - filter out any rows with null/undefined cells
+	const validatedRows = safeRows.filter(
+		(row) => row && row.id && row.cells && Array.isArray(row.cells),
+	);
+
+	// If no valid rows after validation, show empty state
+	const hasValidRows = validatedRows.length > 0;
+
+	// Folosim permisiunile pentru a filtra coloanele vizibile
+	const tablePermissions = useTablePermissions(
+		table.id,
+		userPermissions?.tablePermissions || [],
+		userPermissions?.columnsPermissions || [],
+	);
+
+	// Filtrăm coloanele în funcție de permisiuni
+	const visibleColumns = useMemo(() => {
+		return tablePermissions.getVisibleColumns(safeColumns);
+	}, [safeColumns, tablePermissions]);
+
+	// Handle row selection
+	const handleRowSelection = useCallback((rowId: string, checked: boolean) => {
+		setSelectedRows((prev) => {
+			const newSet = new Set(prev);
+			if (checked) {
+				newSet.add(rowId);
+			} else {
+				newSet.delete(rowId);
+			}
+			return newSet;
+		});
+	}, []);
+
+	// Handle select all rows
+	const handleSelectAll = useCallback(
+		(checked: boolean) => {
+			if (checked) {
+				setSelectedRows(new Set(validatedRows.map((row) => String(row.id))));
+			} else {
+				setSelectedRows(new Set());
+			}
+		},
+		[validatedRows],
+	);
+
+	// Handle bulk delete confirmation
+	const handleBulkDeleteClick = useCallback(() => {
+		if (selectedRows.size === 0) return;
+		setShowBulkDeleteConfirm(true);
+	}, [selectedRows.size]);
+
+	// Handle bulk delete execution
+	const handleBulkDeleteConfirm = useCallback(() => {
+		if (selectedRows.size === 0 || !onBulkDelete) return;
+		onBulkDelete(Array.from(selectedRows));
+		setSelectedRows(new Set()); // Clear selection after bulk delete
+		setShowBulkDeleteConfirm(false);
+	}, [selectedRows, onBulkDelete]);
+
+	// Check if all rows are selected
+	const allRowsSelected =
+		validatedRows.length > 0 && selectedRows.size === validatedRows.length;
+	const someRowsSelected =
+		selectedRows.size > 0 && selectedRows.size < validatedRows.length;
+
+	// Memoize table header pentru a evita re-render-uri inutile
+	const tableHeader = useMemo(
+		() => (
+			<thead>
+				<tr className='bg-muted/20'>
+					{tablePermissions.canEditTable() && (
+						<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-12'>
+							<Checkbox
+								checked={allRowsSelected}
+								indeterminate={someRowsSelected}
+								onCheckedChange={handleSelectAll}
+								className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+							/>
+						</th>
+					)}
+					{visibleColumns.map((col) => (
+						<th
+							className='text-start p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20'
+							key={col.id}>
+							{col.name}
+						</th>
+					))}
+					{tablePermissions.canEditTable() && (
+						<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-16'>
+							Actions
+						</th>
+					)}
+				</tr>
+			</thead>
+		),
+		[
+			visibleColumns,
+			tablePermissions,
+			allRowsSelected,
+			someRowsSelected,
+			handleSelectAll,
+		],
+	);
+
+	// Memoize pagination info pentru a evita re-render-uri inutile
+	const paginationInfo = useMemo(() => {
+		return (
+			<span className='text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-md self-start sm:self-auto'>
+				{totalItems} row{totalItems !== 1 && "s"}
+				{showPagination && totalPages > 1 && (
+					<span className='ml-2 text-xs'>
+						(Page {currentPage} of {totalPages})
 					</span>
+				)}
+			</span>
+		);
+	}, [totalItems, showPagination, totalPages, currentPage]);
+
+	// Nu mai afișăm skeleton la nivelul TableView - se ocupă TableEditor
+
+	// TableEditor gestionează skeleton și "Access Denied" - aici doar filtrăm datele
+
+	return (
+		<div className='w-full'>
+			{/* Enhanced Table Header with Modern Design */}
+			<div className='bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30 border-b border-border/20 px-6 py-4'>
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+					{/* Left Section - Table Info & Selection Status */}
+					<div className='flex items-center gap-4'>
+						<div className='flex items-center gap-3'>
+							<div className='flex items-center justify-center w-8 h-8 bg-primary/10 rounded-lg'>
+								<TableIcon className='w-4 h-4 text-primary' />
+							</div>
+							<div>
+								<h2 className='text-lg font-semibold text-foreground'>
+									Table Data
+								</h2>
+								<div className='flex items-center gap-4 text-sm text-muted-foreground'>
+									{paginationInfo}
+									{selectedRows.size > 0 && (
+										<span className='inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full font-medium'>
+											<CheckCircle className='w-3 h-3' />
+											{selectedRows.size} selected
+										</span>
+									)}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					{/* Right Section - Bulk Actions */}
+					{selectedRows.size > 0 && tablePermissions.canEditTable() && (
+						<div className='flex items-center gap-3'>
+							<div className='flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-lg'>
+								<AlertTriangle className='w-4 h-4 text-destructive' />
+								<span className='text-sm font-medium text-destructive'>
+									{selectedRows.size} row{selectedRows.size !== 1 ? "s" : ""}{" "}
+									selected
+								</span>
+							</div>
+							<Button
+								variant='destructive'
+								size='sm'
+								onClick={handleBulkDeleteClick}
+								className='h-9 px-4 bg-destructive hover:bg-destructive/90 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'>
+								<Trash2 className='w-4 h-4 mr-2' />
+								Delete Selected
+							</Button>
+						</div>
+					)}
 				</div>
-			</CardHeader>
-			<CardContent>
-				<div
-					className='overflow-auto'
-					style={{
-						scrollbarWidth: "none",
-						msOverflowStyle: "none",
-					}}>
-					<table className='w-full'>
-						<thead>
+			</div>
+
+			{/* Modern Table Container */}
+			<div className='overflow-hidden'>
+				<div className='overflow-x-auto'>
+					<table className='w-full min-w-full'>
+						{/* Enhanced Table Header */}
+						<thead className='bg-muted/30 border-b border-border/20'>
 							<tr>
-								{columns.map((col) => (
-									<th className='text-start' key={col.name}>
-										{col.name}
+								{/* Selection Column */}
+								{tablePermissions.canEditTable() && (
+									<th className='sticky left-0 z-20 bg-muted/30 backdrop-blur-sm border-r border-border/20 px-4 py-3 text-left'>
+										<div className='flex items-center justify-center'>
+											<Checkbox
+												checked={
+													selectedRows.size === validatedRows.length &&
+													validatedRows.length > 0
+												}
+												indeterminate={
+													selectedRows.size > 0 &&
+													selectedRows.size < validatedRows.length
+												}
+												onCheckedChange={handleSelectAll}
+												className='data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary/50 data-[state=indeterminate]:border-primary/50'
+											/>
+										</div>
+									</th>
+								)}
+
+								{/* Data Columns */}
+								{safeColumns.map((col) => (
+									<th
+										key={col.id}
+										className='px-4 py-3 text-left text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0'>
+										<div className='flex items-center gap-2'>
+											<span className='truncate'>{col.name}</span>
+											{col.type && (
+												<span className='inline-flex items-center px-2 py-1 text-xs font-medium bg-muted/50 text-muted-foreground rounded-md'>
+													{col.type}
+												</span>
+											)}
+										</div>
 									</th>
 								))}
+
+								{/* Actions Column */}
+								{tablePermissions.canEditTable() && (
+									<th className='sticky right-0 z-20 bg-muted/30 backdrop-blur-sm border-l border-border/20 px-4 py-3 text-left'>
+										<span className='text-sm font-semibold text-foreground'>
+											Actions
+										</span>
+									</th>
+								)}
 							</tr>
 						</thead>
-						<tbody>
-							{rows.length === 0 ? (
+
+						{/* Enhanced Table Body */}
+						<tbody className='divide-y divide-border/10'>
+							{validatedRows.length === 0 ? (
 								<tr>
 									<td
-										colSpan={table.columns.length + 1}
-										className='text-center py-8'>
-										No data yet.
+										colSpan={
+											(tablePermissions.canEditTable() ? 1 : 0) +
+											safeColumns.length +
+											(tablePermissions.canEditTable() ? 1 : 0)
+										}
+										className='px-6 py-16 text-center'>
+										<div className='flex flex-col items-center gap-4'>
+											<div className='w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center'>
+												<Database className='w-8 h-8 text-muted-foreground' />
+											</div>
+											<div className='text-center'>
+												<h3 className='text-lg font-semibold text-foreground mb-2'>
+													No data available
+												</h3>
+												<p className='text-muted-foreground max-w-md'>
+													This table doesn't have any rows yet. Start by adding
+													your first row using the "Add Row" button above.
+												</p>
+											</div>
+										</div>
 									</td>
 								</tr>
 							) : (
-								rows.map((row) => (
-									<tr key={row.id}>
-										{columns.map((col) => {
-											const cell = row.cells.find(
-												(cell) => cell.columnId === col.id,
-											);
-											if (!cell) return;
-											return (
-												<td key={crypto.randomUUID()}>
-													<EditableCell
-														columns={columns}
-														cell={cell}
-														isEditing={
-															editingCell?.rowId === row.id.toFixed(0) &&
-															Number(editingCell.columnId) === col.id
-														}
-														onStartEdit={() => {
-															onEditCell(
-																cell.rowId.toString(),
-																cell.columnId.toString(),
-																cell.id.toString(),
-															);
-														}}
-														onSave={(val) => {
-															console.log(
-																cell.rowId.toString(),
-																cell.columnId.toString(),
-																cell.id.toString(),
-															);
-															onSaveCell(
-																cell.columnId.toString(),
-																cell.rowId.toString(),
-																cell.id.toString(),
-																val,
-															);
-														}}
-														onCancel={onCancelEdit}
-													/>
+								validatedRows.map((row) => {
+									const rowHasPendingChanges = visibleColumns.some((col) =>
+										hasPendingChange?.(String(row.id), String(col.id)),
+									);
+
+									return (
+										<tr
+											key={row.id}
+											className={cn(
+												"hover:bg-muted/20 transition-all duration-200 group",
+												rowHasPendingChanges &&
+													"bg-amber-50/20 border-l-4 border-l-amber-400",
+												selectedRows.has(String(row.id)) &&
+													"bg-primary/5 border-l-4 border-l-primary",
+												row.isOptimistic &&
+													"bg-blue-50/30 border-l-4 border-l-blue-400",
+												deletingRows.has(String(row.id)) &&
+													"opacity-50 bg-destructive/5",
+											)}>
+											{/* Selection Cell */}
+											{tablePermissions.canEditTable() && (
+												<td className='sticky left-0 z-10 bg-background group-hover:bg-muted/20 border-r border-border/20 px-4 py-4'>
+													<div className='flex items-center justify-center'>
+														<Checkbox
+															checked={selectedRows.has(String(row.id))}
+															onCheckedChange={(checked) =>
+																handleRowSelection(
+																	String(row.id),
+																	checked as boolean,
+																)
+															}
+															className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+														/>
+													</div>
 												</td>
-											);
-										})}
-										{user.role !== "VIEWER" && (
-											<td>
-												<Button
-													variant='ghost'
-													size='sm'
-													onClick={() => onDeleteRow(row["id"].toFixed(0))}>
-													<Trash2 />
-												</Button>
-											</td>
-										)}
-									</tr>
-								))
+											)}
+
+											{/* Data Cells */}
+											{safeColumns.map((col) => {
+												if (!row.cells || !Array.isArray(row.cells)) {
+													return (
+														<td
+															key={`${row.id}-${col.id}-virtual`}
+															className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+															<EditableCell
+																columns={safeColumns}
+																cell={{
+																	id: 0,
+																	rowId: row.id,
+																	columnId: col.id,
+																	value: "",
+																	column: col,
+																}}
+																editingCell={editingCell}
+																onEditCell={onEditCell}
+																onSaveCell={onSaveCell}
+																onCancelEdit={onCancelEdit}
+																hasPendingChange={hasPendingChange}
+																getPendingValue={getPendingValue}
+															/>
+														</td>
+													);
+												}
+
+												const cell = row.cells.find(
+													(c: any) => c.columnId === col.id,
+												);
+												if (!cell) {
+													return (
+														<td
+															key={`${row.id}-${col.id}-missing`}
+															className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+															<EditableCell
+																columns={safeColumns}
+																cell={{
+																	id: 0,
+																	rowId: row.id,
+																	columnId: col.id,
+																	value: "",
+																	column: col,
+																}}
+																editingCell={editingCell}
+																onEditCell={onEditCell}
+																onSaveCell={onSaveCell}
+																onCancelEdit={onCancelEdit}
+																hasPendingChange={hasPendingChange}
+																getPendingValue={getPendingValue}
+															/>
+														</td>
+													);
+												}
+
+												return (
+													<td
+														key={`${row.id}-${col.id}-${cell.id}`}
+														className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+														<EditableCell
+															columns={safeColumns}
+															cell={cell}
+															editingCell={editingCell}
+															onEditCell={onEditCell}
+															onSaveCell={onSaveCell}
+															onCancelEdit={onCancelEdit}
+															hasPendingChange={hasPendingChange}
+															getPendingValue={getPendingValue}
+														/>
+													</td>
+												);
+											})}
+
+											{/* Actions Cell */}
+											{tablePermissions.canEditTable() && (
+												<td className='sticky right-0 z-10 bg-background group-hover:bg-muted/20 border-l border-border/20 px-4 py-4'>
+													<div className='flex items-center gap-2'>
+														{/* Row Status Indicators */}
+														{row.isOptimistic && (
+															<div className='flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium'>
+																<div className='w-2 h-2 bg-blue-500 rounded-full animate-pulse'></div>
+																Saving...
+															</div>
+														)}
+
+														{rowHasPendingChanges && (
+															<div className='flex items-center gap-2 px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-xs font-medium'>
+																<Clock className='w-3 h-3' />
+																Modified
+															</div>
+														)}
+
+														{deletingRows.has(String(row.id)) && (
+															<div className='flex items-center gap-2 px-2 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-medium'>
+																<div className='w-2 h-2 bg-destructive rounded-full animate-pulse'></div>
+																Deleting...
+															</div>
+														)}
+
+														{/* Action Buttons */}
+														{!row.isOptimistic &&
+															!deletingRows.has(String(row.id)) && (
+																<Button
+																	variant='ghost'
+																	size='sm'
+																	onClick={() => onDeleteRow(String(row.id))}
+																	className='h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200'
+																	disabled={!tablePermissions.canDeleteTable()}>
+																	<Trash2 className='w-4 h-4' />
+																</Button>
+															)}
+													</div>
+												</td>
+											)}
+										</tr>
+									);
+								})
 							)}
 						</tbody>
 					</table>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+
+			{/* Enhanced Pagination */}
+			{showPagination && (
+				<div className='bg-muted/20 border-t border-border/20 px-6 py-4'>
+					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+						<div className='flex items-center gap-4 text-sm text-muted-foreground'>
+							<span>
+								Showing {(currentPage - 1) * pageSize + 1} to{" "}
+								{Math.min(currentPage * pageSize, totalItems)} of {totalItems}{" "}
+								results
+							</span>
+						</div>
+
+						<div className='flex items-center gap-2'>
+							<Button
+								variant='outline'
+								size='sm'
+								onClick={() => onPageChange(currentPage - 1)}
+								disabled={currentPage <= 1}
+								className='h-8 px-3'>
+								<ChevronLeft className='w-4 h-4' />
+								Previous
+							</Button>
+
+							<div className='flex items-center gap-1'>
+								{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+									const page = i + 1;
+									return (
+										<Button
+											key={page}
+											variant={page === currentPage ? "default" : "outline"}
+											size='sm'
+											onClick={() => onPageChange(page)}
+											className='h-8 w-8 p-0'>
+											{page}
+										</Button>
+									);
+								})}
+							</div>
+
+							<Button
+								variant='outline'
+								size='sm'
+								onClick={() => onPageChange(currentPage + 1)}
+								disabled={currentPage >= totalPages}
+								className='h-8 px-3'>
+								Next
+								<ChevronRight className='w-4 h-4' />
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Bulk Delete Confirmation Dialog */}
+			<AlertDialog
+				open={showBulkDeleteConfirm}
+				onOpenChange={setShowBulkDeleteConfirm}>
+				<AlertDialogContent className='max-w-md'>
+					<AlertDialogHeader>
+						<AlertDialogTitle className='flex items-center gap-2'>
+							<AlertTriangle className='w-5 h-5 text-destructive' />
+							Confirm Bulk Delete
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							Are you sure you want to delete {selectedRows.size} selected row
+							{selectedRows.size !== 1 ? "s" : ""}? This action cannot be
+							undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleBulkDeleteConfirm}
+							className='bg-destructive hover:bg-destructive/90'>
+							Delete {selectedRows.size} Row{selectedRows.size !== 1 ? "s" : ""}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</div>
 	);
-}
+});

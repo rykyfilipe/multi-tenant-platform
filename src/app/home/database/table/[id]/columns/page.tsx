@@ -2,40 +2,53 @@
 
 "use client";
 
-import Loading from "@/components/loading";
+import { TableLoadingState } from "@/components/ui/loading-states";
 import TableEditor from "@/components/table/columns/TableEditor";
-import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
+import { useDatabase } from "@/contexts/DatabaseContext";
+import TourProv from "@/contexts/TourProvider";
 import useTable from "@/hooks/useTable";
-import Link from "next/link";
 import { useParams } from "next/navigation";
+import { tourUtils } from "@/lib/tour-config";
 
 function Page() {
 	const params = useParams();
 	const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
-	if (!id) return;
-
 	const { table, columns, setColumns, loading } = useTable(id);
-	const { user } = useApp();
+	const { selectedDatabase } = useDatabase();
 
-	if (loading) return <Loading message='table' />;
+	if (!id) return null;
+
+	if (loading) return <TableLoadingState />;
+
+	if (!selectedDatabase) {
+		return (
+			<div className='p-4 text-center'>
+				<div className='text-red-500 mb-4'>No database selected</div>
+				<p className='text-muted-foreground'>
+					Please select a database from the dropdown to view this table.
+				</p>
+			</div>
+		);
+	}
 
 	if (!table)
 		return <div className='p-4 text-red-500'>Failed to load table.</div>;
 
 	return (
-		<div className='max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg'>
-			<h1 className='text-2xl font-bold mb-2'>{table.name}</h1>
-			<Link
-				href={`/home/database/table/${table.id}/rows`}
-				className='absolute right-6 top-6'>
-				<Button variant='outline' size='sm'>
-					Edit rows
-				</Button>
-			</Link>
-			<TableEditor columns={columns} setColumns={setColumns} table={table} />
-		</div>
+		<TourProv
+			steps={tourUtils.getColumnsEditorTourSteps(true)} // Always show columns for now
+			onTourComplete={() => {
+				tourUtils.markTourSeen("columns-editor");
+			}}
+			onTourSkip={() => {
+				tourUtils.markTourSeen("columns-editor");
+			}}>
+			<div className='h-full bg-background p-4'>
+				<TableEditor table={table} columns={columns} setColumns={setColumns} />
+			</div>
+		</TourProv>
 	);
 }
 

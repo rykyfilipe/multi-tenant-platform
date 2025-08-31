@@ -10,11 +10,12 @@ interface DatabaseHeaderProps {
 
 export function DatabaseHeader({ onAddTable }: DatabaseHeaderProps) {
 	const { user } = useApp();
+
 	return (
 		<div className='max-w-full flex flex-col sm:flex-row gap-5  items-center justify-between py-8 px-6  bg-black/5 rounded-2xl mb-8 border'>
-			<div className='flex items-center space-x-4'>
-				<div className='p-3 bg-black/5 rounded-xl'>
-					<Database className='h-8 w-8 text-black' />
+			<div className='flex items-center space-x-4 database-header'>
+				<div className='p-3 bg-black/5 rounded-xl hidden xs:block'>
+					<Database className='h-8 w-8 text-black ' />
 				</div>
 				<div>
 					<h1 className='text-4xl font-bold text-gray-900'>Database</h1>
@@ -23,10 +24,11 @@ export function DatabaseHeader({ onAddTable }: DatabaseHeaderProps) {
 					</p>
 				</div>
 			</div>
-			{user.role !== "VIEWER" && (
-				<Button onClick={onAddTable}>
+			{/* Database creation should be admin-only operation */}
+			{user?.role === "ADMIN" && (
+				<Button onClick={onAddTable} className='add-table-button'>
 					{" "}
-					<Plus className='h-5 w-5 add-table-button' />
+					<Plus className='h-5 w-5 ' />
 					<span>Add Table</span>
 				</Button>
 			)}

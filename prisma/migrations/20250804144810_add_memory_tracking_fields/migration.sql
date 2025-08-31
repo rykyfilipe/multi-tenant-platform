@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "public"."Tenant" ADD COLUMN     "lastMemoryUpdate" TIMESTAMP(3),
+ADD COLUMN     "memoryLimitGB" DOUBLE PRECISION NOT NULL DEFAULT 1,
+ADD COLUMN     "memoryUsedGB" DOUBLE PRECISION NOT NULL DEFAULT 0;

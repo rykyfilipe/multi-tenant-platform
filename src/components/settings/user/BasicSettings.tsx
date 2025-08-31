@@ -9,6 +9,8 @@ import { useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import DeleteAccountButton from "./DeleteAccountButton";
+import { signOut } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
 	user: User;
@@ -16,7 +18,7 @@ interface Props {
 
 type EditableField = "firstName" | "lastName" | "email" | null;
 
-function BasicSettings({ user }: Props) {
+export default function BasicSettings({ user }: Props) {
 	const { token, showAlert, tenant, setUser } = useApp();
 	const [editingField, setEditingField] = useState<EditableField>(null);
 	const [editedValues, setEditedValues] = useState({
@@ -24,8 +26,8 @@ function BasicSettings({ user }: Props) {
 		lastName: user.lastName,
 		email: user.email,
 		role: user.role,
-		password: user.password,
 	});
+	const { t } = useLanguage();
 
 	const updateField = async (field: EditableField, value: string) => {
 		if (!field) return;
@@ -46,9 +48,9 @@ function BasicSettings({ user }: Props) {
 				throw new Error("Update failed");
 			}
 
-			showAlert("Succes la update user data", "success");
+			showAlert(t("settings.profileUpdated"), "success");
 		} catch (error) {
-			showAlert("Erroare la update user data", "error");
+			showAlert(t("settings.profileUpdateFailed"), "error");
 		}
 	};
 
@@ -61,10 +63,10 @@ function BasicSettings({ user }: Props) {
 	const handleSave = async (field: EditableField) => {
 		if (field) {
 			await updateField(field, editedValues[field]);
-			setUser((prev: any) => ({
-				...prev,
+			setUser({
+				...user,
 				[field]: editedValues[field],
-			}));
+			});
 			setEditingField(null);
 		}
 	};
@@ -79,32 +81,53 @@ function BasicSettings({ user }: Props) {
 	};
 
 	const renderField = (label: string, field: EditableField) => (
-		<div className='space-y-1'>
-			<Label>{label}</Label>
+		<div className='space-y-2'>
+			<Label className='text-sm font-medium text-foreground'>{label}</Label>
 			{editingField === field ? (
-				<div className='flex items-center gap-2 mt-1'>
+				<div className='flex items-center gap-2 md:flex-col'>
 					<Input
 						autoFocus
 						value={editedValues[field!]}
 						onChange={(e) => handleChange(field, e.target.value)}
 						onKeyDown={(e) => handleKeyDown(e, field)}
-						className='w-max'
+						className='flex-1'
 					/>
-					<div className='flex gap-1'>
+					<div className='flex gap-2'>
 						<Button
 							variant='default'
 							size='sm'
-							onClick={() => handleSave(field)}>
-							Save
+							onClick={() => handleSave(field)}
+							className='px-4'>
+							{t("common.save")}
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => {
+								setEditingField(null);
+								setEditedValues({
+									firstName: user.firstName,
+									lastName: user.lastName,
+									email: user.email,
+									role: user.role,
+								});
+							}}
+							className='px-4'>
+							{t("common.cancel")}
 						</Button>
 					</div>
 				</div>
 			) : (
-				<p
-					className='mt-1 cursor-pointer hover:underline'
-					onDoubleClick={() => setEditingField(field)}>
-					{editedValues[field!]}
-				</p>
+				<div
+					className='p-3 bg-muted/30 rounded-lg border border-border cursor-pointer hover:bg-muted/50 transition-colors'
+					onClick={() => setEditingField(field)}>
+					<span className='text-sm text-foreground'>
+						{editedValues[field!]}
+					</span>
+					<p className='text-xs text-muted-foreground mt-1'>
+						{t("settings.clickToEdit")}
+					</p>
+				</div>
 			)}
 		</div>
 	);
@@ -123,34 +146,57 @@ function BasicSettings({ user }: Props) {
 
 			if (!response.ok) {
 				if (response.status === 409)
-					showAlert("User still has a tenant", "error");
-			} else showAlert("Account deleted successfully", "success");
+					showAlert(t("settings.cannotDeleteAccount"), "error");
+			} else {
+				const message =
+					user.role === "ADMIN"
+						? t("settings.accountAndTenantDeleted")
+						: t("settings.accountDeleted");
+				showAlert(message, "success");
+				setTimeout(() => {
+					signOut({ callbackUrl: "/" });
+				}, 2000);
+			}
 		} catch (error) {
-			showAlert("Error deleting user", "error");
+			showAlert(t("settings.deleteAccountFailed"), "error");
 		}
 	};
 
 	return (
-		<div className='w-full max-w-xl'>
-			<Card className='w-full'>
-				<CardHeader>
-					<CardTitle className='text-xl'>Basic Settings</CardTitle>
-				</CardHeader>
-				<CardContent className='space-y-5'>
-					{renderField("First Name", "firstName")}
-					{renderField("Last Name", "lastName")}
-					{renderField("Email", "email")}
-					<div className='space-y-1'>
-						<Label>Role</Label>
-						<p className='mt-1 cursor-pointer hover:underline'>{user.role}</p>
+		<div className='space-y-6'>
+			{/* Personal Information */}
+			<div className='grid grid-cols-1 max-lg:grid-cols-2 gap-6'>
+				{renderField(t("settings.firstName"), "firstName")}
+				{renderField(t("settings.lastName"), "lastName")}
+			</div>
+
+			{renderField(t("settings.email"), "email")}
+
+			<div className='space-y-1'>
+				<Label className='text-sm font-medium text-foreground'>
+					{t("settings.role")}
+				</Label>
+				<div className='mt-1 p-3 bg-muted/30 rounded-lg border border-border'>
+					<span className='text-sm text-foreground font-medium'>
+						{user.role}
+					</span>
+				</div>
+			</div>
+
+			{/* Account Actions */}
+			<div className='pt-6 border-t'>
+				<div className='flex items-center justify-between'>
+					<div>
+						<h3 className='text-lg font-medium text-foreground'>
+							{t("settings.dangerZone")}
+						</h3>
+						<p className='text-sm text-muted-foreground'>
+							{t("settings.dangerZoneDescription")}
+						</p>
 					</div>
-					<div className='w-full flex justify-end'>
-						<DeleteAccountButton onDelete={handleDelete} />
-					</div>
-				</CardContent>
-			</Card>
+					<DeleteAccountButton onDelete={handleDelete} user={user} />
+				</div>
+			</div>
 		</div>
 	);
 }
-
-export default BasicSettings;

@@ -1,40 +1,81 @@
-<<<<<<< HEAD
-# multi-tenant-platform
-=======
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Multi-Tenant Platform
+
+A comprehensive multi-tenant platform built with Next.js, featuring user management, database management, and multi-language support.
+
+## Features
+
+- **Multi-Tenant Architecture**: Isolated tenant environments with shared infrastructure
+- **User Management**: Role-based access control and user administration
+- **Database Management**: Dynamic table creation and management
+- **Multi-Language Support**: Internationalization (i18n) with 5 languages
+- **Subscription Plans**: Tiered pricing with resource limits
+- **Invoice System**: Automated billing and invoice generation
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js with JWT
+- **Internationalization**: Custom i18n system
+- **Deployment**: Vercel-ready configuration
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables (see `.env.example`)
+4. Run database migrations: `npx prisma migrate dev`
+5. Start development server: `npm run dev`
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and configure:
+
+```env
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="your-secret"
+NEXTAUTH_URL="http://localhost:3000"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Translation Status
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ✅ Completed Components
+- Dashboard components (navigation, analytics, organization management)
+- Authentication components (login, registration, password reset)
+- Cookie banner and contact forms
+- Plan limits and notifications
+- Database management components
+- Table management components
+- API consumer interface
+- Error handling components
+- Loading states and tour management
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 🔄 In Progress
+- Additional UI components and utilities
+- Form validation messages
+- Error messages and notifications
 
-## Learn More
+### 📋 Pending
+- Remaining utility components
+- Additional user interface elements
 
-To learn more about Next.js, take a look at the following resources:
+## Supported Languages
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **English (en)** - Default language
+- **Romanian (ro)** - Complete translation
+- **Spanish (es)** - Complete translation  
+- **French (fr)** - Complete translation
+- **German (de)** - Complete translation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing
 
-## Deploy on Vercel
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add translations for all supported languages
+5. Submit a pull request
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
->>>>>>> e3ddad9 (Initial commit from Create Next App)
+MIT License - see LICENSE file for details.

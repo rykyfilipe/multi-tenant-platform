@@ -1,84 +1,125 @@
 /** @format */
 import { useApp } from "@/contexts/AppContext";
-import { Row } from "@/types/database";
+import { useDatabase } from "@/contexts/DatabaseContext";
+import { Row, Table } from "@/types/database";
 import { useState } from "react";
+import { useBatchCellEditor } from "./useBatchCellEditor";
 
-function useRowsTableEditor() {
+interface UseRowsTableEditorOptions {
+	table: Table | null;
+	onCellsUpdated?: (updatedCells: any[]) => void;
+}
+
+function useRowsTableEditor(
+	options: UseRowsTableEditorOptions = { table: null },
+) {
 	const { user } = useApp();
-	const [editingCell, setEditingCell] = useState<{
-		rowId: string;
-		columnId: string;
-		cellId: string;
-	} | null>(null);
+	const { table, onCellsUpdated } = options;
 
-	const handleCancelEdit = () => setEditingCell(null);
+	console.log(
+		"🎣 useRowsTableEditor initialized with table:",
+		table?.name || "No table",
+	);
+
+	// Folosim noul batch editor
+	const {
+		isEditingCell,
+		startEditing,
+		cancelEditing,
+		addPendingChange,
+		savePendingChanges,
+		discardPendingChanges,
+		saveNow,
+		hasPendingChange,
+		getPendingValue,
+		pendingChangesCount,
+		isSaving,
+	} = useBatchCellEditor({
+		table,
+		autoSaveDelay: 3000, // Auto-save după 3 secunde de inactivitate
+		onSuccess: onCellsUpdated,
+		onError: (error) => {
+			console.error("Batch save error:", error);
+		},
+	});
+
+	const handleCancelEdit = () => cancelEditing();
 
 	const handleEditCell = (rowId: string, columnId: string, cellId: string) => {
-		if (user.role === "VIEWER") return;
-		setEditingCell({ rowId, columnId, cellId });
+		startEditing(rowId, columnId, cellId);
 	};
 
 	const { tenant } = useApp();
 	const tenantId = tenant?.id;
 
+	// Nouă funcție pentru salvarea celulelor care folosește batch editor
 	const handleSaveCell = async (
 		columnId: string,
 		rowId: string,
 		cellId: string,
 		rows: Row[],
-		setRows: (rows: Row[]) => void,
+		onSuccess: (newCell?: any) => void,
 		value: any,
-		table: any,
-		token: string,
-		user: any,
-		showAlert: (message: string, type: "error" | "success") => void,
+		_table: any, // Nu mai folosim table-ul din parametri, îl avem în context
+		_token: string, // Nu mai folosim token-ul din parametri, îl avem în context
+		_user: any, // Nu mai folosim user-ul din parametri, îl avem în context
+		_showAlert: (
+			message: string,
+			type: "error" | "success" | "warning" | "info",
+		) => void, // Nu mai folosim showAlert din parametri, îl avem în context
 	) => {
-		try {
-			const response = await fetch(
-				`/api/tenants/${tenantId}/database/tables/${table.id}/rows/${rowId}/cell/${cellId}`,
-				{
-					method: "PATCH",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({
-						value,
-					}),
-				},
-			);
-			if (!response.ok) throw new Error("Failed to update cell");
+		console.log("💾 handleSaveCell called:", {
+			rowId,
+			columnId,
+			cellId,
+			value,
+		});
 
-			console.log(rowId + " " + cellId);
+		// Găsim celula existentă pentru a obține valoarea originală
+		const currentRow = rows.find((row) => row.id.toString() === rowId);
+		const existingCell = currentRow?.cells?.find(
+			(cell) => cell.columnId.toString() === columnId,
+		);
+		const originalValue = existingCell?.value ?? null;
 
-			const updatedRows = rows.map((row) => {
-				if (row.id.toString() !== rowId) return row;
+		console.log("🔍 Found original value:", originalValue);
 
-				const updatedCells = row.cells.map((cell) => {
-					if (cell.id.toString() === cellId) {
-						return { ...cell, value };
-					}
-					return cell;
-				});
+		// Adăugăm modificarea la batch-ul pending
+		addPendingChange(rowId, columnId, cellId, value, originalValue);
 
-				return { ...row, cells: updatedCells };
-			});
+		// Anulăm editarea
+		cancelEditing();
 
-			setRows(updatedRows);
-
-			setEditingCell(null);
-			showAlert("Cell updated successfully", "success");
-		} catch (error) {
-			showAlert("Error updating cell", "error");
-		}
+		// Apelăm callback-ul pentru actualizare optimistă a UI-ului
+		onSuccess({
+			id: cellId === "virtual" ? `temp-${Date.now()}` : cellId,
+			columnId: parseInt(columnId),
+			rowId: parseInt(rowId),
+			value: value,
+		});
 	};
 
 	return {
-		editingCell,
-		setEditingCell,
+		// Compatibilitate cu API-ul existent
+		editingCell: isEditingCell,
+		setEditingCell: (cell: any) => {
+			if (cell) {
+				startEditing(cell.rowId, cell.columnId, cell.cellId);
+			} else {
+				cancelEditing();
+			}
+		},
 		handleCancelEdit,
 		handleEditCell,
 		handleSaveCell,
+
+		// Noi funcționalități pentru batch editing
+		pendingChangesCount,
+		isSaving,
+		hasPendingChange,
+		getPendingValue,
+		savePendingChanges: saveNow,
+		discardPendingChanges,
 	};
 }
 

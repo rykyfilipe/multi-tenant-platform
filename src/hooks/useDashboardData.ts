@@ -1,0 +1,354 @@
+/** @format */
+
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useApp } from "@/contexts/AppContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { getPlanLimits } from "@/lib/planConstants";
+
+interface DashboardData {
+	stats: {
+		totalDatabases: number;
+		totalTables: number;
+		totalUsers: number;
+		totalRows: number;
+		activeUsers: number;
+		subscriptionStatus: string;
+		planName: string;
+		memoryUsedMB: number;
+		memoryLimitMB: number;
+		memoryPercentage: number;
+		isNearMemoryLimit: boolean;
+		isOverMemoryLimit: boolean;
+	};
+	databaseData: {
+		databases: Array<{
+			name: string;
+			tables: number;
+			rows: number;
+			size: string;
+			usage: number;
+		}>;
+		totalUsage: number;
+		limit: number;
+	};
+	userData: {
+		recentUsers: Array<{
+			id: number;
+			name: string;
+			email: string;
+			role: string;
+			lastActive: string;
+			status: "online" | "offline" | "away";
+		}>;
+		activeUsers: number;
+		totalUsers: number;
+	};
+	usageData: {
+		storage: {
+			used: number;
+			total: number;
+			unit: string;
+		};
+		tables: {
+			used: number;
+			total: number;
+		};
+		rows: {
+			used: number;
+			total: number;
+		};
+		databases: {
+			used: number;
+			total: number;
+		};
+		users: {
+			used: number;
+			total: number;
+		};
+		memory: {
+			used: number;
+			total: number;
+			percentage: number;
+			isNearLimit: boolean;
+			isOverLimit: boolean;
+		};
+	};
+}
+
+export const useDashboardData = () => {
+	const { token, tenant } = useApp();
+	const { subscription } = useSubscription();
+	const [data, setData] = useState<DashboardData | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [loadingPhase, setLoadingPhase] = useState<
+		"initial" | "charts" | "complete"
+	>("initial");
+
+	// Memoize plan limits to avoid recalculation
+	const planLimits = useMemo(
+		() => getPlanLimits(subscription?.subscriptionPlan || null),
+		[subscription?.subscriptionPlan],
+	);
+
+	// Progressive loading: First load essential stats, then charts
+	const fetchEssentialData = useCallback(async () => {
+		if (!token || !tenant) return null;
+
+		try {
+			// Fetch only essential data first for faster FCP
+			const [databasesResponse, usersResponse] = await Promise.all([
+				fetch(`/api/tenants/${tenant.id}/databases`, {
+					headers: { Authorization: `Bearer ${token}` },
+				}),
+				fetch(`/api/tenants/${tenant.id}/users`, {
+					headers: { Authorization: `Bearer ${token}` },
+				}),
+			]);
+
+			if (!databasesResponse.ok || !usersResponse.ok) {
+				throw new Error("Failed to fetch essential dashboard data");
+			}
+
+			const [databasesData, usersData] = await Promise.all([
+				databasesResponse.json(),
+				usersResponse.json(),
+			]);
+
+			// Process essential data
+			const databases = Array.isArray(databasesData) ? databasesData : [];
+			const users = Array.isArray(usersData) ? usersData : [];
+
+			const totalTables = databases.reduce(
+				(acc: number, db: any) => acc + (db.tables?.length || 0),
+				0,
+			);
+
+			const totalRows = databases.reduce((acc: number, db: any) => {
+				const dbRows =
+					db.tables?.reduce(
+						(dbAcc: number, table: any) => dbAcc + (table.rows?.length || 0),
+						0,
+					) || 0;
+				return acc + dbRows;
+			}, 0);
+
+			const activeUsers = users.length + 1;
+
+			// Return essential stats for immediate display
+			return {
+				stats: {
+					totalDatabases: databases.length,
+					totalTables,
+					totalUsers: users.length + 1,
+					totalRows,
+					activeUsers,
+					subscriptionStatus:
+						subscription?.subscriptionStatus || "no_subscription",
+					planName: subscription?.subscriptionPlan || "Free",
+					memoryUsedMB: 0, // Will be loaded in next phase
+					memoryLimitMB: planLimits.storage,
+					memoryPercentage: 0,
+					isNearMemoryLimit: false,
+					isOverMemoryLimit: false,
+				},
+				databaseData: {
+					databases: databases.map((db: any) => {
+						const dbRows =
+							db.tables?.reduce(
+								(acc: number, table: any) => acc + (table.rows?.length || 0),
+								0,
+							) || 0;
+						return {
+							name: db.name,
+							tables: db.tables?.length || 0,
+							rows: dbRows,
+							size: `${(dbRows * 0.001).toFixed(2)} MB`,
+							usage: Math.min(
+								((db.tables?.length || 0) / planLimits.tables) * 100,
+								100,
+							),
+						};
+					}),
+					totalUsage: databases.length,
+					limit: planLimits.databases,
+				},
+				userData: {
+					recentUsers: users.slice(0, 5).map((user: any) => ({
+						id: user.id,
+						name: `${user.firstName} ${user.lastName}`,
+						email: user.email,
+						role: user.role,
+						lastActive: "2 hours ago",
+						status: "online" as const,
+					})),
+					activeUsers,
+					totalUsers: users.length + 1,
+				},
+				usageData: {
+					storage: {
+						used: 0, // Will be loaded in next phase
+						total: planLimits.storage,
+						unit: "MB",
+					},
+					tables: {
+						used: totalTables,
+						total: planLimits.tables,
+					},
+					rows: {
+						used: totalRows,
+						total: planLimits.rows,
+					},
+					databases: {
+						used: databases.length,
+						total: planLimits.databases,
+					},
+					users: {
+						used: users.length + 1,
+						total: planLimits.users,
+					},
+					memory: {
+						used: 0, // Will be loaded in next phase
+						total: planLimits.storage,
+						percentage: 0,
+						isNearLimit: false,
+						isOverLimit: false,
+					},
+				},
+			};
+		} catch (error) {
+			throw error;
+		}
+	}, [token, tenant, subscription?.subscriptionPlan, planLimits]);
+
+	// Load memory data and complete the dashboard
+	const fetchMemoryData = useCallback(
+		async (essentialData: any) => {
+			if (!token || !tenant) return essentialData;
+
+			try {
+				const memoryResponse = await fetch(`/api/tenants/${tenant.id}/memory`, {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+
+				if (!memoryResponse.ok) {
+					console.warn("Failed to fetch memory data, using defaults");
+					return essentialData;
+				}
+
+				const memoryData = await memoryResponse.json();
+				const memoryInfo = memoryData.success
+					? memoryData.data
+					: {
+							usedMB: 0,
+							limitMB: planLimits.storage,
+							percentage: 0,
+							isNearLimit: false,
+							isOverLimit: false,
+					  };
+
+				// Update the data with memory information
+				const updatedData = {
+					...essentialData,
+					stats: {
+						...essentialData.stats,
+						memoryUsedMB: memoryInfo.usedMB,
+						memoryLimitMB: memoryInfo.limitMB,
+						memoryPercentage: memoryInfo.percentage,
+						isNearMemoryLimit: memoryInfo.isNearLimit,
+						isOverMemoryLimit: memoryInfo.isOverLimit,
+					},
+					usageData: {
+						...essentialData.usageData,
+						storage: {
+							used: memoryInfo.usedMB,
+							total: memoryInfo.limitMB,
+							unit: "MB",
+						},
+						memory: {
+							used: memoryInfo.usedMB,
+							total: memoryInfo.limitMB,
+							percentage: memoryInfo.percentage,
+							isNearLimit: memoryInfo.isNearLimit,
+							isOverLimit: memoryInfo.isOverLimit,
+						},
+					},
+				};
+
+				// Trigger memory recalculation in background if needed
+				if (memoryData?.success && memoryData?.data?.lastRecalculated) {
+					const lastRecalc = new Date(memoryData.data.lastRecalculated);
+					const now = new Date();
+					const hoursSinceRecalc =
+						(now.getTime() - lastRecalc.getTime()) / (1000 * 60 * 60);
+
+					if (hoursSinceRecalc > 1) {
+						// Fire and forget - don't wait for this
+						fetch(`/api/tenants/${tenant.id}/memory/recalculate`, {
+							method: "POST",
+							headers: { Authorization: `Bearer ${token}` },
+						}).catch(() => {
+							// Ignore recalculation errors
+						});
+					}
+				}
+
+				return updatedData;
+			} catch (error) {
+				console.warn("Failed to fetch memory data:", error);
+				return essentialData;
+			}
+		},
+		[token, tenant, planLimits],
+	);
+
+	useEffect(() => {
+		const loadDashboardData = async () => {
+			if (!token || !tenant) {
+				setLoading(false);
+				return;
+			}
+
+			try {
+				setLoading(true);
+				setError(null);
+				setLoadingPhase("initial");
+
+				// Phase 1: Load essential data for immediate display
+				const essentialData = await fetchEssentialData();
+				if (essentialData) {
+					setData(essentialData);
+					setLoadingPhase("charts");
+					setLoading(false); // Show content immediately
+
+					// Phase 2: Load memory data in background
+					setTimeout(async () => {
+						try {
+							const completeData = await fetchMemoryData(essentialData);
+							setData(completeData);
+							setLoadingPhase("complete");
+						} catch (error) {
+							console.warn("Background memory data loading failed:", error);
+						}
+					}, 100); // Small delay to prioritize UI rendering
+				}
+			} catch (error) {
+				setError(error instanceof Error ? error.message : "Unknown error");
+				setLoading(false);
+			}
+		};
+
+		loadDashboardData();
+	}, [token, tenant?.id, subscription?.subscriptionPlan, planLimits]);
+
+	// Memoize the return value to prevent unnecessary re-renders
+	return useMemo(
+		() => ({
+			data,
+			loading,
+			error,
+			loadingPhase,
+		}),
+		[data, loading, error, loadingPhase],
+	);
+};

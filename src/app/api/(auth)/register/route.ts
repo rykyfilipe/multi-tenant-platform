@@ -4,13 +4,34 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateToken, hashPassword } from "@/lib/auth";
+import createPredefinedTables from "@/lib/predefinedTables";
 
 const RegisterSchema = z.object({
-	// Define the schema for registration
-	email: z.string().email(),
-	password: z.string().min(8),
-	firstName: z.string().min(4),
-	lastName: z.string().min(4),
+	email: z.string().email("Invalid email format"),
+	password: z
+		.string()
+		.min(12, "Password must be at least 12 characters")
+		.regex(
+			/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+			"Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)",
+		)
+		.max(128, "Password too long")
+		.refine(
+			(password) => !/(.)\1{2,}/.test(password),
+			"Password cannot contain repeated characters (e.g., 'aaa', '111')",
+		)
+		.refine(
+			(password) => !/(.)(.)\1\2/.test(password),
+			"Password cannot contain repeated patterns (e.g., 'abab')",
+		),
+	firstName: z
+		.string()
+		.min(2, "First name must be at least 2 characters")
+		.max(50, "First name too long"),
+	lastName: z
+		.string()
+		.min(2, "Last name must be at least 2 characters")
+		.max(50, "Last name too long"),
 	role: z.enum(["VIEWER", "ADMIN"]).default("VIEWER"),
 });
 
@@ -42,6 +63,11 @@ export async function POST(request: Request) {
 				firstName: parsedData.firstName,
 				lastName: parsedData.lastName,
 				role: parsedData.role,
+				subscriptionStatus: "active",
+				subscriptionPlan: "Free",
+				subscriptionCurrentPeriodEnd: new Date(
+					Date.now() + 365 * 24 * 60 * 60 * 1000,
+				), // 1 year from now
 			},
 		});
 
@@ -71,6 +97,9 @@ export async function POST(request: Request) {
 			},
 		});
 
+		// Modules are now optional and can be enabled later
+		// No automatic table creation during registration
+
 		const payload = {
 			userId: user.id,
 			role: user.role,
@@ -79,7 +108,18 @@ export async function POST(request: Request) {
 		const token = generateToken(payload, "7d");
 
 		const response = NextResponse.json(
-			{ message: "User register successfully", user, token },
+			{
+				message: "User registered successfully",
+				user: {
+					id: user.id,
+					email: user.email,
+					firstName: user.firstName,
+					lastName: user.lastName,
+					role: user.role,
+				},
+				tenant: newTenant,
+				database: newDatabase,
+			},
 			{ status: 201 },
 		);
 
@@ -89,7 +129,9 @@ export async function POST(request: Request) {
 			maxAge: 7 * 24 * 60 * 60, // 7 zile
 		});
 		return response;
-	} catch (error: any) {
-		return NextResponse.json({ error: error.message }, { status: 400 });
+	} catch (error: unknown) {
+		const errorMessage =
+			error instanceof Error ? error.message : "Registration failed";
+		return NextResponse.json({ error: errorMessage }, { status: 400 });
 	}
 }

@@ -9,94 +9,216 @@ datasource db {
 }
 
 model Tenant {
-  id         Int      @id @default(autoincrement())
-  name       String   @unique
-  adminId    Int      @unique
-  admin      User     @relation("TenantAdmin", fields: [adminId], references: [id])
-  users      User[]   @relation("TenantUsers")
-
-  // 🔧 Configurări utile:
-  logoUrl    String?        // URL-ul logo-ului companiei
-  theme      String?        // dark | light | custom...
-  timezone   String?        // ex: "Europe/Bucharest"
-  language   String?        // ex: "ro", "en"
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime        @updatedAt @default(now())
-
-  // 🧾 Informații companie:
-  companyEmail String?      // email de contact
-  phone        String?      // număr de telefon
-  website      String?      // site oficial
-  address      String?      // adresa firmei
-
-  // 🔌 Extensii (ex: dashboard separat)
-  database   Database?
+  id                  Int                @id @default(autoincrement())
+  name                String             @unique
+  adminId             Int                @unique
+  address             String?
+  companyEmail        String?
+  createdAt           DateTime           @default(now())
+  language            String?
+  logoUrl             String?
+  phone               String?
+  theme               String?
+  timezone            String?
+  updatedAt           DateTime           @updatedAt
+  website             String?
+  lastMemoryUpdate    DateTime?
+  memoryLimitGB       Float              @default(0.1)
+  memoryUsedGB        Float              @default(0)
+  defaultCurrency     String?            @default("USD")
+  companyBank         String?
+  companyCity         String?
+  companyCountry      String?
+  companyIban         String?
+  companyPostalCode   String?
+  companyStreet       String?
+  companyStreetNumber String?
+  companyTaxId        String?
+  registrationNumber  String?
+  enabledModules      String[]           @default([]) // ['billing', 'crm', 'inventory']
+  columnPermissions   ColumnPermission[]
+  databases           Database[]
+  invitations         Invitation[]
+  tablePermissions    TablePermission[]
+  admin               User               @relation("TenantAdmin", fields: [adminId], references: [id])
+  users               User[]             @relation("TenantUsers")
 }
 
-
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  firstName String
-  lastName  String
-  password  String
-  role      Role
-
-  tenantId  Int?
-  tenant    Tenant?  @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
-
-  adminOf   Tenant?  @relation("TenantAdmin")
+  id                           Int                @id @default(autoincrement())
+  email                        String             @unique
+  firstName                    String
+  lastName                     String
+  password                     String?
+  role                         Role
+  tenantId                     Int?
+  stripeCustomerId             String?
+  stripeSubscriptionId         String?
+  subscriptionCurrentPeriodEnd DateTime?
+  subscriptionPlan             String?
+  subscriptionStatus           String?
+  profileImage                 String?
+  accounts                     Account[]
+  columnPermissions            ColumnPermission[]
+  sessions                     Session[]
+  tablePermissions             TablePermission[]
+  adminOf                      Tenant?            @relation("TenantAdmin")
+  tenant                       Tenant?            @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Database {
   id        Int      @id @default(autoincrement())
-  tenantId  Int      @unique
+  tenantId  Int
+  createdAt DateTime @default(now())
+  name      String   @default("Main Database")
+  updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   tables    Table[]
 }
 
 model Table {
-  id         Int       @id @default(autoincrement())
-  name       String
-  databaseId Int
-  database   Database  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
-
-  description String
-  columns Column[]
-  rows    Row[]
+  id                  Int                @id @default(autoincrement())
+  databaseId          Int
+  name                String
+  description         String
+  isPublic            Boolean            @default(false)
+  isProtected         Boolean            @default(false)
+  protectedType       String?
+  moduleType          String?            // 'billing', 'crm', 'inventory', etc.
+  isModuleTable       Boolean            @default(false) // pentru a identifica tabelele modulare
+  referencedByColumns Column[]           @relation("ReferenceColumnTable")
+  columns             Column[]
+  columnPermissions   ColumnPermission[]
+  rows                Row[]
+  database            Database           @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  tablePermissions    TablePermission[]
 }
 
 model Column {
-  id            Int     @id @default(autoincrement())
-  name          String
-  type          String
-  required      Boolean @default(false)
-  primary       Boolean @default(false)
-  autoIncrement Boolean @default(false)
-  tableId       Int
-  table         Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
-
-  cells         Cell[]
+  id                Int                @id @default(autoincrement())
+  name              String
+  type              String
+  required          Boolean            @default(false)
+  primary           Boolean            @default(false)
+  tableId           Int
+  referenceTableId  Int?
+  customOptions     String[]           @default([])
+  order             Int                @default(0)
+  isLocked          Boolean            @default(false)
+  semanticType      String?
+  cells             Cell[]
+  referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
+  table             Table              @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  columnPermissions ColumnPermission[]
 }
 
 model Row {
   id        Int      @id @default(autoincrement())
   tableId   Int
   createdAt DateTime @default(now())
-  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
-
   cells     Cell[]
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
 }
 
 model Cell {
-  id        Int    @id @default(autoincrement())
-  rowId     Int
-  columnId  Int
-  value     Json
+  id       Int    @id @default(autoincrement())
+  rowId    Int
+  columnId Int
+  value    Json
+  column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  row      Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+}
 
-  row       Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
-  column    Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+model TablePermission {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tableId   Int
+  tenantId  Int
+  canRead   Boolean  @default(false)
+  canEdit   Boolean  @default(false)
+  canDelete Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tableId])
+  @@index([tenantId])
+  @@index([tableId])
+  @@index([userId])
+}
+
+model ColumnPermission {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  columnId  Int
+  tenantId  Int
+  canRead   Boolean  @default(false)
+  canEdit   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tableId   Int
+  column    Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, columnId])
+  @@index([tenantId])
+  @@index([columnId])
+  @@index([userId])
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  firstName String
+  lastName  String
+  role      Role
+  tenantId  Int
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  accepted  Boolean  @default(false)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
 }
 
 enum Role {

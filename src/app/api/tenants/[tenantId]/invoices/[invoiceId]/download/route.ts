@@ -1,0 +1,424 @@
+/** @format */
+
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import {
+	checkUserTenantAccess,
+	getUserFromRequest,
+	verifyLogin,
+} from "@/lib/auth";
+import { InvoiceSystemService } from "@/lib/invoice-system";
+import {
+	PDFInvoiceGenerator,
+	InvoicePDFData,
+} from "@/lib/pdf-invoice-generator";
+import { InvoiceCalculationService } from "@/lib/invoice-calculations";
+
+const formatPrice = (price: any): string => {
+	if (price == null || price === undefined) return "0.00";
+	const numPrice =
+		typeof price === "string" ? parseFloat(price) : Number(price);
+	return isNaN(numPrice) ? "0.00" : numPrice.toFixed(2);
+};
+
+export async function GET(
+	request: NextRequest,
+	{ params }: { params: Promise<{ tenantId: string; invoiceId: string }> },
+) {
+	const logged = verifyLogin(request);
+	if (!logged) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	const userResult = await getUserFromRequest(request);
+	if (userResult instanceof NextResponse) {
+		return userResult;
+	}
+
+	const { tenantId, invoiceId } = await params;
+	const { userId } = userResult;
+
+	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+	if (!isMember) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	try {
+		// Get the database for this tenant
+		const database = await prisma.database.findFirst({
+			where: { tenantId: Number(tenantId) },
+		});
+
+		if (!database) {
+			return NextResponse.json(
+				{ error: "Database not found for this tenant" },
+				{ status: 404 },
+			);
+		}
+
+		// Get invoice tables
+		const invoiceTables = await InvoiceSystemService.getInvoiceTables(
+			Number(tenantId),
+			database.id,
+		);
+
+		if (
+			!invoiceTables.invoices ||
+			!invoiceTables.invoice_items ||
+			!invoiceTables.customers
+		) {
+			return NextResponse.json(
+				{ error: "Invoice system not initialized" },
+				{ status: 404 },
+			);
+		}
+
+		// Get invoice details
+		const invoice = await prisma.row.findUnique({
+			where: { id: Number(invoiceId) },
+			include: {
+				cells: {
+					include: {
+						column: true,
+					},
+				},
+			},
+		});
+
+		if (!invoice) {
+			return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+		}
+
+		// Verify this is an invoice row
+		const invoiceNumberCell = invoice.cells.find(
+			(c: any) => c.column.name === "invoice_number",
+		);
+		if (!invoiceNumberCell) {
+			return NextResponse.json(
+				{ error: "Invalid invoice row" },
+				{ status: 400 },
+			);
+		}
+
+		// Get customer ID from invoice
+		const customerIdCell = invoice.cells.find(
+			(c: any) => c.column.name === "customer_id",
+		);
+		if (!customerIdCell) {
+			return NextResponse.json(
+				{ error: "Invoice missing customer ID" },
+				{ status: 400 },
+			);
+		}
+
+		const customerId = customerIdCell.value;
+
+		// Get customer details
+		const customer = await prisma.row.findFirst({
+			where: {
+				id: customerId,
+				tableId: invoiceTables.customers.id,
+			},
+			include: {
+				cells: {
+					include: {
+						column: true,
+					},
+				},
+			},
+		});
+
+		if (!customer) {
+			return NextResponse.json(
+				{ error: "Customer not found" },
+				{ status: 404 },
+			);
+		}
+
+		// Get invoice items
+		const invoiceItems = await prisma.row.findMany({
+			where: {
+				tableId: invoiceTables.invoice_items.id,
+				cells: {
+					some: {
+						column: {
+							name: "invoice_id",
+						},
+						value: {
+							equals: Number(invoiceId),
+						},
+					},
+				},
+			},
+			include: {
+				cells: {
+					include: {
+						column: true,
+					},
+				},
+			},
+		});
+
+		// Transform invoice data
+		const invoiceData: any = { id: invoice.id };
+		invoice.cells.forEach((cell: any) => {
+			invoiceData[cell.column.name] = cell.value;
+		});
+
+		// Transform customer data
+		const customerData: any = { id: customer.id };
+		customer.cells.forEach((cell: any) => {
+			customerData[cell.column.name] = cell.value;
+		});
+
+		// Transform invoice items with full product details
+		const items = [];
+		for (const item of invoiceItems) {
+			const itemData: any = { id: item.id };
+
+			// Get basic invoice item data
+			item.cells.forEach((cell: any) => {
+				itemData[cell.column.name] = cell.value;
+			});
+
+			// Get complete product details from the referenced table
+			if (itemData.product_ref_table && itemData.product_ref_id) {
+				try {
+					// Find the referenced table
+					const productTable = await prisma.table.findFirst({
+						where: {
+							name: itemData.product_ref_table,
+							databaseId: database.id,
+						},
+					});
+
+					if (productTable) {
+						const productRow = await prisma.row.findUnique({
+							where: { id: itemData.product_ref_id },
+							include: {
+								cells: {
+									include: {
+										column: true,
+									},
+								},
+							},
+						});
+
+						if (productRow) {
+							// Extract all product information
+							const productData: any = { id: productRow.id };
+							productRow.cells.forEach((cell: any) => {
+								productData[cell.column.name] = cell.value;
+							});
+
+							// Merge product details into item data for easy access
+							itemData.product_name =
+								productData.name ||
+								productData.product_name ||
+								productData.title ||
+								"Product";
+							itemData.product_description =
+								productData.description ||
+								productData.product_description ||
+								"";
+							itemData.product_category =
+								productData.category || productData.product_category || "";
+							itemData.product_sku =
+								productData.sku || productData.product_sku || "";
+							itemData.product_brand =
+								productData.brand || productData.product_brand || "";
+							itemData.product_weight =
+								productData.weight || productData.product_weight || null;
+							itemData.product_dimensions =
+								productData.dimensions || productData.product_dimensions || "";
+							// Only override product_vat if it doesn't exist in invoice_items
+							if (!itemData.product_vat) {
+								itemData.product_vat =
+									productData.vat || productData.product_vat || 0;
+							}
+
+							// Keep the full product data for reference
+							itemData.product_details = productData;
+						}
+					}
+				} catch (error) {
+					console.warn(
+						`Failed to fetch product details for ${itemData.product_ref_table}:${itemData.product_ref_id}`,
+						error,
+					);
+					itemData.product_details = null;
+				}
+			}
+
+			items.push(itemData);
+		}
+
+		// Get tenant information for PDF generation
+		const tenantInfo = await prisma.tenant.findUnique({
+			where: { id: Number(tenantId) },
+			select: {
+				name: true,
+				companyEmail: true,
+				phone: true,
+				address: true,
+				website: true,
+				defaultCurrency: true,
+				companyTaxId: true,
+				registrationNumber: true,
+				companyCity: true,
+				companyCountry: true,
+				companyPostalCode: true,
+				companyIban: true,
+				companyBank: true,
+			},
+		});
+
+		// Calculate totals using unified service
+		const totals = await InvoiceCalculationService.calculateInvoiceTotals(
+			items,
+			{
+				baseCurrency:
+					invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD", // Use actual invoice currency
+				exchangeRates: {}, // Empty for now, will be populated with real rates
+			},
+		);
+
+		// Get company information from customers table (assuming first row contains company info)
+		const companyInfo = await prisma.row.findFirst({
+			where: {
+				tableId: invoiceTables.customers.id,
+				cells: {
+					some: {
+						column: {
+							name: "company_name",
+						},
+					},
+				},
+			},
+			include: {
+				cells: {
+					include: {
+						column: true,
+					},
+				},
+			},
+		});
+
+		// Transform company data
+		const companyData: any = {};
+		if (companyInfo) {
+			companyInfo.cells.forEach((cell: any) => {
+				companyData[cell.column.name] = cell.value;
+			});
+		}
+
+		// Prepare data for PDF generation
+		const pdfData: InvoicePDFData = {
+			company: {
+				name:
+					companyData.company_name || tenantInfo?.name || "Your Company Name",
+				taxId: companyData.company_tax_id || tenantInfo?.companyTaxId || "-",
+				registrationNumber:
+					companyData.company_registration_number ||
+					tenantInfo?.registrationNumber ||
+					"-",
+				address:
+					companyData.company_street && companyData.company_street_number
+						? `${companyData.company_street} ${companyData.company_street_number}`
+						: companyData.company_street || tenantInfo?.address || "-",
+				city: companyData.company_city || tenantInfo?.companyCity || "-",
+				country:
+					companyData.company_country || tenantInfo?.companyCountry || "-",
+				postalCode:
+					companyData.company_postal_code ||
+					tenantInfo?.companyPostalCode ||
+					"-",
+				iban: companyData.company_iban || tenantInfo?.companyIban || "-",
+				bank: companyData.company_bank || tenantInfo?.companyBank || "-",
+				phone: companyData.company_phone || tenantInfo?.phone || "-",
+				email: companyData.company_email || tenantInfo?.companyEmail || "-",
+				website: companyData.company_website || tenantInfo?.website || "-",
+			},
+			customer: {
+				name: customerData.customer_name,
+				taxId: customerData.customer_tax_id,
+				registrationNumber: customerData.customer_registration_number,
+				address:
+					customerData.customer_street && customerData.customer_street_number
+						? `${customerData.customer_street} ${customerData.customer_street_number}`
+						: customerData.customer_address,
+				city: customerData.customer_city,
+				country: customerData.customer_country,
+				postalCode: customerData.customer_postal_code,
+				email: customerData.customer_email,
+				phone: customerData.customer_phone,
+			},
+			invoice: {
+				number: invoiceData.invoice_number,
+				series: invoiceData.invoice_series || "A",
+				date: invoiceData.date,
+				dueDate:
+					invoiceData.due_date ||
+					new Date(
+						new Date(invoiceData.date).getTime() + 30 * 24 * 60 * 60 * 1000,
+					).toISOString(),
+				currency: invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD",
+				paymentTerms: invoiceData.payment_terms || "Net 30",
+				paymentMethod:
+					invoiceData.payment_method || "Bank Transfer / Credit Card",
+			},
+			items: items.map((item, index) => {
+				const quantity = Number(item.quantity) || 0;
+				const unitPrice = Number(item.price) || 0;
+				const vatRate = Number(item.product_vat) || 0;
+				const vatAmount = (quantity * unitPrice * vatRate) / 100;
+				const total = quantity * unitPrice * (1 + vatRate / 100);
+
+				const pdfItem = {
+					description: item.product_name || "Product",
+					sku: item.product_sku,
+					category: item.product_category,
+					quantity: quantity,
+					unitPrice: unitPrice,
+					currency: item.currency || invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD",
+					vatRate: vatRate,
+					vatAmount: vatAmount,
+					total: total,
+				};
+
+				return pdfItem;
+			}),
+			totals: {
+				subtotal: totals.subtotal,
+				vatTotal: totals.vatTotal,
+				grandTotal: totals.grandTotal,
+				currency: invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD",
+			},
+		};
+
+		// Generate PDF
+		try {
+			const pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData);
+
+			// Return PDF with appropriate headers
+			return new NextResponse(pdfBuffer, {
+				headers: {
+					"Content-Type": "application/pdf",
+					"Content-Disposition": `attachment; filename="factura-${invoiceData.invoice_number}.pdf"`,
+				},
+			});
+		} catch (error) {
+			console.error("Error generating PDF:", error);
+			return NextResponse.json(
+				{ error: "Failed to generate PDF invoice" },
+				{ status: 500 },
+			);
+		}
+	} catch (error) {
+		console.error("Error generating invoice download:", error);
+		return NextResponse.json(
+			{ error: "Failed to generate invoice download" },
+			{ status: 500 },
+		);
+	}
+}

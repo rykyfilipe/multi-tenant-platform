@@ -142,6 +142,11 @@ export async function DELETE(
 	if (!isMember)
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+	// Only admins can delete other users (self-deletion is allowed for all users)
+	if (Number(userIdToDelete) !== userId && role !== "ADMIN") {
+		return NextResponse.json({ error: "Unauthorized - Only admins can delete other users" }, { status: 401 });
+	}
+
 	try {
 		const user = await prisma.user.findUnique({
 			where: {
@@ -151,30 +156,68 @@ export async function DELETE(
 		});
 
 		if (!user)
-			return NextResponse.json({ error: "User not founded" }, { status: 404 });
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-		const tenant = await prisma.tenant.findFirst({
-			where: {
-				users: {
-					some: {
-						id: user.id,
+		// Check if user is trying to delete themselves
+		if (Number(userIdToDelete) === userId) {
+			// Allow self-deletion for both admin and regular users
+			const tenant = await prisma.tenant.findFirst({
+				where: {
+					users: {
+						some: {
+							id: user.id,
+						},
 					},
 				},
-			},
-		});
+			});
 
-		if (user.role === "ADMIN" && tenant) {
-			return NextResponse.json(
-				{ error: "User is admin of a tenant, cant delete account" },
-				{ status: 409 },
-			);
+			// Check if user is admin of a tenant
+			if (user.role === "ADMIN" && tenant) {
+				// For admin users, we need to delete the entire tenant and all associated data
+				// This will cascade delete all databases, tables, rows, cells, permissions, etc.
+				await prisma.tenant.delete({
+					where: {
+						id: tenant.id,
+					},
+				});
+			} else {
+				// For regular users, just delete the user
+				await prisma.user.delete({
+					where: {
+						id: Number(userIdToDelete),
+					},
+				});
+			}
+		} else {
+			// Admin is deleting another user from their tenant
+			if (user.role === "ADMIN") {
+				// If deleting another admin, delete the entire tenant
+				const tenant = await prisma.tenant.findFirst({
+					where: {
+						users: {
+							some: {
+								id: user.id,
+							},
+						},
+					},
+				});
+				
+				if (tenant) {
+					await prisma.tenant.delete({
+						where: {
+							id: tenant.id,
+						},
+					});
+				}
+			} else {
+				// For regular users, just delete the user
+				await prisma.user.delete({
+					where: {
+						id: Number(userIdToDelete),
+					},
+				});
+			}
 		}
-
-		await prisma.user.delete({
-			where: {
-				id: Number(userIdToDelete),
-			},
-		});
 
 		return NextResponse.json({ status: 200 });
 	} catch (error) {

@@ -6,19 +6,17 @@ export interface User {
 	firstName: string;
 	lastName: string;
 	role: Role;
-	password: string;
+	profileImage?: string;
+	tenantId?: string | null;
 }
 
 export enum Role {
-	ADMIN = "ADMIN",
 	VIEWER = "VIEWER",
 	EDITOR = "EDITOR",
+	ADMIN = "ADMIN",
 }
 
 export interface UserSchema {
-	firstName: string;
-	lastName: string;
 	email: string;
 	role: Role;
-	password: string;
 }

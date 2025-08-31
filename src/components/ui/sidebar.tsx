@@ -97,19 +97,16 @@ function SidebarProvider({
 
 	// Adds a keyboard shortcut to toggle the sidebar.
 	React.useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (
-				event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-				(event.metaKey || event.ctrlKey)
-			) {
-				event.preventDefault();
-				toggleSidebar();
+		const down = (e: KeyboardEvent) => {
+			if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+				e.preventDefault();
+				setOpen((open) => !open);
 			}
 		};
 
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [toggleSidebar]);
+		document.addEventListener("keydown", down);
+		return () => document.removeEventListener("keydown", down);
+	}, []);
 
 	// We add a state so that we can do data-state="expanded" or "collapsed".
 	// This makes it easier to style the sidebar with Tailwind classes.
@@ -260,19 +257,18 @@ function SidebarTrigger({
 		<Button
 			data-sidebar='trigger'
 			data-slot='sidebar-trigger'
-			variant='ghost'
+			variant='outline'
 			size='icon'
 			className={cn(
-				"size-7",
-				className,
 				"flex items-center justify-center cursor-pointer",
+				className,
 			)}
 			onClick={(event) => {
 				onClick?.(event);
 				toggleSidebar();
 			}}
 			{...props}>
-			<PanelLeftIcon />
+			<PanelLeftIcon className="h-4 w-4" />
 			<span className='sr-only'>Toggle Sidebar</span>
 		</Button>
 	);
