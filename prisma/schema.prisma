@@ -1,11 +1,14 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
+  relationMode = "prisma"
 }
 
 model Tenant {
@@ -35,13 +38,15 @@ model Tenant {
   companyStreetNumber String?
   companyTaxId        String?
   registrationNumber  String?
-  enabledModules      String[]           @default([]) // ['billing', 'crm', 'inventory']
+  enabledModules      String[]           @default([])
   columnPermissions   ColumnPermission[]
   databases           Database[]
   invitations         Invitation[]
   tablePermissions    TablePermission[]
-  admin               User               @relation("TenantAdmin", fields: [adminId], references: [id])
+  admin               User               @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   users               User[]             @relation("TenantUsers")
+
+  @@index([adminId])
 }
 
 model User {
@@ -64,6 +69,8 @@ model User {
   tablePermissions             TablePermission[]
   adminOf                      Tenant?            @relation("TenantAdmin")
   tenant                       Tenant?            @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model Database {
@@ -74,6 +81,8 @@ model Database {
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tables    Table[]
+
+  @@index([tenantId])
 }
 
 model Table {
@@ -84,14 +93,16 @@ model Table {
   isPublic            Boolean            @default(false)
   isProtected         Boolean            @default(false)
   protectedType       String?
-  moduleType          String?            // 'billing', 'crm', 'inventory', etc.
-  isModuleTable       Boolean            @default(false) // pentru a identifica tabelele modulare
+  moduleType          String?
+  isModuleTable       Boolean            @default(false)
   referencedByColumns Column[]           @relation("ReferenceColumnTable")
   columns             Column[]
   columnPermissions   ColumnPermission[]
   rows                Row[]
   database            Database           @relation(fields: [databaseId], references: [id], onDelete: Cascade)
   tablePermissions    TablePermission[]
+
+  @@index([databaseId])
 }
 
 model Column {
@@ -110,6 +121,9 @@ model Column {
   referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
   table             Table              @relation(fields: [tableId], references: [id], onDelete: Cascade)
   columnPermissions ColumnPermission[]
+
+  @@index([tableId])
+  @@index([referenceTableId])
 }
 
 model Row {
@@ -118,6 +132,8 @@ model Row {
   createdAt DateTime @default(now())
   cells     Cell[]
   table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@index([tableId])
 }
 
 model Cell {
@@ -127,6 +143,9 @@ model Cell {
   value    Json
   column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
   row      Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+
+  @@index([rowId])
+  @@index([columnId])
 }
 
 model TablePermission {
@@ -168,6 +187,7 @@ model ColumnPermission {
   @@index([tenantId])
   @@index([columnId])
   @@index([userId])
+  @@index([tableId])
 }
 
 model Account {
@@ -186,6 +206,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -194,6 +215,8 @@ model Session {
   userId       Int
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -219,6 +242,7 @@ model Invitation {
 
   @@index([email])
   @@index([token])
+  @@index([tenantId])
 }
 
 enum Role {

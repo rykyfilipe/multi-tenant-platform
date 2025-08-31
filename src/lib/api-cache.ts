@@ -1,386 +1,312 @@
 /** @format */
 
-// Enhanced API caching with TTL and invalidation strategies
-export class ApiCache {
-	private static instance: ApiCache;
-	private cache = new Map<
-		string,
-		{ data: any; expires: number; hits: number }
-	>();
-	private maxSize = 10000; // Maximum cache entries
-	private cleanupInterval: NodeJS.Timeout;
+// Prisma Accelerate Cache Integration
+// This file now provides utilities for working with Prisma Accelerate cache
+// instead of external caching systems
 
-	private constructor() {
-		// Clean up expired entries every 5 minutes
-		this.cleanupInterval = setInterval(() => {
-			this.cleanup();
-		}, 5 * 60 * 1000);
-	}
+import { DEFAULT_CACHE_STRATEGIES, type CacheStrategy } from "./prisma";
 
-	static getInstance(): ApiCache {
-		if (!ApiCache.instance) {
-			ApiCache.instance = new ApiCache();
-		}
-		return ApiCache.instance;
-	}
+// Cache operation types for Prisma Accelerate
+export const CACHE_OPERATIONS = {
+	FIND_UNIQUE: "findUnique",
+	FIND_MANY: "findMany",
+	FIND_FIRST: "findFirst",
+	COUNT: "count",
+	CREATE: "create",
+	UPDATE: "update",
+	DELETE: "delete",
+	UPSERT: "upsert",
+	AGGREGATE: "aggregate",
+};
 
-	// Set cache with TTL
-	set(key: string, data: any, ttlSeconds: number = 300): void {
-		// Evict least recently used if cache is full
-		if (this.cache.size >= this.maxSize) {
-			this.evictLRU();
-		}
+// Cache prefixes for different entity types
+export const CACHE_PREFIXES = {
+	USER: "user",
+	TENANT: "tenant",
+	DATABASE: "database",
+	TABLE: "table",
+	COLUMN: "column",
+	ROW: "row",
+	CELL: "cell",
+	PERMISSION: "permission",
+	DASHBOARD: "dashboard",
+	WIDGET: "widget",
+	INVOICE: "invoice",
+	COUNT: "count",
+};
 
-		this.cache.set(key, {
-			data,
-			expires: Date.now() + ttlSeconds * 1000,
-			hits: 0,
-		});
-	}
+// Helper function to get TTL for specific operation
+export function getTTL(operation: string, entity: string): number {
+	const operationKey = operation.toUpperCase();
+	const entityKey = entity.toLowerCase();
 
-	// Get cache with hit tracking
-	get(key: string): any | null {
-		const entry = this.cache.get(key);
-		if (!entry) return null;
+	// Get the appropriate cache strategy
+	const strategy =
+		DEFAULT_CACHE_STRATEGIES[entityKey] ||
+		DEFAULT_CACHE_STRATEGIES[entityKey + "List"] ||
+		DEFAULT_CACHE_STRATEGIES.rowList;
 
-		if (Date.now() > entry.expires) {
-			this.cache.delete(key);
-			return null;
-		}
-
-		// Increment hit counter
-		entry.hits++;
-		return entry.data;
-	}
-
-	// Delete cache entry
-	delete(key: string): boolean {
-		return this.cache.delete(key);
-	}
-
-	// Clear all cache
-	clear(): void {
-		this.cache.clear();
-	}
-
-	// Get cache statistics
-	getStats(): {
-		size: number;
-		maxSize: number;
-		hitRate: number;
-		totalHits: number;
-		totalRequests: number;
-	} {
-		let totalHits = 0;
-		let totalRequests = 0;
-
-		for (const entry of this.cache.values()) {
-			totalHits += entry.hits;
-			totalRequests += entry.hits + 1; // +1 for the initial set
-		}
-
-		return {
-			size: this.cache.size,
-			maxSize: this.maxSize,
-			hitRate: totalRequests > 0 ? totalHits / totalRequests : 0,
-			totalHits,
-			totalRequests,
-		};
-	}
-
-	// Evict least recently used entries
-	private evictLRU(): void {
-		const entries = Array.from(this.cache.entries());
-		entries.sort((a, b) => a[1].hits - b[1].hits);
-
-		// Remove 10% of least used entries
-		const toRemove = Math.ceil(this.maxSize * 0.1);
-		for (let i = 0; i < toRemove && i < entries.length; i++) {
-			this.cache.delete(entries[i][0]);
-		}
-	}
-
-	// Clean up expired entries
-	private cleanup(): void {
-		const now = Date.now();
-		for (const [key, entry] of this.cache.entries()) {
-			if (now > entry.expires) {
-				this.cache.delete(key);
-			}
-		}
-	}
-
-	// Invalidate cache by pattern
-	invalidateByPattern(pattern: string): void {
-		for (const key of this.cache.keys()) {
-			if (key.includes(pattern)) {
-				this.cache.delete(key);
-			}
-		}
-	}
-
-	// Preload frequently accessed data
-	async preloadData(
-		keys: string[],
-		loader: (key: string) => Promise<any>,
-	): Promise<void> {
-		const promises = keys.map(async (key) => {
-			try {
-				const data = await loader(key);
-				this.set(key, data, 300); // 5 minutes TTL
-			} catch (error) {
-				console.warn(`Failed to preload cache for key: ${key}`, error);
-			}
-		});
-
-		await Promise.allSettled(promises);
-	}
-
-	// Destroy cache instance
-	destroy(): void {
-		if (this.cleanupInterval) {
-			clearInterval(this.cleanupInterval);
-		}
-		this.clear();
-	}
+	return strategy.ttl;
 }
 
-// Enhanced cached operations with better performance
+// Helper function to get SWR for specific operation
+export function getSWR(operation: string, entity: string): number {
+	const operationKey = operation.toUpperCase();
+	const entityKey = entity.toLowerCase();
+
+	// Get the appropriate cache strategy
+	const strategy =
+		DEFAULT_CACHE_STRATEGIES[entityKey] ||
+		DEFAULT_CACHE_STRATEGIES[entityKey + "List"] ||
+		DEFAULT_CACHE_STRATEGIES.rowList;
+
+	return strategy.swr;
+}
+
+// Helper function to get cache tags for specific operation
+export function getCacheTags(operation: string, entity: string): string[] {
+	const operationKey = operation.toUpperCase();
+	const entityKey = entity.toLowerCase();
+
+	// Get the appropriate cache strategy
+	const strategy =
+		DEFAULT_CACHE_STRATEGIES[entityKey] ||
+		DEFAULT_CACHE_STRATEGIES[entityKey + "List"] ||
+		DEFAULT_CACHE_STRATEGIES.rowList;
+
+	return strategy.tags || [];
+}
+
+// Cache key generator for Prisma Accelerate
+export function generateCacheKey(
+	operation: string,
+	entity: string,
+	params: any,
+): string {
+	const paramsHash = Buffer.from(JSON.stringify(params))
+		.toString("base64")
+		.slice(0, 16);
+	return `${operation}:${entity}:${paramsHash}`;
+}
+
+// Cache invalidation patterns for Prisma Accelerate
+export const CACHE_INVALIDATION_PATTERNS = {
+	// User-related patterns
+	userCreated: (userId: number) => [`user.${userId}`, `user.list`],
+	userUpdated: (userId: number) => [`user.${userId}`, `user.list`],
+	userDeleted: (userId: number) => [
+		`user.${userId}`,
+		`user.list`,
+		`user.count`,
+	],
+
+	// Tenant-related patterns
+	tenantUpdated: (tenantId: number) => [
+		`tenant.${tenantId}`,
+		`database.${tenantId}`,
+		`table.${tenantId}`,
+		`user.${tenantId}`,
+		`database.count.${tenantId}`,
+		`table.count.${tenantId}`,
+		`user.count.${tenantId}`,
+		`row.count.${tenantId}`,
+	],
+
+	// Database-related patterns
+	databaseCreated: (databaseId: number, tenantId: number) => [
+		`database.${databaseId}`,
+		`database.list.${tenantId}`,
+		`database.count.${tenantId}`,
+	],
+	databaseUpdated: (databaseId: number, tenantId: number) => [
+		`database.${databaseId}`,
+		`database.list.${tenantId}`,
+	],
+	databaseDeleted: (databaseId: number, tenantId: number) => [
+		`database.${databaseId}`,
+		`database.list.${tenantId}`,
+		`database.count.${tenantId}`,
+		`table.${databaseId}`,
+		`table.count.${tenantId}`,
+	],
+
+	// Table-related patterns
+	tableCreated: (tableId: number, databaseId: number) => [
+		`table.${tableId}`,
+		`table.list.${databaseId}`,
+		`table.count.${databaseId}`,
+	],
+	tableUpdated: (tableId: number, databaseId: number) => [
+		`table.${tableId}`,
+		`table.list.${databaseId}`,
+	],
+	tableDeleted: (tableId: number, databaseId: number) => [
+		`table.${tableId}`,
+		`table.list.${databaseId}`,
+		`table.count.${databaseId}`,
+		`row.${tableId}`,
+		`column.${tableId}`,
+	],
+
+	// Row-related patterns
+	rowCreated: (tableId: number) => [`row.${tableId}`, `row.count.${tableId}`],
+	rowUpdated: (tableId: number) => [`row.${tableId}`],
+	rowDeleted: (tableId: number) => [`row.${tableId}`, `row.count.${tableId}`],
+
+	// Column-related patterns
+	columnCreated: (tableId: number) => [
+		`column.${tableId}`,
+		`column.list.${tableId}`,
+	],
+	columnUpdated: (tableId: number) => [
+		`column.${tableId}`,
+		`column.list.${tableId}`,
+	],
+	columnDeleted: (tableId: number) => [
+		`column.${tableId}`,
+		`column.list.${tableId}`,
+	],
+
+	// Cell-related patterns
+	cellUpdated: (rowId: number, columnId: number) => [
+		`cell.${rowId}.${columnId}`,
+	],
+	cellDeleted: (rowId: number, columnId: number) => [
+		`cell.${rowId}.${columnId}`,
+	],
+};
+
+// Export the enhanced cached operations that use Prisma Accelerate
 export const enhancedCachedOperations = {
-	// User operations with enhanced caching
-	getUser: async (userId: number) => {
-		const cache = ApiCache.getInstance();
-		const cacheKey = `user_${userId}`;
-
-		const cached = cache.get(cacheKey);
-		if (cached) return cached;
-
-		try {
-			const { PrismaClient } = require("@/lib/prisma");
-			const prisma = new PrismaClient();
-
-			const user = await prisma.user.findUnique({
+	// User operations with Prisma Accelerate cache
+	getUser: async (userId: number, prisma: any) => {
+		return await prisma.findUniqueWithCache(
+			prisma.user,
+			{
 				where: { id: userId },
 				select: {
 					id: true,
 					email: true,
-					firstName: true,
-					lastName: true,
+					name: true,
 					role: true,
 					tenantId: true,
-					subscriptionPlan: true,
-					subscriptionStatus: true,
+					createdAt: true,
+					updatedAt: true,
 				},
-			});
-
-			if (user) {
-				// Cache for 5 minutes
-				cache.set(cacheKey, user, 300);
-			}
-
-			return user;
-		} catch (error) {
-			console.error("Error fetching user:", error);
-			return null;
-		}
+			},
+			DEFAULT_CACHE_STRATEGIES.user,
+		);
 	},
 
-	// Enhanced table schema caching
-	getTableSchema: async (tableId: number) => {
-		const cache = ApiCache.getInstance();
-		const cacheKey = `table_schema_${tableId}`;
-
-		const cached = cache.get(cacheKey);
-		if (cached) return cached;
-
-		try {
-			const { PrismaClient } = require("@/lib/prisma");
-			const prisma = new PrismaClient();
-
-			const table = await prisma.table.findUnique({
+	// Table operations with Prisma Accelerate cache
+	getTable: async (tableId: number, prisma: any) => {
+		return await prisma.findUniqueWithCache(
+			prisma.table,
+			{
 				where: { id: tableId },
 				include: {
 					columns: {
 						orderBy: { order: "asc" },
 					},
 				},
-			});
-
-			if (table) {
-				// Cache for 15 minutes
-				cache.set(cacheKey, table, 900);
-			}
-
-			return table;
-		} catch (error) {
-			console.error("Error fetching table schema:", error);
-			return null;
-		}
+			},
+			DEFAULT_CACHE_STRATEGIES.table,
+		);
 	},
 
-	// Enhanced row operations with pagination caching
+	// Row operations with Prisma Accelerate cache
 	getTableRows: async (
 		tableId: number,
 		page: number = 1,
 		pageSize: number = 25,
 		filters?: any,
+		prisma: any,
 	) => {
-		const cache = ApiCache.getInstance();
-		const cacheKey = `table_rows_${tableId}_${page}_${pageSize}_${JSON.stringify(
-			filters || {},
-		)}`;
+		const skip = (page - 1) * pageSize;
 
-		const cached = cache.get(cacheKey);
-		if (cached) return cached;
-
-		try {
-			const { PrismaClient } = require("@/lib/prisma");
-			const prisma = new PrismaClient();
-
-			const skip = (page - 1) * pageSize;
-
-			// Get total count and rows in parallel
-			const [totalRows, rows] = await Promise.all([
-				prisma.row.count({ where: { tableId } }),
-				prisma.row.findMany({
+		// Get total count and rows in parallel with Prisma Accelerate cache
+		const [totalRows, rows] = await Promise.all([
+			prisma.countWithCache(
+				prisma.row,
+				{ where: { tableId } },
+				DEFAULT_CACHE_STRATEGIES.count,
+			),
+			prisma.findManyWithCache(
+				prisma.row,
+				{
 					where: { tableId },
 					include: { cells: { include: { column: true } } },
 					skip,
 					take: pageSize,
 					orderBy: { createdAt: "asc" },
-				}),
-			]);
-
-			const result = {
-				data: rows,
-				pagination: {
-					page,
-					pageSize,
-					totalRows,
-					totalPages: Math.ceil(totalRows / pageSize),
-					hasNext: page * pageSize < totalRows,
-					hasPrev: page > 1,
 				},
-			};
+				DEFAULT_CACHE_STRATEGIES.rowList,
+			),
+		]);
 
-			// Cache for 2 minutes (shorter TTL for dynamic data)
-			cache.set(cacheKey, result, 120);
-			return result;
-		} catch (error) {
-			console.error("Error fetching table rows:", error);
-			return {
-				data: [],
-				pagination: {
-					page: 1,
-					pageSize,
-					totalRows: 0,
-					totalPages: 0,
-					hasNext: false,
-					hasPrev: false,
-				},
-			};
-		}
+		return {
+			data: rows,
+			pagination: {
+				page,
+				pageSize,
+				totalRows,
+				totalPages: Math.ceil(totalRows / pageSize),
+				hasNext: page * pageSize < totalRows,
+				hasPrev: page > 1,
+			},
+		};
 	},
 
-	// User permissions caching
-	getUserPermissions: async (userId: number, tableId: number) => {
-		const cache = ApiCache.getInstance();
-		const cacheKey = `user_permissions_${userId}_${tableId}`;
-
-		const cached = cache.get(cacheKey);
-		if (cached) return cached;
-
-		try {
-			const { PrismaClient } = require("@/lib/prisma");
-			const prisma = new PrismaClient();
-
-			const permissions = await prisma.tablePermission.findUnique({
-				where: { userId_tableId: { userId, tableId } },
-				select: {
-					canRead: true,
-					canEdit: true,
-					canDelete: true,
-				},
-			});
-
-			// Cache for 2 minutes
-			cache.set(cacheKey, permissions, 120);
-			return permissions;
-		} catch (error) {
-			console.error("Error fetching user permissions:", error);
-			return null;
-		}
-	},
-
-	// Public table caching (all tables are public by default)
-	getPublicTables: async (tenantId: string) => {
-		try {
-			const cache = ApiCache.getInstance();
-			const cacheKey = `public_tables_${tenantId}`;
-			const cached = cache.get(cacheKey);
-			if (cached) return cached;
-
-			const { PrismaClient } = require("@/lib/prisma");
-			const prisma = new PrismaClient();
-
-			const tables = await prisma.table.findMany({
+	// User permissions caching with Prisma Accelerate
+	getUserPermissions: async (userId: number, tableId: number, prisma: any) => {
+		return await prisma.findUniqueWithCache(
+			prisma.tablePermission,
+			{
 				where: {
-					database: {
-						tenantId: tenantId,
+					userId_tableId: {
+						userId,
+						tableId,
 					},
 				},
-				select: {
-					id: true,
-					name: true,
-					description: true,
-					database: {
-						select: {
-							id: true,
-							name: true,
+			},
+			DEFAULT_CACHE_STRATEGIES.permission,
+		);
+	},
+
+	// Database operations with Prisma Accelerate cache
+	getDatabases: async (tenantId: number, prisma: any) => {
+		return await prisma.findManyWithCache(
+			prisma.database,
+			{
+				where: { tenantId },
+				include: {
+					tables: {
+						include: {
+							columns: true,
 						},
 					},
 				},
-			});
-
-			// Cache for 5 minutes
-			cache.set(cacheKey, tables, 300);
-			return tables;
-		} catch (error) {
-			console.error("Error fetching public tables:", error);
-			return [];
-		}
+			},
+			DEFAULT_CACHE_STRATEGIES.databaseList,
+		);
 	},
 
-
-
-	// Cache invalidation methods
-	invalidateTableCache: (tableId: number) => {
-		const cache = ApiCache.getInstance();
-		cache.invalidateByPattern(`table_${tableId}`);
-	},
-
-	invalidateUserCache: (userId: number) => {
-		const cache = ApiCache.getInstance();
-		cache.invalidateByPattern(`user_${userId}`);
-	},
-
-	invalidateTenantCache: (tenantId: number) => {
-		const cache = ApiCache.getInstance();
-		cache.invalidateByPattern(`tenant_${tenantId}`);
-	},
-
-	// Get cache statistics
-	getCacheStats: () => {
-		const cache = ApiCache.getInstance();
-		return cache.getStats();
-	},
-
-	// Clear all cache
-	clearAllCache: () => {
-		const cache = ApiCache.getInstance();
-		cache.clear();
+	// Table list operations with Prisma Accelerate cache
+	getTables: async (databaseId: number, prisma: any) => {
+		return await prisma.findManyWithCache(
+			prisma.table,
+			{
+				where: { databaseId },
+				include: {
+					columns: {
+						orderBy: { order: "asc" },
+					},
+				},
+			},
+			DEFAULT_CACHE_STRATEGIES.tableList,
+		);
 	},
 };
 
-// Export singleton instance
-export const apiCache = ApiCache.getInstance();
+// Export the main operations object
+export const apiCache = enhancedCachedOperations;

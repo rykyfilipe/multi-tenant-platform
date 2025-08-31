@@ -4,7 +4,7 @@ import type { NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "./auth";
-import prisma from "@/lib/prisma";
+import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";
 
 export const authConfig = {
 	providers: [
@@ -31,11 +31,15 @@ export const authConfig = {
 				}
 
 				try {
-					const user = await prisma.user.findFirst({
-						where: {
-							email: credentials.email,
+					const user = await prisma.findFirstWithCache(
+						prisma.user,
+						{
+							where: {
+								email: credentials.email,
+							},
 						},
-					});
+						DEFAULT_CACHE_STRATEGIES.user,
+					);
 
 					if (!user) {
 						return null;
@@ -105,9 +109,11 @@ export const authConfig = {
 
 				if (account?.provider === "google" && token.email) {
 					try {
-						const dbUser = await prisma.user.findFirst({
-							where: { email: token.email },
-						});
+						const dbUser = await prisma.findFirstWithCache(
+							prisma.user,
+							{ where: { email: token.email } },
+							DEFAULT_CACHE_STRATEGIES.user,
+						);
 
 						if (dbUser && dbUser.role) {
 							token.id = dbUser.id.toString();

@@ -19,7 +19,7 @@ import { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import { JWT } from "next-auth/jwt";
-import prisma from "@/lib/prisma";
+import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";
 import createPredefinedTables from "@/lib/predefinedTables";
 
 export const authOptions = {
@@ -48,11 +48,15 @@ export const authOptions = {
 				}
 
 				try {
-					const user = await prisma.user.findFirst({
-						where: {
-							email: credentials.email,
+					const user = await prisma.findFirstWithCache(
+						prisma.user,
+						{
+							where: {
+								email: credentials.email,
+							},
 						},
-					});
+						DEFAULT_CACHE_STRATEGIES.user,
+					);
 
 					if (!user) {
 						return null;
@@ -122,9 +126,11 @@ export const authOptions = {
 		}) {
 			if (account?.provider === "google" && user.email) {
 				try {
-					const existingUser = await prisma.user.findFirst({
-						where: { email: user.email },
-					});
+					const existingUser = await prisma.findFirstWithCache(
+						prisma.user,
+						{ where: { email: user.email } },
+						DEFAULT_CACHE_STRATEGIES.user,
+					);
 
 					if (!existingUser) {
 						// Create new user for Google OAuth
@@ -198,9 +204,11 @@ export const authOptions = {
 
 				if (account?.provider === "google" && token.email) {
 					try {
-						const dbUser = await prisma.user.findFirst({
-							where: { email: token.email },
-						});
+						const dbUser = await prisma.findFirstWithCache(
+							prisma.user,
+							{ where: { email: token.email } },
+							DEFAULT_CACHE_STRATEGIES.user,
+						);
 
 						if (dbUser && dbUser.role) {
 							token.id = dbUser.id.toString();
@@ -237,15 +245,19 @@ export const authOptions = {
 
 				if (token.id && token.role) {
 					try {
-						const dbUser = await prisma.user.findFirst({
-							where: { id: parseInt(token.id as string) },
-							select: {
-								subscriptionStatus: true,
-								subscriptionPlan: true,
-								subscriptionCurrentPeriodEnd: true,
-								profileImage: true,
+						const dbUser = await prisma.findFirstWithCache(
+							prisma.user,
+							{
+								where: { id: parseInt(token.id as string) },
+								select: {
+									subscriptionStatus: true,
+									subscriptionPlan: true,
+									subscriptionCurrentPeriodEnd: true,
+									profileImage: true,
+								},
 							},
-						});
+							DEFAULT_CACHE_STRATEGIES.user,
+						);
 
 						if (dbUser) {
 							token.subscriptionStatus = dbUser.subscriptionStatus;
@@ -467,12 +479,16 @@ export async function getUserFromRequest(
 }
 
 export async function checkUserTenantAccess(userId: number, tenantId: number) {
-	const isMember = await prisma.user.findFirst({
-		where: {
-			id: userId,
-			tenantId: tenantId,
+	const isMember = await prisma.findFirstWithCache(
+		prisma.user,
+		{
+			where: {
+				id: userId,
+				tenantId: tenantId,
+			},
 		},
-	});
+		DEFAULT_CACHE_STRATEGIES.user,
+	);
 
 	return !!isMember;
 }
@@ -492,23 +508,31 @@ export async function checkTableEditPermission(
 	tenantId: number,
 ): Promise<boolean> {
 	// First check if user is admin - admins can edit everything
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { role: true },
-	});
+	const user = await prisma.findUniqueWithCache(
+		prisma.user,
+		{
+			where: { id: userId },
+			select: { role: true },
+		},
+		DEFAULT_CACHE_STRATEGIES.user,
+	);
 
 	if (!user) return false;
 	if (user.role === "ADMIN") return true;
 
 	// For non-admins, check table permissions
-	const tablePermission = await prisma.tablePermission.findFirst({
-		where: {
-			userId: userId,
-			tableId: tableId,
-			tenantId: tenantId,
-			canEdit: true,
+	const tablePermission = await prisma.findFirstWithCache(
+		prisma.tablePermission,
+		{
+			where: {
+				userId: userId,
+				tableId: tableId,
+				tenantId: tenantId,
+				canEdit: true,
+			},
 		},
-	});
+		DEFAULT_CACHE_STRATEGIES.permission,
+	);
 
 	return !!tablePermission;
 }
@@ -524,23 +548,31 @@ export async function checkColumnEditPermission(
 	tenantId: number,
 ): Promise<boolean> {
 	// First check if user is admin - admins can edit everything
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { role: true },
-	});
+	const user = await prisma.findUniqueWithCache(
+		prisma.user,
+		{
+			where: { id: userId },
+			select: { role: true },
+		},
+		DEFAULT_CACHE_STRATEGIES.user,
+	);
 
 	if (!user) return false;
 	if (user.role === "ADMIN") return true;
 
 	// For non-admins, check column permissions first, then fallback to table permissions
-	const columnPermission = await prisma.columnPermission.findFirst({
-		where: {
-			userId: userId,
-			columnId: columnId,
-			tenantId: tenantId,
-			canEdit: true,
+	const columnPermission = await prisma.findFirstWithCache(
+		prisma.columnPermission,
+		{
+			where: {
+				userId: userId,
+				columnId: columnId,
+				tenantId: tenantId,
+				canEdit: true,
+			},
 		},
-	});
+		DEFAULT_CACHE_STRATEGIES.permission,
+	);
 
 	if (columnPermission) return true;
 
@@ -592,10 +624,14 @@ export async function validatePublicApiAccess(request: Request) {
 	}
 
 	// Get user tenant info
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { tenantId: true, role: true },
-	});
+	const user = await prisma.findUniqueWithCache(
+		prisma.user,
+		{
+			where: { id: userId },
+			select: { tenantId: true, role: true },
+		},
+		DEFAULT_CACHE_STRATEGIES.user,
+	);
 
 	if (!user || !user.tenantId) {
 		return {
