@@ -1,10 +1,12 @@
+<!-- @format -->
+
 # Multi-Tenant Platform
 
-A comprehensive multi-tenant platform built with Next.js, featuring user management, database management, and multi-language support.
+A comprehensive multi-tenant platform built with Next.js, featuring user
+management, database management, and multi-language support.
 
-## Features
-
-- **Multi-Tenant Architecture**: Isolated tenant environments with shared infrastructure
+- **Multi-Tenant Architecture**: Isolated tenant environments with shared
+  infrastructure
 - **User Management**: Role-based access control and user administration
 - **Database Management**: Dynamic table creation and management
 - **Multi-Language Support**: Internationalization (i18n) with 5 languages
@@ -41,6 +43,7 @@ NEXTAUTH_URL="http://localhost:3000"
 ## Translation Status
 
 ### ✅ Completed Components
+
 - Dashboard components (navigation, analytics, organization management)
 - Authentication components (login, registration, password reset)
 - Cookie banner and contact forms
@@ -52,11 +55,13 @@ NEXTAUTH_URL="http://localhost:3000"
 - Loading states and tour management
 
 ### 🔄 In Progress
+
 - Additional UI components and utilities
 - Form validation messages
 - Error messages and notifications
 
 ### 📋 Pending
+
 - Remaining utility components
 - Additional user interface elements
 
@@ -64,7 +69,7 @@ NEXTAUTH_URL="http://localhost:3000"
 
 - **English (en)** - Default language
 - **Romanian (ro)** - Complete translation
-- **Spanish (es)** - Complete translation  
+- **Spanish (es)** - Complete translation
 - **French (fr)** - Complete translation
 - **German (de)** - Complete translation
 
