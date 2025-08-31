@@ -102,14 +102,14 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 	return (
 		<>
 			{/* Total Databases */}
-			<Card className='dashboard-card'>
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6'>
+			<Card className='dashboard-card professional-card premium-hover'>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 premium-padding-md'>
 					<CardTitle className='text-sm font-medium'>
 						{t("dashboard.stats.totalDatabases")}
 					</CardTitle>
 					<Database className='h-4 w-4 text-muted-foreground' />
 				</CardHeader>
-				<CardContent className='px-4 sm:px-6'>
+				<CardContent className='premium-padding-md pt-0'>
 					<div className='text-2xl font-bold'>{stats.totalDatabases}</div>
 					<p className='text-xs text-muted-foreground'>
 						{t("dashboard.stats.totalDatabasesDesc")}
@@ -118,14 +118,14 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 			</Card>
 
 			{/* Total Tables */}
-			<Card className='dashboard-card'>
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6'>
+			<Card className='dashboard-card professional-card premium-hover'>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 premium-padding-md'>
 					<CardTitle className='text-sm font-medium'>
 						{t("dashboard.stats.totalTables")}
 					</CardTitle>
 					<Table className='h-4 w-4 text-muted-foreground' />
 				</CardHeader>
-				<CardContent className='px-4 sm:px-6'>
+				<CardContent className='premium-padding-md pt-0'>
 					<div className='text-2xl font-bold'>{stats.totalTables}</div>
 					<p className='text-xs text-muted-foreground'>
 						{t("dashboard.stats.totalTablesDesc")}
@@ -134,14 +134,14 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 			</Card>
 
 			{/* Total Users */}
-			<Card className='dashboard-card'>
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6'>
+			<Card className='dashboard-card professional-card premium-hover'>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 premium-padding-md'>
 					<CardTitle className='text-sm font-medium'>
 						{t("dashboard.stats.totalUsers")}
 					</CardTitle>
 					<Users className='h-4 w-4 text-muted-foreground' />
 				</CardHeader>
-				<CardContent className='px-4 sm:px-6'>
+				<CardContent className='premium-padding-md pt-0'>
 					<div className='text-2xl font-bold'>{stats.totalUsers}</div>
 					<p className='text-xs text-muted-foreground'>
 						{stats.activeUsers} {t("dashboard.stats.activeUsers")}
@@ -150,8 +150,9 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 			</Card>
 
 			{/* Memory Usage */}
-			<Card className={`dashboard-card ${memoryCardBorderClass}`}>
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6'>
+			<Card
+				className={`dashboard-card professional-card premium-hover ${memoryCardBorderClass}`}>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 premium-padding-md'>
 					<CardTitle className='text-sm font-medium'>
 						{t("dashboard.stats.storageUsage")}
 					</CardTitle>
@@ -163,7 +164,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 						<HardDrive className='h-4 w-4 text-muted-foreground' />
 					)}
 				</CardHeader>
-				<CardContent className='px-4 sm:px-6'>
+				<CardContent className='premium-padding-md pt-0'>
 					<div className='text-2xl font-bold'>{memoryDisplay.used}</div>
 					<p className='text-xs text-muted-foreground'>
 						{memoryDisplay.percentage}% of {memoryDisplay.limit} limit
@@ -182,14 +183,14 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 			</Card>
 
 			{/* Total Rows */}
-			<Card className='dashboard-card'>
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6'>
+			<Card className='dashboard-card professional-card premium-hover'>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 premium-padding-md'>
 					<CardTitle className='text-sm font-medium'>
 						{t("dashboard.stats.totalDataRows")}
 					</CardTitle>
 					<BarChart3 className='h-4 w-4 text-muted-foreground' />
 				</CardHeader>
-				<CardContent className='px-4 sm:px-6'>
+				<CardContent className='premium-padding-md pt-0'>
 					<div className='text-2xl font-bold'>
 						{stats.totalRows.toLocaleString()}
 					</div>
@@ -200,16 +201,18 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 			</Card>
 
 			{/* Subscription Status */}
-			<Card className='dashboard-card'>
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6'>
+			<Card className='dashboard-card professional-card premium-hover'>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2 premium-padding-md'>
 					<CardTitle className='text-sm font-medium'>
 						{t("dashboard.stats.subscription")}
 					</CardTitle>
 					<Activity className='h-4 w-4 text-muted-foreground' />
 				</CardHeader>
-				<CardContent className='px-4 sm:px-6'>
+				<CardContent className='premium-padding-md pt-0'>
 					<div className='flex items-center space-x-2'>
-						<Badge className={statusConfig.color}>{statusConfig.text}</Badge>
+						<Badge className={`${statusConfig.color} premium-hover-subtle`}>
+							{statusConfig.text}
+						</Badge>
 					</div>
 					<p className='text-xs text-muted-foreground mt-2'>
 						{stats.planName} {t("dashboard.stats.plan")}

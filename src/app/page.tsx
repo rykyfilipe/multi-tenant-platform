@@ -129,11 +129,6 @@ const DataHubLandingPage = () => {
 			title: t("landing.features.enterpriseSecurity.title"),
 			description: t("landing.features.enterpriseSecurity.description"),
 		},
-		{
-			icon: <Globe className='w-6 h-6' />,
-			title: t("landing.features.apiSdk.title"),
-			description: t("landing.features.apiSdk.description"),
-		},
 	];
 
 	const businessBenefits = [
@@ -147,12 +142,6 @@ const DataHubLandingPage = () => {
 			title: t("landing.benefits.customTables.title"),
 			description: t("landing.benefits.customTables.description"),
 		},
-		{
-			icon: <Zap className='w-8 h-8' />,
-			title: t("landing.benefits.automateProcesses.title"),
-			description: t("landing.benefits.automateProcesses.description"),
-		},
-
 	];
 
 	const targetAudience = [
@@ -225,7 +214,7 @@ const DataHubLandingPage = () => {
 	];
 
 	return (
-		<div className='min-h-screen bg-background'>
+		<div className='min-h-screen premium-gradient-bg'>
 			{/* Navigation */}
 			<nav className='border-b border-border/20 bg-card/90 backdrop-blur-2xl sticky top-0 z-50 shadow-lg'>
 				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -241,22 +230,22 @@ const DataHubLandingPage = () => {
 						<div className='hidden md:flex items-center space-x-8'>
 							<a
 								href='#features'
-								className='text-sm text-muted-foreground hover:text-foreground transition-colors'>
+								className='text-sm text-muted-foreground hover:text-foreground transition-colors premium-interaction px-3 py-2 rounded-md'>
 								{t("landing.nav.features")}
 							</a>
 							<a
 								href='#pricing'
-								className='text-sm text-muted-foreground hover:text-foreground transition-colors'>
+								className='text-sm text-muted-foreground hover:text-foreground transition-colors premium-interaction px-3 py-2 rounded-md'>
 								{t("landing.nav.pricing")}
 							</a>
 							<a
 								href='/docs/help'
-								className='text-sm text-muted-foreground hover:text-foreground transition-colors'>
+								className='text-sm text-muted-foreground hover:text-foreground transition-colors premium-interaction px-3 py-2 rounded-md'>
 								{t("landing.nav.help")}
 							</a>
 							<a
 								href='#contact'
-								className='text-sm text-muted-foreground hover:text-foreground transition-colors'>
+								className='text-sm text-muted-foreground hover:text-foreground transition-colors premium-interaction px-3 py-2 rounded-md'>
 								{t("landing.nav.contact")}
 							</a>
 						</div>
@@ -269,7 +258,9 @@ const DataHubLandingPage = () => {
 											{currentPlan}
 										</span>
 									)}
-									<Button onClick={() => router.push("home/dashboard")}>
+									<Button
+										onClick={() => router.push("home/dashboard")}
+										className='premium-hover-subtle'>
 										{t("landing.nav.goToApp")}
 									</Button>
 
@@ -278,7 +269,7 @@ const DataHubLandingPage = () => {
 										<DropdownMenuTrigger asChild>
 											<Button
 												variant='ghost'
-												className='relative h-8 w-8 rounded-full'>
+												className='relative h-8 w-8 rounded-full premium-hover-subtle'>
 												<Avatar className='h-8 w-8'>
 													<AvatarImage
 														src={session.user?.image || undefined}
@@ -333,10 +324,13 @@ const DataHubLandingPage = () => {
 								<>
 									<Button
 										variant='ghost'
-										onClick={() => setShowLoginModal(true)}>
+										onClick={() => setShowLoginModal(true)}
+										className='premium-hover-subtle'>
 										{t("landing.nav.signIn")}
 									</Button>
-									<Button onClick={() => setShowLoginModal(true)}>
+									<Button
+										onClick={() => setShowLoginModal(true)}
+										className='premium-hover-subtle'>
 										{t("landing.nav.getStarted")}
 									</Button>
 								</>
@@ -346,7 +340,7 @@ const DataHubLandingPage = () => {
 							<Button
 								variant='ghost'
 								size='sm'
-								className='md:hidden'
+								className='md:hidden premium-hover-subtle'
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
 								<Menu className='w-5 h-5' />
 							</Button>
@@ -360,27 +354,23 @@ const DataHubLandingPage = () => {
 						<div className='px-2 pt-2 pb-3 space-y-1'>
 							<a
 								href='#features'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground'>
+								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
 								{t("landing.nav.features")}
 							</a>
 							<a
 								href='#pricing'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground'>
+								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
 								{t("landing.nav.pricing")}
 							</a>
-							<a
-								href='/docs/api'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground'>
-								{t("landing.nav.api")}
-							</a>
+
 							<a
 								href='/docs/help'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground'>
+								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
 								{t("landing.nav.help")}
 							</a>
 							<a
 								href='#contact'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground'>
+								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
 								{t("landing.nav.contact")}
 							</a>
 						</div>
@@ -389,22 +379,20 @@ const DataHubLandingPage = () => {
 			</nav>
 
 			{/* Hero Section */}
-			<section className='py-24 px-4 sm:px-6 lg:px-8'>
-				<div className='max-w-7xl mx-auto text-center'>
+			<section className='premium-section premium-container'>
+				<div className='text-center'>
 					<Badge
 						variant='secondary'
-						className='mb-8 px-6 py-3 text-sm font-semibold bg-card shadow-lg'>
+						className='mb-8 px-6 py-3 text-sm font-semibold bg-card shadow-lg premium-hover-subtle'>
 						{t("landing.tagline")}
 					</Badge>
-					<h1 className='text-5xl md:text-7xl font-bold text-foreground mb-8 leading-tight'>
-						{t("landing.hero.title")}
-					</h1>
-					<p className='text-xl text-muted-foreground mb-8 max-w-3xl mx-auto'>
+					<h1 className='premium-heading mb-8'>{t("landing.hero.title")}</h1>
+					<p className='premium-subheading mb-12'>
 						{t("landing.hero.subtitle")}
 					</p>
 					{session && (
-						<div className='bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-6 mb-8 border border-border/20'>
-							<p className='text-lg font-semibold text-foreground mb-4'>
+						<div className='premium-form-section mb-12 max-w-2xl mx-auto'>
+							<p className='text-lg font-semibold text-foreground mb-6'>
 								{t("landing.hero.startFree")}
 							</p>
 							<Button
@@ -416,7 +404,7 @@ const DataHubLandingPage = () => {
 										router.push("home/dashboard");
 									}
 								}}
-								className='text-lg text-black dark:text-white px-12 py-5 bg-card shadow-lg hover:shadow-xl hover:bg-card/80 transform hover:scale-105 transition-all duration-300'>
+								className='text-lg text-black dark:text-white px-12 py-6 bg-card shadow-lg hover:shadow-xl hover:bg-card/80 transform hover:scale-105 transition-all duration-300'>
 								{t("landing.hero.createAccount")}
 								<ArrowRight className='ml-2 w-5 h-5' />
 							</Button>
@@ -426,25 +414,23 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* Benefits Section */}
-			<section className='py-20 bg-card shadow-inner'>
-				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-							{t("landing.benefits.title")}
-						</h2>
-						<p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+			<section className='premium-section premium-gradient-section'>
+				<div className='premium-container'>
+					<div className='premium-section-header'>
+						<h2 className='premium-heading'>{t("landing.benefits.title")}</h2>
+						<p className='premium-subheading'>
 							{t("landing.benefits.subtitle")}
 						</p>
 					</div>
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8'>
+					<div className='premium-grid-4'>
 						{businessBenefits.map((benefit, index) => (
-							<div key={index} className='text-center'>
+							<div key={index} className='text-center premium-spacing-lg'>
 								<div className='flex justify-center mb-6'>
-									<div className='p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl border border-border/20'>
+									<div className='p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border border-border/20 premium-hover'>
 										{benefit.icon}
 									</div>
 								</div>
-								<h3 className='text-lg font-semibold text-foreground mb-3'>
+								<h3 className='text-lg font-semibold text-foreground mb-4'>
 									{benefit.title}
 								</h3>
 								<p className='text-sm text-muted-foreground leading-relaxed'>
@@ -457,30 +443,26 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* Who is it for Section */}
-			<section className='py-20 px-4 sm:px-6 lg:px-8 bg-muted/20'>
-				<div className='max-w-7xl mx-auto'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-							{t("landing.audience.title")}
-						</h2>
-						<p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+			<section className='premium-section'>
+				<div className='premium-container'>
+					<div className='premium-section-header'>
+						<h2 className='premium-heading'>{t("landing.audience.title")}</h2>
+						<p className='premium-subheading'>
 							{t("landing.audience.subtitle")}
 						</p>
 					</div>
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
+					<div className='premium-grid-3'>
 						{targetAudience.map((audience, index) => (
-							<Card
-								key={index}
-								className='professional-card hover:scale-105 transition-all duration-500 group'>
-								<CardHeader>
-									<div className='p-4 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300'>
+							<Card key={index} className='professional-card premium-hover'>
+								<CardHeader className='premium-padding-md'>
+									<div className='p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-6 shadow-lg premium-hover'>
 										{audience.icon}
 									</div>
 									<CardTitle className='text-2xl font-bold'>
 										{audience.title}
 									</CardTitle>
 								</CardHeader>
-								<CardContent>
+								<CardContent className='premium-padding-md pt-0'>
 									<CardDescription className='text-base leading-relaxed'>
 										{audience.description}
 									</CardDescription>
@@ -492,31 +474,29 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* Features Section */}
-			<section id='features' className='py-24 px-4 sm:px-6 lg:px-8'>
-				<div className='max-w-7xl mx-auto'>
-					<div className='text-center mb-20'>
-						<h2 className='text-4xl md:text-5xl font-bold text-foreground mb-6'>
-							{t("landing.features.title")}
-						</h2>
-						<p className='text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed'>
+			<section
+				id='features'
+				className='premium-section premium-gradient-section'>
+				<div className='premium-container'>
+					<div className='premium-section-header'>
+						<h2 className='premium-heading'>{t("landing.features.title")}</h2>
+						<p className='premium-subheading'>
 							{t("landing.features.subtitle")}
 						</p>
 					</div>
 
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
+					<div className='premium-grid-3'>
 						{features.map((feature, index) => (
-							<Card
-								key={index}
-								className='professional-card hover:scale-105 transition-all duration-500'>
-								<CardHeader>
-									<div className='p-4 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-6 shadow-lg'>
+							<Card key={index} className='professional-card premium-hover'>
+								<CardHeader className='premium-padding-md'>
+									<div className='p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-6 shadow-lg premium-hover'>
 										{feature.icon}
 									</div>
 									<CardTitle className='text-2xl font-bold'>
 										{feature.title}
 									</CardTitle>
 								</CardHeader>
-								<CardContent>
+								<CardContent className='premium-padding-md pt-0'>
 									<CardDescription className='text-base leading-relaxed'>
 										{feature.description}
 									</CardDescription>
@@ -528,18 +508,16 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* Pricing Section */}
-			<section id='pricing' className='py-20 px-4 sm:px-6 lg:px-8 bg-muted/30'>
-				<div className='max-w-7xl mx-auto'>
-					<div className='text-center mb-16'>
-						<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-							{t("landing.pricing.title")}
-						</h2>
-						<p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+			<section id='pricing' className='premium-section'>
+				<div className='premium-container'>
+					<div className='premium-section-header'>
+						<h2 className='premium-heading'>{t("landing.pricing.title")}</h2>
+						<p className='premium-subheading'>
 							{t("landing.pricing.subtitle")}
 						</p>
 					</div>
 
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
+					<div className='premium-grid-3'>
 						{plans.map((plan, index) => {
 							const isCurrentPlan =
 								currentPlan &&
@@ -547,7 +525,7 @@ const DataHubLandingPage = () => {
 							return (
 								<Card
 									key={index}
-									className={`professional-card relative ${
+									className={`professional-card premium-hover relative ${
 										plan.popular ? "ring-2 ring-primary scale-105" : ""
 									} ${isCurrentPlan ? "ring-2 ring-accent" : ""}`}>
 									{plan.popular && (
@@ -560,7 +538,7 @@ const DataHubLandingPage = () => {
 											{t("landing.pricing.yourPlan")}
 										</Badge>
 									)}
-									<CardHeader className='text-center'>
+									<CardHeader className='text-center premium-padding-md'>
 										<CardTitle className='text-2xl'>{plan.name}</CardTitle>
 										<div className='flex items-baseline justify-center'>
 											<span className='text-4xl font-bold'>{plan.price}</span>
@@ -575,8 +553,8 @@ const DataHubLandingPage = () => {
 											{plan.description}
 										</CardDescription>
 									</CardHeader>
-									<CardContent>
-										<ul className='space-y-3 mb-8'>
+									<CardContent className='premium-padding-md pt-0'>
+										<ul className='premium-spacing-sm mb-8'>
 											{plan.features.map((feature, featureIndex) => (
 												<li key={featureIndex} className='flex items-center'>
 													<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
@@ -585,7 +563,7 @@ const DataHubLandingPage = () => {
 											))}
 										</ul>
 										<Button
-											className='w-full'
+											className='w-full premium-hover-subtle'
 											variant={
 												isCurrentPlan
 													? "secondary"
@@ -632,25 +610,25 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* CTA Section */}
-			<section className='py-20 px-4 sm:px-6 lg:px-8'>
-				<div className='max-w-4xl mx-auto text-center'>
-					<h2 className='text-3xl md:text-4xl font-bold text-foreground mb-4'>
-						{t("landing.cta.title")}
-					</h2>
-					<p className='text-xl text-muted-foreground mb-8'>
-						{t("landing.cta.subtitle")}
-					</p>
-					<Button
-						size='lg'
-						onClick={() => setShowLoginModal(true)}
-						className='text-lg px-8 py-3'>
-						{t("landing.cta.button")}
-						<ArrowRight className='ml-2 w-5 h-5' />
-					</Button>
-					<div className='mt-8 p-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-border/20'>
-						<p className='text-lg text-muted-foreground'>
-							{t("landing.cta.bonus")}
+			<section className='premium-section premium-gradient-section'>
+				<div className='premium-container'>
+					<div className='max-w-4xl mx-auto text-center'>
+						<h2 className='premium-heading mb-6'>{t("landing.cta.title")}</h2>
+						<p className='premium-subheading mb-12'>
+							{t("landing.cta.subtitle")}
 						</p>
+						<Button
+							size='lg'
+							onClick={() => setShowLoginModal(true)}
+							className='text-lg px-12 py-6 premium-hover shadow-lg'>
+							{t("landing.cta.button")}
+							<ArrowRight className='ml-2 w-5 h-5' />
+						</Button>
+						<div className='mt-12 premium-form-section'>
+							<p className='text-lg text-muted-foreground'>
+								{t("landing.cta.bonus")}
+							</p>
+						</div>
 					</div>
 				</div>
 			</section>
@@ -659,11 +637,11 @@ const DataHubLandingPage = () => {
 			<ContactForm />
 
 			{/* Footer */}
-			<footer className='border-t border-border bg-card py-12 px-4 sm:px-6 lg:px-8'>
-				<div className='max-w-7xl mx-auto'>
-					<div className='grid grid-cols-1 md:grid-cols-4 gap-8'>
+			<footer className='border-t border-border bg-card premium-section'>
+				<div className='premium-container'>
+					<div className='premium-grid-4'>
 						<div>
-							<div className='flex items-center space-x-3 mb-4'>
+							<div className='flex items-center space-x-3 mb-6'>
 								<div className='w-8 h-8 bg-primary rounded-lg flex items-center justify-center'>
 									<Database className='w-4 h-4 text-primary-foreground' />
 								</div>
@@ -674,118 +652,134 @@ const DataHubLandingPage = () => {
 							</p>
 						</div>
 						<div>
-							<h3 className='font-semibold mb-4'>
+							<h3 className='font-semibold mb-6'>
 								{t("landing.footer.product")}
 							</h3>
-							<ul className='space-y-2 text-sm text-muted-foreground'>
+							<ul className='premium-spacing-sm text-sm text-muted-foreground'>
 								<li>
-									<a href='#features' className='hover:text-foreground'>
+									<a
+										href='#features'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.features")}
 									</a>
 								</li>
 								<li>
-									<a href='#pricing' className='hover:text-foreground'>
+									<a
+										href='#pricing'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.pricing")}
 									</a>
 								</li>
+
 								<li>
-									<a href='/docs/api' className='hover:text-foreground'>
-										{t("landing.footer.api")}
-									</a>
-								</li>
-								<li>
-									<a href='/docs/help' className='hover:text-foreground'>
+									<a
+										href='/docs/help'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.documentation")}
 									</a>
 								</li>
 							</ul>
 						</div>
 						<div>
-							<h3 className='font-semibold mb-4'>
+							<h3 className='font-semibold mb-6'>
 								{t("landing.footer.company")}
 							</h3>
-							<ul className='space-y-2 text-sm text-muted-foreground'>
+							<ul className='premium-spacing-sm text-sm text-muted-foreground'>
 								<li>
-									<a href='/docs/about' className='hover:text-foreground'>
+									<a
+										href='/docs/about'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.about")}
 									</a>
 								</li>
 								<li>
-									<a href='#contact' className='hover:text-foreground'>
+									<a
+										href='#contact'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.contact")}
 									</a>
 								</li>
 							</ul>
 						</div>
 						<div>
-							<h3 className='font-semibold mb-4'>
+							<h3 className='font-semibold mb-6'>
 								{t("landing.footer.support")}
 							</h3>
-							<ul className='space-y-2 text-sm text-muted-foreground'>
+							<ul className='premium-spacing-sm text-sm text-muted-foreground'>
 								<li>
-									<a href='/docs/help' className='hover:text-foreground'>
+									<a
+										href='/docs/help'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.helpCenter")}
 									</a>
 								</li>
 								<li>
-									<a href='/docs/status' className='hover:text-foreground'>
+									<a
+										href='/docs/status'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.status")}
 									</a>
 								</li>
 								<li>
-									<a href='/docs/legal/terms' className='hover:text-foreground'>
+									<a
+										href='/docs/legal/terms'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.terms")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/privacy'
-										className='hover:text-foreground'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.privacy")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/cookies'
-										className='hover:text-foreground'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.cookies")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/refund'
-										className='hover:text-foreground'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.refundPolicy")}
 									</a>
 								</li>
 								<li>
-									<a href='/docs/legal/dpa' className='hover:text-foreground'>
+									<a
+										href='/docs/legal/dpa'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.dpa")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/acceptable-use'
-										className='hover:text-foreground'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.acceptableUse")}
 									</a>
 								</li>
 								<li>
-									<a href='/docs/legal/sla' className='hover:text-foreground'>
+									<a
+										href='/docs/legal/sla'
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.sla")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/configure'
-										className='hover:text-foreground'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
 										{t("landing.footer.legalConfig")}
 									</a>
 								</li>
 							</ul>
 						</div>
 					</div>
-					<div className='border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground'>
+					<div className='border-t border-border mt-12 pt-8 text-center text-sm text-muted-foreground'>
 						{t("landing.footer.copyright")}
 					</div>
 				</div>

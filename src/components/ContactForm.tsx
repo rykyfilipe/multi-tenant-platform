@@ -96,32 +96,26 @@ export const ContactForm = () => {
 	};
 
 	return (
-		<section
-			id='contact'
-			className='py-16 bg-gradient-to-br from-background to-muted/20'>
-			<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
-				<div className='text-center mb-12'>
-					<h2 className='text-3xl sm:text-4xl font-bold text-foreground mb-4'>
-						{t("contact.title")}
-					</h2>
-					<p className='text-lg text-muted-foreground max-w-2xl mx-auto'>
-						{t("contact.subtitle")}
-					</p>
+		<section id='contact' className='premium-section premium-gradient-section'>
+			<div className='premium-container'>
+				<div className='text-center premium-spacing-xl'>
+					<h2 className='premium-heading mb-4'>{t("contact.title")}</h2>
+					<p className='premium-subheading'>{t("contact.subtitle")}</p>
 				</div>
 
 				<div className='grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto'>
 					{/* Contact Information */}
 					<div className='lg:col-span-1'>
-						<Card className='h-full'>
-							<CardHeader>
+						<Card className='h-full professional-card premium-hover'>
+							<CardHeader className='premium-padding-md'>
 								<CardTitle className='text-xl'>
 									{t("contact.info.title")}
 								</CardTitle>
 								<CardDescription>{t("contact.info.subtitle")}</CardDescription>
 							</CardHeader>
-							<CardContent className='space-y-6'>
+							<CardContent className='premium-padding-md pt-0 premium-spacing-lg'>
 								<div className='flex items-start space-x-3'>
-									<div className='w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0'>
+									<div className='w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 premium-hover-subtle'>
 										<Mail className='w-5 h-5 text-primary' />
 									</div>
 									<div>
@@ -138,7 +132,7 @@ export const ContactForm = () => {
 								</div>
 
 								<div className='flex items-start space-x-3'>
-									<div className='w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0'>
+									<div className='w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 premium-hover-subtle'>
 										<Phone className='w-5 h-5 text-primary' />
 									</div>
 									<div>
@@ -155,7 +149,7 @@ export const ContactForm = () => {
 								</div>
 
 								<div className='flex items-start space-x-3'>
-									<div className='w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0'>
+									<div className='w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 premium-hover-subtle'>
 										<MapPin className='w-5 h-5 text-primary' />
 									</div>
 									<div>
@@ -172,7 +166,7 @@ export const ContactForm = () => {
 									<h3 className='font-semibold text-foreground mb-3'>
 										{t("contact.info.whyChoose")}
 									</h3>
-									<ul className='space-y-2 text-sm text-muted-foreground'>
+									<ul className='premium-spacing-sm text-sm text-muted-foreground'>
 										<li className='flex items-center space-x-2'>
 											<CheckCircle className='w-4 h-4 text-green-500 flex-shrink-0' />
 											<span>{t("contact.info.customerSupport")}</span>
@@ -197,17 +191,17 @@ export const ContactForm = () => {
 
 					{/* Contact Form */}
 					<div className='lg:col-span-2'>
-						<Card>
-							<CardHeader>
+						<Card className='professional-card premium-hover'>
+							<CardHeader className='premium-padding-md'>
 								<CardTitle className='text-xl'>
 									{t("contact.form.title")}
 								</CardTitle>
 								<CardDescription>{t("contact.form.subtitle")}</CardDescription>
 							</CardHeader>
-							<CardContent>
+							<CardContent className='premium-padding-md pt-0'>
 								{status.type && (
 									<Alert
-										className={`mb-6 ${
+										className={`mb-6 professional-card ${
 											status.type === "success"
 												? "border-green-200 bg-green-50"
 												: "border-red-200 bg-red-50"
@@ -228,9 +222,9 @@ export const ContactForm = () => {
 									</Alert>
 								)}
 
-								<form onSubmit={handleSubmit} className='space-y-6'>
-									<div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-										<div className='space-y-2'>
+								<form onSubmit={handleSubmit} className='premium-spacing-lg'>
+									<div className='premium-grid-2 gap-4'>
+										<div className='premium-spacing-sm'>
 											<Label htmlFor='name'>{t("contact.form.fullName")}</Label>
 											<Input
 												id='name'
@@ -241,10 +235,10 @@ export const ContactForm = () => {
 												onChange={handleInputChange}
 												required
 												disabled={isLoading}
-												className='w-full'
+												className='w-full premium-interaction'
 											/>
 										</div>
-										<div className='space-y-2'>
+										<div className='premium-spacing-sm'>
 											<Label htmlFor='email'>{t("contact.form.email")}</Label>
 											<Input
 												id='email'
@@ -255,12 +249,12 @@ export const ContactForm = () => {
 												onChange={handleInputChange}
 												required
 												disabled={isLoading}
-												className='w-full'
+												className='w-full premium-interaction'
 											/>
 										</div>
 									</div>
 
-									<div className='space-y-2'>
+									<div className='premium-spacing-sm'>
 										<Label htmlFor='subject'>{t("contact.form.subject")}</Label>
 										<Input
 											id='subject'
@@ -271,11 +265,11 @@ export const ContactForm = () => {
 											onChange={handleInputChange}
 											required
 											disabled={isLoading}
-											className='w-full'
+											className='w-full premium-interaction'
 										/>
 									</div>
 
-									<div className='space-y-2'>
+									<div className='premium-spacing-sm'>
 										<Label htmlFor='message'>{t("contact.form.message")}</Label>
 										<Textarea
 											id='message'
@@ -285,14 +279,14 @@ export const ContactForm = () => {
 											onChange={handleInputChange}
 											required
 											disabled={isLoading}
-											className='w-full min-h-[120px] resize-none'
+											className='w-full min-h-[120px] resize-none premium-interaction'
 										/>
 									</div>
 
 									<Button
 										type='submit'
 										disabled={isLoading}
-										className='w-full sm:w-auto'>
+										className='w-full sm:w-auto premium-hover-subtle'>
 										{isLoading ? (
 											<>
 												<Loader2 className='w-4 h-4 mr-2 animate-spin' />

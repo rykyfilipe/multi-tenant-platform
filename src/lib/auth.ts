@@ -32,6 +32,7 @@ export const authOptions = {
 					prompt: "select_account",
 					access_type: "offline",
 					response_type: "code",
+					scope: "openid email profile",
 				},
 			},
 		}),
@@ -93,11 +94,22 @@ export const authOptions = {
 	},
 	callbacks: {
 		async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
-			// Allows relative callback URLs
+			// Handle relative URLs
 			if (url.startsWith("/")) return `${baseUrl}${url}`;
-			// Allows callback URLs on the same origin
-			else if (new URL(url).origin === baseUrl) return url;
-			return baseUrl;
+
+			// Handle URLs on the same origin
+			if (new URL(url).origin === baseUrl) return url;
+
+			// For production, ensure we redirect to the dashboard after successful auth
+			if (url.includes("callbackUrl")) {
+				const callbackUrl = new URL(url).searchParams.get("callbackUrl");
+				if (callbackUrl && callbackUrl.startsWith("/")) {
+					return `${baseUrl}${callbackUrl}`;
+				}
+			}
+
+			// Default fallback
+			return `${baseUrl}/home/dashboard`;
 		},
 		async signIn({
 			user,
@@ -336,6 +348,7 @@ export const authOptions = {
 	useSecureCookies: process.env.NODE_ENV === "production",
 	secret: process.env.NEXTAUTH_SECRET,
 	debug: process.env.NODE_ENV === "development",
+	trustHost: true,
 };
 interface JwtPayload {
 	userId: number;
@@ -473,36 +486,6 @@ export function verifyToken(token: string): boolean {
 	}
 }
 
-
-
-export async function getPublicUserFromRequest(
-	request: Request,
-): Promise<{ userId: number; role: string } | Response> {
-	const isValid = await verifyPublicToken(request);
-	if (!isValid) {
-		return new Response(JSON.stringify({ error: "Unauthorized" }), {
-			status: 401,
-			headers: { "Content-Type": "application/json" },
-		});
-	}
-
-	const userId = getUserId(request, PUBLIC_JWT_SECRET);
-	const role = getUserRole(request, PUBLIC_JWT_SECRET);
-
-	if (!userId || !role) {
-		return new Response(JSON.stringify({ error: "Invalid token" }), {
-			status: 401,
-			headers: { "Content-Type": "application/json" },
-		});
-	}
-
-	return { userId, role };
-}
-
-/**
- * Check if user has permission to edit a specific table
- * Admins have all permissions, other users are checked based on table permissions
- */
 export async function checkTableEditPermission(
 	userId: number,
 	tableId: number,

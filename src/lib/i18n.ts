@@ -1640,6 +1640,7 @@ export const translations: Translations = {
 		fr: "Contact",
 		de: "Kontakt",
 	},
+
 	"landing.nav.goToApp": {
 		en: "Go to App",
 		ro: "Mergi la Aplicație",
@@ -3439,7 +3440,6 @@ export const translations: Translations = {
 		de: "https://your-domain.com (leer lassen für aktuelle Domain)",
 	},
 
-
 	"apiConsumer.configuration.testingConnection": {
 		en: "Testing Connection...",
 		ro: "Se testează conexiunea...",
@@ -5105,13 +5105,7 @@ export const translations: Translations = {
 		fr: "Tarifs",
 		de: "Preise",
 	},
-	"landing.footer.api": {
-		en: "API",
-		ro: "API",
-		es: "API",
-		fr: "API",
-		de: "API",
-	},
+
 	"landing.footer.documentation": {
 		en: "Documentation",
 		ro: "Documentație",
@@ -5609,25 +5603,11 @@ export const translations: Translations = {
 		de: "Unternehmenssicherheit",
 	},
 	"landing.features.enterpriseSecurity.description": {
-		en: "SOC 2 compliant with encryption at rest, secure API access, and comprehensive audit logs.",
-		ro: "Conform SOC 2 cu criptare în repaus, acces API securizat și jurnale de audit cuprinzătoare.",
-		es: "Cumple con SOC 2 con encriptación en reposo, acceso API seguro y registros de auditoría completos.",
-		fr: "Conforme SOC 2 avec chiffrement au repos, accès API sécurisé et journaux d'audit complets.",
-		de: "SOC 2-konform mit Verschlüsselung im Ruhezustand, sicherem API-Zugriff und umfassenden Audit-Logs.",
-	},
-	"landing.features.apiSdk.title": {
-		en: "REST API & SDK",
-		ro: "REST API & SDK",
-		es: "REST API y SDK",
-		fr: "API REST et SDK",
-		de: "REST-API & SDK",
-	},
-	"landing.features.apiSdk.description": {
-		en: "Full-featured REST API with comprehensive documentation and SDK support.",
-		ro: "API REST complet cu documentație cuprinzătoare și suport SDK.",
-		es: "API REST completa con documentación completa y soporte SDK.",
-		fr: "API REST complète avec documentation complète et support SDK.",
-		de: "Vollständige REST-API mit umfassender Dokumentation und SDK-Unterstützung.",
+		en: "SOC 2 compliant with encryption at rest and comprehensive audit logs.",
+		ro: "Conform SOC 2 cu criptare în repaus și jurnale de audit cuprinzătoare.",
+		es: "Cumple con SOC 2 con encriptación en reposo y registros de auditoría completos.",
+		fr: "Conforme SOC 2 avec chiffrement au repos et journaux d'audit complets.",
+		de: "SOC 2-konform mit Verschlüsselung im Ruhezustand und umfassenden Audit-Logs.",
 	},
 
 	// Benefits array
@@ -5658,20 +5638,6 @@ export const translations: Translations = {
 		es: "Construye estructuras de datos perfectas para tu negocio sin conocimientos técnicos.",
 		fr: "Construisez des structures de données parfaites pour votre entreprise sans connaissances techniques.",
 		de: "Erstellen Sie perfekte Datenstrukturen für Ihr Unternehmen ohne technische Kenntnisse.",
-	},
-	"landing.benefits.automateProcesses.title": {
-		en: "Automate internal processes",
-		ro: "Automatizează procesele interne",
-		es: "Automatiza procesos internos",
-		fr: "Automatisez les processus internes",
-		de: "Interne Prozesse automatisieren",
-	},
-	"landing.benefits.automateProcesses.description": {
-		en: "Connect your applications through our API to automate workflows.",
-		ro: "Conectează aplicațiile tale prin API-ul nostru pentru a automatiza fluxurile de lucru.",
-		es: "Conecta tus aplicaciones a través de nuestra API para automatizar flujos de trabajo.",
-		fr: "Connectez vos applications via notre API pour automatiser les flux de travail.",
-		de: "Verbinden Sie Ihre Anwendungen über unsere API, um Arbeitsabläufe zu automatisieren.",
 	},
 
 	// Target audience array

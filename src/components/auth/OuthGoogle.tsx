@@ -19,11 +19,20 @@ export default function OAuthGoogleLogin({ closeForm }: OAuthGoogleLoginProps) {
 	const handleGoogleSignIn = async () => {
 		setLoading(true);
 		try {
-			await signIn("google", {
+			const result = await signIn("google", {
 				callbackUrl: "/home/dashboard",
+				redirect: true,
 			});
+
+			// If we get here, there was an error
+			if (result?.error) {
+				console.error("Google sign-in error:", result.error);
+				alert(t("oauth.google.error"));
+			}
 		} catch (error) {
+			console.error("Google sign-in error:", error);
 			alert(t("oauth.google.error"));
+		} finally {
 			setLoading(false);
 		}
 	};

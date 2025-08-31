@@ -3,7 +3,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Professional Data Management App Styles */
+/* Premium Data Management App Styles */
 
 /* Global default cursor - Uses CSS variable for theme switching */
 * {
@@ -40,6 +40,180 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 @custom-variant dark (&:is(.dark *));
+
+/*---break--- */
+
+/* PREMIUM DESIGN CLASSES FOR SOPHISTICATED LAYOUT */
+
+/* Premium Card Styling */
+.professional-card {
+	@apply bg-card/90 backdrop-blur-sm border border-border/30;
+	@apply rounded-xl shadow-lg transition-all duration-300 ease-out;
+	@apply hover:shadow-xl hover:border-border/50 hover:bg-card/95;
+	@apply hover:-translate-y-1 hover:scale-[1.02];
+}
+
+/* Premium Dashboard Layout */
+.dashboard-grid {
+	@apply grid gap-6 sm:gap-8;
+	@apply p-6 sm:p-8 lg:p-12;
+	@apply max-w-7xl mx-auto;
+}
+
+/* Premium Table Card */
+.table-card {
+	@apply bg-card/80 backdrop-blur-md border border-border/40;
+	@apply rounded-2xl shadow-md transition-all duration-500 ease-out;
+	@apply hover:shadow-2xl hover:border-primary/20 hover:bg-card/90;
+	@apply hover:-translate-y-2 hover:scale-[1.03];
+	@apply overflow-hidden;
+}
+
+/* Premium Dashboard Card for Stats */
+.dashboard-card {
+	@apply bg-gradient-to-br from-card/95 to-card/80;
+	@apply backdrop-blur-sm border border-border/30;
+	@apply rounded-xl shadow-lg transition-all duration-300 ease-out;
+	@apply hover:shadow-xl hover:border-border/50;
+	@apply hover:-translate-y-1 hover:scale-[1.02];
+	@apply p-6;
+}
+
+/* Premium Form Sections */
+.premium-form-section {
+	@apply bg-card/50 backdrop-blur-sm border border-border/20;
+	@apply rounded-2xl p-8 shadow-lg;
+	@apply transition-all duration-300 ease-out;
+	@apply hover:shadow-xl hover:bg-card/60;
+}
+
+/* Premium Container Spacing */
+.premium-container {
+	@apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+	@apply py-8 sm:py-12 lg:py-16;
+}
+
+/* Premium Grid Layouts */
+.premium-grid-2 {
+	@apply grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8;
+}
+
+.premium-grid-3 {
+	@apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8;
+}
+
+.premium-grid-4 {
+	@apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8;
+}
+
+.premium-grid-6 {
+	@apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6;
+}
+
+/* Premium Section Spacing */
+.premium-section {
+	@apply py-16 sm:py-20 lg:py-24;
+}
+
+.premium-section-header {
+	@apply text-center mb-12 lg:mb-16;
+	@apply space-y-4;
+}
+
+/* Premium Typography */
+.premium-heading {
+	@apply text-3xl sm:text-4xl lg:text-5xl font-bold;
+	@apply leading-tight tracking-tight;
+	@apply bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80;
+	@apply bg-clip-text text-transparent;
+}
+
+.premium-subheading {
+	@apply text-xl sm:text-2xl font-medium;
+	@apply text-muted-foreground leading-relaxed;
+	@apply max-w-3xl mx-auto;
+}
+
+/* Premium Hover Effects */
+.premium-hover {
+	@apply transition-all duration-300 ease-out;
+	@apply hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02];
+}
+
+.premium-hover-subtle {
+	@apply transition-all duration-200 ease-out;
+	@apply hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.01];
+}
+
+/* Premium Micro-Interactions */
+.premium-interaction {
+	@apply transition-all duration-200 ease-out;
+	@apply hover:shadow-lg hover:bg-muted/50;
+	@apply active:scale-95 active:shadow-sm;
+	@apply focus-visible:ring-2 focus-visible:ring-primary/20;
+}
+
+/* Premium Border Styles */
+.premium-border {
+	@apply border border-border/30;
+	@apply bg-gradient-to-r from-border/20 via-border/30 to-border/20;
+}
+
+.premium-border-gradient {
+	@apply bg-gradient-to-r from-transparent via-border/50 to-transparent;
+	@apply h-px w-full;
+}
+
+/* Premium Layout Spacing */
+.premium-spacing-xs {
+	@apply space-y-2;
+}
+.premium-spacing-sm {
+	@apply space-y-3;
+}
+.premium-spacing-md {
+	@apply space-y-4;
+}
+.premium-spacing-lg {
+	@apply space-y-6;
+}
+.premium-spacing-xl {
+	@apply space-y-8;
+}
+.premium-spacing-2xl {
+	@apply space-y-12;
+}
+
+/* Premium Content Padding */
+.premium-padding-sm {
+	@apply p-4 sm:p-6;
+}
+.premium-padding-md {
+	@apply p-6 sm:p-8;
+}
+.premium-padding-lg {
+	@apply p-8 sm:p-12;
+}
+.premium-padding-xl {
+	@apply p-12 sm:p-16;
+}
+
+/* Premium Glass Effect */
+.premium-glass {
+	@apply bg-card/20 backdrop-blur-xl;
+	@apply border border-border/20;
+	@apply shadow-2xl;
+}
+
+/* Premium Gradient Backgrounds */
+.premium-gradient-bg {
+	@apply bg-gradient-to-br from-background via-background to-muted/20;
+}
+
+.premium-gradient-section {
+	@apply bg-gradient-to-r from-card/50 via-card/30 to-card/50;
+	@apply backdrop-blur-sm;
+}
 
 /*---break--- */
 
