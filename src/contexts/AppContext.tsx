@@ -49,7 +49,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		if (session) {
+		if (session?.user) {
 			try {
 				// Only update if user data has actually changed
 				const newUserId = Number(session.user.id);
@@ -64,7 +64,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 					setToken(newToken);
 				}
 			} catch (error) {
-				// Error setting session data
+				console.error("Error setting session data:", error);
 			}
 		} else {
 			if (user || token) {

@@ -73,7 +73,7 @@ const DataHubLandingPage = () => {
 	const isAdmin = user?.role === "ADMIN";
 
 	const handleStripeCheckout = async (priceId: string, planName: string) => {
-		if (!session) {
+		if (!session?.user) {
 			setShowLoginModal(true);
 			return;
 		}
@@ -253,7 +253,7 @@ const DataHubLandingPage = () => {
 						</div>
 
 						<div className='flex items-center space-x-2 sm:space-x-4'>
-							{session ? (
+							{session?.user ? (
 								<>
 									{currentPlan && (
 										<span className='hidden sm:block bg-card/80 text-foreground px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold shadow-inner'>
@@ -339,7 +339,7 @@ const DataHubLandingPage = () => {
 										<span className='hidden sm:inline'>
 											{t("landing.nav.getStarted")}
 										</span>
-										<span className='sm:hidden'>Start</span>
+										<span className='sm:hidden'>Get Started</span>
 									</Button>
 								</>
 							)}
@@ -603,7 +603,7 @@ const DataHubLandingPage = () => {
 													return; // Do nothing if it's the current plan
 												}
 												if (plan.name === t("landing.plans.free.name")) {
-													router.push("home/dashboard");
+													router.push("home/analytics");
 												} else {
 													plan.priceId
 														? handleStripeCheckout(plan.priceId, plan.name)

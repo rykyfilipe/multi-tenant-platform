@@ -112,8 +112,8 @@ export const authOptions = {
 				}
 			}
 
-			// Default fallback
-			return `${baseUrl}/home/dashboard`;
+			// Default fallback - redirect to analytics page
+			return `${baseUrl}/home/analytics`;
 		},
 		async signIn({
 			user,
@@ -124,55 +124,7 @@ export const authOptions = {
 			account: Account | null;
 			profile?: any;
 		}) {
-			if (account?.provider === "google" && user.email) {
-				try {
-					const existingUser = await prisma.findFirstWithCache(
-						prisma.user,
-						{ where: { email: user.email } },
-						DEFAULT_CACHE_STRATEGIES.user,
-					);
-
-					if (!existingUser) {
-						// Create new user for Google OAuth
-						const newUser = await prisma.user.create({
-							data: {
-								email: user.email,
-								firstName: user.name?.split(" ")[0] || "",
-								lastName: user.name?.split(" ").slice(1).join(" ") || "",
-								password: "",
-								role: "ADMIN",
-								subscriptionStatus: "active",
-								subscriptionPlan: "Free",
-								subscriptionCurrentPeriodEnd: new Date(
-									Date.now() + 365 * 24 * 60 * 60 * 1000,
-								),
-							},
-						});
-
-						const newTenant = await prisma.tenant.create({
-							data: {
-								name: newUser.firstName + "'s tenant",
-								adminId: Number(newUser.id),
-								users: { connect: { id: Number(newUser.id) } },
-							},
-						});
-
-						const newDatabase = await prisma.database.create({
-							data: {
-								tenantId: newTenant.id,
-							},
-						});
-
-						await prisma.user.update({
-							where: { id: newUser.id },
-							data: { tenantId: newTenant.id },
-						});
-					}
-				} catch (error) {
-					console.error("Error creating Google OAuth user:", error);
-					return false;
-				}
-			}
+			// Always allow sign in - user creation will be handled in JWT callback
 			return true;
 		},
 		async jwt({
@@ -185,33 +137,58 @@ export const authOptions = {
 			user?: User;
 		}) {
 			try {
-				if (user && user.role) {
-					token.id = user.id;
-					token.email = user.email;
-					token.firstName = user.firstName;
-					token.lastName = user.lastName;
-					token.role = user.role;
-					token.tenantId = user.tenantId;
-					token.profileImage = (user as any).profileImage || undefined;
+				// Handle initial sign in
+				if (user && account) {
+					if (account.provider === "google" && user.email) {
+						try {
+							let dbUser = await prisma.findFirstWithCache(
+								prisma.user,
+								{ where: { email: user.email } },
+								DEFAULT_CACHE_STRATEGIES.user,
+							);
 
-					// Generate custom JWT for API usage
-					const payload = {
-						userId: Number(user.id),
-						role: user.role.toString(),
-					};
-					token.customJWT = generateToken(payload, "7d");
-				}
+							if (!dbUser) {
+								// Create new user for Google OAuth
+								const newUser = await prisma.user.create({
+									data: {
+										email: user.email,
+										firstName: user.name?.split(" ")[0] || "",
+										lastName: user.name?.split(" ").slice(1).join(" ") || "",
+										password: "",
+										role: "ADMIN",
+										subscriptionStatus: "active",
+										subscriptionPlan: "Free",
+										subscriptionCurrentPeriodEnd: new Date(
+											Date.now() + 365 * 24 * 60 * 60 * 1000,
+										),
+									},
+								});
 
-				if (account?.provider === "google" && token.email) {
-					try {
-						const dbUser = await prisma.findFirstWithCache(
-							prisma.user,
-							{ where: { email: token.email } },
-							DEFAULT_CACHE_STRATEGIES.user,
-						);
+								const newTenant = await prisma.tenant.create({
+									data: {
+										name: newUser.firstName + "'s tenant",
+										adminId: Number(newUser.id),
+										users: { connect: { id: Number(newUser.id) } },
+									},
+								});
 
-						if (dbUser && dbUser.role) {
+								await prisma.database.create({
+									data: {
+										tenantId: newTenant.id,
+									},
+								});
+
+								await prisma.user.update({
+									where: { id: newUser.id },
+									data: { tenantId: newTenant.id },
+								});
+
+								dbUser = newUser;
+							}
+
+							// Update token with user data
 							token.id = dbUser.id.toString();
+							token.email = dbUser.email;
 							token.firstName = dbUser.firstName;
 							token.lastName = dbUser.lastName;
 							token.role = dbUser.role;
@@ -224,9 +201,25 @@ export const authOptions = {
 								role: dbUser.role.toString(),
 							};
 							token.customJWT = generateToken(payload, "7d");
+						} catch (error) {
+							console.error("Error handling Google OAuth user:", error);
 						}
-					} catch (error) {
-						console.error("Error fetching Google user data:", error);
+					} else if (user.role) {
+						// Handle credentials login
+						token.id = user.id;
+						token.email = user.email;
+						token.firstName = user.firstName;
+						token.lastName = user.lastName;
+						token.role = user.role;
+						token.tenantId = user.tenantId;
+						token.profileImage = (user as any).profileImage || undefined;
+
+						// Generate custom JWT for API usage
+						const payload = {
+							userId: Number(user.id),
+							role: user.role.toString(),
+						};
+						token.customJWT = generateToken(payload, "7d");
 					}
 				}
 
