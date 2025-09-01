@@ -217,13 +217,15 @@ const DataHubLandingPage = () => {
 		<div className='min-h-screen premium-gradient-bg'>
 			{/* Navigation */}
 			<nav className='border-b border-border/20 bg-card/90 backdrop-blur-2xl sticky top-0 z-50 shadow-lg'>
-				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='flex justify-between items-center h-16'>
-						<div className='flex items-center space-x-3'>
-							<div className='w-10 h-10 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center border border-border/20'>
-								<Database className='w-5 h-5 text-primary' />
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
+					<div className='flex justify-between items-center h-14 sm:h-16'>
+						<div className='flex items-center space-x-2 sm:space-x-3'>
+							<div className='w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center border border-border/20'>
+								<Database className='w-4 h-4 sm:w-5 sm:h-5 text-primary' />
 							</div>
-							<span className='text-xl font-bold text-foreground'>YDV</span>
+							<span className='text-lg sm:text-xl font-bold text-foreground'>
+								YDV
+							</span>
 						</div>
 
 						{/* Desktop Navigation */}
@@ -250,18 +252,21 @@ const DataHubLandingPage = () => {
 							</a>
 						</div>
 
-						<div className='flex items-center space-x-4'>
+						<div className='flex items-center space-x-2 sm:space-x-4'>
 							{session ? (
 								<>
 									{currentPlan && (
-										<span className='bg-card/80 text-foreground px-4 py-2 rounded-full text-xs font-semibold shadow-inner'>
+										<span className='hidden sm:block bg-card/80 text-foreground px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold shadow-inner'>
 											{currentPlan}
 										</span>
 									)}
 									<Button
-										onClick={() => router.push("home/dashboard")}
-										className='premium-hover-subtle'>
-										{t("landing.nav.goToApp")}
+										onClick={() => router.push("home/analytics")}
+										className='premium-hover-subtle text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2'>
+										<span className='hidden sm:inline'>
+											{t("landing.nav.goToApp")}
+										</span>
+										<span className='sm:hidden'>App</span>
 									</Button>
 
 									{/* User Profile Dropdown */}
@@ -325,13 +330,16 @@ const DataHubLandingPage = () => {
 									<Button
 										variant='ghost'
 										onClick={() => setShowLoginModal(true)}
-										className='premium-hover-subtle'>
+										className='premium-hover-subtle text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 hidden sm:flex'>
 										{t("landing.nav.signIn")}
 									</Button>
 									<Button
 										onClick={() => setShowLoginModal(true)}
-										className='premium-hover-subtle'>
-										{t("landing.nav.getStarted")}
+										className='premium-hover-subtle text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2'>
+										<span className='hidden sm:inline'>
+											{t("landing.nav.getStarted")}
+										</span>
+										<span className='sm:hidden'>Start</span>
 									</Button>
 								</>
 							)}
@@ -340,9 +348,9 @@ const DataHubLandingPage = () => {
 							<Button
 								variant='ghost'
 								size='sm'
-								className='md:hidden premium-hover-subtle'
+								className='md:hidden premium-hover-subtle p-2'
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-								<Menu className='w-5 h-5' />
+								<Menu className='w-4 h-4 sm:w-5 sm:h-5' />
 							</Button>
 						</div>
 					</div>
@@ -350,27 +358,30 @@ const DataHubLandingPage = () => {
 
 				{/* Mobile Navigation */}
 				{mobileMenuOpen && (
-					<div className='md:hidden border-t border-border bg-card'>
-						<div className='px-2 pt-2 pb-3 space-y-1'>
+					<div className='md:hidden border-t border-border bg-card/95 backdrop-blur-xl mobile-drawer-enter'>
+						<div className='px-3 pt-3 pb-4 space-y-1'>
 							<a
 								href='#features'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
+								className='block px-3 py-3 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-lg mobile-touch-feedback'
+								onClick={() => setMobileMenuOpen(false)}>
 								{t("landing.nav.features")}
 							</a>
 							<a
 								href='#pricing'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
+								className='block px-3 py-3 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-lg mobile-touch-feedback'
+								onClick={() => setMobileMenuOpen(false)}>
 								{t("landing.nav.pricing")}
 							</a>
-
 							<a
 								href='/docs/help'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
+								className='block px-3 py-3 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-lg mobile-touch-feedback'
+								onClick={() => setMobileMenuOpen(false)}>
 								{t("landing.nav.help")}
 							</a>
 							<a
 								href='#contact'
-								className='block px-3 py-2 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-md'>
+								className='block px-3 py-3 text-sm text-muted-foreground hover:text-foreground premium-interaction rounded-lg mobile-touch-feedback'
+								onClick={() => setMobileMenuOpen(false)}>
 								{t("landing.nav.contact")}
 							</a>
 						</div>
@@ -379,61 +390,67 @@ const DataHubLandingPage = () => {
 			</nav>
 
 			{/* Hero Section */}
-			<section className='premium-section premium-container'>
-				<div className='text-center'>
-					<Badge
-						variant='secondary'
-						className='mb-8 px-6 py-3 text-sm font-semibold bg-card shadow-lg premium-hover-subtle'>
-						{t("landing.tagline")}
-					</Badge>
-					<h1 className='premium-heading mb-8'>{t("landing.hero.title")}</h1>
-					<p className='premium-subheading mb-12'>
-						{t("landing.hero.subtitle")}
-					</p>
-					{session && (
-						<div className='premium-form-section mb-12 max-w-2xl mx-auto'>
-							<p className='text-lg font-semibold text-foreground mb-6'>
-								{t("landing.hero.startFree")}
-							</p>
-							<Button
-								size='lg'
-								onClick={() => {
-									if (!session) {
-										setShowLoginModal(true);
-									} else {
-										router.push("home/dashboard");
-									}
-								}}
-								className='text-lg text-black dark:text-white px-12 py-6 bg-card shadow-lg hover:shadow-xl hover:bg-card/80 transform hover:scale-105 transition-all duration-300'>
-								{t("landing.hero.createAccount")}
-								<ArrowRight className='ml-2 w-5 h-5' />
-							</Button>
-						</div>
-					)}
+			<section className='py-12 sm:py-16 md:py-20 lg:py-24'>
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
+					<div className='text-center'>
+						<Badge
+							variant='secondary'
+							className='mb-6 sm:mb-8 px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold bg-card shadow-lg premium-hover-subtle'>
+							{t("landing.tagline")}
+						</Badge>
+						<h1 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-6 sm:mb-8 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent'>
+							{t("landing.hero.title")}
+						</h1>
+						<p className='text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-8 sm:mb-12'>
+							{t("landing.hero.subtitle")}
+						</p>
+						{session && (
+							<div className='bg-card/50 backdrop-blur-sm border border-border/20 rounded-2xl p-6 sm:p-8 shadow-lg transition-all duration-300 ease-out hover:shadow-xl hover:bg-card/60 mb-8 sm:mb-12 max-w-2xl mx-auto'>
+								<p className='text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-6'>
+									{t("landing.hero.startFree")}
+								</p>
+								<Button
+									size='lg'
+									onClick={() => {
+										if (!session) {
+											setShowLoginModal(true);
+										} else {
+											router.push("home/dashboard");
+										}
+									}}
+									className='text-sm sm:text-lg text-black dark:text-white px-8 sm:px-12 py-4 sm:py-6 bg-card shadow-lg hover:shadow-xl hover:bg-card/80 transform hover:scale-105 transition-all duration-300 w-full sm:w-auto'>
+									{t("landing.hero.createAccount")}
+									<ArrowRight className='ml-2 w-4 h-4 sm:w-5 sm:h-5' />
+								</Button>
+							</div>
+						)}
+					</div>
 				</div>
 			</section>
 
 			{/* Benefits Section */}
-			<section className='premium-section premium-gradient-section'>
-				<div className='premium-container'>
-					<div className='premium-section-header'>
-						<h2 className='premium-heading'>{t("landing.benefits.title")}</h2>
-						<p className='premium-subheading'>
+			<section className='py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-r from-card/50 via-card/30 to-card/50 backdrop-blur-sm'>
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
+					<div className='text-center mb-8 sm:mb-12 lg:mb-16 space-y-3 sm:space-y-4'>
+						<h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent'>
+							{t("landing.benefits.title")}
+						</h2>
+						<p className='text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground leading-relaxed max-w-3xl mx-auto'>
 							{t("landing.benefits.subtitle")}
 						</p>
 					</div>
-					<div className='premium-grid-4'>
+					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8'>
 						{businessBenefits.map((benefit, index) => (
-							<div key={index} className='text-center premium-spacing-lg'>
-								<div className='flex justify-center mb-6'>
-									<div className='p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border border-border/20 premium-hover'>
+							<div key={index} className='text-center space-y-4 sm:space-y-6'>
+								<div className='flex justify-center mb-4 sm:mb-6'>
+									<div className='p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border border-border/20 premium-hover'>
 										{benefit.icon}
 									</div>
 								</div>
-								<h3 className='text-lg font-semibold text-foreground mb-4'>
+								<h3 className='text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4'>
 									{benefit.title}
 								</h3>
-								<p className='text-sm text-muted-foreground leading-relaxed'>
+								<p className='text-sm sm:text-sm text-muted-foreground leading-relaxed'>
 									{benefit.description}
 								</p>
 							</div>
@@ -443,27 +460,29 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* Who is it for Section */}
-			<section className='premium-section'>
-				<div className='premium-container'>
-					<div className='premium-section-header'>
-						<h2 className='premium-heading'>{t("landing.audience.title")}</h2>
-						<p className='premium-subheading'>
+			<section className='py-12 sm:py-16 md:py-20 lg:py-24'>
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
+					<div className='text-center mb-8 sm:mb-12 lg:mb-16 space-y-3 sm:space-y-4'>
+						<h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent'>
+							{t("landing.audience.title")}
+						</h2>
+						<p className='text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground leading-relaxed max-w-3xl mx-auto'>
 							{t("landing.audience.subtitle")}
 						</p>
 					</div>
-					<div className='premium-grid-3'>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
 						{targetAudience.map((audience, index) => (
 							<Card key={index} className='professional-card premium-hover'>
-								<CardHeader className='premium-padding-md'>
-									<div className='p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-6 shadow-lg premium-hover'>
+								<CardHeader className='p-4 sm:p-6 md:p-8'>
+									<div className='p-4 sm:p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-4 sm:mb-6 shadow-lg premium-hover'>
 										{audience.icon}
 									</div>
-									<CardTitle className='text-2xl font-bold'>
+									<CardTitle className='text-xl sm:text-2xl font-bold'>
 										{audience.title}
 									</CardTitle>
 								</CardHeader>
-								<CardContent className='premium-padding-md pt-0'>
-									<CardDescription className='text-base leading-relaxed'>
+								<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
+									<CardDescription className='text-sm sm:text-base leading-relaxed'>
 										{audience.description}
 									</CardDescription>
 								</CardContent>
@@ -476,28 +495,30 @@ const DataHubLandingPage = () => {
 			{/* Features Section */}
 			<section
 				id='features'
-				className='premium-section premium-gradient-section'>
-				<div className='premium-container'>
-					<div className='premium-section-header'>
-						<h2 className='premium-heading'>{t("landing.features.title")}</h2>
-						<p className='premium-subheading'>
+				className='py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-r from-card/50 via-card/30 to-card/50 backdrop-blur-sm'>
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
+					<div className='text-center mb-8 sm:mb-12 lg:mb-16 space-y-3 sm:space-y-4'>
+						<h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent'>
+							{t("landing.features.title")}
+						</h2>
+						<p className='text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground leading-relaxed max-w-3xl mx-auto'>
 							{t("landing.features.subtitle")}
 						</p>
 					</div>
 
-					<div className='premium-grid-3'>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
 						{features.map((feature, index) => (
 							<Card key={index} className='professional-card premium-hover'>
-								<CardHeader className='premium-padding-md'>
-									<div className='p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-6 shadow-lg premium-hover'>
+								<CardHeader className='p-4 sm:p-6 md:p-8'>
+									<div className='p-4 sm:p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-4 sm:mb-6 shadow-lg premium-hover'>
 										{feature.icon}
 									</div>
-									<CardTitle className='text-2xl font-bold'>
+									<CardTitle className='text-xl sm:text-2xl font-bold'>
 										{feature.title}
 									</CardTitle>
 								</CardHeader>
-								<CardContent className='premium-padding-md pt-0'>
-									<CardDescription className='text-base leading-relaxed'>
+								<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
+									<CardDescription className='text-sm sm:text-base leading-relaxed'>
 										{feature.description}
 									</CardDescription>
 								</CardContent>
@@ -508,16 +529,18 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* Pricing Section */}
-			<section id='pricing' className='premium-section'>
-				<div className='premium-container'>
-					<div className='premium-section-header'>
-						<h2 className='premium-heading'>{t("landing.pricing.title")}</h2>
-						<p className='premium-subheading'>
+			<section id='pricing' className='py-12 sm:py-16 md:py-20 lg:py-24'>
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
+					<div className='text-center mb-8 sm:mb-12 lg:mb-16 space-y-3 sm:space-y-4'>
+						<h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent'>
+							{t("landing.pricing.title")}
+						</h2>
+						<p className='text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground leading-relaxed max-w-3xl mx-auto'>
 							{t("landing.pricing.subtitle")}
 						</p>
 					</div>
 
-					<div className='premium-grid-3'>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
 						{plans.map((plan, index) => {
 							const isCurrentPlan =
 								currentPlan &&
@@ -538,32 +561,36 @@ const DataHubLandingPage = () => {
 											{t("landing.pricing.yourPlan")}
 										</Badge>
 									)}
-									<CardHeader className='text-center premium-padding-md'>
-										<CardTitle className='text-2xl'>{plan.name}</CardTitle>
+									<CardHeader className='text-center p-4 sm:p-6 md:p-8'>
+										<CardTitle className='text-xl sm:text-2xl'>
+											{plan.name}
+										</CardTitle>
 										<div className='flex items-baseline justify-center'>
-											<span className='text-4xl font-bold'>{plan.price}</span>
-											<span className='text-muted-foreground ml-1'>
+											<span className='text-3xl sm:text-4xl font-bold'>
+												{plan.price}
+											</span>
+											<span className='text-muted-foreground ml-1 text-sm sm:text-base'>
 												{plan.period}
 											</span>
 										</div>
-										<div className='text-lg font-semibold text-primary mb-2'>
+										<div className='text-base sm:text-lg font-semibold text-primary mb-2'>
 											{plan.storage} {t("landing.pricing.dataStorage")}
 										</div>
-										<CardDescription className='text-base'>
+										<CardDescription className='text-sm sm:text-base'>
 											{plan.description}
 										</CardDescription>
 									</CardHeader>
-									<CardContent className='premium-padding-md pt-0'>
-										<ul className='premium-spacing-sm mb-8'>
+									<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
+										<ul className='space-y-3 mb-6 sm:mb-8'>
 											{plan.features.map((feature, featureIndex) => (
 												<li key={featureIndex} className='flex items-center'>
-													<Check className='w-4 h-4 text-primary mr-3 flex-shrink-0' />
-													<span className='text-sm'>{feature}</span>
+													<Check className='w-3 h-3 sm:w-4 sm:h-4 text-primary mr-2 sm:mr-3 flex-shrink-0' />
+													<span className='text-xs sm:text-sm'>{feature}</span>
 												</li>
 											))}
 										</ul>
 										<Button
-											className='w-full premium-hover-subtle'
+											className='w-full premium-hover-subtle text-sm sm:text-base'
 											variant={
 												isCurrentPlan
 													? "secondary"
@@ -610,22 +637,24 @@ const DataHubLandingPage = () => {
 			</section>
 
 			{/* CTA Section */}
-			<section className='premium-section premium-gradient-section'>
-				<div className='premium-container'>
+			<section className='py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-r from-card/50 via-card/30 to-card/50 backdrop-blur-sm'>
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
 					<div className='max-w-4xl mx-auto text-center'>
-						<h2 className='premium-heading mb-6'>{t("landing.cta.title")}</h2>
-						<p className='premium-subheading mb-12'>
+						<h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4 sm:mb-6 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent'>
+							{t("landing.cta.title")}
+						</h2>
+						<p className='text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-8 sm:mb-12'>
 							{t("landing.cta.subtitle")}
 						</p>
 						<Button
 							size='lg'
 							onClick={() => setShowLoginModal(true)}
-							className='text-lg px-12 py-6 premium-hover shadow-lg'>
+							className='text-sm sm:text-lg px-8 sm:px-12 py-4 sm:py-6 premium-hover shadow-lg w-full sm:w-auto'>
 							{t("landing.cta.button")}
-							<ArrowRight className='ml-2 w-5 h-5' />
+							<ArrowRight className='ml-2 w-4 h-4 sm:w-5 sm:h-5' />
 						</Button>
-						<div className='mt-12 premium-form-section'>
-							<p className='text-lg text-muted-foreground'>
+						<div className='mt-8 sm:mt-12 bg-card/50 backdrop-blur-sm border border-border/20 rounded-2xl p-6 sm:p-8 shadow-lg transition-all duration-300 ease-out hover:shadow-xl hover:bg-card/60'>
+							<p className='text-base sm:text-lg text-muted-foreground'>
 								{t("landing.cta.bonus")}
 							</p>
 						</div>
@@ -637,149 +666,148 @@ const DataHubLandingPage = () => {
 			<ContactForm />
 
 			{/* Footer */}
-			<footer className='border-t border-border bg-card premium-section'>
-				<div className='premium-container'>
-					<div className='premium-grid-4'>
-						<div>
-							<div className='flex items-center space-x-3 mb-6'>
-								<div className='w-8 h-8 bg-primary rounded-lg flex items-center justify-center'>
-									<Database className='w-4 h-4 text-primary-foreground' />
+			<footer className='border-t border-border bg-card py-12 sm:py-16 md:py-20 lg:py-24'>
+				<div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8'>
+					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8'>
+						<div className='sm:col-span-2 lg:col-span-1'>
+							<div className='flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6'>
+								<div className='w-6 h-6 sm:w-8 sm:h-8 bg-primary rounded-lg flex items-center justify-center'>
+									<Database className='w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground' />
 								</div>
-								<span className='text-xl font-bold'>YDV</span>
+								<span className='text-lg sm:text-xl font-bold'>YDV</span>
 							</div>
-							<p className='text-muted-foreground'>
+							<p className='text-sm sm:text-base text-muted-foreground'>
 								{t("landing.footer.description")}
 							</p>
 						</div>
 						<div>
-							<h3 className='font-semibold mb-6'>
+							<h3 className='font-semibold mb-4 sm:mb-6 text-sm sm:text-base'>
 								{t("landing.footer.product")}
 							</h3>
-							<ul className='premium-spacing-sm text-sm text-muted-foreground'>
+							<ul className='space-y-2 sm:space-y-3 text-xs sm:text-sm text-muted-foreground'>
 								<li>
 									<a
 										href='#features'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.features")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='#pricing'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.pricing")}
 									</a>
 								</li>
-
 								<li>
 									<a
 										href='/docs/help'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.documentation")}
 									</a>
 								</li>
 							</ul>
 						</div>
 						<div>
-							<h3 className='font-semibold mb-6'>
+							<h3 className='font-semibold mb-4 sm:mb-6 text-sm sm:text-base'>
 								{t("landing.footer.company")}
 							</h3>
-							<ul className='premium-spacing-sm text-sm text-muted-foreground'>
+							<ul className='space-y-2 sm:space-y-3 text-xs sm:text-sm text-muted-foreground'>
 								<li>
 									<a
 										href='/docs/about'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.about")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='#contact'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.contact")}
 									</a>
 								</li>
 							</ul>
 						</div>
-						<div>
-							<h3 className='font-semibold mb-6'>
+						<div className='sm:col-span-2 lg:col-span-1'>
+							<h3 className='font-semibold mb-4 sm:mb-6 text-sm sm:text-base'>
 								{t("landing.footer.support")}
 							</h3>
-							<ul className='premium-spacing-sm text-sm text-muted-foreground'>
+							<ul className='space-y-2 sm:space-y-3 text-xs sm:text-sm text-muted-foreground'>
 								<li>
 									<a
 										href='/docs/help'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.helpCenter")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/status'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.status")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/terms'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.terms")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/privacy'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.privacy")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/cookies'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.cookies")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/refund'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.refundPolicy")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/dpa'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.dpa")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/acceptable-use'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.acceptableUse")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/sla'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.sla")}
 									</a>
 								</li>
 								<li>
 									<a
 										href='/docs/legal/configure'
-										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded'>
+										className='hover:text-foreground premium-interaction px-2 py-1 -mx-2 rounded block'>
 										{t("landing.footer.legalConfig")}
 									</a>
 								</li>
 							</ul>
 						</div>
 					</div>
-					<div className='border-t border-border mt-12 pt-8 text-center text-sm text-muted-foreground'>
+					<div className='border-t border-border mt-8 sm:mt-12 pt-6 sm:pt-8 text-center text-xs sm:text-sm text-muted-foreground'>
 						{t("landing.footer.copyright")}
 					</div>
 				</div>

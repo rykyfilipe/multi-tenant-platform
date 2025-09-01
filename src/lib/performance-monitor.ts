@@ -302,9 +302,51 @@ export function createPrismaWithPerformanceTracking(prisma: any) {
 			if (typeof value === "function") {
 				return async function (...args: any[]) {
 					const startTime = Date.now();
+					// Safely stringify args to avoid circular reference errors
+					let argsString = "";
+					try {
+						// Custom replacer function to handle circular references and complex objects
+						const safeStringify = (obj: any) => {
+							const seen = new WeakSet();
+							return JSON.stringify(obj, (key, value) => {
+								if (typeof value === "object" && value !== null) {
+									if (seen.has(value)) {
+										return "[Circular]";
+									}
+									seen.add(value);
+
+									// Handle Prisma client objects
+									if (
+										value &&
+										typeof value === "object" &&
+										value.constructor &&
+										value.constructor.name
+									) {
+										if (
+											value.constructor.name.includes("Prisma") ||
+											value.constructor.name.includes("Client")
+										) {
+											return `[${value.constructor.name}]`;
+										}
+									}
+								}
+								if (typeof value === "bigint") {
+									return value.toString() + "n";
+								}
+								if (typeof value === "function") {
+									return "[Function]";
+								}
+								return value;
+							});
+						};
+						argsString = safeStringify(args).slice(0, 100);
+					} catch (error) {
+						argsString = "[Complex Object]";
+					}
+
 					const requestId = performanceMonitor.startAPIRequest(
 						prop,
-						`${prop}_${JSON.stringify(args).slice(0, 100)}`,
+						`${prop}_${argsString}`,
 						startTime,
 					);
 

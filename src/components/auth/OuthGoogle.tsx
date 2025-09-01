@@ -20,7 +20,7 @@ export default function OAuthGoogleLogin({ closeForm }: OAuthGoogleLoginProps) {
 		setLoading(true);
 		try {
 			const result = await signIn("google", {
-				callbackUrl: "/home/dashboard",
+				callbackUrl: "/home/analytics",
 				redirect: true,
 			});
 

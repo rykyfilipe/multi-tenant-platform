@@ -170,6 +170,56 @@ export async function POST(
 				);
 			}
 
+			// For billing module, validate that tenant has complete billing details
+			if (moduleId === "billing") {
+				const tenantDetails = await prisma.tenant.findUnique({
+					where: { id: parseInt(tenantId) },
+					select: {
+						companyTaxId: true,
+						registrationNumber: true,
+						companyStreet: true,
+						companyStreetNumber: true,
+						companyCity: true,
+						companyCountry: true,
+						companyPostalCode: true,
+					},
+				});
+
+				if (!tenantDetails) {
+					return NextResponse.json(
+						{ error: "Tenant not found" },
+						{ status: 404 },
+					);
+				}
+
+				// Check if all required billing fields are filled
+				const requiredFields = [
+					'companyTaxId',
+					'registrationNumber', 
+					'companyStreet',
+					'companyStreetNumber',
+					'companyCity',
+					'companyCountry',
+					'companyPostalCode'
+				];
+
+				const missingFields = requiredFields.filter(field => 
+					!tenantDetails[field as keyof typeof tenantDetails] || 
+					tenantDetails[field as keyof typeof tenantDetails] === ''
+				);
+
+				if (missingFields.length > 0) {
+					return NextResponse.json(
+						{
+							error: "Billing details are incomplete. Please complete the billing information in tenant settings before enabling the invoices module.",
+							missingFields,
+							details: "The following fields are required: Company Tax ID, Registration Number, Company Street, Company Street Number, Company City, Company Country, and Company Postal Code."
+						},
+						{ status: 400 },
+					);
+				}
+			}
+
 			// Create module tables
 			await createModuleTables(parseInt(databaseId), moduleId);
 

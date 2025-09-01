@@ -22,6 +22,10 @@ import {
 	createRowWithCellsTransaction,
 } from "@/lib/transaction-manager";
 import { validateSecurity } from "@/lib/security-validation";
+import {
+	trackUserAction,
+	trackDatabaseOperationFromResponse,
+} from "@/lib/api-tracker";
 
 const RowSchema = z.object({
 	cells: z.array(
@@ -41,6 +45,8 @@ export async function POST(
 	},
 ) {
 	const { tenantId, databaseId, tableId } = await params;
+	const startTime = Date.now();
+
 	const logged = verifyLogin(request);
 	if (!logged) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -425,6 +431,32 @@ export async function POST(
 				},
 			},
 		});
+
+		// Track user activity and database operation
+		if (createdRow) {
+			trackUserAction(
+				userId,
+				Number(tenantId),
+				"create",
+				"row",
+				createdRow.id,
+				request,
+				{
+					tableId: Number(tableId),
+					databaseId: Number(databaseId),
+					cellsCount: cells.length,
+				},
+			);
+
+			trackDatabaseOperationFromResponse(
+				Number(tenantId),
+				Number(databaseId),
+				"create_row",
+				`table_${tableId}`,
+				createdRow,
+				startTime,
+			);
+		}
 
 		return ApiSuccess.created(
 			createdRow,

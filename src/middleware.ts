@@ -13,6 +13,8 @@ import {
 	validateSecurity,
 	validateFileUpload,
 } from "@/lib/security-validation";
+// Note: We can't import Prisma directly in middleware due to Node.js compatibility issues
+// The activity tracking will be handled by individual API routes instead
 
 // Enhanced security headers
 const securityHeaders = {
@@ -169,7 +171,7 @@ export async function middleware(request: NextRequest) {
 		);
 	}
 
-	// Track API performance for API routes
+	// Track API performance and activity for API routes
 	if (request.nextUrl.pathname.startsWith("/api/")) {
 		// Generate unique request ID for tracking
 		const requestId = performanceMonitor.startAPIRequest(
@@ -181,6 +183,9 @@ export async function middleware(request: NextRequest) {
 		// Add headers for tracking
 		response.headers.set("X-Request-Start", startTime.toString());
 		response.headers.set("X-Request-ID", requestId);
+
+		// Note: API tracking is now handled by individual API routes
+		// due to Prisma compatibility issues in middleware
 	}
 
 	// Security logging for suspicious activities

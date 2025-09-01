@@ -2,6 +2,7 @@
 
 import { PrismaClient } from "@/generated/prisma/index";
 import { createPrismaWithPerformanceTracking } from "./performance-monitor";
+// import { connectionMonitor } from "./connection-monitor";
 
 // Prisma Accelerate Cache Configuration
 interface CacheStrategy {
@@ -57,7 +58,7 @@ const DEFAULT_CACHE_STRATEGIES: Record<string, CacheStrategy> = {
 	invoiceList: { ttl: 60, swr: 120, tags: ["invoice", "list"] },
 };
 
-// Enhanced Prisma Client with Accelerate Cache
+// Enhanced Prisma Client with Accelerate Cache and Connection Pool Management
 class PrismaAccelerateClient extends PrismaClient {
 	private cache = new Map<
 		string,
@@ -65,6 +66,8 @@ class PrismaAccelerateClient extends PrismaClient {
 	>();
 	private readonly maxCacheSize = 10000;
 	private readonly cleanupInterval: NodeJS.Timeout;
+	private connectionCount = 0;
+	private readonly maxConnections = 10; // Match database config
 
 	constructor() {
 		super({
@@ -90,7 +93,43 @@ class PrismaAccelerateClient extends PrismaClient {
 		process.on("SIGTERM", () => this.disconnect());
 	}
 
-	// Enhanced findMany with automatic caching
+	// Connection management methods
+	private async acquireConnection(): Promise<boolean> {
+		if (this.connectionCount < this.maxConnections) {
+			this.connectionCount++;
+			return true;
+		}
+
+		// Wait for connection to be available
+		return new Promise((resolve) => {
+			const checkConnection = () => {
+				if (this.connectionCount < this.maxConnections) {
+					this.connectionCount++;
+					resolve(true);
+				} else {
+					setTimeout(checkConnection, 100);
+				}
+			};
+			checkConnection();
+		});
+	}
+
+	private releaseConnection(): void {
+		if (this.connectionCount > 0) {
+			this.connectionCount--;
+		}
+	}
+
+	// Get connection status for monitoring
+	getConnectionStatus() {
+		return {
+			current: this.connectionCount,
+			max: this.maxConnections,
+			available: this.maxConnections - this.connectionCount,
+		};
+	}
+
+	// Enhanced findMany with automatic caching and connection management
 	async findManyWithCache<T>(
 		model: any,
 		options: any,
@@ -103,12 +142,17 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		const result = await model.findMany(options);
-		this.setCache(cacheKey, result, strategy);
-		return result;
+		await this.acquireConnection();
+		try {
+			const result = await model.findMany(options);
+			this.setCache(cacheKey, result, strategy);
+			return result;
+		} finally {
+			this.releaseConnection();
+		}
 	}
 
-	// Enhanced findUnique with automatic caching
+	// Enhanced findUnique with automatic caching and connection management
 	async findUniqueWithCache<T>(
 		model: any,
 		options: any,
@@ -121,14 +165,19 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		const result = await model.findUnique(options);
-		if (result) {
-			this.setCache(cacheKey, result, strategy);
+		await this.acquireConnection();
+		try {
+			const result = await model.findUnique(options);
+			if (result) {
+				this.setCache(cacheKey, result, strategy);
+			}
+			return result;
+		} finally {
+			this.releaseConnection();
 		}
-		return result;
 	}
 
-	// Enhanced findFirst with automatic caching
+	// Enhanced findFirst with automatic caching and connection management
 	async findFirstWithCache<T>(
 		model: any,
 		options: any,
@@ -141,14 +190,19 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		const result = await model.findFirst(options);
-		if (result) {
-			this.setCache(cacheKey, result, strategy);
+		await this.acquireConnection();
+		try {
+			const result = await model.findFirst(options);
+			if (result) {
+				this.setCache(cacheKey, result, strategy);
+			}
+			return result;
+		} finally {
+			this.releaseConnection();
 		}
-		return result;
 	}
 
-	// Enhanced count with automatic caching
+	// Enhanced count with automatic caching and connection management
 	async countWithCache(
 		model: any,
 		options: any,
@@ -161,12 +215,17 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		const result = await model.count(options);
-		this.setCache(cacheKey, result, strategy);
-		return result;
+		await this.acquireConnection();
+		try {
+			const result = await model.count(options);
+			this.setCache(cacheKey, result, strategy);
+			return result;
+		} finally {
+			this.releaseConnection();
+		}
 	}
 
-	// Enhanced aggregate with automatic caching
+	// Enhanced aggregate with automatic caching and connection management
 	async aggregateWithCache(
 		model: any,
 		options: any,
@@ -179,12 +238,17 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		const result = await model.aggregate(options);
-		this.setCache(cacheKey, result, strategy);
-		return result;
+		await this.acquireConnection();
+		try {
+			const result = await model.aggregate(options);
+			this.setCache(cacheKey, result, strategy);
+			return result;
+		} finally {
+			this.releaseConnection();
+		}
 	}
 
-	// Batch operations with intelligent caching
+	// Batch operations with intelligent caching and connection management
 	async batchQuery<T>(
 		operations: Array<{
 			operation: () => Promise<T>;
@@ -212,20 +276,25 @@ class PrismaAccelerateClient extends PrismaClient {
 			}
 		}
 
-		// Execute uncached operations in parallel
+		// Execute uncached operations with connection management
 		if (uncachedOperations.length > 0) {
-			const uncachedResults = await Promise.all(
-				uncachedOperations.map(async ({ operation, cacheKey, strategy }) => {
-					const result = await operation();
-					this.setCache(cacheKey, result, strategy);
-					return result;
-				}),
-			);
+			await this.acquireConnection();
+			try {
+				const uncachedResults = await Promise.all(
+					uncachedOperations.map(async ({ operation, cacheKey, strategy }) => {
+						const result = await operation();
+						this.setCache(cacheKey, result, strategy);
+						return result;
+					}),
+				);
 
-			// Place results in correct positions
-			uncachedOperations.forEach(({ index }, i) => {
-				results[index] = uncachedResults[i];
-			});
+				// Place results in correct positions
+				uncachedOperations.forEach(({ index }, i) => {
+					results[index] = uncachedResults[i];
+				});
+			} finally {
+				this.releaseConnection();
+			}
 		}
 
 		return results;
@@ -324,6 +393,7 @@ class PrismaAccelerateClient extends PrismaClient {
 		try {
 			clearInterval(this.cleanupInterval);
 			this.cache.clear();
+			this.connectionCount = 0; // Reset connection count
 			await super.$disconnect();
 			console.log("Prisma Accelerate client disconnected successfully");
 		} catch (error: any) {
@@ -332,12 +402,17 @@ class PrismaAccelerateClient extends PrismaClient {
 	}
 }
 
-// Create and export the enhanced Prisma client
-const prisma = new PrismaAccelerateClient();
+// Create and export the enhanced Prisma client with global reuse to prevent multiple pools
+declare global {
+	// eslint-disable-next-line no-var, @typescript-eslint/naming-convention
+	var __PRISMA__: PrismaAccelerateClient | undefined;
+}
 
-// Development mode global assignment
+const prisma = globalThis.__PRISMA__ ?? new PrismaAccelerateClient();
+
+// Development mode global assignment (avoid creating multiple clients during HMR)
 if (process.env.NODE_ENV !== "production") {
-	(globalThis as any).prisma = prisma;
+	globalThis.__PRISMA__ = prisma;
 }
 
 // Add performance tracking in development mode

@@ -61,7 +61,7 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 					showAlert(t("register.accountCreated"), "success");
 					closeForm(true);
 					// Redirect to dashboard after successful registration and login
-					window.location.href = "/home/dashboard";
+					window.location.href = "/home/analytics";
 				} else {
 					showAlert(t("register.loginFailed"), "warning");
 				}
@@ -74,49 +74,61 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 	};
 
 	return (
-		<form className='flex flex-col space-y-4 mt-4' onSubmit={handleRegister}>
-			<div>
-				<Label>{t("register.firstName")}</Label>
-				<Input
-					type='text'
-					placeholder={t("register.firstNamePlaceholder")}
-					value={firstName}
-					onChange={(e) => setFirstName(e.target.value)}
-					required
-				/>
+		<form
+			className='flex flex-col space-y-3 sm:space-y-4 mt-3 sm:mt-4'
+			onSubmit={handleRegister}>
+			<div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
+				<div>
+					<Label className='text-sm sm:text-base'>
+						{t("register.firstName")}
+					</Label>
+					<Input
+						type='text'
+						placeholder={t("register.firstNamePlaceholder")}
+						value={firstName}
+						onChange={(e) => setFirstName(e.target.value)}
+						className='rounded-lg h-10 sm:h-11 text-sm sm:text-base'
+						required
+					/>
+				</div>
+				<div>
+					<Label className='text-sm sm:text-base'>
+						{t("register.lastName")}
+					</Label>
+					<Input
+						type='text'
+						placeholder={t("register.lastNamePlaceholder")}
+						value={lastName}
+						onChange={(e) => setLastName(e.target.value)}
+						className='rounded-lg h-10 sm:h-11 text-sm sm:text-base'
+						required
+					/>
+				</div>
 			</div>
 			<div>
-				<Label>{t("register.lastName")}</Label>
-				<Input
-					type='text'
-					placeholder={t("register.lastNamePlaceholder")}
-					value={lastName}
-					onChange={(e) => setLastName(e.target.value)}
-					required
-				/>
-			</div>
-			<div>
-				<Label>{t("register.email")}</Label>
+				<Label className='text-sm sm:text-base'>{t("register.email")}</Label>
 				<Input
 					type='email'
 					placeholder={t("register.emailPlaceholder")}
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
+					className='rounded-lg h-10 sm:h-11 text-sm sm:text-base'
 					required
 				/>
 			</div>
 			<div>
-				<Label>{t("register.password")}</Label>
+				<Label className='text-sm sm:text-base'>{t("register.password")}</Label>
 				<Input
 					type='password'
 					placeholder={t("register.passwordPlaceholder")}
 					value={password}
 					onChange={(e) => setPassword(e.target.value)}
+					className='rounded-lg h-10 sm:h-11 text-sm sm:text-base'
 					required
 				/>
 			</div>
 
-			<div className='flex gap-2 items-center text-sm text-muted-foreground'>
+			<div className='flex gap-2 items-center text-xs sm:text-sm text-muted-foreground'>
 				{t("register.role")}{" "}
 				<span className='font-semibold text-foreground'>ADMIN</span>
 				<Popover open={open}>
@@ -124,10 +136,10 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 						<div
 							onMouseEnter={() => setOpen(true)}
 							onMouseLeave={() => setOpen(false)}>
-							<Info className='w-4 h-4 text-muted-foreground cursor-help' />
+							<Info className='w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground cursor-help' />
 						</div>
 					</PopoverTrigger>
-					<PopoverContent className='text-sm w-[260px] pointer-events-none bg-popover border-border'>
+					<PopoverContent className='text-xs sm:text-sm w-[240px] sm:w-[260px] pointer-events-none bg-popover border-border'>
 						{t("register.roleInfo")}
 					</PopoverContent>
 				</Popover>
@@ -136,7 +148,7 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 			<Button
 				type='submit'
 				disabled={loading}
-				className='w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-sm'>
+				className='w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-sm h-10 sm:h-11 text-sm sm:text-base'>
 				{loading ? t("register.pleaseWait") : t("register.register")}
 			</Button>
 		</form>

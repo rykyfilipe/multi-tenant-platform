@@ -49,7 +49,7 @@ const getNavigationItems = (
 ) => [
 	{
 		title: t("nav.analytics"),
-		url: "/home/dashboard",
+		url: "/home/analytics",
 		icon: BarChart3,
 		description: t("nav.analytics.description"),
 	},
@@ -113,7 +113,7 @@ const getMobileNavigationItems = (
 ) => [
 	{
 		title: t("nav.analytics"),
-		url: "/home/dashboard",
+		url: "/home/analytics",
 		icon: BarChart3,
 	},
 	{
@@ -184,7 +184,7 @@ export function MobileBottomNavbar() {
 			{/* Background with premium glass effect */}
 			<div className='premium-glass border-t border-border shadow-2xl'>
 				{/* Main navigation */}
-				<div className='flex items-center justify-around px-2 py-2'>
+				<div className='flex items-center justify-around px-1 sm:px-2 py-1.5 sm:py-2'>
 					{getMobileNavigationItems(t, user?.role, tenant, user).map((item) => {
 						const isActive = pathname === item.url;
 						return (
@@ -192,13 +192,13 @@ export function MobileBottomNavbar() {
 								key={item.title}
 								href={item.url}
 								className={cn(
-									"flex items-center justify-center p-2.5 rounded-xl premium-interaction",
-									"hover:bg-primary/10 active:scale-95",
+									"flex items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction mobile-touch-feedback",
+									"hover:bg-primary/10 active:scale-95 transition-all duration-200",
 									isActive
 										? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
 										: "text-muted-foreground hover:text-foreground",
 								)}>
-								<item.icon className='w-5 h-5' />
+								<item.icon className='w-4 h-4 sm:w-5 sm:h-5' />
 							</Link>
 						);
 					})}
@@ -207,8 +207,8 @@ export function MobileBottomNavbar() {
 					{session?.user && (
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<button className='flex items-center justify-center p-2.5 rounded-xl premium-interaction hover:bg-primary/10 active:scale-95 text-muted-foreground hover:text-foreground'>
-									<Avatar className='w-5 h-5'>
+								<button className='flex items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction hover:bg-primary/10 active:scale-95 text-muted-foreground hover:text-foreground transition-all duration-200 mobile-touch-feedback'>
+									<Avatar className='w-4 h-4 sm:w-5 sm:h-5'>
 										<AvatarImage src={session.user.image || undefined} />
 										<AvatarFallback className='bg-primary text-primary-foreground text-xs'>
 											{session.user.firstName?.[0]}
@@ -221,9 +221,9 @@ export function MobileBottomNavbar() {
 							<DropdownMenuContent
 								align='end'
 								side='top'
-								className='mb-2 professional-card shadow-xl'>
-								<div className='premium-padding-sm border-b border-border'>
-									<p className='font-medium text-foreground text-sm'>
+								className='mb-2 professional-card shadow-xl w-48 sm:w-56'>
+								<div className='p-3 sm:p-4 border-b border-border'>
+									<p className='font-medium text-foreground text-xs sm:text-sm'>
 										{session.user.firstName} {session.user.lastName}
 									</p>
 									<p className='text-xs text-muted-foreground'>
@@ -337,12 +337,12 @@ export function AppSidebar() {
 				"bg-white border-black/10 shadow-black/10",
 				// Dark theme
 				"dark:bg-black dark:border-white/10 dark:shadow-white/5",
-				isCollapsed ? "w-16" : "w-64",
+				isCollapsed ? "w-14 sm:w-16" : "w-56 sm:w-64",
 				// Ascuns pe mobile
 				"hidden md:flex",
 			)}>
 			{/* Premium Header */}
-			<div className='relative p-4 border-b border-black/10 dark:border-white/10'>
+			<div className='relative p-3 sm:p-4 border-b border-black/10 dark:border-white/10'>
 				<div
 					className={cn(
 						"flex items-center transition-all duration-300",
@@ -351,11 +351,11 @@ export function AppSidebar() {
 					<div
 						className={cn(
 							"flex items-center transition-all duration-300",
-							isCollapsed ? "space-x-0" : "space-x-3",
+							isCollapsed ? "space-x-0" : "space-x-2 sm:space-x-3",
 						)}>
 						<TenantLogo size='lg' showText={false} />
 						{!isCollapsed && (
-							<p className='text-xs text-gray-600 dark:text-gray-300 mt-0.5'>
+							<p className='text-xs text-gray-600 dark:text-gray-300 mt-0.5 truncate'>
 								{tenant?.name}
 							</p>
 						)}
@@ -367,8 +367,8 @@ export function AppSidebar() {
 							onClick={toggleSidebar}
 							variant='ghost'
 							size='sm'
-							className='h-8 w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white premium-hover-subtle rounded-lg'>
-							<ChevronLeft className='h-4 w-4' />
+							className='h-6 w-6 sm:h-8 sm:w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white premium-hover-subtle rounded-lg'>
+							<ChevronLeft className='h-3 w-3 sm:h-4 sm:w-4' />
 						</Button>
 					)}
 				</div>
@@ -376,20 +376,20 @@ export function AppSidebar() {
 
 			{/* Expand Button when collapsed */}
 			{isCollapsed && (
-				<div className='flex justify-center pt-2 pb-1'>
+				<div className='flex justify-center pt-1 sm:pt-2 pb-1'>
 					<Button
 						onClick={toggleSidebar}
 						variant='ghost'
 						size='sm'
-						className='h-8 w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white premium-hover-subtle rounded-lg'>
-						<ChevronRight className='h-4 w-4' />
+						className='h-6 w-6 sm:h-8 sm:w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white premium-hover-subtle rounded-lg'>
+						<ChevronRight className='h-3 w-3 sm:h-4 sm:w-4' />
 					</Button>
 				</div>
 			)}
 
 			{/* Navigation Menu */}
-			<div className='flex-1 p-2 overflow-hidden'>
-				<nav className='premium-spacing-xs'>
+			<div className='flex-1 p-1.5 sm:p-2 overflow-hidden'>
+				<nav className='space-y-1 sm:space-y-2'>
 					{getNavigationItems(t, user?.role, tenant, user).map((item) => {
 						const isActive = pathname === item.url;
 						return (
@@ -399,7 +399,9 @@ export function AppSidebar() {
 								className={cn(
 									"group relative flex items-center rounded-xl premium-interaction",
 									"hover:bg-black/5 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-white/5",
-									isCollapsed ? "p-2 justify-center" : "p-2 space-x-2",
+									isCollapsed
+										? "p-1.5 sm:p-2 justify-center"
+										: "p-1.5 sm:p-2 space-x-2",
 									isActive && [
 										"bg-gradient-to-r from-black/10 via-black/8 to-black/5 dark:from-white/20 dark:via-white/15 dark:to-white/10",
 										"border-l-2 border-gray-900 dark:border-white shadow-lg shadow-black/10 dark:shadow-white/10",
@@ -410,18 +412,20 @@ export function AppSidebar() {
 								)}>
 								<div
 									className={cn(
-										"flex-shrink-0 p-1.5 rounded-lg premium-interaction",
+										"flex-shrink-0 p-1 sm:p-1.5 rounded-lg premium-interaction",
 										isActive &&
 											"bg-gray-900/10 dark:bg-white/20 text-gray-900 dark:text-white shadow-sm",
 										!isActive &&
 											"group-hover:bg-black/5 dark:group-hover:bg-white/10",
 									)}>
-									<item.icon className='w-4 h-4' />
+									<item.icon className='w-3 h-3 sm:w-4 sm:h-4' />
 								</div>
 
 								{!isCollapsed && (
 									<div className='flex-1 min-w-0'>
-										<p className='font-medium text-sm truncate'>{item.title}</p>
+										<p className='font-medium text-xs sm:text-sm truncate'>
+											{item.title}
+										</p>
 										<p className='text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5 leading-tight'>
 											{item.description}
 										</p>
@@ -430,8 +434,10 @@ export function AppSidebar() {
 
 								{/* Tooltip for collapsed state */}
 								{isCollapsed && (
-									<div className='absolute left-full ml-2 px-3 py-2 bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 premium-interaction pointer-events-none whitespace-nowrap z-50 border border-gray-700 dark:border-gray-600'>
-										<div className='font-medium text-sm'>{item.title}</div>
+									<div className='absolute left-full ml-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 text-xs sm:text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 premium-interaction pointer-events-none whitespace-nowrap z-50 border border-gray-700 dark:border-gray-600'>
+										<div className='font-medium text-xs sm:text-sm'>
+											{item.title}
+										</div>
 										<div className='text-xs text-gray-300 dark:text-gray-400 mt-1'>
 											{item.description}
 										</div>
@@ -445,16 +451,16 @@ export function AppSidebar() {
 			</div>
 
 			{/* Premium Footer - Interactive User Menu */}
-			<div className='p-3 border-t border-black/10 dark:border-white/10'>
+			<div className='p-2 sm:p-3 border-t border-black/10 dark:border-white/10'>
 				{session?.user && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<div
 								className={cn(
-									"flex items-center cursor-pointer p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-200",
-									isCollapsed ? "justify-center" : "space-x-3",
+									"flex items-center cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-200",
+									isCollapsed ? "justify-center" : "space-x-2 sm:space-x-3",
 								)}>
-								<Avatar className='w-8 h-8 flex-shrink-0'>
+								<Avatar className='w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0'>
 									<AvatarImage src={session.user.image || undefined} />
 									<AvatarFallback className='bg-gradient-to-br from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 text-white dark:text-gray-900 font-semibold text-xs'>
 										{session.user.firstName?.[0]}
@@ -478,9 +484,9 @@ export function AppSidebar() {
 
 						<DropdownMenuContent
 							align={isCollapsed ? "center" : "start"}
-							className='w-48 professional-card shadow-xl'>
-							<div className='premium-padding-sm border-b border-black/5 dark:border-white/10'>
-								<p className='font-medium text-gray-900 dark:text-white text-sm'>
+							className='w-44 sm:w-48 professional-card shadow-xl'>
+							<div className='p-3 sm:p-4 border-b border-black/5 dark:border-white/10'>
+								<p className='font-medium text-gray-900 dark:text-white text-xs sm:text-sm'>
 									{session.user.firstName} {session.user.lastName}
 								</p>
 								<p className='text-xs text-gray-500 dark:text-gray-400'>
