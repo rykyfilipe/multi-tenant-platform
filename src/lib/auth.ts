@@ -112,6 +112,22 @@ export const authOptions = {
 				}
 			}
 
+			// Handle the specific production URL case
+			if (url.includes("ydv.digital") && url.includes("callbackUrl")) {
+				const urlObj = new URL(url);
+				const callbackUrl = urlObj.searchParams.get("callbackUrl");
+				if (callbackUrl) {
+					// If callbackUrl is a full URL, use it directly
+					if (callbackUrl.startsWith("http")) {
+						return callbackUrl;
+					}
+					// If callbackUrl is relative, prepend the base URL
+					if (callbackUrl.startsWith("/")) {
+						return `${baseUrl}${callbackUrl}`;
+					}
+				}
+			}
+
 			// Default fallback - redirect to auth callback page to ensure session is properly loaded
 			return `${baseUrl}/auth-callback`;
 		},
@@ -353,8 +369,26 @@ export const authOptions = {
 	},
 	useSecureCookies: process.env.NODE_ENV === "production",
 	secret: process.env.NEXTAUTH_SECRET,
-	debug: process.env.NODE_ENV === "development",
+	debug:
+		process.env.NODE_ENV === "development" ||
+		process.env.NEXTAUTH_DEBUG === "true",
 	trustHost: true,
+	logger: {
+		error(code: string, metadata: any) {
+			console.error("NextAuth Error:", code, metadata);
+		},
+		warn(code: string) {
+			console.warn("NextAuth Warning:", code);
+		},
+		debug(code: string, metadata: any) {
+			if (
+				process.env.NODE_ENV === "development" ||
+				process.env.NEXTAUTH_DEBUG === "true"
+			) {
+				console.log("NextAuth Debug:", code, metadata);
+			}
+		},
+	},
 };
 interface JwtPayload {
 	userId: number;
