@@ -112,8 +112,8 @@ export const authOptions = {
 				}
 			}
 
-			// Default fallback - redirect to analytics page
-			return `${baseUrl}/home/analytics`;
+			// Default fallback - redirect to auth callback page to ensure session is properly loaded
+			return `${baseUrl}/auth-callback`;
 		},
 		async signIn({
 			user,

@@ -23,6 +23,7 @@ import {
 	ChartBar,
 	Filter,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import AuthModal from "@/components/auth/AuthModal";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -441,11 +442,20 @@ const DataHubLandingPage = () => {
 					</div>
 					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8'>
 						{businessBenefits.map((benefit, index) => (
-							<div key={index} className='text-center space-y-4 sm:space-y-6'>
+							<motion.div
+								key={index}
+								className='text-center space-y-4 sm:space-y-6'
+								initial={{ opacity: 0, y: 30 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.5, delay: index * 0.1 }}
+								viewport={{ once: true }}>
 								<div className='flex justify-center mb-4 sm:mb-6'>
-									<div className='p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border border-border/20 premium-hover'>
+									<motion.div
+										className='p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border border-border/20 premium-hover'
+										whileHover={{ scale: 1.1, rotate: 5 }}
+										transition={{ duration: 0.2 }}>
 										{benefit.icon}
-									</div>
+									</motion.div>
 								</div>
 								<h3 className='text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4'>
 									{benefit.title}
@@ -453,7 +463,7 @@ const DataHubLandingPage = () => {
 								<p className='text-sm sm:text-sm text-muted-foreground leading-relaxed'>
 									{benefit.description}
 								</p>
-							</div>
+							</motion.div>
 						))}
 					</div>
 				</div>
@@ -472,21 +482,31 @@ const DataHubLandingPage = () => {
 					</div>
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
 						{targetAudience.map((audience, index) => (
-							<Card key={index} className='professional-card premium-hover'>
-								<CardHeader className='p-4 sm:p-6 md:p-8'>
-									<div className='p-4 sm:p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-4 sm:mb-6 shadow-lg premium-hover'>
-										{audience.icon}
-									</div>
-									<CardTitle className='text-xl sm:text-2xl font-bold'>
-										{audience.title}
-									</CardTitle>
-								</CardHeader>
-								<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
-									<CardDescription className='text-sm sm:text-base leading-relaxed'>
-										{audience.description}
-									</CardDescription>
-								</CardContent>
-							</Card>
+							<motion.div
+								key={index}
+								initial={{ opacity: 0, y: 30 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.5, delay: index * 0.2 }}
+								viewport={{ once: true }}>
+								<Card className='professional-card premium-hover'>
+									<CardHeader className='p-4 sm:p-6 md:p-8'>
+										<motion.div
+											className='p-4 sm:p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-4 sm:mb-6 shadow-lg premium-hover'
+											whileHover={{ scale: 1.1, rotate: 5 }}
+											transition={{ duration: 0.2 }}>
+											{audience.icon}
+										</motion.div>
+										<CardTitle className='text-xl sm:text-2xl font-bold'>
+											{audience.title}
+										</CardTitle>
+									</CardHeader>
+									<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
+										<CardDescription className='text-sm sm:text-base leading-relaxed'>
+											{audience.description}
+										</CardDescription>
+									</CardContent>
+								</Card>
+							</motion.div>
 						))}
 					</div>
 				</div>
@@ -508,21 +528,31 @@ const DataHubLandingPage = () => {
 
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
 						{features.map((feature, index) => (
-							<Card key={index} className='professional-card premium-hover'>
-								<CardHeader className='p-4 sm:p-6 md:p-8'>
-									<div className='p-4 sm:p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-4 sm:mb-6 shadow-lg premium-hover'>
-										{feature.icon}
-									</div>
-									<CardTitle className='text-xl sm:text-2xl font-bold'>
-										{feature.title}
-									</CardTitle>
-								</CardHeader>
-								<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
-									<CardDescription className='text-sm sm:text-base leading-relaxed'>
-										{feature.description}
-									</CardDescription>
-								</CardContent>
-							</Card>
+							<motion.div
+								key={index}
+								initial={{ opacity: 0, y: 30 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.5, delay: index * 0.1 }}
+								viewport={{ once: true }}>
+								<Card className='professional-card premium-hover'>
+									<CardHeader className='p-4 sm:p-6 md:p-8'>
+										<motion.div
+											className='p-4 sm:p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl w-fit mb-4 sm:mb-6 shadow-lg premium-hover'
+											whileHover={{ scale: 1.1, rotate: 5 }}
+											transition={{ duration: 0.2 }}>
+											{feature.icon}
+										</motion.div>
+										<CardTitle className='text-xl sm:text-2xl font-bold'>
+											{feature.title}
+										</CardTitle>
+									</CardHeader>
+									<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
+										<CardDescription className='text-sm sm:text-base leading-relaxed'>
+											{feature.description}
+										</CardDescription>
+									</CardContent>
+								</Card>
+							</motion.div>
 						))}
 					</div>
 				</div>
@@ -546,90 +576,98 @@ const DataHubLandingPage = () => {
 								currentPlan &&
 								plan.name.toLowerCase() === currentPlan.toLowerCase();
 							return (
-								<Card
+								<motion.div
 									key={index}
-									className={`professional-card premium-hover relative ${
-										plan.popular ? "ring-2 ring-primary scale-105" : ""
-									} ${isCurrentPlan ? "ring-2 ring-accent" : ""}`}>
-									{plan.popular && (
-										<Badge className='absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary'>
-											{t("landing.pricing.recommended")}
-										</Badge>
-									)}
-									{isCurrentPlan && (
-										<Badge className='absolute -top-3 right-4 bg-accent text-accent-foreground'>
-											{t("landing.pricing.yourPlan")}
-										</Badge>
-									)}
-									<CardHeader className='text-center p-4 sm:p-6 md:p-8'>
-										<CardTitle className='text-xl sm:text-2xl'>
-											{plan.name}
-										</CardTitle>
-										<div className='flex items-baseline justify-center'>
-											<span className='text-3xl sm:text-4xl font-bold'>
-												{plan.price}
-											</span>
-											<span className='text-muted-foreground ml-1 text-sm sm:text-base'>
-												{plan.period}
-											</span>
-										</div>
-										<div className='text-base sm:text-lg font-semibold text-primary mb-2'>
-											{plan.storage} {t("landing.pricing.dataStorage")}
-										</div>
-										<CardDescription className='text-sm sm:text-base'>
-											{plan.description}
-										</CardDescription>
-									</CardHeader>
-									<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
-										<ul className='space-y-3 mb-6 sm:mb-8'>
-											{plan.features.map((feature, featureIndex) => (
-												<li key={featureIndex} className='flex items-center'>
-													<Check className='w-3 h-3 sm:w-4 sm:h-4 text-primary mr-2 sm:mr-3 flex-shrink-0' />
-													<span className='text-xs sm:text-sm'>{feature}</span>
-												</li>
-											))}
-										</ul>
-										<Button
-											className='w-full premium-hover-subtle text-sm sm:text-base'
-											variant={
-												isCurrentPlan
-													? "secondary"
-													: plan.popular
-													? "default"
-													: "outline"
-											}
-											onClick={() => {
-												if (isCurrentPlan) {
-													return; // Do nothing if it's the current plan
+									initial={{ opacity: 0, y: 30 }}
+									whileInView={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.5, delay: index * 0.2 }}
+									viewport={{ once: true }}>
+									<Card
+										className={`professional-card premium-hover relative ${
+											plan.popular ? "ring-2 ring-primary scale-105" : ""
+										} ${isCurrentPlan ? "ring-2 ring-accent" : ""}`}>
+										{plan.popular && (
+											<Badge className='absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary'>
+												{t("landing.pricing.recommended")}
+											</Badge>
+										)}
+										{isCurrentPlan && (
+											<Badge className='absolute -top-3 right-4 bg-accent text-accent-foreground'>
+												{t("landing.pricing.yourPlan")}
+											</Badge>
+										)}
+										<CardHeader className='text-center p-4 sm:p-6 md:p-8'>
+											<CardTitle className='text-xl sm:text-2xl'>
+												{plan.name}
+											</CardTitle>
+											<div className='flex items-baseline justify-center'>
+												<span className='text-3xl sm:text-4xl font-bold'>
+													{plan.price}
+												</span>
+												<span className='text-muted-foreground ml-1 text-sm sm:text-base'>
+													{plan.period}
+												</span>
+											</div>
+											<div className='text-base sm:text-lg font-semibold text-primary mb-2'>
+												{plan.storage} {t("landing.pricing.dataStorage")}
+											</div>
+											<CardDescription className='text-sm sm:text-base'>
+												{plan.description}
+											</CardDescription>
+										</CardHeader>
+										<CardContent className='p-4 sm:p-6 md:p-8 pt-0'>
+											<ul className='space-y-3 mb-6 sm:mb-8'>
+												{plan.features.map((feature, featureIndex) => (
+													<li key={featureIndex} className='flex items-center'>
+														<Check className='w-3 h-3 sm:w-4 sm:h-4 text-primary mr-2 sm:mr-3 flex-shrink-0' />
+														<span className='text-xs sm:text-sm'>
+															{feature}
+														</span>
+													</li>
+												))}
+											</ul>
+											<Button
+												className='w-full premium-hover-subtle text-sm sm:text-base'
+												variant={
+													isCurrentPlan
+														? "secondary"
+														: plan.popular
+														? "default"
+														: "outline"
 												}
-												if (plan.name === t("landing.plans.free.name")) {
-													router.push("home/analytics");
-												} else {
-													plan.priceId
-														? handleStripeCheckout(plan.priceId, plan.name)
-														: null;
-												}
-											}}
-											disabled={
-												isCurrentPlan ||
-												(!plan.priceId &&
-													plan.name !== t("landing.plans.free.name")) ||
-												(!isAdmin &&
-													plan.name !== t("landing.plans.free.name") &&
-													!!session)
-											}>
-											{isCurrentPlan
-												? t("landing.plans.buttons.yourPlan")
-												: !isAdmin &&
-												  plan.name !== t("landing.plans.free.name") &&
-												  session
-												? t("landing.plans.buttons.adminOnly")
-												: plan.name === t("landing.plans.free.name")
-												? t("landing.plans.buttons.startFree")
-												: t("landing.plans.buttons.getStarted")}
-										</Button>
-									</CardContent>
-								</Card>
+												onClick={() => {
+													if (isCurrentPlan) {
+														return; // Do nothing if it's the current plan
+													}
+													if (plan.name === t("landing.plans.free.name")) {
+														router.push("home/analytics");
+													} else {
+														plan.priceId
+															? handleStripeCheckout(plan.priceId, plan.name)
+															: null;
+													}
+												}}
+												disabled={
+													isCurrentPlan ||
+													(!plan.priceId &&
+														plan.name !== t("landing.plans.free.name")) ||
+													(!isAdmin &&
+														plan.name !== t("landing.plans.free.name") &&
+														!!session)
+												}>
+												{isCurrentPlan
+													? t("landing.plans.buttons.yourPlan")
+													: !isAdmin &&
+													  plan.name !== t("landing.plans.free.name") &&
+													  session
+													? t("landing.plans.buttons.adminOnly")
+													: plan.name === t("landing.plans.free.name")
+													? t("landing.plans.buttons.startFree")
+													: t("landing.plans.buttons.getStarted")}
+											</Button>
+										</CardContent>
+									</Card>
+								</motion.div>
 							);
 						})}
 					</div>

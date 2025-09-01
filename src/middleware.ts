@@ -284,6 +284,7 @@ export default withAuth(
 					pathname.startsWith("/reset-password") ||
 					pathname.startsWith("/invite") ||
 					pathname.startsWith("/payment-success") ||
+					pathname.startsWith("/auth-callback") ||
 					pathname.includes("_next") ||
 					pathname.includes("favicon") ||
 					pathname.includes(".")

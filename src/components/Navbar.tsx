@@ -21,6 +21,7 @@ import {
 	FileText,
 	Code,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -180,28 +181,43 @@ export function MobileBottomNavbar() {
 	};
 
 	return (
-		<div className='fixed bottom-0 left-0 right-0 z-50 md:hidden'>
+		<motion.div
+			className='fixed bottom-0 left-0 right-0 z-50 md:hidden'
+			initial={{ y: 100, opacity: 0 }}
+			animate={{ y: 0, opacity: 1 }}
+			transition={{ duration: 0.5, ease: "easeOut" }}>
 			{/* Background with premium glass effect */}
 			<div className='premium-glass border-t border-border shadow-2xl'>
 				{/* Main navigation */}
 				<div className='flex items-center justify-around px-1 sm:px-2 py-1.5 sm:py-2'>
-					{getMobileNavigationItems(t, user?.role, tenant, user).map((item) => {
-						const isActive = pathname === item.url;
-						return (
-							<Link
-								key={item.title}
-								href={item.url}
-								className={cn(
-									"flex items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction mobile-touch-feedback",
-									"hover:bg-primary/10 active:scale-95 transition-all duration-200",
-									isActive
-										? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-										: "text-muted-foreground hover:text-foreground",
-								)}>
-								<item.icon className='w-4 h-4 sm:w-5 sm:h-5' />
-							</Link>
-						);
-					})}
+					{getMobileNavigationItems(t, user?.role, tenant, user).map(
+						(item, index) => {
+							const isActive = pathname === item.url;
+							return (
+								<motion.div
+									key={item.title}
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.3, delay: index * 0.1 }}>
+									<Link
+										href={item.url}
+										className={cn(
+											"flex items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction mobile-touch-feedback",
+											"hover:bg-primary/10 active:scale-95 transition-all duration-200",
+											isActive
+												? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+												: "text-muted-foreground hover:text-foreground",
+										)}>
+										<motion.div
+											whileHover={{ scale: 1.1 }}
+											whileTap={{ scale: 0.9 }}>
+											<item.icon className='w-4 h-4 sm:w-5 sm:h-5' />
+										</motion.div>
+									</Link>
+								</motion.div>
+							);
+						},
+					)}
 
 					{/* User Profile Menu */}
 					{session?.user && (
@@ -267,7 +283,7 @@ export function MobileBottomNavbar() {
 					)}
 				</div>
 			</div>
-		</div>
+		</motion.div>
 	);
 }
 
@@ -298,7 +314,7 @@ export function AppSidebar() {
 	};
 
 	return (
-		<div
+		<motion.div
 			className={cn(
 				"relative flex flex-col h-full transition-all duration-300 ease-in-out",
 				"border-r shadow-xl",
@@ -309,7 +325,10 @@ export function AppSidebar() {
 				isCollapsed ? "w-14 sm:w-16" : "w-56 sm:w-64",
 				// Ascuns pe mobile
 				"hidden md:flex",
-			)}>
+			)}
+			initial={{ x: -100, opacity: 0 }}
+			animate={{ x: 0, opacity: 1 }}
+			transition={{ duration: 0.5, ease: "easeOut" }}>
 			{/* Premium Header */}
 			<div className='relative p-3 sm:p-4 border-b border-black/10 dark:border-white/10'>
 				<div
@@ -359,63 +378,72 @@ export function AppSidebar() {
 			{/* Navigation Menu */}
 			<div className='flex-1 p-1.5 sm:p-2 overflow-hidden'>
 				<nav className='space-y-1 sm:space-y-2'>
-					{getNavigationItems(t, user?.role, tenant, user).map((item) => {
-						const isActive = pathname === item.url;
-						return (
-							<Link
-								key={item.title}
-								href={item.url}
-								className={cn(
-									"group relative flex items-center rounded-xl premium-interaction",
-									"hover:bg-black/5 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-white/5",
-									isCollapsed
-										? "p-1.5 sm:p-2 justify-center"
-										: "p-1.5 sm:p-2 space-x-2",
-									isActive && [
-										"bg-gradient-to-r from-black/10 via-black/8 to-black/5 dark:from-white/20 dark:via-white/15 dark:to-white/10",
-										"border-l-2 border-gray-900 dark:border-white shadow-lg shadow-black/10 dark:shadow-white/10",
-										"text-gray-900 dark:text-white",
-									],
-									!isActive &&
-										"text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white",
-								)}>
-								<div
-									className={cn(
-										"flex-shrink-0 p-1 sm:p-1.5 rounded-lg premium-interaction",
-										isActive &&
-											"bg-gray-900/10 dark:bg-white/20 text-gray-900 dark:text-white shadow-sm",
-										!isActive &&
-											"group-hover:bg-black/5 dark:group-hover:bg-white/10",
-									)}>
-									<item.icon className='w-3 h-3 sm:w-4 sm:h-4' />
-								</div>
+					{getNavigationItems(t, user?.role, tenant, user).map(
+						(item, index) => {
+							const isActive = pathname === item.url;
+							return (
+								<motion.div
+									key={item.title}
+									initial={{ opacity: 0, x: -20 }}
+									animate={{ opacity: 1, x: 0 }}
+									transition={{ duration: 0.3, delay: index * 0.1 }}>
+									<Link
+										href={item.url}
+										className={cn(
+											"group relative flex items-center rounded-xl premium-interaction",
+											"hover:bg-black/5 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-white/5",
+											isCollapsed
+												? "p-1.5 sm:p-2 justify-center"
+												: "p-1.5 sm:p-2 space-x-2",
+											isActive && [
+												"bg-gradient-to-r from-black/10 via-black/8 to-black/5 dark:from-white/20 dark:via-white/15 dark:to-white/10",
+												"border-l-2 border-gray-900 dark:border-white shadow-lg shadow-black/10 dark:shadow-white/10",
+												"text-gray-900 dark:text-white",
+											],
+											!isActive &&
+												"text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white",
+										)}>
+										<motion.div
+											className={cn(
+												"flex-shrink-0 p-1 sm:p-1.5 rounded-lg premium-interaction",
+												isActive &&
+													"bg-gray-900/10 dark:bg-white/20 text-gray-900 dark:text-white shadow-sm",
+												!isActive &&
+													"group-hover:bg-black/5 dark:group-hover:bg-white/10",
+											)}
+											whileHover={{ scale: 1.1 }}
+											whileTap={{ scale: 0.9 }}>
+											<item.icon className='w-3 h-3 sm:w-4 sm:h-4' />
+										</motion.div>
 
-								{!isCollapsed && (
-									<div className='flex-1 min-w-0'>
-										<p className='font-medium text-xs sm:text-sm truncate'>
-											{item.title}
-										</p>
-										<p className='text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5 leading-tight'>
-											{item.description}
-										</p>
-									</div>
-								)}
+										{!isCollapsed && (
+											<div className='flex-1 min-w-0'>
+												<p className='font-medium text-xs sm:text-sm truncate'>
+													{item.title}
+												</p>
+												<p className='text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5 leading-tight'>
+													{item.description}
+												</p>
+											</div>
+										)}
 
-								{/* Tooltip for collapsed state */}
-								{isCollapsed && (
-									<div className='absolute left-full ml-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 text-xs sm:text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 premium-interaction pointer-events-none whitespace-nowrap z-50 border border-gray-700 dark:border-gray-600'>
-										<div className='font-medium text-xs sm:text-sm'>
-											{item.title}
-										</div>
-										<div className='text-xs text-gray-300 dark:text-gray-400 mt-1'>
-											{item.description}
-										</div>
-										<div className='absolute top-1/2 -left-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 border-l border-b border-gray-700 dark:border-gray-600 rotate-45 transform -translate-y-1/2'></div>
-									</div>
-								)}
-							</Link>
-						);
-					})}
+										{/* Tooltip for collapsed state */}
+										{isCollapsed && (
+											<div className='absolute left-full ml-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 text-xs sm:text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 premium-interaction pointer-events-none whitespace-nowrap z-50 border border-gray-700 dark:border-gray-600'>
+												<div className='font-medium text-xs sm:text-sm'>
+													{item.title}
+												</div>
+												<div className='text-xs text-gray-300 dark:text-gray-400 mt-1'>
+													{item.description}
+												</div>
+												<div className='absolute top-1/2 -left-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 border-l border-b border-gray-700 dark:border-gray-600 rotate-45 transform -translate-y-1/2'></div>
+											</div>
+										)}
+									</Link>
+								</motion.div>
+							);
+						},
+					)}
 				</nav>
 			</div>
 
@@ -498,6 +526,6 @@ export function AppSidebar() {
 					</DropdownMenu>
 				)}
 			</div>
-		</div>
+		</motion.div>
 	);
 }

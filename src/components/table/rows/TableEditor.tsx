@@ -27,7 +27,9 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
 import { useTablePermissions } from "@/hooks/useTablePermissions";
-import { Database, Plus, Settings } from "lucide-react";
+import { Database, Plus, Settings, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { fadeInUp, spinAnimation } from "@/lib/animations";
 
 interface Props {
 	table: Table | null;
@@ -51,6 +53,10 @@ const TableEditor = memo(function TableEditor({
 	const [cells, setCells] = useState<any[]>([]);
 	const [isAddingRow, setIsAddingRow] = useState(false);
 	const [deletingRows, setDeletingRows] = useState<Set<string>>(new Set());
+
+	// State for local-only new rows (not saved to server yet)
+	const [pendingNewRows, setPendingNewRows] = useState<any[]>([]);
+	const [isSavingNewRows, setIsSavingNewRows] = useState(false);
 
 	// Verificăm permisiunile utilizatorului
 	const { permissions: userPermissions, loading: permissionsLoading } =
@@ -124,10 +130,8 @@ const TableEditor = memo(function TableEditor({
 	}, [cells, serverError]);
 
 	const handleAdd = useCallback(
-		async (e: FormEvent) => {
+		(e: FormEvent) => {
 			e.preventDefault();
-
-			if (!token) return console.error("No token available");
 
 			// Verificăm dacă utilizatorul poate edita tabelul
 			if (!tablePermissions.canEditTable()) {
@@ -145,13 +149,13 @@ const TableEditor = memo(function TableEditor({
 			setServerError(null);
 			setIsAddingRow(true);
 
-			// Create a temporary row ID for optimistic update
+			// Create a temporary row ID for local-only row
 			const tempRowId = `temp_${Date.now()}_${Math.random()
 				.toString(36)
 				.substr(2, 9)}`;
 
-			// Create optimistic row data
-			const optimisticRow = {
+			// Create local-only row data
+			const localRow = {
 				id: tempRowId,
 				tableId: table?.id || 0,
 				createdAt: new Date().toISOString(),
@@ -164,96 +168,131 @@ const TableEditor = memo(function TableEditor({
 					value: cell.value,
 					column: columns?.find((col) => col.id === cell.columnId) || null,
 				})),
-				isOptimistic: true, // Flag to identify optimistic rows
+				isLocalOnly: true, // Flag to identify local-only rows
+				isPending: true, // Flag to show it's pending save
 			};
 
-			// Optimistic update: add row immediately to local state
-			setRows((currentRows) => [optimisticRow, ...currentRows]);
+			// Add row to local state only (both to main rows and pending rows)
+			setRows((currentRows) => [localRow, ...currentRows]);
+			setPendingNewRows((currentPending) => [...currentPending, localRow]);
 
-			try {
-				const response = await fetch(
-					`/api/tenants/${tenantId}/databases/${
-						table?.databaseId || 0
-					}/tables/${table?.id || 0}/rows`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({ cells }),
-					},
-				);
-
-				if (response.ok) {
-					const newRow = await response.json();
-
-					// Replace optimistic row with real row from server
-					setRows((currentRows) =>
-						currentRows.map((row) =>
-							row.id === tempRowId ? { ...newRow, isOptimistic: false } : row,
-						),
-					);
-
-					showAlert("Row added successfully!", "success");
-					setShowForm(false);
-					setCells([]);
-
-					// Update pagination if needed
-					if (pagination) {
-						const newTotalRows = pagination.totalRows + 1;
-						const newTotalPages = Math.ceil(newTotalRows / pagination.pageSize);
-
-						// If we're on the first page and it's not full, stay here
-						// Otherwise, go to first page to see the new row
-						if (
-							pagination.page !== 1 ||
-							pagination.totalRows % pagination.pageSize === 0
-						) {
-							await fetchRows(1, pagination.pageSize);
-						}
-					}
-				} else {
-					const errorData = await response.json();
-					throw new Error(errorData.error || "Failed to add row");
-				}
-			} catch (error: any) {
-				console.error("Error adding row:", error);
-
-				// Rollback: remove the optimistic row
-				setRows((currentRows) =>
-					currentRows.filter((row) => row.id !== tempRowId),
-				);
-
-				setServerError(error.message || "Failed to add row");
-				showAlert(
-					error.message || "Failed to add row. Please try again.",
-					"error",
-				);
-			} finally {
-				setIsAddingRow(false);
-			}
+			showAlert(
+				"Row added locally. Click 'Save Changes' to persist to server.",
+				"info",
+			);
+			setShowForm(false);
+			setCells([]);
+			setIsAddingRow(false);
 		},
 		[
-			token,
-			tenantId,
-			table?.databaseId || 0,
-			table?.id || 0,
 			cells,
 			setRows,
 			isAddingRow,
 			showAlert,
 			tablePermissions,
 			columns,
-			pagination,
-			fetchRows,
+			table?.id,
 		],
 	);
 
+	// Function to save all pending new rows to server
+	const handleSaveNewRows = useCallback(async () => {
+		if (!token || !tenantId || pendingNewRows.length === 0) return;
+
+		setIsSavingNewRows(true);
+
+		try {
+			// Prepare batch data for all pending rows
+			const batchData = pendingNewRows.map((row) => ({
+				cells: row.cells.map((cell: any) => ({
+					columnId: cell.columnId,
+					value: cell.value,
+				})),
+			}));
+
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table?.databaseId || 0}/tables/${
+					table?.id || 0
+				}/rows/batch`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ rows: batchData }),
+				},
+			);
+
+			if (response.ok) {
+				const result = await response.json();
+				const savedRows = result.rows || [];
+
+				// Replace local rows with server rows
+				setRows((currentRows) => {
+					const updatedRows = [...currentRows];
+
+					// Remove all pending rows
+					const filteredRows = updatedRows.filter((row) => !row.isLocalOnly);
+
+					// Add saved rows at the beginning
+					return [...savedRows, ...filteredRows];
+				});
+
+				// Clear pending rows
+				setPendingNewRows([]);
+
+				showAlert(
+					`Successfully saved ${savedRows.length} row(s) to server!`,
+					"success",
+				);
+
+				// Update pagination if needed
+				if (pagination) {
+					const newTotalRows = pagination.totalRows + savedRows.length;
+					// Refresh to get updated data
+					await fetchRows(1, pagination.pageSize);
+				}
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to save rows");
+			}
+		} catch (error: any) {
+			console.error("Error saving new rows:", error);
+			showAlert(
+				error.message || "Failed to save rows. Please try again.",
+				"error",
+			);
+		} finally {
+			setIsSavingNewRows(false);
+		}
+	}, [
+		token,
+		tenantId,
+		table?.databaseId,
+		table?.id,
+		pendingNewRows,
+		setRows,
+		showAlert,
+		pagination,
+		fetchRows,
+	]);
+
+	// Function to discard all pending new rows
+	const handleDiscardNewRows = useCallback(() => {
+		if (pendingNewRows.length === 0) return;
+
+		// Remove all local-only rows from main rows
+		setRows((currentRows) => currentRows.filter((row) => !row.isLocalOnly));
+
+		// Clear pending rows
+		setPendingNewRows([]);
+
+		showAlert(`Discarded ${pendingNewRows.length} unsaved row(s).`, "info");
+	}, [pendingNewRows, setRows, showAlert]);
+
 	const handleDelete = useCallback(
 		async (rowId: string) => {
-			if (!token || !tenantId) return;
-
 			// Verificăm dacă utilizatorul poate șterge rânduri
 			if (!tablePermissions.canDeleteTable()) {
 				showAlert(
@@ -265,6 +304,27 @@ const TableEditor = memo(function TableEditor({
 
 			// Prevent multiple deletions for the same row
 			if (deletingRows.has(rowId)) return;
+
+			// Check if it's a local-only row
+			const rowToDelete = paginatedRows.find(
+				(row) => row.id.toString() === rowId,
+			);
+			const isLocalRow = rowToDelete?.isLocalOnly;
+
+			if (isLocalRow) {
+				// For local rows, just remove them from state
+				setRows((prevRows: any[]) =>
+					prevRows.filter((row) => row.id.toString() !== rowId),
+				);
+				setPendingNewRows((prevPending) =>
+					prevPending.filter((row) => row.id.toString() !== rowId),
+				);
+				showAlert("Local row removed.", "info");
+				return;
+			}
+
+			// For server rows, proceed with normal deletion
+			if (!token || !tenantId) return;
 
 			let deletedRow: any = null;
 
@@ -651,6 +711,37 @@ const TableEditor = memo(function TableEditor({
 									</Button>
 								)}
 
+								{/* Save/Discard New Rows Buttons */}
+								{pendingNewRows.length > 0 && (
+									<>
+										<Button
+											onClick={handleSaveNewRows}
+											disabled={isSavingNewRows}
+											className='bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200'
+											size='lg'>
+											{isSavingNewRows ? (
+												<>
+													<div className='w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin' />
+													Saving...
+												</>
+											) : (
+												<>
+													<CheckCircle className='w-4 h-4 mr-2' />
+													Save Changes ({pendingNewRows.length})
+												</>
+											)}
+										</Button>
+										<Button
+											onClick={handleDiscardNewRows}
+											variant='outline'
+											className='border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 transition-all duration-200'
+											size='lg'>
+											<X className='w-4 h-4 mr-2' />
+											Discard ({pendingNewRows.length})
+										</Button>
+									</>
+								)}
+
 								<Link
 									href={`/home/database/table/${table?.id}/columns`}
 									className='inline-flex'>
@@ -739,20 +830,28 @@ const TableEditor = memo(function TableEditor({
 				{/* Table Content with Modern Loading */}
 				<div className='bg-card rounded-2xl border border-border/20 shadow-lg overflow-hidden'>
 					{rowsLoading ? (
-						<div className='flex flex-col items-center justify-center py-16 px-8'>
+						<motion.div
+							className='flex flex-col items-center justify-center py-16 px-8'
+							{...fadeInUp}>
 							<div className='relative'>
 								<div className='w-16 h-16 border-4 border-primary/20 rounded-full'></div>
-								<div className='absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin'></div>
+								<motion.div
+									className='absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full'
+									{...spinAnimation}></motion.div>
 							</div>
-							<div className='mt-6 text-center'>
+							<motion.div
+								className='mt-6 text-center'
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 0.2 }}>
 								<h3 className='text-lg font-semibold text-foreground mb-2'>
 									Loading Table Data
 								</h3>
 								<p className='text-muted-foreground'>
 									Please wait while we fetch your data...
 								</p>
-							</div>
-						</div>
+							</motion.div>
+						</motion.div>
 					) : (
 						<TableView
 							tables={tables || []}

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { ElegantLoadingState } from "./ui/loading-states";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { motion } from "framer-motion";
+import { fadeInUp, spinAnimation } from "@/lib/animations";
 
 interface Props {
 	message: string;
@@ -23,17 +25,31 @@ function Loading({ message }: Props) {
 
 	if (showFallback) {
 		return (
-			<div className='flex items-center justify-center h-64 w-full'>
+			<motion.div
+				className='flex items-center justify-center h-64 w-full'
+				{...fadeInUp}>
 				<div className='flex flex-col items-center space-y-4'>
-					<div className='w-12 h-12 border-4 border-red-400 border-dashed rounded-full animate-spin' />
-					<p className='text-gray-600 text-sm text-center'>
+					<motion.div
+						className='w-12 h-12 border-4 border-red-400 border-dashed rounded-full'
+						{...spinAnimation}
+					/>
+					<motion.p
+						className='text-gray-600 text-sm text-center'
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={{ delay: 0.2 }}>
 						{t("loading.fallbackMessage")}
-					</p>
-					<Button onClick={() => window.location.reload()}>
-						{t("loading.refresh")}
-					</Button>
+					</motion.p>
+					<motion.div
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.4 }}>
+						<Button onClick={() => window.location.reload()}>
+							{t("loading.refresh")}
+						</Button>
+					</motion.div>
 				</div>
-			</div>
+			</motion.div>
 		);
 	}
 

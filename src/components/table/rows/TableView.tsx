@@ -32,6 +32,7 @@ import {
 	AlertDialogTitle,
 } from "../../ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
 	tables: Table[] | null;
@@ -362,160 +363,175 @@ export const TableView = memo(function TableView({
 									</td>
 								</tr>
 							) : (
-								validatedRows.map((row) => {
-									const rowHasPendingChanges = visibleColumns.some((col) =>
-										hasPendingChange?.(String(row.id), String(col.id)),
-									);
+								<AnimatePresence>
+									{validatedRows.map((row, index) => {
+										const rowHasPendingChanges = visibleColumns.some((col) =>
+											hasPendingChange?.(String(row.id), String(col.id)),
+										);
 
-									return (
-										<tr
-											key={row.id}
-											className={cn(
-												"hover:bg-muted/20 transition-all duration-200 group",
-												rowHasPendingChanges &&
-													"bg-amber-50/20 border-l-4 border-l-amber-400",
-												selectedRows.has(String(row.id)) &&
-													"bg-primary/5 border-l-4 border-l-primary",
-												row.isOptimistic &&
-													"bg-blue-50/30 border-l-4 border-l-blue-400",
-												deletingRows.has(String(row.id)) &&
-													"opacity-50 bg-destructive/5",
-											)}>
-											{/* Selection Cell */}
-											{tablePermissions.canEditTable() && (
-												<td className='sticky left-0 z-10 bg-background group-hover:bg-muted/20 border-r border-border/20 px-4 py-4'>
-													<div className='flex items-center justify-center'>
-														<Checkbox
-															checked={selectedRows.has(String(row.id))}
-															onCheckedChange={(checked) =>
-																handleRowSelection(
-																	String(row.id),
-																	checked as boolean,
-																)
-															}
-															className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-														/>
-													</div>
-												</td>
-											)}
-
-											{/* Data Cells */}
-											{safeColumns.map((col) => {
-												if (!row.cells || !Array.isArray(row.cells)) {
-													return (
-														<td
-															key={`${row.id}-${col.id}-virtual`}
-															className='px-4 py-4 border-r border-border/20 last:border-r-0'>
-															<EditableCell
-																columns={safeColumns}
-																cell={{
-																	id: 0,
-																	rowId: row.id,
-																	columnId: col.id,
-																	value: "",
-																	column: col,
-																}}
-																editingCell={editingCell}
-																onEditCell={onEditCell}
-																onSaveCell={onSaveCell}
-																onCancelEdit={onCancelEdit}
-																hasPendingChange={hasPendingChange}
-																getPendingValue={getPendingValue}
+										return (
+											<motion.tr
+												key={row.id}
+												initial={{ opacity: 0, y: 20 }}
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: -20 }}
+												transition={{ duration: 0.3, delay: index * 0.05 }}
+												className={cn(
+													"hover:bg-muted/20 transition-all duration-200 group",
+													rowHasPendingChanges &&
+														"bg-amber-50/20 border-l-4 border-l-amber-400",
+													selectedRows.has(String(row.id)) &&
+														"bg-primary/5 border-l-4 border-l-primary",
+													row.isOptimistic &&
+														"bg-blue-50/30 border-l-4 border-l-blue-400",
+													deletingRows.has(String(row.id)) &&
+														"opacity-50 bg-destructive/5",
+												)}>
+												{/* Selection Cell */}
+												{tablePermissions.canEditTable() && (
+													<td className='sticky left-0 z-10 bg-background group-hover:bg-muted/20 border-r border-border/20 px-4 py-4'>
+														<div className='flex items-center justify-center'>
+															<Checkbox
+																checked={selectedRows.has(String(row.id))}
+																onCheckedChange={(checked) =>
+																	handleRowSelection(
+																		String(row.id),
+																		checked as boolean,
+																	)
+																}
+																className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
 															/>
-														</td>
-													);
-												}
-
-												const cell = row.cells.find(
-													(c: any) => c.columnId === col.id,
-												);
-												if (!cell) {
-													return (
-														<td
-															key={`${row.id}-${col.id}-missing`}
-															className='px-4 py-4 border-r border-border/20 last:border-r-0'>
-															<EditableCell
-																columns={safeColumns}
-																cell={{
-																	id: 0,
-																	rowId: row.id,
-																	columnId: col.id,
-																	value: "",
-																	column: col,
-																}}
-																editingCell={editingCell}
-																onEditCell={onEditCell}
-																onSaveCell={onSaveCell}
-																onCancelEdit={onCancelEdit}
-																hasPendingChange={hasPendingChange}
-																getPendingValue={getPendingValue}
-															/>
-														</td>
-													);
-												}
-
-												return (
-													<td
-														key={`${row.id}-${col.id}-${cell.id}`}
-														className='px-4 py-4 border-r border-border/20 last:border-r-0'>
-														<EditableCell
-															columns={safeColumns}
-															cell={cell}
-															editingCell={editingCell}
-															onEditCell={onEditCell}
-															onSaveCell={onSaveCell}
-															onCancelEdit={onCancelEdit}
-															hasPendingChange={hasPendingChange}
-															getPendingValue={getPendingValue}
-														/>
+														</div>
 													</td>
-												);
-											})}
+												)}
 
-											{/* Actions Cell */}
-											{tablePermissions.canEditTable() && (
-												<td className='sticky right-0 z-10 bg-background group-hover:bg-muted/20 border-l border-border/20 px-4 py-4'>
-													<div className='flex items-center gap-2'>
-														{/* Row Status Indicators */}
-														{row.isOptimistic && (
-															<div className='flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium'>
-																<div className='w-2 h-2 bg-blue-500 rounded-full animate-pulse'></div>
-																Saving...
-															</div>
-														)}
+												{/* Data Cells */}
+												{safeColumns.map((col) => {
+													if (!row.cells || !Array.isArray(row.cells)) {
+														return (
+															<td
+																key={`${row.id}-${col.id}-virtual`}
+																className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+																<EditableCell
+																	columns={safeColumns}
+																	cell={{
+																		id: 0,
+																		rowId: row.id,
+																		columnId: col.id,
+																		value: "",
+																		column: col,
+																	}}
+																	editingCell={editingCell}
+																	onEditCell={onEditCell}
+																	onSaveCell={onSaveCell}
+																	onCancelEdit={onCancelEdit}
+																	hasPendingChange={hasPendingChange}
+																	getPendingValue={getPendingValue}
+																/>
+															</td>
+														);
+													}
 
-														{rowHasPendingChanges && (
-															<div className='flex items-center gap-2 px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-xs font-medium'>
-																<Clock className='w-3 h-3' />
-																Modified
-															</div>
-														)}
+													const cell = row.cells.find(
+														(c: any) => c.columnId === col.id,
+													);
+													if (!cell) {
+														return (
+															<td
+																key={`${row.id}-${col.id}-missing`}
+																className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+																<EditableCell
+																	columns={safeColumns}
+																	cell={{
+																		id: 0,
+																		rowId: row.id,
+																		columnId: col.id,
+																		value: "",
+																		column: col,
+																	}}
+																	editingCell={editingCell}
+																	onEditCell={onEditCell}
+																	onSaveCell={onSaveCell}
+																	onCancelEdit={onCancelEdit}
+																	hasPendingChange={hasPendingChange}
+																	getPendingValue={getPendingValue}
+																/>
+															</td>
+														);
+													}
 
-														{deletingRows.has(String(row.id)) && (
-															<div className='flex items-center gap-2 px-2 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-medium'>
-																<div className='w-2 h-2 bg-destructive rounded-full animate-pulse'></div>
-																Deleting...
-															</div>
-														)}
+													return (
+														<td
+															key={`${row.id}-${col.id}-${cell.id}`}
+															className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+															<EditableCell
+																columns={safeColumns}
+																cell={cell}
+																editingCell={editingCell}
+																onEditCell={onEditCell}
+																onSaveCell={onSaveCell}
+																onCancelEdit={onCancelEdit}
+																hasPendingChange={hasPendingChange}
+																getPendingValue={getPendingValue}
+															/>
+														</td>
+													);
+												})}
 
-														{/* Action Buttons */}
-														{!row.isOptimistic &&
-															!deletingRows.has(String(row.id)) && (
-																<Button
-																	variant='ghost'
-																	size='sm'
-																	onClick={() => onDeleteRow(String(row.id))}
-																	className='h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200'
-																	disabled={!tablePermissions.canDeleteTable()}>
-																	<Trash2 className='w-4 h-4' />
-																</Button>
+												{/* Actions Cell */}
+												{tablePermissions.canEditTable() && (
+													<td className='sticky right-0 z-10 bg-background group-hover:bg-muted/20 border-l border-border/20 px-4 py-4'>
+														<div className='flex items-center gap-2'>
+															{/* Row Status Indicators */}
+															{row.isOptimistic && (
+																<div className='flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium'>
+																	<div className='w-2 h-2 bg-blue-500 rounded-full animate-pulse'></div>
+																	Saving...
+																</div>
 															)}
-													</div>
-												</td>
-											)}
-										</tr>
-									);
-								})
+
+															{row.isLocalOnly && (
+																<div className='flex items-center gap-2 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-medium'>
+																	<div className='w-2 h-2 bg-orange-500 rounded-full'></div>
+																	Local Only
+																</div>
+															)}
+
+															{rowHasPendingChanges && (
+																<div className='flex items-center gap-2 px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-xs font-medium'>
+																	<Clock className='w-3 h-3' />
+																	Modified
+																</div>
+															)}
+
+															{deletingRows.has(String(row.id)) && (
+																<div className='flex items-center gap-2 px-2 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-medium'>
+																	<div className='w-2 h-2 bg-destructive rounded-full animate-pulse'></div>
+																	Deleting...
+																</div>
+															)}
+
+															{/* Action Buttons */}
+															{!row.isOptimistic &&
+																!deletingRows.has(String(row.id)) && (
+																	<Button
+																		variant='ghost'
+																		size='sm'
+																		onClick={() => onDeleteRow(String(row.id))}
+																		className='h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200'
+																		disabled={
+																			!tablePermissions.canDeleteTable()
+																		}>
+																		<Trash2 className='w-4 h-4' />
+																	</Button>
+																)}
+														</div>
+													</td>
+												)}
+											</motion.tr>
+										);
+									})}
+								</AnimatePresence>
 							)}
 						</tbody>
 					</table>
