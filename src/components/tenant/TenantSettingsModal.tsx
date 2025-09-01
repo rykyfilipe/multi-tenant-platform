@@ -42,7 +42,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 	const [loading, setLoading] = useState(false);
 	const { showAlert, token, setTenant, user } = useApp();
 	const { t } = useLanguage();
-	const { setTheme: setNextTheme } = useTenantTheme();
+	const { setTheme } = useTenantTheme();
 
 	const [formData, setFormData] = useState({
 		name: tenant.name,
@@ -122,13 +122,9 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 				const updatedTenant = await response.json();
 				setTenant(updatedTenant);
 
-				// Sync theme with next-themes and localStorage if theme was changed
+				// Sync theme with ThemeContext if theme was changed
 				if (updatedTenant.theme && updatedTenant.theme !== tenant.theme) {
-					setNextTheme(updatedTenant.theme);
-					// Also update localStorage to keep it in sync
-					if (typeof window !== "undefined") {
-						localStorage.setItem("theme", updatedTenant.theme);
-					}
+					setTheme(updatedTenant.theme);
 				}
 
 				showAlert(t("message.settingsUpdated"), "success");

@@ -239,40 +239,9 @@ export function MobileBottomNavbar() {
 								</div>
 
 								<DropdownMenuItem
-									onClick={async () => {
+									onClick={() => {
 										const newTheme = currentTheme === "dark" ? "light" : "dark";
-
-										// Update localStorage immediately for instant feedback
-										if (typeof window !== "undefined") {
-											localStorage.setItem("theme", newTheme);
-										}
-
 										setTheme(newTheme);
-
-										// Update tenant theme in database if user is admin
-										if (user?.role === "ADMIN" && tenant?.id) {
-											try {
-												const response = await fetch(
-													`/api/tenants/${tenant.id}`,
-													{
-														method: "PATCH",
-														headers: {
-															"Content-Type": "application/json",
-															Authorization: `Bearer ${token}`,
-														},
-														body: JSON.stringify({ theme: newTheme }),
-													},
-												);
-
-												if (response.ok) {
-													const updatedTenant = await response.json();
-													// Update local tenant state
-													setTenant(updatedTenant);
-												}
-											} catch (error) {
-												console.error("Failed to update tenant theme:", error);
-											}
-										}
 									}}
 									className='cursor-pointer premium-interaction'>
 									{currentTheme === "dark" ? (
@@ -502,40 +471,9 @@ export function AppSidebar() {
 							</div>
 
 							<DropdownMenuItem
-								onClick={async () => {
+								onClick={() => {
 									const newTheme = currentTheme === "dark" ? "light" : "dark";
-
-									// Update localStorage immediately for instant feedback
-									if (typeof window !== "undefined") {
-										localStorage.setItem("theme", newTheme);
-									}
-
 									setTheme(newTheme);
-
-									// Update tenant theme in database if user is admin
-									if (user?.role === "ADMIN" && tenant?.id) {
-										try {
-											const response = await fetch(
-												`/api/tenants/${tenant.id}`,
-												{
-													method: "PATCH",
-													headers: {
-														"Content-Type": "application/json",
-														Authorization: `Bearer ${token}`,
-													},
-													body: JSON.stringify({ theme: newTheme }),
-												},
-											);
-
-											if (response.ok) {
-												const updatedTenant = await response.json();
-												// Update local tenant state
-												setTenant(updatedTenant);
-											}
-										} catch (error) {
-											console.error("Failed to update tenant theme:", error);
-										}
-									}
 								}}
 								className='cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 focus:bg-black/5 dark:focus:bg-white/10 text-gray-900 dark:text-gray-100 premium-interaction'>
 								{currentTheme === "dark" ? (

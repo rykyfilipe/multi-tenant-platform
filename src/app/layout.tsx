@@ -132,8 +132,8 @@ export default function RootLayout({
 						__html: `
 							(function() {
 								try {
-									// Get theme from localStorage or default to system
-									var theme = localStorage.getItem('theme') || 'system';
+									// Get theme from localStorage or default to light
+									var theme = localStorage.getItem('theme') || 'light';
 									var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 									
 									// Apply theme immediately to prevent flickering
@@ -152,7 +152,7 @@ export default function RootLayout({
 									// Listen for theme changes in localStorage
 									window.addEventListener('storage', function(e) {
 										if (e.key === 'theme') {
-											var newTheme = e.newValue || 'system';
+											var newTheme = e.newValue || 'light';
 											var newSystemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 											
 											if (newTheme === 'dark' || (newTheme === 'system' && newSystemTheme === 'dark')) {
