@@ -8,6 +8,7 @@ import { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
 	try {
+		// Get session using getServerSession
 		const session = await getServerSession(authOptions);
 
 		// Get token using getToken (same as middleware)
@@ -16,33 +17,22 @@ export async function GET(request: NextRequest) {
 			secret: process.env.NEXTAUTH_SECRET,
 		});
 
-		// Get environment variables (without exposing secrets)
-		const envInfo = {
-			NODE_ENV: process.env.NODE_ENV,
-			NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-			NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? "Set" : "Not set",
-			GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? "Set" : "Not set",
-			GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET
-				? "Set"
-				: "Not set",
-			JWT_SECRET: process.env.JWT_SECRET ? "Set" : "Not set",
-			PUBLIC_JWT_SECRET: process.env.PUBLIC_JWT_SECRET ? "Set" : "Not set",
-		};
+		// Get cookies
+		const cookies = request.cookies.getAll();
+		const nextAuthCookies = cookies.filter(
+			(cookie) =>
+				cookie.name.includes("next-auth") || cookie.name.includes("authjs"),
+		);
 
 		return NextResponse.json({
-			message: "Authentication Debug Information",
+			message: "Middleware Debug Information",
 			timestamp: new Date().toISOString(),
-			environment: envInfo,
 			session: session
 				? {
 						user: {
 							id: session.user?.id,
 							email: session.user?.email,
 							name: session.user?.name,
-							firstName: session.user?.firstName,
-							lastName: session.user?.lastName,
-							role: session.user?.role,
-							tenantId: session.user?.tenantId,
 						},
 						expires: session.expires,
 				  }
@@ -60,22 +50,31 @@ export async function GET(request: NextRequest) {
 						exp: token.exp,
 				  }
 				: null,
-			authWorking: true,
+			cookies: {
+				total: cookies.length,
+				nextAuthCookies: nextAuthCookies.map((cookie) => ({
+					name: cookie.name,
+					value: cookie.value ? "Set" : "Not set",
+				})),
+			},
+			headers: {
+				userAgent: request.headers.get("user-agent"),
+				host: request.headers.get("host"),
+				referer: request.headers.get("referer"),
+			},
 			recommendations: [
-				"Check that NEXTAUTH_URL is set to https://ydv.digital in production",
-				"Verify Google OAuth credentials are configured for ydv.digital domain",
-				"Ensure all required environment variables are set",
-				"Check browser console for any JavaScript errors",
-				"Verify cookies are being set properly in browser dev tools",
+				"Check if token is being generated correctly",
+				"Verify cookies are being set with correct domain",
+				"Check if NEXTAUTH_SECRET matches between client and server",
+				"Verify token expiration time",
 			],
 		});
 	} catch (error) {
-		console.error("Auth debug error:", error);
+		console.error("Middleware debug error:", error);
 		return NextResponse.json(
 			{
-				message: "Authentication Debug Failed",
+				message: "Middleware Debug Failed",
 				error: error instanceof Error ? error.message : "Unknown error",
-				authWorking: false,
 				timestamp: new Date().toISOString(),
 			},
 			{ status: 500 },

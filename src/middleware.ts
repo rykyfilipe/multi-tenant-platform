@@ -293,7 +293,27 @@ export default withAuth(
 				}
 
 				// Require authentication for protected routes
-				if (pathname.startsWith("/home") || pathname.startsWith("/api/")) {
+				if (pathname.startsWith("/home")) {
+					// Check if token exists and has required properties
+					if (!token) {
+						console.log("No token found for protected route:", pathname);
+						return false;
+					}
+
+					// Additional validation for token
+					if (!token.id || !token.email) {
+						console.log("Invalid token structure:", {
+							id: token.id,
+							email: token.email,
+						});
+						return false;
+					}
+
+					return true;
+				}
+
+				// For API routes, be more lenient but still check token
+				if (pathname.startsWith("/api/")) {
 					return !!token;
 				}
 

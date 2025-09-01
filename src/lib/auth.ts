@@ -344,6 +344,7 @@ export const authOptions = {
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
 				maxAge: 30 * 24 * 60 * 60, // 30 days
+				domain: process.env.NODE_ENV === "production" ? ".ydv.digital" : undefined,
 			},
 		},
 		callbackUrl: {
@@ -352,6 +353,7 @@ export const authOptions = {
 				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
+				domain: process.env.NODE_ENV === "production" ? ".ydv.digital" : undefined,
 			},
 		},
 		csrfToken: {
@@ -361,6 +363,7 @@ export const authOptions = {
 				sameSite: "lax" as const,
 				path: "/",
 				secure: process.env.NODE_ENV === "production",
+				domain: process.env.NODE_ENV === "production" ? ".ydv.digital" : undefined,
 			},
 		},
 	},
