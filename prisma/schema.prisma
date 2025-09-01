@@ -354,6 +354,7 @@ model ApiUsage {
 
   @@index([tenantId, createdAt])
   @@index([endpoint, createdAt])
+  @@index([userId])
 }
 
 model ErrorLog {
@@ -373,6 +374,7 @@ model ErrorLog {
 
   @@index([tenantId, createdAt])
   @@index([errorType, createdAt])
+  @@index([userId])
 }
 
 model PerformanceAlert {
