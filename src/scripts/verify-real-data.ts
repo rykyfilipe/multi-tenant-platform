@@ -1,10 +1,8 @@
 /** @format */
 
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { activityTracker } from "@/lib/activity-tracker";
 import { systemMonitor } from "@/lib/system-monitor";
-
-const prisma = new PrismaClient();
 
 interface VerificationResult {
 	table: string;
@@ -43,8 +41,8 @@ class RealDataVerifier {
 		try {
 			const count = await prisma.userActivity.count();
 			const lastEntry = await prisma.userActivity.findFirst({
-				orderBy: { timestamp: "desc" },
-				select: { timestamp: true },
+				orderBy: { createdAt: "desc" },
+				select: { createdAt: true },
 			});
 
 			const hasData = count > 0;
@@ -57,7 +55,7 @@ class RealDataVerifier {
 				table: "UserActivity",
 				hasData,
 				count,
-				lastEntry: lastEntry?.timestamp,
+				lastEntry: lastEntry?.createdAt,
 				status,
 				message,
 			});
@@ -76,8 +74,8 @@ class RealDataVerifier {
 		try {
 			const count = await prisma.databaseActivity.count();
 			const lastEntry = await prisma.databaseActivity.findFirst({
-				orderBy: { timestamp: "desc" },
-				select: { timestamp: true },
+				orderBy: { createdAt: "desc" },
+				select: { createdAt: true },
 			});
 
 			const hasData = count > 0;
@@ -90,7 +88,7 @@ class RealDataVerifier {
 				table: "DatabaseActivity",
 				hasData,
 				count,
-				lastEntry: lastEntry?.timestamp,
+				lastEntry: lastEntry?.createdAt,
 				status,
 				message,
 			});
@@ -109,8 +107,8 @@ class RealDataVerifier {
 		try {
 			const count = await prisma.systemMetrics.count();
 			const lastEntry = await prisma.systemMetrics.findFirst({
-				orderBy: { timestamp: "desc" },
-				select: { timestamp: true },
+				orderBy: { createdAt: "desc" },
+				select: { createdAt: true },
 			});
 
 			const hasData = count > 0;
@@ -123,7 +121,7 @@ class RealDataVerifier {
 				table: "SystemMetrics",
 				hasData,
 				count,
-				lastEntry: lastEntry?.timestamp,
+				lastEntry: lastEntry?.createdAt,
 				status,
 				message,
 			});
@@ -142,8 +140,8 @@ class RealDataVerifier {
 		try {
 			const count = await prisma.tenantUsage.count();
 			const lastEntry = await prisma.tenantUsage.findFirst({
-				orderBy: { timestamp: "desc" },
-				select: { timestamp: true },
+				orderBy: { createdAt: "desc" },
+				select: { createdAt: true },
 			});
 
 			const hasData = count > 0;
@@ -156,7 +154,7 @@ class RealDataVerifier {
 				table: "TenantUsage",
 				hasData,
 				count,
-				lastEntry: lastEntry?.timestamp,
+				lastEntry: lastEntry?.createdAt,
 				status,
 				message,
 			});
@@ -175,8 +173,8 @@ class RealDataVerifier {
 		try {
 			const count = await prisma.apiUsage.count();
 			const lastEntry = await prisma.apiUsage.findFirst({
-				orderBy: { timestamp: "desc" },
-				select: { timestamp: true },
+				orderBy: { createdAt: "desc" },
+				select: { createdAt: true },
 			});
 
 			const hasData = count > 0;
@@ -189,7 +187,7 @@ class RealDataVerifier {
 				table: "ApiUsage",
 				hasData,
 				count,
-				lastEntry: lastEntry?.timestamp,
+				lastEntry: lastEntry?.createdAt,
 				status,
 				message,
 			});
@@ -208,8 +206,8 @@ class RealDataVerifier {
 		try {
 			const count = await prisma.errorLog.count();
 			const lastEntry = await prisma.errorLog.findFirst({
-				orderBy: { timestamp: "desc" },
-				select: { timestamp: true },
+				orderBy: { createdAt: "desc" },
+				select: { createdAt: true },
 			});
 
 			const hasData = count > 0;
@@ -222,7 +220,7 @@ class RealDataVerifier {
 				table: "ErrorLog",
 				hasData,
 				count,
-				lastEntry: lastEntry?.timestamp,
+				lastEntry: lastEntry?.createdAt,
 				status,
 				message,
 			});
@@ -241,8 +239,8 @@ class RealDataVerifier {
 		try {
 			const count = await prisma.performanceAlert.count();
 			const lastEntry = await prisma.performanceAlert.findFirst({
-				orderBy: { timestamp: "desc" },
-				select: { timestamp: true },
+				orderBy: { createdAt: "desc" },
+				select: { createdAt: true },
 			});
 
 			const hasData = count > 0;
@@ -255,7 +253,7 @@ class RealDataVerifier {
 				table: "PerformanceAlert",
 				hasData,
 				count,
-				lastEntry: lastEntry?.timestamp,
+				lastEntry: lastEntry?.createdAt,
 				status,
 				message,
 			});

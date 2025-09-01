@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import {
 	activityTracker,
 	trackDatabaseOperation,
-	trackUserActivity,
 } from "@/lib/activity-tracker";
 import { getUserFromRequest } from "@/lib/auth";
 
@@ -49,7 +48,7 @@ export function withApiTracking(
 			) {
 				const userInfo = activityTracker.extractUserInfo(request);
 
-				trackUserActivity({
+				activityTracker.trackUserActivity({
 					userId,
 					tenantId,
 					action: options.activityAction,
@@ -218,7 +217,7 @@ export function trackUserAction(
 ) {
 	const userInfo = request ? activityTracker.extractUserInfo(request) : {};
 
-	trackUserActivity({
+	activityTracker.trackUserActivity({
 		userId,
 		tenantId,
 		action,
