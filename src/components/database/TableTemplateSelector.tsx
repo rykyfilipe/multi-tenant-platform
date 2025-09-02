@@ -708,29 +708,29 @@ export function TableTemplateSelector({
 			</Button>
 
 			{showModal && (
-				<div className='fixed inset-0 z-50 bg-background/95 backdrop-blur-sm w-screen h-screen flex flex-col'>
+				<div className='fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col max-h-screen overflow-hidden'>
 					{/* Header */}
 					<div className='flex-shrink-0 px-4 sm:px-6 py-4 border-b border-border/10 bg-background/80 backdrop-blur-sm'>
 						<div className='flex items-center justify-between'>
-							<div className='flex items-center gap-3'>
+							<div className='flex items-center gap-3 min-w-0'>
 								<Button
 									variant='ghost'
 									size='sm'
 									onClick={handleBackToList}
-									className={`p-2 h-9 w-9 ${
+									className={`p-2 h-9 w-9 flex-shrink-0 ${
 										activeView === "list" ? "hidden" : "flex"
 									}`}>
 									<ChevronLeft className='w-4 h-4' />
 								</Button>
-								<div>
-									<h1 className='text-xl sm:text-2xl font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent'>
+								<div className='min-w-0 flex-1'>
+									<h1 className='text-lg sm:text-xl font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent truncate'>
 										{activeView === "list"
 											? t("database.templates.selectTemplates") ||
 											  "Select Table Templates"
 											: previewTemplate?.name || "Template Preview"}
 									</h1>
 									{activeView === "list" && (
-										<p className='text-sm text-muted-foreground mt-1'>
+										<p className='text-sm text-muted-foreground mt-1 line-clamp-2'>
 											Choose from our professionally designed table templates
 										</p>
 									)}
@@ -738,11 +738,11 @@ export function TableTemplateSelector({
 							</div>
 
 							{activeView === "list" && (
-								<div className='flex items-center gap-3'>
+								<div className='flex items-center gap-2 sm:gap-3 flex-shrink-0'>
 									{selectedCount > 0 && (
 										<Badge
 											variant='default'
-											className='px-3 py-1.5 text-sm font-medium'>
+											className='px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium hidden sm:flex'>
 											{selectedCount} selected
 										</Badge>
 									)}
@@ -759,14 +759,14 @@ export function TableTemplateSelector({
 					</div>
 
 					{/* Main Content */}
-					<div className='flex-1 overflow-hidden'>
+					<div className='flex-1 overflow-hidden min-h-0'>
 						{activeView === "list" ? (
 							<div className='h-full flex flex-col'>
 								{/* Template List */}
-								<div className='flex-1 overflow-y-auto p-4 sm:p-6'>
-									<div className='max-w-4xl mx-auto'>
+								<div className='flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6'>
+									<div className='max-w-6xl mx-auto'>
 										{/* Category Tabs */}
-										<div className='mb-6'>
+										<div className='mb-4 sm:mb-6'>
 											<div className='flex flex-wrap gap-2'>
 												{Array.from(
 													new Set(TABLE_TEMPLATES.map((t) => t.category)),
@@ -774,7 +774,7 @@ export function TableTemplateSelector({
 													<Badge
 														key={category}
 														variant='outline'
-														className='px-3 py-1.5 text-sm cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-colors'>
+														className='px-2 sm:px-3 py-1.5 text-xs sm:text-sm cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-colors'>
 														{category}
 													</Badge>
 												))}
@@ -782,7 +782,7 @@ export function TableTemplateSelector({
 										</div>
 
 										{/* Templates Grid */}
-										<div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'>
+										<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'>
 											{TABLE_TEMPLATES.map((template) => {
 												const isSelected = selectedTemplates.has(template.id);
 												const canSelect = canSelectTemplate(template);
@@ -803,26 +803,26 @@ export function TableTemplateSelector({
 																handleTemplateToggle(template.id);
 															}
 														}}>
-														<CardContent className='p-4 sm:p-5'>
+														<CardContent className='p-3 sm:p-4'>
 															<div className='flex gap-3'>
 																<div className='flex-shrink-0'>
 																	<div
-																		className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+																		className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${
 																			isSelected
 																				? "bg-primary text-primary-foreground"
 																				: "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
 																		} transition-colors`}>
-																		<template.icon className='w-5 h-5' />
+																		<template.icon className='w-4 h-4 sm:w-5 sm:h-5' />
 																	</div>
 																</div>
 
 																<div className='flex-1 min-w-0'>
-																	<div className='flex items-start justify-between mb-3'>
+																	<div className='flex items-start justify-between mb-2 sm:mb-3'>
 																		<div className='min-w-0 flex-1'>
-																			<h4 className='font-semibold text-foreground text-base leading-tight truncate mb-1'>
+																			<h4 className='font-semibold text-foreground text-sm sm:text-base leading-tight truncate mb-1'>
 																				{template.name}
 																			</h4>
-																			<div className='flex items-center gap-2 flex-wrap'>
+																			<div className='flex items-center gap-1 sm:gap-2 flex-wrap'>
 																				<Badge
 																					variant='outline'
 																					className='text-xs font-medium'>
@@ -845,7 +845,7 @@ export function TableTemplateSelector({
 																		/>
 																	</div>
 
-																	<p className='text-muted-foreground text-sm leading-relaxed mb-3 line-clamp-2'>
+																	<p className='text-muted-foreground text-xs sm:text-sm leading-relaxed mb-2 sm:mb-3 line-clamp-2'>
 																		{template.description}
 																	</p>
 
@@ -862,14 +862,14 @@ export function TableTemplateSelector({
 																					e.stopPropagation();
 																					handlePreviewTemplate(template);
 																				}}
-																				className='h-7 px-2 text-xs opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10'>
+																				className='h-6 sm:h-7 px-2 text-xs opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10'>
 																				<Eye className='w-3 h-3 mr-1' />
 																				Preview
 																			</Button>
 																		)}
 
 																		{!canSelect && (
-																			<span className='text-amber-600 dark:text-amber-400 font-medium text-xs text-right max-w-[120px] truncate'>
+																			<span className='text-amber-600 dark:text-amber-400 font-medium text-xs text-right max-w-[100px] sm:max-w-[120px] truncate'>
 																				{depStatus.message}
 																			</span>
 																		)}
@@ -884,11 +884,11 @@ export function TableTemplateSelector({
 
 										{/* Dependency Info */}
 										{hasDependencies && (
-											<div className='mt-8 max-w-2xl mx-auto'>
-												<div className='p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-200/50 dark:border-blue-800/50'>
+											<div className='mt-6 sm:mt-8 max-w-2xl mx-auto'>
+												<div className='p-3 sm:p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-200/50 dark:border-blue-800/50'>
 													<div className='flex gap-3'>
-														<Info className='w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5' />
-														<div className='text-sm text-blue-800 dark:text-blue-200'>
+														<Info className='w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5' />
+														<div className='text-xs sm:text-sm text-blue-800 dark:text-blue-200'>
 															<div className='font-semibold mb-1'>
 																Dependency Management
 															</div>
@@ -906,9 +906,9 @@ export function TableTemplateSelector({
 								</div>
 
 								{/* Footer */}
-								<div className='flex-shrink-0 border-t border-border/10 bg-background/80 backdrop-blur-sm p-4 sm:p-6'>
-									<div className='max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-										<div className='text-sm text-muted-foreground'>
+								<div className='flex-shrink-0 border-t border-border/10 bg-background/80 backdrop-blur-sm p-3 sm:p-4 lg:p-6'>
+									<div className='max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4'>
+										<div className='text-xs sm:text-sm text-muted-foreground'>
 											{selectedCount > 0 && (
 												<div className='flex items-center gap-2'>
 													<CheckCircle className='w-4 h-4 text-green-600' />
@@ -923,17 +923,17 @@ export function TableTemplateSelector({
 											)}
 										</div>
 
-										<div className='flex items-center gap-3'>
+										<div className='flex items-center gap-2 sm:gap-3'>
 											<Button
 												variant='outline'
 												onClick={() => setShowModal(false)}
-												className='px-6'>
+												className='px-4 sm:px-6 text-sm'>
 												Cancel
 											</Button>
 											<Button
 												onClick={handleCreateTables}
 												disabled={selectedCount === 0}
-												className='px-6 gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200'>
+												className='px-4 sm:px-6 gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200 text-sm'>
 												<CheckCircle className='w-4 h-4' />
 												Create Tables
 											</Button>
@@ -944,59 +944,59 @@ export function TableTemplateSelector({
 						) : (
 							/* Preview View */
 							<div className='h-full flex flex-col'>
-								<div className='flex-1 overflow-y-auto p-4 sm:p-6'>
-									<div className='max-w-3xl mx-auto'>
+								<div className='flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6'>
+									<div className='max-w-4xl mx-auto'>
 										{previewTemplate && (
-											<div className='space-y-6'>
+											<div className='space-y-4 sm:space-y-6'>
 												{/* Template Header */}
-												<div className='text-center pb-6 border-b border-border/10'>
-													<div className='w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center'>
-														<previewTemplate.icon className='w-8 h-8 text-primary' />
+												<div className='text-center pb-4 sm:pb-6 border-b border-border/10'>
+													<div className='w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center'>
+														<previewTemplate.icon className='w-6 h-6 sm:w-8 sm:h-8 text-primary' />
 													</div>
-													<h2 className='text-2xl sm:text-3xl font-bold text-foreground mb-2'>
+													<h2 className='text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2'>
 														{previewTemplate.name}
 													</h2>
 													<Badge
 														variant='outline'
-														className='text-sm px-3 py-1'>
+														className='text-xs sm:text-sm px-2 sm:px-3 py-1'>
 														{previewTemplate.category}
 													</Badge>
-													<p className='text-muted-foreground mt-3 max-w-2xl mx-auto leading-relaxed'>
+													<p className='text-muted-foreground mt-2 sm:mt-3 max-w-2xl mx-auto leading-relaxed text-sm sm:text-base'>
 														{previewTemplate.description}
 													</p>
 												</div>
 
 												{/* Table Structure */}
 												<div>
-													<h3 className='font-semibold text-foreground mb-4 flex items-center gap-2 text-lg'>
-														<Database className='w-5 h-5' />
+													<h3 className='font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2 text-base sm:text-lg'>
+														<Database className='w-4 h-4 sm:w-5 sm:h-5' />
 														Table Structure
 													</h3>
-													<div className='space-y-3'>
+													<div className='space-y-2 sm:space-y-3'>
 														{previewTemplate.columns.map((column, index) => (
 															<div
 																key={index}
-																className='flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-muted/40 rounded-xl border border-border/10 gap-3'>
-																<div className='flex items-center gap-3 min-w-0 flex-1'>
-																	<div className='w-8 h-8 rounded-lg bg-background border border-border/10 flex items-center justify-center text-sm font-mono text-muted-foreground'>
+																className='flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-muted/40 rounded-xl border border-border/10 gap-2 sm:gap-3'>
+																<div className='flex items-center gap-2 sm:gap-3 min-w-0 flex-1'>
+																	<div className='w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-background border border-border/10 flex items-center justify-center text-xs sm:text-sm font-mono text-muted-foreground flex-shrink-0'>
 																		{index + 1}
 																	</div>
 																	<div className='min-w-0 flex-1'>
-																		<span className='font-semibold text-foreground text-sm block mb-1'>
+																		<span className='font-semibold text-foreground text-xs sm:text-sm block mb-1'>
 																			{column.name}
 																		</span>
-																		<div className='flex gap-2 flex-wrap'>
+																		<div className='flex gap-1 sm:gap-2 flex-wrap'>
 																			{column.primary && (
 																				<Badge
 																					variant='default'
-																					className='text-xs px-2 py-0.5'>
+																					className='text-xs px-1.5 sm:px-2 py-0.5'>
 																					Primary Key
 																				</Badge>
 																			)}
 																			{column.required && (
 																				<Badge
 																					variant='secondary'
-																					className='text-xs px-2 py-0.5'>
+																					className='text-xs px-1.5 sm:px-2 py-0.5'>
 																					Required
 																				</Badge>
 																			)}
@@ -1006,14 +1006,14 @@ export function TableTemplateSelector({
 																<div className='flex items-center gap-2 flex-shrink-0'>
 																	<Badge
 																		variant='outline'
-																		className='text-xs font-mono px-3 py-1'>
+																		className='text-xs font-mono px-2 sm:px-3 py-1'>
 																		{column.type}
 																	</Badge>
 																	{column.type === "reference" &&
 																		column.referenceTableName && (
 																			<Badge
 																				variant='outline'
-																				className='text-xs px-3 py-1 truncate max-w-[120px]'>
+																				className='text-xs px-2 sm:px-3 py-1 truncate max-w-[100px] sm:max-w-[120px]'>
 																				→ {column.referenceTableName}
 																			</Badge>
 																		)}
@@ -1026,11 +1026,11 @@ export function TableTemplateSelector({
 												{/* Dependencies */}
 												{previewTemplate.dependencies.length > 0 && (
 													<div>
-														<h3 className='font-semibold text-foreground mb-4 flex items-center gap-2 text-lg'>
-															<AlertCircle className='w-5 h-5' />
+														<h3 className='font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2 text-base sm:text-lg'>
+															<AlertCircle className='w-4 h-4 sm:w-5 sm:h-5' />
 															Dependencies
 														</h3>
-														<div className='space-y-3'>
+														<div className='space-y-2 sm:space-y-3'>
 															{previewTemplate.dependencies.map((depId) => {
 																const depTemplate = TABLE_TEMPLATES.find(
 																	(t) => t.id === depId,
@@ -1039,26 +1039,26 @@ export function TableTemplateSelector({
 																return (
 																	<div
 																		key={depId}
-																		className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-colors ${
+																		className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl border-2 transition-colors ${
 																			isSelected
 																				? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/50"
 																				: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/50"
 																		}`}>
 																		{isSelected ? (
-																			<CheckCircle className='w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0' />
+																			<CheckCircle className='w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400 flex-shrink-0' />
 																		) : (
-																			<AlertCircle className='w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0' />
+																			<AlertCircle className='w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400 flex-shrink-0' />
 																		)}
-																		<div className='flex-1'>
+																		<div className='flex-1 min-w-0'>
 																			<span
-																				className={`font-medium text-sm ${
+																				className={`font-medium text-xs sm:text-sm ${
 																					isSelected
 																						? "text-green-800 dark:text-green-200"
 																						: "text-red-800 dark:text-red-200"
 																				}`}>
 																				{depTemplate?.name || depId}
 																			</span>
-																			<p className='text-xs text-muted-foreground mt-1'>
+																			<p className='text-xs text-muted-foreground mt-1 line-clamp-2'>
 																				{depTemplate?.description}
 																			</p>
 																		</div>
@@ -1074,9 +1074,9 @@ export function TableTemplateSelector({
 								</div>
 
 								{/* Preview Footer */}
-								<div className='flex-shrink-0 border-t border-border/10 bg-background/80 backdrop-blur-sm p-4 sm:p-6'>
-									<div className='max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-										<div className='text-sm text-muted-foreground'>
+								<div className='flex-shrink-0 border-t border-border/10 bg-background/80 backdrop-blur-sm p-3 sm:p-4 lg:p-6'>
+									<div className='max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4'>
+										<div className='text-xs sm:text-sm text-muted-foreground'>
 											{previewTemplate && (
 												<span>
 													Previewing{" "}
@@ -1088,11 +1088,11 @@ export function TableTemplateSelector({
 											)}
 										</div>
 
-										<div className='flex items-center gap-3'>
+										<div className='flex items-center gap-2 sm:gap-3'>
 											<Button
 												variant='outline'
 												onClick={handleBackToList}
-												className='px-6'>
+												className='px-4 sm:px-6 text-sm'>
 												Back to Templates
 											</Button>
 											<Button
@@ -1106,7 +1106,7 @@ export function TableTemplateSelector({
 													!previewTemplate ||
 													selectedTemplates.has(previewTemplate.id)
 												}
-												className='px-6 gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200'>
+												className='px-4 sm:px-6 gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200 text-sm'>
 												<CheckCircle className='w-4 h-4' />
 												{selectedTemplates.has(previewTemplate?.id || "")
 													? "Already Selected"

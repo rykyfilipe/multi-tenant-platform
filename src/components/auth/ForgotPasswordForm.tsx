@@ -22,7 +22,7 @@ function ForgotPasswordForm({
 	const { t } = useLanguage();
 	const [email, setEmail] = useState("");
 	const [loading, setLoading] = useState(false);
-	const [submitted] = useState(false);
+	const [submitted, setSubmitted] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

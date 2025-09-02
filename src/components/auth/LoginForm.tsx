@@ -39,7 +39,7 @@ function LoginForm({ closeForm, showForgotPassword }: LoginFormProps) {
 				showAlert(t("login.welcomeBack"), "success");
 				closeForm(true);
 				// Redirect to dashboard after successful login
-				window.location.href = "/home/dashboard";
+				window.location.href = "/home/analytics";
 			} else {
 				showAlert(t("login.failed"), "error");
 			}
@@ -52,33 +52,35 @@ function LoginForm({ closeForm, showForgotPassword }: LoginFormProps) {
 	};
 
 	return (
-		<form className='flex flex-col space-y-4 mt-4' onSubmit={handleLogin}>
+		<form
+			className='flex flex-col space-y-3 sm:space-y-4 mt-3 sm:mt-4'
+			onSubmit={handleLogin}>
 			<div>
-				<Label>{t("login.email")}</Label>
+				<Label className='text-sm sm:text-base'>{t("login.email")}</Label>
 				<Input
 					type='email'
 					placeholder={t("login.emailPlaceholder")}
-					className='rounded-lg'
+					className='rounded-lg h-10 sm:h-11 text-sm sm:text-base'
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
 					required
 				/>
 			</div>
 			<div>
-				<Label>{t("login.password")}</Label>
+				<Label className='text-sm sm:text-base'>{t("login.password")}</Label>
 				<Input
 					type='password'
 					placeholder={t("login.passwordPlaceholder")}
-					className='rounded-lg'
+					className='rounded-lg h-10 sm:h-11 text-sm sm:text-base'
 					value={password}
 					onChange={(e) => setPassword(e.target.value)}
 					required
 				/>
-				<div className='text-right mt-1'>
+				<div className='text-right mt-1 sm:mt-2'>
 					<button
 						type='button'
 						onClick={showForgotPassword}
-						className='text-sm text-primary hover:text-primary/80 underline'>
+						className='text-xs sm:text-sm text-primary hover:text-primary/80 underline'>
 						{t("login.forgotPassword")}
 					</button>
 				</div>
@@ -86,10 +88,10 @@ function LoginForm({ closeForm, showForgotPassword }: LoginFormProps) {
 			<Button
 				type='submit'
 				disabled={loading}
-				className='w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-sm'>
+				className='w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-sm h-10 sm:h-11 text-sm sm:text-base'>
 				{loading ? t("login.pleaseWait") : t("login.login")}
 			</Button>
-			<p className='text-xs text-muted-foreground text-center'>
+			<p className='text-xs sm:text-sm text-muted-foreground text-center leading-relaxed'>
 				{t("login.termsAgreement")}{" "}
 				<a href='#' className='underline hover:text-primary'>
 					{t("login.termsOfService")}

@@ -81,7 +81,7 @@ function Page() {
 	const isSubscribed = subscription?.subscriptionStatus === "active";
 
 	// Show loading state if session is not available, user data is not available, or still loading
-	if (!session || loading || !user) {
+	if (loading || !session?.user || !user) {
 		return (
 			<div className='h-full bg-background flex items-center justify-center'>
 				<div className='text-center'>

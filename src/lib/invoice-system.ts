@@ -1,6 +1,6 @@
 /** @format */
 
-import prisma from "./prisma";
+import prisma, { DEFAULT_CACHE_STRATEGIES } from "./prisma";
 import { SemanticColumnType } from "./semantic-types";
 
 export interface InvoiceProduct {
@@ -668,10 +668,14 @@ export class InvoiceSystemService {
 	 * Check if a table is protected
 	 */
 	static async isTableProtected(tableId: number): Promise<boolean> {
-		const table = await prisma.table.findUnique({
-			where: { id: tableId },
-			select: { isProtected: true },
-		});
+		const table = await prisma.findUniqueWithCache(
+			prisma.table,
+			{
+				where: { id: tableId },
+				select: { isProtected: true },
+			},
+			DEFAULT_CACHE_STRATEGIES.table,
+		);
 		return table?.isProtected || false;
 	}
 
@@ -679,10 +683,14 @@ export class InvoiceSystemService {
 	 * Check if a column is locked
 	 */
 	static async isColumnLocked(columnId: number): Promise<boolean> {
-		const column = await prisma.column.findUnique({
-			where: { id: columnId },
-			select: { isLocked: true },
-		});
+		const column = await prisma.findUniqueWithCache(
+			prisma.column,
+			{
+				where: { id: columnId },
+				select: { isLocked: true },
+			},
+			DEFAULT_CACHE_STRATEGIES.column,
+		);
 		return column?.isLocked || false;
 	}
 
@@ -690,17 +698,21 @@ export class InvoiceSystemService {
 	 * Get invoice tables for a tenant
 	 */
 	static async getInvoiceTables(tenantId: number, databaseId: number) {
-		const tables = await prisma.table.findMany({
-			where: {
-				databaseId,
-				database: { tenantId },
-				isProtected: true,
-				protectedType: { in: ["customers", "invoices", "invoice_items"] },
+		const tables = await prisma.findManyWithCache(
+			prisma.table,
+			{
+				where: {
+					databaseId,
+					database: { tenantId },
+					isProtected: true,
+					protectedType: { in: ["customers", "invoices", "invoice_items"] },
+				},
+				include: {
+					columns: true,
+				},
 			},
-			include: {
-				columns: true,
-			},
-		});
+			DEFAULT_CACHE_STRATEGIES.tableList,
+		);
 
 		return {
 			customers: tables.find((t: any) => t.protectedType === "customers"),
@@ -727,13 +739,17 @@ export class InvoiceSystemService {
 			startNumber?: number;
 		} = {},
 	): Promise<{ number: string; series: string; fullNumber: string }> {
-		const invoicesTable = await prisma.table.findFirst({
-			where: {
-				databaseId,
-				database: { tenantId },
-				protectedType: "invoices",
+		const invoicesTable = await prisma.findFirstWithCache(
+			prisma.table,
+			{
+				where: {
+					databaseId,
+					database: { tenantId },
+					protectedType: "invoices",
+				},
 			},
-		});
+			DEFAULT_CACHE_STRATEGIES.table,
+		);
 
 		if (!invoicesTable) {
 			throw new Error("Invoices table not found");
@@ -755,17 +771,21 @@ export class InvoiceSystemService {
 		}
 
 		// Get the last invoice number for this series
-		const lastInvoice = await prisma.row.findFirst({
-			where: { tableId: invoicesTable.id },
-			include: {
-				cells: {
-					include: {
-						column: true,
+		const lastInvoice = await prisma.findFirstWithCache(
+			prisma.row,
+			{
+				where: { tableId: invoicesTable.id },
+				include: {
+					cells: {
+						include: {
+							column: true,
+						},
 					},
 				},
+				orderBy: { id: "desc" },
 			},
-			orderBy: { id: "desc" },
-		});
+			DEFAULT_CACHE_STRATEGIES.row,
+		);
 
 		let lastNumber = options.startNumber || 0;
 		if (lastInvoice) {
@@ -862,29 +882,37 @@ export class InvoiceSystemService {
 		const seriesIdentifier = seriesParts.join(defaultConfig.separator);
 
 		// Get the last invoice number for this series
-		const invoicesTable = await prisma.table.findFirst({
-			where: {
-				databaseId,
-				database: { tenantId },
-				protectedType: "invoices",
+		const invoicesTable = await prisma.findFirstWithCache(
+			prisma.table,
+			{
+				where: {
+					databaseId,
+					database: { tenantId },
+					protectedType: "invoices",
+				},
 			},
-		});
+			DEFAULT_CACHE_STRATEGIES.table,
+		);
 
 		if (!invoicesTable) {
 			throw new Error("Invoices table not found");
 		}
 
-		const lastInvoice = await prisma.row.findFirst({
-			where: { tableId: invoicesTable.id },
-			include: {
-				cells: {
-					include: {
-						column: true,
+		const lastInvoice = await prisma.findFirstWithCache(
+			prisma.row,
+			{
+				where: { tableId: invoicesTable.id },
+				include: {
+					cells: {
+						include: {
+							column: true,
+						},
 					},
 				},
+				orderBy: { id: "desc" },
 			},
-			orderBy: { id: "desc" },
-		});
+			DEFAULT_CACHE_STRATEGIES.row,
+		);
 
 		let lastNumber = defaultConfig.startNumber - 1;
 		if (lastInvoice) {
@@ -963,25 +991,31 @@ export class InvoiceSystemService {
 		}
 
 		// Verify invoice exists
-		const existingInvoice = await prisma.row.findUnique({
-			where: { id: invoiceId },
-			include: {
-				cells: {
-					include: {
-						column: true,
+		const existingInvoice = await prisma.findUniqueWithCache(
+			prisma.row,
+			{
+				where: { id: invoiceId },
+				include: {
+					cells: {
+						include: {
+							column: true,
+						},
 					},
 				},
 			},
-		});
+			DEFAULT_CACHE_STRATEGIES.row,
+		);
 
 		if (!existingInvoice) {
 			throw new Error("Invoice not found");
 		}
 
 		// Get invoice columns
-		const invoiceColumns = await prisma.column.findMany({
-			where: { tableId: invoiceTables.invoices.id },
-		});
+		const invoiceColumns = await prisma.findManyWithCache(
+			prisma.column,
+			{ where: { tableId: invoiceTables.invoices.id } },
+			DEFAULT_CACHE_STRATEGIES.columnList,
+		);
 
 		// Update invoice fields (customer_id, base_currency, etc.)
 		const invoiceColumnMap = invoiceColumns.reduce((acc: any, col: any) => {
@@ -1068,17 +1102,21 @@ export class InvoiceSystemService {
 		}
 
 		// Delete existing invoice items
-		const existingItems = await prisma.row.findMany({
-			where: {
-				tableId: invoiceTables.invoice_items.id,
-				cells: {
-					some: {
-						column: { name: "invoice_id" },
-						value: { equals: invoiceId },
+		const existingItems = await prisma.findManyWithCache(
+			prisma.row,
+			{
+				where: {
+					tableId: invoiceTables.invoice_items.id,
+					cells: {
+						some: {
+							column: { name: "invoice_id" },
+							value: { equals: invoiceId },
+						},
 					},
 				},
 			},
-		});
+			DEFAULT_CACHE_STRATEGIES.rowList,
+		);
 
 		// Delete cells and rows for existing items
 		for (const item of existingItems) {
@@ -1091,9 +1129,11 @@ export class InvoiceSystemService {
 		}
 
 		// Get invoice item columns
-		const itemColumns = await prisma.column.findMany({
-			where: { tableId: invoiceTables.invoice_items.id },
-		});
+		const itemColumns = await prisma.findManyWithCache(
+			prisma.column,
+			{ where: { tableId: invoiceTables.invoice_items.id } },
+			DEFAULT_CACHE_STRATEGIES.columnList,
+		);
 
 		const itemColumnMap = itemColumns.reduce((acc: any, col: any) => {
 			acc[col.name] = col;
@@ -1103,12 +1143,16 @@ export class InvoiceSystemService {
 		// Create new invoice items
 		for (const product of updateData.products) {
 			// Get product details from referenced table
-			const productTable = await prisma.table.findFirst({
-				where: {
-					name: product.product_ref_table,
-					databaseId: databaseId,
+			const productTable = await prisma.findFirstWithCache(
+				prisma.table,
+				{
+					where: {
+						name: product.product_ref_table,
+						databaseId: databaseId,
+					},
 				},
-			});
+				DEFAULT_CACHE_STRATEGIES.table,
+			);
 
 			if (!productTable) {
 				throw new Error(
@@ -1116,16 +1160,20 @@ export class InvoiceSystemService {
 				);
 			}
 
-			const productRow = await prisma.row.findUnique({
-				where: { id: product.product_ref_id },
-				include: {
-					cells: {
-						include: {
-							column: true,
+			const productRow = await prisma.findUniqueWithCache(
+				prisma.row,
+				{
+					where: { id: product.product_ref_id },
+					include: {
+						cells: {
+							include: {
+								column: true,
+							},
 						},
 					},
 				},
-			});
+				DEFAULT_CACHE_STRATEGIES.row,
+			);
 
 			if (!productRow) {
 				throw new Error(
@@ -1391,30 +1439,38 @@ export class InvoiceSystemService {
 		yearlyStats: Record<number, number>;
 		monthlyStats: Record<string, number>;
 	}> {
-		const invoicesTable = await prisma.table.findFirst({
-			where: {
-				databaseId,
-				database: { tenantId },
-				protectedType: "invoices",
+		const invoicesTable = await prisma.findFirstWithCache(
+			prisma.table,
+			{
+				where: {
+					databaseId,
+					database: { tenantId },
+					protectedType: "invoices",
+				},
 			},
-		});
+			DEFAULT_CACHE_STRATEGIES.table,
+		);
 
 		if (!invoicesTable) {
 			throw new Error("Invoices table not found");
 		}
 
 		// Get all invoices for this tenant
-		const allInvoices = await prisma.row.findMany({
-			where: { tableId: invoicesTable.id },
-			include: {
-				cells: {
-					include: {
-						column: true,
+		const allInvoices = await prisma.findManyWithCache(
+			prisma.row,
+			{
+				where: { tableId: invoicesTable.id },
+				include: {
+					cells: {
+						include: {
+							column: true,
+						},
 					},
 				},
+				orderBy: { id: "desc" },
 			},
-			orderBy: { id: "desc" },
-		});
+			DEFAULT_CACHE_STRATEGIES.rowList,
+		);
 
 		const stats = {
 			totalInvoices: allInvoices.length,

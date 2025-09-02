@@ -1,93 +1,107 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import { z } from 'zod';
+/** @format */
+
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";
+import { z } from "zod";
 
 const createDashboardSchema = z.object({
-  name: z.string().min(1).max(100),
+	name: z.string().min(1).max(100),
 });
 
 export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+	try {
+		const session = await getServerSession(authOptions);
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true }
-    });
+		if (!session?.user?.email) {
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+		const user = await prisma.findUniqueWithCache(
+			prisma.user,
+			{
+				where: { email: session.user.email },
+				select: { id: true },
+			},
+			DEFAULT_CACHE_STRATEGIES.user,
+		);
 
-    const dashboards = await prisma.dashboard.findMany({
-      where: { userId: user.id },
-      include: {
-        widgets: {
-          orderBy: { orderIndex: 'asc' }
-        }
-      },
-      orderBy: { updatedAt: 'desc' }
-    });
+		if (!user) {
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
 
-    return NextResponse.json(dashboards);
-  } catch (error) {
-    console.error('Error fetching dashboards:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+		const dashboards = await prisma.findManyWithCache(
+			prisma.dashboard,
+			{
+				where: { userId: user.id },
+				include: {
+					widgets: {
+						orderBy: { orderIndex: "asc" },
+					},
+				},
+				orderBy: { updatedAt: "desc" },
+			},
+			DEFAULT_CACHE_STRATEGIES.dashboardList,
+		);
+
+		return NextResponse.json(dashboards);
+	} catch (error) {
+		console.error("Error fetching dashboards:", error);
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 },
+		);
+	}
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+	try {
+		const session = await getServerSession(authOptions);
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true }
-    });
+		if (!session?.user?.email) {
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+		const user = await prisma.findUniqueWithCache(
+			prisma.user,
+			{
+				where: { email: session.user.email },
+				select: { id: true },
+			},
+			DEFAULT_CACHE_STRATEGIES.user,
+		);
 
-    const body = await request.json();
-    const { name } = createDashboardSchema.parse(body);
+		if (!user) {
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
 
-    const dashboard = await prisma.dashboard.create({
-      data: {
-        name,
-        userId: user.id,
-      },
-      include: {
-        widgets: true
-      }
-    });
+		const body = await request.json();
+		const { name } = createDashboardSchema.parse(body);
 
-    return NextResponse.json(dashboard, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
-        { status: 400 }
-      );
-    }
+		const dashboard = await prisma.dashboard.create({
+			data: {
+				name,
+				userId: user.id,
+			},
+			include: {
+				widgets: true,
+			},
+		});
 
-    console.error('Error creating dashboard:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+		return NextResponse.json(dashboard, { status: 201 });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return NextResponse.json(
+				{ error: "Invalid request data", details: error.errors },
+				{ status: 400 },
+			);
+		}
+
+		console.error("Error creating dashboard:", error);
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 },
+		);
+	}
 }

@@ -36,10 +36,13 @@ function ThemeSyncWrapper({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
 	return (
-		<SessionProvider>
+		<SessionProvider
+			refetchInterval={0}
+			refetchOnWindowFocus={false}
+			refetchWhenOffline={false}>
 			<NextThemesProvider
 				attribute='class'
-				defaultTheme='system'
+				defaultTheme='light'
 				enableSystem={true}
 				disableTransitionOnChange={true}
 				storageKey='theme'>

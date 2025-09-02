@@ -25,7 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 		systemTheme,
 		resolvedTheme,
 	} = useTheme();
-	const [currentTheme, setCurrentTheme] = useState<TenantTheme>("system");
+	const [currentTheme, setCurrentTheme] = useState<TenantTheme>("light");
 	const [isSystemTheme, setIsSystemTheme] = useState(true);
 	const [isInitialized, setIsInitialized] = useState(false);
 
@@ -33,7 +33,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (typeof window !== "undefined" && !isInitialized) {
 			const savedTheme =
-				(localStorage.getItem("theme") as TenantTheme) || "system";
+				(localStorage.getItem("theme") as TenantTheme) || "light";
 			setCurrentTheme(savedTheme);
 			setIsInitialized(true);
 		}
@@ -43,7 +43,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (!isInitialized || !tenant?.theme || !token) return;
 
-		const localStorageTheme = localStorage.getItem("theme") as TenantTheme || "system";
+		const localStorageTheme =
+			(localStorage.getItem("theme") as TenantTheme) || "light";
 		const databaseTheme = tenant.theme as TenantTheme;
 
 		// If localStorage theme is different from database theme, update database
@@ -51,17 +52,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 			updateDatabaseTheme(localStorageTheme);
 		}
 
-		// Apply the localStorage theme (prioritize user's local preference)
-		setCurrentTheme(localStorageTheme);
+		// Only apply theme if it's different from current theme to avoid unnecessary updates
+		if (localStorageTheme !== currentTheme) {
+			setCurrentTheme(localStorageTheme);
 
-		if (localStorageTheme === "system") {
-			setIsSystemTheme(true);
-			setNextTheme("system");
-		} else {
-			setIsSystemTheme(false);
-			setNextTheme(localStorageTheme);
+			if (localStorageTheme === "system") {
+				setIsSystemTheme(true);
+				setNextTheme("system");
+			} else {
+				setIsSystemTheme(false);
+				setNextTheme(localStorageTheme);
+			}
 		}
-	}, [tenant?.theme, setNextTheme, isInitialized, token]);
+	}, [tenant?.theme, setNextTheme, isInitialized, token, currentTheme]);
 
 	// Update database theme
 	const updateDatabaseTheme = async (newTheme: TenantTheme) => {

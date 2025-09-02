@@ -1,11 +1,14 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
+  relationMode = "prisma"
 }
 
 model Tenant {
@@ -35,13 +38,22 @@ model Tenant {
   companyStreetNumber String?
   companyTaxId        String?
   registrationNumber  String?
-  enabledModules      String[]           @default([]) // ['billing', 'crm', 'inventory']
+  enabledModules      String[]           @default([])
   columnPermissions   ColumnPermission[]
   databases           Database[]
   invitations         Invitation[]
   tablePermissions    TablePermission[]
-  admin               User               @relation("TenantAdmin", fields: [adminId], references: [id])
+  admin               User               @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   users               User[]             @relation("TenantUsers")
+  userActivities      UserActivity[]
+  databaseActivities  DatabaseActivity[]
+  systemMetrics       SystemMetrics[]
+  tenantUsage         TenantUsage[]
+  apiUsage            ApiUsage[]
+  errorLogs           ErrorLog[]
+  performanceAlerts   PerformanceAlert[]
+
+  @@index([adminId])
 }
 
 model User {
@@ -64,6 +76,11 @@ model User {
   tablePermissions             TablePermission[]
   adminOf                      Tenant?            @relation("TenantAdmin")
   tenant                       Tenant?            @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
+  userActivities               UserActivity[]
+  apiUsage                     ApiUsage[]
+  errorLogs                    ErrorLog[]
+
+  @@index([tenantId])
 }
 
 model Database {
@@ -74,6 +91,9 @@ model Database {
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tables    Table[]
+  databaseActivities DatabaseActivity[]
+
+  @@index([tenantId])
 }
 
 model Table {
@@ -84,14 +104,16 @@ model Table {
   isPublic            Boolean            @default(false)
   isProtected         Boolean            @default(false)
   protectedType       String?
-  moduleType          String?            // 'billing', 'crm', 'inventory', etc.
-  isModuleTable       Boolean            @default(false) // pentru a identifica tabelele modulare
+  moduleType          String?
+  isModuleTable       Boolean            @default(false)
   referencedByColumns Column[]           @relation("ReferenceColumnTable")
   columns             Column[]
   columnPermissions   ColumnPermission[]
   rows                Row[]
   database            Database           @relation(fields: [databaseId], references: [id], onDelete: Cascade)
   tablePermissions    TablePermission[]
+
+  @@index([databaseId])
 }
 
 model Column {
@@ -110,6 +132,9 @@ model Column {
   referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
   table             Table              @relation(fields: [tableId], references: [id], onDelete: Cascade)
   columnPermissions ColumnPermission[]
+
+  @@index([tableId])
+  @@index([referenceTableId])
 }
 
 model Row {
@@ -118,6 +143,8 @@ model Row {
   createdAt DateTime @default(now())
   cells     Cell[]
   table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@index([tableId])
 }
 
 model Cell {
@@ -127,6 +154,9 @@ model Cell {
   value    Json
   column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
   row      Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+
+  @@index([rowId])
+  @@index([columnId])
 }
 
 model TablePermission {
@@ -168,6 +198,7 @@ model ColumnPermission {
   @@index([tenantId])
   @@index([columnId])
   @@index([userId])
+  @@index([tableId])
 }
 
 model Account {
@@ -186,6 +217,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -194,6 +226,8 @@ model Session {
   userId       Int
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -219,10 +253,145 @@ model Invitation {
 
   @@index([email])
   @@index([token])
+  @@index([tenantId])
 }
 
 enum Role {
   ADMIN
   EDITOR
   VIEWER
+}
+
+model UserActivity {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int
+  userId     Int
+  action     String
+  resource   String?
+  resourceId Int?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+model DatabaseActivity {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  databaseId    Int
+  action        String
+  tableName     String?
+  query         String?
+  responseTime  Int?
+  rowsAffected  Int?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([databaseId, createdAt])
+}
+
+model SystemMetrics {
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  cpuUsage          Decimal  @db.Decimal(5, 2)
+  memoryUsage       Decimal  @db.Decimal(5, 2)
+  diskUsage         Decimal  @db.Decimal(5, 2)
+  networkLatency    Int?
+  errorRate         Decimal  @default(0) @db.Decimal(5, 2)
+  activeConnections Int      @default(0)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+}
+
+model TenantUsage {
+  id               Int       @id @default(autoincrement())
+  tenantId         Int
+  cpuUsage         Decimal   @db.Decimal(5, 2)
+  memoryUsage      Decimal   @db.Decimal(5, 2)
+  storageUsage     Decimal   @db.Decimal(10, 2)
+  apiCalls         Int       @default(0)
+  databaseQueries  Int       @default(0)
+  overageAmount    Decimal   @default(0) @db.Decimal(10, 2)
+  lastActivity     DateTime?
+  createdAt        DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+}
+
+model ApiUsage {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  endpoint     String
+  method       String
+  statusCode   Int
+  responseTime Int
+  requestSize  Int?
+  responseSize Int?
+  userId       Int?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([endpoint, createdAt])
+  @@index([userId])
+}
+
+model ErrorLog {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  userId       Int?
+  errorType    String
+  errorMessage String
+  stackTrace   String?
+  endpoint     String?
+  metadata     Json?
+  resolved     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([errorType, createdAt])
+  @@index([userId])
+}
+
+model PerformanceAlert {
+  id            Int       @id @default(autoincrement())
+  tenantId      Int
+  alertType     String
+  metric        String
+  threshold     Decimal   @db.Decimal(10, 2)
+  currentValue  Decimal   @db.Decimal(10, 2)
+  severity      String
+  message       String
+  resolved      Boolean   @default(false)
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([alertType, createdAt])
 }

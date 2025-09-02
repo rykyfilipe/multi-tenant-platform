@@ -10,12 +10,6 @@ import { NextResponse } from "next/server";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
 import { checkPlanPermission } from "@/lib/planConstants";
 import { z } from "zod";
-import {
-	withApiCache,
-	createCacheKey,
-	createRoleBasedCacheKey,
-	CACHE_DURATIONS,
-} from "@/lib/api-cache-middleware";
 import { Database } from "@/generated/prisma";
 
 const createDatabaseSchema = z.object({
@@ -49,62 +43,49 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
-		const cacheKey = createRoleBasedCacheKey(
-			"databases",
-			Number(tenantId),
-			userId,
-			role,
-		);
-
 		if (role === "ADMIN") {
-			return await withApiCache(
-				request,
-				{ key: cacheKey, duration: CACHE_DURATIONS.DATABASE_LIST },
-				async () => {
-					// Optimized: Single query with proper joins to avoid N+1
-					const databases = await prisma.database.findMany({
-						where: {
-							tenantId: Number(tenantId),
-						},
+			// Optimized: Single query with proper joins to avoid N+1
+			const databases = await prisma.database.findMany({
+				where: {
+					tenantId: Number(tenantId),
+				},
+				select: {
+					id: true,
+					name: true,
+					tenantId: true,
+					// Optimized: Only get essential table metadata, not full data
+					tables: {
 						select: {
 							id: true,
 							name: true,
-							tenantId: true,
-							// Optimized: Only get essential table metadata, not full data
-							tables: {
+							description: true,
+							_count: {
 								select: {
-									id: true,
-									name: true,
-									description: true,
-									_count: {
-										select: {
-											columns: true,
-											rows: true,
-										},
-									},
+									columns: true,
+									rows: true,
 								},
 							},
 						},
-						orderBy: {
-							createdAt: "asc",
-						},
-					});
-
-					// Optimize table data format for frontend compatibility
-					const optimizedDatabases = databases.map((db: any) => ({
-						...db,
-						tables: db.tables.map((table: any) => ({
-							...table,
-							columnsCount: table._count.columns,
-							rowsCount: table._count.rows,
-							// Remove _count from the response
-							_count: undefined,
-						})),
-					}));
-
-					return optimizedDatabases;
+					},
 				},
-			);
+				orderBy: {
+					createdAt: "asc",
+				},
+			});
+
+			// Optimize table data format for frontend compatibility
+			const optimizedDatabases = databases.map((db: any) => ({
+				...db,
+				tables: db.tables.map((table: any) => ({
+					...table,
+					columnsCount: table._count.columns,
+					rowsCount: table._count.rows,
+					// Remove _count from the response
+					_count: undefined,
+				})),
+			}));
+
+			return NextResponse.json(optimizedDatabases, { status: 200 });
 		}
 
 		// Pentru utilizatorii non-admin, returnăm doar bazele de date cu tabelele la care au acces

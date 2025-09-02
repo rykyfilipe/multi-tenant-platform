@@ -15,14 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	Code,
-	Database,
-	Monitor,
-	Settings,
-	Bug,
-	Zap,
-} from "lucide-react";
+import { Code, Database, Monitor, Settings, Bug, Zap } from "lucide-react";
 import ThemeTester from "@/components/dev/ThemeTester";
 import { PerformanceDashboard } from "@/components/dev/PerformanceDashboard";
 
@@ -33,7 +26,7 @@ function DevPage() {
 	const [activeTab, setActiveTab] = useState("theme");
 
 	// Show loading state if session is not available, user data is not available, or still loading
-	if (!session || loading || !user) {
+	if (loading || !session?.user || !user) {
 		return (
 			<div className='h-full bg-background flex items-center justify-center'>
 				<div className='text-center'>
@@ -56,7 +49,8 @@ function DevPage() {
 						Access Restricted
 					</h3>
 					<p className='text-muted-foreground'>
-						Development tools are only available to administrators in development mode.
+						Development tools are only available to administrators in
+						development mode.
 					</p>
 				</div>
 			</div>
@@ -72,57 +66,58 @@ function DevPage() {
 				</div>
 				<h1 className='text-3xl font-bold tracking-tight'>Development Tools</h1>
 				<p className='text-muted-foreground max-w-2xl mx-auto'>
-					Advanced development and debugging tools for administrators. 
-					Use these tools to test features, monitor performance, and debug issues.
+					Advanced development and debugging tools for administrators. Use these
+					tools to test features, monitor performance, and debug issues.
 				</p>
 				<div className='flex items-center justify-center gap-2'>
-					<Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
+					<Badge
+						variant='secondary'
+						className='bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'>
 						Development Mode
 					</Badge>
-					<Badge variant="outline">
-						Admin Access
-					</Badge>
+					<Badge variant='outline'>Admin Access</Badge>
 				</div>
 			</div>
 
 			{/* Development Tools Tabs */}
-			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-6">
-					<TabsTrigger value="theme" className="flex items-center gap-2">
-						<Monitor className="w-4 h-4" />
+			<Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
+				<TabsList className='grid w-full grid-cols-3 lg:w-auto lg:grid-cols-6'>
+					<TabsTrigger value='theme' className='flex items-center gap-2'>
+						<Monitor className='w-4 h-4' />
 						Theme
 					</TabsTrigger>
-					<TabsTrigger value="performance" className="flex items-center gap-2">
-						<Zap className="w-4 h-4" />
+					<TabsTrigger value='performance' className='flex items-center gap-2'>
+						<Zap className='w-4 h-4' />
 						Performance
 					</TabsTrigger>
-					<TabsTrigger value="database" className="flex items-center gap-2">
-						<Database className="w-4 h-4" />
+					<TabsTrigger value='database' className='flex items-center gap-2'>
+						<Database className='w-4 h-4' />
 						Database
 					</TabsTrigger>
-					<TabsTrigger value="settings" className="flex items-center gap-2">
-						<Settings className="w-4 h-4" />
+					<TabsTrigger value='settings' className='flex items-center gap-2'>
+						<Settings className='w-4 h-4' />
 						Settings
 					</TabsTrigger>
-					<TabsTrigger value="debug" className="flex items-center gap-2">
-						<Bug className="w-4 h-4" />
+					<TabsTrigger value='debug' className='flex items-center gap-2'>
+						<Bug className='w-4 h-4' />
 						Debug
 					</TabsTrigger>
-					<TabsTrigger value="api" className="flex items-center gap-2">
-						<Code className="w-4 h-4" />
+					<TabsTrigger value='api' className='flex items-center gap-2'>
+						<Code className='w-4 h-4' />
 						API
 					</TabsTrigger>
 				</TabsList>
 
-				<TabsContent value="theme" className="space-y-6">
+				<TabsContent value='theme' className='space-y-6'>
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Monitor className="w-5 h-5" />
+							<CardTitle className='flex items-center gap-2'>
+								<Monitor className='w-5 h-5' />
 								Theme Synchronization Testing
 							</CardTitle>
 							<CardDescription>
-								Test and debug theme synchronization between localStorage, database, and active theme.
+								Test and debug theme synchronization between localStorage,
+								database, and active theme.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -131,15 +126,16 @@ function DevPage() {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="performance" className="space-y-6">
+				<TabsContent value='performance' className='space-y-6'>
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Zap className="w-5 h-5" />
+							<CardTitle className='flex items-center gap-2'>
+								<Zap className='w-5 h-5' />
 								Performance Monitoring
 							</CardTitle>
 							<CardDescription>
-								Monitor application performance, memory usage, and system metrics.
+								Monitor application performance, memory usage, and system
+								metrics.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -148,21 +144,22 @@ function DevPage() {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="database" className="space-y-6">
+				<TabsContent value='database' className='space-y-6'>
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Database className="w-5 h-5" />
+							<CardTitle className='flex items-center gap-2'>
+								<Database className='w-5 h-5' />
 								Database Tools
 							</CardTitle>
 							<CardDescription>
-								Database connection testing, query performance, and schema inspection tools.
+								Database connection testing, query performance, and schema
+								inspection tools.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<div className="text-center py-12">
-								<Database className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-								<p className="text-muted-foreground">
+							<div className='text-center py-12'>
+								<Database className='w-16 h-16 text-muted-foreground mx-auto mb-4' />
+								<p className='text-muted-foreground'>
 									Database development tools coming soon...
 								</p>
 							</div>
@@ -170,21 +167,22 @@ function DevPage() {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="settings" className="space-y-6">
+				<TabsContent value='settings' className='space-y-6'>
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Settings className="w-5 h-5" />
+							<CardTitle className='flex items-center gap-2'>
+								<Settings className='w-5 h-5' />
 								Development Settings
 							</CardTitle>
 							<CardDescription>
-								Configure development environment, debugging options, and testing parameters.
+								Configure development environment, debugging options, and
+								testing parameters.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<div className="text-center py-12">
-								<Settings className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-								<p className="text-muted-foreground">
+							<div className='text-center py-12'>
+								<Settings className='w-16 h-16 text-muted-foreground mx-auto mb-4' />
+								<p className='text-muted-foreground'>
 									Development settings configuration coming soon...
 								</p>
 							</div>
@@ -192,11 +190,11 @@ function DevPage() {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="debug" className="space-y-6">
+				<TabsContent value='debug' className='space-y-6'>
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Bug className="w-5 h-5" />
+							<CardTitle className='flex items-center gap-2'>
+								<Bug className='w-5 h-5' />
 								Debug Console
 							</CardTitle>
 							<CardDescription>
@@ -204,9 +202,9 @@ function DevPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<div className="text-center py-12">
-								<Bug className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-								<p className="text-muted-foreground">
+							<div className='text-center py-12'>
+								<Bug className='w-16 h-16 text-muted-foreground mx-auto mb-4' />
+								<p className='text-muted-foreground'>
 									Debug console coming soon...
 								</p>
 							</div>
@@ -214,21 +212,22 @@ function DevPage() {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="api" className="space-y-6">
+				<TabsContent value='api' className='space-y-6'>
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Code className="w-5 h-5" />
+							<CardTitle className='flex items-center gap-2'>
+								<Code className='w-5 h-5' />
 								API Testing
 							</CardTitle>
 							<CardDescription>
-								Test API endpoints, inspect requests/responses, and validate data formats.
+								Test API endpoints, inspect requests/responses, and validate
+								data formats.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<div className="text-center py-12">
-								<Code className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-								<p className="text-muted-foreground">
+							<div className='text-center py-12'>
+								<Code className='w-16 h-16 text-muted-foreground mx-auto mb-4' />
+								<p className='text-muted-foreground'>
 									API testing tools coming soon...
 								</p>
 							</div>

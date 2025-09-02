@@ -3,7 +3,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTenantTheme } from "@/contexts/ThemeContext";
@@ -20,7 +26,7 @@ export default function ThemeTester() {
 	useEffect(() => {
 		// Get theme from localStorage
 		if (typeof window !== "undefined") {
-			const savedTheme = localStorage.getItem("theme") || "system";
+			const savedTheme = localStorage.getItem("theme") || "light";
 			setLocalStorageTheme(savedTheme);
 		}
 
@@ -30,8 +36,8 @@ export default function ThemeTester() {
 		}
 
 		// Check if themes are synced
-		const localStorageThemeValue = localStorage.getItem("theme") || "system";
-		const databaseThemeValue = tenant?.theme || "system";
+		const localStorageThemeValue = localStorage.getItem("theme") || "light";
+		const databaseThemeValue = tenant?.theme || "light";
 		setIsSynced(localStorageThemeValue === databaseThemeValue);
 	}, [tenant?.theme]);
 
@@ -44,13 +50,13 @@ export default function ThemeTester() {
 	const getThemeIcon = (theme: string) => {
 		switch (theme) {
 			case "light":
-				return <Sun className="w-4 h-4" />;
+				return <Sun className='w-4 h-4' />;
 			case "dark":
-				return <Moon className="w-4 h-4" />;
+				return <Moon className='w-4 h-4' />;
 			case "system":
-				return <Monitor className="w-4 h-4" />;
+				return <Monitor className='w-4 h-4' />;
 			default:
-				return <Monitor className="w-4 h-4" />;
+				return <Monitor className='w-4 h-4' />;
 		}
 	};
 
@@ -68,50 +74,52 @@ export default function ThemeTester() {
 	};
 
 	return (
-		<Card className="w-full max-w-2xl mx-auto">
+		<Card className='w-full max-w-2xl mx-auto'>
 			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					<Monitor className="w-5 h-5" />
+				<CardTitle className='flex items-center gap-2'>
+					<Monitor className='w-5 h-5' />
 					Theme Synchronization Tester
 				</CardTitle>
 				<CardDescription>
 					Test the synchronization between localStorage and database themes
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-6">
+			<CardContent className='space-y-6'>
 				{/* Current Theme Status */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Current Theme Status</h3>
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-						<div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-							<HardDrive className="w-4 h-4 text-muted-foreground" />
-							<div className="flex-1">
-								<p className="text-xs text-muted-foreground">localStorage</p>
-								<div className="flex items-center gap-2">
+				<div className='space-y-3'>
+					<h3 className='text-sm font-medium'>Current Theme Status</h3>
+					<div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+						<div className='flex items-center gap-2 p-3 rounded-lg bg-muted/50'>
+							<HardDrive className='w-4 h-4 text-muted-foreground' />
+							<div className='flex-1'>
+								<p className='text-xs text-muted-foreground'>localStorage</p>
+								<div className='flex items-center gap-2'>
 									{getThemeIcon(localStorageTheme)}
-									<span className="text-sm font-medium">{localStorageTheme}</span>
+									<span className='text-sm font-medium'>
+										{localStorageTheme}
+									</span>
 								</div>
 							</div>
 						</div>
 
-						<div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-							<Database className="w-4 h-4 text-muted-foreground" />
-							<div className="flex-1">
-								<p className="text-xs text-muted-foreground">Database</p>
-								<div className="flex items-center gap-2">
+						<div className='flex items-center gap-2 p-3 rounded-lg bg-muted/50'>
+							<Database className='w-4 h-4 text-muted-foreground' />
+							<div className='flex-1'>
+								<p className='text-xs text-muted-foreground'>Database</p>
+								<div className='flex items-center gap-2'>
 									{getThemeIcon(databaseTheme)}
-									<span className="text-sm font-medium">{databaseTheme}</span>
+									<span className='text-sm font-medium'>{databaseTheme}</span>
 								</div>
 							</div>
 						</div>
 
-						<div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-							<Monitor className="w-4 h-4 text-muted-foreground" />
-							<div className="flex-1">
-								<p className="text-xs text-muted-foreground">Active</p>
-								<div className="flex items-center gap-2">
+						<div className='flex items-center gap-2 p-3 rounded-lg bg-muted/50'>
+							<Monitor className='w-4 h-4 text-muted-foreground' />
+							<div className='flex-1'>
+								<p className='text-xs text-muted-foreground'>Active</p>
+								<div className='flex items-center gap-2'>
 									{getThemeIcon(currentTheme)}
-									<span className="text-sm font-medium">{currentTheme}</span>
+									<span className='text-sm font-medium'>{currentTheme}</span>
 								</div>
 							</div>
 						</div>
@@ -119,67 +127,73 @@ export default function ThemeTester() {
 				</div>
 
 				{/* Sync Status */}
-				<div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-					<span className="text-sm font-medium">Synchronization Status</span>
-					<Badge 
+				<div className='flex items-center justify-between p-3 rounded-lg bg-muted/50'>
+					<span className='text-sm font-medium'>Synchronization Status</span>
+					<Badge
 						variant={isSynced ? "default" : "destructive"}
-						className={isSynced ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200" : ""}
-					>
+						className={
+							isSynced
+								? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200"
+								: ""
+						}>
 						{isSynced ? "Synced" : "Out of Sync"}
 					</Badge>
 				</div>
 
 				{/* Theme Controls */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Change Theme</h3>
-					<div className="flex flex-wrap gap-2">
+				<div className='space-y-3'>
+					<h3 className='text-sm font-medium'>Change Theme</h3>
+					<div className='flex flex-wrap gap-2'>
 						<Button
 							variant={currentTheme === "light" ? "default" : "outline"}
-							size="sm"
+							size='sm'
 							onClick={() => handleThemeChange("light")}
-							className="flex items-center gap-2"
-						>
-							<Sun className="w-4 h-4" />
+							className='flex items-center gap-2'>
+							<Sun className='w-4 h-4' />
 							Light
 						</Button>
-						
+
 						<Button
 							variant={currentTheme === "dark" ? "default" : "outline"}
-							size="sm"
+							size='sm'
 							onClick={() => handleThemeChange("dark")}
-							className="flex items-center gap-2"
-						>
-							<Moon className="w-4 h-4" />
+							className='flex items-center gap-2'>
+							<Moon className='w-4 h-4' />
 							Dark
 						</Button>
-						
+
 						<Button
 							variant={currentTheme === "system" ? "default" : "outline"}
-							size="sm"
+							size='sm'
 							onClick={() => handleThemeChange("system")}
-							className="flex items-center gap-2"
-						>
-							<Monitor className="w-4 h-4" />
+							className='flex items-center gap-2'>
+							<Monitor className='w-4 h-4' />
 							System
 						</Button>
 					</div>
 				</div>
 
 				{/* Debug Info */}
-				<div className="space-y-3">
-					<h3 className="text-sm font-medium">Debug Information</h3>
-					<div className="space-y-2 text-xs">
-						<div className="flex justify-between">
-							<span className="text-muted-foreground">localStorage.getItem('theme'):</span>
-							<code className="bg-muted px-2 py-1 rounded">{localStorage.getItem("theme") || "undefined"}</code>
+				<div className='space-y-3'>
+					<h3 className='text-sm font-medium'>Debug Information</h3>
+					<div className='space-y-2 text-xs'>
+						<div className='flex justify-between'>
+							<span className='text-muted-foreground'>
+								localStorage.getItem('theme'):
+							</span>
+							<code className='bg-muted px-2 py-1 rounded'>
+								{localStorage.getItem("theme") || "undefined"}
+							</code>
 						</div>
-						<div className="flex justify-between">
-							<span className="text-muted-foreground">tenant.theme:</span>
-							<code className="bg-muted px-2 py-1 rounded">{tenant?.theme || "undefined"}</code>
+						<div className='flex justify-between'>
+							<span className='text-muted-foreground'>tenant.theme:</span>
+							<code className='bg-muted px-2 py-1 rounded'>
+								{tenant?.theme || "undefined"}
+							</code>
 						</div>
-						<div className="flex justify-between">
-							<span className="text-muted-foreground">currentTheme:</span>
-							<code className="bg-muted px-2 py-1 rounded">{currentTheme}</code>
+						<div className='flex justify-between'>
+							<span className='text-muted-foreground'>currentTheme:</span>
+							<code className='bg-muted px-2 py-1 rounded'>{currentTheme}</code>
 						</div>
 					</div>
 				</div>
