@@ -14,8 +14,6 @@ import {
 	validateFileUpload,
 } from "@/lib/security-validation";
 import { withAuth } from "next-auth/middleware";
-// Note: We can't import Prisma directly in middleware due to Node.js compatibility issues
-// The activity tracking will be handled by individual API routes instead
 
 // Enhanced security headers
 const securityHeaders = {
@@ -38,18 +36,14 @@ const securityHeaders = {
 
 export default withAuth(
 	async function middleware(request: NextRequest) {
-		// Start timing the request
 		const startTime = Date.now();
-
-		// Get pathname early for use in multiple places
 		const pathname = request.nextUrl.pathname;
 
-		// Temporary development endpoint to clear rate limits
+		// Development endpoint: clear rate limits
 		if (
-			request.nextUrl.pathname === "/api/dev/clear-rate-limits" &&
+			pathname === "/api/dev/clear-rate-limits" &&
 			process.env.NODE_ENV === "development"
 		) {
-			// Import and clear rate limits
 			try {
 				const { clearAllApiRateLimits } = await import(
 					"@/lib/api-rate-limiting"
@@ -64,9 +58,50 @@ export default withAuth(
 			}
 		}
 
-		// Debug endpoint for development
+		// OAuth debugging endpoint
 		if (
-			request.nextUrl.pathname === "/api/dev/debug" &&
+			pathname === "/api/dev/oauth-debug" &&
+			process.env.NODE_ENV === "development"
+		) {
+			const cookies = request.headers.get("cookie") || "";
+			const nextAuthCookies = cookies
+				.split(";")
+				.filter(cookie => cookie.includes("next-auth"))
+				.map(cookie => cookie.trim());
+
+			return NextResponse.json({
+				message: "OAuth Debug Information",
+				environment: {
+					NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+					NODE_ENV: process.env.NODE_ENV,
+					GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? "Set" : "Not set",
+				},
+				request: {
+					url: request.url,
+					origin: request.nextUrl.origin,
+					pathname: request.nextUrl.pathname,
+					search: request.nextUrl.search,
+					headers: {
+						host: request.headers.get("host"),
+						origin: request.headers.get("origin"),
+						referer: request.headers.get("referer"),
+						userAgent: request.headers.get("user-agent"),
+					},
+				},
+				cookies: {
+					all: cookies ? "Present" : "Not present",
+					nextAuth: nextAuthCookies,
+				},
+				expectedCallbacks: {
+					google: `${request.nextUrl.origin}/api/auth/callback/google`,
+					credentials: `${request.nextUrl.origin}/api/auth/callback/credentials`,
+				},
+			});
+		}
+
+		// General debug endpoint
+		if (
+			pathname === "/api/dev/debug" &&
 			process.env.NODE_ENV === "development"
 		) {
 			return NextResponse.json({
@@ -86,51 +121,37 @@ export default withAuth(
 			});
 		}
 
-		// Add security headers to all responses
+		// Apply security headers
 		const response = NextResponse.next();
 		Object.entries(securityHeaders).forEach(([key, value]) => {
 			response.headers.set(key, value);
 		});
 
-		// CSRF protection for state-changing requests
+		// CSRF protection
 		if (["POST", "PUT", "DELETE", "PATCH"].includes(request.method)) {
-			// Skip CSRF protection for authentication endpoints
 			if (
-				pathname.startsWith("/api/auth/") ||
-				pathname.includes("login") ||
-				pathname.includes("register") ||
-				pathname.includes("forgot-password") ||
-				pathname.includes("reset-password")
+				!pathname.startsWith("/api/auth/") &&
+				!pathname.includes("login") &&
+				!pathname.includes("register") &&
+				!pathname.includes("forgot-password") &&
+				!pathname.includes("reset-password")
 			) {
-				// No CSRF protection for auth endpoints
-			} else {
-				// Only apply CSRF protection to non-auth endpoints
 				const csrfResult = await csrfProtection(request);
-				if (csrfResult) {
-					return csrfResult;
-				}
+				if (csrfResult) return csrfResult;
 			}
 		}
 
-		// Skip rate limiting for authentication endpoints to prevent blocking login
+		// Rate limiting (skip auth endpoints)
 		if (
-			pathname.startsWith("/api/auth/") ||
-			pathname.includes("login") ||
-			pathname.includes("register") ||
-			pathname.includes("forgot-password") ||
-			pathname.includes("reset-password")
+			!pathname.startsWith("/api/auth/") &&
+			!pathname.includes("login") &&
+			!pathname.includes("register") &&
+			!pathname.includes("forgot-password") &&
+			!pathname.includes("reset-password")
 		) {
-			// No rate limiting for auth endpoints
-		} else {
-			// Apply different rate limits based on endpoint type
-			let rateLimitConfig: (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS] =
-				RATE_LIMITS.public;
-
-			if (pathname.startsWith("/api/")) {
-				rateLimitConfig = RATE_LIMITS.api;
-			} else if (pathname.includes("contact")) {
-				rateLimitConfig = RATE_LIMITS.contact;
-			}
+			let rateLimitConfig = RATE_LIMITS.public;
+			if (pathname.startsWith("/api/")) rateLimitConfig = RATE_LIMITS.api;
+			else if (pathname.includes("contact")) rateLimitConfig = RATE_LIMITS.contact;
 
 			const identifier = getClientIdentifier(request);
 			const rateLimitResult = checkRateLimit(identifier, rateLimitConfig);
@@ -139,15 +160,11 @@ export default withAuth(
 				const headers: Record<string, string> = {
 					"X-RateLimit-Limit": rateLimitConfig.maxRequests.toString(),
 					"X-RateLimit-Remaining": "0",
-					"X-RateLimit-Reset": new Date(
-						rateLimitResult.resetTime,
-					).toISOString(),
+					"X-RateLimit-Reset": new Date(rateLimitResult.resetTime).toISOString(),
 				};
-
 				if (rateLimitResult.retryAfter) {
 					headers["Retry-After"] = rateLimitResult.retryAfter.toString();
 				}
-
 				return NextResponse.json(
 					{
 						error: rateLimitResult.blocked
@@ -155,114 +172,51 @@ export default withAuth(
 							: "Rate limit exceeded. Please try again later.",
 						retryAfter: rateLimitResult.retryAfter,
 					},
-					{
-						status: 429,
-						headers,
-					},
+					{ status: 429, headers },
 				);
 			}
 
-			// Add rate limit headers to successful responses
-			response.headers.set(
-				"X-RateLimit-Limit",
-				rateLimitConfig.maxRequests.toString(),
-			);
-			response.headers.set(
-				"X-RateLimit-Remaining",
-				rateLimitResult.remaining.toString(),
-			);
-			response.headers.set(
-				"X-RateLimit-Reset",
-				new Date(rateLimitResult.resetTime).toISOString(),
-			);
+			// Add headers for successful requests
+			response.headers.set("X-RateLimit-Limit", rateLimitConfig.maxRequests.toString());
+			response.headers.set("X-RateLimit-Remaining", rateLimitResult.remaining.toString());
+			response.headers.set("X-RateLimit-Reset", new Date(rateLimitResult.resetTime).toISOString());
 		}
 
-		// Track API performance and activity for API routes
-		if (request.nextUrl.pathname.startsWith("/api/")) {
-			// Generate unique request ID for tracking
+		// Track API performance for API routes
+		if (pathname.startsWith("/api/")) {
 			const requestId = performanceMonitor.startAPIRequest(
 				request.method,
-				request.nextUrl.pathname,
+				pathname,
 				startTime,
 			);
-
-			// Add headers for tracking
 			response.headers.set("X-Request-Start", startTime.toString());
 			response.headers.set("X-Request-ID", requestId);
-
-			// Note: API tracking is now handled by individual API routes
-			// due to Prisma compatibility issues in middleware
 		}
 
-		// Security logging for suspicious activities
+		// Security logging
 		const userAgent = request.headers.get("user-agent") || "";
 		const ip = getClientIdentifier(request);
 
-		// Log suspicious user agents
-		if (
-			userAgent.includes("curl") ||
-			userAgent.includes("wget") ||
-			userAgent.includes("python")
-		) {
-			console.warn("Suspicious User-Agent detected:", {
-				ip,
-				userAgent,
-				pathname,
-			});
+		if (userAgent.includes("curl") || userAgent.includes("wget") || userAgent.includes("python")) {
+			console.warn("Suspicious User-Agent detected:", { ip, userAgent, pathname });
 		}
 
-		// Enhanced security validation for URL path
 		const securityCheck = validateSecurity(pathname);
 		if (!securityCheck.isValid) {
-			console.warn("Security threat detected in URL path:", {
-				ip,
-				pathname,
-				threats: securityCheck.threats,
-				userAgent,
-			});
-
-			// Block obvious attack attempts
-			if (
-				securityCheck.threats.includes("PATH_TRAVERSAL") ||
-				securityCheck.threats.includes("COMMAND_INJECTION")
-			) {
-				return NextResponse.json(
-					{ error: "Invalid request path" },
-					{ status: 400 },
-				);
+			console.warn("Security threat detected in URL path:", { ip, pathname, threats: securityCheck.threats, userAgent });
+			if (securityCheck.threats.includes("PATH_TRAVERSAL") || securityCheck.threats.includes("COMMAND_INJECTION")) {
+				return NextResponse.json({ error: "Invalid request path" }, { status: 400 });
 			}
 		}
 
-		// Log potential attack patterns
-		if (
-			pathname.includes("..") ||
-			pathname.includes("admin") ||
-			pathname.includes("wp-admin") ||
-			pathname.includes(".env") ||
-			pathname.includes("config") ||
-			pathname.includes("backup")
-		) {
-			console.warn("Potential attack attempt:", {
-				ip,
-				pathname,
-				userAgent,
-			});
-		}
-
-		// Block common attack patterns
 		const suspiciousPatterns = [
 			/\.(env|config|backup|sql|log)$/i,
 			/\/(\.git|\.svn|\.hg)/i,
 			/\/(wp-admin|phpmyadmin|adminer)/i,
 			/\/(etc\/passwd|proc\/version)/i,
 		];
-
-		if (suspiciousPatterns.some((pattern) => pattern.test(pathname))) {
-			console.warn("Blocked suspicious request:", {
-				ip,
-				pathname,
-				userAgent,
-			});
+		if (suspiciousPatterns.some(pattern => pattern.test(pathname))) {
+			console.warn("Blocked suspicious request:", { ip, pathname, userAgent });
 			return NextResponse.json({ error: "Access denied" }, { status: 403 });
 		}
 
@@ -273,7 +227,7 @@ export default withAuth(
 			authorized: ({ token, req }) => {
 				const { pathname } = req.nextUrl;
 
-				// Allow access to public routes
+				// Public routes
 				if (
 					pathname === "/" ||
 					pathname.startsWith("/api/auth/") ||
@@ -292,30 +246,17 @@ export default withAuth(
 					return true;
 				}
 
-				// Require authentication for protected routes
+				// Protected routes
 				if (pathname.startsWith("/home")) {
-					// Check if token exists and has required properties
-					if (!token) {
-						console.log("No token found for protected route:", pathname);
+					if (!token || !token.id || !token.email) {
+						console.log("Invalid or missing token for route:", pathname);
 						return false;
 					}
-
-					// Additional validation for token
-					if (!token.id || !token.email) {
-						console.log("Invalid token structure:", {
-							id: token.id,
-							email: token.email,
-						});
-						return false;
-					}
-
 					return true;
 				}
 
-				// For API routes, be more lenient but still check token
-				if (pathname.startsWith("/api/")) {
-					return !!token;
-				}
+				// API routes: require token
+				if (pathname.startsWith("/api/")) return !!token;
 
 				return true;
 			},
@@ -324,8 +265,5 @@ export default withAuth(
 );
 
 export const config = {
-	matcher: [
-		// Match all routes except static files and images
-		"/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)",
-	],
+	matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

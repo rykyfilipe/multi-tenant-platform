@@ -22,6 +22,10 @@ import { JWT } from "next-auth/jwt";
 import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";
 import createPredefinedTables from "@/lib/predefinedTables";
 
+
+
+
+
 export const authOptions = {
 	providers: [
 		GoogleProvider({
@@ -35,6 +39,7 @@ export const authOptions = {
 					scope: "openid email profile",
 				},
 			},
+			allowDangerousEmailAccountLinking: true,
 		}),
 		CredentialsProvider({
 			name: "Credentials",
@@ -42,37 +47,20 @@ export const authOptions = {
 				email: { label: "Email", type: "text", placeholder: "jsmith" },
 				password: { label: "Password", type: "password" },
 			},
-			async authorize(credentials, req) {
-				if (!credentials?.email || !credentials?.password) {
-					return null;
-				}
+			async authorize(credentials) {
+				if (!credentials?.email || !credentials?.password) return null;
 
 				try {
 					const user = await prisma.findFirstWithCache(
 						prisma.user,
-						{
-							where: {
-								email: credentials.email,
-							},
-						},
-						DEFAULT_CACHE_STRATEGIES.user,
+						{ where: { email: credentials.email } },
+						DEFAULT_CACHE_STRATEGIES.user
 					);
 
-					if (!user) {
-						return null;
-					}
+					if (!user || !user.password) return null;
 
-					// Verify the password
-					if (!user.password) return null;
-
-					const isPasswordValid = await verifyPassword(
-						credentials.password,
-						user.password,
-					);
-
-					if (!isPasswordValid) {
-						return null;
-					}
+					const isPasswordValid = await verifyPassword(credentials.password, user.password);
+					if (!isPasswordValid) return null;
 
 					return {
 						id: user.id.toString(),
@@ -97,193 +85,112 @@ export const authOptions = {
 		error: "/",
 	},
 	callbacks: {
-		async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
-			// Handle relative URLs
-			if (url.startsWith("/")) return `${baseUrl}${url}`;
-
-			// Handle URLs on the same origin
-			if (new URL(url).origin === baseUrl) return url;
-
-			// For production, ensure we redirect to the dashboard after successful auth
-			if (url.includes("callbackUrl")) {
-				const callbackUrl = new URL(url).searchParams.get("callbackUrl");
-				if (callbackUrl && callbackUrl.startsWith("/")) {
-					return `${baseUrl}${callbackUrl}`;
-				}
-			}
-
-			// Handle the specific production URL case
-			if (url.includes("ydv.digital") && url.includes("callbackUrl")) {
+		async redirect({ url, baseUrl }) {
+			try {
+				if (url.startsWith("/")) return `${baseUrl}${url}`;
 				const urlObj = new URL(url);
+				if (urlObj.origin === baseUrl) return url;
+
 				const callbackUrl = urlObj.searchParams.get("callbackUrl");
 				if (callbackUrl) {
-					// If callbackUrl is a full URL, use it directly
-					if (callbackUrl.startsWith("http")) {
-						return callbackUrl;
-					}
-					// If callbackUrl is relative, prepend the base URL
-					if (callbackUrl.startsWith("/")) {
-						return `${baseUrl}${callbackUrl}`;
-					}
+					if (callbackUrl.startsWith("http")) return callbackUrl;
+					if (callbackUrl.startsWith("/")) return `${baseUrl}${callbackUrl}`;
 				}
-			}
-
-			// Default fallback - redirect to auth callback page to ensure session is properly loaded
+			} catch {}
 			return `${baseUrl}/auth-callback`;
 		},
-		async signIn({
-			user,
-			account,
-			profile,
-		}: {
-			user: User;
-			account: Account | null;
-			profile?: any;
-		}) {
-			// Always allow sign in - user creation will be handled in JWT callback
+		async signIn({ user, account }) {
+			console.log(`SignIn callback: ${user.email}, provider: ${account?.provider}`);
+			if (account?.provider === "google" && user.email) {
+				try {
+					const existingUser = await prisma.user.findFirst({ where: { email: user.email } });
+					if (!existingUser) {
+						const newUser = await prisma.user.create({
+							data: {
+								email: user.email,
+								firstName: user.name?.split(" ")[0] || "",
+								lastName: user.name?.split(" ").slice(1).join(" ") || "",
+								password: "",
+								role: "ADMIN",
+								subscriptionStatus: "active",
+								subscriptionPlan: "Free",
+								subscriptionCurrentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+							},
+						});
+						const newTenant = await prisma.tenant.create({
+							data: { name: `${newUser.firstName}'s tenant`, adminId: Number(newUser.id), users: { connect: { id: Number(newUser.id) } } },
+						});
+						await prisma.database.create({ data: { tenantId: newTenant.id } });
+						await prisma.user.update({ where: { id: newUser.id }, data: { tenantId: newTenant.id } });
+					}
+				} catch (error) {
+					console.error("Google OAuth signIn error:", error);
+				}
+			}
 			return true;
 		},
-		async jwt({
-			token,
-			account,
-			user,
-		}: {
-			token: JWT;
-			account: Account | null;
-			user?: User;
-		}) {
+		async jwt({ token, account, user }) {
 			try {
-				// Handle initial sign in
 				if (user && account) {
 					if (account.provider === "google" && user.email) {
-						try {
-							let dbUser = await prisma.findFirstWithCache(
-								prisma.user,
-								{ where: { email: user.email } },
-								DEFAULT_CACHE_STRATEGIES.user,
-							);
-
-							if (!dbUser) {
-								// Create new user for Google OAuth
-								const newUser = await prisma.user.create({
-									data: {
-										email: user.email,
-										firstName: user.name?.split(" ")[0] || "",
-										lastName: user.name?.split(" ").slice(1).join(" ") || "",
-										password: "",
-										role: "ADMIN",
-										subscriptionStatus: "active",
-										subscriptionPlan: "Free",
-										subscriptionCurrentPeriodEnd: new Date(
-											Date.now() + 365 * 24 * 60 * 60 * 1000,
-										),
-									},
-								});
-
-								const newTenant = await prisma.tenant.create({
-									data: {
-										name: newUser.firstName + "'s tenant",
-										adminId: Number(newUser.id),
-										users: { connect: { id: Number(newUser.id) } },
-									},
-								});
-
-								await prisma.database.create({
-									data: {
-										tenantId: newTenant.id,
-									},
-								});
-
-								await prisma.user.update({
-									where: { id: newUser.id },
-									data: { tenantId: newTenant.id },
-								});
-
-								dbUser = newUser;
-							}
-
-							// Update token with user data
-							token.id = dbUser.id.toString();
-							token.email = dbUser.email;
-							token.firstName = dbUser.firstName;
-							token.lastName = dbUser.lastName;
-							token.role = dbUser.role;
-							token.tenantId = dbUser.tenantId?.toString() ?? null;
-							token.profileImage = dbUser.profileImage || undefined;
-
-							// Generate custom JWT for API usage
-							const payload = {
-								userId: dbUser.id,
-								role: dbUser.role.toString(),
-							};
-							token.customJWT = generateToken(payload, "7d");
-						} catch (error) {
-							console.error("Error handling Google OAuth user:", error);
+						let dbUser = await prisma.findFirstWithCache(prisma.user, { where: { email: user.email } }, DEFAULT_CACHE_STRATEGIES.user);
+						if (!dbUser) {
+							const newUser = await prisma.user.create({
+								data: {
+									email: user.email,
+									firstName: user.name?.split(" ")[0] || "",
+									lastName: user.name?.split(" ").slice(1).join(" ") || "",
+									password: "",
+									role: "ADMIN",
+									subscriptionStatus: "active",
+									subscriptionPlan: "Free",
+									subscriptionCurrentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+								},
+							});
+							const newTenant = await prisma.tenant.create({ data: { name: `${newUser.firstName}'s tenant`, adminId: Number(newUser.id), users: { connect: { id: Number(newUser.id) } } } });
+							await prisma.database.create({ data: { tenantId: newTenant.id } });
+							await prisma.user.update({ where: { id: newUser.id }, data: { tenantId: newTenant.id } });
+							dbUser = newUser;
 						}
+						Object.assign(token, {
+							id: dbUser.id.toString(),
+							email: dbUser.email,
+							firstName: dbUser.firstName,
+							lastName: dbUser.lastName,
+							role: dbUser.role,
+							tenantId: dbUser.tenantId?.toString() ?? null,
+							profileImage: dbUser.profileImage || undefined,
+							customJWT: generateToken({ userId: dbUser.id, role: dbUser.role.toString() }, "7d"),
+						});
 					} else if (user.role) {
-						// Handle credentials login
-						token.id = user.id;
-						token.email = user.email;
-						token.firstName = user.firstName;
-						token.lastName = user.lastName;
-						token.role = user.role;
-						token.tenantId = user.tenantId;
-						token.profileImage = (user as any).profileImage || undefined;
-
-						// Generate custom JWT for API usage
-						const payload = {
-							userId: Number(user.id),
-							role: user.role.toString(),
-						};
-						token.customJWT = generateToken(payload, "7d");
+						Object.assign(token, {
+							id: user.id,
+							email: user.email,
+							firstName: user.firstName,
+							lastName: user.lastName,
+							role: user.role,
+							tenantId: user.tenantId,
+							profileImage: (user as any).profileImage || undefined,
+							customJWT: generateToken({ userId: Number(user.id), role: user.role.toString() }, "7d"),
+						});
 					}
 				}
 
-				// For subsequent calls when user is undefined but we have token data
 				if (!token.customJWT && token.id && token.role) {
-					try {
-						const payload = {
-							userId: Number(token.id),
-							role: token.role.toString(),
-						};
-						token.customJWT = generateToken(payload, "7d");
-					} catch (error) {
-						console.error("Error regenerating token:", error);
-					}
+					token.customJWT = generateToken({ userId: Number(token.id), role: token.role.toString() }, "7d");
 				}
 
 				if (token.id && token.role) {
-					try {
-						const dbUser = await prisma.findFirstWithCache(
-							prisma.user,
-							{
-								where: { id: parseInt(token.id as string) },
-								select: {
-									subscriptionStatus: true,
-									subscriptionPlan: true,
-									subscriptionCurrentPeriodEnd: true,
-									profileImage: true,
-								},
-							},
-							DEFAULT_CACHE_STRATEGIES.user,
-						);
-
-						if (dbUser) {
-							token.subscriptionStatus = dbUser.subscriptionStatus;
-							token.subscriptionPlan = dbUser.subscriptionPlan;
-							token.subscriptionCurrentPeriodEnd =
-								dbUser.subscriptionCurrentPeriodEnd;
-							token.profileImage = dbUser.profileImage || undefined;
-						}
-					} catch (error) {
-						console.error("Error fetching subscription data:", error);
+					const dbUser = await prisma.findFirstWithCache(prisma.user, { where: { id: parseInt(token.id as string) }, select: { subscriptionStatus: true, subscriptionPlan: true, subscriptionCurrentPeriodEnd: true, profileImage: true } }, DEFAULT_CACHE_STRATEGIES.user);
+					if (dbUser) {
+						token.subscriptionStatus = dbUser.subscriptionStatus;
+						token.subscriptionPlan = dbUser.subscriptionPlan;
+						token.subscriptionCurrentPeriodEnd = dbUser.subscriptionCurrentPeriodEnd;
+						token.profileImage = dbUser.profileImage || undefined;
 					}
 				}
 
-				// Store access token from OAuth providers
-				if (account?.access_token) {
-					token.accessToken = account.access_token;
-				}
+				if (account?.access_token) token.accessToken = account.access_token;
 
 				return token;
 			} catch (error) {
@@ -291,107 +198,52 @@ export const authOptions = {
 				return token;
 			}
 		},
-		async session({ session, token }: { session: Session; token: JWT }) {
-			try {
-				if (token && token.role) {
-					session.user = {
-						id: (token.id as string) || "",
-						email: (token.email as string) || "",
-						firstName: (token.firstName as string) || "",
-						lastName: (token.lastName as string) || "",
-						role: (token.role as any) || null,
-						name:
-							token.firstName && token.lastName
-								? `${token.firstName} ${token.lastName}`
-								: token.email || "",
-						image: (token.profileImage as string) || undefined,
-						profileImage: (token.profileImage as string) || undefined,
-						tenantId: (token.tenantId as string) || null,
-					};
-
-					// Add custom JWT and access token for API usage
-					session.accessToken = (token.accessToken as string) || "";
-					session.customJWT = (token.customJWT as string) || "";
-
-					session.subscription = {
-						status: (token.subscriptionStatus as string) || null,
-						plan: (token.subscriptionPlan as string) || null,
-						currentPeriodEnd:
-							(token.subscriptionCurrentPeriodEnd as Date) || null,
-					};
-				}
-
-				return session;
-			} catch (error) {
-				console.error("Session callback error:", error);
-				return session;
+		async session({ session, token }) {
+			if (token && token.role) {
+				session.user = {
+					id: (token.id as string) || "",
+					email: (token.email as string) || "",
+					firstName: (token.firstName as string) || "",
+					lastName: (token.lastName as string) || "",
+					role: (token.role as any) || null,
+					name: token.firstName && token.lastName ? `${token.firstName} ${token.lastName}` : token.email || "",
+					image: (token.profileImage as string) || undefined,
+					profileImage: (token.profileImage as string) || undefined,
+					tenantId: (token.tenantId as string) || null,
+				};
+				session.accessToken = (token.accessToken as string) || "";
+				session.customJWT = (token.customJWT as string) || "";
+				session.subscription = {
+					status: (token.subscriptionStatus as string) || null,
+					plan: (token.subscriptionPlan as string) || null,
+					currentPeriodEnd: (token.subscriptionCurrentPeriodEnd as Date) || null,
+				};
 			}
+			return session;
 		},
 	},
-	session: {
-		strategy: "jwt" as const,
-		maxAge: 30 * 24 * 60 * 60, // 30 days
-		updateAge: 24 * 60 * 60, // 24 hours
-	},
-	// Cookie configuration for NextAuth v4 in App Router
-	// Note: In v4, cookie names are automatically prefixed with NEXTAUTH_URL
+	session: { strategy: "jwt" as const, maxAge: 30 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
 	cookies: {
-		sessionToken: {
-			name: `next-auth.session-token`,
-			options: {
-				httpOnly: true,
-				sameSite: "lax" as const,
-				path: "/",
-				secure: process.env.NODE_ENV === "production",
-				maxAge: 30 * 24 * 60 * 60, // 30 days
-				domain: process.env.NODE_ENV === "production" ? ".ydv.digital" : undefined,
-			},
-		},
-		callbackUrl: {
-			name: `next-auth.callback-url`,
-			options: {
-				sameSite: "lax" as const,
-				path: "/",
-				secure: process.env.NODE_ENV === "production",
-				domain: process.env.NODE_ENV === "production" ? ".ydv.digital" : undefined,
-			},
-		},
-		csrfToken: {
-			name: `next-auth.csrf-token`,
-			options: {
-				httpOnly: true,
-				sameSite: "lax" as const,
-				path: "/",
-				secure: process.env.NODE_ENV === "production",
-				domain: process.env.NODE_ENV === "production" ? ".ydv.digital" : undefined,
-			},
-		},
+		sessionToken: { name: `next-auth.session-token`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), domain: process.env.NODE_ENV === "production" ? undefined : "localhost" } },
+		callbackUrl: { name: `next-auth.callback-url`, options: { sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), domain: process.env.NODE_ENV === "production" ? undefined : "localhost" } },
+		csrfToken: { name: `next-auth.csrf-token`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), domain: process.env.NODE_ENV === "production" ? undefined : "localhost" } },
+		pkceCodeVerifier: { name: `next-auth.pkce.code_verifier`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), maxAge: 60 * 15 } },
+		state: { name: `next-auth.state`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), maxAge: 60 * 15 } },
+		nonce: { name: `next-auth.nonce`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https") } },
 	},
-	jwt: {
-		maxAge: 30 * 24 * 60 * 60, // 30 days
-	},
-	useSecureCookies: process.env.NODE_ENV === "production",
+	jwt: { maxAge: 30 * 24 * 60 * 60 },
+	useSecureCookies: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 	secret: process.env.NEXTAUTH_SECRET,
-	debug:
-		process.env.NODE_ENV === "development" ||
-		process.env.NEXTAUTH_DEBUG === "true",
+	debug: process.env.NODE_ENV === "development",
 	trustHost: true,
-	logger: {
-		error(code: string, metadata: any) {
-			console.error("NextAuth Error:", code, metadata);
-		},
-		warn(code: string) {
-			console.warn("NextAuth Warning:", code);
-		},
-		debug(code: string, metadata: any) {
-			if (
-				process.env.NODE_ENV === "development" ||
-				process.env.NEXTAUTH_DEBUG === "true"
-			) {
-				console.log("NextAuth Debug:", code, metadata);
-			}
-		},
+	adapter: undefined,
+	events: {
+		async signIn({ user, account }) { console.log(`User ${user.email} signed in via ${account?.provider}`); },
+		async signOut() { console.log("User signed out"); },
+		async createUser({ user }) { console.log(`New user created: ${user.email}`); },
+		async session() { if (process.env.NODE_ENV === "development") console.log("Session event triggered"); },
 	},
+	onError: async (error, context) => { console.error("NextAuth error:", error, "Context:", context); },
 };
 interface JwtPayload {
 	userId: number;
