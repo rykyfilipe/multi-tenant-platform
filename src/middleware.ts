@@ -58,6 +58,47 @@ export async function middleware(request: NextRequest) {
 		}
 	}
 
+	// OAuth debugging endpoint
+	if (
+		request.nextUrl.pathname === "/api/dev/oauth-debug" &&
+		process.env.NODE_ENV === "development"
+	) {
+		const cookies = request.headers.get("cookie") || "";
+		const nextAuthCookies = cookies
+			.split(";")
+			.filter(cookie => cookie.includes("next-auth"))
+			.map(cookie => cookie.trim());
+		
+		return NextResponse.json({
+			message: "OAuth Debug Information",
+			environment: {
+				NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+				NODE_ENV: process.env.NODE_ENV,
+				GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? "Set" : "Not set",
+			},
+			request: {
+				url: request.url,
+				origin: request.nextUrl.origin,
+				pathname: request.nextUrl.pathname,
+				search: request.nextUrl.search,
+				headers: {
+					host: request.headers.get("host"),
+					origin: request.headers.get("origin"),
+					referer: request.headers.get("referer"),
+					userAgent: request.headers.get("user-agent"),
+				},
+			},
+			cookies: {
+				all: cookies ? "Present" : "Not present",
+				nextAuth: nextAuthCookies,
+			},
+			expectedCallbacks: {
+				google: `${request.nextUrl.origin}/api/auth/callback/google`,
+				credentials: `${request.nextUrl.origin}/api/auth/callback/credentials`,
+			},
+		});
+	}
+
 	// Debug endpoint for development
 	if (
 		request.nextUrl.pathname === "/api/dev/debug" &&
@@ -77,6 +118,18 @@ export async function middleware(request: NextRequest) {
 			pathname,
 			method: request.method,
 			userAgent: request.headers.get("user-agent"),
+			headers: {
+				host: request.headers.get("host"),
+				origin: request.headers.get("origin"),
+				referer: request.headers.get("referer"),
+				cookie: request.headers.get("cookie") ? "Present" : "Not present",
+			},
+			url: {
+				href: request.url,
+				origin: request.nextUrl.origin,
+				pathname: request.nextUrl.pathname,
+				search: request.nextUrl.search,
+			},
 		});
 	}
 

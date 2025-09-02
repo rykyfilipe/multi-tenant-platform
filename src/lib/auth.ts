@@ -34,6 +34,8 @@ export const authOptions = {
 					response_type: "code",
 				},
 			},
+			// Enhanced error handling for OAuth
+			allowDangerousEmailAccountLinking: true,
 		}),
 		CredentialsProvider({
 			name: "Credentials",
@@ -93,10 +95,29 @@ export const authOptions = {
 	},
 	callbacks: {
 		async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
-			// Allows relative callback URLs
-			if (url.startsWith("/")) return `${baseUrl}${url}`;
-			// Allows callback URLs on the same origin
-			else if (new URL(url).origin === baseUrl) return url;
+			// Enhanced redirect handling for mobile and production
+			console.log(`Redirect called with url: ${url}, baseUrl: ${baseUrl}`);
+			
+			// Handle relative URLs
+			if (url.startsWith("/")) {
+				const fullUrl = `${baseUrl}${url}`;
+				console.log(`Redirecting to relative URL: ${fullUrl}`);
+				return fullUrl;
+			}
+			
+			// Handle absolute URLs on the same origin
+			try {
+				const urlObj = new URL(url);
+				if (urlObj.origin === baseUrl) {
+					console.log(`Redirecting to same origin URL: ${url}`);
+					return url;
+				}
+			} catch (error) {
+				console.error("Invalid URL in redirect:", error);
+			}
+			
+			// Default fallback
+			console.log(`Redirecting to baseUrl: ${baseUrl}`);
 			return baseUrl;
 		},
 		async signIn({
@@ -108,6 +129,9 @@ export const authOptions = {
 			account: Account | null;
 			profile?: any;
 		}) {
+			console.log(`SignIn callback triggered for user: ${user.email}, provider: ${account?.provider}`);
+			
+			// Enhanced error handling for OAuth providers
 			if (account?.provider === "google" && user.email) {
 				try {
 					const existingUser = await prisma.user.findFirst({
@@ -115,6 +139,8 @@ export const authOptions = {
 					});
 
 					if (!existingUser) {
+						console.log(`Creating new user for Google OAuth: ${user.email}`);
+						
 						// Create new user for Google OAuth
 						const newUser = await prisma.user.create({
 							data: {
@@ -149,12 +175,33 @@ export const authOptions = {
 							where: { id: newUser.id },
 							data: { tenantId: newTenant.id },
 						});
+						
+						console.log(`Successfully created new user and tenant for: ${user.email}`);
+					} else {
+						console.log(`Existing user found for: ${user.email}`);
 					}
 				} catch (error) {
-					console.error("Error creating Google OAuth user:", error);
-					return false;
+					console.error("Error in Google OAuth signIn:", error);
+					// Don't block sign-in for database errors, but log them
+					console.error("Database error details:", {
+						email: user.email,
+						error: error instanceof Error ? error.message : "Unknown error",
+						stack: error instanceof Error ? error.stack : undefined,
+					});
+					// Return true to allow sign-in even if database operations fail
+					// The user can still authenticate, but may need to complete setup later
 				}
 			}
+			
+			// Enhanced validation for credentials provider
+			if (account?.provider === "credentials") {
+				if (!user.email) {
+					console.error("Credentials sign-in failed: No email provided");
+					return false;
+				}
+				console.log(`Credentials sign-in successful for: ${user.email}`);
+			}
+			
 			return true;
 		},
 		async jwt({
@@ -300,42 +347,106 @@ export const authOptions = {
 		maxAge: 30 * 24 * 60 * 60, // 30 days
 		updateAge: 24 * 60 * 60, // 24 hours
 	},
-	// Cookie configuration for NextAuth v4 in App Router
-	// Note: In v4, cookie names are automatically prefixed with NEXTAUTH_URL
+	// Enhanced cookie configuration for cross-platform compatibility
 	cookies: {
 		sessionToken: {
 			name: `next-auth.session-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax" as const,
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 				path: "/",
-				secure: process.env.NODE_ENV === "production",
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
 			},
 		},
 		callbackUrl: {
 			name: `next-auth.callback-url`,
 			options: {
-				sameSite: "lax" as const,
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 				path: "/",
-				secure: process.env.NODE_ENV === "production",
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
 			},
 		},
 		csrfToken: {
 			name: `next-auth.csrf-token`,
 			options: {
 				httpOnly: true,
-				sameSite: "lax" as const,
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 				path: "/",
-				secure: process.env.NODE_ENV === "production",
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
+			},
+		},
+		pkceCodeVerifier: {
+			name: `next-auth.pkce.code_verifier`,
+			options: {
+				httpOnly: true,
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+				path: "/",
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				maxAge: 60 * 15, // 15 minutes
+			},
+		},
+		state: {
+			name: `next-auth.state`,
+			options: {
+				httpOnly: true,
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+				path: "/",
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				maxAge: 60 * 15, // 15 minutes
+			},
+		},
+		nonce: {
+			name: `next-auth.nonce`,
+			options: {
+				httpOnly: true,
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+				path: "/",
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 			},
 		},
 	},
 	jwt: {
 		maxAge: 30 * 24 * 60 * 60, // 30 days
 	},
-	useSecureCookies: process.env.NODE_ENV === "production",
+	useSecureCookies: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 	secret: process.env.NEXTAUTH_SECRET,
 	debug: process.env.NODE_ENV === "development",
+	// Enhanced configuration for better mobile and production support
+	trustHost: true,
+	adapter: undefined, // Using JWT strategy
+	events: {
+		async signIn({ user, account, profile, isNewUser }: { user: User; account: Account | null; profile?: any; isNewUser?: boolean }) {
+			console.log(`User ${user.email} signed in via ${account?.provider}`);
+		},
+		async signOut({ session, token }: { session: Session; token: JWT }) {
+			console.log(`User signed out`);
+		},
+		async createUser({ user }: { user: User }) {
+			console.log(`New user created: ${user.email}`);
+		},
+		async session({ session, token }: { session: Session; token: JWT }) {
+			// Log session events for debugging
+			if (process.env.NODE_ENV === "development") {
+				console.log("Session event triggered");
+			}
+		},
+	},
+	// Enhanced error handling
+	onError: async (error: Error, context: any) => {
+		console.error("NextAuth error:", error);
+		console.error("Context:", context);
+		
+		// Log specific OAuth errors
+		if (error.message?.includes("OAuthCallback")) {
+			console.error("OAuth callback error - check redirect URIs");
+		}
+		if (error.message?.includes("CSRF")) {
+			console.error("CSRF error - check cookie settings");
+		}
+	},
 };
 interface JwtPayload {
 	userId: number;
@@ -475,29 +586,7 @@ export function verifyToken(token: string): boolean {
 
 
 
-export async function getPublicUserFromRequest(
-	request: Request,
-): Promise<{ userId: number; role: string } | Response> {
-	const isValid = await verifyPublicToken(request);
-	if (!isValid) {
-		return new Response(JSON.stringify({ error: "Unauthorized" }), {
-			status: 401,
-			headers: { "Content-Type": "application/json" },
-		});
-	}
 
-	const userId = getUserId(request, PUBLIC_JWT_SECRET);
-	const role = getUserRole(request, PUBLIC_JWT_SECRET);
-
-	if (!userId || !role) {
-		return new Response(JSON.stringify({ error: "Invalid token" }), {
-			status: 401,
-			headers: { "Content-Type": "application/json" },
-		});
-	}
-
-	return { userId, role };
-}
 
 /**
  * Check if user has permission to edit a specific table

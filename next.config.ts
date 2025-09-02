@@ -34,6 +34,27 @@ const performanceHeaders = [
 module.exports = {
 	eslint: { ignoreDuringBuilds: true },
 	typescript: { ignoreBuildErrors: true },
+	
+	// Enhanced configuration for OAuth and HTTPS
+	async redirects() {
+		return [
+			// Force HTTPS in production
+			...(process.env.NODE_ENV === "production" ? [
+				{
+					source: "/(.*)",
+					has: [
+						{
+							type: "header",
+							key: "x-forwarded-proto",
+							value: "http",
+						},
+					],
+					destination: "https://:path*",
+					permanent: true,
+				},
+			] : []),
+		];
+	},
 
 	images: {
 		remotePatterns: [
@@ -69,6 +90,19 @@ module.exports = {
 				source: "/api/(.*)",
 				headers: [
 					{ key: "Cache-Control", value: "public, max-age=60, s-maxage=300" },
+				],
+			},
+			// Enhanced headers for OAuth endpoints
+			{
+				source: "/api/auth/(.*)",
+				headers: [
+					{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+					{ key: "Pragma", value: "no-cache" },
+					{ key: "Expires", value: "0" },
+					// Allow cross-origin for OAuth callbacks
+					{ key: "Access-Control-Allow-Origin", value: "*" },
+					{ key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
+					{ key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
 				],
 			},
 		];
