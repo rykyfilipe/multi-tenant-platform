@@ -37,9 +37,17 @@ export const authOptions = {
 					access_type: "offline",
 					response_type: "code",
 					scope: "openid email profile",
+					// Mobile-specific parameters
+					include_granted_scopes: "true",
+					login_hint: "",
 				},
 			},
 			allowDangerousEmailAccountLinking: true,
+			// Enhanced configuration for mobile compatibility
+			checks: ["state", "pkce"],
+			client: {
+				token_endpoint_auth_method: "client_secret_post",
+			},
 		}),
 		CredentialsProvider({
 			name: "Credentials",
@@ -87,17 +95,44 @@ export const authOptions = {
 	callbacks: {
 		async redirect({ url, baseUrl }) {
 			try {
-				if (url.startsWith("/")) return `${baseUrl}${url}`;
+				console.log(`Redirect callback - url: ${url}, baseUrl: ${baseUrl}`);
+				
+				// Handle relative URLs
+				if (url.startsWith("/")) {
+					const redirectUrl = `${baseUrl}${url}`;
+					console.log(`Redirecting to relative URL: ${redirectUrl}`);
+					return redirectUrl;
+				}
+				
+				// Handle absolute URLs
 				const urlObj = new URL(url);
-				if (urlObj.origin === baseUrl) return url;
+				if (urlObj.origin === baseUrl) {
+					console.log(`Redirecting to same origin URL: ${url}`);
+					return url;
+				}
 
+				// Handle callback URL parameter
 				const callbackUrl = urlObj.searchParams.get("callbackUrl");
 				if (callbackUrl) {
-					if (callbackUrl.startsWith("http")) return callbackUrl;
-					if (callbackUrl.startsWith("/")) return `${baseUrl}${callbackUrl}`;
+					if (callbackUrl.startsWith("http")) {
+						console.log(`Redirecting to external callback URL: ${callbackUrl}`);
+						return callbackUrl;
+					}
+					if (callbackUrl.startsWith("/")) {
+						const relativeCallbackUrl = `${baseUrl}${callbackUrl}`;
+						console.log(`Redirecting to relative callback URL: ${relativeCallbackUrl}`);
+						return relativeCallbackUrl;
+					}
 				}
-			} catch {}
-			return `${baseUrl}/auth-callback`;
+				
+				// Default redirect to auth-callback page
+				const defaultRedirect = `${baseUrl}/auth-callback`;
+				console.log(`Default redirect to: ${defaultRedirect}`);
+				return defaultRedirect;
+			} catch (error) {
+				console.error("Redirect callback error:", error);
+				return `${baseUrl}/auth-callback`;
+			}
 		},
 		async signIn({ user, account }) {
 			console.log(`SignIn callback: ${user.email}, provider: ${account?.provider}`);
@@ -224,12 +259,68 @@ export const authOptions = {
 	},
 	session: { strategy: "jwt" as const, maxAge: 30 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
 	cookies: {
-		sessionToken: { name: `next-auth.session-token`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), domain: process.env.NODE_ENV === "production" ? undefined : "localhost" } },
-		callbackUrl: { name: `next-auth.callback-url`, options: { sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), domain: process.env.NODE_ENV === "production" ? undefined : "localhost" } },
-		csrfToken: { name: `next-auth.csrf-token`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), domain: process.env.NODE_ENV === "production" ? undefined : "localhost" } },
-		pkceCodeVerifier: { name: `next-auth.pkce.code_verifier`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), maxAge: 60 * 15 } },
-		state: { name: `next-auth.state`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"), maxAge: 60 * 15 } },
-		nonce: { name: `next-auth.nonce`, options: { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https") } },
+		sessionToken: { 
+			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.session-token` : `next-auth.session-token`, 
+			options: { 
+				httpOnly: true, 
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				path: "/", 
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
+				maxAge: 30 * 24 * 60 * 60, // 30 days
+			} 
+		},
+		callbackUrl: { 
+			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.callback-url` : `next-auth.callback-url`, 
+			options: { 
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				path: "/", 
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
+				maxAge: 60 * 15, // 15 minutes
+			} 
+		},
+		csrfToken: { 
+			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.csrf-token` : `next-auth.csrf-token`, 
+			options: { 
+				httpOnly: true, 
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				path: "/", 
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
+				maxAge: 60 * 15, // 15 minutes
+			} 
+		},
+		pkceCodeVerifier: { 
+			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.pkce.code_verifier` : `next-auth.pkce.code_verifier`, 
+			options: { 
+				httpOnly: true, 
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				path: "/", 
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				maxAge: 60 * 15, // 15 minutes
+			} 
+		},
+		state: { 
+			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.state` : `next-auth.state`, 
+			options: { 
+				httpOnly: true, 
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				path: "/", 
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				maxAge: 60 * 15, // 15 minutes
+			} 
+		},
+		nonce: { 
+			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.nonce` : `next-auth.nonce`, 
+			options: { 
+				httpOnly: true, 
+				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				path: "/", 
+				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
+				maxAge: 60 * 15, // 15 minutes
+			} 
+		},
 	},
 	jwt: { maxAge: 30 * 24 * 60 * 60 },
 	useSecureCookies: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),

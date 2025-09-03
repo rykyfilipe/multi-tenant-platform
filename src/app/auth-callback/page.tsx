@@ -40,12 +40,30 @@ export default function AuthCallbackPage() {
 
 		if (status === "authenticated" && session) {
 			// User is authenticated, redirect to analytics
-			console.log("User authenticated, redirecting to dashboard");
-			router.replace("/home/analytics");
+			console.log("User authenticated, redirecting to dashboard", {
+				user: session.user?.email,
+				tenantId: session.user?.tenantId,
+				role: session.user?.role
+			});
+			
+			// Add a small delay for mobile browsers to ensure proper redirect
+			const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+			const delay = isMobile ? 500 : 100;
+			
+			setTimeout(() => {
+				router.replace("/home/analytics");
+			}, delay);
 		} else if (status === "unauthenticated") {
 			// User is not authenticated, redirect to home
 			console.log("User not authenticated, redirecting to home");
-			router.replace("/");
+			
+			// Add a small delay for mobile browsers
+			const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+			const delay = isMobile ? 500 : 100;
+			
+			setTimeout(() => {
+				router.replace("/");
+			}, delay);
 		}
 	}, [session, status, router]);
 
