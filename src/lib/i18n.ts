@@ -382,6 +382,13 @@ export const translations: Translations = {
 		fr: "Se Déconnecter",
 		de: "Abmelden",
 	},
+	"ui.home": {
+		en: "Home",
+		ro: "Acasă",
+		es: "Inicio",
+		fr: "Accueil",
+		de: "Startseite",
+	},
 	"ui.multiTenantDatabase": {
 		en: "Multi-Tenant Database",
 		ro: "Bază de Date Multi-Tenant",

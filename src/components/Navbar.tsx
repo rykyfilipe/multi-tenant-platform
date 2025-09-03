@@ -163,6 +163,7 @@ const getMobileNavigationItems = (
 export function MobileBottomNavbar() {
 	const { user, tenant, token, setTenant } = useApp();
 	const { t } = useLanguage();
+	const router = useRouter();
 	const pathname = usePathname();
 	const { data: session } = useSession();
 	const { currentTheme, setTheme } = useTenantTheme();
@@ -273,6 +274,15 @@ export function MobileBottomNavbar() {
 								<DropdownMenuSeparator />
 
 								<DropdownMenuItem
+									onClick={() => router.push("/")}
+									className='cursor-pointer premium-interaction'>
+									<Home className='w-4 h-4 mr-2' />
+									{t("ui.home")}
+								</DropdownMenuItem>
+
+								<DropdownMenuSeparator />
+
+								<DropdownMenuItem
 									onClick={handleSignOut}
 									className='cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 premium-interaction'>
 									<LogOut className='w-4 h-4 mr-2' />
@@ -305,8 +315,8 @@ export function AppSidebar() {
 		return null;
 	}
 
-	const handleSignOut = async () => {
-		router.push("/");
+	const handleSignOut = () => {
+		signOut({ callbackUrl: "/" });
 	};
 
 	const toggleSidebar = () => {
@@ -512,6 +522,15 @@ export function AppSidebar() {
 								{currentTheme === "dark"
 									? t("ui.switchToLightTheme")
 									: t("ui.switchToDarkTheme")}
+							</DropdownMenuItem>
+
+							<DropdownMenuSeparator className='bg-black/10 dark:bg-white/10' />
+
+							<DropdownMenuItem
+								onClick={() => router.push("/")}
+								className='cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 focus:bg-black/5 dark:focus:bg-white/10 text-gray-900 dark:text-gray-100 premium-interaction'>
+								<Home className='w-4 h-4 mr-2' />
+								{t("ui.home")}
 							</DropdownMenuItem>
 
 							<DropdownMenuSeparator className='bg-black/10 dark:bg-white/10' />
