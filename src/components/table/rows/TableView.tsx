@@ -91,6 +91,11 @@ export const TableView = memo(function TableView({
 	hasPendingChange,
 	getPendingValue,
 }: Props) {
+	// Early return if table is null or undefined
+	if (!table) {
+		console.log("🔍 TableView - Table is null/undefined, returning null");
+		return null;
+	}
 	console.log("🔍 TableView props:", {
 		hasPendingChange: !!hasPendingChange,
 		getPendingValue: !!getPendingValue,

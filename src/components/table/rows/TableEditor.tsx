@@ -864,7 +864,7 @@ const TableEditor = memo(function TableEditor({
 								</p>
 							</motion.div>
 						</motion.div>
-					) : (
+					) : table ? (
 						<TableView
 							tables={tables || []}
 							table={table}
@@ -890,6 +890,19 @@ const TableEditor = memo(function TableEditor({
 							hasPendingChange={hasPendingChange}
 							getPendingValue={getPendingValue}
 						/>
+					) : (
+						<motion.div
+							className='flex flex-col items-center justify-center py-16 px-8'
+							{...fadeInUp}>
+							<div className='text-center'>
+								<h3 className='text-lg font-semibold text-foreground mb-2'>
+									Table Not Found
+								</h3>
+								<p className='text-muted-foreground'>
+									The requested table could not be loaded.
+								</p>
+							</div>
+						</motion.div>
 					)}
 				</div>
 
