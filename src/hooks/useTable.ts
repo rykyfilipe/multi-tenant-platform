@@ -36,6 +36,12 @@ function useTable(id: string) {
 			if (!res.ok) throw new Error("Failed to fetch table");
 
 			const data = await res.json();
+			console.log("🔍 useTable - Table data loaded:", {
+				table: data,
+				hasColumns: !!data.columns,
+				columnsLength: data.columns?.length,
+				tableId: data.id
+			});
 			setTable(data);
 			setColumns(data.columns || []);
 
