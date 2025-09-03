@@ -34,63 +34,48 @@ const eslintConfig = [
 			"**/*.gen.*",
 		],
 	},
-	{
-		rules: {
-			// Disable ALL ESLint rules globally
-			"*": "off",
-		},
-	},
 	...compat.extends("next/core-web-vitals", "next/typescript"),
 	{
-		rules: {
-			// Disable all React rules completely
-			"react/*": "off",
+		languageOptions: {
+			parserOptions: {
+				project: "./tsconfig.json",
+				tsconfigRootDir: __dirname,
+			},
 		},
-	},
-	{
 		rules: {
-			// Disable all ESLint rules
-			"@typescript-eslint/no-unused-vars": "off",
-			"@typescript-eslint/no-explicit-any": "off",
-			"@typescript-eslint/ban-ts-comment": "off",
-			"@typescript-eslint/no-non-null-assertion": "off",
-			"prefer-const": "off",
-			"no-var": "off",
-			"no-console": "off",
-			"no-debugger": "off",
-			"no-unused-vars": "off",
-			"no-undef": "off",
-			"no-redeclare": "off",
-			"no-constant-condition": "off",
-			"no-empty": "off",
-			"no-extra-semi": "off",
-			"no-irregular-whitespace": "off",
-			"no-multiple-empty-lines": "off",
-			"no-trailing-spaces": "off",
-			"eol-last": "off",
-			indent: "off",
-			quotes: "off",
-			semi: "off",
-			"react/no-unescaped-entities": "off",
-			"react/jsx-key": "off",
-			"react/jsx-no-target-blank": "off",
-			"react/jsx-no-undef": "off",
-			"react/jsx-uses-react": "off",
-			"react/jsx-uses-vars": "off",
-			"react/no-array-index-key": "off",
-			"react/no-children-prop": "off",
-			"react/no-danger": "off",
-			"react/no-deprecated": "off",
-			"react/no-direct-mutation-state": "off",
-			"react/no-find-dom-node": "off",
-			"react/no-is-mounted": "off",
-			"react/no-render-return-value": "off",
-			"react/no-string-refs": "off",
-			"react/no-unknown-property": "off",
-			"react/prop-types": "off",
-			"react/react-in-jsx-scope": "off",
-			"react/self-closing-comp": "off",
-			"react/sort-comp": "off",
+			// PHASE 1: Critical Security and Performance Rules
+			"@typescript-eslint/no-explicit-any": "warn", // Allow any but warn
+			"@typescript-eslint/no-unused-vars": "warn", // Warn about unused vars
+			"no-console": "warn", // Warn about console statements
+			"no-debugger": "error", // Error on debugger statements
+			"no-alert": "warn", // Warn about alert statements
+			"no-eval": "error", // Error on eval usage
+			"no-implied-eval": "error", // Error on implied eval
+			"no-new-func": "error", // Error on Function constructor
+			
+			// PHASE 1: React Security Rules
+			"react/no-danger": "warn", // Warn about dangerouslySetInnerHTML
+			"react/jsx-no-target-blank": "error", // Error on target="_blank" without rel
+			"react/no-unescaped-entities": "warn", // Warn about unescaped entities
+			
+			// PHASE 1: Basic Code Quality
+			"prefer-const": "warn", // Warn about let that could be const
+			"no-var": "error", // Error on var usage
+			"no-duplicate-imports": "error", // Error on duplicate imports
+			"no-unused-expressions": "warn", // Warn about unused expressions
+			
+			// PHASE 1: TypeScript Critical Rules
+			"@typescript-eslint/no-non-null-assertion": "warn", // Warn about non-null assertions
+			// Note: prefer-nullish-coalescing and prefer-optional-chain require type info - enable in Phase 2
+			
+			// PHASE 1: Next.js Specific
+			"@next/next/no-img-element": "warn", // Warn about img instead of Image
+			"@next/next/no-html-link-for-pages": "error", // Error on html links to pages
+			
+			// PHASE 1: Disable Style Rules (to be enabled in Phase 2)
+			"indent": "off",
+			"quotes": "off",
+			"semi": "off",
 			"comma-dangle": "off",
 			"object-curly-spacing": "off",
 			"array-bracket-spacing": "off",
@@ -104,7 +89,7 @@ const eslintConfig = [
 			"arrow-spacing": "off",
 			"block-spacing": "off",
 			"brace-style": "off",
-			camelcase: "off",
+			"camelcase": "off",
 			"comma-spacing": "off",
 			"comma-style": "off",
 			"computed-property-spacing": "off",
@@ -185,6 +170,25 @@ const eslintConfig = [
 			"template-tag-spacing": "off",
 			"unicode-bom": "off",
 			"wrap-regex": "off",
+			
+			// PHASE 1: Disable React Style Rules
+			"react/jsx-key": "off",
+			"react/jsx-no-undef": "off",
+			"react/jsx-uses-react": "off",
+			"react/jsx-uses-vars": "off",
+			"react/no-array-index-key": "off",
+			"react/no-children-prop": "off",
+			"react/no-deprecated": "off",
+			"react/no-direct-mutation-state": "off",
+			"react/no-find-dom-node": "off",
+			"react/no-is-mounted": "off",
+			"react/no-render-return-value": "off",
+			"react/no-string-refs": "off",
+			"react/no-unknown-property": "off",
+			"react/prop-types": "off",
+			"react/react-in-jsx-scope": "off",
+			"react/self-closing-comp": "off",
+			"react/sort-comp": "off",
 		},
 	},
 ];

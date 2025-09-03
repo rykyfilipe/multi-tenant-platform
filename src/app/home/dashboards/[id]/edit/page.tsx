@@ -1,9 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import DashboardEditor from '@/components/dashboard/DashboardEditor';
-import { notFound } from 'next/navigation';
 
 interface EditDashboardPageProps {
   params: { id: string };

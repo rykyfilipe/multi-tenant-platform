@@ -214,8 +214,8 @@ export function checkApiRateLimit(
 export function withApiRateLimit(
   config: typeof API_RATE_LIMITS[keyof typeof API_RATE_LIMITS]
 ) {
-  return function (handler: Function) {
-    return async function (request: NextRequest, ...args: any[]) {
+  return function (handler: (request: NextRequest, ...args: unknown[]) => Promise<Response>) {
+    return async function (request: NextRequest, ...args: unknown[]) {
       const identifier = getApiClientIdentifier(request);
       const result = checkApiRateLimit(identifier, config);
       

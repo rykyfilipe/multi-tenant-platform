@@ -15,8 +15,8 @@ export const PUBLIC_JWT_SECRET =
 import { Account, User } from "next-auth";
 
 import GoogleProvider from "next-auth/providers/google";
-import { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { Session } from "next-auth";
 
 import { JWT } from "next-auth/jwt";
 import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";

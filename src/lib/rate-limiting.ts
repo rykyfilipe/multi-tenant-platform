@@ -191,8 +191,8 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
 
 // Rate limiting middleware for API routes
 export function withRateLimit(config: RateLimitConfig) {
-	return function (handler: Function) {
-		return async function (request: NextRequest, ...args: any[]) {
+	return function (handler: (request: NextRequest, ...args: unknown[]) => Promise<Response>) {
+		return async function (request: NextRequest, ...args: unknown[]) {
 			const identifier = getClientIdentifier(request);
 			const result = checkRateLimit(identifier, config);
 

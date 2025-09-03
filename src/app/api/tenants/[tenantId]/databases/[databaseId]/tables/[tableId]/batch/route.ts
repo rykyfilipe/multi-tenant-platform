@@ -2,9 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { verifyLogin } from "@/lib/auth";
-import { getUserFromRequest } from "@/lib/auth";
-import { checkUserTenantAccess } from "@/lib/auth";
+import { verifyLogin, getUserFromRequest, checkUserTenantAccess } from "@/lib/auth";
 
 interface BatchCellUpdate {
 	rowId: string;

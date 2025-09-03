@@ -17,8 +17,7 @@ import {
 	MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { User } from "@/types/user";
-import { Role } from "@/types/user";
+import { User, Role } from "@/types/user";
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Link from "next/link";

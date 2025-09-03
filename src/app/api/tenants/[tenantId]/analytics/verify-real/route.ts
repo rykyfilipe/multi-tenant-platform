@@ -2,9 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest, checkUserTenantAccess } from "@/lib/auth";
-import { ApiSuccess, ApiErrors } from "@/lib/api-error-handler";
-
-import { handleApiError } from "@/lib/api-error-handler";
+import { ApiSuccess, ApiErrors, handleApiError } from "@/lib/api-error-handler";
 import { RealDataVerifier } from "@/scripts/verify-real-data";
 
 export async function GET(

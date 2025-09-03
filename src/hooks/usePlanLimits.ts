@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useApp } from "@/contexts/AppContext";
-import { PLAN_LIMITS } from "@/lib/planConstants";
-import type { PlanLimits } from "@/lib/planConstants";
+import { PLAN_LIMITS, type PlanLimits } from "@/lib/planConstants";
 
 interface CurrentCounts {
 	databases: number;

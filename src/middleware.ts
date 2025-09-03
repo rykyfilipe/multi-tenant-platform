@@ -1,7 +1,6 @@
 /** @format */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { performanceMonitor } from "@/lib/performance-monitor";
 import { csrfProtection } from "@/lib/csrf-protection";
 import {

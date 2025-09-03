@@ -32,9 +32,16 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 	Free: {
 		databases: 1,
 		tables: 5,
-		users: 1,
-		storage: 10, // 10 MB
+		users: 3, // Increased from 1 to 3 for team collaboration
+		storage: 100, // Increased from 10 MB to 100 MB
 		rows: 1000, // 1,000 rows
+	},
+	Starter: {
+		databases: 3,
+		tables: 15,
+		users: 5,
+		storage: 500, // 500 MB
+		rows: 10000, // 10,000 rows
 	},
 	Pro: {
 		databases: 5,
@@ -56,12 +63,26 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 	Free: {
 		canCreateDatabases: false, // Only 1 database allowed
 		canCreateTables: true,
-		canCreateUsers: false, // Only 1 user allowed
+		canCreateUsers: true, // Now allowed up to 3 users
 		canCreateRows: true,
 		canImportData: true,
 		canExportData: true,
 		canUseAdvancedFeatures: false,
-		canAccessAnalytics: false,
+		canAccessAnalytics: true, // Now enabled for Free plan - basic analytics
+		canUseCustomIntegrations: false,
+		canAccessAdvancedSecurity: false,
+		canUsePrioritySupport: false,
+		canUseDedicatedSupport: false,
+	},
+	Starter: {
+		canCreateDatabases: true, // Up to 3 databases
+		canCreateTables: true,
+		canCreateUsers: true, // Up to 5 users
+		canCreateRows: true,
+		canImportData: true,
+		canExportData: true,
+		canUseAdvancedFeatures: false, // Limited advanced features
+		canAccessAnalytics: true,
 		canUseCustomIntegrations: false,
 		canAccessAdvancedSecurity: false,
 		canUsePrioritySupport: false,
@@ -106,15 +127,29 @@ export const PLAN_FEATURES: Record<
 		storage: string;
 		rows: string;
 		price: string;
+		annualPrice?: string;
+		annualDiscount?: string;
+		popular?: boolean;
 	}
 > = {
 	Free: {
 		databases: 1,
 		tables: 5,
-		users: 1,
-		storage: "10 MB",
+		users: 3,
+		storage: "100 MB",
 		rows: "1,000 rows",
 		price: "$0/month",
+	},
+	Starter: {
+		databases: 3,
+		tables: 15,
+		users: 5,
+		storage: "500 MB",
+		rows: "10,000 rows",
+		price: "$9/month",
+		annualPrice: "$90/year",
+		annualDiscount: "17% off",
+		popular: true,
 	},
 	Pro: {
 		databases: 5,
@@ -123,6 +158,8 @@ export const PLAN_FEATURES: Record<
 		storage: "1 GB",
 		rows: "100,000 rows",
 		price: "$29/month",
+		annualPrice: "$290/year",
+		annualDiscount: "17% off",
 	},
 	Enterprise: {
 		databases: "Unlimited",
@@ -131,6 +168,8 @@ export const PLAN_FEATURES: Record<
 		storage: "10 GB",
 		rows: "1,000,000 rows",
 		price: "$99/month",
+		annualPrice: "$990/year",
+		annualDiscount: "17% off",
 	},
 };
 
@@ -190,4 +229,46 @@ export const checkPlanAndLimitPermission = (
 	}
 
 	return { allowed: true };
+};
+
+// Pricing utilities
+export const getMonthlyPrice = (plan: string): number => {
+	const prices: Record<string, number> = {
+		Free: 0,
+		Starter: 9,
+		Pro: 29,
+		Enterprise: 99,
+	};
+	return prices[plan] || 0;
+};
+
+export const getAnnualPrice = (plan: string): number => {
+	const monthlyPrice = getMonthlyPrice(plan);
+	return monthlyPrice * 12 * 0.83; // 17% discount for annual billing
+};
+
+export const getAnnualDiscount = (plan: string): number => {
+	return 17; // 17% discount for all paid plans
+};
+
+export const formatPrice = (price: number, currency: string = "USD"): string => {
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency,
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 0,
+	}).format(price);
+};
+
+export const getPlanComparison = () => {
+	const plans = ["Free", "Starter", "Pro", "Enterprise"];
+	return plans.map(plan => ({
+		name: plan,
+		...PLAN_FEATURES[plan],
+		monthlyPrice: getMonthlyPrice(plan),
+		annualPrice: getAnnualPrice(plan),
+		annualDiscount: getAnnualDiscount(plan),
+		limits: PLAN_LIMITS[plan],
+		restrictions: ROLE_RESTRICTIONS[plan],
+	}));
 };

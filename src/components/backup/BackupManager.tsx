@@ -1,0 +1,615 @@
+/** @format */
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+	Plus, 
+	Download, 
+	Upload, 
+	Trash2, 
+	Shield, 
+	Clock,
+	CheckCircle,
+	AlertCircle,
+	Database,
+	FileText,
+	HardDrive,
+	Activity,
+	RefreshCw,
+	Play,
+	Pause,
+	X
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useApp } from "@/contexts/AppContext";
+import { logger } from "@/lib/error-logger";
+import { BackupType, BackupStatus } from "@/lib/backup-system";
+
+interface BackupJob {
+	id: string;
+	tenantId: string;
+	type: BackupType;
+	status: BackupStatus;
+	description?: string;
+	filePath?: string;
+	fileSize?: number;
+	checksum?: string;
+	startedAt: string;
+	completedAt?: string;
+	error?: string;
+	metadata: {
+		databaseCount: number;
+		tableCount: number;
+		rowCount: number;
+		compressionRatio?: number;
+	};
+	createdBy: string;
+}
+
+interface RestoreJob {
+	id: string;
+	tenantId: string;
+	backupId: string;
+	status: BackupStatus;
+	startedAt: string;
+	completedAt?: string;
+	error?: string;
+	restoredBy: string;
+}
+
+interface BackupManagerProps {
+	tenantId: string;
+}
+
+/**
+ * Backup Manager Component
+ * Manages database backups and restores for a tenant
+ */
+export function BackupManager({ tenantId }: BackupManagerProps) {
+	const { t } = useLanguage();
+	const { user } = useApp();
+	const [backups, setBackups] = useState<BackupJob[]>([]);
+	const [restores, setRestores] = useState<RestoreJob[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [showCreateForm, setShowCreateForm] = useState(false);
+	const [selectedBackup, setSelectedBackup] = useState<BackupJob | null>(null);
+	const [restoringBackup, setRestoringBackup] = useState<string | null>(null);
+	const [verifyingBackup, setVerifyingBackup] = useState<string | null>(null);
+	const [verificationResult, setVerificationResult] = useState<any>(null);
+
+	// Form state
+	const [formData, setFormData] = useState({
+		type: BackupType.FULL,
+		description: "",
+	});
+
+	// Load backups and restores
+	useEffect(() => {
+		loadData();
+	}, [tenantId]);
+
+	const loadData = async () => {
+		try {
+			const [backupsResponse, restoresResponse] = await Promise.all([
+				fetch(`/api/tenants/${tenantId}/backups`),
+				fetch(`/api/tenants/${tenantId}/restores`),
+			]);
+
+			if (backupsResponse.ok) {
+				const data = await backupsResponse.json();
+				setBackups(data.data.backups || []);
+			}
+
+			if (restoresResponse.ok) {
+				const data = await restoresResponse.json();
+				setRestores(data.data || []);
+			}
+		} catch (error) {
+			logger.error("Failed to load backup data", error as Error, {
+				component: "BackupManager",
+			});
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const createBackup = async () => {
+		try {
+			const response = await fetch(`/api/tenants/${tenantId}/backups`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(formData),
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				setBackups(prev => [data.data, ...prev]);
+				setShowCreateForm(false);
+				resetForm();
+				
+				logger.info("Backup created successfully", {
+					component: "BackupManager",
+					backupId: data.data.id,
+				});
+			} else {
+				const errorData = await response.json();
+				logger.error("Failed to create backup", new Error(errorData.error), {
+					component: "BackupManager",
+				});
+			}
+		} catch (error) {
+			logger.error("Failed to create backup", error as Error, {
+				component: "BackupManager",
+			});
+		}
+	};
+
+	const deleteBackup = async (backupId: string) => {
+		if (!confirm("Are you sure you want to delete this backup? This action cannot be undone.")) {
+			return;
+		}
+
+		try {
+			const response = await fetch(`/api/tenants/${tenantId}/backups/${backupId}`, {
+				method: "DELETE",
+			});
+
+			if (response.ok) {
+				setBackups(prev => prev.filter(b => b.id !== backupId));
+				
+				logger.info("Backup deleted successfully", {
+					component: "BackupManager",
+					backupId,
+				});
+			} else {
+				const errorData = await response.json();
+				logger.error("Failed to delete backup", new Error(errorData.error), {
+					component: "BackupManager",
+				});
+			}
+		} catch (error) {
+			logger.error("Failed to delete backup", error as Error, {
+				component: "BackupManager",
+			});
+		}
+	};
+
+	const restoreBackup = async (backupId: string) => {
+		if (!confirm("Are you sure you want to restore from this backup? This will overwrite your current data.")) {
+			return;
+		}
+
+		setRestoringBackup(backupId);
+
+		try {
+			const response = await fetch(`/api/tenants/${tenantId}/backups/${backupId}/restore`, {
+				method: "POST",
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				setRestores(prev => [data.data, ...prev]);
+				
+				logger.info("Restore process started", {
+					component: "BackupManager",
+					backupId,
+					restoreId: data.data.id,
+				});
+			} else {
+				const errorData = await response.json();
+				logger.error("Failed to start restore", new Error(errorData.error), {
+					component: "BackupManager",
+				});
+			}
+		} catch (error) {
+			logger.error("Failed to start restore", error as Error, {
+				component: "BackupManager",
+			});
+		} finally {
+			setRestoringBackup(null);
+		}
+	};
+
+	const verifyBackup = async (backupId: string) => {
+		setVerifyingBackup(backupId);
+		setVerificationResult(null);
+
+		try {
+			const response = await fetch(`/api/tenants/${tenantId}/backups/${backupId}/verify`, {
+				method: "POST",
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				setVerificationResult(data.data);
+			} else {
+				const errorData = await response.json();
+				setVerificationResult({ valid: false, error: errorData.error });
+			}
+		} catch (error) {
+			setVerificationResult({ valid: false, error: "Network error" });
+		} finally {
+			setVerifyingBackup(null);
+		}
+	};
+
+	const downloadBackup = async (backup: BackupJob) => {
+		if (!backup.filePath) {
+			logger.error("Backup file path not available", new Error("No file path"), {
+				component: "BackupManager",
+				backupId: backup.id,
+			});
+			return;
+		}
+
+		try {
+			// In a real implementation, you would create a download endpoint
+			// that serves the backup file securely
+			const response = await fetch(`/api/tenants/${tenantId}/backups/${backup.id}/download`);
+			
+			if (response.ok) {
+				const blob = await response.blob();
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = `backup_${backup.id}.sql`;
+				document.body.appendChild(a);
+				a.click();
+				window.URL.revokeObjectURL(url);
+				document.body.removeChild(a);
+			}
+		} catch (error) {
+			logger.error("Failed to download backup", error as Error, {
+				component: "BackupManager",
+				backupId: backup.id,
+			});
+		}
+	};
+
+	const resetForm = () => {
+		setFormData({
+			type: BackupType.FULL,
+			description: "",
+		});
+	};
+
+	const getStatusColor = (status: string) => {
+		switch (status) {
+			case "completed": return "bg-green-100 text-green-800";
+			case "in_progress": return "bg-blue-100 text-blue-800";
+			case "pending": return "bg-yellow-100 text-yellow-800";
+			case "failed": return "bg-red-100 text-red-800";
+			case "cancelled": return "bg-gray-100 text-gray-800";
+			default: return "bg-gray-100 text-gray-800";
+		}
+	};
+
+	const getStatusIcon = (status: string) => {
+		switch (status) {
+			case "completed": return <CheckCircle className="h-4 w-4 text-green-600" />;
+			case "in_progress": return <RefreshCw className="h-4 w-4 text-blue-600 animate-spin" />;
+			case "pending": return <Clock className="h-4 w-4 text-yellow-600" />;
+			case "failed": return <AlertCircle className="h-4 w-4 text-red-600" />;
+			case "cancelled": return <X className="h-4 w-4 text-gray-600" />;
+			default: return <Clock className="h-4 w-4 text-gray-600" />;
+		}
+	};
+
+	const getTypeIcon = (type: string) => {
+		switch (type) {
+			case "full": return <Database className="h-4 w-4" />;
+			case "schema_only": return <FileText className="h-4 w-4" />;
+			case "data_only": return <HardDrive className="h-4 w-4" />;
+			default: return <Database className="h-4 w-4" />;
+		}
+	};
+
+	const formatFileSize = (bytes?: number) => {
+		if (!bytes) return "Unknown";
+		const sizes = ["Bytes", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(1024));
+		return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+	};
+
+	if (loading) {
+		return (
+			<div className="space-y-4">
+				{[...Array(3)].map((_, i) => (
+					<Card key={i}>
+						<CardContent className="p-6">
+							<div className="animate-pulse space-y-4">
+								<div className="h-4 bg-muted rounded w-1/4"></div>
+								<div className="h-3 bg-muted rounded w-1/2"></div>
+								<div className="h-3 bg-muted rounded w-1/3"></div>
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-6">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div>
+					<h2 className="text-2xl font-bold">Backup & Restore</h2>
+					<p className="text-muted-foreground">
+						Manage database backups and restore from previous states
+					</p>
+				</div>
+				<Button onClick={() => setShowCreateForm(true)}>
+					<Plus className="h-4 w-4 mr-2" />
+					Create Backup
+				</Button>
+			</div>
+
+			{/* Create Backup Form */}
+			{showCreateForm && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Create New Backup</CardTitle>
+						<CardDescription>
+							Create a backup of your database data
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="grid gap-4 md:grid-cols-2">
+							<div>
+								<Label htmlFor="type">Backup Type</Label>
+								<Select
+									value={formData.type}
+									onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as BackupType }))}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={BackupType.FULL}>
+											<div className="flex items-center gap-2">
+												<Database className="h-4 w-4" />
+												Full Backup (Schema + Data)
+											</div>
+										</SelectItem>
+										<SelectItem value={BackupType.SCHEMA_ONLY}>
+											<div className="flex items-center gap-2">
+												<FileText className="h-4 w-4" />
+												Schema Only
+											</div>
+										</SelectItem>
+										<SelectItem value={BackupType.DATA_ONLY}>
+											<div className="flex items-center gap-2">
+												<HardDrive className="h-4 w-4" />
+												Data Only
+											</div>
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div>
+								<Label htmlFor="description">Description (Optional)</Label>
+								<Input
+									id="description"
+									value={formData.description}
+									onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+									placeholder="e.g., Pre-migration backup"
+								/>
+							</div>
+						</div>
+
+						<div className="flex gap-4">
+							<Button onClick={createBackup}>
+								<Plus className="h-4 w-4 mr-2" />
+								Create Backup
+							</Button>
+							<Button
+								variant="outline"
+								onClick={() => {
+									setShowCreateForm(false);
+									resetForm();
+								}}
+							>
+								Cancel
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Backups List */}
+			<div className="space-y-4">
+				<h3 className="text-lg font-semibold">Recent Backups</h3>
+				{backups.length === 0 ? (
+					<Card>
+						<CardContent className="p-8 text-center">
+							<Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+							<h4 className="text-lg font-medium mb-2">No Backups Yet</h4>
+							<p className="text-muted-foreground mb-4">
+								Create your first backup to protect your data
+							</p>
+							<Button onClick={() => setShowCreateForm(true)}>
+								<Plus className="h-4 w-4 mr-2" />
+								Create Your First Backup
+							</Button>
+						</CardContent>
+					</Card>
+				) : (
+					backups.map((backup) => (
+						<Card key={backup.id}>
+							<CardHeader>
+								<div className="flex items-start justify-between">
+									<div className="flex items-center gap-3">
+										{getStatusIcon(backup.status)}
+										<div>
+											<CardTitle className="text-lg flex items-center gap-2">
+												{getTypeIcon(backup.type)}
+												{backup.description || `${backup.type} Backup`}
+											</CardTitle>
+											<CardDescription className="flex items-center gap-2">
+												<Badge className={getStatusColor(backup.status)}>
+													{backup.status}
+												</Badge>
+												<span>Created {new Date(backup.startedAt).toLocaleString()}</span>
+											</CardDescription>
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										{backup.status === "completed" && (
+											<>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => verifyBackup(backup.id)}
+													disabled={verifyingBackup === backup.id}
+												>
+													{verifyingBackup === backup.id ? (
+														<RefreshCw className="h-4 w-4 animate-spin" />
+													) : (
+														<Shield className="h-4 w-4" />
+													)}
+													Verify
+												</Button>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => downloadBackup(backup)}
+												>
+													<Download className="h-4 w-4" />
+													Download
+												</Button>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => restoreBackup(backup.id)}
+													disabled={restoringBackup === backup.id}
+												>
+													{restoringBackup === backup.id ? (
+														<RefreshCw className="h-4 w-4 animate-spin" />
+													) : (
+														<Upload className="h-4 w-4" />
+													)}
+													Restore
+												</Button>
+											</>
+										)}
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => deleteBackup(backup.id)}
+										>
+											<Trash2 className="h-4 w-4" />
+										</Button>
+									</div>
+								</div>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								{backup.error && (
+									<div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+										<div className="flex items-center gap-2 text-red-800">
+											<AlertCircle className="h-4 w-4" />
+											<span className="font-medium">Error</span>
+										</div>
+										<p className="text-sm text-red-700 mt-1">{backup.error}</p>
+									</div>
+								)}
+
+								{/* Verification Result */}
+								{verificationResult && verifyingBackup === backup.id && (
+									<div className={`p-3 rounded-lg border ${
+										verificationResult.valid 
+											? "border-green-200 bg-green-50" 
+											: "border-red-200 bg-red-50"
+									}`}>
+										<div className="flex items-center gap-2">
+											{verificationResult.valid ? (
+												<CheckCircle className="h-4 w-4 text-green-600" />
+											) : (
+												<AlertCircle className="h-4 w-4 text-red-600" />
+											)}
+											<span className="font-medium">
+												{verificationResult.valid ? "Backup Valid" : "Backup Invalid"}
+											</span>
+										</div>
+										{verificationResult.error && (
+											<p className="text-sm text-red-600 mt-1">
+												{verificationResult.error}
+											</p>
+										)}
+									</div>
+								)}
+
+								<div className="grid gap-4 md:grid-cols-4">
+									<div>
+										<h4 className="font-medium text-sm mb-2">File Size</h4>
+										<p className="text-sm text-muted-foreground">
+											{formatFileSize(backup.fileSize)}
+										</p>
+									</div>
+									<div>
+										<h4 className="font-medium text-sm mb-2">Tables</h4>
+										<p className="text-sm text-muted-foreground">
+											{backup.metadata.tableCount}
+										</p>
+									</div>
+									<div>
+										<h4 className="font-medium text-sm mb-2">Rows</h4>
+										<p className="text-sm text-muted-foreground">
+											{backup.metadata.rowCount.toLocaleString()}
+										</p>
+									</div>
+									<div>
+										<h4 className="font-medium text-sm mb-2">Checksum</h4>
+										<p className="text-sm text-muted-foreground font-mono">
+											{backup.checksum ? backup.checksum.substring(0, 8) + "..." : "N/A"}
+										</p>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					))
+				)}
+			</div>
+
+			{/* Restore Jobs */}
+			{restores.length > 0 && (
+				<div className="space-y-4">
+					<h3 className="text-lg font-semibold">Recent Restores</h3>
+					{restores.map((restore) => (
+						<Card key={restore.id}>
+							<CardContent className="p-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										{getStatusIcon(restore.status)}
+										<div>
+											<h4 className="font-medium">Restore from Backup</h4>
+											<p className="text-sm text-muted-foreground">
+												Started {new Date(restore.startedAt).toLocaleString()}
+											</p>
+										</div>
+									</div>
+									<Badge className={getStatusColor(restore.status)}>
+										{restore.status}
+									</Badge>
+								</div>
+								{restore.error && (
+									<p className="text-sm text-red-600 mt-2">{restore.error}</p>
+								)}
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			)}
+		</div>
+	);
+}

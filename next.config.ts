@@ -32,8 +32,15 @@ const performanceHeaders = [
 ];
 
 module.exports = {
-	eslint: { ignoreDuringBuilds: true },
-	typescript: { ignoreBuildErrors: true },
+	eslint: { 
+		// Re-enable ESLint with warnings only initially
+		ignoreDuringBuilds: false,
+		dirs: ['src', 'pages', 'components', 'lib', 'hooks', 'contexts', 'types']
+	},
+	typescript: { 
+		// Keep TypeScript errors as warnings initially
+		ignoreBuildErrors: false 
+	},
 	
 	// Enhanced configuration for OAuth and HTTPS
 	async redirects() {

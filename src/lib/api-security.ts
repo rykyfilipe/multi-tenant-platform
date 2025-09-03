@@ -66,10 +66,10 @@ export async function validateJwtToken(token: string): Promise<{
 	error?: string;
 }> {
 	try {
-		const jwt = require("jsonwebtoken");
+		const jwt = await import("jsonwebtoken");
 		const JWT_SECRET = process.env.PUBLIC_JWT_SECRET || "your-secret-key";
 
-		const decoded = jwt.verify(token, JWT_SECRET) as {
+		const decoded = jwt.default.verify(token, JWT_SECRET) as {
 			userId: number;
 			role: string;
 		};

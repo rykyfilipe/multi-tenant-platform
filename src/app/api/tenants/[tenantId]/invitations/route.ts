@@ -1,10 +1,9 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest, verifyLogin } from "@/lib/auth";
+import { getUserFromRequest, verifyLogin, generateToken } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
-import { generateToken } from "@/lib/auth";
 import { sendInvitationEmail } from "@/lib/email";
 
 const invitationSchema = z.object({

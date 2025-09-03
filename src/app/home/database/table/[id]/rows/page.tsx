@@ -14,9 +14,9 @@ import { tourUtils } from "@/lib/tour-config";
 function Page() {
 	const params = useParams();
 	const id = Array.isArray(params.id) ? params.id[0] : params.id;
-	if (!id) return null;
+	const { table, columns, setColumns } = useTable(id || "");
 
-	const { table, columns, setColumns } = useTable(id);
+	if (!id) return null;
 
 	// Eliminăm loading-urile suplimentare - TableEditor gestionează totul cu skeleton
 

@@ -2,8 +2,7 @@
 
 import prisma from "./prisma";
 import { cachedOperations } from "./cached-operations";
-import { PLAN_LIMITS, getRowsLimitForPlan } from "./planConstants";
-import type { PlanLimits } from "./planConstants";
+import { PLAN_LIMITS, getRowsLimitForPlan, type PlanLimits } from "./planConstants";
 
 // Re-export for backward compatibility
 export { PLAN_LIMITS };

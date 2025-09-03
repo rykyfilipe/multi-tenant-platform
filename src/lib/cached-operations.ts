@@ -1,7 +1,6 @@
 /** @format */
 
-import prisma from "./prisma";
-import { DEFAULT_CACHE_STRATEGIES } from "./prisma";
+import prisma, { DEFAULT_CACHE_STRATEGIES } from "./prisma";
 
 // Prisma Accelerate Cache Operations
 // This file provides cached operations using Prisma Accelerate instead of external cache systems

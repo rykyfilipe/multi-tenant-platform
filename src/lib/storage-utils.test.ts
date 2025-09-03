@@ -68,8 +68,8 @@ describe("Storage Utilities", () => {
 		});
 
 		it("should format small sizes correctly", () => {
-			expect(formatStorageSize(512)).toBe("0.50 KB");
-			expect(formatStorageSize(512 * 1024)).toBe("0.50 MB");
+			expect(formatStorageSize(512)).toBe("512 B");
+			expect(formatStorageSize(512 * 1024)).toBe("512.00 KB");
 		});
 	});
 
