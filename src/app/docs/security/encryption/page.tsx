@@ -168,7 +168,7 @@ const EncryptionPage = () => {
 				"Real-time security monitoring",
 				"Detailed audit logs for all operations",
 				"Anomaly detection and alerting",
-				"Compliance reporting and dashboards",
+				"Compliance reporting and analytics",
 			],
 		},
 		{

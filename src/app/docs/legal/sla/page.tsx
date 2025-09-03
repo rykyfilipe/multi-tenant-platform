@@ -264,7 +264,7 @@ export default function ServiceLevelAgreementPage() {
                 <li><strong>Data Import/Export:</strong> Support for files up to 100MB with 95% success rate</li>
                 <li><strong>API Availability:</strong> 99.5% uptime for REST API endpoints</li>
                 <li><strong>Real-time Collaboration:</strong> Sub-second synchronization for multi-user editing</li>
-                <li><strong>Dashboard Rendering:</strong> &lt; 3 second load time for complex dashboards</li>
+                <li><strong>Page Rendering:</strong> &lt; 3 second load time for complex pages</li>
                 <li><strong>Permission Updates:</strong> Real-time propagation of user permission changes</li>
                 <li><strong>Data Backup:</strong> {legalConfig.policies.backupFrequency} with 30-day retention</li>
                 <li><strong>SSL Encryption:</strong> {legalConfig.policies.sslEncryption}</li>

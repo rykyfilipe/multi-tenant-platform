@@ -12,11 +12,10 @@ export const PUBLIC_JWT_SECRET =
 	(() => {
 		throw new Error("PUBLIC_JWT_SECRET environment variable is required");
 	})();
-import { Account, User } from "next-auth";
+import { Account, User, Session } from "next-auth";
 
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { Session } from "next-auth";
 
 import { JWT } from "next-auth/jwt";
 import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";
@@ -93,7 +92,7 @@ export const authOptions = {
 		error: "/",
 	},
 	callbacks: {
-		async redirect({ url, baseUrl }) {
+		async redirect({ url, baseUrl}: { url: string, baseUrl: string }) {
 			try {
 				console.log(`Redirect callback - url: ${url}, baseUrl: ${baseUrl}`);
 				
@@ -134,7 +133,7 @@ export const authOptions = {
 				return `${baseUrl}/auth-callback`;
 			}
 		},
-		async signIn({ user, account }) {
+		async signIn({ user, account }: { user: User, account: Account }) {
 			console.log(`SignIn callback: ${user.email}, provider: ${account?.provider}`);
 			if (account?.provider === "google" && user.email) {
 				try {
@@ -164,7 +163,7 @@ export const authOptions = {
 			}
 			return true;
 		},
-		async jwt({ token, account, user }) {
+		async jwt({ token, account, user }: { token: JWT, account: Account, user: User }) {
 			try {
 				if (user && account) {
 					if (account.provider === "google" && user.email) {
@@ -233,7 +232,7 @@ export const authOptions = {
 				return token;
 			}
 		},
-		async session({ session, token }) {
+		async session({ session, token }: { session: Session, token: JWT }) {
 			if (token && token.role) {
 				session.user = {
 					id: (token.id as string) || "",
@@ -329,12 +328,12 @@ export const authOptions = {
 	trustHost: true,
 	adapter: undefined,
 	events: {
-		async signIn({ user, account }) { console.log(`User ${user.email} signed in via ${account?.provider}`); },
+		async signIn({ user, account }: { user: User, account: Account }	) { console.log(`User ${user.email} signed in via ${account?.provider}`); },
 		async signOut() { console.log("User signed out"); },
-		async createUser({ user }) { console.log(`New user created: ${user.email}`); },
+		async createUser({ user }: { user: User }) { console.log(`New user created: ${user.email}`); },
 		async session() { if (process.env.NODE_ENV === "development") console.log("Session event triggered"); },
 	},
-	onError: async (error, context) => { console.error("NextAuth error:", error, "Context:", context); },
+	onError: async (error: Error, context: any) => { console.error("NextAuth error:", error, "Context:", context); },
 };
 interface JwtPayload {
 	userId: number;
@@ -373,7 +372,7 @@ export async function verifyPassword(
 	}
 }
 
-export async function isAdmin(request: Request): Promise<boolean> {
+export async function isAdmin(request: Request | any): Promise<boolean> {
 	const token = request.headers.get("Authorization")?.split(" ")[1];
 	if (!token) return false;
 
@@ -385,7 +384,7 @@ export async function isAdmin(request: Request): Promise<boolean> {
 	}
 }
 
-export function verifyLogin(request: Request): boolean {
+export function verifyLogin(request: Request | any): boolean {
 	const token = request.headers.get("Authorization")?.split(" ")[1];
 
 	if (!token) {

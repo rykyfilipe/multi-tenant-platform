@@ -317,7 +317,7 @@ export const cachedOperations = {
 				DEFAULT_CACHE_STRATEGIES.dashboardList,
 			);
 		} catch (error) {
-			console.error("Error fetching dashboards:", error);
+			console.error("Error fetching data:", error);
 			return [];
 		}
 	},

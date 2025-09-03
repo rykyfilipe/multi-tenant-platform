@@ -3,8 +3,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { updateMemoryAfterRowChange } from "@/lib/memory-tracking";
+import prisma from "@/lib/prisma";
+import { updateTenantMemoryUsage } from "@/lib/memory-tracking";
 
 interface BatchRowData {
 	cells: Array<{
@@ -225,7 +225,7 @@ export async function POST(
 		}
 
 		// Update memory tracking (async, don't wait)
-		updateMemoryAfterRowChange(Number(tenantId)).catch((error) => {
+		updateTenantMemoryUsage(Number(tenantId)).catch((error) => {
 			console.error("Error updating memory cache:", error);
 		});
 

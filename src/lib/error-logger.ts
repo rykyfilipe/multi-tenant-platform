@@ -211,6 +211,8 @@ class ErrorLogger {
 				} else {
 					Sentry.captureMessage(entry.message, entry.level >= LogLevel.ERROR ? "error" : "info");
 				}
+			}).catch(() => {
+				// Silently ignore if Sentry is not available
 			});
 		} catch (err) {
 			// Fallback if Sentry is not available
