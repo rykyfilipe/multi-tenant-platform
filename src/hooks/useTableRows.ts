@@ -143,7 +143,18 @@ function useTableRows(
 			sortOrderParam: "asc" | "desc" = sortOrder,
 			showLoading: boolean = true,
 		) => {
+			console.log("🔍 useTableRows - Fetch attempt:", {
+				hasToken: !!token,
+				hasUserId: !!userId,
+				hasTenantId: !!tenantId,
+				hasDatabaseId: !!databaseId,
+				hasTableId: !!tableId,
+				page,
+				pageSize
+			});
+			
 			if (!token || !userId || !tenantId || !databaseId || !tableId) {
+				console.log("🔍 useTableRows - Missing required parameters, aborting fetch");
 				return;
 			}
 
@@ -210,6 +221,8 @@ function useTableRows(
 				if (globalSearchParam.trim()) {
 					url.searchParams.set("globalSearch", globalSearchParam.trim());
 				}
+				
+				console.log("🔍 useTableRows - Request URL:", url.toString());
 				if (filtersParam.length > 0) {
 					url.searchParams.set(
 						"filters",
