@@ -3,9 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { checkTenantAccess } from '@/lib/tenant-utils';
-import { InvoiceSystemService } from '@/lib/invoice-system';
+import { authOptions, checkUserTenantAccess } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 const SeriesRequestSchema = z.object({
@@ -25,13 +23,13 @@ export async function GET(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
+		const session = await getServerSession();
 		if (!session?.user?.id) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = await checkTenantAccess(session.user.id, params.tenantId);
+		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -78,13 +76,13 @@ export async function POST(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
+		const session = await getServerSession();
 		if (!session?.user?.id) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = await checkTenantAccess(session.user.id, params.tenantId);
+		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -182,13 +180,13 @@ export async function PUT(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
+		const session = await getServerSession();
 		if (!session?.user?.id) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = await checkTenantAccess(session.user.id, params.tenantId);
+		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -284,13 +282,13 @@ export async function DELETE(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
+		const session = await getServerSession();
 		if (!session?.user?.id) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = await checkTenantAccess(session.user.id, params.tenantId);
+		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -339,7 +337,7 @@ export async function DELETE(
 						.findMany({
 							where: { databaseId: database.id, name: 'invoices' },
 						})
-						.then(tables => tables.map(t => t.id)),
+						.then((tables : any) => tables.map((t : any) => t.id)),
 				},
 				cells: {
 					some: {

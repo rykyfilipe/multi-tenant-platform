@@ -9,11 +9,7 @@ import { POST as exportPOST, GET as exportGET } from '@/app/api/tenants/[tenantI
 vi.mock('@/lib/auth', () => ({
 	authOptions: {},
 	getServerSession: vi.fn(),
-}));
-
-// Mock tenant utils
-vi.mock('@/lib/tenant-utils', () => ({
-	checkTenantAccess: vi.fn(),
+	checkUserTenantAccess: vi.fn(),
 }));
 
 // Mock migrator service
@@ -41,8 +37,8 @@ describe('Invoice Import/Export API Routes', () => {
 		});
 
 		// Mock tenant access
-		const { checkTenantAccess } = require('@/lib/tenant-utils');
-		checkTenantAccess.mockResolvedValue(true);
+		const { checkUserTenantAccess } = require('@/lib/auth');
+		checkUserTenantAccess.mockResolvedValue(true);
 	});
 
 	afterEach(() => {
@@ -129,8 +125,8 @@ describe('Invoice Import/Export API Routes', () => {
 			});
 
 			it('should handle forbidden access', async () => {
-				const { checkTenantAccess } = require('@/lib/tenant-utils');
-				checkTenantAccess.mockResolvedValue(false);
+				const { checkUserTenantAccess } = require('@/lib/auth');
+				checkUserTenantAccess.mockResolvedValue(false);
 
 				const request = new NextRequest('http://localhost:3000/api/tenants/1/invoices/import', {
 					method: 'POST',

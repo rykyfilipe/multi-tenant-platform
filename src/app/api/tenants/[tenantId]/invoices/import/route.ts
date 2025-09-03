@@ -4,8 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { MigratorService, MigratorType } from '@/lib/migrators';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { checkTenantAccess } from '@/lib/tenant-utils';
+import { authOptions, checkUserTenantAccess } from '@/lib/auth';
 
 const ImportRequestSchema = z.object({
 	provider: z.enum(['oblio', 'smartbill', 'fgo', 'csv']),
@@ -26,13 +25,13 @@ export async function POST(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
+		const session = await getServerSession();
 		if (!session?.user?.id) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = await checkTenantAccess(session.user.id, params.tenantId);
+		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -95,20 +94,20 @@ export async function GET(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
+		const session = await getServerSession();
 		if (!session?.user?.id) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = await checkTenantAccess(session.user.id, params.tenantId);
+		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
 		// Get available providers
 		const providers = MigratorService.getAvailableProviders();
-		const providerInfo = providers.map(provider => ({
+		const providerInfo = providers.map((provider : any) => ({
 			...MigratorService.getProviderInfo(provider),
 			name: provider,
 		}));
