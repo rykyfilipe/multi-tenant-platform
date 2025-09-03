@@ -115,11 +115,29 @@ export const TableView = memo(function TableView({
 
 	// Additional safety check for rows - filter out any rows with null/undefined cells
 	const validatedRows = safeRows.filter(
-		(row) => row && row.id && row.cells && Array.isArray(row.cells),
+		(row) => {
+			const isValid = row && row.id && row.cells && Array.isArray(row.cells);
+			if (!isValid) {
+				console.log("🔍 TableView - Invalid row filtered out:", {
+					row,
+					hasId: !!row?.id,
+					hasCells: !!row?.cells,
+					isCellsArray: Array.isArray(row?.cells)
+				});
+			}
+			return isValid;
+		}
 	);
 
 	// If no valid rows after validation, show empty state
 	const hasValidRows = validatedRows.length > 0;
+	
+	console.log("🔍 TableView - Empty state check:", {
+		hasValidRows,
+		validatedRowsLength: validatedRows.length,
+		safeRowsLength: safeRows.length,
+		rowsLength: rows.length
+	});
 
 	// Folosim permisiunile pentru a filtra coloanele vizibile
 	const tablePermissions = useTablePermissions(
@@ -130,7 +148,13 @@ export const TableView = memo(function TableView({
 
 	// Filtrăm coloanele în funcție de permisiuni
 	const visibleColumns = useMemo(() => {
-		return tablePermissions.getVisibleColumns(safeColumns);
+		const visible = tablePermissions.getVisibleColumns(safeColumns);
+		console.log("🔍 TableView - Visible columns:", {
+			totalColumns: safeColumns.length,
+			visibleColumns: visible.length,
+			visibleColumnsData: visible
+		});
+		return visible;
 	}, [safeColumns, tablePermissions]);
 
 	// Handle row selection
