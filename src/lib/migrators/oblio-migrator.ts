@@ -275,7 +275,7 @@ export class OblioMigrator extends BaseMigrator {
 	): Promise<number> {
 		try {
 			// Get invoice tables
-			const invoiceTables = await InvoiceSystemService.getInvoiceTables(tenantId, databaseId);
+			const invoiceTables = await InvoiceSystemService.getInvoiceTables(Number(tenantId), databaseId);
 			
 			if (!invoiceTables.invoices || !invoiceTables.invoice_items) {
 				throw new Error('Invoice system not initialized');
@@ -389,7 +389,7 @@ export class OblioMigrator extends BaseMigrator {
 		items: ImportedInvoiceDTO['items']
 	): Promise<void> {
 		try {
-			const invoiceTables = await InvoiceSystemService.getInvoiceTables(tenantId, databaseId);
+			const invoiceTables = await InvoiceSystemService.getInvoiceTables(Number(tenantId), databaseId);
 			
 			if (!invoiceTables.invoice_items) {
 				throw new Error('Invoice items table not found');

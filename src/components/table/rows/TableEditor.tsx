@@ -82,6 +82,18 @@ const TableEditor = memo(function TableEditor({
 		setRows,
 	} = useTableRows(table?.id?.toString() || "0", 25);
 
+	// Debug logging pentru rows
+	useEffect(() => {
+		console.log("🔍 TableEditor - Rows state:", {
+			paginatedRows,
+			rowsLength: paginatedRows?.length,
+			rowsLoading,
+			rowsError,
+			pagination,
+			tableId: table?.id
+		});
+	}, [paginatedRows, rowsLoading, rowsError, pagination, table?.id]);
+
 	const {
 		editingCell,
 		handleCancelEdit,

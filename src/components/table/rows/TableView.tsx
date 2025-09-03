@@ -95,6 +95,11 @@ export const TableView = memo(function TableView({
 		hasPendingChange: !!hasPendingChange,
 		getPendingValue: !!getPendingValue,
 		rowsCount: rows.length,
+		rows: rows,
+		columns: columns,
+		table: table,
+		validatedRowsLength: validatedRows.length,
+		hasValidRows: hasValidRows
 	});
 	const { user } = useApp();
 	const { permissions: userPermissions } = useCurrentUserPermissions();

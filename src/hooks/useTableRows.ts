@@ -236,7 +236,16 @@ function useTableRows(
 				}
 
 				const data = await res.json();
-				console.log(data);
+				console.log("🔍 useTableRows - API Response:", {
+					status: res.status,
+					url: url.toString(),
+					data: data,
+					dataType: typeof data,
+					hasData: !!data.data,
+					dataLength: data.data?.length,
+					hasPagination: !!data.pagination,
+					pagination: data.pagination
+				});
 
 				// Validează răspunsul
 				if (data.data && data.pagination) {
@@ -249,6 +258,11 @@ function useTableRows(
 					setSortOrder(sortOrderParam);
 
 					// Actualizează rows și pagination
+					console.log("🔍 useTableRows - Setting rows:", {
+						rowsData: data.data,
+						rowsLength: data.data?.length,
+						paginationData: data.pagination
+					});
 					setRows(data.data || []);
 					setPagination(data.pagination || null);
 
