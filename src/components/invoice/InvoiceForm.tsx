@@ -69,6 +69,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface InvoiceFormProps {
 	editInvoice?: any;
 	onInvoiceUpdated?: () => void;
+	onClose?: () => void;
+	onSuccess?: () => void;
 	customers: any[];
 	createInvoice: (invoiceData: any) => Promise<any>;
 	updateInvoice: (invoiceId: number, updateData: any) => Promise<any>;
@@ -81,6 +83,8 @@ interface InvoiceFormProps {
 export function InvoiceForm({
 	editInvoice,
 	onInvoiceUpdated,
+	onClose,
+	onSuccess,
 	customers,
 	createInvoice,
 	updateInvoice,
@@ -564,6 +568,7 @@ export function InvoiceForm({
 				await updateInvoice(editInvoice.invoice.id, invoiceData);
 				showAlert(t("invoice.form.invoiceUpdated"), "success");
 				onInvoiceUpdated?.();
+				onSuccess?.();
 			} else {
 				// Create new invoice
 				await createInvoice(invoiceData);
@@ -576,6 +581,7 @@ export function InvoiceForm({
 					notes: "",
 				});
 				showAlert(t("invoice.form.invoiceCreated"), "success");
+				onSuccess?.();
 			}
 		} catch (error) {
 			console.error(

@@ -12,6 +12,7 @@ import {
 	PDFInvoiceGenerator,
 	InvoicePDFData,
 } from "@/lib/pdf-invoice-generator";
+import { EnhancedPDFGenerator } from "@/lib/pdf-enhanced-generator";
 import { InvoiceCalculationService } from "@/lib/invoice-calculations";
 
 const formatPrice = (price: any): string => {
@@ -396,15 +397,55 @@ export async function GET(
 			},
 		};
 
+		// Get query parameters for enhanced PDF options
+		const url = new URL(request.url);
+		const includeWatermark = url.searchParams.get('watermark') === 'true';
+		const includeQRCode = url.searchParams.get('qrcode') === 'true';
+		const includeBarcode = url.searchParams.get('barcode') === 'true';
+		const useEnhanced = url.searchParams.get('enhanced') === 'true';
+
 		// Generate PDF
 		try {
-			const pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData);
+			let pdfBuffer: Buffer;
+
+			if (useEnhanced) {
+				// Use enhanced PDF generator
+				pdfBuffer = await EnhancedPDFGenerator.generateInvoicePDF({
+					tenantId: tenantId,
+					databaseId: database.id,
+					invoiceId: Number(invoiceId),
+					includeWatermark,
+					includeQRCode,
+					includeBarcode,
+				});
+			} else {
+				// Use original PDF generator
+				pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData);
+			}
+
+			// Log PDF generation
+			await prisma.auditLog.create({
+				data: {
+					tenantId: Number(tenantId),
+					databaseId: database.id,
+					action: 'pdf_generated',
+					status: 'success',
+					metadata: {
+						invoiceId: Number(invoiceId),
+						useEnhanced,
+						includeWatermark,
+						includeQRCode,
+						includeBarcode,
+					},
+				},
+			});
 
 			// Return PDF with appropriate headers
 			return new NextResponse(pdfBuffer, {
 				headers: {
 					"Content-Type": "application/pdf",
 					"Content-Disposition": `attachment; filename="factura-${invoiceData.invoice_number}.pdf"`,
+					"Content-Length": pdfBuffer.length.toString(),
 				},
 			});
 		} catch (error) {

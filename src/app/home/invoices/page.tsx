@@ -5,7 +5,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { InvoiceForm } from "@/components/invoice/InvoiceForm";
-import { InvoiceList } from "@/components/invoice/InvoiceList";
+import { EnhancedInvoiceList } from "@/components/invoice/EnhancedInvoiceList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +45,7 @@ export default function InvoicesPage() {
 		deleteInvoice,
 		getInvoiceDetails,
 		createCustomer,
-		
+		refresh,
 	} = useInvoiceSystem();
 
 	useEffect(() => {
@@ -189,25 +189,16 @@ export default function InvoicesPage() {
 					</TabsList>
 
 					<TabsContent value='list' className='space-y-6'>
-						<Card className='border-0 shadow-lg bg-card'>
-							<CardHeader className='pb-4'>
-								<CardTitle className='flex items-center gap-3 text-xl'>
-									<FileText className='w-6 h-6 text-primary' />
-									All Invoices
-								</CardTitle>
-							</CardHeader>
-							<CardContent className='pt-0'>
-								<InvoiceList
-									onEditInvoice={handleEditInvoice}
-									invoices={invoices}
-									customers={customers}
-									loading={invoiceLoading}
-									error={invoiceError}
-									deleteInvoice={deleteInvoice}
-									getInvoiceDetails={getInvoiceDetails}
-								/>
-							</CardContent>
-						</Card>
+						<EnhancedInvoiceList
+							onEditInvoice={handleEditInvoice}
+							invoices={invoices}
+							customers={customers}
+							loading={invoiceLoading}
+							error={invoiceError}
+							deleteInvoice={deleteInvoice}
+							getInvoiceDetails={getInvoiceDetails}
+							refreshInvoices={refresh}
+						/>
 					</TabsContent>
 
 					<TabsContent value='create' className='space-y-6'>

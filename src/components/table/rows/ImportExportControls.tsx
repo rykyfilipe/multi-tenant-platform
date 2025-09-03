@@ -127,61 +127,174 @@ function ImportExportControls({
 		}
 	};
 
+	// Funcție pentru detectarea automată a delimiterului
+	const detectDelimiter = (text: string): string => {
+		const lines = text.split('\n').slice(0, 5); // Verifică primele 5 linii
+		const delimiters = [',', ';', '\t', '|'];
+		let bestDelimiter = ',';
+		let maxCount = 0;
+
+		for (const delimiter of delimiters) {
+			const counts = lines.map(line => (line.match(new RegExp(`\\${delimiter}`, 'g')) || []).length);
+			const avgCount = counts.reduce((a, b) => a + b, 0) / counts.length;
+			
+			if (avgCount > maxCount && avgCount > 0) {
+				maxCount = avgCount;
+				bestDelimiter = delimiter;
+			}
+		}
+
+		return bestDelimiter;
+	};
+
+	// Funcție pentru parsarea corectă a CSV-ului
+	const parseCSVLine = (line: string, delimiter: string): string[] => {
+		const result: string[] = [];
+		let current = '';
+		let inQuotes = false;
+		let i = 0;
+
+		while (i < line.length) {
+			const char = line[i];
+			const nextChar = line[i + 1];
+
+			if (char === '"') {
+				if (inQuotes && nextChar === '"') {
+					// Escaped quote
+					current += '"';
+					i += 2;
+				} else {
+					// Toggle quote state
+					inQuotes = !inQuotes;
+					i++;
+				}
+			} else if (char === delimiter && !inQuotes) {
+				// End of field
+				result.push(current.trim());
+				current = '';
+				i++;
+			} else {
+				current += char;
+				i++;
+			}
+		}
+
+		// Add the last field
+		result.push(current.trim());
+		return result;
+	};
+
 	const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
+		// Verifică tipul de fișier
+		if (!file.name.toLowerCase().endsWith('.csv')) {
+			showAlert("Please select a CSV file.", "error");
+			return;
+		}
+
 		setIsImporting(true);
 		try {
 			const text = await file.text();
-			const lines = text.split("\n").filter(Boolean);
+			
+			// Verifică dacă fișierul nu este gol
+			if (!text.trim()) {
+				showAlert("The CSV file is empty.", "error");
+				return;
+			}
 
-			const delimiter = ";";
-			const header = lines[0].split(delimiter).map((h) => h.trim());
+			const lines = text.split("\n").filter(line => line.trim() !== "");
+			
+			if (lines.length < 2) {
+				showAlert("The CSV file must contain at least a header and one data row.", "error");
+				return;
+			}
+
+			// Detectează delimiterul automat
+			const delimiter = detectDelimiter(text);
+			console.log(`Detected delimiter: "${delimiter}"`);
+
+			// Parsează header-ul
+			const header = parseCSVLine(lines[0], delimiter).map((h) => h.trim());
+
+			// Verifică dacă header-ul nu este gol
+			if (header.length === 0) {
+				showAlert("The CSV file header is empty.", "error");
+				return;
+			}
 
 			// Verificăm ca toate coloanele din header să existe
-			const isHeaderValid = header.every((h) =>
-				columns.some((c) => c.name === h),
-			);
-			if (!isHeaderValid) {
+			const missingColumns = header.filter(h => !columns.some(c => c.name === h));
+			if (missingColumns.length > 0) {
 				showAlert(
-					"The CSV file contains unknown or missing columns. Please check the file format.",
+					`The CSV file contains unknown columns: ${missingColumns.join(', ')}. Please check the file format.`,
 					"error",
 				);
 				return;
 			}
 
-			const parsedRows = lines.slice(1).map((line) => {
-				const values = line.split(delimiter).map((v) => safeParse(v));
+			// Verifică dacă toate coloanele din tabel sunt prezente în CSV
+			const csvColumns = header;
+			const missingTableColumns = columns.filter(c => !csvColumns.includes(c.name));
+			if (missingTableColumns.length > 0) {
+				showAlert(
+					`The CSV file is missing these table columns: ${missingTableColumns.map(c => c.name).join(', ')}. Please add them to your CSV file.`,
+					"error",
+				);
+				return;
+			}
 
-				// Verificăm dacă numărul de valori corespunde
-				if (values.length !== header.length) return null;
+			const parsedRows = lines.slice(1).map((line, index) => {
+				try {
+					const values = parseCSVLine(line, delimiter).map((v) => safeParse(v));
 
-				const cells = values.map((value, i) => {
-					const col = columns.find((c) => c.name === header[i]);
-					if (!col) return null;
+					// Verificăm dacă numărul de valori corespunde cu header-ul
+					if (values.length !== header.length) {
+						console.warn(`Row ${index + 2}: Expected ${header.length} columns, got ${values.length}`);
+						return null;
+					}
 
-					return {
-						columnId: col.id,
-						value,
-					};
-				});
+					const cells = values.map((value, i) => {
+						const col = columns.find((c) => c.name === header[i]);
+						if (!col) return null;
 
-				// Dacă vreo celulă este invalidă, omitem întregul rând
-				if (cells.includes(null)) return null;
+						return {
+							columnId: col.id,
+							value,
+						};
+					});
 
-				return { cells: cells as { columnId: number; value: any }[] };
+					// Dacă vreo celulă este invalidă, omitem întregul rând
+					if (cells.includes(null)) return null;
+
+					return { cells: cells as { columnId: number; value: any }[] };
+				} catch (error) {
+					console.warn(`Error parsing row ${index + 2}:`, error);
+					return null;
+				}
 			});
 
 			// Filtrăm rândurile invalide
 			const validRows = parsedRows.filter((r) => r !== null);
 
 			if (validRows.length === 0) {
+				const totalRows = lines.length - 1; // Exclude header
 				showAlert(
-					"No valid rows found for import. Please check your CSV file.",
+					`No valid rows found for import. ${totalRows} rows were processed but none were valid. Please check your CSV file format and data.`,
 					"error",
 				);
 				return;
+			}
+
+			// Afișează un mesaj informativ despre câte rânduri vor fi importate
+			const totalRows = lines.length - 1; // Exclude header
+			const skippedRows = totalRows - validRows.length;
+			if (skippedRows > 0) {
+				showAlert(
+					`Found ${validRows.length} valid rows out of ${totalRows} total rows. ${skippedRows} rows will be skipped.`,
+					"info",
+				);
 			}
 
 			// Folosim noul endpoint de import
@@ -285,9 +398,17 @@ function ImportExportControls({
 			cleanVal = cleanVal.slice(1, -1);
 		}
 
+		// Returnează null pentru valori goale
+		if (cleanVal === "" || cleanVal === "null" || cleanVal === "undefined") {
+			return null;
+		}
+
+		// Încearcă să parseze ca JSON pentru valori complexe
 		try {
-			return JSON.parse(cleanVal);
+			const parsed = JSON.parse(cleanVal);
+			return parsed;
 		} catch {
+			// Dacă nu poate fi parsate ca JSON, returnează ca string
 			return cleanVal;
 		}
 	};
@@ -336,9 +457,17 @@ function ImportExportControls({
 								</Button>
 							</div>
 						</PopoverTrigger>
-						<PopoverContent className='text-sm w-[260px] pointer-events-none'>
-							Pentru ca importul să funcționeze, fișierul trebuie să conțină
-							<strong> aceleași coloane</strong> ca tabela curentă.
+						<PopoverContent className='text-sm w-[300px] pointer-events-none'>
+							<div className='space-y-2'>
+								<p><strong>CSV Import Requirements:</strong></p>
+								<ul className='list-disc list-inside space-y-1 text-xs'>
+									<li>File must have .csv extension</li>
+									<li>First row must contain column headers</li>
+									<li>Headers must match table column names exactly</li>
+									<li>Supports comma, semicolon, tab, or pipe delimiters</li>
+									<li>Values with commas should be quoted</li>
+								</ul>
+							</div>
 						</PopoverContent>
 					</Popover>
 					<input

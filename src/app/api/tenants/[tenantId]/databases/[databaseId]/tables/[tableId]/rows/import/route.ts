@@ -213,6 +213,7 @@ export async function POST(
 				required: true,
 				order: true,
 				referenceTableId: true,
+				customOptions: true,
 			},
 			orderBy: { order: "asc" },
 		});
@@ -500,10 +501,12 @@ export async function POST(
 		}
 
 		// Dacă sunt prea multe erori, nu continuăm cu importul
-		if (errors.length > 0 && errors.length >= validRows.length) {
+		// Dar să fie mai permisiv - doar dacă mai mult de 50% din rânduri au erori
+		const errorThreshold = Math.max(1, Math.floor(rows.length * 0.5));
+		if (errors.length > errorThreshold) {
 			return NextResponse.json(
 				{
-					error: "Too many validation errors - import cancelled",
+					error: `Too many validation errors (${errors.length}/${rows.length}) - import cancelled`,
 					details: errors.slice(0, 10),
 					totalErrors: errors.length,
 					warnings: warnings,
@@ -513,6 +516,7 @@ export async function POST(
 						invalidRows: rows.length - validRows.length,
 						errorCount: errors.length,
 						warningCount: warnings.length,
+						errorThreshold: errorThreshold,
 					},
 				},
 				{ status: 400 },
@@ -552,50 +556,64 @@ export async function POST(
 		const importErrors: string[] = [];
 
 		try {
-			await prisma.$transaction(async (tx: any) => {
-				for (let i = 0; i < validRows.length; i++) {
-					const rowData = validRows[i];
-					const rowIndex = i + 1;
+			// Pentru importuri mari, folosim batch processing
+			const batchSize = 100;
+			const batches = [];
+			
+			for (let i = 0; i < validRows.length; i += batchSize) {
+				batches.push(validRows.slice(i, i + batchSize));
+			}
 
-					try {
-						// Creare rând nou
-						const newRow = await tx.row.create({
-							data: {
-								tableId: Number(tableId),
-							},
-							select: {
-								id: true,
-							},
-						});
+			for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+				const batch = batches[batchIndex];
+				
+				await prisma.$transaction(async (tx: any) => {
+					for (let i = 0; i < batch.length; i++) {
+						const rowData = batch[i];
+						const rowIndex = (batchIndex * batchSize) + i + 1;
 
-						// Creare celule pentru rând
-						const createdCells = [];
-						for (const cell of rowData.cells) {
-							const createdCell = await tx.cell.create({
+						try {
+							// Creare rând nou
+							const newRow = await tx.row.create({
 								data: {
-									rowId: newRow.id,
-									columnId: Number(cell.columnId),
-									value: cell.value,
+									tableId: Number(tableId),
+								},
+								select: {
+									id: true,
 								},
 							});
-							createdCells.push(createdCell);
+
+							// Creare celule pentru rând
+							const createdCells = [];
+							for (const cell of rowData.cells) {
+								const createdCell = await tx.cell.create({
+									data: {
+										rowId: newRow.id,
+										columnId: Number(cell.columnId),
+										value: cell.value,
+									},
+								});
+								createdCells.push(createdCell);
+							}
+
+							// Obține rândul complet cu celulele create
+							const completeRow = await tx.row.findUnique({
+								where: { id: newRow.id },
+								include: {
+									cells: true,
+								},
+							});
+
+							importedRows.push(completeRow);
+						} catch (error) {
+							importErrors.push(`Row ${rowIndex}: Failed to import - ${error}`);
+							throw error; // Rollback tranzacția pentru acest batch
 						}
-
-						// Obține rândul complet cu celulele create
-						const completeRow = await tx.row.findUnique({
-							where: { id: newRow.id },
-							include: {
-								cells: true,
-							},
-						});
-
-						importedRows.push(completeRow);
-					} catch (error) {
-						importErrors.push(`Row ${rowIndex}: Failed to import - ${error}`);
-						throw error; // Rollback tranzacția
 					}
-				}
-			});
+				}, {
+					timeout: 30000, // 30 seconds timeout per batch
+				});
+			}
 		} catch (error) {
 			console.error("Transaction failed:", error);
 			return NextResponse.json(
@@ -605,8 +623,8 @@ export async function POST(
 					summary: {
 						totalRows: rows.length,
 						validRows: validRows.length,
-						importedRows: 0,
-						failedRows: validRows.length,
+						importedRows: importedRows.length,
+						failedRows: validRows.length - importedRows.length,
 					},
 				},
 				{ status: 500 },
