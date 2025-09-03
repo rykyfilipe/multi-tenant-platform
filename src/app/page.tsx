@@ -9,21 +9,14 @@ import {
 	Settings,
 	Zap,
 	Shield,
-	BarChart3,
 	Check,
 	Menu,
 	ArrowRight,
-	Globe,
 	LogOut,
-	Monitor,
 	Building2,
-	Store,
-	Calendar,
-	Truck,
-	ChartBar,
 	Filter,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import AuthModal from "@/components/auth/AuthModal";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";

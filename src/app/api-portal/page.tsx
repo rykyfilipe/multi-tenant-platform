@@ -329,7 +329,7 @@ export default function ApiPortalPage() {
 		} catch (error) {
 			logger.error("Failed to load API portal preferences", error as Error, {
 				component: "ApiPortalPage",
-				userId: user.id,
+				userId: user.id.toString(),
 			});
 		}
 	};
@@ -346,7 +346,7 @@ export default function ApiPortalPage() {
 		} catch (error) {
 			logger.error("Failed to save API portal preferences", error as Error, {
 				component: "ApiPortalPage",
-				userId: user.id,
+				userId: user.id.toString(),
 			});
 		}
 	};
@@ -384,7 +384,7 @@ export default function ApiPortalPage() {
 		// Log request execution
 		logger.info("API request executed from portal", {
 			component: "ApiPortalPage",
-			userId: user?.id,
+			userId: user?.id.toString(),
 			endpoint: requestData.endpoint,
 			method: requestData.method,
 			status: requestData.status,
