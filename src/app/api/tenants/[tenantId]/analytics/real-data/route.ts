@@ -24,9 +24,9 @@ async function getRealDataHandler(
 		const role = sessionResult.user.role;
 
 		// Check if user has access to this tenant
-		        const isMember = requireTenantAccess(sessionResult, tenantId.toString());
-		if (!isMember) {
-			return ApiErrors.forbidden("Access denied to this tenant").toResponse();
+		const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Get real-time data from various sources

@@ -22,9 +22,9 @@ export async function GET(
 		const role = sessionResult.user.role;
 
 		// Check if user has access to this tenant
-		        const isMember = requireTenantAccess(sessionResult, tenantId);
-		if (!isMember) {
-			return ApiErrors.forbidden("Access denied to this tenant").toResponse();
+		const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Run verification
