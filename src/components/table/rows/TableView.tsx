@@ -311,14 +311,7 @@ export const TableView = memo(function TableView({
 									</th>
 								))}
 
-								{/* Actions Column */}
-								{tablePermissions.canEditTable() && (
-									<th className='sticky right-0 z-20 bg-muted/30 backdrop-blur-sm border-l border-border/20 px-4 py-3 text-left'>
-										<span className='text-sm font-semibold text-foreground'>
-											Actions
-										</span>
-									</th>
-								)}
+								
 							</tr>
 						</thead>
 

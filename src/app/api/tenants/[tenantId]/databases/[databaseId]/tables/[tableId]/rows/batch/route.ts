@@ -119,7 +119,12 @@ export async function POST(
 		}
 
 		// Get table columns for validation
-		const columns = await prisma.column.findMany({
+		const columns: Array<{
+			id: number;
+			name: string;
+			type: string;
+			required: boolean;
+		}> = await prisma.column.findMany({
 			where: {
 				tableId: Number(tableId),
 			},
@@ -166,7 +171,7 @@ export async function POST(
 
 			// Validate column IDs
 			for (const cell of row.cells) {
-				const columnExists = columns.some((col:any) => col.id === cell.columnId);
+				const columnExists = columns.some((col) => col.id === cell.columnId);
 				if (!columnExists) {
 					return NextResponse.json(
 						{ error: `Column with ID ${cell.columnId} not found` },
