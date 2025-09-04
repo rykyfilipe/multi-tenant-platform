@@ -15,7 +15,7 @@ import { useDatabase } from "@/contexts/DatabaseContext";
 import AddRowForm from "./AddRowForm";
 import { TableView } from "./TableView";
 import { TableFilters, FilterToggleButton } from "./TableFilters";
-import { PendingChangesBar } from "./PendingChangesBar";
+import SaveChangesButton from "./SaveChangesButton";
 import useRowsTableEditor from "@/hooks/useRowsTableEditor";
 import useTableRows from "@/hooks/useTableRows";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,7 @@ const TableEditor = memo(function TableEditor({
 		handleCancelEdit,
 		handleEditCell,
 		handleSaveCell,
+		pendingChanges,
 		pendingChangesCount,
 		isSaving,
 		hasPendingChange,
@@ -765,36 +766,17 @@ const TableEditor = memo(function TableEditor({
 									</Button>
 								)}
 
-								{/* Save/Discard New Rows Buttons */}
-								{pendingNewRows.length > 0 && (
-									<>
-										<Button
-											onClick={handleSaveNewRows}
-											disabled={isSavingNewRows}
-											className='bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200'
-											size='lg'>
-											{isSavingNewRows ? (
-												<>
-													<div className='w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin' />
-													Saving...
-												</>
-											) : (
-												<>
-													<CheckCircle className='w-4 h-4 mr-2' />
-													Save Changes ({pendingNewRows.length})
-												</>
-											)}
-										</Button>
-										<Button
-											onClick={handleDiscardNewRows}
-											variant='outline'
-											className='border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 transition-all duration-200'
-											size='lg'>
-											<X className='w-4 h-4 mr-2' />
-											Discard ({pendingNewRows.length})
-										</Button>
-									</>
-								)}
+								{/* Unified Save Changes Button */}
+								<SaveChangesButton
+									pendingNewRows={pendingNewRows}
+									isSavingNewRows={isSavingNewRows}
+									onSaveNewRows={handleSaveNewRows}
+									onDiscardNewRows={handleDiscardNewRows}
+									pendingChanges={pendingChanges}
+									isSavingChanges={isSaving}
+									onSaveChanges={savePendingChanges}
+									onDiscardChanges={discardPendingChanges}
+								/>
 
 								<Link
 									href={`/home/database/table/${table?.id}/columns`}
@@ -948,14 +930,6 @@ const TableEditor = memo(function TableEditor({
 					)}
 				</div>
 
-				{/* Pending Changes Bar - Enhanced Design */}
-				<PendingChangesBar
-					pendingChangesCount={pendingChangesCount}
-					isSaving={isSaving}
-					onSave={savePendingChanges}
-					onDiscard={discardPendingChanges}
-					isVisible={pendingChangesCount > 0}
-				/>
 			</div>
 		</div>
 	);

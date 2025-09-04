@@ -91,6 +91,43 @@ export const translations: Translations = {
 		fr: "Annuler",
 		de: "Abbrechen",
 	},
+
+	// Save Changes Button
+	"table.saveChanges.saveNewRow": {
+		en: "Save New Row",
+		ro: "Salvează Rând Nou",
+		es: "Guardar Fila Nueva",
+		fr: "Enregistrer Nouvelle Ligne",
+		de: "Neue Zeile Speichern",
+	},
+	"table.saveChanges.saveChange": {
+		en: "Save Change",
+		ro: "Salvează Modificarea",
+		es: "Guardar Cambio",
+		fr: "Enregistrer Modification",
+		de: "Änderung Speichern",
+	},
+	"table.saveChanges.saveChanges": {
+		en: "Save Changes ({count})",
+		ro: "Salvează Modificările ({count})",
+		es: "Guardar Cambios ({count})",
+		fr: "Enregistrer Modifications ({count})",
+		de: "Änderungen Speichern ({count})",
+	},
+	"table.saveChanges.newRows": {
+		en: "new",
+		ro: "noi",
+		es: "nuevas",
+		fr: "nouvelles",
+		de: "neue",
+	},
+	"table.saveChanges.changes": {
+		en: "changes",
+		ro: "modificări",
+		es: "cambios",
+		fr: "modifications",
+		de: "Änderungen",
+	},
 	"common.edit": {
 		en: "Edit",
 		ro: "Editează",

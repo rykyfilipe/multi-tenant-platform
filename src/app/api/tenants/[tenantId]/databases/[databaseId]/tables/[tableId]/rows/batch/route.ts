@@ -49,10 +49,8 @@ export async function POST(
 		const user = await prisma.user.findFirst({
 			where: {
 				id: Number(userId),
-				tenants: {
-					some: {
-						tenantId: Number(tenantId),
-					},
+				tenant: {
+					id: Number(tenantId),
 				},
 			},
 			select: {

@@ -23,6 +23,7 @@ function useRowsTableEditor(
 
 	// Folosim noul batch editor
 	const {
+		pendingChanges,
 		isEditingCell,
 		startEditing,
 		cancelEditing,
@@ -114,6 +115,7 @@ function useRowsTableEditor(
 		handleSaveCell,
 
 		// Noi funcționalități pentru batch editing
+		pendingChanges,
 		pendingChangesCount,
 		isSaving,
 		hasPendingChange,
