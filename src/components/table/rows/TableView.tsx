@@ -263,8 +263,19 @@ export const TableView = memo(function TableView({
 						</div>
 					</div>
 
-					
-					
+					{/* Right Section - Bulk Actions */}
+					<div className='flex items-center gap-3'>
+						{selectedRows.size > 0 && tablePermissions.canEditTable() && onBulkDelete && (
+							<Button
+								onClick={handleBulkDeleteClick}
+								variant='destructive'
+								size='sm'
+								className='bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'>
+								<Trash2 className='w-4 h-4 mr-2' />
+								Delete Selected ({selectedRows.size})
+							</Button>
+						)}
+					</div>
 				</div>
 			</div>
 
@@ -299,7 +310,7 @@ export const TableView = memo(function TableView({
 								{safeColumns.map((col) => (
 									<th
 										key={col.id}
-										className='px-4 py-3 text-left text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0'>
+										className='px-4 py-3 text-left text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20'>
 										<div className='flex items-center gap-2'>
 											<span className='truncate'>{col.name}</span>
 											{col.type && (
@@ -311,7 +322,12 @@ export const TableView = memo(function TableView({
 									</th>
 								))}
 
-								
+								{/* Actions Column */}
+								{tablePermissions.canEditTable() && (
+									<th className='px-4 py-3 text-center text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0 w-20'>
+										Actions
+									</th>
+								)}
 							</tr>
 						</thead>
 
@@ -321,9 +337,9 @@ export const TableView = memo(function TableView({
 								<tr>
 									<td
 										colSpan={
-											(tablePermissions.canEditTable() ? 1 : 0) +
-											safeColumns.length +
-											(tablePermissions.canEditTable() ? 1 : 0)
+											(tablePermissions.canEditTable() ? 1 : 0) + // Selection column
+											safeColumns.length + // Data columns
+											(tablePermissions.canEditTable() ? 1 : 0) // Actions column
 										}
 										className='px-6 py-16 text-center'>
 										<div className='flex flex-col items-center gap-4'>
@@ -445,7 +461,7 @@ export const TableView = memo(function TableView({
 													return (
 														<td
 															key={`${row.id}-${col.id}-${cell.id}`}
-															className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+															className='px-4 py-4 border-r border-border/20'>
 															<EditableCell
 																columns={safeColumns}
 																cell={cell}
@@ -460,6 +476,24 @@ export const TableView = memo(function TableView({
 														</td>
 													);
 												})}
+
+												{/* Actions Cell */}
+												{tablePermissions.canEditTable() && (
+													<td className='px-4 py-4 text-center border-r border-border/20 last:border-r-0'>
+														<Button
+															onClick={() => onDeleteRow(String(row.id))}
+															variant='ghost'
+															size='sm'
+															disabled={deletingRows.has(String(row.id))}
+															className='h-8 w-8 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive/10 transition-all duration-200'>
+															{deletingRows.has(String(row.id)) ? (
+																<div className='w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin' />
+															) : (
+																<Trash2 className='w-4 h-4' />
+															)}
+														</Button>
+													</td>
+												)}
 
 											</motion.tr>
 										);

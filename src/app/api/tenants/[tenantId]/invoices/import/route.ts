@@ -2,9 +2,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { MigratorService, MigratorType } from '@/lib/migrators';
 import { getServerSession } from 'next-auth';
-import { authOptions, checkUserTenantAccess } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
+import { MigratorService, MigratorType } from '@/lib/migrators';
+import { verifyLogin, getUserFromRequest, checkUserTenantAccess } from '@/lib/auth';
 
 const ImportRequestSchema = z.object({
 	provider: z.enum(['oblio', 'smartbill', 'fgo', 'csv']),
@@ -25,13 +26,25 @@ export async function POST(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession();
-		if (!session?.user?.id) {
+		const logged = verifyLogin(request);
+		if (!logged) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
+		const userResult = await getUserFromRequest(request);
+		if (userResult instanceof NextResponse) {
+			return userResult;
+		}
+
+		// Type guard to ensure we have the correct type
+		if (!("userId" in userResult)) {
+			return NextResponse.json({ error: "Invalid user data" }, { status: 401 });
+		}
+
+		const { userId } = userResult;
+
 		// Check tenant access
-		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
+		const hasAccess = await checkUserTenantAccess(userId, Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -94,13 +107,25 @@ export async function GET(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession();
-		if (!session?.user?.id) {
+		const logged = verifyLogin(request);
+		if (!logged) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
+		const userResult = await getUserFromRequest(request);
+		if (userResult instanceof NextResponse) {
+			return userResult;
+		}
+
+		// Type guard to ensure we have the correct type
+		if (!("userId" in userResult)) {
+			return NextResponse.json({ error: "Invalid user data" }, { status: 401 });
+		}
+
+		const { userId } = userResult;
+
 		// Check tenant access
-		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
+		const hasAccess = await checkUserTenantAccess(userId, Number(params.tenantId));
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}

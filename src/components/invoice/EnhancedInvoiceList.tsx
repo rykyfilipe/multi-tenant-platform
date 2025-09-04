@@ -42,7 +42,6 @@ import { InvoiceList } from './InvoiceList';
 import { ImportModal } from './ImportModal';
 import { ExportModal } from './ExportModal';
 import { SeriesManager } from './SeriesManager';
-import { InvoiceForm } from './InvoiceForm';
 
 interface EnhancedInvoiceListProps {
 	onEditInvoice?: (invoice: any) => void;
@@ -72,7 +71,6 @@ export function EnhancedInvoiceList({
 	const [showImportModal, setShowImportModal] = useState(false);
 	const [showExportModal, setShowExportModal] = useState(false);
 	const [showSeriesManager, setShowSeriesManager] = useState(false);
-	const [showCreateForm, setShowCreateForm] = useState(false);
 	
 	// Filter states
 	const [searchTerm, setSearchTerm] = useState('');
@@ -125,15 +123,11 @@ export function EnhancedInvoiceList({
 		showAlert(`Export completed: ${result.filename}`, 'success');
 	};
 
-	const handleCreateInvoice = () => {
-		setShowCreateForm(true);
-	};
 
 	const handleEditInvoice = (invoice: any) => {
 		if (onEditInvoice) {
 			onEditInvoice(invoice);
 		}
-		setShowCreateForm(true);
 	};
 
 	const clearFilters = () => {
@@ -187,10 +181,6 @@ export function EnhancedInvoiceList({
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
-					<Button onClick={handleCreateInvoice} className="bg-primary hover:bg-primary/90">
-						<Plus className="mr-2 h-4 w-4" />
-						New Invoice
-					</Button>
 					<Button variant="outline" onClick={() => setShowImportModal(true)}>
 						<Upload className="mr-2 h-4 w-4" />
 						Import
@@ -462,78 +452,6 @@ export function EnhancedInvoiceList({
 				</div>
 			)}
 
-			{showCreateForm && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-background rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-						<div className="p-6">
-							<div className="flex items-center justify-between mb-6">
-								<h2 className="text-2xl font-bold text-foreground">Create Invoice</h2>
-								<Button variant="ghost" size="sm" onClick={() => setShowCreateForm(false)}>
-									×
-								</Button>
-							</div>
-							<InvoiceForm
-								onClose={() => setShowCreateForm(false)}
-								onSuccess={() => {
-									setShowCreateForm(false);
-									if (refreshInvoices) {
-										refreshInvoices();
-									}
-								}}
-								customers={customers}
-								createInvoice={async (invoiceData: any) => {
-									// This should be implemented based on your API
-									const response = await fetch(`/api/tenants/${tenant?.id}/invoices`, {
-										method: 'POST',
-										headers: {
-											'Content-Type': 'application/json',
-											'Authorization': `Bearer ${token}`,
-										},
-										body: JSON.stringify(invoiceData),
-									});
-									if (!response.ok) {
-										throw new Error('Failed to create invoice');
-									}
-									return response.json();
-								}}
-								updateInvoice={async (invoiceId: number, updateData: any) => {
-									// This should be implemented based on your API
-									const response = await fetch(`/api/tenants/${tenant?.id}/invoices/${invoiceId}`, {
-										method: 'PUT',
-										headers: {
-											'Content-Type': 'application/json',
-											'Authorization': `Bearer ${token}`,
-										},
-										body: JSON.stringify(updateData),
-									});
-									if (!response.ok) {
-										throw new Error('Failed to update invoice');
-									}
-									return response.json();
-								}}
-								createCustomer={async (customerData: any) => {
-									// This should be implemented based on your API
-									const response = await fetch(`/api/tenants/${tenant?.id}/customers`, {
-										method: 'POST',
-										headers: {
-											'Content-Type': 'application/json',
-											'Authorization': `Bearer ${token}`,
-										},
-										body: JSON.stringify(customerData),
-									});
-									if (!response.ok) {
-										throw new Error('Failed to create customer');
-									}
-									return response.json();
-								}}
-								getInvoiceDetails={getInvoiceDetails}
-								loading={loading}
-								error={error}
-							/>
-						</div>
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }

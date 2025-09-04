@@ -55,6 +55,19 @@ export async function POST(
 			);
 		}
 
+		// Check if billing module is enabled
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: Number(tenantId) },
+			select: { enabledModules: true },
+		});
+
+		if (!tenant || !tenant.enabledModules.includes("billing")) {
+			return NextResponse.json(
+				{ error: "Billing module is not enabled for this tenant" },
+				{ status: 403 },
+			);
+		}
+
 		// Get or initialize invoice tables
 		let invoiceTables = await InvoiceSystemService.getInvoiceTables(
 			Number(tenantId),
@@ -209,6 +222,16 @@ export async function GET(
 				{ error: "Database not found for this tenant" },
 				{ status: 404 },
 			);
+		}
+
+		// Check if billing module is enabled
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: Number(tenantId) },
+			select: { enabledModules: true },
+		});
+
+		if (!tenant || !tenant.enabledModules.includes("billing")) {
+			return NextResponse.json({ customers: [] });
 		}
 
 		// Get invoice tables

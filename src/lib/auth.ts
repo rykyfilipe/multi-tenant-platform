@@ -262,7 +262,7 @@ export const authOptions = {
 			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.session-token` : `next-auth.session-token`, 
 			options: { 
 				httpOnly: true, 
-				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const, 
 				path: "/", 
 				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
@@ -272,7 +272,7 @@ export const authOptions = {
 		callbackUrl: { 
 			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.callback-url` : `next-auth.callback-url`, 
 			options: { 
-				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const, 
 				path: "/", 
 				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
@@ -283,7 +283,7 @@ export const authOptions = {
 			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.csrf-token` : `next-auth.csrf-token`, 
 			options: { 
 				httpOnly: true, 
-				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const, 
 				path: "/", 
 				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 				domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
@@ -294,7 +294,7 @@ export const authOptions = {
 			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.pkce.code_verifier` : `next-auth.pkce.code_verifier`, 
 			options: { 
 				httpOnly: true, 
-				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const, 
 				path: "/", 
 				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 				maxAge: 60 * 15, // 15 minutes
@@ -304,7 +304,7 @@ export const authOptions = {
 			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.state` : `next-auth.state`, 
 			options: { 
 				httpOnly: true, 
-				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const, 
 				path: "/", 
 				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 				maxAge: 60 * 15, // 15 minutes
@@ -314,7 +314,7 @@ export const authOptions = {
 			name: process.env.NODE_ENV === "production" ? `__Secure-next-auth.nonce` : `next-auth.nonce`, 
 			options: { 
 				httpOnly: true, 
-				sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+				sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const, 
 				path: "/", 
 				secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https"),
 				maxAge: 60 * 15, // 15 minutes
@@ -328,7 +328,7 @@ export const authOptions = {
 	trustHost: true,
 	adapter: undefined,
 	events: {
-		async signIn({ user, account }: { user: User, account: Account }	) { console.log(`User ${user.email} signed in via ${account?.provider}`); },
+		async signIn({ user, account }: { user: User, account: Account | null }) { console.log(`User ${user.email} signed in via ${account?.provider}`); },
 		async signOut() { console.log("User signed out"); },
 		async createUser({ user }: { user: User }) { console.log(`New user created: ${user.email}`); },
 		async session() { if (process.env.NODE_ENV === "development") console.log("Session event triggered"); },
