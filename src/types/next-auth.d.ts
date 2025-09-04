@@ -1,15 +1,26 @@
 /** @format */
 
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { NextAuthOptions } from "next-auth";
-import { User, Tenant } from "@/generated/prisma";
+import { DefaultJWT } from "next-auth/jwt";
+
+// Define the Role type
+export type Role = "ADMIN" | "EDITOR" | "VIEWER";
 
 declare module "next-auth" {
 	/**
 	 * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
 	 */
 	interface Session {
-		user: User;
+		user: {
+			id: string;
+			email: string;
+			firstName: string;
+			lastName: string;
+			role: Role;
+			name: string;
+			image?: string;
+			profileImage?: string;
+			tenantId?: string | null;
+		};
 		accessToken?: string;
 		customJWT?: string;
 		subscription?: {
@@ -17,20 +28,6 @@ declare module "next-auth" {
 			plan: string | null;
 			currentPeriodEnd: Date | null;
 		};
-	}
-
-	interface Account {
-		id: number;
-		userId: number;
-		provider: string;
-		providerAccountId: string;
-		refresh_token: string | null;
-		access_token: string | null;
-		expires_at: number | null;
-		token_type: string | null;
-		scope: string | null;
-		id_token: string | null;
-		session_state: string | null;
 	}
 
 	interface User {

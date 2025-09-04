@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest, checkUserTenantAccess } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { webhookSystem, WebhookStatus } from "@/lib/webhook-system";
 import { logger } from "@/lib/error-logger";
 import { z } from "zod";
@@ -29,10 +29,11 @@ export async function GET(
 	{ params }: { params: { tenantId: string; webhookId: string } }
 ) {
 	try {
-		const user = await getUserFromRequest(request);
-		if (!user) {
-			return NextResponse.json(
-				{ error: "Authentication required" },
+		const sessionResult = await requireAuthAPI();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const { user } = sessionResult;,
 				{ status: 401 }
 			);
 		}
@@ -105,10 +106,11 @@ export async function PUT(
 	{ params }: { params: { tenantId: string; webhookId: string } }
 ) {
 	try {
-		const user = await getUserFromRequest(request);
-		if (!user) {
-			return NextResponse.json(
-				{ error: "Authentication required" },
+		const sessionResult = await requireAuthAPI();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const { user } = sessionResult;,
 				{ status: 401 }
 			);
 		}
@@ -220,10 +222,11 @@ export async function DELETE(
 	{ params }: { params: { tenantId: string; webhookId: string } }
 ) {
 	try {
-		const user = await getUserFromRequest(request);
-		if (!user) {
-			return NextResponse.json(
-				{ error: "Authentication required" },
+		const sessionResult = await requireAuthAPI();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const { user } = sessionResult;,
 				{ status: 401 }
 			);
 		}

@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/error-logger";
 
@@ -11,14 +11,11 @@ import { logger } from "@/lib/error-logger";
  */
 export async function GET(request: NextRequest) {
 	try {
-		const user = await getUserFromRequest(request);
-		
-		if (!user) {
-			return NextResponse.json(
-				{ error: "Authentication required" },
-				{ status: 401 }
-			);
+		const sessionResult = await requireAuthAPI();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
 		}
+		const { user } = sessionResult;
 
 		// Log data export request
 		logger.info("GDPR data export requested", {

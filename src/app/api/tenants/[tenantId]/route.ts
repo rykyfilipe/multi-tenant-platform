@@ -1,11 +1,7 @@
 /** @format */
 
 import prisma from "@/lib/prisma";
-import {
-	getUserFromRequest,
-	checkUserTenantAccess,
-	verifyLogin,
-} from "@/lib/auth";
+import { requireTenantAccessAPI } from "@/lib/session";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -40,24 +36,11 @@ export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireTenantAccessAPI(tenantId);
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
-
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
 		const validation = tenantSchema.safeParse({ tenantId });
@@ -94,29 +77,16 @@ export async function PATCH(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireTenantAccessAPI(tenantId);
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
 
 	// Only admin can update tenant settings
-	if (role !== "ADMIN") {
+	if (sessionResult.user.role !== "ADMIN") {
 		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 	}
-
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
 		const validation = tenantSchema.safeParse({ tenantId });

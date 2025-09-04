@@ -2,11 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import {
-	checkUserTenantAccess,
-	getUserFromRequest,
-	verifyLogin,
-} from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { z } from "zod";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
 
@@ -19,9 +15,9 @@ export async function POST(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const userResult = await getUserFromRequest(request);
@@ -134,9 +130,9 @@ export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const userResult = await getUserFromRequest(request);
@@ -234,9 +230,9 @@ export async function DELETE(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const userResult = await getUserFromRequest(request);

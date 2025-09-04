@@ -2,7 +2,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions, checkUserTenantAccess } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { InvoiceSystemService, CreateInvoiceRequest } from "@/lib/invoice-system";
 import { z } from "zod";
 import prisma from "@/lib/prisma";

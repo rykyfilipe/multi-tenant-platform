@@ -3,8 +3,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { checkUserTenantAccess } from '@/lib/auth';
+import { authOptions } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { EnhancedPDFGenerator } from '@/lib/pdf-enhanced-generator';
 import { EmailService } from '@/lib/email-service';
 import prisma from '@/lib/prisma';

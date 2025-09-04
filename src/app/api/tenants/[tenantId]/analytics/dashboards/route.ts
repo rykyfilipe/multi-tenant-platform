@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest, checkUserTenantAccess } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { advancedAnalytics, DashboardType } from "@/lib/advanced-analytics";
 import { logger } from "@/lib/error-logger";
 import { z } from "zod";
@@ -33,11 +33,12 @@ export async function GET(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		const user = await getUserFromRequest(request);
-		if (user instanceof Response) {
-			return user;
-		}
-		const userId = user.userId;
+		const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const { user } = sessionResult;
+	const userId = user.id;
 		if (!user) {
 			return NextResponse.json(
 				{ error: "Authentication required" },
@@ -91,11 +92,12 @@ export async function POST(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		const user = await getUserFromRequest(request);
-		if (user instanceof Response) {
-			return user;
-		}
-		const userId = user.userId;
+		const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const { user } = sessionResult;
+	const userId = user.id;
 		if (!user) {
 			return NextResponse.json(
 				{ error: "Authentication required" },

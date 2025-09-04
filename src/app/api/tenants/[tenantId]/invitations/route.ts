@@ -1,7 +1,8 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest, verifyLogin, generateToken } from "@/lib/auth";
+import { generateToken } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { sendInvitationEmail } from "@/lib/email";
@@ -15,19 +16,18 @@ export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = parseInt(user.id);
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -57,19 +57,18 @@ export async function POST(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = parseInt(user.id);
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -178,19 +177,18 @@ export async function DELETE(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = parseInt(user.id);
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

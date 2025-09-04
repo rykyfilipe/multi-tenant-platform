@@ -2,13 +2,9 @@
 
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import {
-	checkUserTenantAccess,
-	getUserFromRequest,
-	verifyLogin,
-	checkColumnEditPermission,
-	checkTableEditPermission,
-} from "@/lib/auth";
+import { checkColumnEditPermission, checkTableEditPermission,  } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { z } from "zod";
 
 const ColumnUpdateSchema = z.object({
@@ -46,17 +42,17 @@ export async function PATCH(
 	},
 ) {
 	const { tenantId, databaseId, tableId, columnId } = await params;
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = user.id;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
 	if (!isMember)
@@ -141,17 +137,17 @@ export async function DELETE(
 	},
 ) {
 	const { tenantId, databaseId, tableId, columnId } = await params;
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = user.id;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
 	if (!isMember)

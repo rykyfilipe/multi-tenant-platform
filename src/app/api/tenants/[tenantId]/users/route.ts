@@ -1,11 +1,7 @@
 /** @format */
 
-import {
-	checkUserTenantAccess,
-	getUserFromRequest,
-	hashPassword,
-	verifyLogin,
-} from "@/lib/auth";
+import { requireTenantAccessAPI, requireAuthAPI } from "@/lib/session";
+import { hashPassword } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -26,24 +22,11 @@ export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireTenantAccessAPI(tenantId);
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
-
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
 		const users = await prisma.user.findMany({
@@ -80,27 +63,15 @@ export async function POST(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireTenantAccessAPI(tenantId);
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
-	const { userId, role } = userResult;
-
-	if (role !== "ADMIN")
+	if (sessionResult.user.role !== "ADMIN")
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	try {
 		const body = await request.json();

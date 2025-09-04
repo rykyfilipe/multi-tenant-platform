@@ -3,7 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
-import { authOptions, checkUserTenantAccess } from '@/lib/auth';
+import { authOptions } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import prisma from '@/lib/prisma';
 
 const SeriesRequestSchema = z.object({

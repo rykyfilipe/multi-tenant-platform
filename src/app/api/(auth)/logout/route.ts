@@ -1,17 +1,17 @@
 /** @format */
 import { NextResponse, NextRequest } from "next/server";
-import { getUserFromRequest } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { trackUserLogout } from "@/lib/activity-tracker";
 
 export async function POST(request: NextRequest) {
 	try {
 		// Track logout activity
 		try {
-			const userResult = await getUserFromRequest(request);
-			if (userResult && !(userResult instanceof NextResponse)) {
-				const { userId, tenantId } = userResult;
-				if (userId && tenantId) {
-					trackUserLogout(userId, tenantId, request);
+			const sessionResult = await requireAuthAPI();
+			if (sessionResult && !(sessionResult instanceof NextResponse)) {
+				const { user } = sessionResult;
+				if (user.id && user.tenantId) {
+					trackUserLogout(parseInt(user.id), parseInt(user.tenantId), request);
 				}
 			}
 		} catch (error) {

@@ -4,8 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { MigratorService } from '@/lib/migrators';
 import { getServerSession } from 'next-auth';
-import { checkUserTenantAccess } from '@/lib/auth';
-
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 const ExportRequestSchema = z.object({
 	format: z.enum(['csv', 'json']),
 	limit: z.number().min(1).max(10000).optional(),

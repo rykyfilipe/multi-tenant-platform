@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { logger, type LogEntry } from "@/lib/error-logger";
-import { getUserFromRequest } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { z } from "zod";
 
 const LogEntrySchema = z.object({
@@ -38,7 +38,11 @@ export async function POST(request: NextRequest) {
 		const logEntry = LogEntrySchema.parse(body);
 
 		// Get user context
-		const user = await getUserFromRequest(request);
+		const sessionResult = await requireAuthAPI();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const { user } = sessionResult;
 		const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
 
 		// Enhance log entry with server context
@@ -46,8 +50,8 @@ export async function POST(request: NextRequest) {
 			...logEntry,
 			context: {
 				...logEntry.context,
-				userId: user?.id.toString(),
-				tenantId: user?.tenantId?.toString(),
+				userId: user?.id,
+				tenantId: user?.tenantId,
 				ip,
 				serverTimestamp: new Date().toISOString(),
 			},

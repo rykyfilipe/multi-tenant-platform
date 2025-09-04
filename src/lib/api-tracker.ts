@@ -5,7 +5,7 @@ import {
 	activityTracker,
 	trackDatabaseOperation,
 } from "@/lib/activity-tracker";
-import { getUserFromRequest } from "@/lib/auth";
+import { requireAuthAPI } from "@/lib/session";
 
 export interface ApiTrackingOptions {
 	trackUserActivity?: boolean;
@@ -28,12 +28,12 @@ export function withApiTracking(
 		try {
 			// Extract user info if authentication is required
 			if (options.requireAuth !== false) {
-				const userResult = await getUserFromRequest(request);
-				if (userResult instanceof NextResponse) {
-					return userResult; // Return error response
+				const sessionResult = await requireAuthAPI();
+				if (sessionResult instanceof NextResponse) {
+					return sessionResult; // Return error response
 				}
-				userId = userResult.userId;
-				tenantId = userResult.tenantId;
+				userId = parseInt(sessionResult.user.id);
+				tenantId = sessionResult.user.tenantId ? parseInt(sessionResult.user.tenantId) : undefined;
 			}
 
 			// Execute the original handler
@@ -106,11 +106,11 @@ export function withDatabaseTracking(
 		try {
 			// Extract tenant info
 			if (options.requireAuth !== false) {
-				const userResult = await getUserFromRequest(request);
-				if (userResult instanceof NextResponse) {
-					return userResult;
+				const sessionResult = await requireAuthAPI();
+				if (sessionResult instanceof NextResponse) {
+					return sessionResult;
 				}
-				tenantId = userResult.tenantId;
+				tenantId = sessionResult.user.tenantId ? parseInt(sessionResult.user.tenantId) : undefined;
 			}
 
 			// Execute the original handler

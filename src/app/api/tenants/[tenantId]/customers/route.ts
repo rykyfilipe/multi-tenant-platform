@@ -2,11 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import {
-	checkUserTenantAccess,
-	getUserFromRequest,
-	verifyLogin,
-} from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { InvoiceSystemService } from "@/lib/invoice-system";
 import { z } from "zod";
 
@@ -21,9 +17,9 @@ export async function POST(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const userResult = await getUserFromRequest(request);
@@ -193,9 +189,9 @@ export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const userResult = await getUserFromRequest(request);

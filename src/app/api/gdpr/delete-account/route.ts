@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/error-logger";
 import { z } from "zod";
@@ -17,11 +17,11 @@ const deleteAccountSchema = z.object({
  */
 export async function POST(request: NextRequest) {
 	try {
-		const user = await getUserFromRequest(request);
-		
-		if (!user) {
-			return NextResponse.json(
-				{ error: "Authentication required" },
+		const sessionResult = await requireAuthAPI();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const { user } = sessionResult;,
 				{ status: 401 }
 			);
 		}
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 		// Log account deletion request
 		logger.warn("GDPR account deletion requested", {
 			component: "GDPRDeleteAccount",
-			userId: user.id,
+			userId: parseInt(user.id),
 			userEmail: user.email,
 			reason,
 			ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
@@ -91,19 +91,19 @@ export async function POST(request: NextRequest) {
 
 			// 7. Delete user activity logs
 			await tx.activityLog.deleteMany({
-				where: { userId: user.id },
+				where: { userId: parseInt(user.id) },
 			});
 
 			// 8. Delete user preferences
 			await tx.userPreference.deleteMany({
-				where: { userId: user.id },
+				where: { userId: parseInt(user.id) },
 			});
 
 			// 9. Delete user invitations
 			await tx.invitation.deleteMany({
 				where: { 
 					OR: [
-						{ invitedBy: user.id },
+						{ invitedBy: parseInt(user.id) },
 						{ email: user.email },
 					],
 				},
@@ -111,24 +111,24 @@ export async function POST(request: NextRequest) {
 
 			// 10. Delete user sessions
 			await tx.session.deleteMany({
-				where: { userId: user.id },
+				where: { userId: parseInt(user.id) },
 			});
 
 			// 11. Delete user accounts (OAuth providers)
 			await tx.account.deleteMany({
-				where: { userId: user.id },
+				where: { userId: parseInt(user.id) },
 			});
 
 			// 12. Finally, delete the user
 			await tx.user.delete({
-				where: { id: user.id },
+				where: { id: parseInt(user.id) },
 			});
 		});
 
 		// Log successful deletion
 		logger.warn("GDPR account deletion completed", {
 			component: "GDPRDeleteAccount",
-			userId: user.id,
+			userId: parseInt(user.id),
 			userEmail: user.email,
 			reason,
 		});

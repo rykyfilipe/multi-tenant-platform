@@ -1,6 +1,6 @@
 /** @format */
 
-import { getUserFromRequest, verifyLogin } from "@/lib/auth";
+import { requireAuthAPI } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -39,21 +39,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI("ADMIN");
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-
-	const { userId, role } = userResult;
-
-	if (role !== "ADMIN")
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const { user } = sessionResult;
+	const userId = parseInt(user.id);
 
 	try {
 		const body = await request.json();

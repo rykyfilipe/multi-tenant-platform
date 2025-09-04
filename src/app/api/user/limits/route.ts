@@ -1,23 +1,22 @@
 /** @format */
 
 import { NextResponse } from "next/server";
-import { verifyLogin, getUserFromRequest } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { getCurrentCounts } from "@/lib/planLimits";
 
 export async function GET(request: Request) {
 	try {
-		const logged = verifyLogin(request);
-		if (!logged) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
 
-		const userResult = await getUserFromRequest(request);
-
-		if (userResult instanceof NextResponse) {
-			return userResult;
-		}
-
-		const { userId } = userResult;
+		const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const { user } = sessionResult;
+	const userId = parseInt(user.id);
 
 		try {
 			const currentCounts = await getCurrentCounts(userId);

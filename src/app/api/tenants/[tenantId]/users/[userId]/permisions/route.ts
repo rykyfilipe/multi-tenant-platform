@@ -1,10 +1,6 @@
 /** @format */
 
-import {
-	checkUserTenantAccess,
-	getUserFromRequest,
-	verifyLogin,
-} from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { checkPlanPermission } from "@/lib/planConstants";
 
@@ -13,19 +9,19 @@ export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; userId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = user.id;
 
 	// Verifică că user-ul este membru în tenant
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
@@ -110,19 +106,19 @@ export async function PATCH(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; userId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = user.id;
 
 	// Verifică că user-ul este membru în tenant
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));

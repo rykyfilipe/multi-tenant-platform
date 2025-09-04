@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest, checkUserTenantAccess } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { ApiSuccess, ApiErrors, handleApiError } from "@/lib/api-error-handler";
 import { activityTracker } from "@/lib/activity-tracker";
 import { systemMonitor } from "@/lib/system-monitor";
@@ -16,18 +16,13 @@ async function getRealDataHandler(
 
 	try {
 		// Verify user authentication and permissions
-		const userResult = await getUserFromRequest(request);
-		if (userResult instanceof NextResponse) {
-			return userResult;
+		const sessionResult = await requireAuthAPI();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
 		}
-
-		// Type guard to ensure we have the correct type
-		if (!("userId" in userResult) || !("role" in userResult)) {
-			return ApiErrors.unauthorized("Invalid user data").toResponse();
-		}
-
-		const userId = userResult.userId;
-		const role = userResult.role;
+		const { user } = sessionResult;
+		const userId = user.id;
+		const role = user.role;
 
 		// Check if user has access to this tenant
 		const isMember = await checkUserTenantAccess(userId, Number(tenantId));

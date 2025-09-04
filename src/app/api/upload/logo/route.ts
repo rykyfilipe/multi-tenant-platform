@@ -1,11 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-	verifyLogin,
-	getUserFromRequest,
-	checkUserTenantAccess,
-} from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { convertMBToBytes } from "@/lib/storage-utils";
 import prisma from "@/lib/prisma";
 import { uploadImage, deleteImage } from "@/lib/cloudinary";
@@ -13,18 +9,18 @@ import { uploadImage, deleteImage } from "@/lib/cloudinary";
 export async function POST(request: NextRequest) {
 	try {
 		// Verify authentication
-		const logged = verifyLogin(request);
-		if (!logged) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
 
 		// Get user from request
-		const userResult = await getUserFromRequest(request);
-		if (userResult instanceof NextResponse) {
-			return userResult;
-		}
-
-		const { userId, role } = userResult;
+		const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const { user } = sessionResult;
+	const userId = user.id;
 
 		// Only admins can upload logos
 		if (role !== "ADMIN") {

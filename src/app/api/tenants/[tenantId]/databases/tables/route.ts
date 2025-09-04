@@ -1,10 +1,6 @@
 /** @format */
 
-import {
-	checkUserTenantAccess,
-	getUserFromRequest,
-	verifyLogin,
-} from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -12,19 +8,18 @@ export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = user.id;
 
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
 

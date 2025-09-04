@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest, checkUserTenantAccess } from "@/lib/auth";
+import { requireTenantAccessAPI } from "@/lib/session";
 import { advancedAnalytics, AnalyticsMetricType } from "@/lib/advanced-analytics";
 import { logger } from "@/lib/error-logger";
 import { z } from "zod";
@@ -37,20 +37,14 @@ export async function POST(
 	{ params }: { params: Promise<{ tenantId: string }> }
 ) {
 	try {
-		const user = await getUserFromRequest(request);
-		if (user instanceof Response) {
-			return user;
-		}
-		const userId = user.userId;
-		if (!user) {
-			return NextResponse.json(
-				{ error: "Authentication required" },
-				{ status: 401 }
-			);
+		const { tenantId } = await params;
+		const sessionResult = await requireTenantAccessAPI(tenantId);
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
 		}
 
-		const tenantId = parseInt((await params).tenantId);
-		if (isNaN(tenantId)) {
+		const tenantIdNum = parseInt(tenantId);
+		if (isNaN(tenantIdNum)) {
 			return NextResponse.json(
 				{ error: "Invalid tenant ID" },
 				{ status: 400 }
@@ -124,11 +118,12 @@ export async function GET(
 	{ params }: { params: Promise<{ tenantId: string }> }
 ) {
 	try {
-		const user = await getUserFromRequest(request);
-		if (user instanceof Response) {
-			return user;
-		}
-		const userId = user.userId;
+		const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const { user } = sessionResult;
+	const userId = user.id;
 		if (!user) {
 			return NextResponse.json(
 				{ error: "Authentication required" },

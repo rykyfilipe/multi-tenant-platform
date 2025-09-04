@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromRequest } from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { ApiSuccess, ApiError } from "@/lib/api-response";
 import { handleApiError } from "@/lib/api-error-handler";
 import { activityTracker } from "@/lib/activity-tracker";

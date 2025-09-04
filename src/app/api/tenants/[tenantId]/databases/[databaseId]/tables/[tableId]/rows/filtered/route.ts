@@ -2,11 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import {
-	checkUserTenantAccess,
-	getUserFromRequest,
-	verifyLogin,
-} from "@/lib/auth";
+import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { z } from "zod";
 
 // Schema de validare pentru filtre
@@ -782,17 +778,17 @@ export async function GET(
 	const { tenantId, databaseId, tableId } = await params;
 
 	// Verificare autentificare
-	const logged = verifyLogin(request);
-	if (!logged) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
+	const sessionResult = await requireAuthAPI();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
 	}
-
-	const { userId, role } = userResult;
+	const { user } = sessionResult;
+	const userId = user.id;
 
 	// Verificare acces tenant
 	const isMember = await checkUserTenantAccess(userId, Number(tenantId));

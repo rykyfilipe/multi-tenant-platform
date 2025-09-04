@@ -2,10 +2,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { MigratorService, MigratorType } from '@/lib/migrators';
-import { verifyLogin, getUserFromRequest, checkUserTenantAccess } from '@/lib/auth';
+import { requireTenantAccessAPI } from "@/lib/session";
 
 const ImportRequestSchema = z.object({
 	provider: z.enum(['oblio', 'smartbill', 'fgo', 'csv']),
@@ -25,29 +23,13 @@ export async function POST(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		// Check authentication
-		const logged = verifyLogin(request);
-		if (!logged) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		// Check authentication and tenant access
+		const sessionResult = await requireTenantAccessAPI(params.tenantId);
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
 		}
-
-		const userResult = await getUserFromRequest(request);
-		if (userResult instanceof NextResponse) {
-			return userResult;
-		}
-
-		// Type guard to ensure we have the correct type
-		if (!("userId" in userResult)) {
-			return NextResponse.json({ error: "Invalid user data" }, { status: 401 });
-		}
-
-		const { userId } = userResult;
-
-		// Check tenant access
-		const hasAccess = await checkUserTenantAccess(userId, Number(params.tenantId));
-		if (!hasAccess) {
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-		}
+		const { user } = sessionResult;
+		const userId = parseInt(user.id);
 
 		// Parse request body
 		const body = await request.json();
@@ -106,29 +88,13 @@ export async function GET(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		// Check authentication
-		const logged = verifyLogin(request);
-		if (!logged) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		// Check authentication and tenant access
+		const sessionResult = await requireTenantAccessAPI(params.tenantId);
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
 		}
-
-		const userResult = await getUserFromRequest(request);
-		if (userResult instanceof NextResponse) {
-			return userResult;
-		}
-
-		// Type guard to ensure we have the correct type
-		if (!("userId" in userResult)) {
-			return NextResponse.json({ error: "Invalid user data" }, { status: 401 });
-		}
-
-		const { userId } = userResult;
-
-		// Check tenant access
-		const hasAccess = await checkUserTenantAccess(userId, Number(params.tenantId));
-		if (!hasAccess) {
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-		}
+		const { user } = sessionResult;
+		const userId = parseInt(user.id);
 
 		// Get available providers
 		const providers = MigratorService.getAvailableProviders();
