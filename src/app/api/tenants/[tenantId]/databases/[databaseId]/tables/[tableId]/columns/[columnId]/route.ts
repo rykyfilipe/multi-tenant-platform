@@ -45,11 +45,6 @@ export async function PATCH(
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 
@@ -136,11 +131,6 @@ export async function DELETE(
 	},
 ) {
 	const { tenantId, databaseId, tableId, columnId } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-
 	const sessionResult = await requireAuthAPI();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;

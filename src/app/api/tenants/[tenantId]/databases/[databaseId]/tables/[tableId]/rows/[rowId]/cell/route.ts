@@ -2,8 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { checkTableEditPermission,  } from "@/lib/auth";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { checkTableEditPermission } from "@/lib/auth";
 import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { z } from "zod";
 

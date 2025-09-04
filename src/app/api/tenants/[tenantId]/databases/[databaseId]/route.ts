@@ -107,11 +107,6 @@ export async function DELETE(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-
 	const { tenantId, databaseId } = await params;
 	const sessionResult = await requireAuthAPI();
 	if (sessionResult instanceof NextResponse) {
