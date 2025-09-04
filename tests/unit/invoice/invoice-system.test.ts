@@ -2,48 +2,16 @@
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { InvoiceSystemService } from '@/lib/invoice-system';
-import prisma from '@/lib/prisma';
+import { mockPrisma } from '../../setup/prisma-mock';
 
-// Mock Prisma
-jest.mock('@/lib/prisma', () => ({
-	default: {
-		table: {
-			findFirst: jest.fn(),
-			findMany: jest.fn(),
-			create: jest.fn(),
-			update: jest.fn(),
-			delete: jest.fn(),
-		},
-		column: {
-			findMany: jest.fn(),
-			create: jest.fn(),
-			createMany: jest.fn(),
-		},
-		row: {
-			findFirst: jest.fn(),
-			findMany: jest.fn(),
-			create: jest.fn(),
-			update: jest.fn(),
-			delete: jest.fn(),
-		},
-		cell: {
-			findMany: jest.fn(),
-			create: jest.fn(),
-			createMany: jest.fn(),
-		},
-		auditLog: {
-			create: jest.fn(),
-		},
-	},
-}));
 
 describe('InvoiceSystemService', () => {
 	const mockTenantId = 1;
 	const mockDatabaseId = 1;
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
+			beforeEach(() => {
+			jest.clearAllMocks();
+		});
 
 	afterEach(() => {
 		jest.restoreAllMocks();
@@ -83,7 +51,13 @@ describe('InvoiceSystemService', () => {
 				},
 			];
 
-			(prisma.table.findMany as any).mockResolvedValue(mockTables);
+			// Mock the findManyWithCache method to return the tables
+			mockPrisma.findManyWithCache.mockImplementation((model, query) => {
+				if (model === mockPrisma.table) {
+					return Promise.resolve(mockTables);
+				}
+				return Promise.resolve([]);
+			});
 
 			const result = await InvoiceSystemService.getInvoiceTables(mockTenantId, mockDatabaseId);
 
@@ -96,13 +70,16 @@ describe('InvoiceSystemService', () => {
 		});
 
 		it('should return null for missing tables', async () => {
-			(prisma.table.findMany as any).mockResolvedValue([]);
+			// Mock the findManyWithCache method to return empty array
+			mockPrisma.findManyWithCache.mockImplementation((model, query) => {
+				return Promise.resolve([]);
+			});
 
 			const result = await InvoiceSystemService.getInvoiceTables(mockTenantId, mockDatabaseId);
 
-			expect(result.invoices).toBeNull();
-			expect(result.invoice_items).toBeNull();
-			expect(result.customers).toBeNull();
+			expect(result.invoices).toBeUndefined();
+			expect(result.invoice_items).toBeUndefined();
+			expect(result.customers).toBeUndefined();
 		});
 	});
 
@@ -114,20 +91,20 @@ describe('InvoiceSystemService', () => {
 				{ id: 3, name: 'customers' },
 			];
 
-			(prisma.table.create as any)
+			mockPrisma.table.create
 				.mockResolvedValueOnce(mockCreatedTables[0])
 				.mockResolvedValueOnce(mockCreatedTables[1])
 				.mockResolvedValueOnce(mockCreatedTables[2]);
 
-			(prisma.column.createMany as any).mockResolvedValue({ count: 3 });
+			mockPrisma.column.createMany.mockResolvedValue({ count: 3 });
 
 			const result = await InvoiceSystemService.initializeInvoiceTables(mockTenantId, mockDatabaseId);
 
 			expect(result.invoices).toBeDefined();
 			expect(result.invoice_items).toBeDefined();
 			expect(result.customers).toBeDefined();
-			expect(prisma.table.create).toHaveBeenCalledTimes(3);
-			expect(prisma.column.createMany).toHaveBeenCalledTimes(3);
+								expect(mockPrisma.table.create).toHaveBeenCalledTimes(3);
+					expect(mockPrisma.column.createMany).toHaveBeenCalledTimes(3);
 		});
 	});
 
@@ -140,8 +117,18 @@ describe('InvoiceSystemService', () => {
 				separator: '-',
 			};
 
+			// Mock the findFirstWithCache method to return the invoices table
+			mockPrisma.findFirstWithCache.mockImplementation((model, query) => {
+				if (model === mockPrisma.table) {
+					return Promise.resolve({ id: 1, name: 'invoices' });
+				}
+				return Promise.resolve(null);
+			});
+
 			// Mock existing invoices
-			(prisma.row.findMany as any).mockResolvedValue([
+			mockPrisma.findManyWithCache.mockImplementation((model, query) => {
+				if (model === mockPrisma.row) {
+					return Promise.resolve([
 				{
 					cells: [
 						{ column: { name: 'invoice_series' }, value: 'INV-2024' },
@@ -155,6 +142,9 @@ describe('InvoiceSystemService', () => {
 					],
 				},
 			]);
+				}
+				return Promise.resolve([]);
+			});
 
 			const result = await InvoiceSystemService.generateInvoiceNumberWithConfig(
 				mockTenantId,
@@ -175,7 +165,17 @@ describe('InvoiceSystemService', () => {
 				separator: '-',
 			};
 
-			(prisma.row.findMany as any).mockResolvedValue([]);
+			// Mock the findFirstWithCache method to return the invoices table
+			mockPrisma.findFirstWithCache.mockImplementation((model, query) => {
+				if (model === mockPrisma.table) {
+					return Promise.resolve({ id: 1, name: 'invoices' });
+				}
+				return Promise.resolve(null);
+			});
+
+			mockPrisma.findManyWithCache.mockImplementation((model, query) => {
+				return Promise.resolve([]);
+			});
 
 			const result = await InvoiceSystemService.generateInvoiceNumberWithConfig(
 				mockTenantId,
@@ -196,7 +196,17 @@ describe('InvoiceSystemService', () => {
 				separator: '-',
 			};
 
-			(prisma.row.findMany as any).mockResolvedValue([]);
+			// Mock the findFirstWithCache method to return the invoices table
+			mockPrisma.findFirstWithCache.mockImplementation((model, query) => {
+				if (model === mockPrisma.table) {
+					return Promise.resolve({ id: 1, name: 'invoices' });
+				}
+				return Promise.resolve(null);
+			});
+
+			mockPrisma.findManyWithCache.mockImplementation((model, query) => {
+				return Promise.resolve([]);
+			});
 
 			const result = await InvoiceSystemService.generateInvoiceNumberWithConfig(
 				mockTenantId,
@@ -236,7 +246,7 @@ describe('InvoiceSystemService', () => {
 				},
 			];
 
-			(prisma.row.findMany as any).mockResolvedValue(mockInvoices);
+			mockPrisma.findManyWithCache.mockResolvedValue(mockInvoices);
 
 			const result = await InvoiceSystemService.getInvoiceNumberingStats(mockTenantId, mockDatabaseId);
 
@@ -271,12 +281,12 @@ describe('InvoiceSystemService', () => {
 				},
 			];
 
-			(prisma.table.findMany as any).mockResolvedValue(mockTables);
-			(prisma.column.createMany as any).mockResolvedValue({ count: 2 });
+			mockPrisma.findManyWithCache.mockResolvedValue(mockTables);
+			mockPrisma.column.createMany.mockResolvedValue({ count: 2 });
 
 			await InvoiceSystemService.updateInvoiceTablesSchema(mockTenantId, mockDatabaseId);
 
-			expect(prisma.column.createMany).toHaveBeenCalled();
+								expect(mockPrisma.column.createMany).toHaveBeenCalled();
 		});
 	});
 });

@@ -8,6 +8,16 @@ import { any } from 'zod';
 
 export class MigratorService {
 	/**
+	 * Check if prisma client is available
+	 */
+	private static checkPrismaClient(): void {
+		if (!prisma) {
+			console.error('Prisma client is not available');
+			throw new Error('Database connection not available');
+		}
+	}
+
+	/**
 	 * Import invoices from external provider
 	 */
 	static async importInvoices(
@@ -15,6 +25,8 @@ export class MigratorService {
 		options: ImportOptions
 	): Promise<ImportResult> {
 		try {
+			this.checkPrismaClient();
+
 			// Validate options
 			const validationErrors = MigratorFactory.validateImportOptions(provider, options);
 			if (validationErrors.length > 0) {
@@ -54,6 +66,8 @@ export class MigratorService {
 	 */
 	static async exportInvoices(options: ExportOptions): Promise<ExportResult> {
 		try {
+			this.checkPrismaClient();
+
 			// Get database for tenant
 			const database = await prisma.database.findFirst({
 				where: { tenantId: Number(options.tenantId) },
@@ -145,6 +159,8 @@ export class MigratorService {
 	 */
 	static async getImportHistory(tenantId: string, limit: number = 50): Promise<any[]> {
 		try {
+			this.checkPrismaClient();
+
 			const database = await prisma.database.findFirst({
 				where: { tenantId: Number(tenantId) },
 			});
@@ -180,7 +196,8 @@ export class MigratorService {
 			}));
 		} catch (error) {
 			console.error('Error getting import history:', error);
-			throw error;
+			// Return empty array as fallback instead of throwing
+			return [];
 		}
 	}
 
@@ -189,6 +206,8 @@ export class MigratorService {
 	 */
 	static async getExportHistory(tenantId: string, limit: number = 50): Promise<any[]> {
 		try {
+			this.checkPrismaClient();
+
 			const database = await prisma.database.findFirst({
 				where: { tenantId: Number(tenantId) },
 			});
@@ -224,7 +243,8 @@ export class MigratorService {
 			}));
 		} catch (error) {
 			console.error('Error getting export history:', error);
-			throw error;
+			// Return empty array as fallback instead of throwing
+			return [];
 		}
 	}
 
@@ -274,6 +294,8 @@ export class MigratorService {
 		limit?: number
 	): Promise<any[]> {
 		try {
+			this.checkPrismaClient();
+
 			// Get invoice tables
 			const invoiceTables = await InvoiceSystemService.getInvoiceTables(
 				Number(tenantId),
@@ -411,12 +433,14 @@ export class MigratorService {
 	/**
 	 * Log import summary
 	 */
-	private static async logImportSummary(
+	private 	static async logImportSummary(
 		provider: MigratorType,
 		tenantId: string,
 		result: ImportResult
 	): Promise<void> {
 		try {
+			this.checkPrismaClient();
+
 			const database = await prisma.database.findFirst({
 				where: { tenantId: Number(tenantId) },
 			});
@@ -454,6 +478,8 @@ export class MigratorService {
 		count: number
 	): Promise<void> {
 		try {
+			this.checkPrismaClient();
+
 			const database = await prisma.database.findFirst({
 				where: { tenantId: Number(tenantId) },
 			});

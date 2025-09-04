@@ -5,7 +5,7 @@ const createJestConfig = nextJest({
 })
 
 const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/tests/setup/prisma-mock.js'],
   testEnvironment: 'jsdom',
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
