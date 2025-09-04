@@ -26,8 +26,7 @@ import { RealSizeInfo } from "./RealSizeInfo";
 export function FreeAnalyticsDashboard() {
 	const { tenant, user } = useApp();
 	const { 
-		essentialData,
-		memoryData,
+		data,
 		loading 
 	} = useDashboardData();
 
@@ -55,28 +54,28 @@ export function FreeAnalyticsDashboard() {
 	const stats = [
 		{
 			title: "Total Databases",
-			value: essentialData?.databases?.length || 0,
+			value: data?.stats?.totalDatabases || 0,
 			description: "of 1 allowed",
 			icon: Database,
 			color: "text-blue-600",
 		},
 		{
 			title: "Total Tables",
-			value: essentialData?.totalTables || 0,
+			value: data?.stats?.totalTables || 0,
 			description: "of 5 allowed",
 			icon: FileText,
 			color: "text-green-600",
 		},
 		{
 			title: "Team Members",
-			value: essentialData?.totalUsers || 1,
+			value: data?.stats?.totalUsers || 1,
 			description: "of 3 allowed",
 			icon: Users,
 			color: "text-purple-600",
 		},
 		{
 			title: "Storage Used",
-			value: formatFileSize((memoryData?.totalMemoryUsed || 0) * 1024 * 1024),
+			value: formatFileSize((data?.stats?.memoryUsedMB || 0) * 1024 * 1024),
 			description: "of 100 MB allowed",
 			icon: TrendingUp,
 			color: "text-orange-600",
@@ -87,17 +86,17 @@ export function FreeAnalyticsDashboard() {
 		{
 			action: "Database created",
 			timestamp: "2 hours ago",
-			user: user?.name || "You",
+			user: user ? `${user.firstName} ${user.lastName}` : "You",
 		},
 		{
 			action: "Table updated",
 			timestamp: "1 day ago", 
-			user: user?.name || "You",
+			user: user ? `${user.firstName} ${user.lastName}` : "You",
 		},
 		{
 			action: "Data imported",
 			timestamp: "3 days ago",
-			user: user?.name || "You",
+			user: user ? `${user.firstName} ${user.lastName}` : "You",
 		},
 	];
 
@@ -152,14 +151,14 @@ export function FreeAnalyticsDashboard() {
 						<div className="flex items-center justify-between">
 							<span className="text-sm">Used</span>
 							<span className="font-medium">
-								{formatFileSize((memoryData?.totalMemoryUsed || 0) * 1024 * 1024)}
+								{formatFileSize((data?.stats?.memoryUsedMB || 0) * 1024 * 1024)}
 							</span>
 						</div>
 						<div className="w-full bg-muted rounded-full h-2">
 							<div 
 								className="bg-primary h-2 rounded-full transition-all duration-300"
 								style={{ 
-									width: `${Math.min(((memoryData?.totalMemoryUsed || 0) / 100) * 100, 100)}%` 
+									width: `${Math.min(((data?.stats?.memoryUsedMB || 0) / 100) * 100, 100)}%` 
 								}}
 							/>
 						</div>
@@ -201,9 +200,9 @@ export function FreeAnalyticsDashboard() {
 			</Card>
 
 			{/* Real Size Information */}
-			{essentialData?.databaseData?.databases && (
+			{data?.databaseData?.databases && (
 				<RealSizeInfo
-					databases={essentialData.databaseData.databases.map((db: any) => ({
+					databases={data.databaseData.databases.map((db: any) => ({
 						name: db.name,
 						realSizeMB: db.realSizeBytes ? db.realSizeBytes / (1024 * 1024) : 0,
 						realSizeKB: db.realSizeKB || 0,
@@ -212,9 +211,9 @@ export function FreeAnalyticsDashboard() {
 						rows: db.rows,
 						cells: db.rows * 5 // Estimate cells per row
 					}))}
-					totalMemoryUsed={memoryData?.totalMemoryUsed || 0}
-					totalRows={essentialData?.stats?.totalRows || 0}
-					totalTables={essentialData?.stats?.totalTables || 0}
+					totalMemoryUsed={data?.stats?.memoryUsedMB || 0}
+					totalRows={data?.stats?.totalRows || 0}
+					totalTables={data?.stats?.totalTables || 0}
 					loading={loading}
 				/>
 			)}

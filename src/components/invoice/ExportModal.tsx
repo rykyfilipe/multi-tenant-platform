@@ -43,7 +43,7 @@ export function ExportModal({ isOpen, onClose, tenantId, onExportComplete }: Exp
 	const [limit, setLimit] = useState<number>(1000);
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
-	const [status, setStatus] = useState('');
+	const [status, setStatus] = useState('all');
 	const [customerId, setCustomerId] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -91,7 +91,7 @@ export function ExportModal({ isOpen, onClose, tenantId, onExportComplete }: Exp
 			const filters: any = {};
 			if (dateFrom) filters.dateFrom = dateFrom;
 			if (dateTo) filters.dateTo = dateTo;
-			if (status) filters.status = status;
+			if (status && status !== 'all') filters.status = status;
 			if (customerId) filters.customerId = parseInt(customerId);
 
 			if (Object.keys(filters).length > 0) {
@@ -270,7 +270,7 @@ export function ExportModal({ isOpen, onClose, tenantId, onExportComplete }: Exp
 													<SelectValue placeholder="All statuses" />
 												</SelectTrigger>
 												<SelectContent>
-													<SelectItem value="">All statuses</SelectItem>
+													<SelectItem value="all">All statuses</SelectItem>
 													<SelectItem value="draft">Draft</SelectItem>
 													<SelectItem value="issued">Issued</SelectItem>
 													<SelectItem value="paid">Paid</SelectItem>

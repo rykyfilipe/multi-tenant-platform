@@ -48,7 +48,7 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ 
 				duration: CHART_STYLES.animation.duration, 
-				ease: CHART_STYLES.animation.easing,
+				ease: "easeOut",
 				delay 
 			}}
 			whileHover={{ 
@@ -70,7 +70,11 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 					<div style={{ height }}>
 						{data.length > 0 ? (
 							<ResponsiveContainer width='100%' height='100%'>
-								<BarChart data={data} layout='horizontal'>
+								<BarChart 
+									data={data} 
+									layout='horizontal'
+									margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+								>
 									<CartesianGrid
 										strokeDasharray={CHART_STYLES.grid.strokeDasharray}
 										stroke={CHART_STYLES.grid.stroke}
@@ -84,6 +88,8 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 										fontWeight={CHART_STYLES.axis.fontWeight}
 										tickLine={false}
 										axisLine={false}
+										ticks={[0, 25, 50, 75, 100]}
+										tickFormatter={(value) => `${value}%`}
 									/>
 									<YAxis
 										dataKey='resource'
@@ -91,21 +97,28 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 										stroke={CHART_STYLES.axis.stroke}
 										fontSize={CHART_STYLES.axis.fontSize}
 										fontWeight={CHART_STYLES.axis.fontWeight}
-										width={100}
+										width={120}
 										tickLine={false}
 										axisLine={false}
 									/>
 									<Tooltip
-										formatter={(value: any) => [
+										formatter={(value: any, name: string, props: any) => [
 											`${value.toFixed(1)}%`,
 											"Usage",
 										]}
-										contentStyle={CHART_STYLES.tooltip}
+										labelFormatter={(label: string) => `Resource: ${label}`}
+										contentStyle={{
+											...CHART_STYLES.tooltip,
+											border: '1px solid #e5e7eb',
+											borderRadius: '8px',
+											boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+										}}
 									/>
 									<Bar 
 										dataKey='percentage' 
 										radius={[0, 6, 6, 0]}
 										strokeWidth={0}
+										fill={PREMIUM_CHART_COLORS.primary.black}
 									>
 										{data.map((entry, index) => (
 											<Cell

@@ -76,8 +76,8 @@ export function EnhancedInvoiceList({
 	
 	// Filter states
 	const [searchTerm, setSearchTerm] = useState('');
-	const [statusFilter, setStatusFilter] = useState('');
-	const [customerFilter, setCustomerFilter] = useState('');
+	const [statusFilter, setStatusFilter] = useState('all');
+	const [customerFilter, setCustomerFilter] = useState('all');
 	const [dateFromFilter, setDateFromFilter] = useState('');
 	const [dateToFilter, setDateToFilter] = useState('');
 	
@@ -91,9 +91,9 @@ export function EnhancedInvoiceList({
 			invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			getCustomerName(invoice.customer_id)?.toLowerCase().includes(searchTerm.toLowerCase());
 		
-		const matchesStatus = !statusFilter || invoice.status === statusFilter;
+		const matchesStatus = !statusFilter || statusFilter === "all" || invoice.status === statusFilter;
 		
-		const matchesCustomer = !customerFilter || invoice.customer_id === parseInt(customerFilter);
+		const matchesCustomer = !customerFilter || customerFilter === "all" || invoice.customer_id === parseInt(customerFilter);
 		
 		const matchesDateFrom = !dateFromFilter || new Date(invoice.date) >= new Date(dateFromFilter);
 		
@@ -313,7 +313,7 @@ export function EnhancedInvoiceList({
 									<SelectValue placeholder="All statuses" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="">All statuses</SelectItem>
+									<SelectItem value="all">All statuses</SelectItem>
 									<SelectItem value="draft">Draft</SelectItem>
 									<SelectItem value="issued">Issued</SelectItem>
 									<SelectItem value="paid">Paid</SelectItem>
@@ -332,7 +332,7 @@ export function EnhancedInvoiceList({
 									<SelectValue placeholder="All customers" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="">All customers</SelectItem>
+									<SelectItem value="all">All customers</SelectItem>
 									{customers.map((customer) => (
 										<SelectItem key={customer.id} value={customer.id.toString()}>
 											{customer.customer_name}

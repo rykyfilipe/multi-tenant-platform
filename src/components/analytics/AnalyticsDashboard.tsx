@@ -403,14 +403,14 @@ export const AnalyticsDashboard: React.FC = () => {
 							/>
 
 							<OverviewChart
-								title='Memory Usage Over Time'
-								icon={MemoryStick}
-								data={timeSeriesData.memoryUsage}
+								title='Storage Usage Over Time'
+								icon={HardDrive}
+								data={timeSeriesData.storageUsage}
 								dataKeys={[
 									{
 										key: "percentage",
-										name: "Memory Usage %",
-										color: "#f59e0b",
+										name: "Storage Usage %",
+										color: "#000000",
 										type: "area",
 									},
 								]}
@@ -437,19 +437,6 @@ export const AnalyticsDashboard: React.FC = () => {
 
 							<div className='space-y-4'>
 								<KPICard
-									title='Memory Usage'
-									value={kpis.memoryUsagePercentage}
-									unit='%'
-									icon={MemoryStick}
-									color={
-										kpis.memoryUsagePercentage > 80
-											? "red"
-											: kpis.memoryUsagePercentage > 60
-											? "orange"
-											: "green"
-									}
-								/>
-								<KPICard
 									title='Storage Usage'
 									value={kpis.storageUsagePercentage}
 									unit='%'
@@ -475,6 +462,19 @@ export const AnalyticsDashboard: React.FC = () => {
 											: "red"
 									}
 								/>
+								<KPICard
+									title='Engagement Rate'
+									value={kpis.engagementRate}
+									unit='%'
+									icon={Users}
+									color={
+										kpis.engagementRate >= 80
+											? "green"
+											: kpis.engagementRate >= 60
+											? "orange"
+											: "red"
+									}
+								/>
 							</div>
 						</div>
 
@@ -490,7 +490,7 @@ export const AnalyticsDashboard: React.FC = () => {
 									rows: db.rows,
 									cells: db.rows * 5 // Estimate cells per row
 								}))}
-								totalMemoryUsed={kpis.memoryUsagePercentage * 100} // Convert percentage to MB
+								totalMemoryUsed={kpis.storageUsagePercentage * 100} // Convert percentage to MB
 								totalRows={kpis.totalRows}
 								totalTables={kpis.totalTables}
 								loading={false}

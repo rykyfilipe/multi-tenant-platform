@@ -54,6 +54,7 @@ export interface ProcessedAnalyticsData {
 			tables: number;
 			rows: number;
 			size: number;
+			realSize?: string;
 		}>;
 		mostActiveUsers: Array<{
 			name: string;
@@ -245,19 +246,13 @@ export const useProcessedAnalyticsData = (): {
 			role.percentage = totalRoleUsers > 0 ? (role.count / totalRoleUsers) * 100 : 0;
 		});
 
-		// Resource usage distribution - ensure minimum visibility for charts
+		// Resource usage distribution - only storage, no memory duplication
 		const resourceUsage = [
-			{
-				resource: "Memory",
-				used: rawData.usageData?.memory?.used || 0,
-				total: rawData.usageData?.memory?.total || 1,
-				percentage: Math.max(memoryUsagePercentage, 1), // Minimum 1% for visibility
-			},
 			{
 				resource: "Storage",
 				used: rawData.usageData?.storage?.used || 0,
 				total: rawData.usageData?.storage?.total || 1,
-				percentage: Math.max(storageUsagePercentage, 1), // Minimum 1% for visibility
+				percentage: Math.max(storageUsagePercentage, 0.1), // Minimum 0.1% for visibility
 			},
 			{
 				resource: "Databases",
@@ -269,7 +264,7 @@ export const useProcessedAnalyticsData = (): {
 								rawData.usageData.databases.total) *
 						  100
 						: 0,
-					1 // Minimum 1% for visibility
+					0.1 // Minimum 0.1% for visibility
 				),
 			},
 			{
@@ -281,7 +276,19 @@ export const useProcessedAnalyticsData = (): {
 						? (rawData.usageData.tables.used / rawData.usageData.tables.total) *
 						  100
 						: 0,
-					1 // Minimum 1% for visibility
+					0.1 // Minimum 0.1% for visibility
+				),
+			},
+			{
+				resource: "Users",
+				used: rawData.usageData?.users?.used || 0,
+				total: rawData.usageData?.users?.total || 1,
+				percentage: Math.max(
+					rawData.usageData?.users?.total > 0
+						? (rawData.usageData.users.used / rawData.usageData.users.total) *
+						  100
+						: 0,
+					0.1 // Minimum 0.1% for visibility
 				),
 			},
 		];
@@ -413,7 +420,7 @@ export const useProcessedAnalyticsData = (): {
 				memoryUsage: memoryUsageData,
 				storageUsage: generateTimeSeriesData(30).map((item, i) => ({
 					date: item.date,
-					used: Math.floor(storageUsagePercentage * (rawData.usageData?.storage?.total || 1000) / 100),
+					used: rawData.usageData?.storage?.used || 0,
 					total: rawData.usageData?.storage?.total || 1000,
 					percentage: storageUsagePercentage,
 				})),

@@ -306,13 +306,6 @@ export const useDashboardData = () => {
 							total: memoryInfo.limitMB,
 							unit: "MB",
 						},
-						memory: {
-							used: memoryInfo.usedMB,
-							total: memoryInfo.limitMB,
-							percentage: memoryInfo.percentage,
-							isNearLimit: memoryInfo.isNearLimit,
-							isOverLimit: memoryInfo.isOverLimit,
-						},
 					},
 				};
 
