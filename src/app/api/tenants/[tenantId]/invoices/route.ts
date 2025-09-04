@@ -58,9 +58,9 @@ export async function POST(
 
 	const { tenantId } = await params;
 
-	 const isMember = requireTenantAccess(sessionResult, tenantId.toString());
-	if (!isMember) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	 const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+	if (tenantAccessError) {
+		return tenantAccessError;
 	}
 
 	try {
@@ -730,9 +730,9 @@ export async function GET(
 
 	const { tenantId } = await params;
 
-	 const isMember = requireTenantAccess(sessionResult, tenantId.toString());
-	if (!isMember) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	 const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+	if (tenantAccessError) {
+		return tenantAccessError;
 	}
 
 	try {

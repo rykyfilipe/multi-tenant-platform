@@ -23,7 +23,12 @@
 		"test:invoice": "tsx tests/run-tests.ts",
 		"test:invoice:setup": "tsx tests/run-tests.ts setup",
 		"test:invoice:cleanup": "tsx tests/run-tests.ts cleanup",
-		"test:invoice:full": "tsx tests/run-tests.ts full"
+		"test:invoice:full": "tsx tests/run-tests.ts full",
+		"test:analytics": "tsx tests/run-analytics-tests.ts",
+		"test:analytics:coverage": "tsx tests/run-analytics-tests.ts coverage",
+		"test:analytics:unit": "tsx tests/run-analytics-tests.ts unit",
+		"test:analytics:integration": "tsx tests/run-analytics-tests.ts integration",
+		"test:analytics:file": "tsx tests/run-analytics-tests.ts file"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",

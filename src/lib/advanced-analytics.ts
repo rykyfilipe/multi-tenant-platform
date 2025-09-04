@@ -648,3 +648,256 @@ export const advancedAnalytics = new AdvancedAnalytics();
 
 // Convenience exports
 export default advancedAnalytics;
+
+// Standalone utility functions for testing and direct usage
+export function generateInsights(data: any): {
+	summary: string;
+	trends: string[];
+	recommendations: string[];
+} {
+	if (!data || typeof data !== 'object') {
+		return {
+			summary: 'No data available for analysis',
+			trends: [],
+			recommendations: [],
+		};
+	}
+
+	const summary = [];
+	const trends = [];
+	const recommendations = [];
+
+	// Analyze user activity
+	if (data.userActivity) {
+		const { totalUsers, activeUsers, newUsers, userGrowth } = data.userActivity;
+		summary.push(`${totalUsers} total users`);
+		
+		if (userGrowth > 0) {
+			trends.push('User growth is positive');
+		}
+		if (activeUsers / totalUsers > 0.7) {
+			recommendations.push('High user engagement detected');
+		}
+	}
+
+	// Analyze database performance
+	if (data.databaseActivity) {
+		const { totalQueries, avgResponseTime, errorRate } = data.databaseActivity;
+		summary.push(`${totalQueries} queries processed`);
+		
+		if (avgResponseTime < 200) {
+			trends.push('Database response time is optimal');
+		} else {
+			recommendations.push('Consider optimizing database queries');
+		}
+		
+		if (errorRate < 0.01) {
+			trends.push('Low error rate maintained');
+		}
+	}
+
+	// Analyze system performance
+	if (data.systemPerformance) {
+		const { cpuUsage, memoryUsage, diskUsage } = data.systemPerformance;
+		summary.push(`CPU: ${cpuUsage}%, Memory: ${memoryUsage}%, Disk: ${diskUsage}%`);
+		
+		if (cpuUsage > 80 || memoryUsage > 80) {
+			recommendations.push('High resource utilization detected');
+		}
+		
+		trends.push('System performance monitoring active');
+	}
+
+	return {
+		summary: summary.join('. ') || 'System metrics collected',
+		trends,
+		recommendations,
+	};
+}
+
+export function calculateTrends(data: number[]): {
+	direction: 'up' | 'down' | 'stable';
+	percentage: number;
+	volatility: number;
+} {
+	if (!data || data.length === 0) {
+		return { direction: 'stable', percentage: 0, volatility: 0 };
+	}
+
+	if (data.length === 1) {
+		return { direction: 'stable', percentage: 0, volatility: 0 };
+	}
+
+	const first = data[0];
+	const last = data[data.length - 1];
+	const percentage = first !== 0 ? ((last - first) / first) * 100 : 0;
+
+	// Calculate volatility (standard deviation)
+	const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+	const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / data.length;
+	const volatility = Math.sqrt(variance) / mean;
+
+	let direction: 'up' | 'down' | 'stable';
+	if (Math.abs(percentage) < 5) {
+		direction = 'stable';
+	} else if (percentage > 0) {
+		direction = 'up';
+	} else {
+		direction = 'down';
+	}
+
+	return {
+		direction,
+		percentage: Math.round(percentage * 100) / 100,
+		volatility: Math.round(volatility * 100) / 100,
+	};
+}
+
+export function getMetricValue(data: any, metricType: AnalyticsMetricType, key: string): any {
+	if (!data || !metricType) return null;
+
+	const metricMap: Record<string, any> = {
+		[AnalyticsMetricType.USER_ACTIVITY]: data.userActivity,
+		[AnalyticsMetricType.DATABASE_PERFORMANCE]: data.databaseActivity,
+		[AnalyticsMetricType.SYSTEM_METRICS]: data.systemPerformance,
+		[AnalyticsMetricType.API_USAGE]: data.apiUsage,
+		[AnalyticsMetricType.ERROR_RATE]: data.errorData,
+		[AnalyticsMetricType.REVENUE]: data.revenue,
+	};
+
+	const metricData = metricMap[metricType];
+	return metricData?.[key] || null;
+}
+
+export function formatMetricValue(value: any, format?: 'number' | 'percentage' | 'currency' | 'duration'): string {
+	if (value === null || value === undefined) {
+		return 'N/A';
+	}
+
+	switch (format) {
+		case 'percentage':
+			return `${(value * 100).toFixed(2)}%`;
+		case 'currency':
+			return `$${value.toLocaleString()}`;
+		case 'duration':
+			const hours = Math.floor(value / 3600);
+			const minutes = Math.floor((value % 3600) / 60);
+			const seconds = Math.floor(value % 60);
+			if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+			if (minutes > 0) return `${minutes}m ${seconds}s`;
+			return `${seconds}s`;
+		default:
+			return typeof value === 'number' ? value.toLocaleString() : String(value);
+	}
+}
+
+export function createDashboard(options: {
+	name: string;
+	description: string;
+	type: DashboardType;
+	isPublic?: boolean;
+	theme?: Partial<CustomDashboard['theme']>;
+}): CustomDashboard {
+	return {
+		id: `dashboard_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+		tenantId: 'test',
+		name: options.name,
+		description: options.description,
+		type: options.type,
+		isPublic: options.isPublic || false,
+		widgets: [],
+		layout: {
+			columns: 12,
+			rows: 8,
+			gap: 16,
+		},
+		theme: {
+			primaryColor: '#3b82f6',
+			backgroundColor: '#ffffff',
+			textColor: '#1f2937',
+			accentColor: '#10b981',
+			...options.theme,
+		},
+		permissions: {
+			view: [],
+			edit: [],
+			share: [],
+		},
+		createdBy: 'test',
+		createdAt: new Date().toISOString(),
+		updatedAt: new Date().toISOString(),
+	};
+}
+
+export function addWidgetToDashboard(dashboard: CustomDashboard, widget: DashboardWidget): CustomDashboard {
+	return {
+		...dashboard,
+		widgets: [...dashboard.widgets, widget],
+		updatedAt: new Date().toISOString(),
+	};
+}
+
+export function removeWidgetFromDashboard(dashboard: CustomDashboard, widgetId: string): CustomDashboard {
+	return {
+		...dashboard,
+		widgets: dashboard.widgets.filter(w => w.id !== widgetId),
+		updatedAt: new Date().toISOString(),
+	};
+}
+
+export function updateWidgetConfig(dashboard: CustomDashboard, widgetId: string, config: Partial<DashboardWidget['config']>): CustomDashboard {
+	return {
+		...dashboard,
+		widgets: dashboard.widgets.map(w => 
+			w.id === widgetId 
+				? { ...w, config: { ...w.config, ...config }, updatedAt: new Date().toISOString() }
+				: w
+		),
+		updatedAt: new Date().toISOString(),
+	};
+}
+
+export function getDashboardData(dashboard: CustomDashboard, rawData: any): {
+	widgets: Array<{
+		id: string;
+		title: string;
+		data: any;
+		insights: any;
+	}>;
+} {
+	return {
+		widgets: dashboard.widgets.map(widget => ({
+			id: widget.id,
+			title: widget.title,
+			data: rawData,
+			insights: generateInsights(rawData),
+		})),
+	};
+}
+
+export function exportDashboardData(dashboard: CustomDashboard, format: 'json' | 'csv' | 'xml' = 'json'): {
+	format: string;
+	data: any;
+} {
+	const data = {
+		id: dashboard.id,
+		name: dashboard.name,
+		description: dashboard.description,
+		type: dashboard.type,
+		widgets: dashboard.widgets,
+		createdAt: dashboard.createdAt,
+		updatedAt: dashboard.updatedAt,
+	};
+
+	if (format === 'csv') {
+		return {
+			format: 'csv',
+			data: Object.entries(data).map(([key, value]) => `${key},${JSON.stringify(value)}`).join('\n'),
+		};
+	}
+
+	return {
+		format: 'json',
+		data: JSON.stringify(data, null, 2),
+	};
+}

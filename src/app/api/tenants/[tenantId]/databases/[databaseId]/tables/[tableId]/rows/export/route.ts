@@ -889,9 +889,9 @@ export async function GET(
 	const userId = getUserId(sessionResult);
 
 	// Verificare acces tenant
-	    const isMember = requireTenantAccess(sessionResult, tenantId);
-	if (!isMember) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	    const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
 	}
 
 	try {

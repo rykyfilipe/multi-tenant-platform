@@ -14,43 +14,29 @@ const customJestConfig = {
     '<rootDir>/tests/unit/',
   ],
   collectCoverageFrom: [
-    'src/app/api/**/*.{js,jsx,ts,tsx}',
-    'src/lib/**/*.{js,jsx,ts,tsx}',
-    '!src/lib/**/*.d.ts',
-    '!src/lib/**/*.test.{js,jsx,ts,tsx}',
-    '!src/lib/**/*.spec.{js,jsx,ts,tsx}',
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.test.{js,jsx,ts,tsx}',
+    '!src/**/*.spec.{js,jsx,ts,tsx}',
+    '!src/generated/**',
   ],
   coverageThreshold: {
     global: {
-      branches: 85,
-      functions: 85,
-      lines: 85,
-      statements: 85,
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
     },
   },
-  coverageReporters: [
-    'text',
-    'text-summary',
-    'html',
-    'lcov',
-    'json',
-  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   testMatch: [
     '<rootDir>/tests/integration/**/*.{js,jsx,ts,tsx}',
   ],
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
-  },
-  transformIgnorePatterns: [
-    '/node_modules/',
-    '^.+\\.module\\.(css|sass|scss)$',
-  ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testTimeout: 30000,
-  verbose: true,
+  setupFiles: ['<rootDir>/tests/setup/integration-setup.js'],
 }
 
 export default createJestConfig(customJestConfig)

@@ -1,45 +1,54 @@
 /** @format */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { EnhancedPDFGenerator } from '@/lib/pdf-enhanced-generator';
 import prisma from '@/lib/prisma';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
-	default: {
-		tenant: {
-			findUnique: vi.fn(),
-		},
-		row: {
-			findFirst: vi.fn(),
-			findMany: vi.fn(),
-		},
-		auditLog: {
-			create: vi.fn(),
-		},
+const mockPrisma = {
+	tenant: {
+		findUnique: jest.fn(),
 	},
+	database: {
+		findFirst: jest.fn(),
+	},
+	row: {
+		findFirst: jest.fn(),
+		findMany: jest.fn(),
+	},
+	auditLog: {
+		create: jest.fn(),
+	},
+	table: {
+		findMany: jest.fn(),
+	},
+	findManyWithCache: jest.fn(),
+};
+
+jest.mock('@/lib/prisma', () => ({
+	default: mockPrisma,
 }));
 
 // Mock InvoiceSystemService
-vi.mock('@/lib/invoice-system', () => ({
+jest.mock('@/lib/invoice-system', () => ({
 	InvoiceSystemService: {
-		getInvoiceTables: vi.fn(),
-		getCustomerTables: vi.fn(),
+		getInvoiceTables: jest.fn(),
+		getCustomerTables: jest.fn(),
 	},
 }));
 
 // Mock PDF-lib
-vi.mock('pdf-lib', () => ({
+jest.mock('pdf-lib', () => ({
 	PDFDocument: {
-		create: vi.fn().mockResolvedValue({
-			addPage: vi.fn().mockReturnValue({
-				getSize: vi.fn().mockReturnValue({ width: 595, height: 842 }),
-				drawText: vi.fn(),
-				drawRectangle: vi.fn(),
-				drawLine: vi.fn(),
+		create: jest.fn().mockResolvedValue({
+			addPage: jest.fn().mockReturnValue({
+				getSize: jest.fn().mockReturnValue({ width: 595, height: 842 }),
+				drawText: jest.fn(),
+				drawRectangle: jest.fn(),
+				drawLine: jest.fn(),
 			}),
-			embedFont: vi.fn().mockResolvedValue({}),
-			save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3, 4])),
+			embedFont: jest.fn().mockResolvedValue({}),
+			save: jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3, 4])),
 		}),
 	},
 	StandardFonts: {
@@ -49,16 +58,16 @@ vi.mock('pdf-lib', () => ({
 	PageSizes: {
 		A4: [595, 842],
 	},
-	rgb: vi.fn().mockReturnValue({}),
+	rgb: jest.fn().mockReturnValue({}),
 }));
 
 describe('EnhancedPDFGenerator', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
+		jest.clearAllMocks();
 	});
 
 	afterEach(() => {
-		vi.restoreAllMocks();
+		jest.restoreAllMocks();
 	});
 
 	describe('generateInvoicePDF', () => {
@@ -123,11 +132,11 @@ describe('EnhancedPDFGenerator', () => {
 				registrationNumber: 'REG456',
 			};
 
-			// Mock Prisma calls
-			(prisma.database.findFirst as any).mockResolvedValue({ id: 1, tenantId: 1 });
-			(prisma.row.findFirst as any).mockResolvedValue(mockInvoiceRow);
-			(prisma.row.findMany as any).mockResolvedValue(mockInvoiceItems);
-			(prisma.tenant.findUnique as any).mockResolvedValue(mockTenant);
+								// Mock Prisma calls
+					mockPrisma.database.findFirst.mockResolvedValue({ id: 1, tenantId: 1 });
+					mockPrisma.row.findFirst.mockResolvedValue(mockInvoiceRow);
+					mockPrisma.row.findMany.mockResolvedValue(mockInvoiceItems);
+					mockPrisma.tenant.findUnique.mockResolvedValue(mockTenant);
 
 			// Mock InvoiceSystemService
 			const { InvoiceSystemService } = await import('@/lib/invoice-system');
@@ -153,9 +162,9 @@ describe('EnhancedPDFGenerator', () => {
 		});
 
 		it('should generate PDF with watermark', async () => {
-			// Mock minimal data
-			(prisma.database.findFirst as any).mockResolvedValue({ id: 1, tenantId: 1 });
-			(prisma.row.findFirst as any).mockResolvedValue({
+								// Mock minimal data
+					mockPrisma.database.findFirst.mockResolvedValue({ id: 1, tenantId: 1 });
+					mockPrisma.row.findFirst.mockResolvedValue({
 				id: 1,
 				cells: [
 					{ column: { name: 'invoice_number' }, value: 'INV-001' },
@@ -163,8 +172,8 @@ describe('EnhancedPDFGenerator', () => {
 					{ column: { name: 'customer_id' }, value: 1 },
 				],
 			});
-			(prisma.row.findMany as any).mockResolvedValue([]);
-			(prisma.tenant.findUnique as any).mockResolvedValue({
+								mockPrisma.row.findMany.mockResolvedValue([]);
+					mockPrisma.tenant.findUnique.mockResolvedValue({
 				name: 'Test Company',
 			});
 
@@ -190,8 +199,8 @@ describe('EnhancedPDFGenerator', () => {
 		});
 
 		it('should handle missing invoice', async () => {
-			(prisma.database.findFirst as any).mockResolvedValue({ id: 1, tenantId: 1 });
-			(prisma.row.findFirst as any).mockResolvedValue(null);
+								mockPrisma.database.findFirst.mockResolvedValue({ id: 1, tenantId: 1 });
+					mockPrisma.row.findFirst.mockResolvedValue(null);
 
 			const { InvoiceSystemService } = await import('@/lib/invoice-system');
 			InvoiceSystemService.getInvoiceTables.mockResolvedValue({
@@ -209,7 +218,7 @@ describe('EnhancedPDFGenerator', () => {
 		});
 
 		it('should handle missing database', async () => {
-			(prisma.database.findFirst as any).mockResolvedValue(null);
+								mockPrisma.database.findFirst.mockResolvedValue(null);
 
 			await expect(
 				EnhancedPDFGenerator.generateInvoicePDF({
@@ -224,15 +233,15 @@ describe('EnhancedPDFGenerator', () => {
 	describe('sendInvoiceEmail', () => {
 		it('should send email with PDF attachment', async () => {
 			// Mock PDF generation
-			vi.spyOn(EnhancedPDFGenerator, 'generateInvoicePDF').mockResolvedValue(
+			jest.spyOn(EnhancedPDFGenerator, 'generateInvoicePDF').mockResolvedValue(
 				Buffer.from('mock-pdf-content')
 			);
 
 			// Mock email sending
-			vi.spyOn(EnhancedPDFGenerator as any, 'sendEmail').mockResolvedValue(true);
+			jest.spyOn(EnhancedPDFGenerator as any, 'sendEmail').mockResolvedValue(true);
 
-			// Mock audit logging
-			(prisma.auditLog.create as any).mockResolvedValue({ id: 1 });
+								// Mock audit logging
+					mockPrisma.auditLog.create.mockResolvedValue({ id: 1 });
 
 			const result = await EnhancedPDFGenerator.sendInvoiceEmail(
 				{
@@ -249,20 +258,20 @@ describe('EnhancedPDFGenerator', () => {
 
 			expect(result).toBe(true);
 			expect(EnhancedPDFGenerator.generateInvoicePDF).toHaveBeenCalled();
-			expect(prisma.auditLog.create).toHaveBeenCalled();
+								expect(mockPrisma.auditLog.create).toHaveBeenCalled();
 		});
 
 		it('should handle email sending failure', async () => {
 			// Mock PDF generation
-			vi.spyOn(EnhancedPDFGenerator, 'generateInvoicePDF').mockResolvedValue(
+			jest.spyOn(EnhancedPDFGenerator, 'generateInvoicePDF').mockResolvedValue(
 				Buffer.from('mock-pdf-content')
 			);
 
 			// Mock email sending failure
-			vi.spyOn(EnhancedPDFGenerator as any, 'sendEmail').mockResolvedValue(false);
+			jest.spyOn(EnhancedPDFGenerator as any, 'sendEmail').mockResolvedValue(false);
 
-			// Mock audit logging
-			(prisma.auditLog.create as any).mockResolvedValue({ id: 1 });
+								// Mock audit logging
+					mockPrisma.auditLog.create.mockResolvedValue({ id: 1 });
 
 			const result = await EnhancedPDFGenerator.sendInvoiceEmail(
 				{

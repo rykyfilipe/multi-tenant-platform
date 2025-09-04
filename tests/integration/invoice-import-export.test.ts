@@ -1,25 +1,25 @@
 /** @format */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import { POST as importPOST, GET as importGET } from '@/app/api/tenants/[tenantId]/invoices/import/route';
 import { POST as exportPOST, GET as exportGET } from '@/app/api/tenants/[tenantId]/invoices/export/route';
 
 // Mock authentication
-vi.mock('@/lib/auth', () => ({
+jest.mock('@/lib/auth', () => ({
 	authOptions: {},
-	getServerSession: vi.fn(),
-	checkUserTenantAccess: vi.fn(),
+	getServerSession: jest.fn(),
+	checkUserTenantAccess: jest.fn(),
 }));
 
 // Mock migrator service
-vi.mock('@/lib/migrators', () => ({
+jest.mock('@/lib/migrators', () => ({
 	MigratorService: {
-		importInvoices: vi.fn(),
-		getAvailableProviders: vi.fn(),
-		getImportHistory: vi.fn(),
-		exportInvoices: vi.fn(),
-		getExportHistory: vi.fn(),
+		importInvoices: jest.fn(),
+		getAvailableProviders: jest.fn(),
+		getImportHistory: jest.fn(),
+		exportInvoices: jest.fn(),
+		getExportHistory: jest.fn(),
 	},
 }));
 
@@ -28,7 +28,7 @@ describe('Invoice Import/Export API Routes', () => {
 	const mockUserId = '1';
 
 	beforeEach(() => {
-		vi.clearAllMocks();
+		jest.clearAllMocks();
 		
 		// Mock authentication
 		const { getServerSession } = require('@/lib/auth');
@@ -42,7 +42,7 @@ describe('Invoice Import/Export API Routes', () => {
 	});
 
 	afterEach(() => {
-		vi.restoreAllMocks();
+		jest.restoreAllMocks();
 	});
 
 	describe('Import API', () => {
