@@ -784,6 +784,10 @@ export async function GET(
 	}
 	const userId = getUserId(sessionResult);
 
+	console.log("userId", userId);
+	console.log("tenantId", tenantId);
+	console.log("sessionResult", sessionResult);
+
 	// Verificare acces tenant
 	    const isMember = requireTenantAccess(sessionResult, tenantId);
 	if (!isMember) {
