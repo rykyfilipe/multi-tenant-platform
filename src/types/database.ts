@@ -49,13 +49,16 @@ export interface Row {
 	createdAt: string;
 	cells?: Cell[];
 	isOptimistic?: boolean; // Flag to identify optimistic rows
+	isLocalOnly?: boolean; // Flag to identify local-only rows (not saved to server)
+	isPending?: boolean; // Flag to show it's pending save
 }
 
 export interface Cell {
-	id: number;
-	rowId: number;
+	id: number | string; // Support both number and string for local cells
+	rowId: number | string; // Support both number and string for local cells
 	columnId: number;
 	value: any;
+	column?: Column | null; // Optional column reference for local cells
 }
 
 export interface CellSchema {

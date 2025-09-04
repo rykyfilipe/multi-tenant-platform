@@ -71,7 +71,7 @@ export const hoverLift = {
 // Animații pentru loading
 export const spinAnimation = {
 	animate: { rotate: 360 },
-	transition: { duration: 1, repeat: Infinity, ease: "linear" },
+	transition: { duration: 1, repeat: Infinity, ease: "linear" as const },
 };
 
 export const pulseAnimation = {
