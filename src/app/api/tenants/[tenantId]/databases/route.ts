@@ -25,10 +25,6 @@ export async function GET(
 	}
 
 	const { tenantId } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 
@@ -164,10 +160,6 @@ export async function POST(
 	}
 
 	const { tenantId } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 
@@ -288,10 +280,6 @@ export async function DELETE(
 	}
 
 	const { tenantId } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 

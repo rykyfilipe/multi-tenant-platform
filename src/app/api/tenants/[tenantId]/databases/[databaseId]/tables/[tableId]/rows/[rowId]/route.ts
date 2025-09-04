@@ -24,10 +24,6 @@ export async function DELETE(
 	}
 
 	const { tenantId, databaseId, tableId, rowId } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 

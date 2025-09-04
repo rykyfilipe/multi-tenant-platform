@@ -10,11 +10,6 @@ export async function GET(request: Request) {
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-
-		const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = parseInt(user.id);
 

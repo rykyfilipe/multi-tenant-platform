@@ -74,11 +74,6 @@ export async function POST(
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 
@@ -270,11 +265,6 @@ export async function GET(
 	},
 ) {
 	const { tenantId, databaseId, tableId } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-
 	const sessionResult = await requireAuthAPI();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;

@@ -19,22 +19,17 @@ export async function GET(
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-
-		const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = parseInt(user.id);
 		const { tenantId } = await params;
 
 		// Verify user belongs to this tenant
-		const user = await prisma.user.findUnique({
+		const userRecord = await prisma.user.findUnique({
 			where: { id: userId },
 			select: { tenantId: true },
 		});
 
-		if (!user || user.tenantId !== parseInt(tenantId)) {
+		if (!userRecord || userRecord.tenantId !== parseInt(tenantId)) {
 			return NextResponse.json({ error: "Access denied" }, { status: 403 });
 		}
 
@@ -94,11 +89,6 @@ export async function POST(
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-
-		const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = parseInt(user.id);
 		const { tenantId } = await params;
@@ -112,12 +102,12 @@ export async function POST(
 		}
 
 		// Verify user belongs to this tenant
-		const user = await prisma.user.findUnique({
+		const userRecord2 = await prisma.user.findUnique({
 			where: { id: userId },
 			select: { tenantId: true },
 		});
 
-		if (!user || user.tenantId !== parseInt(tenantId)) {
+		if (!userRecord2 || userRecord2.tenantId !== parseInt(tenantId)) {
 			return NextResponse.json({ error: "Access denied" }, { status: 403 });
 		}
 

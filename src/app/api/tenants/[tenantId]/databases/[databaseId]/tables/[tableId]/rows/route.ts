@@ -2,8 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { checkTableEditPermission,  } from "@/lib/auth";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { checkTableEditPermission } from "@/lib/auth";
 import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import { checkPlanLimit } from "@/lib/planLimits";
 import { updateMemoryAfterRowChange } from "@/lib/memory-middleware";
@@ -43,11 +42,6 @@ export async function POST(
 ) {
 	const { tenantId, databaseId, tableId } = await params;
 	const startTime = Date.now();
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 
 	const sessionResult = await requireAuthAPI();
 	if (sessionResult instanceof NextResponse) {
@@ -518,11 +512,6 @@ export async function GET(
 	},
 ) {
 	const { tenantId, databaseId, tableId } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-
 	const sessionResult = await requireAuthAPI();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;

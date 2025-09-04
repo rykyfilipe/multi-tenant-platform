@@ -15,10 +15,6 @@ export async function POST(request: NextRequest) {
 	}
 
 		// Get user from request
-		const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 

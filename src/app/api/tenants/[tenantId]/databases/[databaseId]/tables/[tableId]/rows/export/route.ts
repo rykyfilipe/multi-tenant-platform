@@ -886,11 +886,6 @@ export async function GET(
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 

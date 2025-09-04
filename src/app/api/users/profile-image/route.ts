@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
 
 		const formData = await request.formData();
 		const image = formData.get("image") as File;
-		const userId = formData.get("userId") as string;
+		const userIdFromForm = formData.get("userId") as string;
 
-		if (!image || !userId) {
+		if (!image || !userIdFromForm) {
 			return NextResponse.json(
 				{ error: "Image and userId are required" },
 				{ status: 400 },
@@ -43,12 +43,12 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Verify user exists and current user has permission
-		const user = await prisma.user.findUnique({
-			where: { id: parseInt(userId) },
+		const targetUser = await prisma.user.findUnique({
+			where: { id: parseInt(userIdFromForm) },
 			select: { id: true, email: true, tenantId: true },
 		});
 
-		if (!user) {
+		if (!targetUser) {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Only allow users to update their own profile image
-		if (currentUser.id !== user.id) {
+		if (currentUser.id !== parseInt(userIdFromForm)) {
 			return NextResponse.json(
 				{ error: "You can only update your own profile image" },
 				{ status: 403 },
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 		// Generate unique filename
 		const timestamp = Date.now();
 		const fileExtension = image.name.split(".").pop();
-		const fileName = `profile_${userId}_${timestamp}.${fileExtension}`;
+		const fileName = `profile_${userIdFromForm}_${timestamp}.${fileExtension}`;
 
 		// Convert file to buffer
 		const bytes = await image.arrayBuffer();
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
 		// Get the current user's profile image to delete the old one
 		const userWithProfileImage = await prisma.user.findUnique({
-			where: { id: parseInt(userId) },
+			where: { id: parseInt(userIdFromForm) },
 			select: { profileImage: true },
 		});
 
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
 
 		// Update user profile in database
 		await prisma.user.update({
-			where: { id: parseInt(userId) },
+			where: { id: parseInt(userIdFromForm) },
 			data: { profileImage: uploadResult.secure_url },
 		});
 

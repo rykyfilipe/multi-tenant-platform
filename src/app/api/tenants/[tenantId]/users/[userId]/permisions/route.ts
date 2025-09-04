@@ -15,11 +15,6 @@ export async function GET(
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 
@@ -34,17 +29,17 @@ export async function GET(
 	}
 
 	// Verificăm permisiunea de plan pentru gestionarea permisiunilor
-	const user = await prisma.user.findUnique({
+	const userRecord = await prisma.user.findUnique({
 		where: { id: userId },
 		select: { subscriptionPlan: true },
 	});
 
-	if (!user) {
+	if (!userRecord) {
 		return NextResponse.json({ error: "User not found" }, { status: 404 });
 	}
 
 	// Verifică dacă planul permite gestionarea permisiunilor
-	if (!checkPlanPermission(user.subscriptionPlan, "canManagePermissions")) {
+	if (!checkPlanPermission(userRecord.subscriptionPlan, "canManagePermissions")) {
 		return NextResponse.json(
 			{
 				error:
@@ -112,11 +107,6 @@ export async function PATCH(
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 

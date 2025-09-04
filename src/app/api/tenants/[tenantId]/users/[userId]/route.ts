@@ -20,11 +20,6 @@ export async function PATCH(
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 
@@ -125,10 +120,6 @@ export async function DELETE(
 	}
 
 	const { tenantId, userId: userIdToDelete } = await params;
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = user.id;
 
