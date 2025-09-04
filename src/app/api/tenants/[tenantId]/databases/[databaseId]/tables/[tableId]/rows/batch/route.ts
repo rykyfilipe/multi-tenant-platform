@@ -26,7 +26,7 @@ export async function POST(
 	},
 ) {
 	try {
-		const session = await getServerSession(authOptions);
+		const session = await getServerSession();
 		if (!session?.user?.id) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
@@ -48,7 +48,7 @@ export async function POST(
 		// Verify user has access to the tenant
 		const user = await prisma.user.findFirst({
 			where: {
-				id: userId,
+				id: Number(userId),
 				tenants: {
 					some: {
 						tenantId: Number(tenantId),
@@ -106,7 +106,7 @@ export async function POST(
 		if (role !== "ADMIN") {
 			const hasPermission = await prisma.tablePermission.findFirst({
 				where: {
-					userId: userId,
+					userId: Number(userId),
 					tableId: Number(tableId),
 					canEdit: true,
 				},
@@ -148,7 +148,7 @@ export async function POST(
 			}
 
 			// Check required columns
-			const requiredColumns = columns.filter((col) => col.required);
+			const requiredColumns = columns.filter((col:any) => col.required);
 			for (const requiredCol of requiredColumns) {
 				const hasCell = row.cells.some(
 					(cell) =>
@@ -166,7 +166,7 @@ export async function POST(
 
 			// Validate column IDs
 			for (const cell of row.cells) {
-				const columnExists = columns.some((col) => col.id === cell.columnId);
+				const columnExists = columns.some((col:any) => col.id === cell.columnId);
 				if (!columnExists) {
 					return NextResponse.json(
 						{ error: `Column with ID ${cell.columnId} not found` },
