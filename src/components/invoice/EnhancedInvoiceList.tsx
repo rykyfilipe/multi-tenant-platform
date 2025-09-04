@@ -211,7 +211,7 @@ export function EnhancedInvoiceList({
 						Manage your invoices and generate PDF documents
 					</p>
 				</div>
-				<div className="flex flex-wrap gap-2">
+				<div className="flex flex-wrap gap-2" data-tour-id="series-management">
 					<Button variant="outline" onClick={() => setShowSeriesManager(true)}>
 						<SettingsIcon className="mr-2 h-4 w-4" />
 						Series
@@ -301,7 +301,7 @@ export function EnhancedInvoiceList({
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4" data-tour-id="invoice-search">
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-2 block">
 								Search
@@ -403,7 +403,7 @@ export function EnhancedInvoiceList({
 			</Card>
 
 			{/* Invoice List */}
-			<div className="space-y-4">
+			<div className="space-y-4" data-tour-id="invoice-list">
 				{loading ? (
 					<div className="space-y-4">
 						{[...Array(5)].map((_, i) => (
@@ -455,7 +455,7 @@ export function EnhancedInvoiceList({
 											</div>
 										</div>
 									</div>
-									<div className="flex items-center gap-2">
+									<div className="flex items-center gap-2" data-tour-id="invoice-actions">
 										<Button
 											variant="outline"
 											size="sm"

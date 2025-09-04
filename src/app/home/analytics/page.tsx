@@ -7,36 +7,19 @@ import { useSession } from "next-auth/react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import TourProv from "@/contexts/TourProvider";
-import { useTour } from "@reactour/tour";
-import { tourUtils } from "@/lib/tour-config";
 import PerformanceOptimizer from "@/components/PerformanceOptimizer";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { FreeAnalyticsDashboard } from "@/components/analytics/FreeAnalyticsDashboard";
 import { useApp } from "@/contexts/AppContext";
+import { TourManager } from "@/components/tours/TourManager";
+import { allTours } from "@/tours";
 
 // Main Analytics Page Component
 
 function AnalyticsPage() {
 	const { data: session } = useSession();
 	const { t } = useLanguage();
-	const { tenant } = useApp();
-	const { setIsOpen, setCurrentStep } = useTour();
-
-	const startTour = () => {
-		setCurrentStep(0);
-		setIsOpen(true);
-	};
-
-	useEffect(() => {
-		const hasSeenTour = tourUtils.isTourSeen("analytics");
-		if (!hasSeenTour) {
-			const timer = setTimeout(() => {
-				startTour();
-			}, 2000);
-
-			return () => clearTimeout(timer);
-		}
-	}, []);
+	const { tenant, user } = useApp();
 
 	if (!session) return null;
 
@@ -46,16 +29,19 @@ function AnalyticsPage() {
 
 	return (
 		<PerformanceOptimizer preloadFonts={true} preloadCriticalCSS={true}>
-			<TourProv
-				steps={tourUtils.getDashboardTourSteps(true)}
-				onTourComplete={() => {
-					tourUtils.markTourSeen("analytics");
+			<DashboardComponent />
+			<TourManager
+				tours={allTours}
+				currentPage="analytics"
+				userRole={user?.role}
+				enabledFeatures={tenant?.enabledModules || []}
+				onTourComplete={(tourId) => {
+					console.log(`Tour ${tourId} completed`);
 				}}
-				onTourSkip={() => {
-					tourUtils.markTourSeen("analytics");
-				}}>
-				<DashboardComponent />
-			</TourProv>
+				onTourSkip={(tourId) => {
+					console.log(`Tour ${tourId} skipped`);
+				}}
+			/>
 		</PerformanceOptimizer>
 	);
 }

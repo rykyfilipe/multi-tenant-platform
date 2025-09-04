@@ -22,6 +22,8 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useInvoiceSystem } from "@/hooks/useInvoiceSystem";
+import { TourManager } from "@/components/tours/TourManager";
+import { allTours } from "@/tours";
 
 export default function InvoicesPage() {
 	const [activeTab, setActiveTab] = useState("list");
@@ -150,7 +152,7 @@ export default function InvoicesPage() {
 			{/* Hero Section */}
 			<div className='bg-gradient-to-br from-primary/5 via-background to-muted/20 border-b'>
 				<div className='container mx-auto px-4 py-8 sm:py-12'>
-					<div className='max-w-4xl mx-auto text-center space-y-4'>
+					<div className='max-w-4xl mx-auto text-center space-y-4' data-tour-id="invoice-header">
 						<div className='inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4'>
 							<FileText className='w-8 h-8 text-primary' />
 						</div>
@@ -181,7 +183,8 @@ export default function InvoicesPage() {
 						</TabsTrigger>
 						<TabsTrigger
 							value='create'
-							className='flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200'>
+							className='flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200'
+							data-tour-id="create-invoice-button">
 							<Plus className='w-4 h-4' />
 							<span className='hidden sm:inline'>Create Invoice</span>
 							<span className='sm:hidden'>Create</span>
@@ -203,6 +206,7 @@ export default function InvoicesPage() {
 
 					<TabsContent value='create' className='space-y-6'>
 						<InvoiceForm
+							open={activeTab === 'create'}
 							editInvoice={editingInvoice}
 							onInvoiceUpdated={handleInvoiceUpdated}
 							customers={customers}
@@ -216,6 +220,19 @@ export default function InvoicesPage() {
 					</TabsContent>
 				</Tabs>
 			</div>
+			
+			<TourManager
+				tours={allTours}
+				currentPage="invoice"
+				userRole={user?.role}
+				enabledFeatures={[]}
+				onTourComplete={(tourId) => {
+					console.log(`Tour ${tourId} completed`);
+				}}
+				onTourSkip={(tourId) => {
+					console.log(`Tour ${tourId} skipped`);
+				}}
+			/>
 		</div>
 	);
 }

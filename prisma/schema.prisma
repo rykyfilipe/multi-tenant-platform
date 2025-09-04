@@ -54,6 +54,7 @@ model Tenant {
   performanceAlerts   PerformanceAlert[]
   invoiceSeries       InvoiceSeries[]
   invoiceAuditLogs    InvoiceAuditLog[]
+  userPreferences     UserPreferences[]
 
   @@index([adminId])
 }
@@ -81,6 +82,7 @@ model User {
   userActivities               UserActivity[]
   apiUsage                     ApiUsage[]
   errorLogs                    ErrorLog[]
+  userPreferences              UserPreferences?
 
   @@index([tenantId])
 }
@@ -443,4 +445,46 @@ model InvoiceAuditLog {
   @@index([databaseId])
   @@index([invoiceId])
   @@index([action, createdAt])
+}
+
+model UserPreferences {
+  id                    Int      @id @default(autoincrement())
+  userId                Int      @unique
+  tenantId              Int
+  
+  // Tour completion tracking
+  tourDashboardDone     Boolean  @default(false)
+  tourInvoiceDone       Boolean  @default(false)
+  tourDatabaseDone      Boolean  @default(false)
+  tourUsersDone         Boolean  @default(false)
+  tourSettingsDone      Boolean  @default(false)
+  tourAnalyticsDone     Boolean  @default(false)
+  
+  // Tour preferences
+  autoStartTours        Boolean  @default(true)
+  showTourHints         Boolean  @default(true)
+  tourSpeed             String   @default("normal") // slow, normal, fast
+  
+  // UI preferences
+  theme                 String   @default("system") // light, dark, system
+  language              String   @default("en")
+  timezone              String   @default("UTC")
+  
+  // Notification preferences
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(true)
+  weeklyDigest          Boolean  @default(true)
+  
+  // Other preferences
+  sidebarCollapsed      Boolean  @default(false)
+  compactMode           Boolean  @default(false)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
 }
