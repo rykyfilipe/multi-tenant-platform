@@ -78,6 +78,21 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			newValue: any,
 			originalValue: any,
 		) => {
+			// Verifică dacă este un rând local (cu ID temporar)
+			const isLocalRow = rowId.startsWith('temp_') || cellId.startsWith('temp_cell_');
+			
+			// Nu adăuga modificări pentru rândurile locale în pendingChanges
+			if (isLocalRow) {
+				console.log("🚫 Skipping pending change for local row:", {
+					rowId,
+					columnId,
+					cellId,
+					newValue,
+					originalValue,
+				});
+				return;
+			}
+
 			console.log("🔄 Adding pending change:", {
 				rowId,
 				columnId,

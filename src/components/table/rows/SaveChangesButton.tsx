@@ -52,17 +52,21 @@ export const SaveChangesButton = memo(function SaveChangesButton({
 	const isSaving = isSavingNewRows || isSavingChanges;
 
 	// Gestionează salvarea unificată
-	const handleSave = useCallback(() => {
+	const handleSave = useCallback(async () => {
 		if (isSaving) return;
 
-		// Salvează modificările existente mai întâi
-		if (changesCount > 0 && onSaveChanges) {
-			onSaveChanges();
-		}
+		try {
+			// Salvează rândurile noi mai întâi (pentru a crea ID-urile reale)
+			if (newRowsCount > 0 && onSaveNewRows) {
+				await onSaveNewRows();
+			}
 
-		// Apoi salvează rândurile noi
-		if (newRowsCount > 0 && onSaveNewRows) {
-			onSaveNewRows();
+			// Apoi salvează modificările existente (acum cu ID-uri reale)
+			if (changesCount > 0 && onSaveChanges) {
+				await onSaveChanges();
+			}
+		} catch (error) {
+			console.error("Error saving changes:", error);
 		}
 	}, [isSaving, changesCount, onSaveChanges, newRowsCount, onSaveNewRows]);
 
