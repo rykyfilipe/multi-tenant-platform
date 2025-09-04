@@ -73,6 +73,7 @@ export async function POST(
 			validatedData.tags || []
 		);
 
+		const userId = getUserId(sessionResult);
 		logger.info("Analytics metric tracked", {
 			component: "AdvancedAnalyticsAPI",
 			userId: userId.toString(),
@@ -119,11 +120,11 @@ export async function GET(
 ) {
 	try {
 		const sessionResult = await requireAuthResponse();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-	const userId = getUserId(sessionResult);
-		if (!user) {
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+		if (!userId) {
 			return NextResponse.json(
 				{ error: "Authentication required" },
 				{ status: 401 }
@@ -139,7 +140,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
