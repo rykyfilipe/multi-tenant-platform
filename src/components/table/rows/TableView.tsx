@@ -263,26 +263,8 @@ export const TableView = memo(function TableView({
 						</div>
 					</div>
 
-					{/* Right Section - Bulk Actions */}
-					{selectedRows.size > 0 && tablePermissions.canEditTable() && (
-						<div className='flex items-center gap-3'>
-							<div className='flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-lg'>
-								<AlertTriangle className='w-4 h-4 text-destructive' />
-								<span className='text-sm font-medium text-destructive'>
-									{selectedRows.size} row{selectedRows.size !== 1 ? "s" : ""}{" "}
-									selected
-								</span>
-							</div>
-							<Button
-								variant='destructive'
-								size='sm'
-								onClick={handleBulkDeleteClick}
-								className='h-9 px-4 bg-destructive hover:bg-destructive/90 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'>
-								<Trash2 className='w-4 h-4 mr-2' />
-								Delete Selected
-							</Button>
-						</div>
-					)}
+					
+					
 				</div>
 			</div>
 
