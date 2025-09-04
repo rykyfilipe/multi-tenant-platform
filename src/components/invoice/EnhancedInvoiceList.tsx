@@ -15,7 +15,6 @@ import {
 	Calendar,
 	Eye,
 	Edit,
-	Download,
 	Trash2,
 	DollarSign,
 	Package,
@@ -27,8 +26,6 @@ import {
 	Settings,
 	Building,
 	CreditCard,
-	Upload,
-	Download as DownloadIcon,
 	Settings as SettingsIcon,
 	Search,
 	Filter,
@@ -38,9 +35,6 @@ import { format } from 'date-fns';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { convertCurrency } from '@/lib/currency-exchange-client';
-import { InvoiceList } from './InvoiceList';
-import { ImportModal } from './ImportModal';
-import { ExportModal } from './ExportModal';
 import { SeriesManager } from './SeriesManager';
 
 interface EnhancedInvoiceListProps {
@@ -68,8 +62,6 @@ export function EnhancedInvoiceList({
 	const { t } = useLanguage();
 	
 	// Modal states
-	const [showImportModal, setShowImportModal] = useState(false);
-	const [showExportModal, setShowExportModal] = useState(false);
 	const [showSeriesManager, setShowSeriesManager] = useState(false);
 	
 	// Filter states
@@ -110,18 +102,57 @@ export function EnhancedInvoiceList({
 		return customer ? customer.customer_name : `Customer ${customerId}`;
 	};
 
-	const handleImportComplete = (result: any) => {
-		setShowImportModal(false);
-		if (refreshInvoices) {
-			refreshInvoices();
+	const getStatusVariant = (status: string) => {
+		switch (status?.toLowerCase()) {
+			case 'paid':
+				return 'default';
+			case 'pending':
+				return 'secondary';
+			case 'overdue':
+				return 'destructive';
+			case 'draft':
+				return 'outline';
+			default:
+				return 'secondary';
 		}
-		showAlert(`Import completed: ${result.imported} imported, ${result.updated} updated, ${result.skipped} skipped`, 'success');
 	};
 
-	const handleExportComplete = (result: any) => {
-		setShowExportModal(false);
-		showAlert(`Export completed: ${result.filename}`, 'success');
+	const formatPrice = (amount: number, currency: string = 'USD') => {
+		return new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: currency,
+		}).format(amount);
 	};
+
+	const handleViewInvoice = async (invoiceId: number) => {
+		try {
+			const details = await getInvoiceDetails(invoiceId);
+			// You can implement a modal or navigation to view invoice details
+			console.log('Invoice details:', details);
+		} catch (error) {
+			console.error('Error fetching invoice details:', error);
+		}
+	};
+
+	const handleDeleteInvoice = async (invoiceId: number) => {
+		if (window.confirm('Are you sure you want to delete this invoice?')) {
+			try {
+				const success = await deleteInvoice(invoiceId);
+				if (success) {
+					showAlert('Invoice deleted successfully', 'success');
+					if (refreshInvoices) {
+						refreshInvoices();
+					}
+				} else {
+					showAlert('Failed to delete invoice', 'error');
+				}
+			} catch (error) {
+				console.error('Error deleting invoice:', error);
+				showAlert('Failed to delete invoice', 'error');
+			}
+		}
+	};
+
 
 
 	const handleEditInvoice = (invoice: any) => {
@@ -177,18 +208,10 @@ export function EnhancedInvoiceList({
 				<div>
 					<h1 className="text-3xl font-bold text-foreground">Invoices</h1>
 					<p className="text-muted-foreground">
-						Manage your invoices, import from external systems, and export data
+						Manage your invoices and generate PDF documents
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
-					<Button variant="outline" onClick={() => setShowImportModal(true)}>
-						<Upload className="mr-2 h-4 w-4" />
-						Import
-					</Button>
-					<Button variant="outline" onClick={() => setShowExportModal(true)}>
-						<DownloadIcon className="mr-2 h-4 w-4" />
-						Export
-					</Button>
 					<Button variant="outline" onClick={() => setShowSeriesManager(true)}>
 						<SettingsIcon className="mr-2 h-4 w-4" />
 						Series
@@ -380,15 +403,87 @@ export function EnhancedInvoiceList({
 			</Card>
 
 			{/* Invoice List */}
-			<InvoiceList
-				onEditInvoice={handleEditInvoice}
-				invoices={paginatedInvoices}
-				customers={customers}
-				loading={loading}
-				error={error}
-				deleteInvoice={deleteInvoice}
-				getInvoiceDetails={getInvoiceDetails}
-			/>
+			<div className="space-y-4">
+				{loading ? (
+					<div className="space-y-4">
+						{[...Array(5)].map((_, i) => (
+							<Card key={i} className="border-0 shadow-sm">
+								<CardContent className="p-6">
+									<div className="animate-pulse">
+										<div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
+										<div className="h-3 bg-muted rounded w-1/2"></div>
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
+				) : error ? (
+					<Card className="border-0 shadow-sm">
+						<CardContent className="p-6 text-center">
+							<AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+							<p className="text-destructive">{error}</p>
+						</CardContent>
+					</Card>
+				) : paginatedInvoices.length === 0 ? (
+					<Card className="border-0 shadow-sm">
+						<CardContent className="p-6 text-center">
+							<FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+							<p className="text-muted-foreground">No invoices found</p>
+						</CardContent>
+					</Card>
+				) : (
+					paginatedInvoices.map((invoice) => (
+						<Card key={invoice.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+							<CardContent className="p-6">
+								<div className="flex items-center justify-between">
+									<div className="flex-1">
+										<div className="flex items-center gap-3 mb-2">
+											<h3 className="font-semibold text-lg">#{invoice.invoice_number}</h3>
+											<Badge variant={getStatusVariant(invoice.status)}>
+												{invoice.status}
+											</Badge>
+										</div>
+										<div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+											<div>
+												<span className="font-medium">Customer:</span> {invoice.customer_name || 'N/A'}
+											</div>
+											<div>
+												<span className="font-medium">Date:</span> {format(new Date(invoice.date), 'MMM dd, yyyy')}
+											</div>
+											<div>
+												<span className="font-medium">Amount:</span> {formatPrice(invoice.total_amount, invoice.base_currency)}
+											</div>
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => onEditInvoice?.(invoice)}
+										>
+											<Edit className="h-4 w-4" />
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => handleViewInvoice(invoice.id)}
+										>
+											<Eye className="h-4 w-4" />
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => handleDeleteInvoice(invoice.id)}
+										>
+											<Trash2 className="h-4 w-4" />
+										</Button>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					))
+				)}
+			</div>
 
 			{/* Pagination */}
 			{totalPages > 1 && (
@@ -421,20 +516,6 @@ export function EnhancedInvoiceList({
 				</Card>
 			)}
 
-			{/* Modals */}
-			<ImportModal
-				isOpen={showImportModal}
-				onClose={() => setShowImportModal(false)}
-				tenantId={tenant?.id?.toString() || ''}
-				onImportComplete={handleImportComplete}
-			/>
-
-			<ExportModal
-				isOpen={showExportModal}
-				onClose={() => setShowExportModal(false)}
-				tenantId={tenant?.id?.toString() || ''}
-				onExportComplete={handleExportComplete}
-			/>
 
 			{showSeriesManager && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

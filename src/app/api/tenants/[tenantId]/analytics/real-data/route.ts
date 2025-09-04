@@ -449,9 +449,11 @@ async function getBusinessData(tenantId: number) {
 			where: { tenantId: tenantId },
 			select: {
 				createdAt: true,
-				databasesUsed: true,
-				tablesUsed: true,
-				storageUsed: true,
+				cpuUsage: true,
+				memoryUsage: true,
+				storageUsage: true,
+				apiCalls: true,
+				databaseQueries: true,
 			},
 			orderBy: { createdAt: 'desc' },
 		});

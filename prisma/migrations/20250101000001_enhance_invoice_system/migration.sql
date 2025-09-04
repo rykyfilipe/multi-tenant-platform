@@ -1,9 +1,5 @@
 -- Add enhanced invoice system fields to existing tables
--- This migration extends the existing invoice system with import/export capabilities
-
--- Add import/export fields to existing invoice-related tables
--- Note: Since we're using a dynamic table system, we'll add these fields through the application
--- This migration creates supporting tables for the enhanced invoice system
+-- This migration creates supporting tables for the internal PDF invoice system
 
 -- Create InvoiceSeries table for atomic numbering
 CREATE TABLE IF NOT EXISTS "InvoiceSeries" (
@@ -25,24 +21,6 @@ CREATE TABLE IF NOT EXISTS "InvoiceSeries" (
     UNIQUE("tenantId", "databaseId", "series")
 );
 
--- Create InvoiceImport table for tracking imports
-CREATE TABLE IF NOT EXISTS "InvoiceImport" (
-    "id" SERIAL PRIMARY KEY,
-    "tenantId" INTEGER NOT NULL,
-    "databaseId" INTEGER NOT NULL,
-    "provider" VARCHAR(50) NOT NULL, -- 'oblio', 'smartbill', 'fgo', 'csv', 'json'
-    "externalId" VARCHAR(255),
-    "invoiceNumber" VARCHAR(100),
-    "invoiceDate" TIMESTAMP(3),
-    "customerVatId" VARCHAR(50),
-    "customerName" VARCHAR(255),
-    "rawSnapshot" JSONB,
-    "importedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-    "importedBy" INTEGER,
-    "status" VARCHAR(20) DEFAULT 'imported', -- 'imported', 'duplicate', 'error'
-    "errorMessage" TEXT,
-    UNIQUE("tenantId", "provider", "externalId")
-);
 
 -- Create InvoiceAuditLog table for tracking all invoice actions
 CREATE TABLE IF NOT EXISTS "InvoiceAuditLog" (
@@ -92,8 +70,6 @@ CREATE TABLE IF NOT EXISTS "InvoiceTemplate" (
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS "InvoiceSeries_tenantId_databaseId_idx" ON "InvoiceSeries"("tenantId", "databaseId");
-CREATE INDEX IF NOT EXISTS "InvoiceImport_tenantId_provider_idx" ON "InvoiceImport"("tenantId", "provider");
-CREATE INDEX IF NOT EXISTS "InvoiceImport_externalId_idx" ON "InvoiceImport"("externalId");
 CREATE INDEX IF NOT EXISTS "InvoiceAuditLog_tenantId_invoiceId_idx" ON "InvoiceAuditLog"("tenantId", "invoiceId");
 CREATE INDEX IF NOT EXISTS "InvoiceAuditLog_createdAt_idx" ON "InvoiceAuditLog"("createdAt");
 CREATE INDEX IF NOT EXISTS "InvoiceEmailLog_tenantId_invoiceId_idx" ON "InvoiceEmailLog"("tenantId", "invoiceId");

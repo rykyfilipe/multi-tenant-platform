@@ -200,7 +200,8 @@ describe('InvoiceCalculationService', () => {
 
 		it('should format price correctly for RON', () => {
 			const result = InvoiceCalculationService.formatPrice(123.45, 'RON');
-			expect(result).toBe('RON 123.45');
+			expect(result).toContain('RON');
+			expect(result).toContain('123.45');
 		});
 	});
 

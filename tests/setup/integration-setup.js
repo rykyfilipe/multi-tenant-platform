@@ -25,42 +25,6 @@ jest.mock('@/lib/currency-exchange-client', () => ({
 	}),
 }));
 
-// Mock external APIs
-jest.mock('@/lib/migrators/oblio-migrator', () => ({
-	OblioMigrator: {
-		importInvoices: jest.fn().mockResolvedValue({
-			success: true,
-			imported: 5,
-			updated: 2,
-			skipped: 0,
-			errors: 0,
-		}),
-		exportInvoices: jest.fn().mockResolvedValue({
-			success: true,
-			data: 'Invoice Number,Date,Customer\nINV-001,2024-01-01,Test Customer',
-			mimeType: 'text/csv',
-			filename: 'invoices_export.csv',
-		}),
-	},
-}));
-
-jest.mock('@/lib/migrators/smartbill-migrator', () => ({
-	SmartBillMigrator: {
-		importInvoices: jest.fn().mockResolvedValue({
-			success: true,
-			imported: 3,
-			updated: 1,
-			skipped: 0,
-			errors: 0,
-		}),
-		exportInvoices: jest.fn().mockResolvedValue({
-			success: true,
-			data: 'Invoice Number,Date,Customer\nINV-001,2024-01-01,Test Customer',
-			mimeType: 'text/csv',
-			filename: 'invoices_export.csv',
-		}),
-	},
-}));
 
 // Global test utilities
 global.createMockInvoice = (overrides = {}) => ({

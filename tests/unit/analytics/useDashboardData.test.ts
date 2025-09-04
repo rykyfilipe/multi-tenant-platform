@@ -130,7 +130,12 @@ describe('useDashboardData Hook', () => {
       },
     } as any);
 
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
+    // Mock all fetch calls to reject
+    (global.fetch as jest.Mock)
+      .mockRejectedValueOnce(new Error('API Error'))
+      .mockRejectedValueOnce(new Error('API Error'))
+      .mockRejectedValueOnce(new Error('API Error'))
+      .mockRejectedValueOnce(new Error('API Error'));
 
     const { result } = renderHook(() => useDashboardData());
 
@@ -414,7 +419,12 @@ describe('useDashboardData Hook', () => {
       },
     } as any);
 
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network Error'));
+    // Mock all fetch calls to reject
+    (global.fetch as jest.Mock)
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockRejectedValueOnce(new Error('Network Error'));
 
     const { result } = renderHook(() => useDashboardData());
 
@@ -439,7 +449,12 @@ describe('useDashboardData Hook', () => {
       },
     } as any);
 
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Request timeout'));
+    // Mock all fetch calls to reject with timeout
+    (global.fetch as jest.Mock)
+      .mockRejectedValueOnce(new Error('Request timeout'))
+      .mockRejectedValueOnce(new Error('Request timeout'))
+      .mockRejectedValueOnce(new Error('Request timeout'))
+      .mockRejectedValueOnce(new Error('Request timeout'));
 
     const { result } = renderHook(() => useDashboardData());
 
