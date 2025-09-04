@@ -788,7 +788,7 @@ export class InvoiceSystemService {
 		);
 
 		let lastNumber = options.startNumber || 0;
-		if (lastInvoice) {
+		if (lastInvoice && lastInvoice.cells) {
 			const invoiceNumberCell = lastInvoice.cells.find(
 				(cell: any) => cell.column.name === "invoice_number",
 			);
@@ -915,7 +915,7 @@ export class InvoiceSystemService {
 		);
 
 		let lastNumber = defaultConfig.startNumber - 1;
-		if (lastInvoice) {
+		if (lastInvoice && lastInvoice.cells) {
 			const invoiceNumberCell = lastInvoice.cells.find(
 				(cell: any) => cell.column.name === "invoice_number",
 			);
@@ -1024,7 +1024,7 @@ export class InvoiceSystemService {
 		}, {} as Record<string, any>);
 
 		// Update customer_id if changed
-		if (updateData.customer_id) {
+		if (updateData.customer_id && existingInvoice.cells) {
 			const customerIdCell = existingInvoice.cells.find(
 				(cell: any) => cell.column.name === "customer_id",
 			);
@@ -1037,7 +1037,7 @@ export class InvoiceSystemService {
 		}
 
 		// Update base_currency if changed
-		if (updateData.base_currency) {
+		if (updateData.base_currency && existingInvoice.cells) {
 			const baseCurrencyCell = existingInvoice.cells.find(
 				(cell: any) => cell.column.name === "base_currency",
 			);
@@ -1050,7 +1050,7 @@ export class InvoiceSystemService {
 		}
 
 		// Update payment_terms if changed
-		if (updateData.payment_terms) {
+		if (updateData.payment_terms && existingInvoice.cells) {
 			const paymentTermsCell = existingInvoice.cells.find(
 				(cell: any) => cell.column.name === "payment_terms",
 			);
@@ -1063,7 +1063,7 @@ export class InvoiceSystemService {
 		}
 
 		// Update payment_method if changed
-		if (updateData.payment_method) {
+		if (updateData.payment_method && existingInvoice.cells) {
 			const paymentMethodCell = existingInvoice.cells.find(
 				(cell: any) => cell.column.name === "payment_method",
 			);
@@ -1076,7 +1076,7 @@ export class InvoiceSystemService {
 		}
 
 		// Update notes if changed
-		if (updateData.notes) {
+		if (updateData.notes && existingInvoice.cells) {
 			const notesCell = existingInvoice.cells.find(
 				(cell: any) => cell.column.name === "notes",
 			);
@@ -1089,7 +1089,7 @@ export class InvoiceSystemService {
 		}
 
 		// Update due_date if changed
-		if (updateData.due_date) {
+		if (updateData.due_date && existingInvoice.cells) {
 			const dueDateCell = existingInvoice.cells.find(
 				(cell: any) => cell.column.name === "due_date",
 			);
@@ -1483,6 +1483,8 @@ export class InvoiceSystemService {
 
 		// Process each invoice to build statistics
 		for (const invoice of allInvoices) {
+			if (!invoice.cells) continue;
+			
 			const invoiceNumberCell = invoice.cells.find(
 				(cell: any) => cell.column.name === "invoice_number",
 			);

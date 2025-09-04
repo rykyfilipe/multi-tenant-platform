@@ -52,6 +52,7 @@ import {
 	ErrorTrackingChart,
 	RealDataStatus,
 } from "./index";
+import { RealSizeInfo } from "./RealSizeInfo";
 import { useProcessedAnalyticsData } from "@/hooks/useProcessedAnalyticsData";
 
 type TimeFilter = "7d" | "30d" | "90d" | "1y";
@@ -381,7 +382,7 @@ export const AnalyticsDashboard: React.FC = () => {
 								icon={Database}
 								items={rankings.topDatabases.map((db) => ({
 									name: db.name,
-									value: `${(db.size / 1024).toFixed(2)} MB`,
+									value: db.realSize || `${(db.size / 1024).toFixed(2)} MB`,
 									subtitle: `${
 										db.tables
 									} tables, ${db.rows.toLocaleString()} rows`,
@@ -475,6 +476,25 @@ export const AnalyticsDashboard: React.FC = () => {
 									}
 								/>
 							</div>
+						</div>
+
+						{/* Real Database Sizes */}
+						<div className="mt-6">
+							<RealSizeInfo
+								databases={rankings.topDatabases.map((db) => ({
+									name: db.name,
+									realSizeMB: (db.size / 1024), // Convert KB to MB
+									realSizeKB: db.size,
+									realSizeFormatted: db.realSize || `${(db.size / 1024).toFixed(2)} MB`,
+									tables: db.tables,
+									rows: db.rows,
+									cells: db.rows * 5 // Estimate cells per row
+								}))}
+								totalMemoryUsed={kpis.memoryUsagePercentage * 100} // Convert percentage to MB
+								totalRows={kpis.totalRows}
+								totalTables={kpis.totalTables}
+								loading={false}
+							/>
 						</div>
 					</TabsContent>
 

@@ -18,6 +18,7 @@ import {
 	Legend,
 } from "recharts";
 import { LucideIcon, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { PREMIUM_CHART_COLORS, CHART_STYLES, getChartColor } from "@/lib/chart-colors";
 
 interface TrendChartProps {
 	title: string;

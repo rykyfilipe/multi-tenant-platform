@@ -19,6 +19,7 @@ import {
 	Legend,
 } from "recharts";
 import { LucideIcon, AlertTriangle, Bug, Zap, Shield } from "lucide-react";
+import { PREMIUM_CHART_COLORS, CHART_STYLES } from "@/lib/chart-colors";
 
 interface ErrorTrackingChartProps {
 	title: string;

@@ -17,6 +17,7 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { formatFileSize, formatNumber } from "@/lib/utils";
+import { RealSizeInfo } from "./RealSizeInfo";
 
 /**
  * Basic Analytics Dashboard for Free Plan Users
@@ -198,6 +199,25 @@ export function FreeAnalyticsDashboard() {
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* Real Size Information */}
+			{essentialData?.databaseData?.databases && (
+				<RealSizeInfo
+					databases={essentialData.databaseData.databases.map((db: any) => ({
+						name: db.name,
+						realSizeMB: db.realSizeBytes ? db.realSizeBytes / (1024 * 1024) : 0,
+						realSizeKB: db.realSizeKB || 0,
+						realSizeFormatted: db.realSizeFormatted || db.size,
+						tables: db.tables,
+						rows: db.rows,
+						cells: db.rows * 5 // Estimate cells per row
+					}))}
+					totalMemoryUsed={memoryData?.totalMemoryUsed || 0}
+					totalRows={essentialData?.stats?.totalRows || 0}
+					totalTables={essentialData?.stats?.totalTables || 0}
+					loading={loading}
+				/>
+			)}
 
 			{/* Upgrade Prompt */}
 			<Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20">

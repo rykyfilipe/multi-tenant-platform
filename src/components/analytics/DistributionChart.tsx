@@ -14,6 +14,7 @@ import {
 	Legend,
 } from "recharts";
 import { LucideIcon } from "lucide-react";
+import { PREMIUM_CHART_COLORS, CHART_STYLES, getChartColor } from "@/lib/chart-colors";
 
 interface DistributionChartProps {
 	title: string;
@@ -29,14 +30,14 @@ interface DistributionChartProps {
 }
 
 const DEFAULT_COLORS = [
-	"#3b82f6", // blue
-	"#10b981", // green
-	"#f59e0b", // orange
-	"#ef4444", // red
-	"#8b5cf6", // purple
-	"#06b6d4", // cyan
-	"#84cc16", // lime
-	"#f97316", // orange-500
+	PREMIUM_CHART_COLORS.data.primary,    // Pure black
+	PREMIUM_CHART_COLORS.data.secondary,  // Dark gray
+	PREMIUM_CHART_COLORS.data.tertiary,   // Medium gray
+	PREMIUM_CHART_COLORS.data.quaternary, // Light gray
+	PREMIUM_CHART_COLORS.data.accent,     // Gold accent
+	PREMIUM_CHART_COLORS.accent.charcoal, // Charcoal
+	PREMIUM_CHART_COLORS.accent.graphite, // Graphite
+	PREMIUM_CHART_COLORS.accent.platinum, // Platinum
 ];
 
 export const DistributionChart: React.FC<DistributionChartProps> = ({
@@ -66,11 +67,12 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 			<text
 				x={x}
 				y={y}
-				fill='white'
+				fill={PREMIUM_CHART_COLORS.white}
 				textAnchor={x > cx ? "start" : "end"}
 				dominantBaseline='central'
 				fontSize={12}
-				fontWeight='bold'>
+				fontWeight='600'
+				style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}>
 				{`${(percent * 100).toFixed(0)}%`}
 			</text>
 		);
@@ -80,15 +82,27 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 		<motion.div
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.4, delay }}>
-			<Card className='bg-card border-border'>
-				<CardHeader>
-					<CardTitle className='flex items-center gap-2 text-foreground'>
-						<Icon className='w-5 h-5' />
+			transition={{ 
+				duration: CHART_STYLES.animation.duration, 
+				ease: CHART_STYLES.animation.easing,
+				delay 
+			}}
+			whileHover={{ 
+				y: -2,
+				transition: { duration: 0.2 }
+			}}>
+			<Card 
+				className='bg-card border-border shadow-lg hover:shadow-xl transition-all duration-300'
+				style={CHART_STYLES.card}>
+				<CardHeader className='pb-4'>
+					<CardTitle className='flex items-center gap-3 text-foreground text-lg font-semibold'>
+						<div className='p-2 rounded-lg bg-gradient-to-br from-black to-gray-800 text-white'>
+							<Icon className='w-5 h-5' />
+						</div>
 						{title}
 					</CardTitle>
 				</CardHeader>
-				<CardContent>
+				<CardContent className='pt-0'>
 					<div style={{ height }}>
 						{data.length > 0 ? (
 							<ResponsiveContainer width='100%' height='100%'>
@@ -99,13 +113,20 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 										cy='50%'
 										labelLine={false}
 										label={renderCustomLabel}
-										outerRadius={80}
-										fill='#8884d8'
-										dataKey='value'>
+										outerRadius={90}
+										innerRadius={30}
+										fill={PREMIUM_CHART_COLORS.data.primary}
+										dataKey='value'
+										stroke={PREMIUM_CHART_COLORS.white}
+										strokeWidth={2}
+									>
 										{data.map((entry, index) => (
 											<Cell
 												key={`cell-${index}`}
 												fill={colors[index % colors.length]}
+												style={{
+													filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+												}}
 											/>
 										))}
 									</Pie>
@@ -114,47 +135,50 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 											`${value.toLocaleString()}`,
 											name,
 										]}
-										contentStyle={{
-											backgroundColor: "hsl(var(--card))",
-											border: "1px solid hsl(var(--border))",
-											borderRadius: "8px",
-											color: "hsl(var(--foreground))",
-										}}
+										contentStyle={CHART_STYLES.tooltip}
 									/>
-									<Legend />
+									<Legend 
+										wrapperStyle={CHART_STYLES.legend}
+									/>
 								</PieChart>
 							</ResponsiveContainer>
 						) : (
-							<div className='flex items-center justify-center h-full text-muted-foreground'>
-								No data available
+							<div className='flex flex-col items-center justify-center h-full text-muted-foreground space-y-2'>
+								<div className='w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center'>
+									<Icon className='w-6 h-6' />
+								</div>
+								<p className='text-sm font-medium'>No data available</p>
 							</div>
 						)}
 					</div>
 
 					{/* Distribution Details */}
-					<div className='mt-4 space-y-2'>
+					<div className='mt-6 space-y-3'>
 						{data.map((item, index) => (
-							<div
+							<motion.div
 								key={item.name}
-								className='flex justify-between items-center text-sm'>
-								<div className='flex items-center gap-2'>
+								initial={{ opacity: 0, x: -20 }}
+								animate={{ opacity: 1, x: 0 }}
+								transition={{ delay: index * 0.1 }}
+								className='flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors duration-200'>
+								<div className='flex items-center gap-3'>
 									<div
 										className='w-3 h-3 rounded-full'
 										style={{ backgroundColor: colors[index % colors.length] }}
 									/>
-									<span className='text-muted-foreground'>{item.name}</span>
+									<span className='text-sm font-medium text-foreground'>{item.name}</span>
 								</div>
-								<div className='flex items-center gap-2'>
-									<span className='font-medium'>
+								<div className='flex items-center gap-3'>
+									<span className='text-sm font-semibold text-foreground'>
 										{item.value.toLocaleString()}
 									</span>
 									{item.percentage && (
-										<span className='text-muted-foreground'>
-											({item.percentage.toFixed(1)}%)
-										</span>
+										<div className='px-2 py-1 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'>
+											{item.percentage.toFixed(1)}%
+										</div>
 									)}
 								</div>
-							</div>
+							</motion.div>
 						))}
 					</div>
 				</CardContent>

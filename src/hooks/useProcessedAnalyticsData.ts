@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useDashboardData } from "./useDashboardData";
 import { useApp } from "@/contexts/AppContext";
+import { getChartColor } from "@/lib/chart-colors";
 
 export interface ProcessedAnalyticsData {
 	// Raw data from useDashboardData
@@ -201,15 +202,18 @@ export const useProcessedAnalyticsData = (): {
 		const weeklyTableGrowth = Math.floor(Math.random() * 15) + 5;
 		const weeklyRowGrowth = Math.floor(Math.random() * 200) + 50;
 
-		// Distribution data
+		// Distribution data - use real sizes from memory tracking
 		const databaseSizes =
 			rawData.databaseData?.databases?.map((db: any, index: number) => {
-				// Use KB for better chart visibility
+				// Use real size data if available, otherwise fallback to estimated
 				const sizeValueKB = db.sizeKB || (parseFloat((db.size || "0MB").replace("MB", "")) * 1024);
+				const realSizeKB = db.realSizeKB || sizeValueKB;
+				
 				return {
 					name: db.name || `Database ${index + 1}`,
-					value: sizeValueKB > 0 ? sizeValueKB : Math.floor(totalRows * 0.1 * 1024) + Math.floor(Math.random() * totalRows * 0.2 * 1024),
+					value: realSizeKB > 0 ? realSizeKB : Math.floor(totalRows * 0.02) + Math.floor(Math.random() * totalRows * 0.01),
 					percentage: 0, // Will be calculated after sorting
+					realSize: db.realSizeFormatted || db.size, // Show real size in formatted form
 				};
 			}) || [];
 
@@ -282,14 +286,15 @@ export const useProcessedAnalyticsData = (): {
 			},
 		];
 
-		// Rankings
+		// Rankings - use real sizes from memory tracking
 		const topDatabases =
 			rawData.databaseData?.databases
 				?.map((db: any) => ({
 					name: db.name,
 					tables: db.tables || 0,
 					rows: db.rows || 0,
-					size: db.sizeKB || (parseFloat((db.size || "0MB").replace("MB", "")) * 1024) || 0,
+					size: db.realSizeKB || db.sizeKB || (parseFloat((db.size || "0MB").replace("MB", "")) * 1024) || 0,
+					realSize: db.realSizeFormatted || db.size, // Real formatted size
 				}))
 				.sort((a: any, b: any) => b.size - a.size)
 				.slice(0, 5) || [];

@@ -159,12 +159,17 @@ export const useDashboardData = () => {
 								(acc: number, table: any) => acc + (table.rowsCount || table._count?.rows || 0),
 								0,
 							) || 0;
+						
+						// Use fallback calculation - will be updated with real memory data
+						const estimatedSizeMB = dbRows * 0.00002; // ~0.02 KB per row
+						const estimatedSizeKB = Math.round(dbRows * 0.02);
+						
 						return {
 							name: db.name,
 							tables: db.tables?.length || 0,
 							rows: dbRows,
-							size: `${(dbRows * 0.001).toFixed(2)} MB`,
-							sizeKB: Math.round(dbRows * 0.001 * 1024), // Convert to KB for better chart visibility
+							size: `${estimatedSizeMB.toFixed(2)} MB`, // Will be updated with real data
+							sizeKB: estimatedSizeKB, // Will be updated with real data
 							usage: Math.min(
 								((db.tables?.length || 0) / planLimits.tables) * 100,
 								100,
@@ -228,9 +233,15 @@ export const useDashboardData = () => {
 			if (!token || !tenant) return essentialData;
 
 			try {
-				const memoryResponse = await fetch(`/api/tenants/${tenant.id}/memory`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
+				// Fetch both memory data and real database sizes in parallel
+				const [memoryResponse, realSizesResponse] = await Promise.all([
+					fetch(`/api/tenants/${tenant.id}/memory`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+					fetch(`/api/analytics/real-database-sizes`, {
+						headers: { Authorization: `Bearer ${token}` },
+					})
+				]);
 
 				if (!memoryResponse.ok) {
 					console.warn("Failed to fetch memory data, using defaults");
@@ -248,9 +259,38 @@ export const useDashboardData = () => {
 							isOverLimit: false,
 					  };
 
+				// Get real database sizes if available
+				let realSizesData = null;
+				if (realSizesResponse.ok) {
+					const realSizes = await realSizesResponse.json();
+					realSizesData = realSizes.success ? realSizes.data : null;
+				}
+
+				// Update database data with real sizes if available
+				let updatedDatabaseData = essentialData.databaseData;
+				if (realSizesData?.databases) {
+					updatedDatabaseData = {
+						...essentialData.databaseData,
+						databases: essentialData.databaseData.databases.map((db: any) => {
+							const realSize = realSizesData.databases.find((realDb: any) => realDb.name === db.name);
+							if (realSize) {
+								return {
+									...db,
+									size: `${realSize.realSizeMB.toFixed(2)} MB`,
+									sizeKB: realSize.realSizeKB,
+									realSizeBytes: realSize.realSizeBytes,
+									realSizeFormatted: realSize.sizeFormatted
+								};
+							}
+							return db;
+						})
+					};
+				}
+
 				// Update the data with memory information
 				const updatedData = {
 					...essentialData,
+					databaseData: updatedDatabaseData,
 					stats: {
 						...essentialData.stats,
 						memoryUsedMB: memoryInfo.usedMB,
