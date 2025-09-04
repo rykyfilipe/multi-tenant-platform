@@ -205,11 +205,6 @@ export const TableView = memo(function TableView({
 							{col.name}
 						</th>
 					))}
-					{tablePermissions.canEditTable() && (
-						<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-16'>
-							Actions
-						</th>
-					)}
 				</tr>
 			</thead>
 		),
@@ -491,56 +486,6 @@ export const TableView = memo(function TableView({
 													);
 												})}
 
-												{/* Actions Cell */}
-												{tablePermissions.canEditTable() && (
-													<td className='sticky right-0 z-10 bg-background group-hover:bg-muted/20 border-l border-border/20 px-4 py-4'>
-														<div className='flex items-center gap-2'>
-															{/* Row Status Indicators */}
-															{row.isOptimistic && (
-																<div className='flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium'>
-																	<div className='w-2 h-2 bg-blue-500 rounded-full animate-pulse'></div>
-																	Saving...
-																</div>
-															)}
-
-															{row.isLocalOnly && (
-																<div className='flex items-center gap-2 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-medium'>
-																	<div className='w-2 h-2 bg-orange-500 rounded-full'></div>
-																	Local Only
-																</div>
-															)}
-
-															{rowHasPendingChanges && (
-																<div className='flex items-center gap-2 px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-xs font-medium'>
-																	<Clock className='w-3 h-3' />
-																	Modified
-																</div>
-															)}
-
-															{deletingRows.has(String(row.id)) && (
-																<div className='flex items-center gap-2 px-2 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-medium'>
-																	<div className='w-2 h-2 bg-destructive rounded-full animate-pulse'></div>
-																	Deleting...
-																</div>
-															)}
-
-															{/* Action Buttons */}
-															{!row.isOptimistic &&
-																!deletingRows.has(String(row.id)) && (
-																	<Button
-																		variant='ghost'
-																		size='sm'
-																		onClick={() => onDeleteRow(String(row.id))}
-																		className='h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200'
-																		disabled={
-																			!tablePermissions.canDeleteTable()
-																		}>
-																		<Trash2 className='w-4 h-4' />
-																	</Button>
-																)}
-														</div>
-													</td>
-												)}
 											</motion.tr>
 										);
 									})}

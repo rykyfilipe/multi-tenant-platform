@@ -113,17 +113,19 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				return newMap;
 			});
 
-			// Programează auto-save
+			// Programează auto-save doar dacă autoSaveDelay > 0
 			if (autoSaveTimeoutRef.current) {
 				clearTimeout(autoSaveTimeoutRef.current);
 			}
 
-			autoSaveTimeoutRef.current = setTimeout(() => {
-				console.log("⏰ Auto-save triggered");
-				if (saveFunctionRef.current) {
-					saveFunctionRef.current();
-				}
-			}, autoSaveDelay);
+			if (autoSaveDelay > 0) {
+				autoSaveTimeoutRef.current = setTimeout(() => {
+					console.log("⏰ Auto-save triggered");
+					if (saveFunctionRef.current) {
+						saveFunctionRef.current();
+					}
+				}, autoSaveDelay);
+			}
 		},
 		[getCellKey, autoSaveDelay],
 	);

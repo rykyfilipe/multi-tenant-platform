@@ -219,6 +219,34 @@ const TableEditor = memo(function TableEditor({
 		setIsSavingNewRows(true);
 
 		try {
+			// Validate pending rows before sending
+			const validationErrors: string[] = [];
+			
+			pendingNewRows.forEach((row, rowIndex) => {
+				if (!row.cells || !Array.isArray(row.cells)) {
+					validationErrors.push(`Row ${rowIndex + 1}: Invalid cell data`);
+					return;
+				}
+
+				// Check required columns
+				columns?.forEach((column) => {
+					if (column.required) {
+						const cell = row.cells.find((c: any) => c.columnId === column.id);
+						if (!cell || cell.value === null || cell.value === undefined || cell.value === '') {
+							validationErrors.push(`Row ${rowIndex + 1}: ${column.name} is required`);
+						}
+					}
+				});
+			});
+
+			if (validationErrors.length > 0) {
+				showAlert(
+					`Validation errors found:\n${validationErrors.join('\n')}`,
+					"error",
+				);
+				return;
+			}
+
 			// Prepare batch data for all pending rows
 			const batchData = pendingNewRows.map((row) => ({
 				cells: row.cells.map((cell: any) => ({
@@ -226,6 +254,8 @@ const TableEditor = memo(function TableEditor({
 					value: cell.value,
 				})),
 			}));
+
+			console.log("Saving batch data:", batchData);
 
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table?.databaseId || 0}/tables/${
@@ -271,15 +301,21 @@ const TableEditor = memo(function TableEditor({
 					await fetchRows(1, pagination.pageSize);
 				}
 			} else {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "Failed to save rows");
+				let errorMessage = "Failed to save rows";
+				try {
+					const errorData = await response.json();
+					errorMessage = errorData.error || errorData.message || errorMessage;
+				} catch (parseError) {
+					errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+				}
+				
+				console.error("Server error:", errorMessage);
+				showAlert(errorMessage, "error");
 			}
 		} catch (error: any) {
 			console.error("Error saving new rows:", error);
-			showAlert(
-				error.message || "Failed to save rows. Please try again.",
-				"error",
-			);
+			const errorMessage = error.message || "Network error. Please check your connection and try again.";
+			showAlert(errorMessage, "error");
 		} finally {
 			setIsSavingNewRows(false);
 		}
@@ -293,6 +329,7 @@ const TableEditor = memo(function TableEditor({
 		showAlert,
 		pagination,
 		fetchRows,
+		columns,
 	]);
 
 	// Function to discard all pending new rows

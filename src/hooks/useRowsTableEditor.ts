@@ -36,7 +36,7 @@ function useRowsTableEditor(
 		isSaving,
 	} = useBatchCellEditor({
 		table,
-		autoSaveDelay: 3000, // Auto-save după 3 secunde de inactivitate
+		autoSaveDelay: 0, // Disable auto-save - only save on explicit click
 		onSuccess: onCellsUpdated,
 		onError: (error) => {
 			console.error("Batch save error:", error);
