@@ -1,6 +1,6 @@
 /** @format */
 
-import { requireTenantAccessAPI, requireAuthAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, requireTenantAccessAPI, getUserId } from "@/lib/session";
 import { hashPassword } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -29,6 +29,7 @@ export async function GET(
 	}
 
 	try {
+		const userId = sessionResult.user.id;
 		const users = await prisma.user.findMany({
 			where: {
 				tenantId: Number(tenantId),
@@ -72,6 +73,7 @@ export async function POST(
 	if (sessionResult.user.role !== "ADMIN")
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+	const userId = sessionResult.user.id;
 
 	try {
 		const body = await request.json();

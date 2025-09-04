@@ -1,6 +1,6 @@
 /** @format */
 
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { checkPlanLimit, getCurrentCounts } from "@/lib/planLimits";
@@ -19,19 +19,20 @@ export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		if (role === "ADMIN") {
@@ -154,19 +155,20 @@ export async function POST(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse("ADMIN");
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (role !== "ADMIN" || !isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		const body = await request.json();
@@ -274,19 +276,20 @@ export async function DELETE(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse("ADMIN");
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (role !== "ADMIN" || !isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		// Check if any databases exist for this tenant

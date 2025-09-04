@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { z } from "zod";
 
 // Schema de validare pentru import (compatibil cu frontend-ul actual)
@@ -139,15 +139,14 @@ export async function POST(
 	const { tenantId, databaseId, tableId } = await params;
 
 	// Verificare autentificare
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
 	// Verificare acces tenant
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+	    const isMember = requireTenantAccess(sessionResult, tenantId);
 	if (!isMember) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}

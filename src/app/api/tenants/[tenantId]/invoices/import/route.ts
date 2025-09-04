@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { MigratorService, MigratorType } from '@/lib/migrators';
-import { requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess } from "@/lib/session";
 
 const ImportRequestSchema = z.object({
 	provider: z.enum(['oblio', 'smartbill', 'fgo', 'csv']),
@@ -23,13 +23,20 @@ export async function POST(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		// Check authentication and tenant access
-		const sessionResult = await requireTenantAccessAPI(params.tenantId);
+		// Check authentication
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
-		const userId = parseInt(user.id);
+		const session = sessionResult;
+
+		// Check tenant access
+		const tenantAccessResult = requireTenantAccess(session, params.tenantId);
+		if (tenantAccessResult instanceof NextResponse) {
+			return tenantAccessResult;
+		}
+
+		const userId = parseInt(session.user.id);
 
 		// Parse request body
 		const body = await request.json();
@@ -88,13 +95,20 @@ export async function GET(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		// Check authentication and tenant access
-		const sessionResult = await requireTenantAccessAPI(params.tenantId);
+		// Check authentication
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
-		const userId = parseInt(user.id);
+		const session = sessionResult;
+
+		// Check tenant access
+		const tenantAccessResult = requireTenantAccess(session, params.tenantId);
+		if (tenantAccessResult instanceof NextResponse) {
+			return tenantAccessResult;
+		}
+
+		const userId = parseInt(session.user.id);
 
 		// Get available providers
 		const providers = MigratorService.getAvailableProviders();

@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 
 interface BatchCellUpdate {
 	rowId: string;
@@ -22,17 +22,16 @@ export async function POST(
 ) {
 	try {
 		const { tenantId, databaseId, tableId } = await params;
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-	const { user } = sessionResult;
-	const userId = user.id;
+		const userId = getUserId(sessionResult);
 
-		// Verifică că user-ul este membru în tenant
-		const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-		if (!isMember) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		// Check tenant access
+		const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		const body = await request.json();

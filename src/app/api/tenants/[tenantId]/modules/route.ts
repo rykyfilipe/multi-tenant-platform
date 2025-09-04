@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import {
 	createModuleTables,
@@ -15,12 +15,11 @@ export async function GET(
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
 	try {
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 		const { tenantId } = await params;
 
 		// Verify user belongs to this tenant
@@ -85,12 +84,11 @@ export async function POST(
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
 	try {
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 		const { tenantId } = await params;
 
 		// Only admins can manage modules

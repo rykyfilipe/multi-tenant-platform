@@ -1,17 +1,16 @@
 /** @format */
 
 import { NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { getCurrentCounts } from "@/lib/planLimits";
 
 export async function GET(request: Request) {
 	try {
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 
 		try {
 			const currentCounts = await getCurrentCounts(userId);

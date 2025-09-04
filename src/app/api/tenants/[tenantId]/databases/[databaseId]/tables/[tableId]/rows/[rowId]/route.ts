@@ -1,6 +1,6 @@
 /** @format */
 
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { updateMemoryAfterRowChange } from "@/lib/memory-middleware";
 import { NextResponse } from "next/server";
@@ -18,19 +18,19 @@ export async function DELETE(
 		}>;
 	},
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId, databaseId, tableId, rowId } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		// Verificăm dacă tabela există și aparține tenant-ului și database-ului

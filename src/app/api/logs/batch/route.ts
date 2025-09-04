@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { logger, type LogEntry } from "@/lib/error-logger";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { z } from "zod";
 
 const LogEntrySchema = z.object({
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 		const logEntries = BatchLogSchema.parse(body);
 
 		// Get user context
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}

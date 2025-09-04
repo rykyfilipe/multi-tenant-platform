@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { checkColumnEditPermission, checkTableEditPermission } from "@/lib/auth";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { z } from "zod";
 
 const ColumnUpdateSchema = z.object({
@@ -41,16 +41,17 @@ export async function PATCH(
 	},
 ) {
 	const { tenantId, databaseId, tableId, columnId } = await params;
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	// Check table edit permissions for column operations
 	const canEdit = await checkTableEditPermission(
@@ -131,16 +132,17 @@ export async function DELETE(
 	},
 ) {
 	const { tenantId, databaseId, tableId, columnId } = await params;
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	// Check table edit permissions for column operations
 	const canEdit = await checkTableEditPermission(

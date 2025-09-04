@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { generateToken } from "@/lib/auth";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { sendInvitationEmail } from "@/lib/email";
@@ -16,14 +16,13 @@ export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -53,14 +52,13 @@ export async function POST(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -169,14 +167,13 @@ export async function DELETE(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId } = await params;
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId, getTenantId } from "@/lib/session";
 
 export async function GET(
 	request: Request,
@@ -12,24 +12,20 @@ export async function GET(
 		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
 	},
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-
 	const { tenantId, databaseId, tableId } = await params;
-	const { userId, role } = userResult;
+	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		// Verificăm că baza de date există și aparține tenant-ului
@@ -161,24 +157,20 @@ export async function DELETE(
 		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
 	},
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse("ADMIN");
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-
 	const { tenantId, databaseId, tableId } = await params;
-	const { userId, role } = userResult;
+	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (role !== "ADMIN" || !isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		// Verificăm că tabela există și aparține bazei de date și tenant-ului
@@ -235,24 +227,20 @@ export async function PATCH(
 		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
 	},
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse("ADMIN");
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-
 	const { tenantId, databaseId, tableId } = await params;
-	const { userId, role } = userResult;
+	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (role !== "ADMIN" || !isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		// Verificăm că tabela există și aparține bazei de date și tenant-ului

@@ -1,6 +1,6 @@
 /** @format */
 
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { checkPlanPermission } from "@/lib/planConstants";
 
@@ -9,19 +9,20 @@ export async function GET(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; userId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
 	// Verifică că user-ul este membru în tenant
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	// Admins pot vedea permisiunile oricui, utilizatorii obișnuiți doar ale lor
 	if (role !== "ADMIN" && userId.toString() !== userIdToUpdate) {
@@ -101,19 +102,20 @@ export async function PATCH(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; userId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
 	// Verifică că user-ul este membru în tenant
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	// Doar admins pot modifica permisiunile
 	if (role !== "ADMIN") {

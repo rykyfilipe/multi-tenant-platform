@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { InvoiceSystemService } from "@/lib/invoice-system";
 import { InvoiceCalculationService } from "@/lib/invoice-calculations";
 
@@ -10,22 +10,18 @@ export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string; invoiceId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-
 	const { tenantId, invoiceId } = await params;
-	const { userId } = userResult;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
 	}
 
 	try {
@@ -298,22 +294,18 @@ export async function PATCH(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string; invoiceId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-
 	const { tenantId, invoiceId } = await params;
-	const { userId } = userResult;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
 	}
 
 	try {
@@ -420,22 +412,18 @@ export async function DELETE(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string; invoiceId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
-	const userResult = await getUserFromRequest(request);
-	if (userResult instanceof NextResponse) {
-		return userResult;
-	}
-
 	const { tenantId, invoiceId } = await params;
-	const { userId } = userResult;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
 	}
 
 	try {

@@ -1,19 +1,18 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { convertMBToBytes } from "@/lib/storage-utils";
 import prisma from "@/lib/prisma";
 import { uploadImage, deleteImage } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
 	try {
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 
 		const formData = await request.formData();
 		const image = formData.get("image") as File;

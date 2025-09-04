@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { integrationsMarketplace, IntegrationCategory } from "@/lib/integrations-marketplace";
 import { logger } from "@/lib/error-logger";
 import { z } from "zod";
@@ -24,7 +24,7 @@ export async function GET(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
@@ -39,7 +39,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = await checkUserTenantAccess(user.id, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId);
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -76,7 +76,7 @@ export async function POST(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
@@ -91,7 +91,7 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		const hasAccess = await checkUserTenantAccess(user.id, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId);
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },

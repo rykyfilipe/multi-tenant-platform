@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { ApiSuccess, ApiError } from "@/lib/api-response";
 import { handleApiError } from "@/lib/api-error-handler";
 import { activityTracker } from "@/lib/activity-tracker";
@@ -16,19 +16,20 @@ export async function POST(
 
 	try {
 		// Verify user authentication and permissions
-		const userResult = await getUserFromRequest(request);
-		if (userResult instanceof NextResponse) {
-			return userResult;
+		const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
 		}
 
-		// Extract user info from the result
-		const userId = (userResult as { userId: number; role: string }).userId;
-		const role = (userResult as { userId: number; role: string }).role;
-		// For now, we'll use the tenantId from the URL params since getUserFromRequest doesn't return tenantId
-		const userTenantId = Number(tenantId);
+		// Extract user info from the session
+		const userId = getUserId(sessionResult);
+		const role = sessionResult.user.role;
 
-		// Note: In a real implementation, you would check if the user has access to this tenant
-		// For now, we'll proceed with the tenantId from the URL params
+		// Check tenant access
+		const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
+		}
 
 		// Start system monitoring if not already running
 		if (!systemMonitor.isRunning()) {

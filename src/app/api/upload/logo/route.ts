@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { convertMBToBytes } from "@/lib/storage-utils";
 import prisma from "@/lib/prisma";
 import { uploadImage, deleteImage } from "@/lib/cloudinary";
@@ -9,34 +9,17 @@ import { uploadImage, deleteImage } from "@/lib/cloudinary";
 export async function POST(request: NextRequest) {
 	try {
 		// Verify authentication
-		const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-
-		// Get user from request
-	const { user } = sessionResult;
-	const userId = user.id;
-
-		// Only admins can upload logos
-		if (role !== "ADMIN") {
-			return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+		const sessionResult = await requireAuthResponse("ADMIN");
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
 		}
 
-		// Get tenant ID from user
-		const currentUser = await prisma.user.findUnique({
-			where: { id: userId },
-			select: { tenantId: true },
-		});
+		// Get user from session
+		const userId = getUserId(sessionResult);
+		const tenantId = sessionResult.user.tenantId;
 
-		if (!currentUser?.tenantId) {
+		if (!tenantId) {
 			return NextResponse.json({ error: "No tenant found" }, { status: 400 });
-		}
-
-		// Verify user has access to tenant
-		const hasAccess = await checkUserTenantAccess(userId, currentUser.tenantId);
-		if (!hasAccess) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
 		// Parse form data

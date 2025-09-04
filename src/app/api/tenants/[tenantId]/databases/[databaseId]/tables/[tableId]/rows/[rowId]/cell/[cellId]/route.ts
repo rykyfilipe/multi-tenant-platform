@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { checkTableEditPermission } from "@/lib/auth";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { updateMemoryAfterRowChange } from "@/lib/memory-middleware";
 import { z } from "zod";
 
@@ -26,16 +26,17 @@ export async function PATCH(
 	},
 ) {
 	const { tenantId, databaseId, tableId, rowId, cellId } = await params;
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	// Check table edit permissions instead of hard-coded role check
 	const canEdit = await checkTableEditPermission(

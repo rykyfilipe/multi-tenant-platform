@@ -1,6 +1,6 @@
 /** @format */
 
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -9,17 +9,17 @@ export async function GET(
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string }> },
 ) {
 	const { tenantId, databaseId } = await params;
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	try {
 		if (role === "ADMIN") {
@@ -108,14 +108,13 @@ export async function DELETE(
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string }> },
 ) {
 	const { tenantId, databaseId } = await params;
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+	    const isMember = requireTenantAccess(sessionResult, tenantId);
 
 	if (role !== "ADMIN" || !isMember)
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -1,6 +1,6 @@
 /** @format */
 
-import { requireAuthAPI } from "@/lib/session";
+import { requireAuthResponse, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -39,13 +39,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-	const sessionResult = await requireAuthAPI("ADMIN");
+	const sessionResult = await requireAuthResponse("ADMIN");
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 
 	try {
 		const body = await request.json();

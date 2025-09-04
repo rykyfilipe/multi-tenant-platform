@@ -1,13 +1,13 @@
 /** @format */
 import { NextResponse, NextRequest } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { trackUserLogout } from "@/lib/activity-tracker";
 
 export async function POST(request: NextRequest) {
 	try {
 		// Track logout activity
 		try {
-			const sessionResult = await requireAuthAPI();
+			const sessionResult = await requireAuthResponse();
 			if (sessionResult && !(sessionResult instanceof NextResponse)) {
 				const { user } = sessionResult;
 				if (user.id && user.tenantId) {

@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { ApiSuccess, ApiErrors, handleApiError } from "@/lib/api-error-handler";
 import { RealDataVerifier } from "@/scripts/verify-real-data";
 
@@ -14,16 +14,15 @@ export async function GET(
 
 	try {
 		// Verify user authentication and permissions
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
-		const userId = user.id;
+		const userId = getUserId(sessionResult);
 		const role = user.role;
 
 		// Check if user has access to this tenant
-		const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+		        const isMember = requireTenantAccess(sessionResult, tenantId);
 		if (!isMember) {
 			return ApiErrors.forbidden("Access denied to this tenant").toResponse();
 		}

@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/error-logger";
 import { z } from "zod";
@@ -17,7 +17,7 @@ const deleteAccountSchema = z.object({
  */
 export async function POST(request: NextRequest) {
 	try {
-		const sessionResult = await requireAuthAPI();
+		const sessionResult = await requireAuthResponse();
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}

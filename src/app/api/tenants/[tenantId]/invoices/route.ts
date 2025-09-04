@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { InvoiceSystemService, CreateInvoiceRequest } from "@/lib/invoice-system";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
@@ -57,7 +57,7 @@ export async function POST(
 	const { tenantId } = await params;
 	const { userId } = userResult;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+	 const isMember = requireTenantAccess(sessionResult, tenantId);
 	if (!isMember) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
@@ -726,7 +726,7 @@ export async function GET(
 	const { tenantId } = await params;
 	const { userId } = userResult;
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+	 const isMember = requireTenantAccess(sessionResult, tenantId);
 	if (!isMember) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}

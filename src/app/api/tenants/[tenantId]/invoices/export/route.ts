@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { MigratorService } from '@/lib/migrators';
 import { getServerSession } from 'next-auth';
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 const ExportRequestSchema = z.object({
 	format: z.enum(['csv', 'json']),
 	limit: z.number().min(1).max(10000).optional(),
@@ -28,7 +28,7 @@ export async function POST(
 		}
 
 		// Check tenant access
-		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
+		const hasAccess = requireTenantAccess(sessionResult, tenantId);
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -92,7 +92,7 @@ export async function GET(
 		}
 
 		// Check tenant access
-		const hasAccess = await checkUserTenantAccess(Number(session.user.id), Number(params.tenantId));
+		const hasAccess = requireTenantAccess(sessionResult, tenantId);
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}

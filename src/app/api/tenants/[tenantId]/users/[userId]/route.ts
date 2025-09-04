@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { id } from "date-fns/locale";
 import { Numans } from "next/font/google";
 
@@ -14,17 +14,16 @@ export async function PATCH(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; userId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId, userId: userIdToUpdate } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
 	// Verifică că user-ul curent este admin și membru în tenant
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
+	 const isMember = requireTenantAccess(sessionResult, tenantId);
 	if (!isMember || role !== "ADMIN")
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -114,19 +113,19 @@ export async function DELETE(
 	request: Request,
 	{ params }: { params: Promise<{ tenantId: string; userId: string }> },
 ) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
 
 	const { tenantId, userId: userIdToDelete } = await params;
-	const { user } = sessionResult;
-	const userId = user.id;
+	const userId = getUserId(sessionResult);
 
-	const isMember = await checkUserTenantAccess(userId, Number(tenantId));
-
-	if (!isMember)
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
 
 	// Only admins can delete other users (self-deletion is allowed for all users)
 	if (Number(userIdToDelete) !== userId && role !== "ADMIN") {

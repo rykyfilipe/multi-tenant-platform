@@ -1,18 +1,17 @@
 /** @format */
 
 import { hashPassword, verifyPassword } from "@/lib/auth";
-import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
+import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import prisma from "@/lib/prisma";
 
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 
 	// Verifică că user-ul curent este admin și membru în tenant
 
@@ -34,12 +33,11 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-	const sessionResult = await requireAuthAPI();
+	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-	const { user } = sessionResult;
-	const userId = parseInt(user.id);
+	const userId = getUserId(sessionResult);
 	const body = await request.json();
 
 	try {
