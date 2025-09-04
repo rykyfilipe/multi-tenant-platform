@@ -14,6 +14,7 @@ export async function GET(
 		return sessionResult;
 	}
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	// Check tenant access
 	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
@@ -113,6 +114,7 @@ export async function DELETE(
 		return sessionResult;
 	}
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	    const isMember = requireTenantAccess(sessionResult, tenantId);
 

@@ -89,6 +89,7 @@ export async function POST(
 		return sessionResult;
 	}
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 		const { tenantId } = await params;
 
 		// Only admins can manage modules

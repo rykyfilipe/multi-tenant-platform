@@ -23,6 +23,7 @@ export async function GET(
 
 	const { tenantId } = await params;
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,6 +60,7 @@ export async function POST(
 
 	const { tenantId } = await params;
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -174,6 +176,7 @@ export async function DELETE(
 
 	const { tenantId } = await params;
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	if (role !== "ADMIN") {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's tenant
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: parseInt(session.user.id) },
       include: { tenant: true }
     });
 

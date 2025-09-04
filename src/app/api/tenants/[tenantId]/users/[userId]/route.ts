@@ -21,6 +21,7 @@ export async function PATCH(
 
 	const { tenantId, userId: userIdToUpdate } = await params;
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	// Verifică că user-ul curent este admin și membru în tenant
 	 const isMember = requireTenantAccess(sessionResult, tenantId);
@@ -120,6 +121,7 @@ export async function DELETE(
 
 	const { tenantId, userId: userIdToDelete } = await params;
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	// Check tenant access
 	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);

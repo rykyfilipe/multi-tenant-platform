@@ -16,6 +16,7 @@ export async function GET(
 
 	const { tenantId, userId: userIdToUpdate } = await params;
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	// Verifică că user-ul este membru în tenant
 	// Check tenant access
@@ -109,6 +110,7 @@ export async function PATCH(
 
 	const { tenantId, userId: userIdToUpdate } = await params;
 	const userId = getUserId(sessionResult);
+	const role = sessionResult.user.role;
 
 	// Verifică că user-ul este membru în tenant
 	// Check tenant access
