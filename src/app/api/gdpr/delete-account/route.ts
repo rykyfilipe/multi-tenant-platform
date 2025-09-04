@@ -21,10 +21,7 @@ export async function POST(request: NextRequest) {
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;,
-				{ status: 401 }
-			);
-		}
+		const { user } = sessionResult;
 
 		const body = await request.json();
 		const { confirmation, reason } = deleteAccountSchema.parse(body);

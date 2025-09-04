@@ -1,17 +1,12 @@
 /** @format */
 
-import { hashPassword, verifyPassword,  } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/auth";
 import { requireAuthAPI, requireTenantAccessAPI } from "@/lib/session";
 import prisma from "@/lib/prisma";
 
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-
 	const sessionResult = await requireAuthAPI();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;

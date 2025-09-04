@@ -18,10 +18,7 @@ export async function GET(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;,
-				{ status: 401 }
-			);
-		}
+		const { user } = sessionResult;
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -89,10 +86,7 @@ export async function DELETE(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;,
-				{ status: 401 }
-			);
-		}
+		const { user } = sessionResult;
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
