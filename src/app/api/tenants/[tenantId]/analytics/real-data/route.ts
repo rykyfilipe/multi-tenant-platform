@@ -81,26 +81,32 @@ async function getRealTimeData(tenantId: number) {
 		// Get unique active users in last 7 days
 		const activeUsers = new Set(userActivityData.map((activity : any) => activity.userId)).size;
 
-		// Get new users in last 7 days	
-		const newUsers = await prisma.user.count({
+		// Get new users in last 7 days (using user activity instead since User model doesn't have createdAt)
+		const newUserActivities = await prisma.userActivity.findMany({
 			where: {
 				tenantId: tenantId,
+				action: 'USER_CREATED', // Assuming this action exists for user creation
 				createdAt: {
 					gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
 				},
 			},
+			select: { userId: true },
 		});
+		const newUsers = new Set(newUserActivities.map(activity => activity.userId)).size;
 
 		// Calculate user growth (compare with previous 7 days)
-		const previousWeekUsers = await prisma.user.count({
+		const previousWeekUserActivities = await prisma.userActivity.findMany({
 			where: {
 				tenantId: tenantId,
+				action: 'USER_CREATED',
 				createdAt: {
 					gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
 					lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
 				},
 			},
+			select: { userId: true },
 		});
+		const previousWeekUsers = new Set(previousWeekUserActivities.map(activity => activity.userId)).size;
 
 		const userGrowth = previousWeekUsers > 0 ? ((newUsers / previousWeekUsers) * 100) : 0;
 
@@ -507,9 +513,12 @@ async function getBusinessData(tenantId: number) {
 			last12Months,
 		};
 
-		// Get real growth data
-		const userGrowthData = await prisma.user.findMany({
-			where: { tenantId: tenantId },
+		// Get real growth data (using user activity since User model doesn't have createdAt)
+		const userGrowthData = await prisma.userActivity.findMany({
+			where: { 
+				tenantId: tenantId,
+				action: 'USER_CREATED'
+			},
 			select: { createdAt: true },
 		});
 

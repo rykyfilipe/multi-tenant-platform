@@ -251,6 +251,32 @@ export const getAnnualDiscount = (plan: string): number => {
 	return 17; // 17% discount for all paid plans
 };
 
+export const getStripePriceId = (plan: string, billing: "monthly" | "annual"): string | null => {
+	const priceIds: Record<string, Record<string, string>> = {
+		Free: {
+			monthly: process.env.NEXT_PUBLIC_STRIPE_FREE_PRICE_ID || "",
+			annual: process.env.NEXT_PUBLIC_STRIPE_FREE_PRICE_ID || "",
+		},
+		Starter: {
+			monthly: process.env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PRICE_ID || "",
+			annual: process.env.NEXT_PUBLIC_STRIPE_STARTER_ANNUAL_PRICE_ID || "",
+		},
+		Pro: {
+			monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID || "",
+			annual: process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID || "",
+		},
+		Enterprise: {
+			monthly: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || "",
+			annual: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_ANNUAL_PRICE_ID || "",
+		},
+	};
+	
+	const planPriceIds = priceIds[plan];
+	if (!planPriceIds) return null;
+	
+	return planPriceIds[billing] || null;
+};
+
 export const formatPrice = (price: number, currency: string = "USD"): string => {
 	return new Intl.NumberFormat("en-US", {
 		style: "currency",

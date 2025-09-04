@@ -46,6 +46,14 @@ export const translations: Translations = {
 		fr: "Base de Données",
 		de: "Datenbank",
 	},
+	"nav.billing": {
+		en: "Billing",
+		ro: "Facturare",
+		es: "Facturación",
+		fr: "Facturation",
+		de: "Abrechnung",
+	},
+
 	"nav.invoices": {
 		en: "Invoices",
 		ro: "Facturi",
@@ -381,6 +389,15 @@ export const translations: Translations = {
 		fr: "Tableaux de données et schémas",
 		de: "Datentabellen und Schemas",
 	},
+
+	"nav.billing.description": {
+		en: "Manage subscription and billing",
+		ro: "Gestionează abonamentul și facturarea",
+		es: "Gestionar suscripción y facturación",
+		fr: "Gérer l'abonnement et la facturation",
+		de: "Abonnement und Abrechnung verwalten",
+	},
+
 	"nav.invoices.description": {
 		en: "Create and manage invoices",
 		ro: "Creează și gestionează facturi",

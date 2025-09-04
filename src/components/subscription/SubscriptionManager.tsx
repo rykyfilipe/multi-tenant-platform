@@ -57,6 +57,7 @@ import { useApp } from "@/contexts/AppContext";
 import BillingHistory from "./BillingHistory";
 import { getPlanFeatures } from "@/lib/planConstants";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 interface SubscriptionData {
 	stripeCustomerId: string | null;
@@ -80,6 +81,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 	const { data: session } = useSession();
 	const { showAlert, user } = useApp();
 	const { t } = useLanguage();
+	const { currentCounts, planLimits, getUsagePercentage } = usePlanLimits();
 	const [isActionLoading, setIsActionLoading] = useState(false);
 	const [showCancelDialog, setShowCancelDialog] = useState(false);
 	const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -555,9 +557,14 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 								<span className='text-sm font-medium text-muted-foreground'>
 									Databases
 								</span>
-								<span className='text-sm text-foreground'>1/1</span>
+								<span className='text-sm text-foreground'>
+									{currentCounts?.databases || 0}/{planLimits.databases}
+								</span>
 							</div>
-							<Progress value={100} className='h-2' />
+							<Progress 
+								value={getUsagePercentage('databases')} 
+								className='h-2' 
+							/>
 						</div>
 
 						<div className='space-y-3'>
@@ -565,9 +572,14 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 								<span className='text-sm font-medium text-muted-foreground'>
 									Tables
 								</span>
-								<span className='text-sm text-foreground'>1/5</span>
+								<span className='text-sm text-foreground'>
+									{currentCounts?.tables || 0}/{planLimits.tables}
+								</span>
 							</div>
-							<Progress value={20} className='h-2' />
+							<Progress 
+								value={getUsagePercentage('tables')} 
+								className='h-2' 
+							/>
 						</div>
 
 						<div className='space-y-3'>
@@ -575,9 +587,14 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 								<span className='text-sm font-medium text-muted-foreground'>
 									Users
 								</span>
-								<span className='text-sm text-foreground'>1/2</span>
+								<span className='text-sm text-foreground'>
+									{currentCounts?.users || 0}/{planLimits.users}
+								</span>
 							</div>
-							<Progress value={50} className='h-2' />
+							<Progress 
+								value={getUsagePercentage('users')} 
+								className='h-2' 
+							/>
 						</div>
 					</div>
 				</CardContent>

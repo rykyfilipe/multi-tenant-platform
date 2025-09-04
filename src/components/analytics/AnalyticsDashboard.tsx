@@ -226,8 +226,8 @@ export const AnalyticsDashboard: React.FC = () => {
 							title='Total Databases'
 							value={kpis.totalDatabases}
 							icon={Database}
-							change={data.growth.weeklyDatabaseGrowth}
-							changeType='increase'
+							change={Math.abs(data.growth.weeklyDatabaseGrowth)}
+							changeType={data.growth.weeklyDatabaseGrowth >= 0 ? 'increase' : 'decrease'}
 							color='blue'
 							delay={0}
 						/>
@@ -235,8 +235,8 @@ export const AnalyticsDashboard: React.FC = () => {
 							title='Total Tables'
 							value={kpis.totalTables}
 							icon={Server}
-							change={data.growth.weeklyTableGrowth}
-							changeType='increase'
+							change={Math.abs(data.growth.weeklyTableGrowth)}
+							changeType={data.growth.weeklyTableGrowth >= 0 ? 'increase' : 'decrease'}
 							color='green'
 							delay={0.1}
 						/>
@@ -244,8 +244,8 @@ export const AnalyticsDashboard: React.FC = () => {
 							title='Total Rows'
 							value={kpis.totalRows}
 							icon={BarChart3}
-							change={data.growth.weeklyRowGrowth}
-							changeType='increase'
+							change={Math.abs(data.growth.weeklyRowGrowth)}
+							changeType={data.growth.weeklyRowGrowth >= 0 ? 'increase' : 'decrease'}
 							color='purple'
 							delay={0.2}
 						/>
@@ -253,8 +253,8 @@ export const AnalyticsDashboard: React.FC = () => {
 							title='Active Users'
 							value={kpis.activeUsers}
 							icon={Users}
-							change={data.growth.weeklyUserGrowth}
-							changeType='increase'
+							change={Math.abs(data.growth.weeklyUserGrowth)}
+							changeType={data.growth.weeklyUserGrowth >= 0 ? 'increase' : 'decrease'}
 							color='orange'
 							delay={0.3}
 						/>
@@ -546,8 +546,8 @@ export const AnalyticsDashboard: React.FC = () => {
 									title='Active Users'
 									value={kpis.activeUsers}
 									icon={Activity}
-									change={data.growth.weeklyUserGrowth}
-									changeType='increase'
+									change={Math.abs(data.growth.weeklyUserGrowth)}
+									changeType={data.growth.weeklyUserGrowth >= 0 ? 'increase' : 'decrease'}
 									color='green'
 								/>
 								<KPICard
@@ -667,11 +667,11 @@ export const AnalyticsDashboard: React.FC = () => {
 
 							<BusinessMetricsCard
 								title='Monthly Recurring Revenue'
-								value={businessData?.revenue?.monthlyRecurringRevenue || 0}
+								value={businessData?.revenue?.monthlyRevenue || 0}
 								icon={DollarSign}
-								change={businessData?.revenue?.revenueGrowth}
+								change={Math.abs(businessData?.revenue?.revenueGrowth || 0)}
 								changeType={
-									businessData?.revenue?.revenueGrowth > 0
+									(businessData?.revenue?.revenueGrowth || 0) >= 0
 										? "increase"
 										: "decrease"
 								}
@@ -683,9 +683,9 @@ export const AnalyticsDashboard: React.FC = () => {
 								title='Customer Acquisition Cost'
 								value={businessData?.conversion?.customerAcquisitionCost || 0}
 								icon={Users}
-								change={businessData?.conversion?.conversionRate}
+								change={Math.abs(businessData?.conversion?.conversionRate || 0)}
 								changeType={
-									businessData?.conversion?.conversionRate > 10
+									(businessData?.conversion?.conversionRate || 0) > 10
 										? "increase"
 										: "decrease"
 								}
@@ -697,9 +697,9 @@ export const AnalyticsDashboard: React.FC = () => {
 								title='Customer Lifetime Value'
 								value={businessData?.revenue?.lifetimeValue || 0}
 								icon={TrendingUp}
-								change={businessData?.revenue?.churnRate}
+								change={Math.abs(businessData?.revenue?.churnRate || 0)}
 								changeType={
-									businessData?.revenue?.churnRate < 5 ? "increase" : "decrease"
+									(businessData?.revenue?.churnRate || 0) < 5 ? "increase" : "decrease"
 								}
 								color='purple'
 								delay={0.5}
@@ -756,14 +756,14 @@ export const AnalyticsDashboard: React.FC = () => {
 								value={businessData?.performance?.uptime || 99.9}
 								unit='%'
 								icon={Shield}
-								change={businessData?.performance?.errorRate}
+								change={Math.abs(businessData?.performance?.errorRate || 0)}
 								changeType={
-									businessData?.performance?.errorRate < 1
+									(businessData?.performance?.errorRate || 0) < 1
 										? "increase"
 										: "decrease"
 								}
 								color={
-									businessData?.performance?.uptime > 99.5 ? "green" : "orange"
+									(businessData?.performance?.uptime || 99.9) > 99.5 ? "green" : "orange"
 								}
 								delay={0.3}
 							/>
@@ -773,14 +773,14 @@ export const AnalyticsDashboard: React.FC = () => {
 								value={businessData?.performance?.avgResponseTime || 0}
 								unit='ms'
 								icon={Clock}
-								change={businessData?.performance?.p95ResponseTime}
+								change={Math.abs(businessData?.performance?.p95ResponseTime || 0)}
 								changeType={
-									businessData?.performance?.avgResponseTime < 200
+									(businessData?.performance?.avgResponseTime || 0) < 200
 										? "increase"
 										: "decrease"
 								}
 								color={
-									businessData?.performance?.avgResponseTime < 100
+									(businessData?.performance?.avgResponseTime || 0) < 100
 										? "green"
 										: "orange"
 								}
@@ -792,14 +792,14 @@ export const AnalyticsDashboard: React.FC = () => {
 								value={businessData?.performance?.errorRate || 0}
 								unit='%'
 								icon={AlertTriangle}
-								change={businessData?.performance?.successRate}
+								change={Math.abs(businessData?.performance?.successRate || 0)}
 								changeType={
-									businessData?.performance?.errorRate < 1
+									(businessData?.performance?.errorRate || 0) < 1
 										? "increase"
 										: "decrease"
 								}
 								color={
-									businessData?.performance?.errorRate < 1 ? "green" : "red"
+									(businessData?.performance?.errorRate || 0) < 1 ? "green" : "red"
 								}
 								delay={0.5}
 							/>

@@ -67,7 +67,7 @@ export const KPICard: React.FC<KPICardProps> = ({
 			if (val >= 1000000) {
 				return `${(val / 1000000).toFixed(1)}M`;
 			}
-			if (val >= 1000) {
+			if (val >= 10000) {
 				return `${(val / 1000).toFixed(1)}K`;
 			}
 			return val.toLocaleString();

@@ -52,6 +52,9 @@ model Tenant {
   apiUsage            ApiUsage[]
   errorLogs           ErrorLog[]
   performanceAlerts   PerformanceAlert[]
+  invoiceSeries       InvoiceSeries[]
+  invoiceImports      InvoiceImport[]
+  invoiceAuditLogs    InvoiceAuditLog[]
 
   @@index([adminId])
 }
@@ -92,6 +95,9 @@ model Database {
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tables    Table[]
   databaseActivities DatabaseActivity[]
+  invoiceSeries      InvoiceSeries[]
+  invoiceImports     InvoiceImport[]
+  invoiceAuditLogs   InvoiceAuditLog[]
 
   @@index([tenantId])
 }
@@ -394,4 +400,72 @@ model PerformanceAlert {
 
   @@index([tenantId, createdAt])
   @@index([alertType, createdAt])
+}
+
+// Invoice System Tables
+model InvoiceSeries {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  databaseId    Int
+  series        String
+  prefix        String   @default("")
+  suffix        String   @default("")
+  separator     String   @default("-")
+  includeYear   Boolean  @default(false)
+  includeMonth  Boolean  @default(false)
+  resetYearly   Boolean  @default(false)
+  currentNumber Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, databaseId, series])
+  @@index([tenantId])
+  @@index([databaseId])
+}
+
+model InvoiceImport {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  databaseId      Int
+  provider        String
+  externalId      String
+  invoiceNumber   String
+  invoiceDate     DateTime
+  customerVatId   String?
+  customerName    String?
+  rawSnapshot     Json?
+  status          String   @default("imported") // imported, duplicate, error
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([databaseId])
+  @@index([provider, externalId])
+  @@index([status, createdAt])
+}
+
+model InvoiceAuditLog {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int
+  databaseId Int
+  invoiceId  Int
+  action     String
+  userId     Int?
+  changes    Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([databaseId])
+  @@index([invoiceId])
+  @@index([action, createdAt])
 }

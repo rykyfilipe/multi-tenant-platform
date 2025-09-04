@@ -20,6 +20,7 @@ import {
 	Home,
 	FileText,
 	Code,
+	CreditCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -75,9 +76,15 @@ const getNavigationItems = (
 		icon: Database,
 		description: t("nav.database.description"),
 	},
-	// Only show invoices if billing module is enabled
+	// Only show billing if billing module is enabled
 	...(tenant?.enabledModules?.includes("billing")
 		? [
+				{
+					title: t("nav.billing"),
+					url: "/home/billing",
+					icon: CreditCard,
+					description: t("nav.billing.description"),
+				},
 				{
 					title: t("nav.invoices"),
 					url: "/home/invoices",

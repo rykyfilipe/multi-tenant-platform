@@ -67,7 +67,8 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface InvoiceFormProps {
-	editInvoice?: any;
+	open: boolean;
+			editInvoice?: any;
 	onInvoiceUpdated?: () => void;
 	onClose?: () => void;
 	onSuccess?: () => void;
@@ -81,6 +82,7 @@ interface InvoiceFormProps {
 }
 
 export function InvoiceForm({
+	open,
 	editInvoice,
 	onInvoiceUpdated,
 	onClose,
