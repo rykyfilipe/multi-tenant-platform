@@ -93,19 +93,9 @@ export const TableView = memo(function TableView({
 }: Props) {
 	// Early return if table is null or undefined
 	if (!table) {
-		console.log("🔍 TableView - Table is null/undefined, returning null");
 		return null;
 	}
-	console.log("🔍 TableView props:", {
-		hasPendingChange: !!hasPendingChange,
-		getPendingValue: !!getPendingValue,
-		rowsCount: rows.length,
-		rows: rows,
-		columns: columns,
-		table: table,
-		validatedRowsLength: validatedRows.length,
-		hasValidRows: hasValidRows
-	});
+	
 	const { user } = useApp();
 	const { permissions: userPermissions } = useCurrentUserPermissions();
 
@@ -123,12 +113,7 @@ export const TableView = memo(function TableView({
 		(row) => {
 			const isValid = row && row.id && row.cells && Array.isArray(row.cells);
 			if (!isValid) {
-				console.log("🔍 TableView - Invalid row filtered out:", {
-					row,
-					hasId: !!row?.id,
-					hasCells: !!row?.cells,
-					isCellsArray: Array.isArray(row?.cells)
-				});
+				
 			}
 			return isValid;
 		}
@@ -137,12 +122,7 @@ export const TableView = memo(function TableView({
 	// If no valid rows after validation, show empty state
 	const hasValidRows = validatedRows.length > 0;
 	
-	console.log("🔍 TableView - Empty state check:", {
-		hasValidRows,
-		validatedRowsLength: validatedRows.length,
-		safeRowsLength: safeRows.length,
-		rowsLength: rows.length
-	});
+	
 
 	// Folosim permisiunile pentru a filtra coloanele vizibile
 	const tablePermissions = useTablePermissions(
@@ -154,11 +134,7 @@ export const TableView = memo(function TableView({
 	// Filtrăm coloanele în funcție de permisiuni
 	const visibleColumns = useMemo(() => {
 		const visible = tablePermissions.getVisibleColumns(safeColumns);
-		console.log("🔍 TableView - Visible columns:", {
-			totalColumns: safeColumns.length,
-			visibleColumns: visible.length,
-			visibleColumnsData: visible
-		});
+		
 		return visible;
 	}, [safeColumns, tablePermissions]);
 
@@ -455,12 +431,13 @@ export const TableView = memo(function TableView({
 																		value: "",
 																		column: col,
 																	}}
-																	editingCell={editingCell}
-																	onEditCell={onEditCell}
-																	onSaveCell={onSaveCell}
-																	onCancelEdit={onCancelEdit}
-																	hasPendingChange={hasPendingChange}
-																	getPendingValue={getPendingValue}
+																	isEditing={editingCell?.rowId === String(row.id) && editingCell?.columnId === String(col.id)}
+																	onStartEdit={() => onEditCell(String(row.id), String(col.id), "0")}
+																	onSave={(value) => onSaveCell(String(row.id), String(col.id), "0", value)}
+																	onCancel={onCancelEdit}
+																	tables={tables}
+																	hasPendingChange={hasPendingChange?.(String(row.id), String(col.id))}
+																	pendingValue={getPendingValue?.(String(row.id), String(col.id))}
 																/>
 															</td>
 														);
@@ -483,12 +460,13 @@ export const TableView = memo(function TableView({
 																		value: "",
 																		column: col,
 																	}}
-																	editingCell={editingCell}
-																	onEditCell={onEditCell}
-																	onSaveCell={onSaveCell}
-																	onCancelEdit={onCancelEdit}
-																	hasPendingChange={hasPendingChange}
-																	getPendingValue={getPendingValue}
+																	isEditing={editingCell?.rowId === String(row.id) && editingCell?.columnId === String(col.id)}
+																	onStartEdit={() => onEditCell(String(row.id), String(col.id), "0")}
+																	onSave={(value) => onSaveCell(String(row.id), String(col.id), "0", value)}
+																	onCancel={onCancelEdit}
+																	tables={tables}
+																	hasPendingChange={hasPendingChange?.(String(row.id), String(col.id))}
+																	pendingValue={getPendingValue?.(String(row.id), String(col.id))}
 																/>
 															</td>
 														);
@@ -501,12 +479,13 @@ export const TableView = memo(function TableView({
 															<EditableCell
 																columns={safeColumns}
 																cell={cell}
-																editingCell={editingCell}
-																onEditCell={onEditCell}
-																onSaveCell={onSaveCell}
-																onCancelEdit={onCancelEdit}
-																hasPendingChange={hasPendingChange}
-																getPendingValue={getPendingValue}
+																isEditing={editingCell?.rowId === String(row.id) && editingCell?.columnId === String(col.id)}
+																onStartEdit={() => onEditCell(String(row.id), String(col.id), String(cell.id))}
+																onSave={(value) => onSaveCell(String(row.id), String(col.id), String(cell.id), value)}
+																onCancel={onCancelEdit}
+																tables={tables}
+																hasPendingChange={hasPendingChange?.(String(row.id), String(col.id))}
+																pendingValue={getPendingValue?.(String(row.id), String(col.id))}
 															/>
 														</td>
 													);

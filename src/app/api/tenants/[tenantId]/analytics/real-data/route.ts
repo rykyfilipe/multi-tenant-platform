@@ -428,9 +428,19 @@ async function getBusinessData(tenantId: number) {
 		const tenant = await prisma.tenant.findUnique({
 			where: { id: tenantId },
 			select: {
+				createdAt: true,
+			},
+		});
+
+		// Get subscription data from admin user
+		const adminUser = await prisma.user.findFirst({
+			where: { 
+				tenantId: tenantId,
+				role: "ADMIN"
+			},
+			select: {
 				subscriptionPlan: true,
 				subscriptionStatus: true,
-				createdAt: true,
 			},
 		});
 
@@ -454,7 +464,7 @@ async function getBusinessData(tenantId: number) {
 			'Enterprise': 299,
 		};
 
-		const monthlyRevenue = planPrices[tenant?.subscriptionPlan || 'Free'] || 0;
+		const monthlyRevenue = planPrices[adminUser?.subscriptionPlan || 'Free'] || 0;
 		const totalRevenue = monthlyRevenue * Math.max(1, Math.floor((Date.now() - (tenant?.createdAt?.getTime() || Date.now())) / (30 * 24 * 60 * 60 * 1000)));
 
 		// Calculate revenue growth (compare current month with previous)

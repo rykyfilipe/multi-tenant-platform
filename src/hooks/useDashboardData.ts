@@ -127,7 +127,7 @@ export const useDashboardData = () => {
 			const totalRows = databases.reduce((acc: number, db: any) => {
 				const dbRows =
 					db.tables?.reduce(
-						(dbAcc: number, table: any) => dbAcc + (table.rows?.length || 0),
+						(dbAcc: number, table: any) => dbAcc + (table.rowsCount || table._count?.rows || 0),
 						0,
 					) || 0;
 				return acc + dbRows;
@@ -156,7 +156,7 @@ export const useDashboardData = () => {
 					databases: databases.map((db: any) => {
 						const dbRows =
 							db.tables?.reduce(
-								(acc: number, table: any) => acc + (table.rows?.length || 0),
+								(acc: number, table: any) => acc + (table.rowsCount || table._count?.rows || 0),
 								0,
 							) || 0;
 						return {
@@ -164,6 +164,7 @@ export const useDashboardData = () => {
 							tables: db.tables?.length || 0,
 							rows: dbRows,
 							size: `${(dbRows * 0.001).toFixed(2)} MB`,
+							sizeKB: Math.round(dbRows * 0.001 * 1024), // Convert to KB for better chart visibility
 							usage: Math.min(
 								((db.tables?.length || 0) / planLimits.tables) * 100,
 								100,

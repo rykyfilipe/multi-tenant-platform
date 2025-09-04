@@ -203,13 +203,15 @@ export const useProcessedAnalyticsData = (): {
 
 		// Distribution data
 		const databaseSizes =
-			rawData.databaseData?.databases?.map((db: any, index: number) => ({
-				name: db.name || `Database ${index + 1}`,
-				value:
-					parseFloat((db.size || "0MB").replace("MB", "")) ||
-					Math.floor(totalRows * 0.1) + Math.floor(Math.random() * totalRows * 0.2),
-				percentage: 0, // Will be calculated after sorting
-			})) || [];
+			rawData.databaseData?.databases?.map((db: any, index: number) => {
+				// Use KB for better chart visibility
+				const sizeValueKB = db.sizeKB || (parseFloat((db.size || "0MB").replace("MB", "")) * 1024);
+				return {
+					name: db.name || `Database ${index + 1}`,
+					value: sizeValueKB > 0 ? sizeValueKB : Math.floor(totalRows * 0.1 * 1024) + Math.floor(Math.random() * totalRows * 0.2 * 1024),
+					percentage: 0, // Will be calculated after sorting
+				};
+			}) || [];
 
 		// Calculate percentages for database sizes
 		const totalSize = databaseSizes.reduce((acc, db) => acc + db.value, 0);
@@ -239,40 +241,44 @@ export const useProcessedAnalyticsData = (): {
 			role.percentage = totalRoleUsers > 0 ? (role.count / totalRoleUsers) * 100 : 0;
 		});
 
-		// Resource usage distribution
+		// Resource usage distribution - ensure minimum visibility for charts
 		const resourceUsage = [
 			{
 				resource: "Memory",
 				used: rawData.usageData?.memory?.used || 0,
 				total: rawData.usageData?.memory?.total || 1,
-				percentage: memoryUsagePercentage,
+				percentage: Math.max(memoryUsagePercentage, 1), // Minimum 1% for visibility
 			},
 			{
 				resource: "Storage",
 				used: rawData.usageData?.storage?.used || 0,
 				total: rawData.usageData?.storage?.total || 1,
-				percentage: storageUsagePercentage,
+				percentage: Math.max(storageUsagePercentage, 1), // Minimum 1% for visibility
 			},
 			{
 				resource: "Databases",
 				used: rawData.usageData?.databases?.used || 0,
 				total: rawData.usageData?.databases?.total || 1,
-				percentage:
+				percentage: Math.max(
 					rawData.usageData?.databases?.total > 0
 						? (rawData.usageData.databases.used /
 								rawData.usageData.databases.total) *
 						  100
 						: 0,
+					1 // Minimum 1% for visibility
+				),
 			},
 			{
 				resource: "Tables",
 				used: rawData.usageData?.tables?.used || 0,
 				total: rawData.usageData?.tables?.total || 1,
-				percentage:
+				percentage: Math.max(
 					rawData.usageData?.tables?.total > 0
 						? (rawData.usageData.tables.used / rawData.usageData.tables.total) *
 						  100
 						: 0,
+					1 // Minimum 1% for visibility
+				),
 			},
 		];
 
@@ -283,7 +289,7 @@ export const useProcessedAnalyticsData = (): {
 					name: db.name,
 					tables: db.tables || 0,
 					rows: db.rows || 0,
-					size: parseFloat((db.size || "0MB").replace("MB", "")) || 0,
+					size: db.sizeKB || (parseFloat((db.size || "0MB").replace("MB", "")) * 1024) || 0,
 				}))
 				.sort((a: any, b: any) => b.size - a.size)
 				.slice(0, 5) || [];

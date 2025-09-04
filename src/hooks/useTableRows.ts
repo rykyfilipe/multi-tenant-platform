@@ -133,7 +133,7 @@ function useTableRows(
 	}, []);
 
 	// Funcția principală de fetch cu optimizări
-	const fetchRows = useCallback(
+			const fetchRows = useCallback(
 		async (
 			page: number = 1,
 			pageSize: number = 25,
@@ -143,18 +143,10 @@ function useTableRows(
 			sortOrderParam: "asc" | "desc" = sortOrder,
 			showLoading: boolean = true,
 		) => {
-			console.log("🔍 useTableRows - Fetch attempt:", {
-				hasToken: !!token,
-				hasUserId: !!userId,
-				hasTenantId: !!tenantId,
-				hasDatabaseId: !!databaseId,
-				hasTableId: !!tableId,
-				page,
-				pageSize
-			});
 			
-			if (!token || !userId || !tenantId || !databaseId || !tableId) {
-				console.log("🔍 useTableRows - Missing required parameters, aborting fetch");
+			
+			if (!token || !userId || !tenantId || !databaseId || !tableId || tableId === "" || tableId === "0") {
+				
 				return;
 			}
 
@@ -222,7 +214,6 @@ function useTableRows(
 					url.searchParams.set("globalSearch", globalSearchParam.trim());
 				}
 				
-				console.log("🔍 useTableRows - Request URL:", url.toString());
 				if (filtersParam.length > 0) {
 					url.searchParams.set(
 						"filters",
@@ -249,16 +240,7 @@ function useTableRows(
 				}
 
 				const data = await res.json();
-				console.log("🔍 useTableRows - API Response:", {
-					status: res.status,
-					url: url.toString(),
-					data: data,
-					dataType: typeof data,
-					hasData: !!data.data,
-					dataLength: data.data?.length,
-					hasPagination: !!data.pagination,
-					pagination: data.pagination
-				});
+				console.log("🔍 useTableRows - API Response:", data);
 
 				// Validează răspunsul
 				if (data.data && data.pagination) {
@@ -271,11 +253,7 @@ function useTableRows(
 					setSortOrder(sortOrderParam);
 
 					// Actualizează rows și pagination
-					console.log("🔍 useTableRows - Setting rows:", {
-						rowsData: data.data,
-						rowsLength: data.data?.length,
-						paginationData: data.pagination
-					});
+					
 					setRows(data.data || []);
 					setPagination(data.pagination || null);
 
@@ -453,7 +431,7 @@ function useTableRows(
 
 	// Auto-fetch când se schimbă dependențele
 	useEffect(() => {
-		if (token && userId && tenantId && databaseId && tableId) {
+		if (token && userId && tenantId && databaseId && tableId && tableId !== "" && tableId !== "0") {
 			// Fetch doar la prima încărcare, nu la fiecare schimbare de dependențe
 			if (isInitialLoadRef.current) {
 				// Use setTimeout to avoid dependency issues

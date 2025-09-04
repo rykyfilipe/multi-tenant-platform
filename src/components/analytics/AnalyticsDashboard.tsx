@@ -381,7 +381,7 @@ export const AnalyticsDashboard: React.FC = () => {
 								icon={Database}
 								items={rankings.topDatabases.map((db) => ({
 									name: db.name,
-									value: `${db.size} MB`,
+									value: `${(db.size / 1024).toFixed(2)} MB`,
 									subtitle: `${
 										db.tables
 									} tables, ${db.rows.toLocaleString()} rows`,

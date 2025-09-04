@@ -67,7 +67,7 @@ const TableEditor = memo(function TableEditor({
 		userPermissions?.columnsPermissions || [],
 	);
 
-	// Use server-side pagination hook
+	// Use server-side pagination hook - only initialize when table is available
 	const {
 		rows: paginatedRows,
 		loading: rowsLoading,
@@ -80,7 +80,7 @@ const TableEditor = memo(function TableEditor({
 		globalSearch,
 		filters,
 		setRows,
-	} = useTableRows(table?.id?.toString() || "0", 25);
+	} = useTableRows(table?.id?.toString() || "", 25);
 
 	// Debug logging pentru rows
 	useEffect(() => {
@@ -90,9 +90,14 @@ const TableEditor = memo(function TableEditor({
 			rowsLoading,
 			rowsError,
 			pagination,
-			tableId: table?.id
+			tableId: table?.id,
+			table: table,
+			hasToken: !!token,
+			hasUser: !!user,
+			hasTenant: !!tenant,
+			hasSelectedDatabase: !!selectedDatabase
 		});
-	}, [paginatedRows, rowsLoading, rowsError, pagination, table?.id]);
+	}, [paginatedRows, rowsLoading, rowsError, pagination, table?.id, table, token, user, tenant, selectedDatabase]);
 
 	const {
 		editingCell,
