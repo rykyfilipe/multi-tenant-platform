@@ -21,16 +21,11 @@ export async function POST(
 	{ params }: { params: Promise<{ tenantId: string; databaseId: string; tableId: string }> }
 ) {
 	try {
-		const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-
 		const { tenantId, databaseId, tableId } = await params;
 		const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
 	const { user } = sessionResult;
 	const userId = user.id;
 

@@ -38,11 +38,6 @@ export async function PATCH(request: Request) {
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
 	}
-
-	const sessionResult = await requireAuthAPI();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
 	const { user } = sessionResult;
 	const userId = parseInt(user.id);
 	const body = await request.json();
