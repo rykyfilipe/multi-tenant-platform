@@ -24,7 +24,7 @@ export async function GET(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -35,7 +35,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -80,7 +80,7 @@ export async function POST(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -91,7 +91,7 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -106,13 +106,13 @@ export async function POST(
 			tenantId.toString(),
 			validatedData.type,
 			validatedData.description,
-			user.id
+			userId.toString()
 		);
 
 		logger.info("Backup created", {
 			component: "BackupsAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			backupId: backup.id,
 			type: backup.type,
 		});
@@ -133,11 +133,7 @@ export async function POST(
 			);
 		}
 
-		logger.error("Failed to create backup", error as Error, {
-			component: "BackupsAPI",
-			userId: user.id,
-			tenantId: params.tenantId,
-		});
+		
 
 		return NextResponse.json(
 			{ error: "Failed to create backup" },

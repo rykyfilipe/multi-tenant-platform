@@ -33,7 +33,7 @@ export async function GET(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -44,7 +44,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -82,7 +82,6 @@ export async function GET(
 	} catch (error) {
 		logger.error("Failed to get webhook", error as Error, {
 			component: "WebhookAPI",
-			userId: user.id,
 			tenantId: params.tenantId,
 			webhookId: params.webhookId,
 		});
@@ -107,7 +106,7 @@ export async function PUT(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -118,7 +117,7 @@ export async function PUT(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -165,8 +164,8 @@ export async function PUT(
 
 		logger.info("Webhook endpoint updated", {
 			component: "WebhookAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			webhookId: params.webhookId,
 			updates: validatedData,
 		});
@@ -195,8 +194,7 @@ export async function PUT(
 
 		logger.error("Failed to update webhook", error as Error, {
 			component: "WebhookAPI",
-			userId: user.id,
-			tenantId: params.tenantId,
+			tenantId: params.tenantId.toString(),
 			webhookId: params.webhookId,
 		});
 
@@ -220,7 +218,7 @@ export async function DELETE(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -231,7 +229,7 @@ export async function DELETE(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -265,8 +263,8 @@ export async function DELETE(
 
 		logger.info("Webhook endpoint deleted", {
 			component: "WebhookAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			webhookId: params.webhookId,
 		});
 
@@ -278,7 +276,6 @@ export async function DELETE(
 	} catch (error) {
 		logger.error("Failed to delete webhook", error as Error, {
 			component: "WebhookAPI",
-			userId: user.id,
 			tenantId: params.tenantId,
 			webhookId: params.webhookId,
 		});

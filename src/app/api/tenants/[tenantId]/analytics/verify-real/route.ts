@@ -19,7 +19,7 @@ export async function GET(
 			return sessionResult;
 		}
 		const userId = getUserId(sessionResult);
-		const role = user.role;
+		const role = sessionResult.user.role;
 
 		// Check if user has access to this tenant
 		        const isMember = requireTenantAccess(sessionResult, tenantId);

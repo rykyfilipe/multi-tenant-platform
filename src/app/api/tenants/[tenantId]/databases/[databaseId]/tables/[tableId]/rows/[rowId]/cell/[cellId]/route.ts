@@ -160,7 +160,7 @@ export async function PATCH(
 		}
 
 		// Verificăm permisiunile pentru utilizatorii non-admin (doar dacă e necesar)
-		if (role !== "ADMIN") {
+		if (sessionResult.user.role !== "ADMIN") {
 			const hasPermission = await prisma.tablePermission.findFirst({
 				where: {
 					userId: userId,

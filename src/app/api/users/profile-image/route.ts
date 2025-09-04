@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
 		// Check if current user is admin or the same user
 		const currentUser = await prisma.user.findUnique({
-			where: { id: currentUserId },
+			where: { id: Number(userId) },
 			select: { id: true, role: true, tenantId: true },
 		});
 

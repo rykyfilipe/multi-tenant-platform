@@ -18,7 +18,7 @@ export async function POST(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -29,8 +29,8 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
-		if (!hasAccess) {
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
+		if (!hasAccess) {	
 			return NextResponse.json(
 				{ error: "Access denied" },
 				{ status: 403 }
@@ -58,8 +58,8 @@ export async function POST(
 
 		logger.info("Webhook test executed", {
 			component: "WebhookTestAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			webhookId: params.webhookId,
 			success: testResult.success,
 		});
@@ -72,7 +72,6 @@ export async function POST(
 	} catch (error) {
 		logger.error("Failed to test webhook", error as Error, {
 			component: "WebhookTestAPI",
-			userId: user.id,
 			tenantId: params.tenantId,
 			webhookId: params.webhookId,
 		});

@@ -21,10 +21,10 @@ async function getRealDataHandler(
 			return sessionResult;
 		}
 		const userId = getUserId(sessionResult);
-		const role = user.role;
+		const role = sessionResult.user.role;
 
 		// Check if user has access to this tenant
-		        const isMember = requireTenantAccess(sessionResult, tenantId);
+		        const isMember = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!isMember) {
 			return ApiErrors.forbidden("Access denied to this tenant").toResponse();
 		}

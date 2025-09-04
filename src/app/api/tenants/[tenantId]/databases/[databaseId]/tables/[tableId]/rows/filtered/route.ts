@@ -818,7 +818,7 @@ export async function GET(
 		}
 
 		// Verificare permisiuni pentru utilizatorii non-admin
-		if (role !== "ADMIN") {
+		if (sessionResult.user.role !== "ADMIN") {
 			const permission = await prisma.tablePermission.findFirst({
 				where: {
 					userId: userId,

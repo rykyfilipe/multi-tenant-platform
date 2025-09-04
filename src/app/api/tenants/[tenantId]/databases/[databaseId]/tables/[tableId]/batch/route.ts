@@ -73,7 +73,7 @@ export async function POST(
 		}
 
 		// Execută operațiile într-o tranzacție
-		const result = await prisma.$transaction(async (tx) => {
+		const result = await prisma.$transaction(async (tx:any) => {
 			const results = {
 				updatedCells: [] as any[],
 				createdCells: [] as any[],

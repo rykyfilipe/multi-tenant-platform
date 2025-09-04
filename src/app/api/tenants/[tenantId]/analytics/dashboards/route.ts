@@ -38,7 +38,7 @@ export async function GET(
 		return sessionResult;
 	}
 	const userId = getUserId(sessionResult);
-		if (!user) {
+		if (!userId) {
 			return NextResponse.json(
 				{ error: "Authentication required" },
 				{ status: 401 }
@@ -54,7 +54,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -96,7 +96,7 @@ export async function POST(
 		return sessionResult;
 	}
 	const userId = getUserId(sessionResult);
-		if (!user) {
+		if (!userId) {
 			return NextResponse.json(
 				{ error: "Authentication required" },
 				{ status: 401 }
@@ -112,7 +112,7 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		    const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		    const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },

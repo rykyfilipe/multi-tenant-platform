@@ -29,7 +29,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -72,7 +72,6 @@ export async function GET(
 	} catch (error) {
 		logger.error("Failed to get webhook deliveries", error as Error, {
 			component: "WebhookDeliveriesAPI",
-			userId: user.id,
 			tenantId: params.tenantId,
 			webhookId: params.webhookId,
 		});

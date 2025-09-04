@@ -29,7 +29,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -59,12 +59,7 @@ export async function GET(
 		});
 
 	} catch (error) {
-		logger.error("Failed to get backup", error as Error, {
-			component: "BackupAPI",
-			userId: user.id,
-			tenantId: params.tenantId,
-			backupId: params.backupId,
-		});
+		
 
 		return NextResponse.json(
 			{ error: "Failed to get backup" },
@@ -86,7 +81,7 @@ export async function DELETE(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -97,7 +92,7 @@ export async function DELETE(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -131,8 +126,8 @@ export async function DELETE(
 
 		logger.info("Backup deleted", {
 			component: "BackupAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			backupId: params.backupId,
 		});
 
@@ -142,13 +137,7 @@ export async function DELETE(
 		});
 
 	} catch (error) {
-		logger.error("Failed to delete backup", error as Error, {
-			component: "BackupAPI",
-			userId: user.id,
-			tenantId: params.tenantId,
-			backupId: params.backupId,
-		});
-
+		
 		return NextResponse.json(
 			{ error: "Failed to delete backup" },
 			{ status: 500 }

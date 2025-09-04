@@ -28,7 +28,7 @@ export async function GET(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -39,7 +39,7 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -80,7 +80,7 @@ export async function POST(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -91,7 +91,7 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -109,13 +109,13 @@ export async function POST(
 			validatedData.name,
 			validatedData.config,
 			validatedData.credentials,
-			user.id
+			userId.toString()
 		);
 
 		logger.info("Integration created", {
 			component: "IntegrationsAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			integrationId: integration.id,
 			providerId: integration.providerId,
 		});
@@ -136,11 +136,7 @@ export async function POST(
 			);
 		}
 
-		logger.error("Failed to create integration", error as Error, {
-			component: "IntegrationsAPI",
-			userId: user.id,
-			tenantId: params.tenantId,
-		});
+		
 
 		return NextResponse.json(
 			{ error: "Failed to create integration" },

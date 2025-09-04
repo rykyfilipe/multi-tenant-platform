@@ -44,11 +44,11 @@ export async function GET(
 			});
 
 			// Serializăm datele pentru a evita probleme cu tipurile Prisma
-			const serializedTables = tables.map((table) => ({
+			const serializedTables = tables.map((table:any) => ({
 				...table,
 				createdAt: table.createdAt?.toISOString(),
 				updatedAt: table.updatedAt?.toISOString(),
-				columns: table.columns?.map((column) => ({
+				columns: table.columns?.map((column:any) => ({
 					...column,
 					createdAt: column.createdAt?.toISOString(),
 					updatedAt: column.updatedAt?.toISOString(),
@@ -92,7 +92,7 @@ export async function GET(
 
 		const accessibleTables = tablePermissions
 			.filter((permission: { canRead: boolean }) => permission.canRead)
-			.map((permission: { table: unknown }) => permission.table);
+			.map((permission: { table: any }) => permission.table);
 
 		// Serializăm datele pentru a evita probleme cu tipurile Prisma
 		const serializedAccessibleTables = accessibleTables.map((table: any) => ({

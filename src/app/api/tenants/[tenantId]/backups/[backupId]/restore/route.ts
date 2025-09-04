@@ -18,7 +18,7 @@ export async function POST(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -29,7 +29,7 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -65,13 +65,13 @@ export async function POST(
 		const restoreJob = await backupSystem.restoreFromBackup(
 			params.backupId,
 			tenantId.toString(),
-			user.id
+			userId.toString()
 		);
 
 		logger.info("Restore process started", {
 			component: "BackupRestoreAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			backupId: params.backupId,
 			restoreId: restoreJob.id,
 		});
@@ -84,7 +84,6 @@ export async function POST(
 	} catch (error) {
 		logger.error("Failed to start restore", error as Error, {
 			component: "BackupRestoreAPI",
-			userId: user.id,
 			tenantId: params.tenantId,
 			backupId: params.backupId,
 		});

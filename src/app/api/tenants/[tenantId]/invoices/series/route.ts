@@ -24,14 +24,18 @@ export async function GET(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+			const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+		if (!userId) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
-		if (!hasAccess) {
+		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
+		if (!hasAccess) {	
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
@@ -77,13 +81,17 @@ export async function POST(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+		const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+		if (!userId) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -181,13 +189,17 @@ export async function PUT(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+		const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+		if (!userId) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -283,13 +295,17 @@ export async function DELETE(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+		const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+		if (!userId) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}

@@ -1,8 +1,6 @@
 /** @format */
 
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";	
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { InvoiceSystemService, CreateInvoiceRequest } from "@/lib/invoice-system";
 import { z } from "zod";
@@ -41,13 +39,17 @@ export async function POST(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const session = await getServerSession(authOptions);
-	if (!session?.user?.email) {
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const userId = getUserId(sessionResult);
+	if (!sessionResult.user.email) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
 	const userResult = await prisma.user.findFirst({
-		where: { email: session.user.email },
+		where: { email: sessionResult.user.email },
 	});
 
 	if (!userResult) {
@@ -55,9 +57,8 @@ export async function POST(
 	}
 
 	const { tenantId } = await params;
-	const { userId } = userResult;
 
-	 const isMember = requireTenantAccess(sessionResult, tenantId);
+	 const isMember = requireTenantAccess(sessionResult, tenantId.toString());
 	if (!isMember) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
@@ -710,13 +711,17 @@ export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ tenantId: string }> },
 ) {
-	const session = await getServerSession(authOptions);
-	if (!session?.user?.email) {
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const userId = getUserId(sessionResult);
+	if (!sessionResult.user.email) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
 	const userResult = await prisma.user.findFirst({
-		where: { email: session.user.email },
+		where: { email: sessionResult.user.email },
 	});
 
 	if (!userResult) {
@@ -724,9 +729,8 @@ export async function GET(
 	}
 
 	const { tenantId } = await params;
-	const { userId } = userResult;
 
-	 const isMember = requireTenantAccess(sessionResult, tenantId);
+	 const isMember = requireTenantAccess(sessionResult, tenantId.toString());
 	if (!isMember) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}

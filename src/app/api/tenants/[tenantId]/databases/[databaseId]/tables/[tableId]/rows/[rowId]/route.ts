@@ -49,7 +49,7 @@ export async function DELETE(
 		}
 
 		// Pentru utilizatorii non-admin, verificăm permisiunile
-		if (role !== "ADMIN") {
+		if (sessionResult.user.role !== "ADMIN") {
 			const tablePermission = await prisma.tablePermission.findFirst({
 				where: {
 					userId: userId,

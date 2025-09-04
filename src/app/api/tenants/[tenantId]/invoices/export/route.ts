@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { MigratorService } from '@/lib/migrators';
-import { getServerSession } from 'next-auth';
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 const ExportRequestSchema = z.object({
 	format: z.enum(['csv', 'json']),
@@ -22,13 +21,17 @@ export async function POST(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+		const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+		if (!userId) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
@@ -39,7 +42,7 @@ export async function POST(
 
 		// Prepare export options
 		const exportOptions = {
-			tenantId: params.tenantId,
+			tenantId: params.tenantId.toString(),
 			format: validatedData.format,
 			limit: validatedData.limit,
 			filters: validatedData.filters,
@@ -86,19 +89,23 @@ export async function GET(
 ) {
 	try {
 		// Check authentication
-		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+		const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+		if (!userId) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
 		// Get export history
-		const exportHistory = await MigratorService.getExportHistory(params.tenantId, 20);
+		const exportHistory = await MigratorService.getExportHistory(params.tenantId.toString(), 20);
 
 		// Get available export formats
 		const availableFormats = [

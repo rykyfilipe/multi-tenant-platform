@@ -101,9 +101,9 @@ export async function POST(
 		}
 
 		// Verificăm limitele planului pentru utilizatori
-		const currentCounts = await getCurrentCounts(userId);
+		const currentCounts = await getCurrentCounts(Number(userId));
 		const userLimit = await checkPlanLimit(
-			userId,
+			Number(userId),
 			"users",
 			currentCounts.users,
 		);

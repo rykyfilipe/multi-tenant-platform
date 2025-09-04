@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 		// Generate unique filename
 		const timestamp = Date.now();
 		const fileExtension = logoFile.name.split(".").pop();
-		const fileName = `logo_${currentUser.tenantId}_${timestamp}.${fileExtension}`;
+		const fileName = `logo_${tenantId}_${timestamp}.${fileExtension}`;
 
 		// Convert file to buffer
 		const bytes = await logoFile.arrayBuffer();
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
 		// Get the current tenant's logo to delete the old one
 		const tenant = await prisma.tenant.findUnique({
-			where: { id: currentUser.tenantId },
+			where: { id: tenantId },
 			select: { logoUrl: true },
 		});
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
 		// Update tenant logo in database
 		await prisma.tenant.update({
-			where: { id: currentUser.tenantId },
+			where: { id: tenantId },
 			data: { logoUrl: uploadResult.secure_url },
 		});
 

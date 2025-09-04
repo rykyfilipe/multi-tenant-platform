@@ -18,7 +18,7 @@ export async function POST(
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
-		const { user } = sessionResult;
+		const userId = getUserId(sessionResult);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
@@ -29,7 +29,7 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId);
+		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
 		if (!hasAccess) {
 			return NextResponse.json(
 				{ error: "Access denied" },
@@ -58,8 +58,8 @@ export async function POST(
 
 		logger.info("Backup verification completed", {
 			component: "BackupVerifyAPI",
-			userId: user.id,
-			tenantId,
+			userId: userId.toString(),
+			tenantId: tenantId.toString(),
 			backupId: params.backupId,
 			valid: verification.valid,
 		});
@@ -72,7 +72,6 @@ export async function POST(
 	} catch (error) {
 		logger.error("Failed to verify backup", error as Error, {
 			component: "BackupVerifyAPI",
-			userId: user.id,
 			tenantId: params.tenantId,
 			backupId: params.backupId,
 		});
