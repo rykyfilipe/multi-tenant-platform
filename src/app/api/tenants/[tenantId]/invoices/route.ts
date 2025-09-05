@@ -157,32 +157,35 @@ export async function POST(
 			);
 		}
 
-		// Check if required columns exist
-		const requiredColumns = [
-			"invoice_id",
-			"product_ref_table",
-			"product_ref_id",
+		// Check if required columns exist using semantic types
+		const requiredSemanticTypes = [
+			"invoice_number", // invoice_id
+			"reference", // product_ref_table
+			"id", // product_ref_id
 			"quantity",
-			"price",
+			"unit_price", // price
 			"product_vat",
 			"currency",
 		];
 
-		const missingColumns = requiredColumns.filter((colName) => {
+		const missingSemanticTypes = requiredSemanticTypes.filter((semanticType) => {
 			const found = invoiceTables.invoice_items!.columns!.find(
-				(c: any) => c.name === colName,
+				(c: any) => c.semanticType === semanticType,
 			);
 			return !found;
 		});
 
-		if (missingColumns.length > 0) {
-			console.error("Missing required columns:", missingColumns);
+		if (missingSemanticTypes.length > 0) {
+			console.error("Missing required semantic types:", missingSemanticTypes);
 			console.error(
 				"Available columns:",
-				invoiceTables.invoice_items!.columns!.map((c: any) => c.name),
+				invoiceTables.invoice_items!.columns!.map((c: any) => ({
+					name: c.name,
+					semanticType: c.semanticType,
+				})),
 			);
 			return NextResponse.json(
-				{ error: `Missing required columns: ${missingColumns.join(", ")}` },
+				{ error: `Missing required columns: ${missingSemanticTypes.join(", ")}` },
 				{ status: 500 },
 			);
 		}
@@ -223,21 +226,21 @@ export async function POST(
 			value: string | number;
 		}> = [];
 
-		// Find required columns safely
+		// Find required columns safely using semantic types
 		const invoiceNumberColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "invoice_number",
+			(c: any) => c.semanticType === "invoice_number",
 		);
 		const invoiceSeriesColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "invoice_series",
+			(c: any) => c.semanticType === "invoice_series",
 		);
 		const dateColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "date",
+			(c: any) => c.semanticType === "invoice_date",
 		);
 		const dueDateColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "due_date",
+			(c: any) => c.semanticType === "invoice_due_date",
 		);
 		const customerIdColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "customer_id",
+			(c: any) => c.semanticType === "invoice_customer_id",
 		);
 
 		// Validate that all required columns exist
@@ -289,7 +292,7 @@ export async function POST(
 
 		// Add payment details if columns exist
 		const paymentTermsColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "payment_terms",
+			(c: any) => c.semanticType === "invoice_payment_terms",
 		);
 		if (paymentTermsColumn && parsedData.payment_terms) {
 			invoiceCells.push({
@@ -300,7 +303,7 @@ export async function POST(
 		}
 
 		const paymentMethodColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "payment_method",
+			(c: any) => c.semanticType === "invoice_payment_method",
 		);
 		if (paymentMethodColumn && parsedData.payment_method) {
 			invoiceCells.push({
@@ -311,7 +314,7 @@ export async function POST(
 		}
 
 		const notesColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "notes",
+			(c: any) => c.semanticType === "invoice_notes",
 		);
 		if (notesColumn && parsedData.notes) {
 			invoiceCells.push({
@@ -357,52 +360,52 @@ export async function POST(
 				},
 			});
 
-			// Find all columns safely
+			// Find all columns safely using semantic types
 			const columns = {
 				invoice_id: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "invoice_id",
+					(c: any) => c.semanticType === "invoice_number",
 				),
 				product_ref_table: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_ref_table",
+					(c: any) => c.semanticType === "reference",
 				),
 				product_ref_id: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_ref_id",
+					(c: any) => c.semanticType === "id",
 				),
 				quantity: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "quantity",
+					(c: any) => c.semanticType === "quantity",
 				),
 				price: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "price",
+					(c: any) => c.semanticType === "unit_price",
 				),
 				product_vat: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_vat",
+					(c: any) => c.semanticType === "product_vat",
 				),
 				currency: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "currency",
+					(c: any) => c.semanticType === "currency",
 				),
 				product_name: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_name",
+					(c: any) => c.semanticType === "product_name",
 				),
 				product_description: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_description",
+					(c: any) => c.semanticType === "product_description",
 				),
 				product_category: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_category",
+					(c: any) => c.semanticType === "product_category",
 				),
 				product_sku: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_sku",
+					(c: any) => c.semanticType === "product_sku",
 				),
 				product_brand: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_brand",
+					(c: any) => c.semanticType === "product_brand",
 				),
 				product_weight: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_weight",
+					(c: any) => c.semanticType === "product_weight",
 				),
 				product_dimensions: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "product_dimensions",
+					(c: any) => c.semanticType === "product_dimensions",
 				),
 				description: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.name === "description",
+					(c: any) => c.semanticType === "description",
 				),
 			};
 
@@ -503,7 +506,7 @@ export async function POST(
 
 			// Add unit of measure if column exists
 			const unitOfMeasureColumn = invoiceTables.invoice_items!.columns!.find(
-				(c: any) => c.name === "unit_of_measure",
+				(c: any) => c.semanticType === "unit_of_measure",
 			);
 			if (unitOfMeasureColumn && product.unit_of_measure) {
 				itemCells.push({
@@ -660,10 +663,10 @@ export async function POST(
 
 		// Add total_amount and base_currency to invoice
 		const totalAmountColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "total_amount",
+			(c: any) => c.semanticType === "invoice_total_amount",
 		);
 		const baseCurrencyColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.name === "base_currency",
+			(c: any) => c.semanticType === "invoice_base_currency",
 		);
 
 		const defaultCurrency = tenantInfo?.defaultCurrency || "USD";

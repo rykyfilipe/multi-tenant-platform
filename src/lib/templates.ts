@@ -30,6 +30,11 @@ export interface TemplateTable {
 	}>;
 }
 
+// Currency options array from tenant settings
+const CURRENCY_OPTIONS = [
+	"USD", "EUR", "RON", "GBP", "JPY", "CAD", "AUD", "CHF"
+];
+
 // Template-uri predefinite pentru tabele
 export const TABLE_TEMPLATES: TemplateTable[] = [
 	{
@@ -40,13 +45,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		category: "User Management",
 		dependencies: [],
 		columns: [
-			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "user_id",
-			},
 			{
 				name: "email",
 				type: "text",
@@ -75,13 +73,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		category: "E-commerce",
 		dependencies: [],
 		columns: [
-			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "product_id",
-			},
 			{
 				name: "name",
 				type: "text",
@@ -132,9 +123,10 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 			},
 			{
 				name: "currency",
-				type: "text",
+				type: "custom_array",
 				required: false,
 				semanticType: "currency",
+				customOptions: CURRENCY_OPTIONS,
 			},
 			{
 				name: "created_at",
@@ -152,13 +144,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		category: "E-commerce",
 		dependencies: ["users", "products"],
 		columns: [
-			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "order_id",
-			},
 			{
 				name: "user_id",
 				type: "reference",
@@ -194,13 +179,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		category: "CRM",
 		dependencies: [],
 		columns: [
-			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "customer_id",
-			},
 			{
 				name: "first_name",
 				type: "text",
@@ -241,13 +219,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		category: "Billing",
 		dependencies: ["customers"],
 		columns: [
-			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "invoice_id",
-			},
 			{
 				name: "customer_id",
 				type: "reference",
@@ -296,13 +267,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		dependencies: ["invoices"],
 		columns: [
 			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "payment_id",
-			},
-			{
 				name: "invoice_id",
 				type: "reference",
 				required: true,
@@ -344,13 +308,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		dependencies: [],
 		columns: [
 			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "analytics_id",
-			},
-			{
 				name: "event_name",
 				type: "text",
 				required: true,
@@ -385,13 +342,6 @@ export const TABLE_TEMPLATES: TemplateTable[] = [
 		category: "System",
 		dependencies: [],
 		columns: [
-			{
-				name: "id",
-				type: "integer",
-				required: true,
-				primary: true,
-				semanticType: "setting_id",
-			},
 			{
 				name: "key",
 				type: "text",
