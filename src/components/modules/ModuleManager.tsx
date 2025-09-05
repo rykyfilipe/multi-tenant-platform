@@ -119,6 +119,35 @@ export default function ModuleManager() {
 
 		try {
 			setUpdating(moduleId);
+			
+			// Optimistic update - update local state immediately
+			setModulesStatus(prevStatus => 
+				prevStatus.map(status => {
+					if (status.databaseId === databaseId) {
+						return {
+							...status,
+							modules: {
+								...status.modules,
+								[moduleId]: {
+									enabled: action === "enable",
+									available: true,
+								},
+							},
+						};
+					}
+					return status;
+				})
+			);
+
+			// Update enabledModules optimistically
+			if (action === "enable") {
+				setEnabledModules(prev => 
+					prev.includes(moduleId) ? prev : [...prev, moduleId]
+				);
+			} else {
+				setEnabledModules(prev => prev.filter(m => m !== moduleId));
+			}
+
 			const response = await fetch(`/api/tenants/${tenant.id}/modules`, {
 				method: "POST",
 				headers: {
@@ -133,7 +162,7 @@ export default function ModuleManager() {
 			});
 
 			if (response.ok) {
-				// Refresh modules status
+				// Refresh modules status to ensure consistency
 				await fetchModulesStatus();
 				if (action === "enable") {
 					showAlert(`Module enabled successfully`, "success");
@@ -141,6 +170,34 @@ export default function ModuleManager() {
 					showAlert(`Module disabled successfully`, "success");
 				}
 			} else {
+				// Revert optimistic update on error
+				setModulesStatus(prevStatus => 
+					prevStatus.map(status => {
+						if (status.databaseId === databaseId) {
+							return {
+								...status,
+								modules: {
+									...status.modules,
+									[moduleId]: {
+										enabled: action === "disable", // Revert to previous state
+										available: true,
+									},
+								},
+							};
+						}
+						return status;
+					})
+				);
+
+				// Revert enabledModules
+				if (action === "enable") {
+					setEnabledModules(prev => prev.filter(m => m !== moduleId));
+				} else {
+					setEnabledModules(prev => 
+						prev.includes(moduleId) ? prev : [...prev, moduleId]
+					);
+				}
+
 				const error = await response.json();
 				console.error("Error toggling module:", error);
 
@@ -160,6 +217,34 @@ export default function ModuleManager() {
 				}
 			}
 		} catch (error) {
+			// Revert optimistic update on network error
+			setModulesStatus(prevStatus => 
+				prevStatus.map(status => {
+					if (status.databaseId === databaseId) {
+						return {
+							...status,
+							modules: {
+								...status.modules,
+								[moduleId]: {
+									enabled: action === "disable", // Revert to previous state
+									available: true,
+								},
+							},
+						};
+					}
+					return status;
+				})
+			);
+
+			// Revert enabledModules
+			if (action === "enable") {
+				setEnabledModules(prev => prev.filter(m => m !== moduleId));
+			} else {
+				setEnabledModules(prev => 
+					prev.includes(moduleId) ? prev : [...prev, moduleId]
+				);
+			}
+
 			console.error("Error toggling module:", error);
 			showAlert("Network error occurred", "error");
 		} finally {
