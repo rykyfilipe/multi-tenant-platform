@@ -30,6 +30,10 @@ const updateTenantSchema = z.object({
 	companyPostalCode: z.string().optional(),
 	companyIban: z.string().optional(),
 	companyBank: z.string().optional(),
+	// Invoice numbering settings
+	invoiceStartNumber: z.number().min(1).optional(),
+	invoiceSeriesPrefix: z.string().optional(),
+	invoiceIncludeYear: z.boolean().optional(),
 });
 
 export async function GET(

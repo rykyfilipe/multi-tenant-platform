@@ -38,6 +38,10 @@ model Tenant {
   companyStreetNumber String?
   companyTaxId        String?
   registrationNumber  String?
+  // Invoice numbering settings
+  invoiceStartNumber  Int?               @default(1)
+  invoiceSeriesPrefix String?            @default("INV")
+  invoiceIncludeYear  Boolean?           @default(true)
   enabledModules      String[]           @default([])
   columnPermissions   ColumnPermission[]
   databases           Database[]
@@ -55,6 +59,8 @@ model Tenant {
   invoiceSeries       InvoiceSeries[]
   invoiceAuditLogs    InvoiceAuditLog[]
   userPreferences     UserPreferences[]
+  pdfAnalytics        PDFAnalytics[]
+  pdfTemplateConfigs  PDFTemplateConfig[]
 
   @@index([adminId])
 }
@@ -487,4 +493,39 @@ model UserPreferences {
 
   @@index([tenantId])
   @@index([userId])
+}
+
+// PDF Analytics and Tracking
+model PDFAnalytics {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  templateId    String
+  generationTime Int      // in milliseconds
+  fileSize      Int      // in bytes
+  pageCount     Int
+  features      String[] // QR Code, Barcode, Watermark, etc.
+  generatedAt   DateTime @default(now())
+  generatedBy   String   // user ID or system
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([templateId])
+  @@index([generatedAt])
+}
+
+// PDF Templates Configuration
+model PDFTemplateConfig {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  templateId    String
+  customization Json     // PDFCustomization object
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, templateId])
+  @@index([tenantId])
 }

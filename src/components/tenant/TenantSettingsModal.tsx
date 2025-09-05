@@ -19,6 +19,13 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { useApp } from "@/contexts/AppContext";
@@ -65,6 +72,10 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 		companyPostalCode: (tenant as any).companyPostalCode || "",
 		companyIban: (tenant as any).companyIban || "",
 		companyBank: (tenant as any).companyBank || "",
+		// Invoice numbering settings
+		invoiceStartNumber: (tenant as any).invoiceStartNumber || 1,
+		invoiceSeriesPrefix: (tenant as any).invoiceSeriesPrefix || "INV",
+		invoiceIncludeYear: (tenant as any).invoiceIncludeYear !== false, // default true
 	});
 
 	// Check if user is admin
@@ -572,6 +583,90 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 											disabled={loading}
 										/>
 									</div>
+								</div>
+							</div>
+
+							{/* Invoice Numbering Settings */}
+							<div className='space-y-4 mt-8'>
+								<h4 className='text-md font-semibold text-foreground'>
+									{t("invoice.numberingSettings")}
+								</h4>
+								<p className='text-sm text-muted-foreground'>
+									{t("invoice.numberingSettingsDescription")}
+								</p>
+
+								<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+									<div className='space-y-2'>
+										<Label htmlFor='invoiceSeriesPrefix'>
+											{t("invoice.series")}
+										</Label>
+										<Input
+											id='invoiceSeriesPrefix'
+											placeholder='INV'
+											value={formData.invoiceSeriesPrefix}
+											onChange={(e) =>
+												setFormData((prev) => ({
+													...prev,
+													invoiceSeriesPrefix: e.target.value,
+												}))
+											}
+											disabled={loading}
+										/>
+									</div>
+
+									<div className='space-y-2'>
+										<Label htmlFor='invoiceStartNumber'>
+											{t("invoice.startNumber")}
+										</Label>
+										<Input
+											id='invoiceStartNumber'
+											type='number'
+											min='1'
+											placeholder='1'
+											value={formData.invoiceStartNumber}
+											onChange={(e) =>
+												setFormData((prev) => ({
+													...prev,
+													invoiceStartNumber: parseInt(e.target.value) || 1,
+												}))
+											}
+											disabled={loading}
+										/>
+									</div>
+
+									<div className='space-y-2'>
+										<Label htmlFor='invoiceIncludeYear'>
+											{t("invoice.includeYear")}
+										</Label>
+										<Select
+											value={formData.invoiceIncludeYear ? 'yes' : 'no'}
+											onValueChange={(value) =>
+												setFormData((prev) => ({
+													...prev,
+													invoiceIncludeYear: value === 'yes',
+												}))
+											}
+											disabled={loading}
+										>
+											<SelectTrigger>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value='yes'>{t("common.yes")}</SelectItem>
+												<SelectItem value='no'>{t("common.no")}</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+								</div>
+
+								<div className='p-4 bg-muted/50 rounded-lg'>
+									<p className='text-sm text-muted-foreground'>
+										<strong>{t("invoice.preview")}:</strong> {
+											formData.invoiceIncludeYear 
+												? `${formData.invoiceSeriesPrefix}-${new Date().getFullYear()}-${formData.invoiceStartNumber.toString().padStart(6, '0')}`
+												: `${formData.invoiceSeriesPrefix}-${formData.invoiceStartNumber.toString().padStart(6, '0')}`
+										}
+									</p>
 								</div>
 							</div>
 						</PremiumTabsContent>

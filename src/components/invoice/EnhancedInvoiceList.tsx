@@ -186,27 +186,15 @@ export function EnhancedInvoiceList({
 		try {
 			setDeleting(true);
 			
-			// Optimistic update - remove from local state immediately
-			setOptimisticInvoices(prev => 
-				prev.filter(invoice => invoice.id !== invoiceToDelete.id)
-			);
-
 			const success = await deleteInvoice(invoiceToDelete.id);
 			
 			if (success) {
 				showAlert('Invoice deleted successfully', 'success');
-				if (refreshInvoices) {
-					refreshInvoices();
-				}
 			} else {
-				// Revert optimistic update on failure
-				setOptimisticInvoices(invoices);
 				showAlert('Failed to delete invoice', 'error');
 			}
 		} catch (error) {
 			console.error('Error deleting invoice:', error);
-			// Revert optimistic update on error
-			setOptimisticInvoices(invoices);
 			showAlert('Failed to delete invoice', 'error');
 		} finally {
 			setDeleting(false);

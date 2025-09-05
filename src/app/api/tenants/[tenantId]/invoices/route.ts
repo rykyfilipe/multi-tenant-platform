@@ -187,15 +187,20 @@ export async function POST(
 			);
 		}
 
-		// Generate invoice number with series
+		// Get tenant settings for invoice numbering
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: Number(tenantId) },
+		});
+
+		// Generate invoice number with series using tenant settings
 		const invoiceData =
 			await InvoiceSystemService.generateInvoiceNumberWithConfig(
 				Number(tenantId),
 				database.id,
 				{
-					series: "INV", // Default series
-					includeYear: true, // Include year in series (e.g., INV-2025-000001)
-					startNumber: 1,
+					series: (tenant as any)?.invoiceSeriesPrefix || "INV",
+					includeYear: (tenant as any)?.invoiceIncludeYear !== false, // default true
+					startNumber: (tenant as any)?.invoiceStartNumber || 1,
 					separator: "-",
 				},
 			);
