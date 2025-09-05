@@ -34,6 +34,9 @@ import {
 	AlertCircle,
 	ChevronLeft,
 	X,
+	Sparkles,
+	Zap,
+	Star,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -75,6 +78,7 @@ export function TemplateSelectorModal({
 	const [previewTemplate, setPreviewTemplate] = useState<TemplateTable | null>(null);
 	const [activeView, setActiveView] = useState<"list" | "preview">("list");
 	const [isLoading, setIsLoading] = useState(false);
+	const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
 	// Reset state when modal opens/closes
 	useEffect(() => {
@@ -83,6 +87,7 @@ export function TemplateSelectorModal({
 			setPreviewTemplate(null);
 			setActiveView("list");
 			setIsLoading(false);
+			setSelectedCategory("All");
 		}
 	}, [isOpen]);
 
@@ -145,39 +150,53 @@ export function TemplateSelectorModal({
 
 	const selectedCount = selectedTemplates.size;
 	const hasDependencies = templates.some((t) => t.dependencies.length > 0);
+	
+	// Filter templates by category
+	const filteredTemplates = selectedCategory === "All" 
+		? templates 
+		: templates.filter(t => t.category === selectedCategory);
+	
+	// Get unique categories
+	const categories = ["All", ...Array.from(new Set(templates.map(t => t.category)))];
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="max-w-6xl h-[90vh] p-0 gap-0 overflow-hidden">
+			<DialogContent className="max-w-7xl h-[95vh] p-0 gap-0 overflow-hidden bg-gradient-to-br from-slate-50/50 via-white to-slate-100/50 dark:from-slate-950/50 dark:via-slate-900 dark:to-slate-800/50">
 				{/* Header */}
-				<DialogHeader className="px-6 py-4 border-b border-border/10 bg-background/80 backdrop-blur-sm">
+				<DialogHeader className="px-8 py-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
 					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-3">
+						<div className="flex items-center gap-4">
 							{activeView === "preview" && (
 								<Button
 									variant="ghost"
 									size="sm"
 									onClick={handleBackToList}
-									className="p-2 h-8 w-8">
+									className="p-2 h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
 									<ChevronLeft className="w-4 h-4" />
 								</Button>
 							)}
-							<div>
-								<DialogTitle className="text-xl font-semibold">
-									{activeView === "list"
-										? t("database.templates.selectTemplates") || "Select Table Templates"
-										: previewTemplate?.name || "Template Preview"}
-								</DialogTitle>
-								{activeView === "list" && (
-									<p className="text-sm text-muted-foreground mt-1">
-										Choose from our professionally designed table templates
-									</p>
-								)}
+							<div className="flex items-center gap-3">
+								<div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+									<Sparkles className="w-5 h-5 text-primary" />
+								</div>
+								<div>
+									<DialogTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+										{activeView === "list"
+											? t("database.templates.selectTemplates") || "Select Table Templates"
+											: previewTemplate?.name || "Template Preview"}
+									</DialogTitle>
+									{activeView === "list" && (
+										<p className="text-slate-600 dark:text-slate-400 mt-1 font-medium">
+											Choose from our professionally designed table templates
+										</p>
+									)}
+								</div>
 							</div>
 						</div>
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-3">
 							{activeView === "list" && selectedCount > 0 && (
-								<Badge variant="default" className="px-3 py-1">
+								<Badge className="px-4 py-2 bg-gradient-to-r from-primary to-primary/90 text-white border-0 shadow-lg">
+									<Star className="w-3 h-3 mr-1" />
 									{selectedCount} selected
 								</Badge>
 							)}
@@ -185,7 +204,7 @@ export function TemplateSelectorModal({
 								variant="ghost"
 								size="sm"
 								onClick={onClose}
-								className="p-2 h-8 w-8">
+								className="p-2 h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
 								<X className="w-4 h-4" />
 							</Button>
 						</div>
@@ -195,140 +214,172 @@ export function TemplateSelectorModal({
 				{/* Body */}
 				<div className="flex-1 overflow-hidden">
 					<ScrollArea className="h-full">
-						<div className="p-6">
+						<div className="p-8">
 							{activeView === "list" ? (
-								<div className="space-y-6">
-									{/* Category Tabs */}
-									<div>
-										<div className="flex flex-wrap gap-2">
-											{Array.from(
-												new Set(templates.map((t) => t.category)),
-											).map((category) => (
-												<Badge
+								<div className="space-y-8">
+									{/* Category Filters */}
+									<div className="space-y-4">
+										<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Filter by Category</h3>
+										<div className="flex flex-wrap gap-3">
+											{categories.map((category) => (
+												<Button
 													key={category}
-													variant="outline"
-													className="px-3 py-1 text-sm cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-colors">
+													variant={selectedCategory === category ? "default" : "outline"}
+													onClick={() => setSelectedCategory(category)}
+													className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
+														selectedCategory === category
+															? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg hover:shadow-xl scale-105"
+															: "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-700 hover:shadow-md"
+													}`}>
+													{category === "All" && <Zap className="w-4 h-4 mr-2" />}
 													{category}
-												</Badge>
+													{category !== "All" && (
+														<Badge variant="secondary" className="ml-2 px-2 py-0.5 text-xs">
+															{templates.filter(t => t.category === category).length}
+														</Badge>
+													)}
+												</Button>
 											))}
 										</div>
 									</div>
 
 									{/* Templates Grid */}
-									<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-										{templates.map((template) => {
-											const isSelected = selectedTemplates.has(template.id);
-											const canSelect = canSelectTemplate(template);
-											const depStatus = getDependencyStatus(template);
+									<div className="space-y-4">
+										<div className="flex items-center justify-between">
+											<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+												{selectedCategory === "All" ? "All Templates" : `${selectedCategory} Templates`}
+											</h3>
+											<span className="text-sm text-slate-600 dark:text-slate-400">
+												{filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
+											</span>
+										</div>
+										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+											{filteredTemplates.map((template) => {
+												const isSelected = selectedTemplates.has(template.id);
+												const canSelect = canSelectTemplate(template);
+												const depStatus = getDependencyStatus(template);
 
-											return (
-												<Card
-													key={template.id}
-													className={`group cursor-pointer transition-all duration-300 border-2 hover:shadow-lg ${
-														isSelected
-															? "border-primary bg-primary/5 shadow-lg scale-[1.02]"
-															: canSelect
-															? "border-border/50 hover:border-primary/30 hover:bg-gradient-to-br hover:from-primary/5 hover:to-transparent"
-															: "border-border/30 opacity-60 cursor-not-allowed bg-muted/30"
-													}`}
-													onClick={() => {
-														if (canSelect) {
-															handleTemplateToggle(template.id);
-														}
-													}}>
-													<CardContent className="p-4">
-														<div className="flex gap-3">
-															<div className="flex-shrink-0">
-																<div
-																	className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-																		isSelected
-																			? "bg-primary text-primary-foreground"
-																			: "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-																	} transition-colors`}>
-																	<template.icon className="w-5 h-5" />
-																</div>
-															</div>
-
-															<div className="flex-1 min-w-0">
-																<div className="flex items-start justify-between mb-2">
-																	<div className="min-w-0 flex-1">
-																		<h4 className="font-semibold text-foreground text-sm leading-tight truncate mb-1">
-																			{template.name}
-																		</h4>
-																		<div className="flex items-center gap-1.5 flex-wrap">
-																			<Badge
-																				variant="outline"
-																				className="text-xs font-medium px-2 py-0.5">
-																				{template.category}
-																			</Badge>
-																			{template.dependencies.length > 0 && (
+												return (
+													<Card
+														key={template.id}
+														className={`group cursor-pointer transition-all duration-500 border-0 hover:shadow-2xl hover:shadow-primary/10 ${
+															isSelected
+																? "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-xl shadow-primary/20 scale-[1.02] ring-2 ring-primary/30"
+																: canSelect
+																? "bg-white dark:bg-slate-800 hover:bg-gradient-to-br hover:from-slate-50 hover:to-white dark:hover:from-slate-800 dark:hover:to-slate-700 shadow-lg hover:shadow-xl"
+																: "bg-slate-50 dark:bg-slate-800/50 opacity-60 cursor-not-allowed"
+														} rounded-3xl overflow-hidden`}
+														onClick={() => {
+															if (canSelect) {
+																handleTemplateToggle(template.id);
+															}
+														}}>
+														<CardContent className="p-6">
+															<div className="space-y-4">
+																{/* Header */}
+																<div className="flex items-start justify-between">
+																	<div className="flex items-center gap-4">
+																		<div
+																			className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+																				isSelected
+																					? "bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg"
+																					: canSelect
+																					? "bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 text-slate-700 dark:text-slate-300 group-hover:from-primary/10 group-hover:to-primary/5 group-hover:text-primary"
+																					: "bg-slate-100 dark:bg-slate-700 text-slate-400"
+																			}`}>
+																			<template.icon className="w-7 h-7" />
+																		</div>
+																		<div className="min-w-0 flex-1">
+																			<h4 className="font-bold text-slate-900 dark:text-slate-100 text-lg leading-tight mb-1">
+																				{template.name}
+																			</h4>
+																			<div className="flex items-center gap-2 flex-wrap">
 																				<Badge
-																					variant="secondary"
-																					className="text-xs px-2 py-0.5">
-																					{template.dependencies.length} deps
+																					variant="outline"
+																					className="text-xs font-medium px-3 py-1 rounded-full border-slate-200 dark:border-slate-600">
+																					{template.category}
 																				</Badge>
-																			)}
+																				{template.dependencies.length > 0 && (
+																					<Badge
+																						variant="secondary"
+																						className="text-xs px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+																						{template.dependencies.length} deps
+																					</Badge>
+																				)}
+																			</div>
 																		</div>
 																	</div>
 
-																	<Checkbox
-																		checked={isSelected}
-																		disabled={!canSelect}
-																		className="ml-2 flex-shrink-0"
-																	/>
+																	<div className="flex items-center gap-2">
+																		{canSelect && (
+																			<Button
+																				variant="ghost"
+																				size="sm"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					handlePreviewTemplate(template);
+																				}}
+																				className="h-8 w-8 p-0 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10">
+																				<Eye className="w-4 h-4" />
+																			</Button>
+																		)}
+																		<Checkbox
+																			checked={isSelected}
+																			disabled={!canSelect}
+																			className="w-5 h-5"
+																		/>
+																	</div>
 																</div>
 
-																<p className="text-muted-foreground text-sm leading-relaxed mb-2 line-clamp-2">
+																{/* Description */}
+																<p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed line-clamp-2">
 																	{template.description}
 																</p>
 
-																<div className="flex items-center justify-between">
-																	<span className="text-xs text-muted-foreground font-medium">
-																		{template.columns.length} columns
-																	</span>
-
-																	{canSelect && (
-																		<Button
-																			variant="ghost"
-																			size="sm"
-																			onClick={(e) => {
-																				e.stopPropagation();
-																				handlePreviewTemplate(template);
-																			}}
-																			className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10">
-																			<Eye className="w-3 h-3 mr-1" />
-																			Preview
-																		</Button>
-																	)}
+																{/* Footer */}
+																<div className="flex items-center justify-between pt-2">
+																	<div className="flex items-center gap-4">
+																		<span className="text-xs text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
+																			{template.columns.length} columns
+																		</span>
+																		{isSelected && (
+																			<div className="flex items-center gap-1 text-primary text-xs font-medium">
+																				<CheckCircle className="w-3 h-3" />
+																				Selected
+																			</div>
+																		)}
+																	</div>
 
 																	{!canSelect && (
-																		<span className="text-amber-600 dark:text-amber-400 font-medium text-xs text-right max-w-[100px] truncate">
+																		<span className="text-amber-600 dark:text-amber-400 font-medium text-xs text-right max-w-[120px] truncate bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full">
 																			{depStatus.message}
 																		</span>
 																	)}
 																</div>
 															</div>
-														</div>
-													</CardContent>
-												</Card>
-											);
-										})}
+														</CardContent>
+													</Card>
+												);
+											})}
+										</div>
 									</div>
 
 									{/* Dependency Info */}
 									{hasDependencies && (
-										<div className="mt-8 max-w-2xl mx-auto">
-											<div className="p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
-												<div className="flex gap-3">
-													<Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-													<div className="text-sm text-blue-800 dark:text-blue-200">
-														<div className="font-semibold mb-1">
+										<div className="mt-12 max-w-4xl mx-auto">
+											<div className="p-6 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-950/40 dark:to-indigo-950/40 rounded-3xl border border-blue-200/60 dark:border-blue-800/60 shadow-lg">
+												<div className="flex gap-4">
+													<div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+														<Info className="w-6 h-6 text-white" />
+													</div>
+													<div className="text-slate-800 dark:text-slate-200">
+														<div className="font-bold text-lg mb-2">
 															Dependency Management
 														</div>
-														<p className="leading-relaxed">
+														<p className="leading-relaxed text-sm">
 															Tables with dependencies will be created in the
 															correct order. Make sure to select all required
-															dependent tables.
+															dependent tables for a complete setup.
 														</p>
 													</div>
 												</div>
@@ -465,63 +516,73 @@ export function TemplateSelectorModal({
 				</div>
 
 				{/* Footer */}
-				<DialogFooter className="px-6 py-4 border-t border-border/10 bg-background/80 backdrop-blur-sm">
+				<DialogFooter className="px-8 py-6 border-t border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
 					<div className="flex items-center justify-between w-full">
-						<div className="text-sm text-muted-foreground">
+						<div className="text-sm text-slate-600 dark:text-slate-400">
 							{activeView === "list" ? (
 								selectedCount > 0 && (
-									<div className="flex items-center gap-2">
-										<CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-										<span>
-											Will create{" "}
-											<strong className="text-foreground mx-1">
-												{selectedCount}
-											</strong>
-											{selectedCount === 1 ? " table" : " tables"}
-										</span>
+									<div className="flex items-center gap-3">
+										<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+											<CheckCircle className="w-4 h-4 text-white" />
+										</div>
+										<div>
+											<span className="font-semibold text-slate-900 dark:text-slate-100">
+												Will create {selectedCount} {selectedCount === 1 ? "table" : "tables"}
+											</span>
+											<p className="text-xs text-slate-500 dark:text-slate-500">
+												Ready to generate your database structure
+											</p>
+										</div>
 									</div>
 								)
 							) : (
 								previewTemplate && (
-									<span>
-										Previewing{" "}
-										<strong className="text-foreground">
-											{previewTemplate.name}
-										</strong>{" "}
-										template
-									</span>
+									<div className="flex items-center gap-3">
+										<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+											<Eye className="w-4 h-4 text-white" />
+										</div>
+										<div>
+											<span className="font-semibold text-slate-900 dark:text-slate-100">
+												Previewing {previewTemplate.name}
+											</span>
+											<p className="text-xs text-slate-500 dark:text-slate-500">
+												Review template structure and dependencies
+											</p>
+										</div>
+									</div>
 								)
 							)}
 						</div>
 
-						<div className="flex items-center gap-3">
+						<div className="flex items-center gap-4">
 							{activeView === "preview" && (
 								<Button
 									variant="outline"
 									onClick={handleBackToList}
-									className="px-4">
+									className="px-6 py-3 rounded-2xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200">
+									<ChevronLeft className="w-4 h-4 mr-2" />
 									Back to Templates
 								</Button>
 							)}
 							<Button
 								variant="outline"
 								onClick={onClose}
-								className="px-4">
+								className="px-6 py-3 rounded-2xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200">
 								Cancel
 							</Button>
 							{activeView === "list" ? (
 								<Button
 									onClick={handleCreateTables}
 									disabled={selectedCount === 0 || isLoading}
-									className="px-6 gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200">
+									className="px-8 py-3 gap-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl font-semibold">
 									{isLoading ? (
 										<>
-											<div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-											Creating...
+											<div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+											Creating Tables...
 										</>
 									) : (
 										<>
-											<CheckCircle className="w-4 h-4" />
+											<CheckCircle className="w-5 h-5" />
 											Create Tables
 										</>
 									)}
@@ -538,8 +599,8 @@ export function TemplateSelectorModal({
 										!previewTemplate ||
 										selectedTemplates.has(previewTemplate.id)
 									}
-									className="px-6 gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200">
-									<CheckCircle className="w-4 h-4" />
+									className="px-8 py-3 gap-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl font-semibold">
+									<CheckCircle className="w-5 h-5" />
 									{selectedTemplates.has(previewTemplate?.id || "")
 										? "Already Selected"
 										: "Select Template"}
