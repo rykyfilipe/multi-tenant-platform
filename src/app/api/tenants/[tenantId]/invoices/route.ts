@@ -763,6 +763,15 @@ export async function GET(
 			},
 		});
 
+		// Get customers table for customer data
+		const customersTable = await prisma.table.findFirst({
+			where: {
+				databaseId: database.id,
+				database: { tenantId: Number(tenantId) },
+				protectedType: "customers",
+			},
+		});
+
 		let invoices = [];
 		if (invoicesTable) {
 			const allInvoices = await prisma.row.findMany({
@@ -777,13 +786,47 @@ export async function GET(
 				orderBy: { id: "desc" },
 			});
 
-			// Transform to readable format
+			// Get all customers for lookup
+			let customers = [];
+			if (customersTable) {
+				const allCustomers = await prisma.row.findMany({
+					where: { tableId: customersTable.id },
+					include: {
+						cells: {
+							include: {
+								column: true,
+							},
+						},
+					},
+				});
+
+				// Transform customers to readable format
+				customers = allCustomers.map((customer: any) => {
+					const customerData: any = { id: customer.id };
+					customer.cells.forEach((cell: any) => {
+						customerData[cell.column.name] = cell.value;
+					});
+					return customerData;
+				});
+			}
+
+			// Transform invoices to readable format and include customer data
 			invoices = allInvoices.map((invoice: any) => {
 				const invoiceData: any = { id: invoice.id };
 
 				invoice.cells.forEach((cell: any) => {
 					invoiceData[cell.column.name] = cell.value;
 				});
+
+				// Add customer name if customer_id exists
+				if (invoiceData.customer_id && customers.length > 0) {
+					const customer = customers.find((c: any) => c.id === invoiceData.customer_id);
+					if (customer) {
+						invoiceData.customer_name = customer.customer_name;
+						invoiceData.customer_email = customer.customer_email;
+						invoiceData.customer_address = customer.customer_address;
+					}
+				}
 
 				return invoiceData;
 			});

@@ -30,6 +30,7 @@ import {
 	Search,
 	Filter,
 	Plus,
+	Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '@/contexts/AppContext';
@@ -79,9 +80,10 @@ export function EnhancedInvoiceList({
 	const filteredInvoices = invoices.filter(invoice => {
 		const matchesSearch = !searchTerm || 
 			invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			getCustomerName(invoice.customer_id)?.toLowerCase().includes(searchTerm.toLowerCase());
+			(invoice.customer_name || getCustomerName(invoice.customer_id))?.toLowerCase().includes(searchTerm.toLowerCase());
 		
-		const matchesStatus = !statusFilter || statusFilter === "all" || invoice.status === statusFilter;
+		const actualStatus = getInvoiceStatus(invoice);
+		const matchesStatus = !statusFilter || statusFilter === "all" || actualStatus === statusFilter;
 		
 		const matchesCustomer = !customerFilter || customerFilter === "all" || invoice.customer_id === parseInt(customerFilter);
 		
@@ -102,11 +104,21 @@ export function EnhancedInvoiceList({
 		return customer ? customer.customer_name : `Customer ${customerId}`;
 	};
 
+	const getInvoiceStatus = (invoice: any) => {
+		if (invoice.paid) return 'paid';
+		if (invoice.due_date) {
+			const dueDate = new Date(invoice.due_date);
+			const now = new Date();
+			return dueDate < now ? 'overdue' : 'issued';
+		}
+		return 'draft';
+	};
+
 	const getStatusVariant = (status: string) => {
 		switch (status?.toLowerCase()) {
 			case 'paid':
 				return 'default';
-			case 'pending':
+			case 'issued':
 				return 'secondary';
 			case 'overdue':
 				return 'destructive';
@@ -124,13 +136,15 @@ export function EnhancedInvoiceList({
 		}).format(amount);
 	};
 
+	const [viewingInvoice, setViewingInvoice] = useState<any>(null);
+
 	const handleViewInvoice = async (invoiceId: number) => {
 		try {
 			const details = await getInvoiceDetails(invoiceId);
-			// You can implement a modal or navigation to view invoice details
-			console.log('Invoice details:', details);
+			setViewingInvoice(details);
 		} catch (error) {
 			console.error('Error fetching invoice details:', error);
+			showAlert('Failed to load invoice details', 'error');
 		}
 	};
 
@@ -155,16 +169,50 @@ export function EnhancedInvoiceList({
 
 
 
-	const handleEditInvoice = (invoice: any) => {
-		if (onEditInvoice) {
-			onEditInvoice(invoice);
+	const handleEditInvoice = async (invoice: any) => {
+		try {
+			// Fetch complete invoice details for editing
+			const details = await getInvoiceDetails(invoice.id);
+			if (onEditInvoice) {
+				onEditInvoice(details);
+			}
+		} catch (error) {
+			console.error('Error fetching invoice details for editing:', error);
+			showAlert('Failed to load invoice details for editing', 'error');
+		}
+	};
+
+	const handleDownloadPDF = async (invoiceId: number, invoiceNumber: string) => {
+		try {
+			const response = await fetch(`/api/tenants/${tenant?.id}/invoices/${invoiceId}/download`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to download PDF');
+			}
+
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `factura-${invoiceNumber}.pdf`;
+			document.body.appendChild(a);
+			a.click();
+			window.URL.revokeObjectURL(url);
+			document.body.removeChild(a);
+
+			showAlert('Invoice PDF downloaded successfully', 'success');
+		} catch (error) {
+			console.error('Error downloading PDF:', error);
+			showAlert('Failed to download invoice PDF', 'error');
 		}
 	};
 
 	const clearFilters = () => {
 		setSearchTerm('');
-		setStatusFilter('');
-		setCustomerFilter('');
+		setStatusFilter('all');
+		setCustomerFilter('all');
 		setDateFromFilter('');
 		setDateToFilter('');
 		setCurrentPage(1);
@@ -181,19 +229,8 @@ export function EnhancedInvoiceList({
 		};
 
 		invoices.forEach(invoice => {
-			if (invoice.paid) {
-				counts.paid++;
-			} else if (invoice.due_date) {
-				const dueDate = new Date(invoice.due_date);
-				const now = new Date();
-				if (dueDate < now) {
-					counts.overdue++;
-				} else {
-					counts.issued++;
-				}
-			} else {
-				counts.draft++;
-			}
+			const status = getInvoiceStatus(invoice);
+			counts[status as keyof typeof counts]++;
 		});
 
 		return counts;
@@ -439,13 +476,13 @@ export function EnhancedInvoiceList({
 									<div className="flex-1">
 										<div className="flex items-center gap-3 mb-2">
 											<h3 className="font-semibold text-lg">#{invoice.invoice_number}</h3>
-											<Badge variant={getStatusVariant(invoice.status)}>
-												{invoice.status}
+											<Badge variant={getStatusVariant(getInvoiceStatus(invoice))}>
+												{getInvoiceStatus(invoice)}
 											</Badge>
 										</div>
 										<div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
 											<div>
-												<span className="font-medium">Customer:</span> {invoice.customer_name || 'N/A'}
+												<span className="font-medium">Customer:</span> {invoice.customer_name || getCustomerName(invoice.customer_id)}
 											</div>
 											<div>
 												<span className="font-medium">Date:</span> {format(new Date(invoice.date), 'MMM dd, yyyy')}
@@ -459,7 +496,16 @@ export function EnhancedInvoiceList({
 										<Button
 											variant="outline"
 											size="sm"
+											onClick={() => handleDownloadPDF(invoice.id, invoice.invoice_number)}
+											title="Download PDF"
+										>
+											<Download className="h-4 w-4" />
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
 											onClick={() => onEditInvoice?.(invoice)}
+											title="Edit Invoice"
 										>
 											<Edit className="h-4 w-4" />
 										</Button>
@@ -467,6 +513,7 @@ export function EnhancedInvoiceList({
 											variant="outline"
 											size="sm"
 											onClick={() => handleViewInvoice(invoice.id)}
+											title="View Details"
 										>
 											<Eye className="h-4 w-4" />
 										</Button>
@@ -474,6 +521,7 @@ export function EnhancedInvoiceList({
 											variant="outline"
 											size="sm"
 											onClick={() => handleDeleteInvoice(invoice.id)}
+											title="Delete Invoice"
 										>
 											<Trash2 className="h-4 w-4" />
 										</Button>
@@ -528,6 +576,111 @@ export function EnhancedInvoiceList({
 								</Button>
 							</div>
 							<SeriesManager tenantId={tenant?.id?.toString() || ''} />
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Invoice Details Modal */}
+			{viewingInvoice && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="bg-background rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+						<div className="p-6">
+							<div className="flex items-center justify-between mb-6">
+								<h2 className="text-2xl font-bold text-foreground">
+									Invoice #{viewingInvoice.invoice?.invoice_number || 'N/A'}
+								</h2>
+								<div className="flex items-center gap-2">
+									<Button 
+										variant="outline" 
+										size="sm"
+										onClick={() => handleDownloadPDF(viewingInvoice.invoice?.id, viewingInvoice.invoice?.invoice_number)}
+									>
+										<Download className="h-4 w-4 mr-2" />
+										Download PDF
+									</Button>
+									<Button variant="ghost" size="sm" onClick={() => setViewingInvoice(null)}>
+										×
+									</Button>
+								</div>
+							</div>
+							
+							<div className="space-y-6">
+								{/* Invoice Header */}
+								<Card>
+									<CardContent className="p-6">
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+											<div>
+												<h3 className="font-semibold text-lg mb-4">Invoice Details</h3>
+												<div className="space-y-2 text-sm">
+													<div><span className="font-medium">Invoice Number:</span> {viewingInvoice.invoice?.invoice_number || 'N/A'}</div>
+													<div><span className="font-medium">Date:</span> {viewingInvoice.invoice?.date ? format(new Date(viewingInvoice.invoice.date), 'MMM dd, yyyy') : 'N/A'}</div>
+													<div><span className="font-medium">Due Date:</span> {viewingInvoice.invoice?.due_date ? format(new Date(viewingInvoice.invoice.due_date), 'MMM dd, yyyy') : 'N/A'}</div>
+													<div><span className="font-medium">Status:</span> 
+														<Badge variant={getStatusVariant(viewingInvoice.invoice?.status)} className="ml-2">
+															{viewingInvoice.invoice?.status || 'Draft'}
+														</Badge>
+													</div>
+												</div>
+											</div>
+											<div>
+												<h3 className="font-semibold text-lg mb-4">Customer Details</h3>
+												<div className="space-y-2 text-sm">
+													<div><span className="font-medium">Name:</span> {viewingInvoice.customer?.customer_name || 'N/A'}</div>
+													<div><span className="font-medium">Email:</span> {viewingInvoice.customer?.customer_email || 'N/A'}</div>
+													<div><span className="font-medium">Address:</span> {viewingInvoice.customer?.customer_address || 'N/A'}</div>
+												</div>
+											</div>
+										</div>
+									</CardContent>
+								</Card>
+
+								{/* Invoice Items */}
+								<Card>
+									<CardHeader>
+										<CardTitle>Invoice Items</CardTitle>
+									</CardHeader>
+									<CardContent>
+										{viewingInvoice.items && viewingInvoice.items.length > 0 ? (
+											<div className="space-y-4">
+												{viewingInvoice.items.map((item: any, index: number) => (
+													<div key={index} className="flex justify-between items-center p-4 border rounded-lg">
+														<div className="flex-1">
+															<div className="font-medium">{item.product_details?.name || item.description || 'Product'}</div>
+															<div className="text-sm text-muted-foreground">
+																Quantity: {item.quantity} × {formatPrice(item.price, item.currency || 'USD')}
+															</div>
+														</div>
+														<div className="text-right">
+															<div className="font-medium">{formatPrice(item.quantity * item.price, item.currency || 'USD')}</div>
+														</div>
+													</div>
+												))}
+											</div>
+										) : (
+											<p className="text-muted-foreground">No items found</p>
+										)}
+									</CardContent>
+								</Card>
+
+								{/* Totals */}
+								{viewingInvoice.totals && (
+									<Card>
+										<CardContent className="p-6">
+											<div className="space-y-2 text-right">
+												<div className="flex justify-between">
+													<span>Subtotal:</span>
+													<span>{formatPrice(viewingInvoice.totals.subtotal, viewingInvoice.invoice?.base_currency || 'USD')}</span>
+												</div>
+												<div className="flex justify-between">
+													<span>Items Count:</span>
+													<span>{viewingInvoice.totals.items_count || 0}</span>
+												</div>
+											</div>
+										</CardContent>
+									</Card>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>

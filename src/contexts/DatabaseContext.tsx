@@ -402,16 +402,13 @@ export const DatabaseProvider = ({
 	};
 
 	const handleDeleteTable = async (id: string) => {
-		if (!tenantId || !token || !selectedDatabase) return;
+		if (!tenantId || !token || !selectedDatabase) {
+			throw new Error("Missing required data for table deletion");
+		}
 		
 		// Find the table to get its name for confirmation
 		const tableToDelete = tables?.find(table => table.id.toString() === id);
 		const tableName = tableToDelete?.name || "this table";
-		
-		// Show confirmation dialog
-		if (!confirm(`Are you sure you want to delete "${tableName}"? This action cannot be undone and will remove all data in this table.`)) {
-			return;
-		}
 		
 		try {
 			const response = await fetch(
@@ -454,6 +451,7 @@ export const DatabaseProvider = ({
 			console.error("Error deleting table:", error);
 			const errorMessage = error instanceof Error ? error.message : "Failed to remove table. Please try again.";
 			showAlert(errorMessage, "error");
+			throw error; // Re-throw to let the dialog handle the error state
 		}
 	};
 

@@ -1,6 +1,6 @@
 /** @format */
 
-import { Edit, Trash, Database } from "lucide-react";
+import { Edit, Database } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { useDatabase } from "@/contexts/DatabaseContext";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Table } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { memo } from "react";
+import { DeleteTableDialog } from "./DeleteTableDialog";
 
 const TableCard = memo(function TableCard({ table }: { table: Table }) {
 	const { handleDeleteTable } = useDatabase();
@@ -65,20 +66,15 @@ const TableCard = memo(function TableCard({ table }: { table: Table }) {
 					</Link>
 				</div>
 				<div className='flex items-center justify-end gap-2'>
-					{user?.role !== "VIEWER" && !table.isPredefined && (
-						<Button
-							size='sm'
-							variant='destructive'
-							onClick={() => handleDeleteTable(table?.id.toString())}
-							className='delete-table-button text-xs'>
-							<Trash className='w-4 h-4' />
-						</Button>
-					)}
-					{table.isPredefined && (
-						<div className='flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded'>
-							<Database className='w-3 h-3' />
-							Protected
-						</div>
+					{user?.role !== "VIEWER" && (
+						<DeleteTableDialog
+							tableName={table.name}
+							tableId={table.id.toString()}
+							onConfirm={handleDeleteTable}
+							isProtected={table.isPredefined}
+							rowsCount={table.rowsCount ?? (Array.isArray(table.rows) ? table.rows.length : 0)}
+							columnsCount={table.columnsCount ?? (Array.isArray(table.columns) ? table.columns.length : 0)}
+						/>
 					)}
 				</div>
 			</CardFooter>
