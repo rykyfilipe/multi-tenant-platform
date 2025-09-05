@@ -100,7 +100,7 @@ function DatabaseContent() {
 
 						{/* Buton Add Table */}
 						{selectedDatabase && (
-							<div className='w-full sm:w-auto flex justify-end gap-2'>
+							<div className='w-full flex flex-wrap gap-2'>
 								<TableTemplateSelector
 									onTemplatesSelected={(templates) => {
 										if (selectedDatabase) {
