@@ -76,6 +76,22 @@ export function EnhancedInvoiceList({
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 
+	// Helper functions - declared before they are used
+	const getCustomerName = (customerId: number) => {
+		const customer = customers.find((c) => c.id === customerId);
+		return customer ? customer.customer_name : `Customer ${customerId}`;
+	};
+
+	const getInvoiceStatus = (invoice: any) => {
+		if (invoice.paid) return 'paid';
+		if (invoice.due_date) {
+			const dueDate = new Date(invoice.due_date);
+			const now = new Date();
+			return dueDate < now ? 'overdue' : 'issued';
+		}
+		return 'draft';
+	};
+
 	// Filter invoices based on current filters
 	const filteredInvoices = invoices.filter(invoice => {
 		const matchesSearch = !searchTerm || 
@@ -98,21 +114,6 @@ export function EnhancedInvoiceList({
 	const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
 	const startIndex = (currentPage - 1) * itemsPerPage;
 	const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
-
-	const getCustomerName = (customerId: number) => {
-		const customer = customers.find((c) => c.id === customerId);
-		return customer ? customer.customer_name : `Customer ${customerId}`;
-	};
-
-	const getInvoiceStatus = (invoice: any) => {
-		if (invoice.paid) return 'paid';
-		if (invoice.due_date) {
-			const dueDate = new Date(invoice.due_date);
-			const now = new Date();
-			return dueDate < now ? 'overdue' : 'issued';
-		}
-		return 'draft';
-	};
 
 	const getStatusVariant = (status: string) => {
 		switch (status?.toLowerCase()) {

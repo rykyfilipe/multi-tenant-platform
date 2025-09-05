@@ -190,6 +190,6 @@ export const CHART_STYLES = {
   // Animation settings
   animation: {
     duration: 0.6,
-    easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+    easing: [0.4, 0, 0.2, 1], // Framer Motion cubic-bezier format
   },
 };
