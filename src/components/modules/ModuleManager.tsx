@@ -51,7 +51,7 @@ interface ModulesResponse {
 }
 
 export default function ModuleManager() {
-	const { token, tenant, showAlert } = useApp();
+	const { token, tenant, showAlert, setTenant } = useApp();
 	const { t } = useLanguage();
 	const [modules, setModules] = useState<ModuleDefinition[]>([]);
 	const [modulesStatus, setModulesStatus] = useState<ModuleStatus[]>([]);
@@ -162,6 +162,18 @@ export default function ModuleManager() {
 			});
 
 			if (response.ok) {
+				// Update tenant context with new enabled modules
+				if (tenant) {
+					const updatedEnabledModules = action === "enable" 
+						? [...(tenant.enabledModules || []), moduleId]
+						: (tenant.enabledModules || []).filter(m => m !== moduleId);
+					
+					setTenant({
+						...tenant,
+						enabledModules: updatedEnabledModules
+					});
+				}
+
 				// Refresh modules status to ensure consistency
 				await fetchModulesStatus();
 				if (action === "enable") {
@@ -192,10 +204,24 @@ export default function ModuleManager() {
 				// Revert enabledModules
 				if (action === "enable") {
 					setEnabledModules(prev => prev.filter(m => m !== moduleId));
+					// Revert tenant context
+					if (tenant) {
+						setTenant({
+							...tenant,
+							enabledModules: (tenant.enabledModules || []).filter(m => m !== moduleId)
+						});
+					}
 				} else {
 					setEnabledModules(prev => 
 						prev.includes(moduleId) ? prev : [...prev, moduleId]
 					);
+					// Revert tenant context
+					if (tenant) {
+						setTenant({
+							...tenant,
+							enabledModules: [...(tenant.enabledModules || []), moduleId]
+						});
+					}
 				}
 
 				const error = await response.json();
@@ -239,10 +265,24 @@ export default function ModuleManager() {
 			// Revert enabledModules
 			if (action === "enable") {
 				setEnabledModules(prev => prev.filter(m => m !== moduleId));
+				// Revert tenant context
+				if (tenant) {
+					setTenant({
+						...tenant,
+						enabledModules: (tenant.enabledModules || []).filter(m => m !== moduleId)
+					});
+				}
 			} else {
 				setEnabledModules(prev => 
 					prev.includes(moduleId) ? prev : [...prev, moduleId]
 				);
+				// Revert tenant context
+				if (tenant) {
+					setTenant({
+						...tenant,
+						enabledModules: [...(tenant.enabledModules || []), moduleId]
+					});
+				}
 			}
 
 			console.error("Error toggling module:", error);
