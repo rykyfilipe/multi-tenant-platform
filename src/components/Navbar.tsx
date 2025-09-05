@@ -190,7 +190,7 @@ export function MobileBottomNavbar() {
 			{/* Background with premium glass effect */}
 			<div className='premium-glass border-t border-border shadow-2xl'>
 				{/* Main navigation */}
-				<div className='flex items-center justify-around px-1 sm:px-2 py-1.5 sm:py-2'>
+				<div className='flex items-center justify-around px-2 py-2 sm:px-4 sm:py-3'>
 					{getMobileNavigationItems(t, user?.role, tenant, user).map(
 						(item, index) => {
 							const isActive = pathname === item.url;
@@ -203,16 +203,20 @@ export function MobileBottomNavbar() {
 									<Link
 										href={item.url}
 										className={cn(
-											"flex items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction mobile-touch-feedback",
-											"hover:bg-primary/10 active:scale-95 transition-all duration-200",
+											"flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction mobile-touch-feedback",
+											"hover:bg-primary/10 active:scale-95 transition-all duration-200 min-w-0 flex-1",
 											isActive
 												? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
 												: "text-muted-foreground hover:text-foreground",
 										)}>
 										<motion.div
 											whileHover={{ scale: 1.1 }}
-											whileTap={{ scale: 0.9 }}>
+											whileTap={{ scale: 0.9 }}
+											className="flex flex-col items-center gap-1">
 											<item.icon className='w-4 h-4 sm:w-5 sm:h-5' />
+											<span className="text-xs font-medium truncate max-w-full">
+												{item.title}
+											</span>
 										</motion.div>
 									</Link>
 								</motion.div>

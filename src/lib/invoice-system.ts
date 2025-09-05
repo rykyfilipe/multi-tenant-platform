@@ -1344,40 +1344,52 @@ export class InvoiceSystemService {
 			return;
 		}
 
-		// Check if product_vat column exists
+		// Check which required columns are missing
 		const existingColumns = existingTables.invoice_items.columns || [];
-		const hasProductVat = existingColumns.some(
-			(col: any) => col.name === "product_vat",
+		const requiredColumns = [
+			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 15 },
+			{ name: "price", type: "number", semanticType: SemanticColumnType.UNIT_PRICE, order: 6 },
+		];
+
+		const missingColumns = requiredColumns.filter(col => 
+			!existingColumns.some((existing: any) => existing.name === col.name)
 		);
 
-		if (hasProductVat) {
-			console.log("product_vat column already exists, no update needed");
+		if (missingColumns.length === 0) {
+			console.log("All required columns already exist, no update needed");
 			return;
 		}
 
-		console.log("Adding missing product_vat column to invoice_items table");
+		console.log("Adding missing columns to invoice_items table:", missingColumns.map(c => c.name));
 
-		// Add the missing product_vat column
-		await prisma.column.create({
-			data: {
-				name: "product_vat",
-				type: "number",
-				semanticType: SemanticColumnType.PRODUCT_VAT,
-				required: true,
-				primary: false,
-				order: 15,
-				isLocked: false,
-				tableId: existingTables.invoice_items.id,
-			},
-		});
+		// Add missing columns
+		for (const col of missingColumns) {
+			await prisma.column.create({
+				data: {
+					name: col.name,
+					type: col.type,
+					semanticType: col.semanticType,
+					required: true,
+					primary: false,
+					order: col.order,
+					isLocked: false,
+					tableId: existingTables.invoice_items.id,
+				},
+			});
+		}
 
 		// Update order for subsequent columns if they exist
 		const columnsToUpdate = [
-			{ name: "description", newOrder: 16 },
-			{ name: "tax_rate", newOrder: 17 },
-			{ name: "tax_amount", newOrder: 18 },
-			{ name: "discount_rate", newOrder: 19 },
-			{ name: "discount_amount", newOrder: 20 },
+			{ name: "product_name", newOrder: 16 },
+			{ name: "product_description", newOrder: 17 },
+			{ name: "product_category", newOrder: 18 },
+			{ name: "product_brand", newOrder: 19 },
+			{ name: "product_sku", newOrder: 20 },
+			{ name: "description", newOrder: 21 },
+			{ name: "tax_rate", newOrder: 22 },
+			{ name: "tax_amount", newOrder: 23 },
+			{ name: "discount_rate", newOrder: 24 },
+			{ name: "discount_amount", newOrder: 25 },
 		];
 
 		for (const colUpdate of columnsToUpdate) {

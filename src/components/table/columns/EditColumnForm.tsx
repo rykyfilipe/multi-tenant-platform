@@ -65,11 +65,206 @@ export default function EditColumnForm({
 	});
 
 	const updateColumn = useCallback((key: keyof Column, value: any) => {
+		// Special handling for semantic types - auto-configure column type and options
+		if (key === "semanticType" && value) {
+			let columnType: (typeof USER_FRIENDLY_COLUMN_TYPES)[keyof typeof USER_FRIENDLY_COLUMN_TYPES] =
+				USER_FRIENDLY_COLUMN_TYPES.text;
+			let customOptions: string[] = [];
+
+			// Auto-configure column type and options based on semantic type
+			switch (value) {
+				case "currency":
+				case "invoice_currency":
+				case "invoice_base_currency":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.customArray;
+					customOptions = t("columnTypes.currencies").split(", ");
+					break;
+
+				case "product_status":
+				case "invoice_status":
+				case "status":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.customArray;
+					customOptions = [
+						t("columnTypes.status.active"),
+						t("columnTypes.status.inactive"),
+						t("columnTypes.status.draft"),
+						t("columnTypes.status.published"),
+						t("columnTypes.status.archived"),
+						t("columnTypes.status.pending"),
+						t("columnTypes.status.completed"),
+						t("columnTypes.status.cancelled"),
+					];
+					break;
+
+				case "product_category":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.customArray;
+					customOptions = [
+						t("columnTypes.categories.electronics"),
+						t("columnTypes.categories.clothing"),
+						t("columnTypes.categories.books"),
+						t("columnTypes.categories.homeGarden"),
+						t("columnTypes.categories.sports"),
+						t("columnTypes.categories.automotive"),
+						t("columnTypes.categories.healthBeauty"),
+						t("columnTypes.categories.toysGames"),
+						t("columnTypes.categories.foodBeverages"),
+						t("columnTypes.categories.jewelry"),
+						t("columnTypes.categories.toolsHardware"),
+						t("columnTypes.categories.petSupplies"),
+						t("columnTypes.categories.officeSupplies"),
+						t("columnTypes.categories.babyProducts"),
+						t("columnTypes.categories.gardenOutdoor"),
+						t("columnTypes.categories.music"),
+						t("columnTypes.categories.movies"),
+						t("columnTypes.categories.art"),
+						t("columnTypes.categories.collectibles"),
+						t("columnTypes.categories.antiques"),
+					];
+					break;
+
+				case "product_price":
+				case "price":
+				case "amount":
+				case "unit_price":
+				case "total_price":
+				case "tax_amount":
+				case "discount_amount":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.number;
+					break;
+
+				case "product_vat":
+				case "tax_rate":
+				case "discount_rate":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.number;
+					break;
+
+				case "quantity":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.number;
+					break;
+
+				case "invoice_date":
+				case "invoice_due_date":
+				case "date":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.date;
+					break;
+
+				case "product_name":
+				case "customer_name":
+				case "name":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "product_description":
+				case "description":
+				case "notes":
+				case "comments":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "email":
+				case "customer_email":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "phone":
+				case "customer_phone":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "address":
+				case "customer_address":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "city":
+				case "customer_city":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "country":
+				case "customer_country":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "postal_code":
+				case "customer_postal_code":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "tax_id":
+				case "customer_tax_id":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "registration_number":
+				case "customer_registration_number":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "street":
+				case "customer_street":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "street_number":
+				case "customer_street_number":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "iban":
+				case "company_iban":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "bic":
+				case "company_bic":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "bank":
+				case "company_bank":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+
+				case "unit_of_measure":
+					columnType = USER_FRIENDLY_COLUMN_TYPES.customArray;
+					customOptions = [
+						t("columnTypes.units.piece"),
+						t("columnTypes.units.kg"),
+						t("columnTypes.units.gram"),
+						t("columnTypes.units.liter"),
+						t("columnTypes.units.meter"),
+						t("columnTypes.units.cm"),
+						t("columnTypes.units.mm"),
+						t("columnTypes.units.hour"),
+						t("columnTypes.units.day"),
+						t("columnTypes.units.week"),
+						t("columnTypes.units.month"),
+						t("columnTypes.units.year"),
+					];
+					break;
+
+				default:
+					// Keep current type for unknown semantic types
+					columnType = (editedColumn.type as (typeof USER_FRIENDLY_COLUMN_TYPES)[keyof typeof USER_FRIENDLY_COLUMN_TYPES]) || USER_FRIENDLY_COLUMN_TYPES.text;
+					break;
+			}
+
+			// Update the column with the new type and options
+			setEditedColumn((prev) => ({
+				...prev,
+				[key]: value,
+				type: columnType,
+				customOptions: customOptions,
+			}));
+			return;
+		}
+
 		setEditedColumn((prev) => ({
 			...prev,
 			[key]: value,
 		}));
-	}, []);
+	}, [t, editedColumn.type]);
 
 	const handleBooleanChange = useCallback(
 		(key: keyof Column, value: string) => {

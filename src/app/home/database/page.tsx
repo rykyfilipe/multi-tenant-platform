@@ -75,30 +75,31 @@ function DatabaseContent() {
 			onTourSkip={() => {
 				tourUtils.markTourSeen("database");
 			}}>
-			<div className='h-full bg-background'>
+			<div className='min-h-full bg-background'>
 				{/* Header */}
 				<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
-					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 gap-4'>
-						{/* Titlu + descriere + selector */}
-						<div className='flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6'>
-							<div>
-								<h1 className='text-xl font-semibold text-foreground'>
-									Database
-								</h1>
-								<p className='text-sm text-muted-foreground'>
-									Manage your data tables and schemas
-								</p>
-							</div>
-
-							<div className='database-selector w-full sm:w-auto'>
-								<DatabaseSelector />
-							</div>
+					<div className='px-3 sm:px-4 md:px-6 py-3 sm:py-4'>
+						{/* Title and Description */}
+						<div className='mb-4 sm:mb-0'>
+							<h1 className='text-lg sm:text-xl font-semibold text-foreground'>
+								Database
+							</h1>
+							<p className='text-xs sm:text-sm text-muted-foreground'>
+								Manage your data tables and schemas
+							</p>
 						</div>
 
-						{/* Buton Add Table */}
+						{/* Database Selector */}
+						<div className='mb-4 sm:mb-0'>
+							<DatabaseSelector />
+						</div>
+
+						{/* Action Buttons */}
 						{selectedDatabase && (
-							<div className='w-full flex items-center justify-end gap-2'>
-								<TableTemplateSelector />
+							<div className='flex flex-col sm:flex-row gap-2 sm:gap-3'>
+								<div className='flex-1 sm:flex-none'>
+									<TableTemplateSelector />
+								</div>
 								<Button
 									onClick={() => setShowAddTableModal(true)}
 									className='w-full sm:w-auto add-table-button'
@@ -112,7 +113,7 @@ function DatabaseContent() {
 				</div>
 
 				{/* Main Content */}
-				<div className='p-6'>
+				<div className='p-3 sm:p-4 md:p-6'>
 					<div className='max-w-7xl mx-auto'>
 						{/* Loading state */}
 						{loading && <DatabaseLoadingState />}

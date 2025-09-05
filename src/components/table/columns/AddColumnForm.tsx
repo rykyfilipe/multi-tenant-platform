@@ -84,6 +84,8 @@ export default function AddColumnForm({
 				// Auto-configure column type and options based on semantic type
 				switch (value) {
 					case "currency":
+					case "invoice_currency":
+					case "invoice_base_currency":
 						columnType = USER_FRIENDLY_COLUMN_TYPES.customArray;
 						customOptions = t("columnTypes.currencies").split(", ");
 						break;

@@ -189,19 +189,19 @@ export default function TemplatesPage() {
 		<div className="min-h-screen bg-background">
 			{/* Header */}
 			<div className="sticky top-0 z-40 border-b border-border/20 bg-background/80 backdrop-blur-sm">
-				<div className="container mx-auto px-4 py-4">
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-						<div className="flex items-center gap-4">
+				<div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+					<div className="flex flex-col gap-3 sm:gap-4">
+						<div className="flex items-center gap-2 sm:gap-4">
 							<Button
 								variant="ghost"
 								size="sm"
 								onClick={() => router.push("/home/database")}
-								className="p-2">
+								className="p-2 flex-shrink-0">
 								<ArrowLeft className="w-4 h-4" />
 							</Button>
-							<div>
-								<h1 className="text-2xl font-bold">Table Templates</h1>
-								<p className="text-muted-foreground">
+							<div className="min-w-0 flex-1">
+								<h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate">Table Templates</h1>
+								<p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
 									Choose from professionally designed table templates for{" "}
 									<strong>{selectedDatabase.name}</strong>
 								</p>
@@ -209,23 +209,25 @@ export default function TemplatesPage() {
 						</div>
 
 						{selectedCount > 0 && (
-							<div className="flex items-center gap-3">
-								<Badge variant="default" className="px-3 py-1">
+							<div className="flex items-center justify-between gap-2 sm:gap-3">
+								<Badge variant="default" className="px-2 sm:px-3 py-1 text-xs sm:text-sm">
 									{selectedCount} selected
 								</Badge>
 								<Button
 									onClick={handleCreateTables}
 									disabled={isCreating || selectedCount === 0}
-									className="px-6 gap-2">
+									className="px-3 sm:px-6 gap-2 text-xs sm:text-sm">
 									{isCreating ? (
 										<>
 											<div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-											Creating Tables...
+											<span className="hidden sm:inline">Creating Tables...</span>
+											<span className="sm:hidden">Creating...</span>
 										</>
 									) : (
 										<>
 											<CheckCircle className="w-4 h-4" />
-											Create {selectedCount} Table{selectedCount !== 1 ? 's' : ''}
+											<span className="hidden sm:inline">Create {selectedCount} Table{selectedCount !== 1 ? 's' : ''}</span>
+											<span className="sm:hidden">Create</span>
 										</>
 									)}
 								</Button>
@@ -237,7 +239,7 @@ export default function TemplatesPage() {
 
 			{/* Progress Indicator */}
 			{(isCreating || progress) && (
-				<div className="container mx-auto px-4 py-4">
+				<div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
 					<TemplateCreationProgress 
 						progress={progress} 
 						isCreating={isCreating} 
@@ -246,24 +248,25 @@ export default function TemplatesPage() {
 			)}
 
 			{/* Main Content */}
-			<div className="container mx-auto px-4 py-6">
+			<div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6">
 				{/* Search and Filters */}
-				<div className="mb-8">
-					<div className="flex flex-col sm:flex-row gap-4 mb-6">
+				<div className="mb-6 sm:mb-8">
+					<div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
 						<div className="relative flex-1">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
 							<Input
 								placeholder="Search templates..."
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="pl-10"
+								className="pl-10 text-sm"
 							/>
 						</div>
-						<div className="flex gap-2 flex-wrap">
+						<div className="flex gap-1 sm:gap-2 flex-wrap overflow-x-auto pb-2 sm:pb-0">
 							<Button
 								variant={selectedCategory === null ? "default" : "outline"}
 								size="sm"
-								onClick={() => setSelectedCategory(null)}>
+								onClick={() => setSelectedCategory(null)}
+								className="text-xs sm:text-sm whitespace-nowrap">
 								All Categories
 							</Button>
 							{categories.map((category) => (
@@ -271,7 +274,8 @@ export default function TemplatesPage() {
 									key={category}
 									variant={selectedCategory === category ? "default" : "outline"}
 									size="sm"
-									onClick={() => setSelectedCategory(category)}>
+									onClick={() => setSelectedCategory(category)}
+									className="text-xs sm:text-sm whitespace-nowrap">
 									{category}
 								</Button>
 							))}
@@ -296,7 +300,7 @@ export default function TemplatesPage() {
 				</div>
 
 				{/* Templates Grid */}
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
 					{filteredTemplates.map((template) => {
 						const isSelected = selectedTemplates.has(template.id);
 						const canSelect = canSelectTemplate(template);

@@ -264,20 +264,20 @@ export function ColumnOrderManager({
 	};
 
 	return (
-		<div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-			<Card className='w-full max-w-2xl max-h-[80vh] overflow-hidden'>
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-4'>
-					<div className='flex items-center gap-2'>
-						<Settings className='w-5 h-5' />
-						<CardTitle>Manage Column Order</CardTitle>
+		<div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4'>
+			<Card className='w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden'>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3 sm:pb-4'>
+					<div className='flex items-center gap-2 min-w-0 flex-1'>
+						<Settings className='w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0' />
+						<CardTitle className='text-base sm:text-lg truncate'>Manage Column Order</CardTitle>
 					</div>
-					<Button variant='ghost' size='sm' onClick={onClose}>
+					<Button variant='ghost' size='sm' onClick={onClose} className='flex-shrink-0'>
 						<X className='w-4 h-4' />
 					</Button>
 				</CardHeader>
 
-				<CardContent className='space-y-4'>
-					<div className='text-sm text-muted-foreground mb-4'>
+				<CardContent className='space-y-3 sm:space-y-4'>
+					<div className='text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4'>
 						Drag and drop or use the arrow buttons to reorder columns. The order
 						will be saved when you click "Save Order".
 					</div>
@@ -289,7 +289,7 @@ export function ColumnOrderManager({
 						<SortableContext
 							items={reorderedColumns.map((col) => col.id)}
 							strategy={verticalListSortingStrategy}>
-							<div className='space-y-2 max-h-96 overflow-y-auto'>
+							<div className='space-y-2 max-h-64 sm:max-h-96 overflow-y-auto'>
 								{reorderedColumns.map((column, index) => (
 									<SortableColumnItem
 										key={column.id}
@@ -305,15 +305,15 @@ export function ColumnOrderManager({
 						</SortableContext>
 					</DndContext>
 
-					<div className='flex items-center justify-between pt-4 border-t'>
-						<Button variant='outline' onClick={resetOrder}>
+					<div className='flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-3 sm:pt-4 border-t gap-2 sm:gap-0'>
+						<Button variant='outline' onClick={resetOrder} className='w-full sm:w-auto'>
 							Reset Order
 						</Button>
 						<div className='flex items-center gap-2'>
-							<Button variant='outline' onClick={onClose}>
+							<Button variant='outline' onClick={onClose} className='flex-1 sm:flex-none'>
 								Cancel
 							</Button>
-							<Button onClick={saveColumnOrder}>
+							<Button onClick={saveColumnOrder} className='flex-1 sm:flex-none'>
 								<Save className='w-4 h-4 mr-2' />
 								Save Order
 							</Button>

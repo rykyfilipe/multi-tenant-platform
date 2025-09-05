@@ -288,7 +288,7 @@ export const TableView = memo(function TableView({
 							<tr>
 								{/* Selection Column */}
 								{tablePermissions.canEditTable() && (
-									<th className='sticky left-0 z-20 bg-muted/30 backdrop-blur-sm border-r border-border/20 px-4 py-3 text-left'>
+									<th className='sticky left-0 z-20 bg-muted/30 backdrop-blur-sm border-r border-border/20 px-2 sm:px-4 py-2 sm:py-3 text-left'>
 										<div className='flex items-center justify-center'>
 											<Checkbox
 												checked={
@@ -310,11 +310,11 @@ export const TableView = memo(function TableView({
 								{safeColumns.map((col) => (
 									<th
 										key={col.id}
-										className='px-4 py-3 text-left text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20'>
-										<div className='flex items-center gap-2'>
+										className='px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 min-w-[120px]'>
+										<div className='flex items-center gap-1 sm:gap-2'>
 											<span className='truncate'>{col.name}</span>
 											{col.type && (
-												<span className='inline-flex items-center px-2 py-1 text-xs font-medium bg-muted/50 text-muted-foreground rounded-md'>
+												<span className='hidden sm:inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium bg-muted/50 text-muted-foreground rounded-md'>
 													{col.type}
 												</span>
 											)}
@@ -324,7 +324,7 @@ export const TableView = memo(function TableView({
 
 								{/* Actions Column */}
 								{tablePermissions.canEditTable() && (
-									<th className='px-4 py-3 text-center text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0 w-20'>
+									<th className='px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0 w-16 sm:w-20'>
 										Actions
 									</th>
 								)}
