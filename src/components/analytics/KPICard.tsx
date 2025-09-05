@@ -79,31 +79,24 @@ export const KPICard: React.FC<KPICardProps> = ({
 		<motion.div
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.4, delay }}
-			whileHover={{ 
-				scale: 1.02,
-				y: -2,
-				transition: { duration: 0.2 }
-			}}>
-			<Card className='group relative overflow-hidden bg-gradient-to-br from-card/80 to-card/60 border-border/20 hover:border-border/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 backdrop-blur-sm'>
-				{/* Subtle gradient overlay */}
-				<div className='absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300' />
-				
-				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3 relative z-10'>
-					<CardTitle className='text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors duration-200'>
+			transition={{ duration: 0.3, delay }}
+			whileHover={{ scale: 1.02 }}>
+			<Card className='bg-card border-border hover:shadow-md transition-all duration-200'>
+				<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+					<CardTitle className='text-sm font-medium text-muted-foreground'>
 						{title}
 					</CardTitle>
 					<div
-						className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 ${colorClasses[color]}`}>
-						<Icon className='w-5 h-5' />
+						className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
+						<Icon className='w-4 h-4' />
 					</div>
 				</CardHeader>
-				<CardContent className='relative z-10'>
-					<div className='flex items-baseline space-x-3'>
-						<div className='text-3xl font-bold text-foreground group-hover:text-primary transition-colors duration-200'>
+				<CardContent>
+					<div className='flex items-baseline space-x-2'>
+						<div className='text-2xl font-bold text-foreground'>
 							{formatValue(value)}
 							{unit && (
-								<span className='text-lg font-normal text-muted-foreground ml-1'>
+								<span className='text-sm font-normal text-muted-foreground ml-1'>
 									{unit}
 								</span>
 							)}
@@ -111,14 +104,14 @@ export const KPICard: React.FC<KPICardProps> = ({
 						{change !== undefined && (
 							<Badge
 								variant='secondary'
-								className={`text-xs font-medium px-2 py-1 rounded-full shadow-sm ${getTrendColor(changeType)}`}>
+								className={`text-xs ${getTrendColor(changeType)}`}>
 								{getTrendIcon(changeType)}
 								<span className='ml-1'>{Math.abs(change)}%</span>
 							</Badge>
 						)}
 					</div>
 					{description && (
-						<p className='text-sm text-muted-foreground mt-2 group-hover:text-foreground/80 transition-colors duration-200'>{description}</p>
+						<p className='text-xs text-muted-foreground mt-1'>{description}</p>
 					)}
 				</CardContent>
 			</Card>

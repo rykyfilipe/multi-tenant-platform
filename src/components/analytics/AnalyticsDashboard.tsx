@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -52,8 +51,6 @@ import {
 	RevenueChart,
 	ErrorTrackingChart,
 	RealDataStatus,
-	AnalyticsFilters,
-	AnalyticsSectionHeader,
 } from "./index";
 import { RealSizeInfo } from "./RealSizeInfo";
 import { useProcessedAnalyticsData } from "@/hooks/useProcessedAnalyticsData";
@@ -167,58 +164,64 @@ export const AnalyticsDashboard: React.FC = () => {
 			initial={{ opacity: 0 }}
 			animate={{ opacity: 1 }}
 			transition={{ duration: 0.5 }}
-			className='h-full bg-gradient-to-br from-background via-background/95 to-background/90'>
-			{/* Modern Header */}
-			<div className='sticky top-0 z-50 border-b border-border/20 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm'>
-				<div className='px-6 py-6'>
-					<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
-						{/* Title Section */}
-						<div className='space-y-2' data-tour-id="dashboard-stats">
-							<div className='flex items-center gap-3'>
-								<div className='p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl shadow-lg'>
-									<BarChart3 className='w-6 h-6 text-primary' />
-								</div>
-								<div>
-									<h1 className='text-3xl font-bold text-foreground tracking-tight'>
-										Analytics Dashboard
-									</h1>
-									<p className='text-muted-foreground font-medium'>
-										Real-time insights and performance metrics
-									</p>
-								</div>
-							</div>
-						</div>
+			className='h-full bg-background'>
+			{/* Header */}
+			<div className='border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50'>
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 md:px-6 py-3 sm:py-4 gap-3 sm:gap-4'>
+					<div data-tour-id="dashboard-stats">
+						<h1 className='text-xl sm:text-2xl font-bold text-foreground'>
+							Analytics Dashboard
+						</h1>
+						<p className='text-sm sm:text-base text-muted-foreground'>
+							Comprehensive insights and performance metrics for your platform
+						</p>
+					</div>
 
-						{/* Controls Section */}
-						<div data-tour-id="quick-actions">
-							<AnalyticsFilters
-								timeFilter={timeFilter}
-								onTimeFilterChange={(value) => setTimeFilter(value as TimeFilter)}
-								onExport={handleExportData}
-								onRefresh={() => window.location.reload()}
-								showAdvancedFilters={true}
-								onAdvancedFilters={() => console.log('Advanced filters clicked')}
-							/>
-						</div>
+					<div className='flex items-center gap-2 sm:gap-3 flex-wrap' data-tour-id="quick-actions">
+						<Select
+							value={timeFilter}
+							onValueChange={(value) => setTimeFilter(value as TimeFilter)}>
+							<SelectTrigger className='w-28 sm:w-32'>
+								<Calendar className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='7d'>Last 7 days</SelectItem>
+								<SelectItem value='30d'>Last 30 days</SelectItem>
+								<SelectItem value='90d'>Last 90 days</SelectItem>
+								<SelectItem value='1y'>Last year</SelectItem>
+							</SelectContent>
+						</Select>
+
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={handleExportData}
+							className='text-xs sm:text-sm'>
+							<Download className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
+							<span className='hidden sm:inline'>Export</span>
+						</Button>
+
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => window.location.reload()}
+							className='text-xs sm:text-sm'>
+							<RefreshCw className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
+							<span className='hidden sm:inline'>Refresh</span>
+						</Button>
 					</div>
 				</div>
 			</div>
 
 			{/* Main Content */}
-			<div className='p-6 max-w-7xl mx-auto space-y-8'>
-				{/* KPI Cards Section */}
+			<div className='p-3 sm:p-4 md:p-6 max-w-[1400px] mx-auto space-y-4 sm:space-y-6 md:space-y-8'>
+				{/* KPI Cards */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.1 }}
-					className='space-y-6'>
-					<AnalyticsSectionHeader
-						title='Key Metrics'
-						description='Overview of your platform performance'
-						icon={BarChart3}
-					/>
-					
-					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6'>
+					transition={{ duration: 0.6, delay: 0.1 }}>
+					<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6'>
 						<KPICard
 							title='Total Databases'
 							value={kpis.totalDatabases}
@@ -281,21 +284,11 @@ export const AnalyticsDashboard: React.FC = () => {
 				</motion.div>
 
 				{/* Analytics Tabs */}
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.2 }}>
-					<Tabs
-						value={activeTab}
-						onValueChange={setActiveTab}
-						className='space-y-8'>
-						<AnalyticsSectionHeader
-							title='Analytics Overview'
-							description='Detailed insights and performance metrics'
-							icon={Activity}
-						/>
-						
-						<TabsList className='grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 h-auto bg-muted/30 p-1 rounded-xl'>
+				<Tabs
+					value={activeTab}
+					onValueChange={setActiveTab}
+					className='space-y-4 sm:space-y-6'>
+					<TabsList className='grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 h-auto'>
 						<TabsTrigger
 							value='overview'
 							className='text-xs sm:text-sm py-2 sm:py-3'>
@@ -334,8 +327,8 @@ export const AnalyticsDashboard: React.FC = () => {
 					</TabsList>
 
 					{/* Overview Tab */}
-					<TabsContent value='overview' className='space-y-8 mt-8'>
-						<div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+					<TabsContent value='overview' className='space-y-4 sm:space-y-6'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
 							<OverviewChart
 								title='User Activity Trend'
 								icon={Activity}
@@ -400,8 +393,8 @@ export const AnalyticsDashboard: React.FC = () => {
 					</TabsContent>
 
 					{/* Resources Tab */}
-					<TabsContent value='resources' className='space-y-8 mt-8'>
-						<div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+					<TabsContent value='resources' className='space-y-4 sm:space-y-6'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
 							<ResourceUsageChart
 								title='Resource Utilization'
 								icon={Gauge}
@@ -506,8 +499,8 @@ export const AnalyticsDashboard: React.FC = () => {
 					</TabsContent>
 
 					{/* Users Tab */}
-					<TabsContent value='users' className='space-y-8 mt-8'>
-						<div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+					<TabsContent value='users' className='space-y-4 sm:space-y-6'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
 							<DistributionChart
 								title='User Roles Distribution'
 								icon={Users}
@@ -575,8 +568,8 @@ export const AnalyticsDashboard: React.FC = () => {
 					</TabsContent>
 
 					{/* Performance Tab */}
-					<TabsContent value='performance' className='space-y-8 mt-8'>
-						<div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+					<TabsContent value='performance' className='space-y-4 sm:space-y-6'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
 							<PerformanceChart
 								title='System Health Radar'
 								icon={Gauge}
@@ -662,8 +655,8 @@ export const AnalyticsDashboard: React.FC = () => {
 					</TabsContent>
 
 					{/* Business Tab */}
-					<TabsContent value='business' className='space-y-8 mt-8'>
-						<div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+					<TabsContent value='business' className='space-y-4 sm:space-y-6'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
 							<RevenueChart
 								title='Revenue & ARPU Trends'
 								icon={DollarSign}
@@ -749,8 +742,8 @@ export const AnalyticsDashboard: React.FC = () => {
 					</TabsContent>
 
 					{/* Errors Tab */}
-					<TabsContent value='errors' className='space-y-8 mt-8'>
-						<div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+					<TabsContent value='errors' className='space-y-4 sm:space-y-6'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
 							<ErrorTrackingChart
 								title='Error Tracking & Resolution'
 								icon={AlertTriangle}
@@ -837,13 +830,12 @@ export const AnalyticsDashboard: React.FC = () => {
 					</TabsContent>
 
 					{/* Data Status Tab */}
-					<TabsContent value='status' className='space-y-8 mt-8'>
-						<div className='grid grid-cols-1 gap-8'>
+					<TabsContent value='status' className='space-y-4 sm:space-y-6'>
+						<div className='grid grid-cols-1 gap-4 sm:gap-6'>
 							<RealDataStatus />
 						</div>
 					</TabsContent>
-					</Tabs>
-				</motion.div>
+				</Tabs>
 			</div>
 		</motion.div>
 	);
