@@ -1,6 +1,7 @@
 /** @format */
 
-import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
+// Use dynamic import for pdf-lib to avoid SSR issues
+import type { PDFDocument as PDFDocumentType, RGB, PageSizes as PageSizesType } from 'pdf-lib';
 import { InvoiceSystemService } from './invoice-system';
 import prisma from './prisma';
 
@@ -34,6 +35,9 @@ export class EnhancedPDFGenerator {
 	 */
 	static async generateInvoicePDF(options: PDFGenerationOptions): Promise<Buffer> {
 		try {
+			// Dynamic import to avoid SSR issues
+			const { PDFDocument, rgb, StandardFonts, PageSizes } = await import('pdf-lib');
+			
 			// Get invoice data
 			const invoiceData = await this.getInvoiceData(options);
 			if (!invoiceData) {

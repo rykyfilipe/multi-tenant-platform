@@ -2,13 +2,22 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
 import {
 	FileText,
 	User,
@@ -64,6 +73,16 @@ export function EnhancedInvoiceList({
 	
 	// Modal states
 	const [showSeriesManager, setShowSeriesManager] = useState(false);
+	const [viewingInvoice, setViewingInvoice] = useState<any>(null);
+	
+	// Delete confirmation dialog
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
+	const [deleting, setDeleting] = useState(false);
+	
+	// Optimistic updates state
+	const [optimisticInvoices, setOptimisticInvoices] = useState<any[]>(invoices);
+	const [optimisticCustomers, setOptimisticCustomers] = useState<any[]>(customers);
 	
 	// Filter states
 	const [searchTerm, setSearchTerm] = useState('');
@@ -76,9 +95,18 @@ export function EnhancedInvoiceList({
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 
+	// Sync optimistic state with props
+	useEffect(() => {
+		setOptimisticInvoices(invoices);
+	}, [invoices]);
+
+	useEffect(() => {
+		setOptimisticCustomers(customers);
+	}, [customers]);
+
 	// Helper functions - declared before they are used
 	const getCustomerName = (customerId: number) => {
-		const customer = customers.find((c) => c.id === customerId);
+		const customer = optimisticCustomers.find((c) => c.id === customerId);
 		return customer ? customer.customer_name : `Customer ${customerId}`;
 	};
 
@@ -93,7 +121,7 @@ export function EnhancedInvoiceList({
 	};
 
 	// Filter invoices based on current filters
-	const filteredInvoices = invoices.filter(invoice => {
+	const filteredInvoices = optimisticInvoices.filter(invoice => {
 		const matchesSearch = !searchTerm || 
 			invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			(invoice.customer_name || getCustomerName(invoice.customer_id))?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -137,8 +165,6 @@ export function EnhancedInvoiceList({
 		}).format(amount);
 	};
 
-	const [viewingInvoice, setViewingInvoice] = useState<any>(null);
-
 	const handleViewInvoice = async (invoiceId: number) => {
 		try {
 			const details = await getInvoiceDetails(invoiceId);
@@ -149,22 +175,43 @@ export function EnhancedInvoiceList({
 		}
 	};
 
-	const handleDeleteInvoice = async (invoiceId: number) => {
-		if (window.confirm('Are you sure you want to delete this invoice?')) {
-			try {
-				const success = await deleteInvoice(invoiceId);
-				if (success) {
-					showAlert('Invoice deleted successfully', 'success');
-					if (refreshInvoices) {
-						refreshInvoices();
-					}
-				} else {
-					showAlert('Failed to delete invoice', 'error');
+	const handleDeleteInvoice = (invoice: any) => {
+		setInvoiceToDelete(invoice);
+		setDeleteDialogOpen(true);
+	};
+
+	const confirmDeleteInvoice = async () => {
+		if (!invoiceToDelete) return;
+
+		try {
+			setDeleting(true);
+			
+			// Optimistic update - remove from local state immediately
+			setOptimisticInvoices(prev => 
+				prev.filter(invoice => invoice.id !== invoiceToDelete.id)
+			);
+
+			const success = await deleteInvoice(invoiceToDelete.id);
+			
+			if (success) {
+				showAlert('Invoice deleted successfully', 'success');
+				if (refreshInvoices) {
+					refreshInvoices();
 				}
-			} catch (error) {
-				console.error('Error deleting invoice:', error);
+			} else {
+				// Revert optimistic update on failure
+				setOptimisticInvoices(invoices);
 				showAlert('Failed to delete invoice', 'error');
 			}
+		} catch (error) {
+			console.error('Error deleting invoice:', error);
+			// Revert optimistic update on error
+			setOptimisticInvoices(invoices);
+			showAlert('Failed to delete invoice', 'error');
+		} finally {
+			setDeleting(false);
+			setDeleteDialogOpen(false);
+			setInvoiceToDelete(null);
 		}
 	};
 
@@ -505,7 +552,7 @@ export function EnhancedInvoiceList({
 										<Button
 											variant="outline"
 											size="sm"
-											onClick={() => onEditInvoice?.(invoice)}
+											onClick={() => handleEditInvoice(invoice)}
 											title="Edit Invoice"
 										>
 											<Edit className="h-4 w-4" />
@@ -521,7 +568,7 @@ export function EnhancedInvoiceList({
 										<Button
 											variant="outline"
 											size="sm"
-											onClick={() => handleDeleteInvoice(invoice.id)}
+											onClick={() => handleDeleteInvoice(invoice)}
 											title="Delete Invoice"
 										>
 											<Trash2 className="h-4 w-4" />
@@ -686,6 +733,41 @@ export function EnhancedInvoiceList({
 					</div>
 				</div>
 			)}
+
+			{/* Delete Confirmation Dialog */}
+			<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete Invoice</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to delete invoice <strong>{invoiceToDelete?.invoice_number}</strong>? 
+							This action cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<Alert variant="destructive">
+						<AlertCircle className="h-4 w-4" />
+						<AlertDescription>
+							This will permanently delete the invoice and all associated data.
+						</AlertDescription>
+					</Alert>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setDeleteDialogOpen(false)}
+							disabled={deleting}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={confirmDeleteInvoice}
+							disabled={deleting}
+						>
+							{deleting ? 'Deleting...' : 'Delete Invoice'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 		</div>
 	);

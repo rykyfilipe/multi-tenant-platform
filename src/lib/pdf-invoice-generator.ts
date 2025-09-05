@@ -1,6 +1,7 @@
 /** @format */
 
-import { PDFDocument, rgb, StandardFonts, TextAlignment } from "pdf-lib";
+// Use dynamic import for pdf-lib to avoid SSR issues
+import type { PDFDocument as PDFDocumentType, RGB, TextAlignment } from "pdf-lib";
 
 export interface InvoicePDFData {
 	// Company information
@@ -106,6 +107,9 @@ export class PDFInvoiceGenerator {
 	 * Generate professional PDF invoice using pdf-lib
 	 */
 	static async generateInvoicePDF(data: InvoicePDFData): Promise<Buffer> {
+		// Dynamic import to avoid SSR issues
+		const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib");
+		
 		// Create a new PDF document
 		const pdfDoc = await PDFDocument.create();
 		const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
