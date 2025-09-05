@@ -19,6 +19,7 @@ export interface Tenant {
 	timezone?: string;
 	language?: string;
 	defaultCurrency?: string;
+	enabledModules?: string[];
 
 	// Legacy settings (for backward compatibility)
 	settings?: TenantSettings;
