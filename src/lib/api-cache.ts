@@ -187,7 +187,8 @@ export const enhancedCachedOperations = {
 				select: {
 					id: true,
 					email: true,
-					name: true,
+					firstName: true,
+					lastName: true,
 					role: true,
 					tenantId: true,
 					createdAt: true,

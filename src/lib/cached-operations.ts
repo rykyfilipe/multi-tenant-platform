@@ -16,9 +16,12 @@ export const cachedOperations = {
 					select: {
 						id: true,
 						email: true,
-						name: true,
+						firstName: true,
+						lastName: true,
 						role: true,
 						tenantId: true,
+						subscriptionPlan: true,
+						subscriptionStatus: true,
 						createdAt: true,
 						updatedAt: true,
 					},
@@ -389,5 +392,52 @@ export const cachedOperations = {
 	clearAllCache: () => {
 		// This would integrate with Prisma Accelerate's cache management
 		console.log("Cache clear requested - handled by Prisma Accelerate");
+	},
+
+	// Get counts for plan limits
+	getCounts: async (tenantId: number, userId: number) => {
+		try {
+			const [databases, tables, users, rows] = await Promise.all([
+				prisma.countWithCache(
+					prisma.database,
+					{ where: { tenantId } },
+					DEFAULT_CACHE_STRATEGIES.count,
+				),
+				prisma.countWithCache(
+					prisma.table,
+					{ 
+						where: { 
+							database: { tenantId },
+							isModuleTable: false,
+							isProtected: false,
+						} 
+					},
+					DEFAULT_CACHE_STRATEGIES.count,
+				),
+				prisma.countWithCache(
+					prisma.user,
+					{ where: { tenantId } },
+					DEFAULT_CACHE_STRATEGIES.count,
+				),
+				prisma.countWithCache(
+					prisma.row,
+					{ 
+						where: { 
+							table: { 
+								database: { tenantId },
+								isModuleTable: false,
+								isProtected: false,
+							} 
+						} 
+					},
+					DEFAULT_CACHE_STRATEGIES.count,
+				),
+			]);
+
+			return [databases, tables, users, rows];
+		} catch (error) {
+			console.error("Error fetching counts:", error);
+			return [0, 0, 0, 0];
+		}
 	},
 };
