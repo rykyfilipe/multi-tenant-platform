@@ -15,8 +15,6 @@ import { Plus } from "lucide-react";
 import { useEffect } from "react";
 import { tourUtils } from "@/lib/tour-config";
 import { TableTemplateSelector } from "@/components/database/TableTemplateSelector";
-import { TemplateCreationProgress } from "@/components/database/TemplateCreationProgress";
-import { useTableTemplates } from "@/hooks/useTableTemplates";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +38,6 @@ function DatabaseContent() {
 		loading,
 	} = useDatabase();
 
-	const { createTablesFromTemplates, isCreating, progress } = useTableTemplates();
 
 	const { setIsOpen, setCurrentStep } = useTour();
 
@@ -101,14 +98,7 @@ function DatabaseContent() {
 						{/* Buton Add Table */}
 						{selectedDatabase && (
 							<div className='w-full flex flex-wrap gap-2'>
-								<TableTemplateSelector
-									onTemplatesSelected={(templates) => {
-										if (selectedDatabase) {
-											createTablesFromTemplates(templates, selectedDatabase.id);
-										}
-									}}
-									selectedDatabaseId={selectedDatabase?.id || null}
-								/>
+								<TableTemplateSelector />
 								<Button
 									onClick={() => setShowAddTableModal(true)}
 									className='w-full sm:w-auto add-table-button'
@@ -127,15 +117,6 @@ function DatabaseContent() {
 						{/* Loading state */}
 						{loading && <DatabaseLoadingState />}
 
-						{/* Template Creation Progress */}
-						{(isCreating || progress) && (
-							<div className='mb-6'>
-								<TemplateCreationProgress 
-									progress={progress} 
-									isCreating={isCreating} 
-								/>
-							</div>
-						)}
 
 						{/* Selected database info */}
 						{!loading && selectedDatabase && (

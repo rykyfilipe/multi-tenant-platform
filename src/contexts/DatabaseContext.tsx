@@ -403,9 +403,19 @@ export const DatabaseProvider = ({
 
 	const handleDeleteTable = async (id: string) => {
 		if (!tenantId || !token || !selectedDatabase) return;
+		
+		// Find the table to get its name for confirmation
+		const tableToDelete = tables?.find(table => table.id.toString() === id);
+		const tableName = tableToDelete?.name || "this table";
+		
+		// Show confirmation dialog
+		if (!confirm(`Are you sure you want to delete "${tableName}"? This action cannot be undone and will remove all data in this table.`)) {
+			return;
+		}
+		
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${id}`,
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables?tableId=${id}`,
 				{
 					method: "DELETE",
 					headers: {
@@ -414,8 +424,10 @@ export const DatabaseProvider = ({
 					},
 				},
 			);
+			
 			if (!response.ok) {
-				throw new Error("Failed to delete table");
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to delete table");
 			}
 
 			// Update local state immediately for better UX
@@ -435,12 +447,13 @@ export const DatabaseProvider = ({
 				});
 			}
 
-			// Refresh from server to ensure consistency
-			fetchDatabases();
-			showAlert("Table removed successfully", "success");
+			// Refresh tables from server to ensure consistency
+			await fetchTables();
+			showAlert(`Table "${tableName}" removed successfully`, "success");
 		} catch (error) {
 			console.error("Error deleting table:", error);
-			showAlert("Failed to remove table. Please try again.", "error");
+			const errorMessage = error instanceof Error ? error.message : "Failed to remove table. Please try again.";
+			showAlert(errorMessage, "error");
 		}
 	};
 
