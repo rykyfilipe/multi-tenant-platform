@@ -225,7 +225,7 @@ export class EmailService {
 			});
 
 			// Log email result
-			await prisma.auditLog.create({
+			await prisma.invoiceAuditLog.create({
 				data: {
 					tenantId: email.tenantId,
 					action: 'email_sent',

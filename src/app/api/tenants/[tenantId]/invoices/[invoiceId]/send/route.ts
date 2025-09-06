@@ -122,7 +122,7 @@ export async function POST(
 		}
 
 		// Log the action
-		await prisma.auditLog.create({
+		await prisma.invoiceAuditLog.create({
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,
@@ -198,7 +198,7 @@ export async function GET(
 		const queueStatus = await EmailService.getQueueStatus(params.tenantId);
 
 		// Get recent email history for this invoice
-		const emailHistory = await prisma.auditLog.findMany({
+		const emailHistory = await prisma.invoiceAuditLog.findMany({
 			where: {
 				tenantId: Number(params.tenantId),
 				action: 'invoice_sent',

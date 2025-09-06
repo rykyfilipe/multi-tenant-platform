@@ -172,10 +172,10 @@ export function MobileBottomNavbar() {
 			initial={{ y: 100, opacity: 0 }}
 			animate={{ y: 0, opacity: 1 }}
 			transition={{ duration: 0.5, ease: "easeOut" }}>
-			{/* Background with premium glass effect */}
-			<div className='premium-glass border-t border-border shadow-2xl'>
-				{/* Main navigation */}
-				<div className='flex items-center justify-between px-1 py-2 sm:px-2 sm:py-3 overflow-x-auto scrollbar-hide' style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+			{/* Premium glass effect background */}
+			<div className='bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-white/20 dark:border-white/10 shadow-2xl'>
+				{/* Main navigation - Icons only */}
+				<div className='flex items-center justify-between px-2 py-3 overflow-x-auto scrollbar-hide' style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 					{getMobileNavigationItems(t, user?.role, tenant, user).map(
 						(item, index) => {
 							const isActive = pathname === item.url;
@@ -189,21 +189,18 @@ export function MobileBottomNavbar() {
 									<Link
 										href={item.url}
 										className={cn(
-											"flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg premium-interaction mobile-touch-feedback",
-											"hover:bg-primary/10 active:scale-95 transition-all duration-200 min-w-0",
-											"w-12 sm:w-14", // Fixed width to prevent overflow
+											"flex items-center justify-center p-3 rounded-xl transition-all duration-200 min-w-0",
+											"hover:bg-white/20 dark:hover:bg-white/10 active:scale-95",
+											"w-12 h-12", // Fixed size for consistency
 											isActive
 												? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-												: "text-muted-foreground hover:text-foreground",
+												: "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white",
 										)}>
 										<motion.div
 											whileHover={{ scale: 1.05 }}
 											whileTap={{ scale: 0.95 }}
-											className="flex flex-col items-center gap-0.5 sm:gap-1">
-											<item.icon className='w-3.5 h-3.5 sm:w-4 sm:h-4' />
-											<span className="text-[10px] sm:text-xs font-medium truncate max-w-full leading-tight">
-												{item.title}
-											</span>
+											className="flex items-center justify-center">
+											<item.icon className='w-5 h-5' />
 										</motion.div>
 									</Link>
 								</motion.div>
@@ -211,15 +208,15 @@ export function MobileBottomNavbar() {
 						},
 					)}
 
-					{/* User Profile Menu */}
+					{/* User Profile Menu - Icon Only */}
 					{session?.user && (
-						<div className="flex-shrink-0 ml-1">
+						<div className="flex-shrink-0">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<button className='flex items-center justify-center p-1.5 sm:p-2 rounded-lg premium-interaction hover:bg-primary/10 active:scale-95 text-muted-foreground hover:text-foreground transition-all duration-200 mobile-touch-feedback w-12 sm:w-14'>
-										<Avatar className='w-3.5 h-3.5 sm:w-4 sm:h-4'>
+									<button className='flex items-center justify-center p-3 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 active:scale-95 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-200 w-12 h-12'>
+										<Avatar className='w-6 h-6 ring-2 ring-white/20 dark:ring-white/10'>
 											<AvatarImage src={session.user.image || undefined} />
-											<AvatarFallback className='bg-primary text-primary-foreground text-[10px] sm:text-xs'>
+											<AvatarFallback className='bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-xs'>
 												{session.user.firstName?.[0]}
 												{session.user.lastName?.[0]}
 											</AvatarFallback>
@@ -320,67 +317,38 @@ export function AppSidebar() {
 		<motion.div
 			className={cn(
 				"relative flex flex-col h-full transition-all duration-300 ease-in-out",
-				"border-r shadow-xl",
-				// Light theme
-				"bg-white border-black/10 shadow-black/10",
-				// Dark theme
-				"dark:bg-black dark:border-white/10 dark:shadow-white/5",
-				isCollapsed ? "w-14 sm:w-16" : "w-56 sm:w-64",
+				"border-r shadow-2xl backdrop-blur-xl",
+				// Premium glass effect
+				"bg-white/80 border-white/20 shadow-black/5",
+				"dark:bg-black/80 dark:border-white/10 dark:shadow-white/5",
+				isCollapsed ? "w-16" : "w-20",
 				// Ascuns pe mobile
 				"hidden md:flex",
 			)}
 			initial={{ x: -100, opacity: 0 }}
 			animate={{ x: 0, opacity: 1 }}
 			transition={{ duration: 0.5, ease: "easeOut" }}>
-			{/* Premium Header */}
-			<div className='relative p-3 sm:p-4 border-b border-black/10 dark:border-white/10'>
-				<div
-					className={cn(
-						"flex items-center transition-all duration-300",
-						isCollapsed ? "justify-center" : "justify-between",
-					)}>
-					<div
-						className={cn(
-							"flex items-center transition-all duration-300",
-							isCollapsed ? "space-x-0" : "space-x-2 sm:space-x-3",
-						)}>
-						<TenantLogo size='lg' showText={false} />
-						{!isCollapsed && (
-							<p className='text-xs text-gray-600 dark:text-gray-300 mt-0.5 truncate'>
-								{tenant?.name}
-							</p>
-						)}
-					</div>
-
-					{/* Toggle Button */}
-					{!isCollapsed && (
-						<Button
-							onClick={toggleSidebar}
-							variant='ghost'
-							size='sm'
-							className='h-6 w-6 sm:h-8 sm:w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white premium-hover-subtle rounded-lg'>
-							<ChevronLeft className='h-3 w-3 sm:h-4 sm:w-4' />
-						</Button>
-					)}
+			{/* Premium Header - Logo Only */}
+			<div className='relative p-4 border-b border-white/10 dark:border-white/5'>
+				<div className="flex items-center justify-center">
+					<TenantLogo size='lg' showText={false} />
 				</div>
 			</div>
 
-			{/* Expand Button when collapsed */}
-			{isCollapsed && (
-				<div className='flex justify-center pt-1 sm:pt-2 pb-1'>
-					<Button
-						onClick={toggleSidebar}
-						variant='ghost'
-						size='sm'
-						className='h-6 w-6 sm:h-8 sm:w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white premium-hover-subtle rounded-lg'>
-						<ChevronRight className='h-3 w-3 sm:h-4 sm:w-4' />
-					</Button>
-				</div>
-			)}
+			{/* Toggle Button - Always visible */}
+			<div className='flex justify-center py-2'>
+				<Button
+					onClick={toggleSidebar}
+					variant='ghost'
+					size='sm'
+					className='h-8 w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/20 dark:hover:bg-white/10 rounded-full transition-all duration-200'>
+					{isCollapsed ? <ChevronRight className='h-4 w-4' /> : <ChevronLeft className='h-4 w-4' />}
+				</Button>
+			</div>
 
-			{/* Navigation Menu */}
-			<div className='flex-1 p-1.5 sm:p-2 overflow-hidden'>
-				<nav className='space-y-1 sm:space-y-2'>
+			{/* Navigation Menu - Icons Only */}
+			<div className='flex-1 p-2 overflow-hidden'>
+				<nav className='space-y-2'>
 					{getNavigationItems(t, user?.role, tenant, user).map(
 						(item, index) => {
 							const isActive = pathname === item.url;
@@ -393,55 +361,34 @@ export function AppSidebar() {
 									<Link
 										href={item.url}
 										className={cn(
-											"group relative flex items-center rounded-xl premium-interaction",
-											"hover:bg-black/5 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-white/5",
-											isCollapsed
-												? "p-1.5 sm:p-2 justify-center"
-												: "p-1.5 sm:p-2 space-x-2",
+											"group relative flex items-center justify-center rounded-xl transition-all duration-200",
+											"hover:bg-white/20 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-white/10",
+											"p-3",
 											isActive && [
-												"bg-gradient-to-r from-black/10 via-black/8 to-black/5 dark:from-white/20 dark:via-white/15 dark:to-white/10",
-												"border-l-2 border-gray-900 dark:border-white shadow-lg shadow-black/10 dark:shadow-white/10",
-												"text-gray-900 dark:text-white",
+												"bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10",
+												"shadow-lg shadow-primary/20",
+												"text-primary",
 											],
 											!isActive &&
-												"text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white",
+												"text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white",
 										)}>
 										<motion.div
-											className={cn(
-												"flex-shrink-0 p-1 sm:p-1.5 rounded-lg premium-interaction",
-												isActive &&
-													"bg-gray-900/10 dark:bg-white/20 text-gray-900 dark:text-white shadow-sm",
-												!isActive &&
-													"group-hover:bg-black/5 dark:group-hover:bg-white/10",
-											)}
+											className="flex items-center justify-center"
 											whileHover={{ scale: 1.1 }}
 											whileTap={{ scale: 0.9 }}>
-											<item.icon className='w-3 h-3 sm:w-4 sm:h-4' />
+											<item.icon className='w-5 h-5' />
 										</motion.div>
 
-										{!isCollapsed && (
-											<div className='flex-1 min-w-0'>
-												<p className='font-medium text-xs sm:text-sm truncate'>
-													{item.title}
-												</p>
-												<p className='text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5 leading-tight'>
-													{item.description}
-												</p>
+										{/* Premium Tooltip */}
+										<div className='absolute left-full ml-3 px-3 py-2 bg-gray-900/95 dark:bg-gray-800/95 text-white text-sm rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm border border-gray-700/50 dark:border-gray-600/50 transition-all duration-200'>
+											<div className='font-medium'>
+												{item.title}
 											</div>
-										)}
-
-										{/* Tooltip for collapsed state */}
-										{isCollapsed && (
-											<div className='absolute left-full ml-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 text-xs sm:text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 premium-interaction pointer-events-none whitespace-nowrap z-50 border border-gray-700 dark:border-gray-600'>
-												<div className='font-medium text-xs sm:text-sm'>
-													{item.title}
-												</div>
-												<div className='text-xs text-gray-300 dark:text-gray-400 mt-1'>
-													{item.description}
-												</div>
-												<div className='absolute top-1/2 -left-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 border-l border-b border-gray-700 dark:border-gray-600 rotate-45 transform -translate-y-1/2'></div>
+											<div className='text-xs text-gray-300 dark:text-gray-400 mt-1'>
+												{item.description}
 											</div>
-										)}
+											<div className='absolute top-1/2 -left-1 w-2 h-2 bg-gray-900/95 dark:bg-gray-800/95 border-l border-b border-gray-700/50 dark:border-gray-600/50 rotate-45 transform -translate-y-1/2'></div>
+										</div>
 									</Link>
 								</motion.div>
 							);
@@ -450,35 +397,19 @@ export function AppSidebar() {
 				</nav>
 			</div>
 
-			{/* Premium Footer - Interactive User Menu */}
-			<div className='p-2 sm:p-3 border-t border-black/10 dark:border-white/10'>
+			{/* Premium Footer - User Avatar Only */}
+			<div className='p-3 border-t border-white/10 dark:border-white/5'>
 				{session?.user && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<div
-								className={cn(
-									"flex items-center cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-200",
-									isCollapsed ? "justify-center" : "space-x-2 sm:space-x-3",
-								)}>
-								<Avatar className='w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0'>
+							<div className="flex items-center justify-center cursor-pointer p-2 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200 group">
+								<Avatar className='w-8 h-8 ring-2 ring-white/20 dark:ring-white/10 group-hover:ring-primary/30 transition-all duration-200'>
 									<AvatarImage src={session.user.image || undefined} />
-									<AvatarFallback className='bg-gradient-to-br from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 text-white dark:text-gray-900 font-semibold text-xs'>
+									<AvatarFallback className='bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-sm'>
 										{session.user.firstName?.[0]}
 										{session.user.lastName?.[0]}
 									</AvatarFallback>
 								</Avatar>
-								{!isCollapsed && (
-									<div className='flex-1 min-w-0'>
-										<p className='font-medium text-gray-900 dark:text-white truncate text-xs leading-tight'>
-											{session.user.firstName} {session.user.lastName}
-										</p>
-										<p className='text-xs text-gray-500 dark:text-gray-400 truncate'>
-											{user?.role === "ADMIN"
-												? t("common.admin")
-												: t("common.user")}
-										</p>
-									</div>
-								)}
 							</div>
 						</DropdownMenuTrigger>
 

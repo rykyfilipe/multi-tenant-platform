@@ -528,7 +528,7 @@ export function EnhancedInvoiceList({
 											</div>
 										</div>
 									</div>
-									<div className="flex items-center gap-2" data-tour-id="invoice-actions">
+									<div className="flex flex-col sm:flex-row items-center gap-2" data-tour-id="invoice-actions">
 										<Button
 											variant="outline"
 											size="sm"

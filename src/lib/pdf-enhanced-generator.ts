@@ -811,7 +811,7 @@ export class EnhancedPDFGenerator {
 		success: boolean
 	): Promise<void> {
 		try {
-			await prisma.auditLog.create({
+			await prisma.invoiceAuditLog.create({
 				data: {
 					tenantId: parseInt(options.tenantId),
 					databaseId: options.databaseId,

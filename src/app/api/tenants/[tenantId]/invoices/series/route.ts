@@ -142,7 +142,7 @@ export async function POST(
 		});
 
 		// Log audit event
-		await prisma.auditLog.create({
+		await prisma.invoiceAuditLog.create({
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,
@@ -248,7 +248,7 @@ export async function PUT(
 		});
 
 		// Log audit event
-		await prisma.auditLog.create({
+		await prisma.invoiceAuditLog.create({
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,
@@ -380,7 +380,7 @@ export async function DELETE(
 		});
 
 		// Log audit event
-		await prisma.auditLog.create({
+		await prisma.invoiceAuditLog.create({
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,

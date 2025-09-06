@@ -78,7 +78,7 @@ export function InvitationCreationForm({
 				firstName: "",
 				lastName: "",
 				email: "",
-				role: "VIEWER",
+				role: Role.VIEWER,
 			});
 
 			// Call callback
@@ -233,15 +233,7 @@ export function InvitationCreationForm({
 								<SelectValue placeholder='Select a role' />
 							</SelectTrigger>
 							<SelectContent className='rounded-xl border-2 border-slate-200 dark:border-slate-700'>
-								<SelectItem value={Role.ADMIN} className='rounded-lg'>
-									<div className='flex items-center gap-3 py-2'>
-										<Crown className='w-4 h-4 text-purple-600' />
-										<div>
-											<div className='font-medium'>Administrator</div>
-											<div className='text-xs text-slate-500'>Full system access</div>
-										</div>
-									</div>
-								</SelectItem>
+								
 								<SelectItem value={Role.EDITOR} className='rounded-lg'>
 									<div className='flex items-center gap-3 py-2'>
 										<Edit className='w-4 h-4 text-blue-600' />
@@ -303,7 +295,7 @@ export function InvitationCreationForm({
 								firstName: "",
 								lastName: "",
 								email: "",
-								role: "VIEWER",
+								role: Role.VIEWER,
 							});
 							setError("");
 							setSuccess(false);

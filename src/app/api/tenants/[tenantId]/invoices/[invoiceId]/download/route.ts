@@ -416,14 +416,13 @@ export async function GET(
 			}
 
 			// Log PDF generation
-			await prisma.auditLog.create({
+			await prisma.invoiceAuditLog.create({
 				data: {
 					tenantId: Number(tenantId),
 					databaseId: database.id,
+					invoiceId: Number(invoiceId),
 					action: 'pdf_generated',
-					status: 'success',
 					metadata: {
-						invoiceId: Number(invoiceId),
 						useEnhanced,
 						includeWatermark,
 						includeQRCode,
