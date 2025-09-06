@@ -155,4 +155,3 @@ export const TrendChart: React.FC<TrendChartProps> = ({
 	);
 };
 
-export { TrendChart };

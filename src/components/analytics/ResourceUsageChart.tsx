@@ -181,4 +181,3 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 	);
 };
 
-export { ResourceUsageChart };

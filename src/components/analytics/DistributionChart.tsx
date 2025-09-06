@@ -187,4 +187,3 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 	);
 };
 
-export { DistributionChart };

@@ -169,4 +169,3 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
 	);
 };
 
-export { OverviewChart };

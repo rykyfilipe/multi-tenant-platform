@@ -138,4 +138,3 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
 	);
 };
 
-export { PerformanceChart };
