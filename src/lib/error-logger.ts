@@ -225,6 +225,12 @@ class ErrorLogger {
 	 * Remote logging for production
 	 */
 	private logToRemote(entry: LogEntry): void {
+		// Only attempt remote logging in development
+		if (process.env.NODE_ENV !== "development") {
+			this.storePendingLog(entry);
+			return;
+		}
+
 		try {
 			// Send to remote logging service
 			fetch("/api/logs", {
@@ -289,6 +295,11 @@ class ErrorLogger {
 	 */
 	uploadPendingLogs(): void {
 		if (typeof window === "undefined") return;
+
+		// Only attempt remote logging in development
+		if (process.env.NODE_ENV !== "development") {
+			return;
+		}
 
 		try {
 			const pending = JSON.parse(localStorage.getItem("pending_logs") || "[]");

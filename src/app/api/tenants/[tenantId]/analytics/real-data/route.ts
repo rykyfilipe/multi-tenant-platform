@@ -317,6 +317,7 @@ async function getRealTimeData(tenantId: number) {
 
 		// Group API usage by date
 		const apiUsageByDate = apiUsageData.reduce((acc: Record<string, { total: number; successful: number }>, usage: any) => {
+			if (!usage.createdAt) return acc; // Skip if createdAt is null/undefined
 			const date = usage.createdAt.toISOString().split('T')[0];
 			if (!acc[date]) {
 				acc[date] = { total: 0, successful: 0 };
@@ -603,6 +604,7 @@ async function getBusinessData(tenantId: number) {
 
 		// Group usage by date
 		const usageByDate = activeUsersData.reduce((acc: Record<string, Set<number>>, activity: any) => {
+			if (!activity.createdAt) return acc; // Skip if createdAt is null/undefined
 			const date = activity.createdAt.toISOString().split('T')[0];
 			if (!acc[date]) {
 				acc[date] = new Set();
@@ -618,7 +620,7 @@ async function getBusinessData(tenantId: number) {
 			const dateStr = date.toISOString().split('T')[0];
 			const dayActiveUsers = usageByDate[dateStr]?.size || 0;
 			const daySessions = activeUsersData.filter((activity: any) => 
-				activity.createdAt.toISOString().split('T')[0] === dateStr
+				activity.createdAt && activity.createdAt.toISOString().split('T')[0] === dateStr
 			).length;
 			
 			last30Days.push({
