@@ -358,10 +358,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 									});
 								}
 							}}
-							disabled={isAddingColumn}
-							className={`add-column-button ${
-								user.role === "VIEWER" ? "opacity-0 pointer-events-none" : ""
-							}`}>
+							disabled={isAddingColumn || user.role === "VIEWER"}
+							className="add-column-button">
 							{showForm ? (
 								<X className='w-4 h-4' />
 							) : isAddingColumn ? (

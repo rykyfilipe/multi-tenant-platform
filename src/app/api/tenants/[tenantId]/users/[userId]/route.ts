@@ -4,8 +4,7 @@ import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
-import { id } from "date-fns/locale";
-import { Numans } from "next/font/google";
+import { deleteUserTransaction } from "@/lib/transaction-manager";
 
 // Schema generică pentru body: acceptă un singur câmp cu orice valoare validă
 const userUpdateSchema = z.record(z.any());
@@ -168,12 +167,14 @@ export async function DELETE(
 					},
 				});
 			} else {
-				// For regular users, just delete the user
-				await prisma.user.delete({
-					where: {
-						id: Number(userIdToDelete),
-					},
-				});
+				// For regular users, use the transaction manager for safe deletion
+				const result = await deleteUserTransaction(Number(userIdToDelete));
+				if (!result.success) {
+					return NextResponse.json(
+						{ error: "Failed to delete user" },
+						{ status: 500 }
+					);
+				}
 			}
 		} else {
 			// Admin is deleting another user from their tenant
@@ -197,20 +198,22 @@ export async function DELETE(
 					});
 				}
 			} else {
-				// For regular users, just delete the user
-				await prisma.user.delete({
-					where: {
-						id: Number(userIdToDelete),
-					},
-				});
+				// For regular users, use the transaction manager for safe deletion
+				const result = await deleteUserTransaction(Number(userIdToDelete));
+				if (!result.success) {
+					return NextResponse.json(
+						{ error: "Failed to delete user" },
+						{ status: 500 }
+					);
+				}
 			}
 		}
 
 		return NextResponse.json({ status: 200 });
 	} catch (error) {
-		console.error("Error fetching tenant:", error);
+		console.error("Error deleting user:", error);
 		return NextResponse.json(
-			{ error: "Failed to fetch tenant" },
+			{ error: "Failed to delete user" },
 			{ status: 500 },
 		);
 	}

@@ -66,16 +66,15 @@ const TableCard = memo(function TableCard({ table }: { table: Table }) {
 					</Link>
 				</div>
 				<div className='flex items-center justify-end gap-2'>
-					{user?.role !== "VIEWER" && (
-						<DeleteTableDialog
-							tableName={table.name}
-							tableId={table.id.toString()}
-							onConfirm={handleDeleteTable}
-							isProtected={table.isPredefined}
-							rowsCount={table.rowsCount ?? (Array.isArray(table.rows) ? table.rows.length : 0)}
-							columnsCount={table.columnsCount ?? (Array.isArray(table.columns) ? table.columns.length : 0)}
-						/>
-					)}
+					<DeleteTableDialog
+						tableName={table.name}
+						tableId={table.id.toString()}
+						onConfirm={handleDeleteTable}
+						isProtected={table.isPredefined}
+						rowsCount={table.rowsCount ?? (Array.isArray(table.rows) ? table.rows.length : 0)}
+						columnsCount={table.columnsCount ?? (Array.isArray(table.columns) ? table.columns.length : 0)}
+						disabled={user?.role === "VIEWER"}
+					/>
 				</div>
 			</CardFooter>
 		</Card>

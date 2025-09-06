@@ -112,7 +112,7 @@ function InvitePageContent() {
 						email: invitation?.email,
 						password,
 						redirect: true,
-						callbackUrl: "/home/dashboard",
+						callbackUrl: "/home/analytics",
 					});
 				}, 2000);
 			}

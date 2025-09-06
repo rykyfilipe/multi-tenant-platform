@@ -153,11 +153,9 @@ export function TableView({
 									{meta.label}
 								</th>
 							))}
-							{tablePermissions.canEditTable() && (
-								<th className='text-start p-3 text-xs font-medium text-muted-foreground uppercase tracking-wider w-16'>
-									Actions
-								</th>
-							)}
+							<th className='text-start p-3 text-xs font-medium text-muted-foreground uppercase tracking-wider w-16'>
+								Actions
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -165,8 +163,7 @@ export function TableView({
 							<tr>
 								<td
 									colSpan={
-										columnSchemaMeta.length +
-										(tablePermissions.canEditTable() ? 1 : 0)
+										columnSchemaMeta.length + 1
 									}
 									className='text-center py-12'>
 									<div className='text-muted-foreground'>
@@ -206,23 +203,24 @@ export function TableView({
 											</div>
 										</td>
 									))}
-									{tablePermissions.canEditTable() && (
-										<td className='p-3'>
-											<div className="flex items-center gap-2">
-												{!column.isPredefined && (
-													<Button
-														variant='ghost'
-														size='sm'
-														onClick={() => onEditColumn(column)}
-														className='h-8 px-3 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50'>
-														Edit
-													</Button>
+									<td className='p-3'>
+										<div className="flex items-center gap-2">
+											{!column.isPredefined && (
+												<Button
+													variant='ghost'
+													size='sm'
+													onClick={() => onEditColumn(column)}
+													disabled={!tablePermissions.canEditTable()}
+													className='h-8 px-3 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50'>
+													Edit
+												</Button>
 												)}
 												{!column.isPredefined ? (
 													<Button
 														variant='ghost'
 														size='sm'
 														onClick={() => onDeleteColumn(column.id.toString())}
+														disabled={!tablePermissions.canEditTable()}
 														className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10'>
 														<Trash2 className='h-4 w-4' />
 													</Button>

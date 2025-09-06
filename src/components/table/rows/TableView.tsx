@@ -188,16 +188,15 @@ export const TableView = memo(function TableView({
 		() => (
 			<thead>
 				<tr className='bg-muted/20'>
-					{tablePermissions.canEditTable() && (
-						<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-12'>
-							<Checkbox
-								checked={allRowsSelected}
-								indeterminate={someRowsSelected}
-								onCheckedChange={handleSelectAll}
-								className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-							/>
-						</th>
-					)}
+					<th className='text-center p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 w-12'>
+						<Checkbox
+							checked={allRowsSelected}
+							indeterminate={someRowsSelected}
+							onCheckedChange={handleSelectAll}
+							disabled={!tablePermissions.canEditTable()}
+							className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+						/>
+					</th>
 					{visibleColumns.map((col) => (
 						<th
 							className='text-start p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20'
@@ -265,16 +264,17 @@ export const TableView = memo(function TableView({
 
 					{/* Right Section - Bulk Actions */}
 					<div className='flex items-center gap-3'>
-						{selectedRows.size > 0 && tablePermissions.canEditTable() && onBulkDelete && (
-							<Button
-								onClick={handleBulkDeleteClick}
-								variant='destructive'
-								size='sm'
-								className='bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'>
-								<Trash2 className='w-4 h-4 mr-2' />
-								Delete Selected ({selectedRows.size})
-							</Button>
-						)}
+					{selectedRows.size > 0 && onBulkDelete && (
+						<Button
+							onClick={handleBulkDeleteClick}
+							variant='destructive'
+							size='sm'
+							disabled={!tablePermissions.canEditTable()}
+							className='bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'>
+							<Trash2 className='w-4 h-4 mr-2' />
+							Delete Selected ({selectedRows.size})
+						</Button>
+					)}
 					</div>
 				</div>
 			</div>
@@ -287,24 +287,23 @@ export const TableView = memo(function TableView({
 						<thead className='bg-muted/30 border-b border-border/20'>
 							<tr>
 								{/* Selection Column */}
-								{tablePermissions.canEditTable() && (
-									<th className='sticky left-0 z-20 bg-muted/30 backdrop-blur-sm border-r border-border/20 px-2 sm:px-4 py-2 sm:py-3 text-left'>
-										<div className='flex items-center justify-center'>
-											<Checkbox
-												checked={
-													selectedRows.size === validatedRows.length &&
-													validatedRows.length > 0
-												}
-												indeterminate={
-													selectedRows.size > 0 &&
-													selectedRows.size < validatedRows.length
-												}
-												onCheckedChange={handleSelectAll}
-												className='data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary/50 data-[state=indeterminate]:border-primary/50'
-											/>
-										</div>
-									</th>
-								)}
+								<th className='sticky left-0 z-20 bg-muted/30 backdrop-blur-sm border-r border-border/20 px-2 sm:px-4 py-2 sm:py-3 text-left'>
+									<div className='flex items-center justify-center'>
+										<Checkbox
+											checked={
+												selectedRows.size === validatedRows.length &&
+												validatedRows.length > 0
+											}
+											indeterminate={
+												selectedRows.size > 0 &&
+												selectedRows.size < validatedRows.length
+											}
+											onCheckedChange={handleSelectAll}
+											disabled={!tablePermissions.canEditTable()}
+											className='data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary/50 data-[state=indeterminate]:border-primary/50'
+										/>
+									</div>
+								</th>
 
 								{/* Data Columns */}
 								{safeColumns.map((col) => (
@@ -323,11 +322,9 @@ export const TableView = memo(function TableView({
 								))}
 
 								{/* Actions Column */}
-								{tablePermissions.canEditTable() && (
-									<th className='px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0 w-16 sm:w-20'>
-										Actions
-									</th>
-								)}
+								<th className='px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0 w-16 sm:w-20'>
+									Actions
+								</th>
 							</tr>
 						</thead>
 
@@ -337,9 +334,9 @@ export const TableView = memo(function TableView({
 								<tr>
 									<td
 										colSpan={
-											(tablePermissions.canEditTable() ? 1 : 0) + // Selection column
+											1 + // Selection column (always visible)
 											safeColumns.length + // Data columns
-											(tablePermissions.canEditTable() ? 1 : 0) // Actions column
+											1 // Actions column (always visible)
 										}
 										className='px-6 py-16 text-center'>
 										<div className='flex flex-col items-center gap-4'>
@@ -384,22 +381,21 @@ export const TableView = memo(function TableView({
 														"opacity-50 bg-destructive/5",
 												)}>
 												{/* Selection Cell */}
-												{tablePermissions.canEditTable() && (
-													<td className='sticky left-0 z-10 bg-background group-hover:bg-muted/20 border-r border-border/20 px-4 py-4'>
-														<div className='flex items-center justify-center'>
-															<Checkbox
-																checked={selectedRows.has(String(row.id))}
-																onCheckedChange={(checked) =>
-																	handleRowSelection(
-																		String(row.id),
-																		checked as boolean,
-																	)
-																}
-																className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-															/>
-														</div>
-													</td>
-												)}
+												<td className='sticky left-0 z-10 bg-background group-hover:bg-muted/20 border-r border-border/20 px-4 py-4'>
+													<div className='flex items-center justify-center'>
+														<Checkbox
+															checked={selectedRows.has(String(row.id))}
+															onCheckedChange={(checked) =>
+																handleRowSelection(
+																	String(row.id),
+																	checked as boolean,
+																)
+															}
+															disabled={!tablePermissions.canEditTable()}
+															className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+														/>
+													</div>
+												</td>
 
 												{/* Data Cells */}
 												{safeColumns.map((col) => {
@@ -478,22 +474,20 @@ export const TableView = memo(function TableView({
 												})}
 
 												{/* Actions Cell */}
-												{tablePermissions.canEditTable() && (
-													<td className='px-4 py-4 text-center border-r border-border/20 last:border-r-0'>
-														<Button
-															onClick={() => onDeleteRow(String(row.id))}
-															variant='ghost'
-															size='sm'
-															disabled={deletingRows.has(String(row.id))}
-															className='h-8 w-8 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive/10 transition-all duration-200'>
-															{deletingRows.has(String(row.id)) ? (
-																<div className='w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin' />
-															) : (
-																<Trash2 className='w-4 h-4' />
-															)}
-														</Button>
-													</td>
-												)}
+												<td className='px-4 py-4 text-center border-r border-border/20 last:border-r-0'>
+													<Button
+														onClick={() => onDeleteRow(String(row.id))}
+														variant='ghost'
+														size='sm'
+														disabled={deletingRows.has(String(row.id)) || !tablePermissions.canEditTable()}
+														className='h-8 w-8 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive/10 transition-all duration-200'>
+														{deletingRows.has(String(row.id)) ? (
+															<div className='w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin' />
+														) : (
+															<Trash2 className='w-4 h-4' />
+														)}
+													</Button>
+												</td>
 
 											</motion.tr>
 										);

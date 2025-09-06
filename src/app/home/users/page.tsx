@@ -141,9 +141,20 @@ const UsersPage = () => {
 		}
 	}, [tenant]);
 
-	// Delete user
+	// Delete user with confirmation
 	const deleteUser = async (userId: string) => {
 		if (!tenant) return;
+
+		// Find the user to get their name for confirmation
+		const userToDelete = users.find(user => user.id.toString() === userId);
+		const userName = userToDelete ? `${userToDelete.firstName} ${userToDelete.lastName}` : 'this user';
+
+		// Show confirmation dialog
+		const confirmed = window.confirm(
+			`Are you sure you want to delete ${userName}? This action cannot be undone and will remove all their data and permissions.`
+		);
+
+		if (!confirmed) return;
 
 		try {
 			const res = await fetch(`/api/tenants/${tenant.id}/users/${userId}`, {

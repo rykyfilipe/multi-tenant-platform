@@ -21,6 +21,7 @@ export interface RoleRestrictions {
 	canImportData: boolean;
 	canExportData: boolean;
 	canUseAdvancedFeatures: boolean;
+	canManagePermissions: boolean;
 	canAccessAnalytics: boolean;
 	canUseCustomIntegrations: boolean;
 	canAccessAdvancedSecurity: boolean;
@@ -68,6 +69,7 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canImportData: true,
 		canExportData: true,
 		canUseAdvancedFeatures: false,
+		canManagePermissions: false,
 		canAccessAnalytics: true, // Now enabled for Free plan - basic analytics
 		canUseCustomIntegrations: false,
 		canAccessAdvancedSecurity: false,
@@ -82,6 +84,7 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canImportData: true,
 		canExportData: true,
 		canUseAdvancedFeatures: false, // Limited advanced features
+		canManagePermissions: false,
 		canAccessAnalytics: true,
 		canUseCustomIntegrations: false,
 		canAccessAdvancedSecurity: false,
@@ -96,6 +99,7 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canImportData: true,
 		canExportData: true,
 		canUseAdvancedFeatures: true,
+		canManagePermissions: true,
 		canAccessAnalytics: true,
 		canUseCustomIntegrations: true,
 		canAccessAdvancedSecurity: true,
@@ -110,6 +114,7 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canImportData: true,
 		canExportData: true,
 		canUseAdvancedFeatures: true,
+		canManagePermissions: true,
 		canAccessAnalytics: true,
 		canUseCustomIntegrations: true,
 		canAccessAdvancedSecurity: true,

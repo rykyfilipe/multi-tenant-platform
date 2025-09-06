@@ -42,6 +42,7 @@ export default function PermissionsManager() {
 		permissions,
 		setPermissions,
 		loading: permissionsLoading,
+		error: permissionsError,
 		savePermissions,
 	} = usePermissions(userId || "");
 
@@ -106,6 +107,31 @@ export default function PermissionsManager() {
 	};
 
 	const loading = permissionsLoading || tablesLoading;
+
+	// Handle error state
+	if (permissionsError) {
+		return (
+			<div className='h-full bg-background'>
+				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+					<div className='text-center py-12'>
+						<Card className='max-w-md mx-auto'>
+							<CardHeader>
+								<div className='mx-auto w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mb-4 border border-destructive/30'>
+									<Shield className='w-6 h-6 text-destructive' />
+								</div>
+								<CardTitle className='text-destructive'>
+									Error Loading Permissions
+								</CardTitle>
+								<CardDescription>
+									{permissionsError}
+								</CardDescription>
+							</CardHeader>
+						</Card>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className='h-full bg-background'>

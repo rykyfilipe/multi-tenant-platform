@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
 import { useTablePermissions } from "@/hooks/useTablePermissions";
+import { useApp } from "@/contexts/AppContext";
 import { TablePermission, ColumnPermission } from "@/types/permissions";
 import { Table, Column } from "@/types/database";
 import { Shield, Eye, Edit, Trash, Save, X } from "lucide-react";
@@ -27,6 +28,7 @@ export const PermissionManager: React.FC<PermissionManagerProps> = ({
 	columns,
 	onPermissionsUpdate,
 }) => {
+	const { user, tenant } = useApp();
 	const { permissions: userPermissions } = useCurrentUserPermissions();
 	const tablePermissions = useTablePermissions(
 		table.id,
@@ -67,9 +69,9 @@ export const PermissionManager: React.FC<PermissionManagerProps> = ({
 			// Create new permission if it doesn't exist
 			const newPermission: TablePermission = {
 				id: Date.now(),
-				userId: 1, // This should come from context
+				userId: user?.id || 0,
 				tableId: table.id,
-				tenantId: 1, // This should come from context
+				tenantId: tenant?.id || 0,
 				canRead: field === "canRead" ? value : false,
 				canEdit: field === "canEdit" ? value : false,
 				canDelete: field === "canDelete" ? value : false,
@@ -101,10 +103,10 @@ export const PermissionManager: React.FC<PermissionManagerProps> = ({
 			// Create new permission if it doesn't exist
 			const newPermission: ColumnPermission = {
 				id: Date.now(),
-				userId: 1, // This should come from context
+				userId: user?.id || 0,
 				columnId,
 				tableId: table.id,
-				tenantId: 1, // This should come from context
+				tenantId: tenant?.id || 0,
 				canRead: field === "canRead" ? value : false,
 				canEdit: field === "canEdit" ? value : false,
 				createdAt: new Date().toISOString(),

@@ -41,7 +41,7 @@ export async function GET(
 	}
 
 	// Verifică dacă planul permite gestionarea permisiunilor
-	if (!checkPlanPermission(userRecord.subscriptionPlan, "canUseAdvancedFeatures")) {
+	if (!checkPlanPermission(userRecord.subscriptionPlan, "canManagePermissions")) {
 		return NextResponse.json(
 			{
 				error:

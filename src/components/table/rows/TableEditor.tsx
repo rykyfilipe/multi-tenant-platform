@@ -744,27 +744,26 @@ const TableEditor = memo(function TableEditor({
 
 							{/* Action Buttons */}
 							<div className='flex items-center gap-3'>
-								{tablePermissions.canEditTable() && (
-									<Button
-										onClick={() => {
-											setShowForm((prev) => !prev);
-											setServerError(null);
-										}}
-										className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
-										size='lg'>
-										{showForm ? (
-											<>
-												<X className='w-4 h-4 mr-2' />
-												Cancel
-											</>
-										) : (
-											<>
-												<Plus className='w-4 h-4 mr-2' />
-												Add Row
-											</>
-										)}
-									</Button>
-								)}
+								<Button
+									onClick={() => {
+										setShowForm((prev) => !prev);
+										setServerError(null);
+									}}
+									disabled={!tablePermissions.canEditTable()}
+									className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
+									size='lg'>
+									{showForm ? (
+										<>
+											<X className='w-4 h-4 mr-2' />
+											Cancel
+										</>
+									) : (
+										<>
+											<Plus className='w-4 h-4 mr-2' />
+											Add Row
+										</>
+									)}
+								</Button>
 
 								{/* Unified Save Changes Button */}
 								<SaveChangesButton
@@ -815,7 +814,7 @@ const TableEditor = memo(function TableEditor({
 			{/* Main Content */}
 			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
 				{/* Add Row Form - Modern Floating Design */}
-				{showForm && tablePermissions.canEditTable() && (
+				{showForm && (
 					<div className='mb-8'>
 						<div className='bg-card border border-border/20 rounded-2xl shadow-2xl backdrop-blur-sm bg-gradient-to-br from-card to-card/80'>
 							<div className='p-8'>

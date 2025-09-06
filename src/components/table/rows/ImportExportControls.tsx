@@ -428,35 +428,34 @@ function ImportExportControls({
 			</Button>
 
 			{/* Allow import/export based on table permissions rather than hard-coded role check */}
-			{tablePermissions.canEditTable() && (
-				<label htmlFor='import-csv'>
-					<Popover open={open}>
-						<PopoverTrigger asChild>
-							<div
-								onMouseEnter={() => setOpen(true)}
-								onMouseLeave={() => setOpen(false)}>
-								<Button
-									asChild
-									disabled={isImporting}
-									variant='outline'
-									size='sm'
-									className='flex items-center gap-2'>
-									<span className='flex items-center gap-2'>
-										{isImporting ? (
-											<>
-												<div className='w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin'></div>
-												Importing...
-											</>
-										) : (
-											<>
-												Import
-												<Info className='w-4 h-4 text-muted-foreground' />
-											</>
-										)}
-									</span>
-								</Button>
-							</div>
-						</PopoverTrigger>
+			<label htmlFor='import-csv'>
+				<Popover open={open}>
+					<PopoverTrigger asChild>
+						<div
+							onMouseEnter={() => setOpen(true)}
+							onMouseLeave={() => setOpen(false)}>
+							<Button
+								asChild
+								disabled={isImporting || !tablePermissions.canEditTable()}
+								variant='outline'
+								size='sm'
+								className='flex items-center gap-2'>
+								<span className='flex items-center gap-2'>
+									{isImporting ? (
+										<>
+											<div className='w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin'></div>
+											Importing...
+										</>
+									) : (
+										<>
+											Import
+											<Info className='w-4 h-4 text-muted-foreground' />
+										</>
+									)}
+								</span>
+							</Button>
+						</div>
+					</PopoverTrigger>
 						<PopoverContent className='text-sm w-[300px] pointer-events-none'>
 							<div className='space-y-2'>
 								<p><strong>CSV Import Requirements:</strong></p>

@@ -201,9 +201,9 @@ export const usePermissionUpdates = (
 			} else {
 				const newPermission: TablePermission = {
 					id: Date.now(),
-					userId: 1, // This should come from context
+					userId: parseInt(userId),
 					tableId,
-					tenantId: 1, // This should come from context
+					tenantId: tenant?.id || 0,
 					canRead: field === "canRead" ? value : false,
 					canEdit: field === "canEdit" ? value : false,
 					canDelete: field === "canDelete" ? value : false,
@@ -246,9 +246,9 @@ export const usePermissionUpdates = (
 				// Creăm o nouă permisiune pentru coloană
 				const newColumnPermission: ColumnPermission = {
 					id: Date.now() + columnId, // ID temporar
-					userId: 1, // This should come from context
+					userId: parseInt(userId),
 					tableId,
-					tenantId: 1, // This should come from context
+					tenantId: tenant?.id || 0,
 					columnId,
 					canRead: field === "canRead" ? value : false,
 					canEdit: field === "canEdit" ? value : false,
