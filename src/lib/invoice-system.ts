@@ -990,6 +990,11 @@ export class InvoiceSystemService {
 			throw new Error("Invoice system not initialized");
 		}
 
+		// Additional validation to ensure tables have IDs
+		if (!invoiceTables.invoices.id || !invoiceTables.invoice_items.id) {
+			throw new Error("Invoice tables missing required ID fields");
+		}
+
 		// Verify invoice exists
 		const existingInvoice = await prisma.findUniqueWithCache(
 			prisma.row,
@@ -1139,6 +1144,14 @@ export class InvoiceSystemService {
 			acc[col.name] = col;
 			return acc;
 		}, {} as Record<string, any>);
+
+		// Validate required columns exist
+		const requiredColumns = ['invoice_id', 'product_ref_table', 'product_ref_id', 'quantity', 'price'];
+		for (const colName of requiredColumns) {
+			if (!itemColumnMap[colName] || !itemColumnMap[colName].id) {
+				throw new Error(`Required column '${colName}' not found in invoice_items table`);
+			}
+		}
 
 		// Create new invoice items
 		for (const product of updateData.products) {

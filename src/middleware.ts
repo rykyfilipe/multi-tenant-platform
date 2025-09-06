@@ -134,6 +134,7 @@ export default withAuth(
 				!pathname.includes("register") &&
 				!pathname.includes("forgot-password") &&
 				!pathname.includes("reset-password") &&
+				!pathname.startsWith("/api/invite") && // Exclude invitation acceptance endpoint (no auth required)
 				!pathname.startsWith("/api/tenants/") && // Exclude tenant API endpoints that use Bearer token auth
 				!pathname.startsWith("/api/users/") && // Exclude user API endpoints that use Bearer token auth
 				!pathname.startsWith("/api/upload/") && // Exclude upload API endpoints
