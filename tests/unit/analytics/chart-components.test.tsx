@@ -1,7 +1,7 @@
 /** @format */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { OverviewChart } from '@/components/analytics/OverviewChart';
 import { ResourceUsageChart } from '@/components/analytics/ResourceUsageChart';
 import { DistributionChart } from '@/components/analytics/DistributionChart';
@@ -16,13 +16,19 @@ jest.mock('recharts', () => ({
   AreaChart: ({ children, data }: any) => <div data-testid="area-chart" data-chart-data={JSON.stringify(data)}>{children}</div>,
   BarChart: ({ children, data }: any) => <div data-testid="bar-chart" data-chart-data={JSON.stringify(data)}>{children}</div>,
   PieChart: ({ children, data }: any) => <div data-testid="pie-chart" data-chart-data={JSON.stringify(data)}>{children}</div>,
+  ComposedChart: ({ children, data }: any) => <div data-testid="composed-chart" data-chart-data={JSON.stringify(data)}>{children}</div>,
+  RadarChart: ({ children, data }: any) => <div data-testid="radar-chart" data-chart-data={JSON.stringify(data)}>{children}</div>,
   Line: ({ dataKey, stroke }: any) => <div data-testid="line" data-key={dataKey} data-stroke={stroke} />,
   Area: ({ dataKey, fill }: any) => <div data-testid="area" data-key={dataKey} data-fill={fill} />,
   Bar: ({ dataKey, fill }: any) => <div data-testid="bar" data-key={dataKey} data-fill={fill} />,
   Pie: ({ dataKey, fill }: any) => <div data-testid="pie" data-key={dataKey} data-fill={fill} />,
+  Radar: ({ dataKey, fill }: any) => <div data-testid="radar" data-key={dataKey} data-fill={fill} />,
   XAxis: ({ dataKey }: any) => <div data-testid="x-axis" data-key={dataKey} />,
   YAxis: ({ dataKey }: any) => <div data-testid="y-axis" data-key={dataKey} />,
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
+  PolarGrid: () => <div data-testid="polar-grid" />,
+  PolarAngleAxis: ({ dataKey }: any) => <div data-testid="polar-angle-axis" data-key={dataKey} />,
+  PolarRadiusAxis: () => <div data-testid="polar-radius-axis" />,
   Tooltip: () => <div data-testid="tooltip" />,
   Legend: () => <div data-testid="legend" />,
   Cell: ({ fill }: any) => <div data-testid="cell" data-fill={fill} />,
@@ -173,7 +179,7 @@ describe('Chart Components', () => {
       expect(screen.getByTestId('pie')).toBeInTheDocument();
     });
 
-    it('displays percentages correctly', () => {
+    it('displays percentages correctly', async () => {
       render(
         <DistributionChart 
           data={mockDistributionData} 
@@ -182,9 +188,15 @@ describe('Chart Components', () => {
         />
       );
       
-      expect(screen.getByText('40%')).toBeInTheDocument();
-      expect(screen.getByText('24%')).toBeInTheDocument();
-      expect(screen.getByText('16%')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('40.0%')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByText('24.0%')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByText('16.0%')).toBeInTheDocument();
+      });
     });
 
     it('handles empty data gracefully', () => {
@@ -202,7 +214,7 @@ describe('Chart Components', () => {
   });
 
   describe('TrendChart', () => {
-    it('renders trend data correctly', () => {
+    it('renders trend data correctly', async () => {
       render(
         <TrendChart 
           data={mockData} 
@@ -212,11 +224,15 @@ describe('Chart Components', () => {
         />
       );
       
-      expect(screen.getByText('Trend Analysis')).toBeInTheDocument();
-      expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Trend Analysis')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+      });
     });
 
-    it('shows trend indicators correctly', () => {
+    it('shows trend indicators correctly', async () => {
       render(
         <TrendChart 
           data={mockData} 
@@ -227,10 +243,12 @@ describe('Chart Components', () => {
         />
       );
       
-      expect(screen.getByText('Trend Analysis')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Trend Analysis')).toBeInTheDocument();
+      });
     });
 
-    it('handles empty data gracefully', () => {
+    it('handles empty data gracefully', async () => {
       render(
         <TrendChart 
           data={[]} 
@@ -240,13 +258,17 @@ describe('Chart Components', () => {
         />
       );
       
-      expect(screen.getByText('Empty Trend')).toBeInTheDocument();
-      expect(screen.getByText('No data available')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Empty Trend')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByText('No data available')).toBeInTheDocument();
+      });
     });
   });
 
   describe('PerformanceChart', () => {
-    it('renders performance metrics correctly', () => {
+    it('renders performance metrics correctly', async () => {
       render(
         <PerformanceChart 
           data={mockPerformanceData} 
@@ -255,11 +277,15 @@ describe('Chart Components', () => {
         />
       );
       
-      expect(screen.getByText('Performance Metrics')).toBeInTheDocument();
-      expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Performance Metrics')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+      });
     });
 
-    it('shows performance indicators correctly', () => {
+    it('shows performance indicators correctly', async () => {
       render(
         <PerformanceChart 
           data={mockPerformanceData} 
@@ -268,10 +294,12 @@ describe('Chart Components', () => {
         />
       );
       
-      expect(screen.getByText('Performance Metrics')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Performance Metrics')).toBeInTheDocument();
+      });
     });
 
-    it('handles empty data gracefully', () => {
+    it('handles empty data gracefully', async () => {
       render(
         <PerformanceChart 
           data={[]} 
@@ -280,8 +308,12 @@ describe('Chart Components', () => {
         />
       );
       
-      expect(screen.getByText('Empty Performance')).toBeInTheDocument();
-      expect(screen.getByText('No data available')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Empty Performance')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByText('No data available')).toBeInTheDocument();
+      });
     });
   });
 

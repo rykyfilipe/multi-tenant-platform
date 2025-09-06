@@ -168,3 +168,5 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
 		</motion.div>
 	);
 };
+
+export { OverviewChart };

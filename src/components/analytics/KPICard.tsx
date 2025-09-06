@@ -32,11 +32,11 @@ const colorClasses = {
 const getTrendIcon = (type?: "increase" | "decrease" | "neutral") => {
 	switch (type) {
 		case "increase":
-			return <TrendingUp className='w-3 h-3' />;
+			return <TrendingUp className='w-3 h-3' data-testid="trending-up-icon" />;
 		case "decrease":
-			return <TrendingDown className='w-3 h-3' />;
+			return <TrendingDown className='w-3 h-3' data-testid="trending-down-icon" />;
 		default:
-			return <Minus className='w-3 h-3' />;
+			return <Minus className='w-3 h-3' data-testid="minus-icon" />;
 	}
 };
 
@@ -67,10 +67,10 @@ export const KPICard: React.FC<KPICardProps> = ({
 			if (val >= 1000000) {
 				return `${(val / 1000000).toFixed(1)}M`;
 			}
-			if (val >= 10000) {
+			if (val >= 1000) {
 				return `${(val / 1000).toFixed(1)}K`;
 			}
-			return val.toLocaleString();
+			return val.toString();
 		}
 		return val;
 	};
@@ -87,7 +87,8 @@ export const KPICard: React.FC<KPICardProps> = ({
 						{title}
 					</CardTitle>
 					<div
-						className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
+						className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorClasses[color]}`}
+						data-testid="kpi-card-icon">
 						<Icon className='w-4 h-4' />
 					</div>
 				</CardHeader>
@@ -106,7 +107,7 @@ export const KPICard: React.FC<KPICardProps> = ({
 								variant='secondary'
 								className={`text-xs ${getTrendColor(changeType)}`}>
 								{getTrendIcon(changeType)}
-								<span className='ml-1'>{Math.abs(change)}%</span>
+								<span className='ml-1'>{Math.round(Math.abs(change))}%</span>
 							</Badge>
 						)}
 					</div>

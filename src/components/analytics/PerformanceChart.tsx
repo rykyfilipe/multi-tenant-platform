@@ -137,3 +137,5 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
 		</motion.div>
 	);
 };
+
+export { PerformanceChart };

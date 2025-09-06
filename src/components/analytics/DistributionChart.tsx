@@ -186,3 +186,5 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 		</motion.div>
 	);
 };
+
+export { DistributionChart };

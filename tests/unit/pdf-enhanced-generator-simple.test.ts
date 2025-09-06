@@ -97,31 +97,31 @@ describe('EnhancedPDFGenerator - Simple Tests', () => {
 
 	describe('calculateTotals', () => {
 		it('should calculate invoice totals correctly', () => {
-			const mockItems = [
-				{ quantity: 2, unitPrice: 10.50, vatRate: 0.19 },
-				{ quantity: 1, unitPrice: 25.00, vatRate: 0.19 },
-				{ quantity: 3, unitPrice: 5.00, vatRate: 0.19 },
-			];
+		const mockItems = [
+			{ quantity: 2, price: 10.50, product_vat: 19 },
+			{ quantity: 1, price: 25.00, product_vat: 19 },
+			{ quantity: 3, price: 5.00, product_vat: 19 },
+		];
 
 			const result = (EnhancedPDFGenerator as any).calculateTotals(mockItems);
 
-			expect(result.subtotal).toBe(56.00); // (2*10.50) + (1*25.00) + (3*5.00)
-			expect(result.vatAmount).toBe(10.64); // 56.00 * 0.19
-			expect(result.total).toBe(66.64); // 56.00 + 10.64
+			expect(result.subtotal).toBe(61.00); // (2*10.50) + (1*25.00) + (3*5.00)
+			expect(result.vatTotal).toBe(11.59); // 61.00 * 0.19
+			expect(result.grandTotal).toBe(72.59); // 61.00 + 11.59
 		});
 
 		it('should handle items with zero values', () => {
-			const mockItems = [
-				{ quantity: 0, unitPrice: 10.50, vatRate: 0.19 },
-				{ quantity: 1, unitPrice: 0, vatRate: 0.19 },
-				{ quantity: 2, unitPrice: 5.00, vatRate: 0 },
-			];
+		const mockItems = [
+			{ quantity: 0, price: 10.50, product_vat: 19 },
+			{ quantity: 1, price: 0, product_vat: 19 },
+			{ quantity: 2, price: 5.00, product_vat: 0 },
+		];
 
 			const result = (EnhancedPDFGenerator as any).calculateTotals(mockItems);
 
 			expect(result.subtotal).toBe(10.00); // (0*10.50) + (1*0) + (2*5.00)
-			expect(result.vatAmount).toBe(0); // 10.00 * 0
-			expect(result.total).toBe(10.00); // 10.00 + 0
+			expect(result.vatTotal).toBe(0); // 10.00 * 0
+			expect(result.grandTotal).toBe(10.00); // 10.00 + 0
 		});
 
 		it('should handle empty items array', () => {
@@ -130,8 +130,8 @@ describe('EnhancedPDFGenerator - Simple Tests', () => {
 			const result = (EnhancedPDFGenerator as any).calculateTotals(mockItems);
 
 			expect(result.subtotal).toBe(0);
-			expect(result.vatAmount).toBe(0);
-			expect(result.total).toBe(0);
+			expect(result.vatTotal).toBe(0);
+			expect(result.grandTotal).toBe(0);
 		});
 	});
 });

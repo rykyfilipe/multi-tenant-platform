@@ -47,7 +47,7 @@ export function SeriesManager({ tenantId }: SeriesManagerProps) {
 		includeYear: false,
 		includeMonth: false,
 		resetYearly: false,
-		startNumber: 0,
+		startNumber: 1,
 	});
 
 	useEffect(() => {
@@ -194,7 +194,7 @@ export function SeriesManager({ tenantId }: SeriesManagerProps) {
 			includeYear: false,
 			includeMonth: false,
 			resetYearly: false,
-			startNumber: 0,
+			startNumber: 1,
 		});
 	};
 
@@ -293,9 +293,9 @@ export function SeriesManager({ tenantId }: SeriesManagerProps) {
 								<Input
 									id="startNumber"
 									type="number"
-									min="0"
+									min="1"
 									value={formData.startNumber}
-									onChange={(e) => setFormData({ ...formData, startNumber: parseInt(e.target.value) || 0 })}
+									onChange={(e) => setFormData({ ...formData, startNumber: Math.max(1, parseInt(e.target.value) || 1) })}
 								/>
 							</div>
 						</div>

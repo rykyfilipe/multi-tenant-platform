@@ -478,3 +478,131 @@ export function canUserRead(userRole: string): boolean {
 }
 
 // Legacy validatePublicApiAccess function removed - use NextAuth session handling instead
+
+// Additional auth utility functions for testing compatibility
+export async function isAdmin(request: Request): Promise<boolean> {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    return decoded.role === 'ADMIN';
+  } catch {
+    return false;
+  }
+}
+
+export function verifyLogin(request: Request): boolean {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  
+  const token = authHeader.substring(7);
+  return verifyToken(token);
+}
+
+export function getUserId(request: Request, secret?: Secret): number | null {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, secret || JWT_SECRET) as any;
+    return decoded.userId || decoded.id;
+  } catch {
+    return null;
+  }
+}
+
+export function getUserRole(request: Request): string | null {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    return decoded.role;
+  } catch {
+    return null;
+  }
+}
+
+export async function getUserFromRequest(request: Request): Promise<{ userId: number; role: string } | Response> {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  }
+  
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    return { userId: decoded.userId || decoded.id, role: decoded.role };
+  } catch {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  }
+}
+
+export async function checkUserTenantAccess(userId: number, tenantId: number): Promise<boolean> {
+  try {
+    const userTenant = await prisma.findFirstWithCache({
+      where: {
+        userId,
+        tenantId,
+      },
+    }, 'userTenant');
+    
+    return !!userTenant;
+  } catch {
+    return false;
+  }
+}
+
+export async function validatePublicApiAccess(request: Request): Promise<{
+  isValid: boolean;
+  userId?: number;
+  tenantId?: number;
+  role?: string;
+  error?: string;
+}> {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader) {
+    return { isValid: false, error: 'Missing authorization header' };
+  }
+  
+  if (!authHeader.startsWith('Bearer ')) {
+    return { isValid: false, error: 'Invalid authorization format' };
+  }
+  
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const userId = decoded.userId || decoded.id;
+    const role = decoded.role;
+    
+    // Check if user has tenant access
+    const userTenant = await prisma.findUniqueWithCache({
+      where: { userId },
+    }, 'userTenant');
+    
+    if (!userTenant) {
+      return { isValid: false, error: 'User not found or no tenant access' };
+    }
+    
+    return {
+      isValid: true,
+      userId,
+      tenantId: userTenant.tenantId,
+      role,
+    };
+  } catch {
+    return { isValid: false, error: 'Invalid token' };
+  }
+}

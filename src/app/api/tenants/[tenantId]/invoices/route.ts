@@ -698,15 +698,10 @@ export async function POST(
 		// Debug: Log the calculated totals
 		console.log("Calculated totals:", JSON.stringify(totals, null, 2));
 
-		// Add total_amount and base_currency to invoice
+		// Add total_amount to invoice
 		const totalAmountColumn = invoiceTables.invoices!.columns!.find(
 			(c: any) => c.semanticType === "invoice_total_amount",
 		);
-		const baseCurrencyColumn2 = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_base_currency",
-		);
-
-		const defaultCurrency = tenantInfo?.defaultCurrency || "USD";
 
 		if (totalAmountColumn) {
 			await prisma.cell.create({
@@ -714,16 +709,6 @@ export async function POST(
 					rowId: invoiceRow.id,
 					columnId: totalAmountColumn.id,
 					value: totals.grandTotal.toString(),
-				},
-			});
-		}
-
-		if (baseCurrencyColumn2) {
-			await prisma.cell.create({
-				data: {
-					rowId: invoiceRow.id,
-					columnId: baseCurrencyColumn2.id,
-					value: parsedData.base_currency || defaultCurrency,
 				},
 			});
 		}

@@ -758,11 +758,11 @@ export function getMetricValue(data: any, metricType: AnalyticsMetricType, key: 
 
 	const metricMap: Record<string, any> = {
 		[AnalyticsMetricType.USER_ACTIVITY]: data.userActivity,
-		[AnalyticsMetricType.DATABASE_PERFORMANCE]: data.databaseActivity,
-		[AnalyticsMetricType.SYSTEM_METRICS]: data.systemPerformance,
-		[AnalyticsMetricType.API_USAGE]: data.apiUsage,
-		[AnalyticsMetricType.ERROR_RATE]: data.errorData,
-		[AnalyticsMetricType.REVENUE]: data.revenue,
+		[AnalyticsMetricType.DATABASE_USAGE]: data.databaseActivity,
+		[AnalyticsMetricType.SYSTEM_HEALTH]: data.systemPerformance,
+		[AnalyticsMetricType.API_PERFORMANCE]: data.apiUsage,
+		[AnalyticsMetricType.ERROR_RATES]: data.errorData,
+		[AnalyticsMetricType.REVENUE_ANALYTICS]: data.revenue,
 	};
 
 	const metricData = metricMap[metricType];
@@ -845,12 +845,12 @@ export function removeWidgetFromDashboard(dashboard: CustomDashboard, widgetId: 
 	};
 }
 
-export function updateWidgetConfig(dashboard: CustomDashboard, widgetId: string, config: Partial<DashboardWidget['config']>): CustomDashboard {
+export function updateWidgetConfig(dashboard: CustomDashboard, widgetId: string, updates: Partial<DashboardWidget>): CustomDashboard {
 	return {
 		...dashboard,
 		widgets: dashboard.widgets.map(w => 
 			w.id === widgetId 
-				? { ...w, config: { ...w.config, ...config }, updatedAt: new Date().toISOString() }
+				? { ...w, ...updates, updatedAt: new Date().toISOString() }
 				: w
 		),
 		updatedAt: new Date().toISOString(),

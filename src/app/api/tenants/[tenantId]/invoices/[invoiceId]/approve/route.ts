@@ -13,10 +13,10 @@ export async function POST(
 		const authResponse = await requireAuthResponse();
 		if (authResponse) return authResponse;
 
-		const tenantAccess = requireTenantAccess(tenantId);
+		const tenantAccess = requireTenantAccess(authResponse, tenantId.toString());
 		if (tenantAccess) return tenantAccess;
 
-		const userId = getUserId();
+		const userId = getUserId(authResponse);
 		if (!userId) {
 			return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
 		}
@@ -34,7 +34,7 @@ export async function POST(
 		const approvalService = InvoiceApprovalService.getInstance();
 		const result = await approvalService.approveInvoice(
 			invoiceId,
-			approverId,
+			approverId.toString(),
 			approverName,
 			approverEmail,
 			comments
@@ -66,7 +66,7 @@ export async function GET(
 		const authResponse = await requireAuthResponse();
 		if (authResponse) return authResponse;
 
-		const tenantAccess = requireTenantAccess(tenantId);
+		const tenantAccess = requireTenantAccess(authResponse, tenantId.toString());
 		if (tenantAccess) return tenantAccess;
 
 		const approvalService = InvoiceApprovalService.getInstance();
@@ -85,7 +85,7 @@ export async function GET(
 		}
 
 		// Get all approval requests for this invoice
-		const approvalRequests = await approvalService.getApprovalRequests(invoiceId);
+		const approvalRequests = await approvalService.getApprovalRequest(invoiceId.toString());
 		
 		return NextResponse.json({
 			success: true,

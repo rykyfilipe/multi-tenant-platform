@@ -137,7 +137,7 @@ export async function POST(
 				includeYear: validatedData.includeYear || false,
 				includeMonth: validatedData.includeMonth || false,
 				resetYearly: validatedData.resetYearly || false,
-				currentNumber: validatedData.startNumber || 0,
+				currentNumber: validatedData.startNumber || 1,
 			},
 		});
 

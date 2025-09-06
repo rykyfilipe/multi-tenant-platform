@@ -131,7 +131,7 @@ describe('EnhancedPDFGenerator', () => {
 					mockPrisma.row.findMany.mockResolvedValue(mockInvoiceItems);
 					mockPrisma.tenant.findUnique.mockResolvedValue(mockTenant);
 
-			// Mock prisma.findManyWithCache to return invoice tables
+			// Mock InvoiceSystemService.getInvoiceTables directly  
 			mockPrisma.findManyWithCache.mockResolvedValue([
 				{ id: 1, protectedType: 'invoices', columns: [] },
 				{ id: 2, protectedType: 'invoice_items', columns: [] },
@@ -168,11 +168,11 @@ describe('EnhancedPDFGenerator', () => {
 			});
 
 			// Mock prisma.findManyWithCache to return invoice tables
-			mockPrisma.findManyWithCache.mockResolvedValue([
-				{ id: 1, protectedType: 'invoices', columns: [] },
-				{ id: 2, protectedType: 'invoice_items', columns: [] },
-				{ id: 3, protectedType: 'customers', columns: [] },
-			]);
+			mockInvoiceSystemService.getInvoiceTables.mockResolvedValue({
+				invoices: { id: 1, protectedType: 'invoices', columns: [] },
+				invoice_items: { id: 2, protectedType: 'invoice_items', columns: [] },
+				customers: { id: 3, protectedType: 'customers', columns: [] },
+			});
 
 			const result = await EnhancedPDFGenerator.generateInvoicePDF({
 				tenantId: '1',

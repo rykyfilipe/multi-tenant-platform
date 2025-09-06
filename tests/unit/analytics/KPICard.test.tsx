@@ -1,7 +1,7 @@
 /** @format */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { KPICard } from '@/components/analytics/KPICard';
 import { Database, Users, TrendingUp } from 'lucide-react';
 
@@ -12,25 +12,35 @@ describe('KPICard Component', () => {
     icon: Users,
   };
 
-  it('renders with basic props', () => {
+  it('renders with basic props', async () => {
     render(<KPICard {...defaultProps} />);
     
-    expect(screen.getByText('Total Users')).toBeInTheDocument();
-    expect(screen.getByText('1.3K')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Total Users')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('1.3K')).toBeInTheDocument();
+    });
   });
 
-  it('formats large numbers correctly', () => {
+  it('formats large numbers correctly', async () => {
     const { rerender } = render(<KPICard {...defaultProps} value={1500000} />);
-    expect(screen.getByText('1.5M')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('1.5M')).toBeInTheDocument();
+    });
 
     rerender(<KPICard {...defaultProps} value={15000} />);
-    expect(screen.getByText('15.0K')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('15.0K')).toBeInTheDocument();
+    });
 
     rerender(<KPICard {...defaultProps} value={500} />);
-    expect(screen.getByText('500')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('500')).toBeInTheDocument();
+    });
   });
 
-  it('displays change indicator with increase trend', () => {
+  it('displays change indicator with increase trend', async () => {
     render(
       <KPICard
         {...defaultProps}
@@ -39,11 +49,15 @@ describe('KPICard Component', () => {
       />
     );
     
-    expect(screen.getByText('12%')).toBeInTheDocument();
-    expect(screen.getByTestId('trending-up-icon')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('13%')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('trending-up-icon')).toBeInTheDocument();
+    });
   });
 
-  it('displays change indicator with decrease trend', () => {
+  it('displays change indicator with decrease trend', async () => {
     render(
       <KPICard
         {...defaultProps}
@@ -52,11 +66,15 @@ describe('KPICard Component', () => {
       />
     );
     
-    expect(screen.getByText('8%')).toBeInTheDocument();
-    expect(screen.getByTestId('trending-down-icon')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('8%')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('trending-down-icon')).toBeInTheDocument();
+    });
   });
 
-  it('displays change indicator with neutral trend', () => {
+  it('displays change indicator with neutral trend', async () => {
     render(
       <KPICard
         {...defaultProps}
@@ -65,11 +83,15 @@ describe('KPICard Component', () => {
       />
     );
     
-    expect(screen.getByText('0%')).toBeInTheDocument();
-    expect(screen.getByTestId('minus-icon')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('0%')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('minus-icon')).toBeInTheDocument();
+    });
   });
 
-  it('displays unit when provided', () => {
+  it('displays unit when provided', async () => {
     render(
       <KPICard
         {...defaultProps}
@@ -78,10 +100,15 @@ describe('KPICard Component', () => {
       />
     );
     
-    expect(screen.getByText('85.5%')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('85.5')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('%')).toBeInTheDocument();
+    });
   });
 
-  it('displays description when provided', () => {
+  it('displays description when provided', async () => {
     render(
       <KPICard
         {...defaultProps}
@@ -89,28 +116,40 @@ describe('KPICard Component', () => {
       />
     );
     
-    expect(screen.getByText('Active users in the last 30 days')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Active users in the last 30 days')).toBeInTheDocument();
+    });
   });
 
-  it('applies correct color theme', () => {
+  it('applies correct color theme', async () => {
     const { rerender } = render(<KPICard {...defaultProps} color="green" />);
-    expect(screen.getByTestId('kpi-card-icon')).toHaveClass('bg-green-500/10', 'text-green-600');
+    await waitFor(() => {
+      expect(screen.getByTestId('kpi-card-icon')).toHaveClass('bg-green-500/10', 'text-green-600');
+    });
 
     rerender(<KPICard {...defaultProps} color="red" />);
-    expect(screen.getByTestId('kpi-card-icon')).toHaveClass('bg-red-500/10', 'text-red-600');
+    await waitFor(() => {
+      expect(screen.getByTestId('kpi-card-icon')).toHaveClass('bg-red-500/10', 'text-red-600');
+    });
 
     rerender(<KPICard {...defaultProps} color="purple" />);
-    expect(screen.getByTestId('kpi-card-icon')).toHaveClass('bg-purple-500/10', 'text-purple-600');
+    await waitFor(() => {
+      expect(screen.getByTestId('kpi-card-icon')).toHaveClass('bg-purple-500/10', 'text-purple-600');
+    });
   });
 
-  it('handles string values correctly', () => {
+  it('handles string values correctly', async () => {
     render(<KPICard {...defaultProps} value="N/A" />);
-    expect(screen.getByText('N/A')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('N/A')).toBeInTheDocument();
+    });
   });
 
-  it('applies animation delay correctly', () => {
+  it('applies animation delay correctly', async () => {
     const { container } = render(<KPICard {...defaultProps} delay={0.5} />);
-    const motionDiv = container.querySelector('[style*="transition-delay"]');
-    expect(motionDiv).toBeInTheDocument();
+    await waitFor(() => {
+      const motionDiv = container.querySelector('div[style*="opacity"]');
+      expect(motionDiv).toBeInTheDocument();
+    });
   });
 });

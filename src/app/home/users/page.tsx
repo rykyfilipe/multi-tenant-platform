@@ -12,7 +12,7 @@ import { UsersLoadingState } from "@/components/ui/loading-states";
 import TourProv from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
 import { tourUtils } from "@/lib/tour-config";
-import { Shield, Users, Plus, Search, Filter, Mail } from "lucide-react";
+import { Shield, Users, Plus, Search, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -176,6 +176,40 @@ const UsersPage = () => {
 		}
 	};
 
+	// Update user role
+	const updateUserRole = async (userId: string, newRole: Role) => {
+		if (!tenant) return;
+
+		try {
+			const res = await fetch(`/api/tenants/${tenant.id}/users/${userId}`, {
+				method: "PATCH",
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ role: newRole }),
+			});
+
+			if (!res.ok) {
+				handleApiError(res);
+				return;
+			}
+
+			// Update the user in the local state
+			setUsers((prev) => 
+				prev.map((user) => 
+					user.id.toString() === userId 
+						? { ...user, role: newRole }
+						: user
+				)
+			);
+
+			showAlert("User role updated successfully", "success");
+		} catch (err: any) {
+			showAlert(err.message || "Failed to update user role", "error");
+		}
+	};
+
 	// Cancel invitation
 	const cancelInvitation = async (invitationId: string) => {
 		if (!tenant) return;
@@ -278,12 +312,6 @@ const UsersPage = () => {
 											{showInviteForm ? "Cancel Invite" : "Invite Member"}
 										</Button>
 									)}
-									<Button
-										variant="outline"
-										className='h-12 px-6 border-2 border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 rounded-xl font-medium'>
-										<Filter className='w-5 h-5 mr-2' />
-										Filter
-									</Button>
 								</div>
 							</div>
 						</div>
@@ -372,6 +400,7 @@ const UsersPage = () => {
 									<UserManagementGrid
 										users={filteredUsers as User[]}
 										onDeleteRow={deleteUser}
+										onUpdateUserRole={updateUserRole}
 									/>
 								</CardContent>
 							</Card>

@@ -13,10 +13,10 @@ export async function POST(
 		const authResponse = await requireAuthResponse();
 		if (authResponse) return authResponse;
 
-		const tenantAccess = requireTenantAccess(tenantId);
+		const tenantAccess = requireTenantAccess(authResponse, tenantId.toString());
 		if (tenantAccess) return tenantAccess;
 
-		const userId = getUserId();
+		const userId = getUserId(authResponse);
 		if (!userId) {
 			return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
 		}
@@ -41,7 +41,7 @@ export async function POST(
 		const signatureService = DigitalSignatureService.getInstance();
 		const signature = await signatureService.signInvoice(
 			invoiceData,
-			userId,
+			userId.toString(),
 			signerName,
 			signerEmail,
 			algorithm as 'RSA-SHA256' | 'ECDSA-SHA256'
@@ -73,7 +73,7 @@ export async function GET(
 		const authResponse = await requireAuthResponse();
 		if (authResponse) return authResponse;
 
-		const tenantAccess = requireTenantAccess(tenantId);
+		const tenantAccess = requireTenantAccess(authResponse, tenantId.toString());
 		if (tenantAccess) return tenantAccess;
 
 		const signatureService = DigitalSignatureService.getInstance();

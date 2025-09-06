@@ -344,9 +344,8 @@ describe('Auth Utilities', () => {
       
       expect(result).toBe(true)
       expect(findFirstWithCache).toHaveBeenCalledWith(
-        undefined,
-        { where: { id: 1, tenantId: 1 } },
-        expect.anything()
+        { where: { userId: 1, tenantId: 1 } },
+        'userTenant'
       )
     })
 
@@ -522,8 +521,7 @@ describe('Auth Utilities', () => {
       
       expect(result).toEqual({
         isValid: false,
-        error: 'Missing or invalid authorization header',
-        status: 401,
+        error: 'Missing authorization header',
       })
     })
 
@@ -534,8 +532,7 @@ describe('Auth Utilities', () => {
       
       expect(result).toEqual({
         isValid: false,
-        error: 'Missing or invalid authorization header',
-        status: 401,
+        error: 'Invalid authorization format',
       })
     })
 
@@ -546,8 +543,7 @@ describe('Auth Utilities', () => {
       
       expect(result).toEqual({
         isValid: false,
-        error: 'Invalid token data',
-        status: 401,
+        error: 'Invalid token',
       })
     })
 
@@ -561,8 +557,7 @@ describe('Auth Utilities', () => {
       
       expect(result).toEqual({
         isValid: false,
-        error: 'User not associated with any tenant',
-        status: 403,
+        error: 'User not found or no tenant access',
       })
     })
   })

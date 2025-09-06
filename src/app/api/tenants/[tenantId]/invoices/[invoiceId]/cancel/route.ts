@@ -13,10 +13,10 @@ export async function POST(
 		const authResponse = await requireAuthResponse();
 		if (authResponse) return authResponse;
 
-		const tenantAccess = requireTenantAccess(tenantId);
+		const tenantAccess = requireTenantAccess(authResponse, tenantId.toString());
 		if (tenantAccess) return tenantAccess;
 
-		const userId = getUserId();
+		const userId = getUserId(authResponse);
 		if (!userId) {
 			return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
 		}
@@ -34,8 +34,8 @@ export async function POST(
 		const cancellationService = InvoiceCancellationService.getInstance();
 		const result = await cancellationService.requestCancellation(
 			invoiceId,
-			tenantId,
-			userId,
+			tenantId.toString()	,
+			userId.toString()	,
 			reasonId,
 			description
 		);
@@ -66,7 +66,7 @@ export async function GET(
 		const authResponse = await requireAuthResponse();
 		if (authResponse) return authResponse;
 
-		const tenantAccess = requireTenantAccess(tenantId);
+		const tenantAccess = requireTenantAccess(authResponse, tenantId.toString());
 		if (tenantAccess) return tenantAccess;
 
 		const cancellationService = InvoiceCancellationService.getInstance();

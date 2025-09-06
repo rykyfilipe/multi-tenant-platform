@@ -154,3 +154,5 @@ export const TrendChart: React.FC<TrendChartProps> = ({
 		</motion.div>
 	);
 };
+
+export { TrendChart };

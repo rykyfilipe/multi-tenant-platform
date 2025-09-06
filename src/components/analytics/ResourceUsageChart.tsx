@@ -180,3 +180,5 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 		</motion.div>
 	);
 };
+
+export { ResourceUsageChart };
