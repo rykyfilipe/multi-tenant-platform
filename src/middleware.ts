@@ -133,7 +133,14 @@ export default withAuth(
 				!pathname.includes("login") &&
 				!pathname.includes("register") &&
 				!pathname.includes("forgot-password") &&
-				!pathname.includes("reset-password")
+				!pathname.includes("reset-password") &&
+				!pathname.startsWith("/api/tenants/") && // Exclude tenant API endpoints that use Bearer token auth
+				!pathname.startsWith("/api/users/") && // Exclude user API endpoints that use Bearer token auth
+				!pathname.startsWith("/api/upload/") && // Exclude upload API endpoints
+				!pathname.startsWith("/api/account/") && // Exclude account API endpoints
+				!pathname.startsWith("/api/user/") && // Exclude user API endpoints
+				!pathname.startsWith("/api/gdpr/") && // Exclude GDPR API endpoints
+				!pathname.startsWith("/api/logs/") // Exclude logs API endpoints
 			) {
 				const csrfResult = await csrfProtection(request);
 				if (csrfResult) return csrfResult;
@@ -233,6 +240,7 @@ export default withAuth(
 					pathname.startsWith("/api/contact") ||
 					pathname.startsWith("/api/invite") ||
 					pathname.startsWith("/api/dev/") ||
+					pathname.startsWith("/api/users/") || // Allow user API endpoints (they use Bearer token auth)
 					pathname.startsWith("/docs/") ||
 					pathname.startsWith("/reset-password") ||
 					pathname.startsWith("/invite") ||

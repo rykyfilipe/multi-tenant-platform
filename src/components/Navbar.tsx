@@ -105,7 +105,7 @@ const getNavigationItems = (
 		: []),
 ];
 
-// Navigation items pentru mobile (mai puține pentru spațiu limitat)
+// Navigation items pentru mobile (doar cele esențiale pentru spațiu limitat)
 const getMobileNavigationItems = (
 	t: (key: string) => string,
 	userRole?: string,
@@ -113,19 +113,14 @@ const getMobileNavigationItems = (
 	user?: any,
 ) => [
 	{
-		title: t("nav.analytics"),
-		url: "/home/analytics",
-		icon: BarChart3,
-	},
-	{
-		title: t("nav.organization"),
-		url: "/home/tenant",
-		icon: Building2,
-	},
-	{
 		title: t("nav.database"),
 		url: "/home/database",
 		icon: Database,
+	},
+	{
+		title: t("nav.analytics"),
+		url: "/home/analytics",
+		icon: BarChart3,
 	},
 	{
 		title: userRole === "ADMIN" ? t("nav.users") : t("nav.team"),
@@ -147,16 +142,6 @@ const getMobileNavigationItems = (
 		url: "/home/settings",
 		icon: Settings,
 	},
-	// Development tools for admins
-	...(user?.role === "ADMIN" && process.env.NODE_ENV === "development"
-		? [
-				{
-					title: "Dev Tools",
-					url: "/home/dev",
-					icon: Code,
-				},
-		  ]
-		: []),
 ];
 
 // Mobile Bottom Navigation Bar
@@ -190,7 +175,7 @@ export function MobileBottomNavbar() {
 			{/* Background with premium glass effect */}
 			<div className='premium-glass border-t border-border shadow-2xl'>
 				{/* Main navigation */}
-				<div className='flex items-center justify-around px-2 py-2 sm:px-4 sm:py-3'>
+				<div className='flex items-center justify-between px-1 py-2 sm:px-2 sm:py-3 overflow-x-auto scrollbar-hide' style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 					{getMobileNavigationItems(t, user?.role, tenant, user).map(
 						(item, index) => {
 							const isActive = pathname === item.url;
@@ -199,22 +184,24 @@ export function MobileBottomNavbar() {
 									key={item.title}
 									initial={{ opacity: 0, y: 20 }}
 									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.3, delay: index * 0.1 }}>
+									transition={{ duration: 0.3, delay: index * 0.1 }}
+									className="flex-shrink-0">
 									<Link
 										href={item.url}
 										className={cn(
-											"flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction mobile-touch-feedback",
-											"hover:bg-primary/10 active:scale-95 transition-all duration-200 min-w-0 flex-1",
+											"flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg premium-interaction mobile-touch-feedback",
+											"hover:bg-primary/10 active:scale-95 transition-all duration-200 min-w-0",
+											"w-12 sm:w-14", // Fixed width to prevent overflow
 											isActive
 												? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
 												: "text-muted-foreground hover:text-foreground",
 										)}>
 										<motion.div
-											whileHover={{ scale: 1.1 }}
-											whileTap={{ scale: 0.9 }}
-											className="flex flex-col items-center gap-1">
-											<item.icon className='w-4 h-4 sm:w-5 sm:h-5' />
-											<span className="text-xs font-medium truncate max-w-full">
+											whileHover={{ scale: 1.05 }}
+											whileTap={{ scale: 0.95 }}
+											className="flex flex-col items-center gap-0.5 sm:gap-1">
+											<item.icon className='w-3.5 h-3.5 sm:w-4 sm:h-4' />
+											<span className="text-[10px] sm:text-xs font-medium truncate max-w-full leading-tight">
 												{item.title}
 											</span>
 										</motion.div>
@@ -226,18 +213,19 @@ export function MobileBottomNavbar() {
 
 					{/* User Profile Menu */}
 					{session?.user && (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<button className='flex items-center justify-center p-2 sm:p-2.5 rounded-xl premium-interaction hover:bg-primary/10 active:scale-95 text-muted-foreground hover:text-foreground transition-all duration-200 mobile-touch-feedback'>
-									<Avatar className='w-4 h-4 sm:w-5 sm:h-5'>
-										<AvatarImage src={session.user.image || undefined} />
-										<AvatarFallback className='bg-primary text-primary-foreground text-xs'>
-											{session.user.firstName?.[0]}
-											{session.user.lastName?.[0]}
-										</AvatarFallback>
-									</Avatar>
-								</button>
-							</DropdownMenuTrigger>
+						<div className="flex-shrink-0 ml-1">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<button className='flex items-center justify-center p-1.5 sm:p-2 rounded-lg premium-interaction hover:bg-primary/10 active:scale-95 text-muted-foreground hover:text-foreground transition-all duration-200 mobile-touch-feedback w-12 sm:w-14'>
+										<Avatar className='w-3.5 h-3.5 sm:w-4 sm:h-4'>
+											<AvatarImage src={session.user.image || undefined} />
+											<AvatarFallback className='bg-primary text-primary-foreground text-[10px] sm:text-xs'>
+												{session.user.firstName?.[0]}
+												{session.user.lastName?.[0]}
+											</AvatarFallback>
+										</Avatar>
+									</button>
+								</DropdownMenuTrigger>
 
 							<DropdownMenuContent
 								align='end'
@@ -294,6 +282,7 @@ export function MobileBottomNavbar() {
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
+						</div>
 					)}
 				</div>
 			</div>

@@ -2,6 +2,7 @@
 
 // Use dynamic import for pdf-lib to avoid SSR issues
 import type { PDFDocument as PDFDocumentType, RGB, TextAlignment } from "pdf-lib";
+import { rgb } from "pdf-lib";
 
 export interface InvoicePDFData {
 	// Company information

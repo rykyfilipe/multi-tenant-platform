@@ -34,9 +34,9 @@ export async function GET(
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (!hasAccess) {	
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Get database for tenant
@@ -91,9 +91,9 @@ export async function POST(
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (!hasAccess) {
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Parse request body
@@ -199,9 +199,9 @@ export async function PUT(
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (!hasAccess) {
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Parse request body
@@ -305,9 +305,9 @@ export async function DELETE(
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (!hasAccess) {
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Parse request body

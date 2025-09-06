@@ -37,9 +37,9 @@ export async function POST(
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (!hasAccess) {
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Parse request body
@@ -177,9 +177,9 @@ export async function GET(
 		}
 
 		// Check tenant access
-		const hasAccess = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (!hasAccess) {
-			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		// Get email templates for this tenant

@@ -1879,6 +1879,27 @@ export const translations: Translations = {
 		fr: "Statut",
 		de: "Status",
 	},
+	"invoice.form.invoiceSeries": {
+		en: "Invoice Series",
+		ro: "Seria Facturii",
+		es: "Serie de Factura",
+		fr: "Série de Facture",
+		de: "Rechnungsserie",
+	},
+	"invoice.form.selectSeries": {
+		en: "Select Series",
+		ro: "Selectează Seria",
+		es: "Seleccionar Serie",
+		fr: "Sélectionner Série",
+		de: "Serie Auswählen",
+	},
+	"invoice.form.noSeriesAvailable": {
+		en: "No series available",
+		ro: "Nu sunt serii disponibile",
+		es: "No hay series disponibles",
+		fr: "Aucune série disponible",
+		de: "Keine Serien verfügbar",
+	},
 	"invoice.form.added": {
 		en: "Added",
 		ro: "Adăugat",
@@ -5462,6 +5483,20 @@ export const translations: Translations = {
 		es: "Pagado",
 		fr: "Payé",
 		de: "Bezahlt",
+	},
+	"status.issued": {
+		en: "Issued",
+		ro: "Emisă",
+		es: "Emitida",
+		fr: "Émise",
+		de: "Ausgestellt",
+	},
+	"status.canceled": {
+		en: "Canceled",
+		ro: "Anulată",
+		es: "Cancelada",
+		fr: "Annulée",
+		de: "Storniert",
 	},
 	"status.overdue": {
 		en: "Overdue",

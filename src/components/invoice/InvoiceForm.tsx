@@ -57,6 +57,8 @@ import {
 	CreditCard,
 	CheckCircle,
 	Eye,
+	Send,
+	X,
 	// Check,
 	// ChevronsUpDown,
 } from "lucide-react";
@@ -117,6 +119,8 @@ export function InvoiceForm({
 	const [selectedTable, setSelectedTable] = useState<string>("");
 	const [tableRows, setTableRows] = useState<any[]>([]);
 	const [tableRowsLoading, setTableRowsLoading] = useState(false);
+	const [availableSeries, setAvailableSeries] = useState<any[]>([]);
+	const [availableSeriesLoading, setAvailableSeriesLoading] = useState(false);
 	const [tableValidation, setTableValidation] = useState<{
 		isValid: boolean;
 		message: string;
@@ -150,6 +154,8 @@ export function InvoiceForm({
 		payment_terms: t("invoice.form.paymentTerms"),
 		payment_method: t("invoice.form.paymentMethod"),
 		notes: "",
+		status: "draft",
+		invoice_series: "",
 	});
 
 	// Calculate invoice totals when products change
@@ -157,20 +163,27 @@ export function InvoiceForm({
 		const calculateTotals = async () => {
 			try {
 				const totals = await InvoiceCalculationService.calculateInvoiceTotals(
-					products.map((product) => ({
-						id:
-							typeof product.id === "string"
-								? parseInt(product.id)
-								: product.id,
-						product_ref_table: product.product_ref_table || "",
-						product_ref_id: product.product_ref_id || 0,
-						quantity: product.quantity || 1,
-						price: product.extractedPrice || 0,
-						currency: product.currency || "USD",
-						product_vat: product.vatRate || 0,
-						description: product.description || "",
-						unit_of_measure: "",
-					})),
+					products.map((product) => {
+						// Ensure all values are valid numbers
+						const safePrice = typeof product.extractedPrice === 'number' && !isNaN(product.extractedPrice) ? product.extractedPrice : 0;
+						const safeQuantity = typeof product.quantity === 'number' && !isNaN(product.quantity) ? product.quantity : 1;
+						const safeVat = typeof product.vatRate === 'number' && !isNaN(product.vatRate) ? product.vatRate : 0;
+						
+						return {
+							id:
+								typeof product.id === "string"
+									? parseInt(product.id)
+									: product.id,
+							product_ref_table: product.product_ref_table || "",
+							product_ref_id: product.product_ref_id || 0,
+							quantity: safeQuantity,
+							price: safePrice,
+							currency: product.currency || "USD",
+							product_vat: safeVat,
+							description: product.description || "",
+							unit_of_measure: "",
+						};
+					}),
 					{
 						baseCurrency,
 						exchangeRates,
@@ -213,6 +226,34 @@ export function InvoiceForm({
 		};
 
 		fetchTables();
+	}, [token, tenant?.id]);
+
+	// Fetch available invoice series
+	useEffect(() => {
+		const fetchSeries = async () => {
+			if (!token || !tenant?.id) return;
+
+			setAvailableSeriesLoading(true);
+			try {
+				const response = await fetch(
+					`/api/tenants/${tenant.id}/invoices/series`,
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					},
+				);
+
+				if (response.ok) {
+					const data = await response.json();
+					setAvailableSeries(data.series || []);
+				}
+			} catch (error) {
+				console.error("Error fetching series:", error);
+			} finally {
+				setAvailableSeriesLoading(false);
+			}
+		};
+
+		fetchSeries();
 	}, [token, tenant?.id]);
 
 	// Fetch table rows when table is selected
@@ -304,6 +345,8 @@ export function InvoiceForm({
 						editInvoice.invoice.payment_method ||
 						t("invoice.form.paymentMethod"),
 					notes: editInvoice.invoice.notes || "",
+					status: editInvoice.invoice.status || "draft",
+					invoice_series: editInvoice.invoice.invoice_series || "",
 				});
 			}
 
@@ -404,6 +447,8 @@ export function InvoiceForm({
 				payment_terms: t("invoice.form.paymentTerms"),
 				payment_method: t("invoice.form.paymentMethod"),
 				notes: "",
+				status: "draft",
+				invoice_series: "",
 			});
 		}
 	}, [editInvoice]);
@@ -435,16 +480,21 @@ export function InvoiceForm({
 		const productDetails = extractProductDetails(selectedTable, selectedRow);
 		const extractedVat = productDetails.vat || 0;
 
+		// Ensure we have valid numeric values
+		const safePrice = typeof extractedPrice === 'number' && !isNaN(extractedPrice) ? extractedPrice : 0;
+		const safeQuantity = typeof productForm.quantity === 'number' && !isNaN(productForm.quantity) ? productForm.quantity : 1;
+		const safeVat = typeof extractedVat === 'number' && !isNaN(extractedVat) ? extractedVat : 0;
+
 		const newProduct: ProductWithConversion = {
 			id: Date.now().toString(),
 			product_ref_table: productForm.product_ref_table,
 			product_ref_id: productForm.product_ref_id,
-			quantity: productForm.quantity,
+			quantity: safeQuantity,
 			description: productForm.description,
 			currency: extractedCurrency || "USD", // Folosește moneda extrasă sau USD ca fallback
-			extractedPrice: extractedPrice || 0,
-			calculatedTotal: (extractedPrice || 0) * productForm.quantity,
-			vatRate: extractedVat,
+			extractedPrice: safePrice,
+			calculatedTotal: safePrice * safeQuantity,
+			vatRate: safeVat,
 		};
 
 		// Convert the product to base currency
@@ -475,9 +525,10 @@ export function InvoiceForm({
 				const updatedProduct = { ...p, [field]: value };
 
 				// Recalculează totalul dacă s-a schimbat cantitatea
-				if (field === "quantity" && updatedProduct.extractedPrice) {
-					updatedProduct.calculatedTotal =
-						updatedProduct.extractedPrice * value;
+				if (field === "quantity") {
+					const safePrice = typeof updatedProduct.extractedPrice === 'number' && !isNaN(updatedProduct.extractedPrice) ? updatedProduct.extractedPrice : 0;
+					const safeQuantity = typeof value === 'number' && !isNaN(value) ? value : 1;
+					updatedProduct.calculatedTotal = safePrice * safeQuantity;
 				}
 
 				return updatedProduct;
@@ -548,6 +599,8 @@ export function InvoiceForm({
 				payment_terms: invoiceForm.payment_terms,
 				payment_method: invoiceForm.payment_method,
 				notes: invoiceForm.notes,
+				status: invoiceForm.status || "draft",
+				invoice_series: invoiceForm.invoice_series || undefined,
 				products: products.map((p) => ({
 					product_ref_table: p.product_ref_table,
 					product_ref_id: p.product_ref_id,
@@ -581,6 +634,8 @@ export function InvoiceForm({
 					payment_terms: t("invoice.form.paymentTerms"),
 					payment_method: t("invoice.form.paymentMethod"),
 					notes: "",
+					status: "draft",
+					invoice_series: "",
 				});
 				showAlert(t("invoice.form.invoiceCreated"), "success");
 				onSuccess?.();
@@ -629,7 +684,7 @@ export function InvoiceForm({
 		rowId: number,
 	): number | null => {
 		const row = tableRows.find((r: any) => r.id === rowId);
-		if (!row || !row.cells) return null;
+		if (!row || !row.cells) return 0; // Return 0 instead of null for better handling
 
 		// Caută coloana cu preț folosind tipuri semantice
 		const priceCell = row.cells.find((cell: any) => {
@@ -656,13 +711,14 @@ export function InvoiceForm({
 		if (
 			priceCell &&
 			priceCell.value !== null &&
-			priceCell.value !== undefined
+			priceCell.value !== undefined &&
+			priceCell.value !== ""
 		) {
 			const price = parseFloat(priceCell.value.toString());
-			return isNaN(price) ? null : price;
+			return isNaN(price) ? 0 : price; // Return 0 instead of null for better handling
 		}
 
-		return null;
+		return 0; // Return 0 instead of null for better handling
 	};
 
 	// Funcție pentru a extrage moneda din produs
@@ -970,12 +1026,14 @@ export function InvoiceForm({
 										setSelectedTable("");
 										setTableRows([]);
 										setTableValidation(null);
-										setInvoiceForm({
-											due_date: "",
-											payment_terms: t("invoice.form.paymentTerms"),
-											payment_method: t("invoice.form.paymentMethod"),
-											notes: "",
-										});
+									setInvoiceForm({
+										due_date: "",
+										payment_terms: t("invoice.form.paymentTerms"),
+										payment_method: t("invoice.form.paymentMethod"),
+										notes: "",
+										status: "draft",
+										invoice_series: "",
+									});
 										setInvoiceTotals(null);
 									}}>
 									<Plus className='w-4 h-4 mr-2' />
@@ -1126,12 +1184,83 @@ export function InvoiceForm({
 									/>
 								</div>
 
+								{/* Status Factură */}
+								<div>
+									<Label htmlFor='status'>
+										{t("invoice.form.status")} *
+									</Label>
+									<Select
+										value={invoiceForm.status || "draft"}
+										onValueChange={(value) =>
+											setInvoiceForm({
+												...invoiceForm,
+												status: value,
+											})
+										}>
+										<SelectTrigger>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="draft">
+												{t("status.draft")}
+											</SelectItem>
+											<SelectItem value="issued">
+												{t("status.issued")}
+											</SelectItem>
+											<SelectItem value="paid">
+												{t("status.paid")}
+											</SelectItem>
+											<SelectItem value="overdue">
+												{t("status.overdue")}
+											</SelectItem>
+											<SelectItem value="canceled">
+												{t("status.canceled")}
+											</SelectItem>
+										</SelectContent>
+									</Select>
+									
+									{/* Quick Status Action Buttons */}
+									<div className='flex gap-2 mt-2'>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => setInvoiceForm({...invoiceForm, status: "paid"})}
+											className={`${invoiceForm.status === "paid" ? "bg-green-50 border-green-200 text-green-800" : ""}`}
+										>
+											<CheckCircle className='w-3 h-3 mr-1' />
+											{t("status.paid")}
+										</Button>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => setInvoiceForm({...invoiceForm, status: "canceled"})}
+											className={`${invoiceForm.status === "canceled" ? "bg-red-50 border-red-200 text-red-800" : ""}`}
+										>
+											<X className='w-3 h-3 mr-1' />
+											{t("status.canceled")}
+										</Button>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => setInvoiceForm({...invoiceForm, status: "issued"})}
+											className={`${invoiceForm.status === "issued" ? "bg-blue-50 border-blue-200 text-blue-800" : ""}`}
+										>
+											<Send className='w-3 h-3 mr-1' />
+											{t("status.issued")}
+										</Button>
+									</div>
+								</div>
+
 								{/* Termeni de Plată */}
 								<div>
 									<Label htmlFor='payment_terms'>
 										{t("invoice.form.paymentTerms")}
 									</Label>
 									<Select
+									defaultValue={t("invoice.form.net15Days")}
 										value={invoiceForm.payment_terms}
 										onValueChange={(value) =>
 											setInvoiceForm({
@@ -1191,6 +1320,40 @@ export function InvoiceForm({
 											<SelectItem value={t("invoice.form.check")}>
 												{t("invoice.form.check")}
 											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+
+							{/* Seria Facturii */}
+							<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+								<div>
+									<Label htmlFor='invoice_series'>
+										{t("invoice.form.invoiceSeries")}
+									</Label>
+									<Select
+										value={invoiceForm.invoice_series || ""}
+										onValueChange={(value) =>
+											setInvoiceForm({
+												...invoiceForm,
+												invoice_series: value,
+											})
+										}>
+										<SelectTrigger>
+											<SelectValue placeholder={t("invoice.form.selectSeries")} />
+										</SelectTrigger>
+										<SelectContent>
+											{availableSeries && availableSeries.length > 0 ? (
+												availableSeries.map((series) => (
+													<SelectItem key={series.id} value={series.series}>
+														{series.series}
+													</SelectItem>
+												))
+											) : (
+												<SelectItem value="no-series" disabled>
+													{t("invoice.form.noSeriesAvailable")}
+												</SelectItem>
+											)}
 										</SelectContent>
 									</Select>
 								</div>
@@ -1637,7 +1800,7 @@ export function InvoiceForm({
 																{t("invoice.form.unitPrice")}
 															</p>
 															<p className='font-bold text-lg text-green-600 dark:text-green-400'>
-																{product.extractedPrice ? (
+																{product.extractedPrice && !isNaN(product.extractedPrice) ? (
 																	`${product.extractedPrice.toFixed(2)} ${
 																		product.currency
 																	}`
@@ -1653,7 +1816,7 @@ export function InvoiceForm({
 																{t("invoice.form.totalOriginal")}
 															</p>
 															<p className='font-bold text-xl text-green-700 dark:text-green-300'>
-																{product.calculatedTotal ? (
+																{product.calculatedTotal && !isNaN(product.calculatedTotal) ? (
 																	`${product.calculatedTotal.toFixed(2)} ${
 																		product.currency
 																	}`
@@ -1671,7 +1834,7 @@ export function InvoiceForm({
 																})}
 															</p>
 															<p className='font-bold text-xl text-blue-700 dark:text-blue-300'>
-																{product.convertedTotal ? (
+																{product.convertedTotal && !isNaN(product.convertedTotal) ? (
 																	`${formatCurrency(
 																		product.convertedTotal,
 																		baseCurrency,

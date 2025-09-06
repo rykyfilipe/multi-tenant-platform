@@ -135,3 +135,89 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json({ error: errorMessage }, { status: 500 });
 	}
 }
+
+export async function DELETE(request: NextRequest) {
+	try {
+		const sessionResult = await requireAuthResponse();
+		if (sessionResult instanceof NextResponse) {
+			return sessionResult;
+		}
+		const userId = getUserId(sessionResult);
+
+		const body = await request.json();
+		const { userId: targetUserId } = body;
+
+		if (!targetUserId) {
+			return NextResponse.json(
+				{ error: "userId is required" },
+				{ status: 400 },
+			);
+		}
+
+		// Verify user exists and current user has permission
+		const targetUser = await prisma.user.findUnique({
+			where: { id: parseInt(targetUserId) },
+			select: { id: true, email: true, tenantId: true, profileImage: true },
+		});
+
+		if (!targetUser) {
+			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
+
+		// Check if current user is admin or the same user
+		const currentUser = await prisma.user.findUnique({
+			where: { id: Number(userId) },
+			select: { id: true, role: true, tenantId: true },
+		});
+
+		if (!currentUser) {
+			return NextResponse.json(
+				{ error: "Current user not found" },
+				{ status: 404 },
+			);
+		}
+
+		// Only allow users to delete their own profile image
+		if (currentUser.id !== parseInt(targetUserId)) {
+			return NextResponse.json(
+				{ error: "You can only delete your own profile image" },
+				{ status: 403 },
+			);
+		}
+
+		// Delete old profile image from Cloudinary if it exists
+		if (
+			targetUser.profileImage &&
+			targetUser.profileImage.includes("cloudinary")
+		) {
+			try {
+				// Extract public_id from the URL
+				const urlParts = targetUser.profileImage.split("/");
+				const publicId = urlParts[urlParts.length - 1].split(".")[0];
+				await deleteImage(publicId);
+			} catch (error) {
+				console.error("Failed to delete profile image from Cloudinary:", error);
+				// Continue with database update even if Cloudinary deletion fails
+			}
+		}
+
+		// Update user profile in database to remove image
+		await prisma.user.update({
+			where: { id: parseInt(targetUserId) },
+			data: { profileImage: null },
+		});
+
+		return NextResponse.json({
+			message: "Profile image deleted successfully",
+		});
+	} catch (error) {
+		console.error("Profile image deletion error:", error);
+
+		let errorMessage = "Failed to delete profile image";
+		if (error instanceof Error) {
+			errorMessage = error.message;
+		}
+
+		return NextResponse.json({ error: errorMessage }, { status: 500 });
+	}
+}

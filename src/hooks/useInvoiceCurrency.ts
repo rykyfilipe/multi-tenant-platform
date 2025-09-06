@@ -137,32 +137,34 @@ export function useInvoiceCurrency(defaultBaseCurrency: string = "RON") {
 			let totalInBaseCurrency = 0;
 			let vatTotalInBaseCurrency = 0;
 
-			products.forEach((product) => {
-				if (product.calculatedTotal) {
-					// Calculate VAT for this product
-					const vatAmount =
-						(product.calculatedTotal * (product.vatRate || 0)) / 100;
+		products.forEach((product) => {
+			// Ensure we have valid numeric values
+			const safeCalculatedTotal = typeof product.calculatedTotal === 'number' && !isNaN(product.calculatedTotal) ? product.calculatedTotal : 0;
+			const safeVatRate = typeof product.vatRate === 'number' && !isNaN(product.vatRate) ? product.vatRate : 0;
+			const safeConvertedTotal = typeof product.convertedTotal === 'number' && !isNaN(product.convertedTotal) ? product.convertedTotal : 0;
+			
+			if (safeCalculatedTotal > 0) {
+				// Calculate VAT for this product
+				const vatAmount = (safeCalculatedTotal * safeVatRate) / 100;
 
-					// Add to original currency totals
-					const currency = product.currency;
-					totalInOriginalCurrencies[currency] =
-						(totalInOriginalCurrencies[currency] || 0) +
-						product.calculatedTotal;
-					vatTotalInOriginalCurrencies[currency] =
-						(vatTotalInOriginalCurrencies[currency] || 0) + vatAmount;
+				// Add to original currency totals
+				const currency = product.currency;
+				totalInOriginalCurrencies[currency] =
+					(totalInOriginalCurrencies[currency] || 0) + safeCalculatedTotal;
+				vatTotalInOriginalCurrencies[currency] =
+					(vatTotalInOriginalCurrencies[currency] || 0) + vatAmount;
 
-					// Add to base currency total
-					if (product.convertedTotal) {
-						const convertedVatAmount =
-							(product.convertedTotal * (product.vatRate || 0)) / 100;
-						totalInBaseCurrency += product.convertedTotal;
-						vatTotalInBaseCurrency += convertedVatAmount;
-					} else if (product.currency === baseCurrency) {
-						totalInBaseCurrency += product.calculatedTotal;
-						vatTotalInBaseCurrency += vatAmount;
-					}
+				// Add to base currency total
+				if (safeConvertedTotal > 0) {
+					const convertedVatAmount = (safeConvertedTotal * safeVatRate) / 100;
+					totalInBaseCurrency += safeConvertedTotal;
+					vatTotalInBaseCurrency += convertedVatAmount;
+				} else if (product.currency === baseCurrency) {
+					totalInBaseCurrency += safeCalculatedTotal;
+					vatTotalInBaseCurrency += vatAmount;
 				}
-			});
+			}
+		});
 
 			const grandTotalInBaseCurrency =
 				totalInBaseCurrency + vatTotalInBaseCurrency;

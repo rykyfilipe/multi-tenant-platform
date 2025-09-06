@@ -2,6 +2,7 @@
 
 // Advanced PDF Generator with Professional Templates and Features
 import type { PDFDocument as PDFDocumentType, RGB, PageSizes as PageSizesType } from 'pdf-lib';
+import { rgb } from 'pdf-lib';
 import { PDF_TEMPLATES, PDFCustomization, DEFAULT_PDF_CUSTOMIZATION, getTemplateById } from './pdf-templates';
 import { InvoiceSystemService } from './invoice-system';
 import prisma from './prisma';

@@ -61,10 +61,14 @@ export class InvoiceCalculationService {
 
 		// Process items sequentially to handle async exchange rate calls
 		for (const item of items) {
+			// Ensure we have valid numeric values
+			const safePrice = typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0;
+			const safeQuantity = typeof item.quantity === 'number' && !isNaN(item.quantity) ? item.quantity : 1;
+			const safeVatRate = typeof item.product_vat === 'number' && !isNaN(item.product_vat) ? item.product_vat : 0;
+			
 			// Calculate total for this item (price * quantity) - same as calculatedTotal in InvoiceForm
-			const calculatedTotal = item.quantity * item.price;
-			const vatRate = item.product_vat || 0;
-			const itemVat = (calculatedTotal * vatRate) / 100;
+			const calculatedTotal = safePrice * safeQuantity;
+			const itemVat = (calculatedTotal * safeVatRate) / 100;
 			const currency = item.currency || "USD";
 
 			// Add to currency-specific totals (without VAT)
@@ -83,8 +87,9 @@ export class InvoiceCalculationService {
 					config.baseCurrency,
 					config.exchangeRates,
 				);
-				const convertedSubtotal = calculatedTotal * conversionRate;
-				const convertedVat = itemVat * conversionRate;
+				const safeConversionRate = typeof conversionRate === 'number' && !isNaN(conversionRate) ? conversionRate : 1;
+				const convertedSubtotal = calculatedTotal * safeConversionRate;
+				const convertedVat = itemVat * safeConversionRate;
 				subtotalInBaseCurrency += convertedSubtotal;
 				vatTotalInBaseCurrency += convertedVat;
 			}

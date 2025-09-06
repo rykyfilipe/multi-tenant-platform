@@ -2,6 +2,7 @@
 
 // Use dynamic import for pdf-lib to avoid SSR issues
 import type { PDFDocument as PDFDocumentType, RGB, PageSizes as PageSizesType } from 'pdf-lib';
+import { rgb } from 'pdf-lib';
 import { InvoiceSystemService } from './invoice-system';
 import prisma from './prisma';
 

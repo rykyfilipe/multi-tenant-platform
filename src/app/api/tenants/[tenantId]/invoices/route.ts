@@ -19,6 +19,8 @@ const CreateInvoiceSchema = z.object({
 	payment_terms: z.string().optional(),
 	payment_method: z.string(),
 	notes: z.string().optional(),
+	status: z.string().optional().default("draft"),
+	invoice_series: z.string().optional(),
 	additional_data: z.record(z.unknown()).optional(),
 	products: z.array(
 		z.object({
@@ -322,6 +324,41 @@ export async function POST(
 				columnId: notesColumn.id,
 				value: parsedData.notes,
 			});
+		}
+
+		// Add status column
+		const statusColumn = invoiceTables.invoices!.columns!.find(
+			(c: any) => c.semanticType === "invoice_status",
+		);
+		if (statusColumn) {
+			invoiceCells.push({
+				rowId: invoiceRow.id,
+				columnId: statusColumn.id,
+				value: parsedData.status || "draft",
+			});
+		}
+
+		// Add base currency column
+		const baseCurrencyColumn = invoiceTables.invoices!.columns!.find(
+			(c: any) => c.semanticType === "invoice_base_currency",
+		);
+		if (baseCurrencyColumn && parsedData.base_currency) {
+			invoiceCells.push({
+				rowId: invoiceRow.id,
+				columnId: baseCurrencyColumn.id,
+				value: parsedData.base_currency,
+			});
+		}
+
+		// Override invoice series if provided by user
+		if (parsedData.invoice_series && invoiceSeriesColumn) {
+			// Remove the automatically generated series cell if it exists
+			const existingSeriesIndex = invoiceCells.findIndex(
+				cell => cell.columnId === invoiceSeriesColumn.id
+			);
+			if (existingSeriesIndex !== -1) {
+				invoiceCells[existingSeriesIndex].value = parsedData.invoice_series;
+			}
 		}
 
 		// Add additional data cells if any
@@ -665,7 +702,7 @@ export async function POST(
 		const totalAmountColumn = invoiceTables.invoices!.columns!.find(
 			(c: any) => c.semanticType === "invoice_total_amount",
 		);
-		const baseCurrencyColumn = invoiceTables.invoices!.columns!.find(
+		const baseCurrencyColumn2 = invoiceTables.invoices!.columns!.find(
 			(c: any) => c.semanticType === "invoice_base_currency",
 		);
 
@@ -681,11 +718,11 @@ export async function POST(
 			});
 		}
 
-		if (baseCurrencyColumn) {
+		if (baseCurrencyColumn2) {
 			await prisma.cell.create({
 				data: {
 					rowId: invoiceRow.id,
-					columnId: baseCurrencyColumn.id,
+					columnId: baseCurrencyColumn2.id,
 					value: parsedData.base_currency || defaultCurrency,
 				},
 			});

@@ -48,13 +48,13 @@ const getRoleIcon = (role: Role) => {
 const getRoleColor = (role: Role) => {
 	switch (role) {
 		case Role.ADMIN:
-			return "bg-gradient-to-r from-purple-500 to-pink-500 text-white";
+			return "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25";
 		case Role.EDITOR:
-			return "bg-gradient-to-r from-blue-500 to-cyan-500 text-white";
+			return "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25";
 		case Role.VIEWER:
-			return "bg-gradient-to-r from-gray-500 to-slate-500 text-white";
+			return "bg-gradient-to-r from-slate-500 to-slate-600 text-white shadow-lg shadow-slate-500/25";
 		default:
-			return "bg-gray-100 text-gray-700";
+			return "bg-slate-100 text-slate-700";
 	}
 };
 
@@ -88,6 +88,7 @@ export function UserManagementGrid({
 	const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 	const [sortField, setSortField] = useState<keyof User>('firstName');
 	const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+	const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
 	// Handle select all
 	const handleSelectAll = (checked: boolean) => {
@@ -134,193 +135,196 @@ export function UserManagementGrid({
 		return 0;
 	});
 
-	// Get current date for "Since" display
-	const getCurrentDate = () => {
-		const now = new Date();
-		const month = now.toLocaleString('en-US', { month: 'short' });
-		const year = now.getFullYear();
-		return `Since ${month}, ${year}`;
-	};
+	if (users.length === 0) {
+		return (
+			<div className='text-center py-16'>
+				<div className='w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-6'>
+					<UserIcon className='w-10 h-10 text-slate-400' />
+				</div>
+				<h3 className='text-lg font-semibold text-slate-900 dark:text-white mb-2'>No team members yet</h3>
+				<p className='text-slate-500 dark:text-slate-400 max-w-md mx-auto'>
+					Start building your team by inviting members to join your organization.
+				</p>
+			</div>
+		);
+	}
 
 	return (
-		<div className='space-y-6'>
-			{/* Table */}
-			<Card className='border-border/20 bg-card/50 backdrop-blur-sm'>
-				<CardContent className='p-0'>
-					<div className='overflow-x-auto'>
-						<table className='w-full'>
-							<thead>
-								<tr className='border-b border-border/20 bg-muted/30'>
-									<th className='px-6 py-4 text-left'>
-										<Checkbox
-											checked={selectedUsers.size === users.length && users.length > 0}
-											onCheckedChange={handleSelectAll}
-											className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-										/>
-									</th>
-									<th 
-										className='px-6 py-4 text-left font-medium text-foreground cursor-pointer hover:text-primary transition-colors'
-										onClick={() => handleSort('firstName')}
-									>
-										<div className='flex items-center gap-2'>
-											Member Name
-											<ChevronUp className={`w-4 h-4 transition-transform ${sortField === 'firstName' ? (sortDirection === 'asc' ? 'rotate-0' : 'rotate-180') : 'opacity-30'}`} />
-										</div>
-									</th>
-									<th 
-										className='px-6 py-4 text-left font-medium text-foreground cursor-pointer hover:text-primary transition-colors'
-										onClick={() => handleSort('role')}
-									>
-										<div className='flex items-center gap-2'>
-											Title
-											<ChevronUp className={`w-4 h-4 transition-transform ${sortField === 'role' ? (sortDirection === 'asc' ? 'rotate-0' : 'rotate-180') : 'opacity-30'}`} />
-										</div>
-									</th>
-									<th className='px-6 py-4 text-left font-medium text-foreground'>
-										Project
-									</th>
-									<th className='px-6 py-4 text-left font-medium text-foreground'>
-										Actions
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{sortedUsers.map((user, index) => (
-									<tr 
-										key={user.id} 
-										className='border-b border-border/10 hover:bg-muted/20 transition-colors group'
-									>
-										<td className='px-6 py-4'>
-											<Checkbox
-												checked={selectedUsers.has(user.id.toString())}
-												onCheckedChange={(checked) => handleUserSelection(user.id.toString(), checked as boolean)}
-												className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-											/>
-										</td>
-										<td className='px-6 py-4'>
-											<div className='flex items-center gap-3'>
-												<Avatar className='w-10 h-10'>
-													<AvatarImage src={user.profileImage} />
-													<AvatarFallback className='bg-primary/10 text-primary font-medium'>
-														{getInitials(user.firstName, user.lastName)}
-													</AvatarFallback>
-												</Avatar>
-												<div>
-													<div className='font-medium text-foreground'>
-														{user.firstName} {user.lastName}
-													</div>
-													<div className='text-sm text-muted-foreground'>
-														{user.email}
-													</div>
-													<div className='text-xs text-muted-foreground'>
-														{getCurrentDate()}
-													</div>
-												</div>
-											</div>
-										</td>
-										<td className='px-6 py-4'>
-											<div className='flex items-center gap-2'>
-												{getRoleIcon(user.role)}
-												<span className='text-foreground'>
-													{getRoleDisplayName(user.role)}
-												</span>
-											</div>
-										</td>
-										<td className='px-6 py-4'>
-											<div className='flex items-center gap-2'>
-												<div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center'>
-													<span className='text-white text-xs font-bold'>P</span>
-												</div>
-												<div>
-													<div className='font-medium text-foreground'>
-														Platform
-													</div>
-													<div className='text-sm text-muted-foreground'>
-														Team collaboration and management
-													</div>
-												</div>
-											</div>
-										</td>
-										<td className='px-6 py-4'>
-											<div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-												{currentUser?.role === Role.ADMIN && (
-													<>
-														<Button
-															variant='ghost'
-															size='sm'
-															onClick={() => onEditCell?.(user.id.toString(), 'firstName')}
-															className='h-8 w-8 p-0 hover:bg-muted'
-														>
-															<Edit className='w-4 h-4' />
-														</Button>
-														<Button
-															variant='ghost'
-															size='sm'
-															onClick={() => onDeleteRow(user.id.toString())}
-															className='h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground'
-														>
-															<Trash2 className='w-4 h-4' />
-														</Button>
-													</>
-												)}
-												<Button
-													variant='ghost'
-													size='sm'
-													className='h-8 w-8 p-0 hover:bg-muted'
-												>
-													<MoreHorizontal className='w-4 h-4' />
-												</Button>
-											</div>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Pagination */}
-			{users.length > 0 && (
-				<div className='flex items-center justify-between'>
-					<div className='text-sm text-muted-foreground'>
-						Showing {users.length} of {users.length} members
-					</div>
-					<div className='flex items-center gap-2'>
-						<Button variant='outline' size='sm' disabled>
-							&lt;&lt;
-						</Button>
-						<Button variant='outline' size='sm' disabled>
-							&lt;
-						</Button>
-						<Button variant='default' size='sm'>
-							1
-						</Button>
-						<Button variant='outline' size='sm' disabled>
-							&gt;
-						</Button>
-						<Button variant='outline' size='sm' disabled>
-							&gt;&gt;
-						</Button>
+		<div className='space-y-0'>
+			{/* Modern Table Header */}
+			<div className='bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 px-6 py-4 border-b border-slate-200 dark:border-slate-600'>
+				<div className='flex items-center gap-4'>
+					<Checkbox
+						checked={selectedUsers.size === users.length && users.length > 0}
+						onCheckedChange={handleSelectAll}
+						className='data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md'
+					/>
+					<div className='flex-1 grid grid-cols-12 gap-6 text-sm font-semibold text-slate-600 dark:text-slate-300'>
+						<div className='col-span-4 flex items-center gap-2'>
+							<span>Team Member</span>
+							<button
+								onClick={() => handleSort('firstName')}
+								className='hover:text-slate-900 dark:hover:text-white transition-colors p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600'>
+								<ChevronUp className={`w-4 h-4 transition-transform ${sortField === 'firstName' && sortDirection === 'asc' ? 'rotate-180' : ''}`} />
+							</button>
+						</div>
+						<div className='col-span-3 flex items-center gap-2'>
+							<span>Role</span>
+							<button
+								onClick={() => handleSort('role')}
+								className='hover:text-slate-900 dark:hover:text-white transition-colors p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600'>
+								<ChevronUp className={`w-4 h-4 transition-transform ${sortField === 'role' && sortDirection === 'asc' ? 'rotate-180' : ''}`} />
+							</button>
+						</div>
+						<div className='col-span-3'>Contact</div>
+						<div className='col-span-2 text-center'>Actions</div>
 					</div>
 				</div>
-			)}
+			</div>
 
-			{/* Empty State */}
-			{users.length === 0 && (
-				<Card className='border-dashed border-2 border-muted-foreground/20'>
-					<CardContent className='text-center py-16'>
-						<div className='p-4 bg-muted/30 rounded-full w-fit mx-auto mb-4'>
-							<UserIcon className='w-8 h-8 text-muted-foreground' />
+			{/* Modern Table Body */}
+			<div className='divide-y divide-slate-200 dark:divide-slate-700'>
+				{sortedUsers.map((user, index) => (
+					<div
+						key={user.id}
+						className={`px-6 py-5 transition-all duration-200 group ${
+							hoveredRow === user.id.toString() 
+								? 'bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20' 
+								: 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+						} ${index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-800/30'}`}
+						onMouseEnter={() => setHoveredRow(user.id.toString())}
+						onMouseLeave={() => setHoveredRow(null)}>
+						<div className='flex items-center gap-4'>
+							<Checkbox
+								checked={selectedUsers.has(user.id.toString())}
+								onCheckedChange={(checked) => handleUserSelection(user.id.toString(), checked as boolean)}
+								className='data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md'
+							/>
+							<div className='flex-1 grid grid-cols-12 gap-6 items-center'>
+								{/* Member Info */}
+								<div className='col-span-4 flex items-center gap-4'>
+									<div className='relative'>
+										<Avatar className='w-12 h-12 border-2 border-white dark:border-slate-800 shadow-lg'>
+											<AvatarImage src={user.profileImage} className='object-cover' />
+											<AvatarFallback className='bg-gradient-to-br from-primary to-primary/80 text-white font-bold text-lg'>
+												{getInitials(user.firstName, user.lastName)}
+											</AvatarFallback>
+										</Avatar>
+										{user.role === 'ADMIN' && (
+											<div className='absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg'>
+												<Crown className='w-3 h-3 text-white' />
+											</div>
+										)}
+									</div>
+									<div className='min-w-0 flex-1'>
+										<div className='font-semibold text-slate-900 dark:text-white text-base'>
+											{user.firstName} {user.lastName}
+										</div>
+										<div className='text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2'>
+											<div className='w-2 h-2 bg-green-500 rounded-full' />
+											Active • Joined {new Date(user.createdAt).toLocaleDateString('en-US', { 
+												month: 'short', 
+												day: 'numeric', 
+												year: 'numeric' 
+											})}
+										</div>
+									</div>
+								</div>
+
+								{/* Role */}
+								<div className='col-span-3'>
+									<Badge className={`${getRoleColor(user.role)} border-0 text-xs font-semibold px-4 py-2 rounded-lg shadow-sm`}>
+										<div className='flex items-center gap-2'>
+											{getRoleIcon(user.role)}
+											{getRoleDisplayName(user.role)}
+										</div>
+									</Badge>
+								</div>
+
+								{/* Contact */}
+								<div className='col-span-3'>
+									<div className='flex items-center gap-3 text-slate-600 dark:text-slate-300'>
+										<div className='w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center'>
+											<Mail className='w-4 h-4' />
+										</div>
+										<div className='min-w-0 flex-1'>
+											<div className='text-sm font-medium text-slate-900 dark:text-white truncate'>
+												{user.email}
+											</div>
+										</div>
+									</div>
+								</div>
+
+								{/* Actions */}
+								<div className='col-span-2 flex items-center justify-center gap-2'>
+									<Button
+										variant='ghost'
+										size='sm'
+										asChild
+										className={`h-9 w-9 rounded-lg transition-all duration-200 ${
+											hoveredRow === user.id.toString() 
+												? 'opacity-100 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300' 
+												: 'opacity-0 group-hover:opacity-100'
+										}`}>
+										<Link href={`/home/users/permisions/${user.id}`}>
+											<Settings2 className='w-4 h-4' />
+										</Link>
+									</Button>
+									{currentUser?.role === 'ADMIN' && currentUser?.id !== user.id && (
+										<Button
+											variant='ghost'
+											size='sm'
+											onClick={() => onDeleteRow(user.id.toString())}
+											className={`h-9 w-9 rounded-lg transition-all duration-200 ${
+												hoveredRow === user.id.toString() 
+													? 'opacity-100 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
+													: 'opacity-0 group-hover:opacity-100'
+											}`}>
+											<Trash2 className='w-4 h-4' />
+										</Button>
+									)}
+								</div>
+							</div>
 						</div>
-						<h3 className='text-lg font-medium text-foreground mb-2'>
-							{t("user.management.noMembers")}
-						</h3>
-						<p className='text-muted-foreground mb-4'>
-							{t("user.management.noMembersDescription")}
-						</p>
-					</CardContent>
-				</Card>
+					</div>
+				))}
+			</div>
+
+			{/* Premium Bulk Actions */}
+			{selectedUsers.size > 0 && (
+				<div className='bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-t border-primary/20 px-6 py-4'>
+					<div className='flex items-center justify-between'>
+						<div className='flex items-center gap-3'>
+							<div className='w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center'>
+								<UserIcon className='w-4 h-4 text-primary' />
+							</div>
+							<div>
+								<div className='font-semibold text-primary'>
+									{selectedUsers.size} member{selectedUsers.size > 1 ? 's' : ''} selected
+								</div>
+								<div className='text-sm text-slate-600 dark:text-slate-400'>
+									Choose an action to perform on selected members
+								</div>
+							</div>
+						</div>
+						<div className='flex items-center gap-3'>
+							<Button 
+								variant='outline' 
+								size='sm' 
+								className='border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-200 rounded-lg'>
+								<Settings2 className='w-4 h-4 mr-2' />
+								Manage Permissions
+							</Button>
+							<Button 
+								variant='outline' 
+								size='sm' 
+								className='border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-200 rounded-lg'>
+								<Trash2 className='w-4 h-4 mr-2' />
+								Remove Members
+							</Button>
+						</div>
+					</div>
+				</div>
 			)}
 		</div>
 	);
