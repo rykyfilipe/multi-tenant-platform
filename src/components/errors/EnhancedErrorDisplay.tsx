@@ -408,9 +408,9 @@ export function EnhancedErrorDisplay({
 
 					{/* Actions */}
 					<div className="flex items-center justify-between pt-4 border-t">
-						<div className="text-sm text-muted-foreground">
-							Error occurred at {new Date(error.timestamp).toLocaleString()}
-						</div>
+					<div className="text-sm text-muted-foreground">
+						Error occurred at {error.timestamp ? new Date(error.timestamp).toLocaleString() : 'Unknown time'}
+					</div>
 						<div className="flex items-center gap-2">
 							{onRetry && (
 								<Button variant="outline" size="sm" onClick={onRetry}>

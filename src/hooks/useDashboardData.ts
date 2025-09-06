@@ -312,6 +312,11 @@ export const useDashboardData = () => {
 				// Trigger memory recalculation in background if needed
 				if (memoryData?.success && memoryData?.data?.lastRecalculated) {
 					const lastRecalc = new Date(memoryData.data.lastRecalculated);
+					// Check if the date is valid
+					if (isNaN(lastRecalc.getTime())) {
+						console.warn('Invalid lastRecalculated date:', memoryData.data.lastRecalculated);
+						return;
+					}
 					const now = new Date();
 					const hoursSinceRecalc =
 						(now.getTime() - lastRecalc.getTime()) / (1000 * 60 * 60);

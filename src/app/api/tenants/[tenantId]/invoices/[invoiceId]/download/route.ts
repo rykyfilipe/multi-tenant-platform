@@ -352,9 +352,14 @@ export async function GET(
 				date: invoiceData.date,
 				dueDate:
 					invoiceData.due_date ||
-					new Date(
-						new Date(invoiceData.date).getTime() + 30 * 24 * 60 * 60 * 1000,
-					).toISOString(),
+					(() => {
+						const invoiceDate = new Date(invoiceData.date);
+						if (isNaN(invoiceDate.getTime())) {
+							// Fallback to current date if invoice date is invalid
+							return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+						}
+						return new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+					})(),
 				currency: invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD",
 				paymentTerms: invoiceData.payment_terms || "Net 30",
 				paymentMethod:

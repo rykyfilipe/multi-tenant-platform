@@ -190,7 +190,7 @@ export const RealDataStatus: React.FC<RealDataStatusProps> = ({
 				</CardTitle>
 				<CardDescription>
 					Last verified:{" "}
-					{new Date(verificationData.summary.verifiedAt).toLocaleString()}
+					{verificationData.summary.verifiedAt ? new Date(verificationData.summary.verifiedAt).toLocaleString() : 'Unknown time'}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>

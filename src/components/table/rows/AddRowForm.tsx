@@ -79,7 +79,12 @@ const formatCellValue = (value: any, type: string, column?: Column): any => {
 		case USER_FRIENDLY_COLUMN_TYPES.yesNo:
 			return value.toLowerCase() === "true";
 		case USER_FRIENDLY_COLUMN_TYPES.date:
-			return new Date(value).toISOString();
+			try {
+				const date = new Date(value);
+				return isNaN(date.getTime()) ? value : date.toISOString();
+			} catch {
+				return value;
+			}
 		case USER_FRIENDLY_COLUMN_TYPES.link:
 			// For reference columns, ensure we return an array (always multiple)
 			if (!Array.isArray(value)) {
@@ -97,7 +102,9 @@ const formatCellValue = (value: any, type: string, column?: Column): any => {
 const formatDateForInput = (value: string | string[]): string => {
 	if (Array.isArray(value) || !value) return "";
 	try {
-		return new Date(value).toISOString().slice(0, 16);
+		const date = new Date(value);
+		if (isNaN(date.getTime())) return "";
+		return date.toISOString().slice(0, 16);
 	} catch {
 		return "";
 	}

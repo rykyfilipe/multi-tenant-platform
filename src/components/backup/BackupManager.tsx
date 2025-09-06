@@ -460,7 +460,7 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 												<Badge className={getStatusColor(backup.status)}>
 													{backup.status}
 												</Badge>
-												<span>Created {new Date(backup.startedAt).toLocaleString()}</span>
+												<span>Created {backup.startedAt ? new Date(backup.startedAt).toLocaleString() : 'Unknown date'}</span>
 											</CardDescription>
 										</div>
 									</div>
@@ -594,7 +594,7 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 										<div>
 											<h4 className="font-medium">Restore from Backup</h4>
 											<p className="text-sm text-muted-foreground">
-												Started {new Date(restore.startedAt).toLocaleString()}
+												Started {restore.startedAt ? new Date(restore.startedAt).toLocaleString() : 'Unknown date'}
 											</p>
 										</div>
 									</div>

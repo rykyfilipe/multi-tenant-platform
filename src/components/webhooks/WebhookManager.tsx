@@ -542,7 +542,7 @@ export function WebhookManager({ tenantId }: WebhookManagerProps) {
 													{webhook.lastDelivery.status}
 												</div>
 												<div>
-													{new Date(webhook.lastDelivery.timestamp).toLocaleString()}
+													{webhook.lastDelivery.timestamp ? new Date(webhook.lastDelivery.timestamp).toLocaleString() : 'Unknown time'}
 												</div>
 											</div>
 										) : (

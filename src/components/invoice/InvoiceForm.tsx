@@ -2054,7 +2054,7 @@ export function InvoiceForm({
 													</div>
 													<p className='text-xs text-muted-foreground'>
 														{t("invoice.form.ratesAsOf", {
-															date: new Date(conversionDate).toLocaleString(),
+															date: conversionDate ? new Date(conversionDate).toLocaleString() : 'Unknown date',
 														})}
 													</p>
 												</div>
