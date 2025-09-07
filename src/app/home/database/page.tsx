@@ -24,7 +24,7 @@ function Page() {
 
 export default Page;
 
-function DatabaseContent() {
+export function DatabaseContent() {
 	const {
 		tables,
 		selectedDatabase,

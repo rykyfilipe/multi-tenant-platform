@@ -155,7 +155,24 @@ export function useInvoiceSystem() {
 	const createInvoice = useCallback(
 		async (invoiceData: {
 			customer_id: number;
-			products: InvoiceProduct[];
+			base_currency: string;
+			due_date: string;
+			payment_terms?: string;
+			payment_method: string;
+			notes?: string;
+			status?: string;
+			invoice_series?: string;
+			products: Array<{
+				product_ref_table: string;
+				product_ref_id: number;
+				quantity: number;
+				unit_of_measure?: string;
+				description?: string;
+				currency: string;
+				original_price: number;
+				converted_price: number;
+				price: number;
+			}>;
 			additional_data?: Record<string, any>;
 		}) => {
 			if (!token || !tenantId) {

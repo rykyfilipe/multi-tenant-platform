@@ -163,8 +163,8 @@ describe('Chart Colors', () => {
     });
 
     it('handles very large numbers', () => {
-      expect(getChartColor(Number.MAX_SAFE_INTEGER)).toBe('#3b82f6'); // Should cycle back
-      expect(getChartColor(Number.MAX_VALUE)).toBe('#3b82f6'); // Should cycle back
+      expect(getChartColor(Number.MAX_SAFE_INTEGER)).toBe('#10b981'); // Should cycle to second color (index 1)
+      expect(getChartColor(Number.MAX_VALUE)).toBe('#ef4444'); // Should cycle to fourth color (index 3)
     });
 
     it('handles NaN and Infinity', () => {

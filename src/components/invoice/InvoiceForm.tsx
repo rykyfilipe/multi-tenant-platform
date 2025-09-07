@@ -162,8 +162,8 @@ export function InvoiceForm({
 	// Form state for invoice details
 	const [invoiceForm, setInvoiceForm] = useState({
 		due_date: "",
-		payment_terms: t("invoice.form.paymentTerms"),
-		payment_method: t("invoice.form.paymentMethod"),
+		payment_terms: t("invoice.form.net15Days"),
+		payment_method: t("invoice.form.bankTransfer"),
 		notes: "",
 		status: "draft",
 		invoice_series: "",
@@ -468,8 +468,8 @@ export function InvoiceForm({
 			setTableValidation(null);
 			setInvoiceForm({
 				due_date: "",
-				payment_terms: t("invoice.form.paymentTerms"),
-				payment_method: t("invoice.form.paymentMethod"),
+				payment_terms: t("invoice.form.net15Days"),
+				payment_method: t("invoice.form.bankTransfer"),
 				notes: "",
 				status: "draft",
 				invoice_series: "",
@@ -647,8 +647,8 @@ export function InvoiceForm({
 				setProducts([]);
 				setInvoiceForm({
 					due_date: "",
-					payment_terms: t("invoice.form.paymentTerms"),
-					payment_method: t("invoice.form.paymentMethod"),
+					payment_terms: t("invoice.form.net15Days"),
+					payment_method: t("invoice.form.bankTransfer"),
 					notes: "",
 					status: "draft",
 					invoice_series: "",
@@ -1057,8 +1057,8 @@ export function InvoiceForm({
 										setTableValidation(null);
 									setInvoiceForm({
 										due_date: "",
-										payment_terms: t("invoice.form.paymentTerms"),
-										payment_method: t("invoice.form.paymentMethod"),
+										payment_terms: t("invoice.form.net15Days"),
+										payment_method: t("invoice.form.bankTransfer"),
 										notes: "",
 										status: "draft",
 										invoice_series: "",
@@ -1289,7 +1289,6 @@ export function InvoiceForm({
 										{t("invoice.form.paymentTerms")}
 									</Label>
 									<Select
-									defaultValue={t("invoice.form.net15Days")}
 										value={invoiceForm.payment_terms}
 										onValueChange={(value) =>
 											setInvoiceForm({
@@ -1326,7 +1325,7 @@ export function InvoiceForm({
 										{t("invoice.form.paymentMethod")} *
 									</Label>
 									<Select
-										value={t("invoice.form.bankTransfer")}
+										value={invoiceForm.payment_method}
 										onValueChange={(value) =>
 											setInvoiceForm({
 												...invoiceForm,

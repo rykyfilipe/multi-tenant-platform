@@ -63,11 +63,11 @@ export const PREMIUM_CHART_COLORS = {
 
   // Status Colors - Refined and Elegant
   status: {
-    success: "#22c55e",        // Success green
+    success: "#10b981",        // Success green (emerald-500)
     warning: "#f59e0b",        // Warning amber
     error: "#ef4444",          // Error red
     info: "#3b82f6",           // Info blue
-    neutral: "#6b6b6b",        // Neutral gray
+    neutral: "#6b7280",        // Neutral gray (gray-500)
   },
 
   // Interactive States
@@ -93,12 +93,11 @@ export const CHART_PALETTES = {
 
   // Elegant Accent - Black with gold accents
   elegant: [
-    "#000000",  // Primary black
-    "#d4af37",  // Gold accent
-    "#2d2d2d",  // Charcoal
-    "#e8b4b8",  // Rose gold
-    "#404040",  // Dark gray
-    "#f7e7ce",  // Champagne
+    "#3b82f6",  // blue-500
+    "#10b981",  // emerald-500
+    "#f59e0b",  // amber-500
+    "#ef4444",  // red-500
+    "#8b5cf6",  // violet-500
   ],
 
   // Sophisticated - Various grays with subtle accents
@@ -125,22 +124,75 @@ export const CHART_PALETTES = {
 // Utility Functions
 export const getChartColor = (index: number, palette: keyof typeof CHART_PALETTES = 'elegant'): string => {
   const colors = CHART_PALETTES[palette];
-  return colors[index % colors.length];
+  
+  // Handle edge cases
+  if (isNaN(index) || !isFinite(index)) {
+    return colors[0];
+  }
+  
+  // Handle negative numbers - return first color
+  if (index < 0) {
+    return colors[0];
+  }
+  
+  // Convert to integer
+  const normalizedIndex = Math.floor(index);
+  return colors[normalizedIndex % colors.length];
 };
 
-export const getGradientColor = (baseColor: string, opacity: number = 0.3): string => {
-  // Convert hex to rgba with opacity
-  const hex = baseColor.replace('#', '');
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+export const getGradientColor = (index: number): string => {
+  // Handle edge cases
+  if (isNaN(index) || !isFinite(index)) {
+    return 'url(#gradient-0)';
+  }
+  
+  // Handle negative numbers - return first gradient
+  if (index < 0) {
+    return 'url(#gradient-0)';
+  }
+  
+  // Convert to integer
+  const normalizedIndex = Math.floor(index);
+  return `url(#gradient-${normalizedIndex % 5})`; // Cycle through 5 gradients
 };
 
-export const getStatusColor = (percentage: number): string => {
-  if (percentage >= 90) return PREMIUM_CHART_COLORS.status.error;
-  if (percentage >= 75) return PREMIUM_CHART_COLORS.status.warning;
-  if (percentage >= 50) return PREMIUM_CHART_COLORS.data.secondary;
+export const getChartColors = (count: number, palette: keyof typeof CHART_PALETTES = 'elegant'): string[] => {
+  if (count <= 0) return [];
+  const colors = CHART_PALETTES[palette];
+  const result: string[] = [];
+  for (let i = 0; i < count; i++) {
+    result.push(colors[i % colors.length]);
+  }
+  return result;
+};
+
+export const getStatusColor = (status: string | number | null | undefined): string => {
+  // Handle null and undefined
+  if (status === null || status === undefined) {
+    return PREMIUM_CHART_COLORS.status.neutral;
+  }
+  
+  // Handle string status
+  if (typeof status === 'string') {
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case 'success':
+        return PREMIUM_CHART_COLORS.status.success;
+      case 'warning':
+        return PREMIUM_CHART_COLORS.status.warning;
+      case 'error':
+        return PREMIUM_CHART_COLORS.status.error;
+      case 'info':
+        return PREMIUM_CHART_COLORS.status.info;
+      default:
+        return PREMIUM_CHART_COLORS.status.neutral;
+    }
+  }
+  
+  // Handle percentage status
+  if (status >= 90) return PREMIUM_CHART_COLORS.status.error;
+  if (status >= 75) return PREMIUM_CHART_COLORS.status.warning;
+  if (status >= 50) return PREMIUM_CHART_COLORS.data.secondary;
   return PREMIUM_CHART_COLORS.status.success;
 };
 

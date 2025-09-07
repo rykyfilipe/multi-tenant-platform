@@ -73,7 +73,7 @@ export function validateProducts(products: any[]): string[] {
 			errors.push(`${productPrefix}: Currency is required`);
 		}
 		
-		if (product.price === undefined || product.price === null || product.price < 0) {
+		if (product.extractedPrice === undefined || product.extractedPrice === null || product.extractedPrice < 0) {
 			errors.push(`${productPrefix}: Price must be non-negative`);
 		}
 	});
@@ -170,7 +170,7 @@ export function validateInvoiceForm(data: {
 		}
 		
 		// Check for products with zero price
-		const zeroPriceProducts = data.products.filter(p => p.price === 0);
+		const zeroPriceProducts = data.products.filter(p => p.extractedPrice === 0);
 		if (zeroPriceProducts.length > 0) {
 			warnings.push(`${zeroPriceProducts.length} product(s) have zero price.`);
 		}

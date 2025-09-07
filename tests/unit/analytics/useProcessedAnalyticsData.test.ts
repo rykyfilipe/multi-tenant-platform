@@ -352,10 +352,19 @@ describe('useProcessedAnalyticsData Hook', () => {
       tenant: { id: 1 },
     } as any);
 
+    // Mock fetch for real-time data
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockRealTimeData),
+    });
+
     const { result } = renderHook(() => useProcessedAnalyticsData());
 
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
     expect(result.current.data).toBeNull();
-    expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
   });
 

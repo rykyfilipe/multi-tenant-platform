@@ -347,7 +347,8 @@ describe('Input Component', () => {
         'bg-transparent',
         'px-3',
         'py-1',
-        'text-base'
+        'text-sm',
+        'sm:text-base'
       )
     })
 

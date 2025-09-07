@@ -84,6 +84,7 @@ global.createMockProduct = (overrides = {}) => ({
 });
 
 // Cleanup after each test
+global.afterEach = global.afterEach || (() => {});
 afterEach(() => {
 	jest.clearAllMocks();
 });
