@@ -1,7 +1,8 @@
 /** @format */
 
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
-import prisma from "@/lib/prisma";
+import prisma, { withRetry } from "@/lib/prisma";
+import { handleDatabaseError } from "@/lib/database-error-handler";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -26,7 +27,7 @@ export async function GET(
 	try {
 		if (role === "ADMIN") {
 			// Pentru admin, returnăm toate tabelele din tenant, dar excludem tabelele protejate
-			const tables = await prisma.table.findMany({
+			const tables = await withRetry(() => prisma.table.findMany({
 				where: {
 					database: {
 						tenantId: Number(tenantId),
@@ -41,7 +42,7 @@ export async function GET(
 						},
 					},
 				},
-			});
+			}));
 
 			// Serializăm datele pentru a evita probleme cu tipurile Prisma
 			const serializedTables = tables.map((table:any) => ({
@@ -66,7 +67,7 @@ export async function GET(
 		}
 
 		// Pentru utilizatorii non-admin, returnăm doar tabelele la care au acces, dar excludem tabelele protejate
-		const tablePermissions = await prisma.tablePermission.findMany({
+		const tablePermissions = await withRetry(() => prisma.tablePermission.findMany({
 			where: {
 				userId: userId,
 				table: {
@@ -88,7 +89,7 @@ export async function GET(
 					},
 				},
 			},
-		});
+		}));
 
 		const accessibleTables = tablePermissions
 			.filter((permission: { canRead: boolean }) => permission.canRead)
@@ -120,6 +121,13 @@ export async function GET(
 			"Error stack:",
 			error instanceof Error ? error.stack : "No stack trace",
 		);
+		
+		// Check if it's a database connection error
+		const dbErrorResponse = handleDatabaseError(error, `tables-${tenantId}`);
+		if (dbErrorResponse) {
+			return dbErrorResponse;
+		}
+		
 		return NextResponse.json(
 			{
 				error: "Failed to fetch tables",

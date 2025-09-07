@@ -95,6 +95,9 @@ class PrismaAccelerateClient extends PrismaClient {
 		process.on("beforeExit", () => this.disconnect());
 		process.on("SIGINT", () => this.disconnect());
 		process.on("SIGTERM", () => this.disconnect());
+
+		// Wrap all model methods with retry logic
+		this.wrapModelMethods();
 	}
 
 	// Connection management methods
@@ -121,8 +124,8 @@ class PrismaAccelerateClient extends PrismaClient {
 	// Retry logic for database operations
 	private async executeWithRetry<T>(
 		operation: () => Promise<T>,
-		maxRetries: number = 3,
-		baseDelay: number = 1000
+		maxRetries: number = 5,
+		baseDelay: number = 500
 	): Promise<T> {
 		let lastError: Error | null = null;
 		
@@ -137,19 +140,27 @@ class PrismaAccelerateClient extends PrismaClient {
 					error.code === 'P2021' || // Table does not exist
 					error.code === 'P2024' || // Timed out fetching a new connection from the connection pool
 					error.code === '08006' || // Connection closed by upstream database
+					error.code === 'P1001' || // Can't reach database server
+					error.code === 'P1002' || // The database server was reached but timed out
+					error.code === 'P1003' || // Database does not exist
+					error.code === 'P1008' || // Operations timed out
+					error.code === 'P1017' || // Server has closed the connection
 					error.message?.includes('connection closed') ||
 					error.message?.includes('connection terminated') ||
 					error.message?.includes('connection pool') ||
 					error.message?.includes('ECONNRESET') ||
-					error.message?.includes('ETIMEDOUT');
+					error.message?.includes('ETIMEDOUT') ||
+					error.message?.includes('ENOTFOUND') ||
+					error.message?.includes('ECONNREFUSED') ||
+					error.message?.includes('upstream database');
 
 				if (!isConnectionError || attempt === maxRetries) {
 					throw error;
 				}
 
 				// Exponential backoff with jitter
-				const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
-				console.warn(`Database operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms:`, error.message);
+				const delay = Math.min(baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000, 10000);
+				console.warn(`Database operation failed (attempt ${attempt}/${maxRetries}), retrying in ${Math.round(delay)}ms:`, error.message);
 				
 				await new Promise(resolve => setTimeout(resolve, delay));
 				
@@ -157,6 +168,7 @@ class PrismaAccelerateClient extends PrismaClient {
 				if (isConnectionError) {
 					try {
 						await this.$disconnect();
+						await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before reconnecting
 						await this.$connect();
 					} catch (reconnectError) {
 						console.warn('Failed to reconnect to database:', reconnectError);
@@ -453,9 +465,43 @@ class PrismaAccelerateClient extends PrismaClient {
 		return await this.executeWithRetry(operation);
 	}
 
+	// Force reconnection method
+	async forceReconnect(): Promise<void> {
+		try {
+			await this.$disconnect();
+			await new Promise(resolve => setTimeout(resolve, 2000));
+			await this.$connect();
+			console.log('Database reconnected successfully');
+		} catch (error) {
+			console.error('Failed to force reconnect:', error);
+		}
+	}
+
 	// Override common Prisma methods to include retry logic
 	async $transaction<T>(fn: (prisma: any) => Promise<T>): Promise<T> {
 		return await this.executeWithRetry(() => super.$transaction(fn));
+	}
+
+	// Override all model methods to include retry logic
+	private wrapModelMethods() {
+		const models = ['user', 'tenant', 'database', 'table', 'column', 'row', 'cell', 'permission', 'dashboard', 'widget', 'invoiceAuditLog', 'invoiceSeries', 'emailQueue'];
+		
+		models.forEach(modelName => {
+			const model = (this as any)[modelName];
+			if (model) {
+				// Wrap common methods
+				const methods = ['findMany', 'findUnique', 'findFirst', 'create', 'update', 'delete', 'createMany', 'updateMany', 'deleteMany', 'count', 'aggregate'];
+				
+				methods.forEach(method => {
+					if (typeof model[method] === 'function') {
+						const originalMethod = model[method].bind(model);
+						model[method] = async (...args: any[]) => {
+							return await this.executeWithRetry(() => originalMethod(...args));
+						};
+					}
+				});
+			}
+		});
 	}
 
 	// Disconnect and cleanup
@@ -501,6 +547,11 @@ export async function withRetry<T>(
 	maxRetries: number = 3
 ): Promise<T> {
 	return await trackedPrisma.executeWithRetryWrapper(operation);
+}
+
+// Utility function to force database reconnection
+export async function forceReconnect(): Promise<void> {
+	return await trackedPrisma.forceReconnect();
 }
 
 // Export the enhanced client
