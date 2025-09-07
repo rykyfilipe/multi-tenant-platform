@@ -142,10 +142,21 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		message: string,
 		type: "success" | "error" | "warning" | "info" = "success",
 	) => {
+		console.log("=== SHOW ALERT DEBUG ===");
+		console.log("Message:", message);
+		console.log("Type:", type);
+		console.log("Current alert state:", { alertMessage, alertType, isAlertVisible });
+		
 		setAlertMessage(message);
 		setAlertType(type);
 		setIsAlertVisible(true);
-		setTimeout(() => setIsAlertVisible(false), 5000);
+		
+		console.log("Alert state after setting:", { message, type, visible: true });
+		
+		setTimeout(() => {
+			console.log("Auto-hiding alert after 5 seconds");
+			setIsAlertVisible(false);
+		}, 5000);
 	};
 
 	const hideAlert = () => {

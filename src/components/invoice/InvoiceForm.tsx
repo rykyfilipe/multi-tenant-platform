@@ -596,16 +596,26 @@ export function InvoiceForm({
 			invoiceForm: invoiceForm,
 		});
 
+		// Debug logging
+		console.log("=== VALIDATION DEBUG ===");
+		console.log("Selected Customer:", selectedCustomer);
+		console.log("Base Currency:", baseCurrency);
+		console.log("Due Date:", invoiceForm.due_date);
+		console.log("Payment Method:", invoiceForm.payment_method);
+		console.log("Products:", products);
+		console.log("Validation Result:", validation);
 
 		if (!validation.isValid) {
 			setShowValidationErrors(true);
 			const errorMessage = formatValidationErrors(validation);
 			const missingFields = formatMissingFields(validation);
 			console.error("Validation failed:", errorMessage);
-			showAlert(
-				`Please fix the following errors:\n\n${errorMessage}${missingFields ? `\n\n${missingFields}` : ""}`,
-				"error"
-			);
+			console.error("Missing fields:", missingFields);
+			
+			// Show alert with detailed error information
+			const fullErrorMessage = `Please fix the following errors:\n\n${errorMessage}${missingFields ? `\n\n${missingFields}` : ""}`;
+			console.log("Showing alert with message:", fullErrorMessage);
+			showAlert(fullErrorMessage, "error");
 			return;
 		}
 

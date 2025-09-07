@@ -1387,6 +1387,13 @@ export const translations: Translations = {
 		fr: "Veuillez remplir correctement tous les champs du produit",
 		de: "Bitte füllen Sie alle Produktfelder korrekt aus",
 	},
+	"invoice.form.remove": {
+		en: "Remove",
+		ro: "Șterge",
+		es: "Eliminar",
+		fr: "Supprimer",
+		de: "Entfernen",
+	},
 	"invoice.form.unit": {
 		en: "pcs",
 		ro: "buc",
