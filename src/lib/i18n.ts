@@ -8771,6 +8771,13 @@ export const translations: Translations = {
 		fr: "Vos tableaux sont prêts à utiliser!",
 		de: "Ihre Tabellen sind einsatzbereit!",
 	},
+	"loading.loadingUsers": {
+		en: "Loading Users...",
+		ro: "Se încarcă Utilizatori...",
+		es: "Cargando Usuarios...",
+		fr: "Chargement des Utilisateurs...",
+		de: "Lädt Nutzer...",
+	},
 };
 
 // Function to get translation for a specific key and language

@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +71,9 @@ export function EnhancedInvoiceList({
 	const { token, tenant, showAlert } = useApp();
 	const { t } = useLanguage();
 	
+	// Add error state for component-level error handling
+	const [componentError, setComponentError] = useState<string | null>(null);
+	
 	// Modal states
 	const [showSeriesManager, setShowSeriesManager] = useState(false);
 	const [viewingInvoice, setViewingInvoice] = useState<any>(null);
@@ -104,39 +107,116 @@ export function EnhancedInvoiceList({
 		setOptimisticCustomers(customers);
 	}, [customers]);
 
+	// Error boundary effect to catch any initialization errors
+	useEffect(() => {
+		try {
+			// Validate invoices data on mount
+			if (invoices && Array.isArray(invoices)) {
+				invoices.forEach((invoice, index) => {
+					if (invoice && typeof invoice === 'object') {
+						// Test date parsing for each invoice
+						if (invoice.date) {
+							safeParseDate(invoice.date);
+						}
+						if (invoice.due_date) {
+							safeParseDate(invoice.due_date);
+						}
+					}
+				});
+			}
+		} catch (error) {
+			console.error('Error during invoice data validation:', error);
+			setComponentError('Invalid invoice data detected');
+		}
+	}, [invoices]);
+
 	// Helper functions - declared before they are used
 	const getCustomerName = (customerId: number) => {
 		const customer = optimisticCustomers.find((c) => c.id === customerId);
 		return customer ? customer.customer_name : `Customer ${customerId}`;
 	};
 
+	// Helper function to safely parse dates
+	const safeParseDate = (dateValue: any): Date | null => {
+		try {
+			if (!dateValue) return null;
+			
+			// Handle string dates
+			if (typeof dateValue === 'string') {
+				// Check for empty or invalid strings
+				if (dateValue.trim() === '' || dateValue === 'null' || dateValue === 'undefined') {
+					return null;
+				}
+				
+				// Check if it's a valid date string
+				const parsed = new Date(dateValue);
+				return isNaN(parsed.getTime()) ? null : parsed;
+			}
+			
+			// Handle Date objects
+			if (dateValue instanceof Date) {
+				return isNaN(dateValue.getTime()) ? null : dateValue;
+			}
+			
+			// Handle numbers (timestamps)
+			if (typeof dateValue === 'number') {
+				const parsed = new Date(dateValue);
+				return isNaN(parsed.getTime()) ? null : parsed;
+			}
+			
+			return null;
+		} catch (error) {
+			console.warn('Error parsing date:', dateValue, error);
+			return null;
+		}
+	};
+
 	const getInvoiceStatus = (invoice: any) => {
 		if (invoice.paid) return 'paid';
 		if (invoice.due_date) {
-			const dueDate = new Date(invoice.due_date);
-			const now = new Date();
-			return dueDate < now ? 'overdue' : 'issued';
+			const dueDate = safeParseDate(invoice.due_date);
+			if (dueDate) {
+				const now = new Date();
+				return dueDate < now ? 'overdue' : 'issued';
+			}
 		}
 		return 'draft';
 	};
 
 	// Filter invoices based on current filters
-	const filteredInvoices = optimisticInvoices.filter(invoice => {
-		const matchesSearch = !searchTerm || 
-			invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			(invoice.customer_name || getCustomerName(invoice.customer_id))?.toLowerCase().includes(searchTerm.toLowerCase());
-		
-		const actualStatus = getInvoiceStatus(invoice);
-		const matchesStatus = !statusFilter || statusFilter === "all" || actualStatus === statusFilter;
-		
-		const matchesCustomer = !customerFilter || customerFilter === "all" || invoice.customer_id === parseInt(customerFilter);
-		
-		const matchesDateFrom = !dateFromFilter || new Date(invoice.date) >= new Date(dateFromFilter);
-		
-		const matchesDateTo = !dateToFilter || new Date(invoice.date) <= new Date(dateToFilter);
-		
-		return matchesSearch && matchesStatus && matchesCustomer && matchesDateFrom && matchesDateTo;
-	});
+	const filteredInvoices = useMemo(() => {
+		try {
+			return optimisticInvoices.filter(invoice => {
+				try {
+					const matchesSearch = !searchTerm || 
+						invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+						(invoice.customer_name || getCustomerName(invoice.customer_id))?.toLowerCase().includes(searchTerm.toLowerCase());
+					
+					const actualStatus = getInvoiceStatus(invoice);
+					const matchesStatus = !statusFilter || statusFilter === "all" || actualStatus === statusFilter;
+					
+					const matchesCustomer = !customerFilter || customerFilter === "all" || invoice.customer_id === parseInt(customerFilter);
+					
+					const invoiceDate = safeParseDate(invoice.date);
+					const fromDate = safeParseDate(dateFromFilter);
+					const toDate = safeParseDate(dateToFilter);
+					
+					const matchesDateFrom = !dateFromFilter || !invoiceDate || !fromDate || invoiceDate >= fromDate;
+					
+					const matchesDateTo = !dateToFilter || !invoiceDate || !toDate || invoiceDate <= toDate;
+					
+					return matchesSearch && matchesStatus && matchesCustomer && matchesDateFrom && matchesDateTo;
+				} catch (error) {
+					console.warn('Error filtering invoice:', invoice, error);
+					return false; // Exclude problematic invoices from the list
+				}
+			});
+		} catch (error) {
+			console.error('Error filtering invoices:', error);
+			setComponentError('Error processing invoice data');
+			return [];
+		}
+	}, [optimisticInvoices, searchTerm, statusFilter, customerFilter, dateFromFilter, dateToFilter]);
 
 	// Paginate filtered invoices
 	const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
@@ -273,6 +353,21 @@ export function EnhancedInvoiceList({
 	};
 
 	const statusCounts = getStatusCounts();
+
+	// Show error state if there's a component error
+	if (componentError) {
+		return (
+			<div className="space-y-6">
+				<div className="text-center py-8">
+					<h2 className="text-xl font-semibold text-red-600 mb-2">Error Processing Invoices</h2>
+					<p className="text-muted-foreground mb-4">{componentError}</p>
+					<Button onClick={() => setComponentError(null)} variant="outline">
+						Try Again
+					</Button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-6">
@@ -521,7 +616,15 @@ export function EnhancedInvoiceList({
 												<span className="font-medium">Customer:</span> {invoice.customer_name || getCustomerName(invoice.customer_id)}
 											</div>
 											<div>
-												<span className="font-medium">Date:</span> {format(new Date(invoice.date), 'MMM dd, yyyy')}
+												<span className="font-medium">Date:</span> {invoice.date ? (() => {
+													try {
+														const date = safeParseDate(invoice.date);
+														return date ? format(date, 'MMM dd, yyyy') : 'Invalid Date';
+													} catch (error) {
+														console.warn('Error formatting date:', invoice.date, error);
+														return 'Invalid Date';
+													}
+												})() : 'N/A'}
 											</div>
 											<div>
 												<span className="font-medium">Amount:</span> {formatPrice(invoice.total_amount, invoice.base_currency)}
@@ -650,8 +753,24 @@ export function EnhancedInvoiceList({
 												<h3 className="font-semibold text-lg mb-4">Invoice Details</h3>
 												<div className="space-y-2 text-sm">
 													<div><span className="font-medium">Invoice Number:</span> {viewingInvoice.invoice?.invoice_number || 'N/A'}</div>
-													<div><span className="font-medium">Date:</span> {viewingInvoice.invoice?.date ? format(new Date(viewingInvoice.invoice.date), 'MMM dd, yyyy') : 'N/A'}</div>
-													<div><span className="font-medium">Due Date:</span> {viewingInvoice.invoice?.due_date ? format(new Date(viewingInvoice.invoice.due_date), 'MMM dd, yyyy') : 'N/A'}</div>
+													<div><span className="font-medium">Date:</span> {viewingInvoice.invoice?.date ? (() => {
+														try {
+															const date = safeParseDate(viewingInvoice.invoice.date);
+															return date ? format(date, 'MMM dd, yyyy') : 'Invalid Date';
+														} catch (error) {
+															console.warn('Error formatting date:', viewingInvoice.invoice.date, error);
+															return 'Invalid Date';
+														}
+													})() : 'N/A'}</div>
+													<div><span className="font-medium">Due Date:</span> {viewingInvoice.invoice?.due_date ? (() => {
+														try {
+															const date = safeParseDate(viewingInvoice.invoice.due_date);
+															return date ? format(date, 'MMM dd, yyyy') : 'Invalid Date';
+														} catch (error) {
+															console.warn('Error formatting due date:', viewingInvoice.invoice.due_date, error);
+															return 'Invalid Date';
+														}
+													})() : 'N/A'}</div>
 													<div><span className="font-medium">Status:</span> 
 														<Badge variant={getStatusVariant(viewingInvoice.invoice?.status)} className="ml-2">
 															{viewingInvoice.invoice?.status || 'Draft'}
