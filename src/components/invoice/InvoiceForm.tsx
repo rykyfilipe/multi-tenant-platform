@@ -583,6 +583,31 @@ export function InvoiceForm({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
+		// Debug: Log form data before validation
+		console.log("=== FORM SUBMISSION DEBUG ===");
+		console.log("Selected customer:", selectedCustomer);
+		console.log("Base currency:", baseCurrency);
+		console.log("Invoice form:", invoiceForm);
+		console.log("Products:", products);
+		
+		// Test validation with empty data
+		if (!selectedCustomer && products.length === 0 && !invoiceForm.due_date) {
+			console.log("TESTING: Form is empty, validation should fail");
+			console.log("Due date value:", invoiceForm.due_date);
+			console.log("Due date type:", typeof invoiceForm.due_date);
+			console.log("Payment method value:", invoiceForm.payment_method);
+			console.log("Payment method type:", typeof invoiceForm.payment_method);
+			console.log("Base currency value:", baseCurrency);
+			console.log("Base currency type:", typeof baseCurrency);
+			console.log("Products array:", products);
+			console.log("Products length:", products.length);
+			console.log("Selected customer value:", selectedCustomer);
+			console.log("Selected customer type:", typeof selectedCustomer);
+			console.log("Invoice form object:", invoiceForm);
+			// Test showAlert function
+			showAlert("TEST: Form is empty - this should show an error", "error");
+		}
+
 		// Validate form using the validator
 		const validation = validateInvoiceForm({
 			customer_id: selectedCustomer,
@@ -593,10 +618,13 @@ export function InvoiceForm({
 			invoiceForm: invoiceForm,
 		});
 
+		console.log("Validation result:", validation);
+
 		if (!validation.isValid) {
 			setShowValidationErrors(true);
 			const errorMessage = formatValidationErrors(validation);
 			const missingFields = formatMissingFields(validation);
+			console.error("Validation failed:", errorMessage);
 			showAlert(
 				`Please fix the following errors:\n\n${errorMessage}${missingFields ? `\n\n${missingFields}` : ""}`,
 				"error"

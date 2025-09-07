@@ -182,6 +182,10 @@ export function useInvoiceSystem() {
 			try {
 				setError(null);
 
+				// Debug: Log the data being sent
+				console.log("=== CREATING INVOICE ===");
+				console.log("Invoice data:", JSON.stringify(invoiceData, null, 2));
+
 				const response = await fetch(`/api/tenants/${tenantId}/invoices`, {
 					method: "POST",
 					headers: {
@@ -191,8 +195,12 @@ export function useInvoiceSystem() {
 					body: JSON.stringify(invoiceData),
 				});
 
+				console.log("Response status:", response.status);
+				console.log("Response ok:", response.ok);
+
 				if (!response.ok) {
 					const errorData = await response.json();
+					console.error("API Error:", errorData);
 					throw new Error(errorData.error || "Failed to create invoice");
 				}
 

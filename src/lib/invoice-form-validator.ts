@@ -73,7 +73,7 @@ export function validateProducts(products: any[]): string[] {
 			errors.push(`${productPrefix}: Currency is required`);
 		}
 		
-		if (product.extractedPrice === undefined || product.extractedPrice === null || product.extractedPrice < 0) {
+		if (product.original_price === undefined || product.original_price === null || product.original_price < 0) {
 			errors.push(`${productPrefix}: Price must be non-negative`);
 		}
 	});
@@ -134,8 +134,18 @@ export function validateInvoiceForm(data: {
 	const warnings: string[] = [];
 	const missingFields: string[] = [];
 
+	// Debug logging
+	console.log("=== VALIDATION DEBUG ===");
+	console.log("Input data:", data);
+	console.log("Customer ID type:", typeof data.customer_id, "value:", data.customer_id);
+	console.log("Base currency type:", typeof data.base_currency, "value:", data.base_currency);
+	console.log("Due date type:", typeof data.due_date, "value:", data.due_date);
+	console.log("Payment method type:", typeof data.payment_method, "value:", data.payment_method);
+	console.log("Products array length:", data.products?.length || 0);
+
 	// Validate customer
 	const customerErrors = validateCustomer(data.customer_id);
+	console.log("Customer errors:", customerErrors);
 	errors.push(...customerErrors);
 	if (customerErrors.length > 0) {
 		missingFields.push("Customer");
@@ -143,6 +153,7 @@ export function validateInvoiceForm(data: {
 
 	// Validate base currency
 	const currencyErrors = validateBaseCurrency(data.base_currency);
+	console.log("Currency errors:", currencyErrors);
 	errors.push(...currencyErrors);
 	if (currencyErrors.length > 0) {
 		missingFields.push("Base Currency");
@@ -150,6 +161,7 @@ export function validateInvoiceForm(data: {
 
 	// Validate invoice details
 	const invoiceErrors = validateInvoiceDetails(data.invoiceForm);
+	console.log("Invoice errors:", invoiceErrors);
 	errors.push(...invoiceErrors);
 	if (invoiceErrors.length > 0) {
 		missingFields.push("Invoice Details");
@@ -157,6 +169,7 @@ export function validateInvoiceForm(data: {
 
 	// Validate products
 	const productErrors = validateProducts(data.products);
+	console.log("Product errors:", productErrors);
 	errors.push(...productErrors);
 	if (productErrors.length > 0) {
 		missingFields.push("Products");
@@ -170,18 +183,29 @@ export function validateInvoiceForm(data: {
 		}
 		
 		// Check for products with zero price
-		const zeroPriceProducts = data.products.filter(p => p.extractedPrice === 0);
+		const zeroPriceProducts = data.products.filter(p => p.original_price === 0);
 		if (zeroPriceProducts.length > 0) {
 			warnings.push(`${zeroPriceProducts.length} product(s) have zero price.`);
 		}
 	}
 
-	return {
+	const result = {
 		isValid: errors.length === 0,
 		errors,
 		warnings,
 		missingFields,
 	};
+
+	console.log("Final validation result:", result);
+	
+	// Test with empty data to ensure validation works
+	if (data.customer_id === null && data.products.length === 0 && !data.due_date) {
+		console.log("TESTING: Empty form should have validation errors");
+		console.log("Errors found:", errors.length);
+		console.log("Is valid:", result.isValid);
+	}
+	
+	return result;
 }
 
 // Helper function to get field-specific error messages
