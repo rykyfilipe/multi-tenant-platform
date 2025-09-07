@@ -149,6 +149,20 @@ export async function POST(
 			Number(tenantId),
 			database.id,
 		);
+		
+		console.log("=== INITIAL INVOICE TABLES DEBUG ===");
+		console.log("Invoice tables found:", {
+			customers: !!invoiceTables.customers,
+			invoices: !!invoiceTables.invoices,
+			invoice_items: !!invoiceTables.invoice_items
+		});
+		
+		if (invoiceTables.invoices?.columns) {
+			console.log("Initial invoice columns:", invoiceTables.invoices.columns.map((c: any) => ({
+				name: c.name,
+				semanticType: c.semanticType
+			})));
+		}
 
 		// Check if tables exist but have wrong schema
 		const hasCorrectSchema = invoiceTables.invoice_items?.columns?.some(
@@ -185,6 +199,20 @@ export async function POST(
 				Number(tenantId),
 				database.id,
 			);
+			
+			console.log("=== AFTER TABLE INITIALIZATION DEBUG ===");
+			console.log("Invoice tables after init:", {
+				customers: !!invoiceTables.customers,
+				invoices: !!invoiceTables.invoices,
+				invoice_items: !!invoiceTables.invoice_items
+			});
+			
+			if (invoiceTables.invoices?.columns) {
+				console.log("Invoice columns after init:", invoiceTables.invoices.columns.map((c: any) => ({
+					name: c.name,
+					semanticType: c.semanticType
+				})));
+			}
 		} else {
 			// Tables exist but might be missing new columns - try to update schema
 			try {
@@ -198,6 +226,20 @@ export async function POST(
 					Number(tenantId),
 					database.id,
 				);
+				
+				console.log("=== AFTER SCHEMA UPDATE DEBUG ===");
+				console.log("Invoice tables after schema update:", {
+					customers: !!invoiceTables.customers,
+					invoices: !!invoiceTables.invoices,
+					invoice_items: !!invoiceTables.invoice_items
+				});
+				
+				if (invoiceTables.invoices?.columns) {
+					console.log("Invoice columns after schema update:", invoiceTables.invoices.columns.map((c: any) => ({
+						name: c.name,
+						semanticType: c.semanticType
+					})));
+				}
 			} catch (error) {
 				console.error("Failed to update invoice tables schema:", error);
 				// Continue with existing schema - validation will catch missing columns
@@ -309,8 +351,34 @@ export async function POST(
 			!dueDateColumn ||
 			!customerIdColumn
 		) {
+			console.error("=== MISSING INVOICE COLUMNS DEBUG ===");
+			console.error("Available columns:", invoiceTables.invoices!.columns!.map((c: any) => ({
+				name: c.name,
+				semanticType: c.semanticType
+			})));
+			console.error("Missing columns:", {
+				invoiceNumberColumn: invoiceNumberColumn ? "FOUND" : "MISSING",
+				dateColumn: dateColumn ? "FOUND" : "MISSING", 
+				dueDateColumn: dueDateColumn ? "FOUND" : "MISSING",
+				customerIdColumn: customerIdColumn ? "FOUND" : "MISSING"
+			});
+			
 			return NextResponse.json(
-				{ error: "Required invoice columns not found" },
+				{ 
+					error: "Required invoice columns not found",
+					details: {
+						availableColumns: invoiceTables.invoices!.columns!.map((c: any) => ({
+							name: c.name,
+							semanticType: c.semanticType
+						})),
+						missingColumns: {
+							invoiceNumberColumn: !invoiceNumberColumn,
+							dateColumn: !dateColumn,
+							dueDateColumn: !dueDateColumn,
+							customerIdColumn: !customerIdColumn
+						}
+					}
+				},
 				{ status: 500 },
 			);
 		}

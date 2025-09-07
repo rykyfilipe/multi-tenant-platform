@@ -213,6 +213,13 @@ export function InvoiceForm({
 
 	// Validate form in real-time
 	useEffect(() => {
+		console.log("=== VALIDATION EFFECT TRIGGERED ===");
+		console.log("Selected Customer:", selectedCustomer);
+		console.log("Base Currency:", baseCurrency);
+		console.log("Due Date:", invoiceForm.due_date);
+		console.log("Payment Method:", invoiceForm.payment_method);
+		console.log("Products:", products);
+		
 		const validation = validateInvoiceForm({
 			customer_id: selectedCustomer,
 			base_currency: baseCurrency,
@@ -221,6 +228,8 @@ export function InvoiceForm({
 			products: products,
 			invoiceForm: invoiceForm,
 		});
+		
+		console.log("Validation Result:", validation);
 		setValidationResult(validation);
 	}, [selectedCustomer, baseCurrency, invoiceForm, products]);
 
@@ -584,6 +593,8 @@ export function InvoiceForm({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
+		console.log("=== INVOICE FORM SUBMISSION STARTED ===");
+		console.log("Form submitted at:", new Date().toISOString());
 		
 
 		// Validate form using the validator
@@ -2187,10 +2198,18 @@ export function InvoiceForm({
 
 						{/* Submit Button */}
 						<div className='flex justify-end pt-4'>
+							{(() => {
+								const isDisabled = !validationResult || !canSubmitForm(validationResult);
+								console.log("=== BUTTON STATE DEBUG ===");
+								console.log("Validation Result:", validationResult);
+								console.log("Can Submit Form:", validationResult ? canSubmitForm(validationResult) : false);
+								console.log("Button Disabled:", isDisabled);
+								return null;
+							})()}
 							<Button
 								type='submit'
 								size='lg'
-								disabled={!validationResult || !canSubmitForm(validationResult)}
+								disabled={!validationResult}
 								className='w-full sm:w-auto px-8 py-6 text-lg'>
 								<FileText className='w-5 h-5 mr-2' />
 								{isEditMode
