@@ -726,14 +726,65 @@ export async function POST(
 		});
 	} catch (error) {
 		console.error("Error creating invoice:", error);
+		
+		// Handle Zod validation errors
 		if (error instanceof z.ZodError) {
 			return NextResponse.json(
-				{ error: "Validation error", details: error.errors },
+				{ 
+					error: "Validation error", 
+					details: error.errors,
+					message: "Please check the form data and try again"
+				},
 				{ status: 400 },
 			);
 		}
+
+		// Handle specific error types
+		if (error instanceof Error) {
+			// Check for missing semantic types error
+			if (error.message.includes("Missing required columns")) {
+				return NextResponse.json(
+					{ 
+						error: "Database configuration error", 
+						message: error.message,
+						details: "The invoice system is not properly configured. Please contact support."
+					},
+					{ status: 500 },
+				);
+			}
+
+			// Check for database connection errors
+			if (error.message.includes("connection") || error.message.includes("database")) {
+				return NextResponse.json(
+					{ 
+						error: "Database connection error", 
+						message: "Unable to connect to database. Please try again in a moment.",
+						details: "The database is temporarily unavailable"
+					},
+					{ status: 503 },
+				);
+			}
+
+			// Check for product validation errors
+			if (error.message.includes("product") || error.message.includes("Product")) {
+				return NextResponse.json(
+					{ 
+						error: "Product validation error", 
+						message: error.message,
+						details: "Please check your product selections and try again"
+					},
+					{ status: 400 },
+				);
+			}
+		}
+
+		// Generic error response
 		return NextResponse.json(
-			{ error: "Failed to create invoice" },
+			{ 
+				error: "Failed to create invoice",
+				message: "An unexpected error occurred. Please try again.",
+				details: process.env.NODE_ENV === 'development' ? error : undefined
+			},
 			{ status: 500 },
 		);
 	}

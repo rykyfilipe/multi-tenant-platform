@@ -16,6 +16,13 @@ import {
 } from "@/lib/semantic-helpers";
 import { SemanticColumnType } from "@/lib/semantic-types";
 import { InvoiceCalculationService } from "@/lib/invoice-calculations";
+import { 
+	validateInvoiceForm, 
+	ValidationResult, 
+	canSubmitForm, 
+	formatValidationErrors,
+	formatMissingFields 
+} from "@/lib/invoice-form-validator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,6 +147,10 @@ export function InvoiceForm({
 	// Invoice totals state for unified calculations
 	const [invoiceTotals, setInvoiceTotals] = useState<any>(null);
 
+	// Validation state
+	const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+	const [showValidationErrors, setShowValidationErrors] = useState(false);
+
 	// Form state for adding products
 	const [productForm, setProductForm] = useState({
 		product_ref_table: "",
@@ -199,6 +210,19 @@ export function InvoiceForm({
 			calculateTotals();
 		}
 	}, [products, baseCurrency, exchangeRates]);
+
+	// Validate form in real-time
+	useEffect(() => {
+		const validation = validateInvoiceForm({
+			customer_id: selectedCustomer,
+			base_currency: baseCurrency,
+			due_date: invoiceForm.due_date,
+			payment_method: invoiceForm.payment_method,
+			products: products,
+			invoiceForm: invoiceForm,
+		});
+		setValidationResult(validation);
+	}, [selectedCustomer, baseCurrency, invoiceForm, products]);
 
 	// Fetch available tables for product selection from all databases
 	useEffect(() => {
@@ -559,37 +583,29 @@ export function InvoiceForm({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		if (!selectedCustomer) {
-			showAlert(t("invoice.form.selectCustomer"), "error");
+		// Validate form using the validator
+		const validation = validateInvoiceForm({
+			customer_id: selectedCustomer,
+			base_currency: baseCurrency,
+			due_date: invoiceForm.due_date,
+			payment_method: invoiceForm.payment_method,
+			products: products,
+			invoiceForm: invoiceForm,
+		});
+
+		if (!validation.isValid) {
+			setShowValidationErrors(true);
+			const errorMessage = formatValidationErrors(validation);
+			const missingFields = formatMissingFields(validation);
+			showAlert(
+				`Please fix the following errors:\n\n${errorMessage}${missingFields ? `\n\n${missingFields}` : ""}`,
+				"error"
+			);
 			return;
 		}
 
-		if (products.length === 0) {
-			showAlert(t("invoice.form.addAtLeastOneProduct"), "error");
-			return;
-		}
-
-		if (!invoiceForm.due_date) {
-			showAlert(t("invoice.form.dueDateRequired"), "error");
-			return;
-		}
-
-		if (!invoiceForm.payment_method) {
-			showAlert(t("invoice.form.paymentMethodRequired"), "error");
-			return;
-		}
-
-		// Validate products
-		for (const product of products) {
-			if (
-				!product.product_ref_table ||
-				!product.product_ref_id ||
-				product.quantity <= 0
-			) {
-				showAlert(t("invoice.form.fillProductFields"), "error");
-				return;
-			}
-		}
+		// Hide validation errors if form is valid
+		setShowValidationErrors(false);
 
 		try {
 			const invoiceData = {
@@ -640,19 +656,32 @@ export function InvoiceForm({
 				showAlert(t("invoice.form.invoiceCreated"), "success");
 				onSuccess?.();
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error(
 				isEditMode
 					? t("invoice.form.errorUpdating")
 					: t("invoice.form.errorCreating"),
 				error,
 			);
-			showAlert(
-				isEditMode
-					? t("invoice.form.failedToUpdate")
-					: t("invoice.form.failedToCreate"),
-				"error",
-			);
+
+			// Handle API error responses
+			let errorMessage = isEditMode
+				? t("invoice.form.failedToUpdate")
+				: t("invoice.form.failedToCreate");
+
+			if (error?.response?.data) {
+				const apiError = error.response.data;
+				if (apiError.message) {
+					errorMessage = apiError.message;
+				}
+				if (apiError.details) {
+					errorMessage += `\n\nDetails: ${apiError.details}`;
+				}
+			} else if (error?.message) {
+				errorMessage = error.message;
+			}
+
+			showAlert(errorMessage, "error");
 		}
 	};
 
@@ -2087,17 +2116,67 @@ export function InvoiceForm({
 							</Card>
 						) : null}
 
+						{/* Validation Errors Display */}
+						{showValidationErrors && validationResult && !validationResult.isValid && (
+							<Card className='border-destructive/20 bg-destructive/5'>
+								<CardContent className='p-4'>
+									<div className='flex items-start gap-3'>
+										<AlertTriangle className='w-5 h-5 text-destructive mt-0.5 flex-shrink-0' />
+										<div className='space-y-2'>
+											<h4 className='font-medium text-destructive'>
+												Please fix the following errors:
+											</h4>
+											<ul className='text-sm text-destructive/80 space-y-1'>
+												{validationResult.errors.map((error, index) => (
+													<li key={index} className='flex items-start gap-2'>
+														<span className='text-destructive font-medium'>{index + 1}.</span>
+														<span>{error}</span>
+													</li>
+												))}
+											</ul>
+											{validationResult.missingFields.length > 0 && (
+												<div className='pt-2 border-t border-destructive/20'>
+													<p className='text-sm font-medium text-destructive'>
+														Missing required fields: {validationResult.missingFields.join(", ")}
+													</p>
+												</div>
+											)}
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
+						{/* Warnings Display */}
+						{validationResult && validationResult.warnings.length > 0 && (
+							<Card className='border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20'>
+								<CardContent className='p-4'>
+									<div className='flex items-start gap-3'>
+										<Info className='w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0' />
+										<div className='space-y-2'>
+											<h4 className='font-medium text-yellow-800 dark:text-yellow-200'>
+												Warnings:
+											</h4>
+											<ul className='text-sm text-yellow-700 dark:text-yellow-300 space-y-1'>
+												{validationResult.warnings.map((warning, index) => (
+													<li key={index} className='flex items-start gap-2'>
+														<span className='text-yellow-600 dark:text-yellow-400 font-medium'>{index + 1}.</span>
+														<span>{warning}</span>
+													</li>
+												))}
+											</ul>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
 						{/* Submit Button */}
 						<div className='flex justify-end pt-4'>
 							<Button
 								type='submit'
 								size='lg'
-								disabled={
-									!selectedCustomer ||
-									products.length === 0 ||
-									!invoiceForm.due_date ||
-									!invoiceForm.payment_method
-								}
+								disabled={!validationResult || !canSubmitForm(validationResult)}
 								className='w-full sm:w-auto px-8 py-6 text-lg'>
 								<FileText className='w-5 h-5 mr-2' />
 								{isEditMode
