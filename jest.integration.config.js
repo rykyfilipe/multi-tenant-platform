@@ -1,11 +1,11 @@
-import nextJest from 'next/jest.js'
+const nextJest = require('next/jest')
 
 const createJestConfig = nextJest({
   dir: './',
 })
 
 const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/integration-test-setup.js'],
   testEnvironment: 'node',
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
@@ -36,7 +36,7 @@ const customJestConfig = {
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testTimeout: 30000,
-  setupFiles: ['<rootDir>/tests/setup/integration-setup.js'],
+  setupFiles: ['<rootDir>/tests/setup/integration-test-setup.js'],
 }
 
-export default createJestConfig(customJestConfig)
+module.exports = createJestConfig(customJestConfig)

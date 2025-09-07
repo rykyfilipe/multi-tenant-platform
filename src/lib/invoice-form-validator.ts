@@ -65,16 +65,19 @@ export function validateProducts(products: any[]): string[] {
 			errors.push(`${productPrefix}: Product ID is required`);
 		}
 		
-		if (!product.quantity || product.quantity <= 0) {
-			errors.push(`${productPrefix}: Quantity must be greater than 0`);
+		// Validate quantity - ensure it's a valid positive number
+		if (!product.quantity || isNaN(product.quantity) || !isFinite(product.quantity) || product.quantity <= 0) {
+			errors.push(`${productPrefix}: Quantity must be a valid positive number`);
 		}
 		
 		if (!product.currency || product.currency.trim() === "") {
 			errors.push(`${productPrefix}: Currency is required`);
 		}
 		
-		if (product.extractedPrice === undefined || product.extractedPrice === null || product.extractedPrice < 0) {
-			errors.push(`${productPrefix}: Price must be non-negative`);
+		// Validate price - check both extractedPrice and original_price
+		const price = product.extractedPrice ?? product.original_price ?? product.price;
+		if (price === undefined || price === null || isNaN(price) || !isFinite(price) || price < 0) {
+			errors.push(`${productPrefix}: Price must be a valid non-negative number`);
 		}
 	});
 

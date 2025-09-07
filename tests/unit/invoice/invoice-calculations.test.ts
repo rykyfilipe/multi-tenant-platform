@@ -217,4 +217,129 @@ describe('InvoiceCalculationService', () => {
 			expect(InvoiceCalculationService.numberToWords(1234)).toBe('one thousand two hundred and thirty-four');
 		});
 	});
+
+	describe('Edge cases and error handling', () => {
+		it('should handle invalid numeric values gracefully', async () => {
+			const items: InvoiceItem[] = [
+				{
+					id: 1,
+					product_ref_table: 'products',
+					product_ref_id: 1,
+					quantity: NaN,
+					price: Infinity,
+					currency: 'USD',
+					product_vat: -5,
+					description: 'Invalid Product',
+					unit_of_measure: 'buc',
+				},
+			];
+
+			const config = {
+				baseCurrency: 'USD',
+				exchangeRates: {},
+			};
+
+			const result = await InvoiceCalculationService.calculateInvoiceTotals(items, config);
+			
+			// Should handle invalid values by defaulting to safe values
+			expect(result.subtotal).toBe(0);
+			expect(result.vatTotal).toBe(0);
+			expect(result.grandTotal).toBe(0);
+		});
+
+		it('should handle empty items array', async () => {
+			const items: InvoiceItem[] = [];
+			const config = {
+				baseCurrency: 'USD',
+				exchangeRates: {},
+			};
+
+			const result = await InvoiceCalculationService.calculateInvoiceTotals(items, config);
+			
+			expect(result.subtotal).toBe(0);
+			expect(result.vatTotal).toBe(0);
+			expect(result.grandTotal).toBe(0);
+			expect(result.itemsCount).toBe(0);
+		});
+
+		it('should handle missing currency gracefully', async () => {
+			const items: InvoiceItem[] = [
+				{
+					id: 1,
+					product_ref_table: 'products',
+					product_ref_id: 1,
+					quantity: 1,
+					price: 100,
+					currency: '', // Empty currency
+					product_vat: 20,
+					description: 'Test Product',
+					unit_of_measure: 'buc',
+				},
+			];
+
+			const config = {
+				baseCurrency: 'USD',
+				exchangeRates: {},
+			};
+
+			const result = await InvoiceCalculationService.calculateInvoiceTotals(items, config);
+			
+			// Should default to USD
+			expect(result.totalsByCurrency['USD']).toBe(100);
+		});
+
+		it('should handle very large numbers', async () => {
+			const items: InvoiceItem[] = [
+				{
+					id: 1,
+					product_ref_table: 'products',
+					product_ref_id: 1,
+					quantity: 1000000,
+					price: 999999.99,
+					currency: 'USD',
+					product_vat: 20,
+					description: 'Large Product',
+					unit_of_measure: 'buc',
+				},
+			];
+
+			const config = {
+				baseCurrency: 'USD',
+				exchangeRates: {},
+			};
+
+			const result = await InvoiceCalculationService.calculateInvoiceTotals(items, config);
+			
+			expect(result.subtotal).toBe(999999990000);
+			expect(result.vatTotal).toBe(199999998000);
+			expect(result.grandTotal).toBe(1199999988000);
+		});
+
+		it('should handle zero VAT correctly', async () => {
+			const items: InvoiceItem[] = [
+				{
+					id: 1,
+					product_ref_table: 'products',
+					product_ref_id: 1,
+					quantity: 1,
+					price: 100,
+					currency: 'USD',
+					product_vat: 0,
+					description: 'Zero VAT Product',
+					unit_of_measure: 'buc',
+				},
+			];
+
+			const config = {
+				baseCurrency: 'USD',
+				exchangeRates: {},
+			};
+
+			const result = await InvoiceCalculationService.calculateInvoiceTotals(items, config);
+			
+			expect(result.subtotal).toBe(100);
+			expect(result.vatTotal).toBe(0);
+			expect(result.grandTotal).toBe(100);
+		});
+	});
 });

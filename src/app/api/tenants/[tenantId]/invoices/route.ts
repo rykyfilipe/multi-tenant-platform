@@ -13,28 +13,28 @@ import {
 } from "@/lib/semantic-helpers";
 
 const CreateInvoiceSchema = z.object({
-	customer_id: z.number(),
-	base_currency: z.string(),
-	due_date: z.string(),
+	customer_id: z.number().min(1, "Customer is required"),
+	base_currency: z.string().min(1, "Base currency is required").regex(/^[A-Z]{3}$/, "Base currency must be a valid 3-letter currency code"),
+	due_date: z.string().min(1, "Due date is required"),
 	payment_terms: z.string().optional(),
-	payment_method: z.string(),
+	payment_method: z.string().min(1, "Payment method is required"),
 	notes: z.string().optional(),
 	status: z.string().optional().default("draft"),
 	invoice_series: z.string().optional(),
 	additional_data: z.record(z.unknown()).optional(),
 	products: z.array(
 		z.object({
-			product_ref_table: z.string(),
-			product_ref_id: z.number(),
-			quantity: z.number(),
+			product_ref_table: z.string().min(1, "Product table is required"),
+			product_ref_id: z.number().min(1, "Product ID is required"),
+			quantity: z.number().min(0.01, "Quantity must be greater than 0").finite("Quantity must be a valid number"),
 			unit_of_measure: z.string().optional(),
 			description: z.string().optional(),
-			currency: z.string(),
-			original_price: z.number(),
-			converted_price: z.number(),
-			price: z.number(),
+			currency: z.string().min(1, "Currency is required").regex(/^[A-Z]{3}$/, "Currency must be a valid 3-letter currency code"),
+			original_price: z.number().min(0, "Price must be non-negative").finite("Price must be a valid number"),
+			converted_price: z.number().min(0, "Converted price must be non-negative").finite("Converted price must be a valid number"),
+			price: z.number().min(0, "Price must be non-negative").finite("Price must be a valid number"),
 		}),
-	),
+	).min(1, "At least one product is required"),
 });
 
 export async function POST(
@@ -69,7 +69,62 @@ export async function POST(
 
 	try {
 		const body = await request.json();
-		const parsedData = CreateInvoiceSchema.parse(body);
+		
+		// Validate request body structure
+		if (!body || typeof body !== 'object') {
+			return NextResponse.json(
+				{ 
+					error: "Invalid request body", 
+					message: "Request body must be a valid JSON object" 
+				}, 
+				{ status: 400 }
+			);
+		}
+
+		// Validate using Zod schema with detailed error messages
+		const parseResult = CreateInvoiceSchema.safeParse(body);
+		if (!parseResult.success) {
+			const errors = parseResult.error.errors.map(err => ({
+				field: err.path.join('.'),
+				message: err.message
+			}));
+			
+			return NextResponse.json(
+				{ 
+					error: "Validation failed", 
+					message: "Please check the following fields:",
+					details: errors
+				}, 
+				{ status: 400 }
+			);
+		}
+		
+		const parsedData = parseResult.data;
+
+		// Additional validation for due date
+		const dueDate = new Date(parsedData.due_date);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		
+		if (isNaN(dueDate.getTime())) {
+			return NextResponse.json(
+				{ 
+					error: "Invalid due date", 
+					message: "Due date must be a valid date" 
+				}, 
+				{ status: 400 }
+			);
+		}
+		
+		if (dueDate < today) {
+			return NextResponse.json(
+				{ 
+					error: "Invalid due date", 
+					message: "Due date cannot be in the past" 
+				}, 
+				{ status: 400 }
+			);
+		}
 
 		// Get the database for this tenant and tenant info
 		const [database, tenantInfo] = await Promise.all([
@@ -736,6 +791,28 @@ export async function POST(
 					message: "Please check the form data and try again"
 				},
 				{ status: 400 },
+			);
+		}
+
+		// Handle database connection errors
+		if (error instanceof Error && error.message.includes('connection')) {
+			return NextResponse.json(
+				{ 
+					error: "Database connection error", 
+					message: "Unable to connect to database. Please try again later."
+				},
+				{ status: 503 },
+			);
+		}
+
+		// Handle Prisma errors
+		if (error instanceof Error && error.message.includes('Prisma')) {
+			return NextResponse.json(
+				{ 
+					error: "Database error", 
+					message: "An error occurred while saving the invoice. Please try again."
+				},
+				{ status: 500 },
 			);
 		}
 
