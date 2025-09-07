@@ -83,9 +83,8 @@ class PrismaAccelerateClient extends PrismaClient {
 		});
 
 		// Configure connection pool settings
-		this.$on('beforeExit', async () => {
-			await this.$disconnect();
-		});
+		// Note: beforeExit hook is not applicable to library engine in Prisma 5.0.0+
+		// Use process event listeners instead
 
 		// Cleanup expired cache entries every 5 minutes
 		this.cleanupInterval = setInterval(() => {
