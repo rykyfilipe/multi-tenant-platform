@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { InvoiceSystemService, CreateInvoiceRequest } from "@/lib/invoice-system";
 import { z } from "zod";
-import prisma from "@/lib/prisma";
+import prisma, { withRetry } from "@/lib/prisma";
 import { InvoiceCalculationService } from "@/lib/invoice-calculations";
 import {
 	validateTableForInvoices,
@@ -50,9 +50,11 @@ export async function POST(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const userResult = await prisma.user.findFirst({
-		where: { email: sessionResult.user.email },
-	});
+	const userResult = await withRetry(() => 
+		prisma.user.findFirst({
+			where: { email: sessionResult.user.email },
+		})
+	);
 
 	if (!userResult) {
 		return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -750,9 +752,11 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const userResult = await prisma.user.findFirst({
-		where: { email: sessionResult.user.email },
-	});
+	const userResult = await withRetry(() => 
+		prisma.user.findFirst({
+			where: { email: sessionResult.user.email },
+		})
+	);
 
 	if (!userResult) {
 		return NextResponse.json({ error: "User not found" }, { status: 404 });

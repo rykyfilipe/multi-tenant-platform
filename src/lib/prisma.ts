@@ -82,6 +82,11 @@ class PrismaAccelerateClient extends PrismaClient {
 					: ["error"],
 		});
 
+		// Configure connection pool settings
+		this.$on('beforeExit', async () => {
+			await this.$disconnect();
+		});
+
 		// Cleanup expired cache entries every 5 minutes
 		this.cleanupInterval = setInterval(() => {
 			this.cleanupCache();
@@ -114,6 +119,56 @@ class PrismaAccelerateClient extends PrismaClient {
 		});
 	}
 
+	// Retry logic for database operations
+	private async executeWithRetry<T>(
+		operation: () => Promise<T>,
+		maxRetries: number = 3,
+		baseDelay: number = 1000
+	): Promise<T> {
+		let lastError: Error | null = null;
+		
+		for (let attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				return await operation();
+			} catch (error: any) {
+				lastError = error;
+				
+				// Check if it's a connection error that we should retry
+				const isConnectionError = 
+					error.code === 'P2021' || // Table does not exist
+					error.code === 'P2024' || // Timed out fetching a new connection from the connection pool
+					error.code === '08006' || // Connection closed by upstream database
+					error.message?.includes('connection closed') ||
+					error.message?.includes('connection terminated') ||
+					error.message?.includes('connection pool') ||
+					error.message?.includes('ECONNRESET') ||
+					error.message?.includes('ETIMEDOUT');
+
+				if (!isConnectionError || attempt === maxRetries) {
+					throw error;
+				}
+
+				// Exponential backoff with jitter
+				const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
+				console.warn(`Database operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms:`, error.message);
+				
+				await new Promise(resolve => setTimeout(resolve, delay));
+				
+				// Try to reconnect if it's a connection issue
+				if (isConnectionError) {
+					try {
+						await this.$disconnect();
+						await this.$connect();
+					} catch (reconnectError) {
+						console.warn('Failed to reconnect to database:', reconnectError);
+					}
+				}
+			}
+		}
+		
+		throw lastError || new Error('Max retries exceeded');
+	}
+
 	private releaseConnection(): void {
 		if (this.connectionCount > 0) {
 			this.connectionCount--;
@@ -142,14 +197,16 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		await this.acquireConnection();
-		try {
-			const result = await model.findMany(options);
-			this.setCache(cacheKey, result, strategy);
-			return result;
-		} finally {
-			this.releaseConnection();
-		}
+		return await this.executeWithRetry(async () => {
+			await this.acquireConnection();
+			try {
+				const result = await model.findMany(options);
+				this.setCache(cacheKey, result, strategy);
+				return result;
+			} finally {
+				this.releaseConnection();
+			}
+		});
 	}
 
 	// Enhanced findUnique with automatic caching and connection management
@@ -165,16 +222,18 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		await this.acquireConnection();
-		try {
-			const result = await model.findUnique(options);
-			if (result) {
-				this.setCache(cacheKey, result, strategy);
+		return await this.executeWithRetry(async () => {
+			await this.acquireConnection();
+			try {
+				const result = await model.findUnique(options);
+				if (result) {
+					this.setCache(cacheKey, result, strategy);
+				}
+				return result;
+			} finally {
+				this.releaseConnection();
 			}
-			return result;
-		} finally {
-			this.releaseConnection();
-		}
+		});
 	}
 
 	// Enhanced findFirst with automatic caching and connection management
@@ -190,16 +249,18 @@ class PrismaAccelerateClient extends PrismaClient {
 			return cached;
 		}
 
-		await this.acquireConnection();
-		try {
-			const result = await model.findFirst(options);
-			if (result) {
-				this.setCache(cacheKey, result, strategy);
+		return await this.executeWithRetry(async () => {
+			await this.acquireConnection();
+			try {
+				const result = await model.findFirst(options);
+				if (result) {
+					this.setCache(cacheKey, result, strategy);
+				}
+				return result;
+			} finally {
+				this.releaseConnection();
 			}
-			return result;
-		} finally {
-			this.releaseConnection();
-		}
+		});
 	}
 
 	// Enhanced count with automatic caching and connection management
@@ -388,6 +449,16 @@ class PrismaAccelerateClient extends PrismaClient {
 		};
 	}
 
+	// Wrapper for regular Prisma operations with retry logic
+	async executeWithRetryWrapper<T>(operation: () => Promise<T>): Promise<T> {
+		return await this.executeWithRetry(operation);
+	}
+
+	// Override common Prisma methods to include retry logic
+	async $transaction<T>(fn: (prisma: any) => Promise<T>): Promise<T> {
+		return await this.executeWithRetry(() => super.$transaction(fn));
+	}
+
 	// Disconnect and cleanup
 	async disconnect(): Promise<void> {
 		try {
@@ -424,6 +495,14 @@ const trackedPrisma =
 // Export cache strategies for external use
 export { DEFAULT_CACHE_STRATEGIES };
 export type { CacheStrategy };
+
+// Utility function to wrap any Prisma operation with retry logic
+export async function withRetry<T>(
+	operation: () => Promise<T>,
+	maxRetries: number = 3
+): Promise<T> {
+	return await trackedPrisma.executeWithRetryWrapper(operation);
+}
 
 // Export the enhanced client
 export default trackedPrisma;

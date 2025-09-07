@@ -815,12 +815,12 @@ export class EnhancedPDFGenerator {
 				data: {
 					tenantId: parseInt(options.tenantId),
 					databaseId: options.databaseId,
+					invoiceId: options.invoiceId || 0,
 					action: 'email_sent',
-					status: success ? 'success' : 'error',
 					metadata: {
-						invoiceId: options.invoiceId,
 						recipients: emailOptions.to,
 						subject: emailOptions.subject,
+						status: success ? 'success' : 'error',
 					},
 				},
 			});

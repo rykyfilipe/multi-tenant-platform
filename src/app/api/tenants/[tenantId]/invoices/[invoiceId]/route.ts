@@ -468,15 +468,39 @@ export async function DELETE(
 			return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
 		}
 
-		// Verify this is an invoice row
+		// Debug logging for invoice structure
+		console.log(`DELETE Invoice ${invoiceId} - Found ${invoice.cells.length} cells:`, 
+			invoice.cells.map((c: any) => ({ 
+				columnName: c.column.name, 
+				value: c.value,
+				semanticType: c.column.semanticType 
+			}))
+		);
+
+		// Verify this is an invoice row by checking for invoice_number cell
 		const invoiceNumberCell = invoice.cells.find(
 			(c: any) => c.column.name === "invoice_number",
 		);
+		
+		// If no invoice_number cell found, check if this is actually an invoice row
+		// by looking for other invoice-specific columns
 		if (!invoiceNumberCell) {
-			return NextResponse.json(
-				{ error: "Invalid invoice row" },
-				{ status: 400 },
+			const hasInvoiceColumns = invoice.cells.some((c: any) => 
+				c.column.name === "customer_id" || 
+				c.column.name === "date" || 
+				c.column.name === "status"
 			);
+			
+			if (!hasInvoiceColumns) {
+				return NextResponse.json(
+					{ error: "Invalid invoice row - not an invoice" },
+					{ status: 400 },
+				);
+			}
+			
+			// If it has invoice columns but no invoice_number, it might be a corrupted invoice
+			// Log this for debugging but allow deletion
+			console.warn(`Invoice ${invoiceId} missing invoice_number cell but has other invoice columns. Proceeding with deletion.`);
 		}
 
 		// Get invoice items to delete

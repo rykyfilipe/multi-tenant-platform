@@ -146,8 +146,8 @@ export async function POST(
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,
+				invoiceId: 0, // Use 0 for non-invoice operations
 				action: 'created',
-				status: 'success',
 				metadata: {
 					resource: 'invoice_series',
 					resourceId: newSeries.id,
@@ -252,8 +252,8 @@ export async function PUT(
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,
+				invoiceId: 0, // Use 0 for non-invoice operations
 				action: 'updated',
-				status: 'success',
 				metadata: {
 					resource: 'invoice_series',
 					resourceId: id,
@@ -384,8 +384,8 @@ export async function DELETE(
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,
+				invoiceId: 0, // Use 0 for non-invoice operations
 				action: 'deleted',
-				status: 'success',
 				metadata: {
 					resource: 'invoice_series',
 					resourceId: id,

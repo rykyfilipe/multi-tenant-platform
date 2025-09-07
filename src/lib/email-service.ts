@@ -227,14 +227,16 @@ export class EmailService {
 			// Log email result
 			await prisma.invoiceAuditLog.create({
 				data: {
-					tenantId: email.tenantId,
+					tenantId: parseInt(email.tenantId),
+					databaseId: 0, // Email operations don't have a specific database
+					invoiceId: 0, // Email operations don't have a specific invoice
 					action: 'email_sent',
-					status: success ? 'success' : 'error',
 					metadata: {
 						emailId: email.id,
 						recipients: email.to,
 						subject: email.subject,
 						retryCount: email.retryCount + 1,
+						status: success ? 'success' : 'error',
 					},
 				},
 			});

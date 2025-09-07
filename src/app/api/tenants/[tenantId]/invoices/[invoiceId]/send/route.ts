@@ -126,12 +126,12 @@ export async function POST(
 			data: {
 				tenantId: Number(params.tenantId),
 				databaseId: database.id,
+				invoiceId: Number(params.invoiceId),
 				action: 'invoice_sent',
-				status: result.success ? 'success' : 'error',
 				metadata: {
-					invoiceId: Number(params.invoiceId),
 					recipients: validatedData.to,
 					method: result.method,
+					status: result.success ? 'success' : 'error',
 					emailId: result.emailId,
 				},
 			},
