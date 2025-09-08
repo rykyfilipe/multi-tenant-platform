@@ -15,12 +15,13 @@ interface PaginationInfo {
 }
 
 interface FilterConfig {
+	id: string; // Unique identifier for each filter
 	columnId: number;
 	columnName: string;
 	columnType: string;
 	operator: string;
 	value: any;
-	secondValue?: any;
+	secondValue?: any; // For range filters
 }
 
 interface UseTableRowsResult {
@@ -87,6 +88,14 @@ function useTableRows(
 		new Map(),
 	);
 	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+	// Helper function to ensure filters have IDs
+	const ensureFilterIds = useCallback((filters: FilterConfig[]): FilterConfig[] => {
+		return filters.map((filter, index) => ({
+			...filter,
+			id: filter.id || `filter-${Date.now()}-${index}`
+		}));
+	}, []);
 
 	// Cache key generator
 	const generateCacheKey = useCallback(
@@ -167,7 +176,7 @@ function useTableRows(
 				setPagination(cachedData.pagination || null);
 				setCurrentPage(page);
 				setCurrentPageSize(pageSize);
-				setFilters(filtersParam);
+				setFilters(ensureFilterIds(filtersParam));
 				setGlobalSearch(globalSearchParam);
 				setSortBy(sortByParam);
 				setSortOrder(sortOrderParam);
@@ -255,7 +264,7 @@ function useTableRows(
 					// Actualizează state-ul - IMPORTANT: actualizează currentPage înainte de a seta rows
 					setCurrentPage(page);
 					setCurrentPageSize(pageSize);
-					setFilters(filtersParam);
+					setFilters(ensureFilterIds(filtersParam));
 					setGlobalSearch(globalSearchParam);
 					setSortBy(sortByParam);
 					setSortOrder(sortOrderParam);
@@ -369,7 +378,7 @@ function useTableRows(
 			});
 
 			// OPTIMISTIC UPDATE: Actualizează state-ul local imediat
-			setFilters(filtersParam);
+			setFilters(ensureFilterIds(filtersParam));
 			setGlobalSearch(globalSearchParam);
 			setSortBy(sortByParam);
 			setSortOrder(sortOrderParam);
@@ -398,8 +407,8 @@ function useTableRows(
 
 	// Actualizează filtrele fără a face fetch
 	const updateFilters = useCallback((newFilters: FilterConfig[]) => {
-		setFilters(newFilters);
-	}, []);
+		setFilters(ensureFilterIds(newFilters));
+	}, [ensureFilterIds]);
 
 	// Debounced global search update
 	const updateGlobalSearch = useCallback(

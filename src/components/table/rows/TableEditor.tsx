@@ -1202,6 +1202,8 @@ const TableEditor = memo(function TableEditor({
 						setShowSidebar={setShowSidebar}
 						onActiveFiltersChange={setActiveFiltersCount}
 						loading={rowsLoading}
+						currentFilters={filters}
+						currentGlobalSearch={globalSearch}
 					/>
 				</div>
 

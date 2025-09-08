@@ -472,7 +472,7 @@ async function applyStringFilters(
 
 		return (
 			["text", "string", "email", "url"].includes(column.type) &&
-			["starts_with", "ends_with", "contains", "not_contains"].includes(
+			["starts_with", "ends_with", "contains", "not_contains", "equals", "not_equals", "is_empty", "is_not_empty"].includes(
 				filter.operator,
 			)
 		);
@@ -483,7 +483,18 @@ async function applyStringFilters(
 	return rows.filter((row) => {
 		return stringFilters.every((filter) => {
 			const cell = row.cells?.find((c: any) => c.columnId === filter.columnId);
-			if (!cell || !cell.value) return false;
+			
+			// Handle empty/null cells
+			if (!cell || cell.value === null || cell.value === undefined || cell.value === "") {
+				// For "is_empty" and "is_not_empty" operators, handle them here
+				if (filter.operator === "is_empty") {
+					return true; // Cell is empty, so it matches
+				} else if (filter.operator === "is_not_empty") {
+					return false; // Cell is empty, so it doesn't match
+				} else {
+					return false; // For other operators, empty cell doesn't match
+				}
+			}
 
 			const cellValue = String(cell.value);
 			const filterValue = String(filter.value);
@@ -497,6 +508,14 @@ async function applyStringFilters(
 					return cellValue.toLowerCase().includes(filterValue.toLowerCase());
 				case "not_contains":
 					return !cellValue.toLowerCase().includes(filterValue.toLowerCase());
+				case "equals":
+					return cellValue === filterValue;
+				case "not_equals":
+					return cellValue !== filterValue;
+				case "is_empty":
+					return false; // Cell has value, so it's not empty
+				case "is_not_empty":
+					return true; // Cell has value, so it's not empty
 				default:
 					return true;
 			}
@@ -614,8 +633,34 @@ export async function GET(
 
 		// Apply column filters
 		if (parsedFilters.length > 0) {
+			console.log("🔍 API - Processing filters:", parsedFilters);
 			const filterConditions = parsedFilters.map((filter: any) => {
 				const { columnId, operator, value, secondValue } = filter;
+				
+				// Find the column to determine the correct data type
+				const column = tableColumns.find((col: any) => col.id === Number(columnId));
+				if (!column) {
+					console.warn(`Column with ID ${columnId} not found`);
+					return {};
+				}
+				
+				// Convert values to appropriate types based on column type
+				let convertedValue = value;
+				let convertedSecondValue = secondValue;
+				
+				if (["number", "integer", "decimal"].includes(column.type)) {
+					convertedValue = value !== null && value !== undefined && value !== "" ? Number(value) : null;
+					convertedSecondValue = secondValue !== null && secondValue !== undefined && secondValue !== "" ? Number(secondValue) : null;
+				} else if (["boolean"].includes(column.type)) {
+					convertedValue = value === "true" || value === true;
+				}
+				
+				console.log(`🔍 API - Filter ${operator} on column ${column.name} (${column.type}):`, {
+					originalValue: value,
+					convertedValue,
+					originalSecondValue: secondValue,
+					convertedSecondValue
+				});
 
 				switch (operator) {
 					case "contains":
@@ -643,45 +688,36 @@ export async function GET(
 							},
 						};
 					case "equals":
+						// For string columns, handle in post-processing
+						if (["text", "string", "email", "url"].includes(column.type)) {
+							return {};
+						}
 						return {
 							cells: {
 								some: {
 									columnId: Number(columnId),
-									value: value,
+									value: convertedValue,
 								},
 							},
 						};
 					case "not_equals":
+					case "notEquals":
+						// For string columns, handle in post-processing
+						if (["text", "string", "email", "url"].includes(column.type)) {
+							return {};
+						}
 						return {
 							cells: {
 								none: {
 									columnId: Number(columnId),
-									value: value,
+									value: convertedValue,
 								},
 							},
 						};
 					case "starts_with":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										not: null, // Ensure the cell has a value
-									},
-								},
-							},
-						};
 					case "ends_with":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										not: null, // Ensure the cell has a value
-									},
-								},
-							},
-						};
+						// These will be handled by post-processing string filters
+						return {};
 					case "regex":
 						return {
 							cells: {
@@ -700,7 +736,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
-										gt: Number(value),
+										gt: convertedValue,
 									},
 								},
 							},
@@ -711,7 +747,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
-										gte: Number(value),
+										gte: convertedValue,
 									},
 								},
 							},
@@ -722,7 +758,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
-										lt: Number(value),
+										lt: convertedValue,
 									},
 								},
 							},
@@ -733,7 +769,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
-										lte: Number(value),
+										lte: convertedValue,
 									},
 								},
 							},
@@ -744,8 +780,8 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
-										gte: Number(value),
-										lte: Number(secondValue),
+										gte: convertedValue,
+										lte: convertedSecondValue,
 									},
 								},
 							},
@@ -756,8 +792,8 @@ export async function GET(
 								none: {
 									columnId: Number(columnId),
 									value: {
-										gte: Number(value),
-										lte: Number(secondValue),
+										gte: convertedValue,
+										lte: convertedSecondValue,
 									},
 								},
 							},
@@ -849,34 +885,40 @@ export async function GET(
 							},
 						};
 					case "is_empty":
-						return {
-							cells: {
-								none: {
-									columnId: Number(columnId),
-									value: {
-										not: null,
-									},
-								},
-							},
-						};
 					case "is_not_empty":
+						// These will be handled by post-processing string filters
+						return {};
+					case "before":
 						return {
 							cells: {
 								some: {
 									columnId: Number(columnId),
 									value: {
-										not: null,
+										lt: new Date(convertedValue).toISOString(),
+									},
+								},
+							},
+						};
+					case "after":
+						return {
+							cells: {
+								some: {
+									columnId: Number(columnId),
+									value: {
+										gt: new Date(convertedValue).toISOString(),
 									},
 								},
 							},
 						};
 					default:
+						console.warn(`Unsupported filter operator: ${operator}`);
 						return {};
 				}
 			});
 
 			// Combine all filter conditions with AND logic
 			if (filterConditions.length > 0) {
+				console.log("🔍 API - Filter conditions:", filterConditions);
 				whereClause = {
 					...whereClause,
 					AND: filterConditions,
@@ -887,20 +929,41 @@ export async function GET(
 		// Apply global search if provided
 		if (globalSearch.trim()) {
 			const searchTerm = globalSearch.trim();
-			whereClause = {
-				...whereClause,
-				cells: {
-					some: {
-						value: {
-							path: ["$"],
-							string_contains: searchTerm,
+			// Combine global search with existing filters using AND logic
+			if (whereClause.AND) {
+				whereClause = {
+					...whereClause,
+					AND: [
+						...whereClause.AND,
+						{
+							cells: {
+								some: {
+									value: {
+										path: ["$"],
+										string_contains: searchTerm,
+									},
+								},
+							},
+						},
+					],
+				};
+			} else {
+				whereClause = {
+					...whereClause,
+					cells: {
+						some: {
+							value: {
+								path: ["$"],
+								string_contains: searchTerm,
+							},
 						},
 					},
-				},
-			};
+				};
+			}
 		}
 
 		// Get total count for pagination info with filters applied
+		console.log("🔍 API - Final whereClause:", JSON.stringify(whereClause, null, 2));
 		const totalRows = await prisma.row.count({
 			where: whereClause,
 		});

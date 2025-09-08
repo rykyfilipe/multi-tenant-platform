@@ -66,6 +66,9 @@ interface TableFiltersProps {
 	setShowSidebar?: (show: boolean) => void;
 	onActiveFiltersChange?: (count: number) => void;
 	loading?: boolean;
+	// External filter state to synchronize with
+	currentFilters?: FilterConfig[];
+	currentGlobalSearch?: string;
 }
 
 // Export the toggle button as a separate component
@@ -110,6 +113,8 @@ export function TableFilters({
 	setShowSidebar: externalSetSidebar,
 	onActiveFiltersChange,
 	loading = false,
+	currentFilters = [],
+	currentGlobalSearch = "",
 }: TableFiltersProps) {
 	const [showSidebar, setShowSidebar] = useState(externalShowSidebar ?? false);
 	const [filters, setFilters] = useState<FilterConfig[]>([]);
@@ -130,6 +135,16 @@ export function TableFilters({
 			externalSetSidebar(showSidebar);
 		}
 	}, [showSidebar, externalSetSidebar]);
+
+	// Synchronize local filter state with external props
+	useEffect(() => {
+		if (currentFilters && currentFilters.length > 0) {
+			setFilters(currentFilters);
+		}
+		if (currentGlobalSearch !== undefined) {
+			setGlobalSearch(currentGlobalSearch);
+		}
+	}, [currentFilters, currentGlobalSearch]);
 
 	const applyFilters = async () => {
 		console.log("🔍 TableFilters - applyFilters called:", {
