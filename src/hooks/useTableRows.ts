@@ -227,6 +227,14 @@ function useTableRows(
 					url.searchParams.set("sortOrder", sortOrderParam);
 				}
 
+				console.log("🌐 useTableRows - Making API request:", {
+					url: url.toString(),
+					filtersParam,
+					globalSearchParam,
+					page,
+					pageSize
+				});
+
 				const res = await fetch(url.toString(), {
 					method: "GET",
 					headers: {
@@ -282,13 +290,6 @@ function useTableRows(
 			tenantId,
 			databaseId,
 			tableId,
-			currentPage,
-			currentPageSize,
-			filters,
-			globalSearch,
-			sortBy,
-			sortOrder,
-			loading,
 			generateCacheKey,
 			getCachedData,
 			setCachedData,
@@ -358,9 +359,17 @@ function useTableRows(
 			sortByParam: string = "id",
 			sortOrderParam: "asc" | "desc" = "asc",
 		) => {
+			console.log("🔍 useTableRows - applyFilters called:", {
+				filtersParam,
+				globalSearchParam,
+				sortByParam,
+				sortOrderParam,
+				currentPageSize,
+				tableId
+			});
+
 			// Reset la prima pagină când se aplică filtre noi
-			// Use setTimeout to avoid dependency issues
-			setTimeout(async () => {
+			try {
 				await fetchRows(
 					1,
 					currentPageSize,
@@ -368,10 +377,14 @@ function useTableRows(
 					globalSearchParam,
 					sortByParam,
 					sortOrderParam,
+					true // showLoading: true
 				);
-			}, 0);
+				console.log("✅ useTableRows - applyFilters completed successfully");
+			} catch (error) {
+				console.error("❌ useTableRows - applyFilters failed:", error);
+			}
 		},
-		[currentPageSize], // Removed fetchRows from dependencies
+		[currentPageSize, fetchRows, tableId],
 	);
 
 	// Actualizează filtrele fără a face fetch

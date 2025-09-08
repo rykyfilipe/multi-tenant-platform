@@ -99,6 +99,349 @@ const TableEditor = memo(function TableEditor({
 		});
 	}, [paginatedRows, rowsLoading, rowsError, pagination, table?.id, table, token, user, tenant, selectedDatabase]);
 
+	// Handler functions for TableView buttons
+	const handleAddRow = useCallback(() => {
+		setShowForm(true);
+	}, []);
+
+	const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		// Verifică tipul de fișier
+		if (!file.name.toLowerCase().endsWith('.csv')) {
+			showAlert("Please select a CSV file.", "error");
+			return;
+		}
+
+		if (!tenantId || !token || !table) {
+			showAlert("Missing authentication information", "error");
+			return;
+		}
+
+		try {
+			const text = await file.text();
+			
+			// Verifică dacă fișierul nu este gol
+			if (!text.trim()) {
+				showAlert("The CSV file is empty.", "error");
+				return;
+			}
+
+			const lines = text.split("\n").filter(line => line.trim() !== "");
+			
+			if (lines.length < 2) {
+				showAlert("The CSV file must contain at least a header and one data row.", "error");
+				return;
+			}
+
+			// Detectează delimiterul automat
+			const detectDelimiter = (text: string): string => {
+				const lines = text.split('\n').slice(0, 5);
+				const delimiters = [',', ';', '\t', '|'];
+				let bestDelimiter = ',';
+				let maxCount = 0;
+
+				for (const delimiter of delimiters) {
+					const counts = lines.map(line => (line.match(new RegExp(`\\${delimiter}`, 'g')) || []).length);
+					const avgCount = counts.reduce((a, b) => a + b, 0) / counts.length;
+					
+					if (avgCount > maxCount && avgCount > 0) {
+						maxCount = avgCount;
+						bestDelimiter = delimiter;
+					}
+				}
+
+				return bestDelimiter;
+			};
+
+			const delimiter = detectDelimiter(text);
+
+			// Parsează header-ul
+			const parseCSVLine = (line: string, delimiter: string): string[] => {
+				const result: string[] = [];
+				let current = '';
+				let inQuotes = false;
+				let i = 0;
+
+				while (i < line.length) {
+					const char = line[i];
+					const nextChar = line[i + 1];
+
+					if (char === '"') {
+						if (inQuotes && nextChar === '"') {
+							current += '"';
+							i += 2;
+						} else {
+							inQuotes = !inQuotes;
+							i++;
+						}
+					} else if (char === delimiter && !inQuotes) {
+						result.push(current.trim());
+						current = '';
+						i++;
+					} else {
+						current += char;
+						i++;
+					}
+				}
+
+				result.push(current.trim());
+				return result;
+			};
+
+			const header = parseCSVLine(lines[0], delimiter).map((h) => h.trim());
+
+			// Verifică dacă header-ul nu este gol
+			if (header.length === 0) {
+				showAlert("The CSV file header is empty.", "error");
+				return;
+			}
+
+			// Verificăm ca toate coloanele din header să existe
+			const missingColumns = header.filter(h => !columns?.some(c => c.name === h));
+			if (missingColumns.length > 0) {
+				showAlert(
+					`The CSV file contains unknown columns: ${missingColumns.join(', ')}. Please check the file format.`,
+					"error",
+				);
+				return;
+			}
+
+			// Verifică dacă toate coloanele din tabel sunt prezente în CSV
+			const csvColumns = header;
+			const missingTableColumns = columns?.filter(c => !csvColumns.includes(c.name)) || [];
+			if (missingTableColumns.length > 0) {
+				showAlert(
+					`The CSV file is missing these table columns: ${missingTableColumns.map(c => c.name).join(', ')}. Please add them to your CSV file.`,
+					"error",
+				);
+				return;
+			}
+
+			const safeParse = (val: string): any => {
+				let cleanVal = val.trim();
+				cleanVal = cleanVal.replace(/\r?\n/g, "");
+
+				if (cleanVal.startsWith('"') && cleanVal.endsWith('"')) {
+					cleanVal = cleanVal.slice(1, -1);
+				}
+
+				if (cleanVal === "" || cleanVal === "null" || cleanVal === "undefined") {
+					return null;
+				}
+
+				try {
+					const parsed = JSON.parse(cleanVal);
+					return parsed;
+				} catch {
+					return cleanVal;
+				}
+			};
+
+			const parsedRows = lines.slice(1).map((line, index) => {
+				try {
+					const values = parseCSVLine(line, delimiter).map((v) => safeParse(v));
+
+					if (values.length !== header.length) {
+						console.warn(`Row ${index + 2}: Expected ${header.length} columns, got ${values.length}`);
+						return null;
+					}
+
+					const cells = values.map((value, i) => {
+						const col = columns?.find((c) => c.name === header[i]);
+						if (!col) return null;
+
+						return {
+							columnId: col.id,
+							value,
+						};
+					});
+
+					if (cells.includes(null)) return null;
+
+					return { cells: cells as { columnId: number; value: any }[] };
+				} catch (error) {
+					console.warn(`Error parsing row ${index + 2}:`, error);
+					return null;
+				}
+			});
+
+			const validRows = parsedRows.filter((r) => r !== null);
+
+			if (validRows.length === 0) {
+				const totalRows = lines.length - 1;
+				showAlert(
+					`No valid rows found for import. ${totalRows} rows were processed but none were valid. Please check your CSV file format and data.`,
+					"error",
+				);
+				return;
+			}
+
+			const totalRows = lines.length - 1;
+			const skippedRows = totalRows - validRows.length;
+			if (skippedRows > 0) {
+				showAlert(
+					`Found ${validRows.length} valid rows out of ${totalRows} total rows. ${skippedRows} rows will be skipped.`,
+					"info",
+				);
+			}
+
+			const res = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/import`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ rows: validRows }),
+				},
+			);
+
+			if (!res.ok) {
+				const errorData = await res.json();
+				if (res.status === 400) {
+					let errorMessage = errorData.error || "Import failed";
+
+					if (errorData.summary) {
+						const summary = errorData.summary;
+						errorMessage = `Import failed: ${summary.totalRows} rows processed, ${summary.validRows} valid, ${summary.invalidRows} invalid`;
+
+						if (errorData.details && errorData.details.length > 0) {
+							errorMessage += `\n\nFirst few errors:\n${errorData.details
+								.slice(0, 3)
+								.join("\n")}`;
+						}
+					} else if (errorData.details) {
+						errorMessage = `Validation failed:\n${errorData.details
+							.slice(0, 5)
+							.join("\n")}`;
+					}
+
+					showAlert(errorMessage, "error");
+				} else {
+					showAlert(
+						"Import failed: " + (errorData.error || "Unknown error"),
+						"error",
+					);
+				}
+			} else {
+				const data = await res.json();
+
+				if (res.status === 207) {
+					const warningMessage = data.warnings
+						? `Import completed with warnings: ${data.warnings.join("; ")}`
+						: data.message || "Import completed with warnings";
+					showAlert(warningMessage, "warning");
+				} else {
+					showAlert(
+						`Successfully imported ${data.importedRows || 0} rows!`,
+						"success",
+					);
+				}
+
+				refetchRows();
+			}
+		} catch (err: any) {
+			showAlert("Failed to import data. Please try again.", "error");
+		} finally {
+			// Reset input-ul de fișier
+			const fileInput = document.getElementById('import-csv') as HTMLInputElement;
+			if (fileInput) {
+				fileInput.value = "";
+			}
+		}
+	}, [tenantId, token, table, columns, showAlert, refetchRows]);
+
+	const handleExport = useCallback(async () => {
+		if (!tenantId || !token || !table) return;
+
+		try {
+			// Build query parameters for export
+			const params = new URLSearchParams({
+				format: "csv",
+				limit: "10000",
+			});
+
+			if (globalSearch && globalSearch.trim()) {
+				params.append("globalSearch", globalSearch.trim());
+			}
+
+			if (filters && filters.length > 0) {
+				params.append("filters", JSON.stringify(filters));
+			}
+
+			const exportUrl = new URL(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/export`,
+				window.location.origin,
+			);
+
+			// Add query parameters
+			exportUrl.search = params.toString();
+
+			// Fetch CSV data with timeout
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+			const response = await fetch(exportUrl, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+				signal: controller.signal,
+			});
+
+			clearTimeout(timeoutId);
+
+			if (!response.ok) {
+				throw new Error(`Export failed: ${response.status}`);
+			}
+
+			// Get CSV content and create download
+			const csvContent = await response.text();
+
+			// Validate CSV content
+			if (!csvContent || csvContent.trim().length === 0) {
+				throw new Error("Export returned empty content");
+			}
+
+			const blob = new Blob([csvContent], {
+				type: "text/csv;charset=utf-8;",
+			});
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `table_${table.id}_export_${
+				new Date().toISOString().split("T")[0]
+			}.csv`;
+			a.click();
+			window.URL.revokeObjectURL(url);
+
+			showAlert("Export completed successfully!", "success");
+		} catch (error: any) {
+			console.error("Export error:", error);
+			if (error.name === "AbortError") {
+				showAlert(
+					"Export timed out. Please try again with fewer filters.",
+					"error",
+				);
+			} else {
+				showAlert("Export failed. Please try again.", "error");
+			}
+		}
+	}, [tenantId, token, table, globalSearch, filters, showAlert]);
+
+	const handleFilter = useCallback(() => {
+		setShowSidebar(!showSidebar);
+	}, [showSidebar]);
+
+	const handleImportClick = useCallback(() => {
+		const fileInput = document.getElementById('import-csv') as HTMLInputElement;
+		if (fileInput) {
+			fileInput.click();
+		}
+	}, []);
+
 	const {
 		editingCell,
 		handleCancelEdit,
@@ -846,6 +1189,15 @@ const TableEditor = memo(function TableEditor({
 					</div>
 				)}
 
+				{/* Hidden import input */}
+				<input
+					type='file'
+					id='import-csv'
+					accept='.csv'
+					className='hidden'
+					onChange={(e) => handleImport(e)}
+				/>
+
 				{/* Filters Section */}
 				<div className='mb-6'>
 					<TableFilters
@@ -912,6 +1264,13 @@ const TableEditor = memo(function TableEditor({
 							showPagination={true}
 							hasPendingChange={hasPendingChange}
 							getPendingValue={getPendingValue}
+							onAddRow={handleAddRow}
+							onImport={handleImportClick}
+							onExport={handleExport}
+							onFilter={handleFilter}
+							onRefresh={refetchRows}
+							filters={filters}
+							globalSearch={globalSearch}
 						/>
 					) : (
 						<motion.div

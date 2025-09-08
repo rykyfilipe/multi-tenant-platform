@@ -32,6 +32,14 @@ export const useOptimizedReferenceData = (
 
 	useEffect(() => {
 		const fetchReferenceData = async () => {
+			console.log("🔍 useOptimizedReferenceData - Starting fetch:", {
+				tenantId: tenant?.id,
+				databaseId: selectedDatabase?.id,
+				hasToken: !!token,
+				referenceTableId,
+				tablesCount: tables?.length
+			});
+
 			setIsLoading(true);
 			setError(null);
 
@@ -60,6 +68,12 @@ export const useOptimizedReferenceData = (
 		};
 
 		const fetchSingleTableData = async (tableId: number) => {
+			console.log("🔍 useOptimizedReferenceData - Fetching single table data:", {
+				tableId,
+				tenantId: tenant!.id,
+				databaseId: selectedDatabase!.id
+			});
+
 			const response = await fetch(
 				`/api/tenants/${tenant!.id}/databases/${
 					selectedDatabase!.id
@@ -182,11 +196,24 @@ export const useOptimizedReferenceData = (
 			rowsData: Row[],
 			tableId: number,
 		): ReferenceDataItem[] => {
+			console.log("🔍 useOptimizedReferenceData - Processing rows to reference data:", {
+				tableId,
+				rowsCount: rowsData.length,
+				rowsData: rowsData.slice(0, 2) // Log first 2 rows for debugging
+			});
+
 			const options: ReferenceDataItem[] = [];
 
 			// Găsim tabela pentru a accesa coloanele
 			const referenceTable = tables?.find((t) => t.id === tableId);
-			if (!referenceTable?.columns) return options;
+			if (!referenceTable?.columns) {
+				console.warn("⚠️ useOptimizedReferenceData - No reference table or columns found:", {
+					tableId,
+					hasReferenceTable: !!referenceTable,
+					hasColumns: !!referenceTable?.columns
+				});
+				return options;
+			}
 
 			rowsData.forEach((row) => {
 				if (
@@ -254,6 +281,12 @@ export const useOptimizedReferenceData = (
 						primaryKeyValue: primaryKeyValue || row.id,
 					});
 				}
+			});
+
+			console.log("✅ useOptimizedReferenceData - Processed reference data:", {
+				tableId,
+				optionsCount: options.length,
+				options: options.slice(0, 3) // Log first 3 options for debugging
 			});
 
 			return options;

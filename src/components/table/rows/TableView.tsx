@@ -73,6 +73,15 @@ interface Props {
 	// Batch editing props
 	hasPendingChange?: (rowId: string, columnId: string) => boolean;
 	getPendingValue?: (rowId: string, columnId: string) => any;
+
+	// New functionality props
+	onAddRow?: () => void;
+	onImport?: () => void;
+	onExport?: () => void;
+	onFilter?: () => void;
+	onRefresh?: () => void;
+	filters?: any[];
+	globalSearch?: string;
 }
 
 export const TableView = memo(function TableView({
@@ -97,6 +106,13 @@ export const TableView = memo(function TableView({
 	showPagination = true,
 	hasPendingChange,
 	getPendingValue,
+	onAddRow,
+	onImport,
+	onExport,
+	onFilter,
+	onRefresh,
+	filters = [],
+	globalSearch = "",
 }: Props) {
 	// Early return if table is null or undefined
 	if (!table) {
@@ -320,45 +336,44 @@ export const TableView = memo(function TableView({
 
 					{/* Bottom Row - Action Buttons */}
 					<div className='flex flex-wrap items-center gap-2'>
-						{/* Sort Button */}
-						<Button
-							variant='outline'
-							size='sm'
-							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
-							title='Sort data'>
-							<ChevronUp className='w-4 h-4 mr-1' />
-							<ChevronDown className='w-4 h-4' />
-						</Button>
-
-						{/* Add Filter Button */}
-						<Button
-							variant='outline'
-							size='sm'
-							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
-							title='Add filter'>
-							<Filter className='w-4 h-4 mr-2' />
-							<span className='hidden sm:inline'>Add filter</span>
-						</Button>
+						{/* Filter Button */}
+						{onFilter && (
+							<Button
+								onClick={onFilter}
+								variant='outline'
+								size='sm'
+								className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
+								title='Add filter'>
+								<Filter className='w-4 h-4 mr-2' />
+								<span className='hidden sm:inline'>Add filter</span>
+							</Button>
+						)}
 
 						{/* Import Button */}
-						<Button
-							variant='outline'
-							size='sm'
-							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
-							title='Import data'>
-							<Upload className='w-4 h-4 mr-2' />
-							<span className='hidden sm:inline'>Import</span>
-						</Button>
+						{onImport && (
+							<Button
+								onClick={onImport}
+								variant='outline'
+								size='sm'
+								className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
+								title='Import data'>
+								<Upload className='w-4 h-4 mr-2' />
+								<span className='hidden sm:inline'>Import</span>
+							</Button>
+						)}
 
 						{/* Export Button */}
-						<Button
-							variant='outline'
-							size='sm'
-							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
-							title='Export data'>
-							<Download className='w-4 h-4 mr-2' />
-							<span className='hidden sm:inline'>Export</span>
-						</Button>
+						{onExport && (
+							<Button
+								onClick={onExport}
+								variant='outline'
+								size='sm'
+								className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
+								title='Export data'>
+								<Download className='w-4 h-4 mr-2' />
+								<span className='hidden sm:inline'>Export</span>
+							</Button>
+						)}
 
 						{/* Bulk Actions */}
 						{selectedRows.size > 0 && onBulkDelete && (
@@ -375,14 +390,17 @@ export const TableView = memo(function TableView({
 						)}
 
 						{/* Add Row Button */}
-						<Button
-							variant='default'
-							size='sm'
-							className='bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 font-medium transition-all'
-							title='Add new row'>
-							<Plus className='w-4 h-4 mr-2' />
-							Add Row
-						</Button>
+						{onAddRow && (
+							<Button
+								onClick={onAddRow}
+								variant='default'
+								size='sm'
+								className='bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 font-medium transition-all'
+								title='Add new row'>
+								<Plus className='w-4 h-4 mr-2' />
+								Add Row
+							</Button>
+						)}
 					</div>
 				</div>
 			</div>
