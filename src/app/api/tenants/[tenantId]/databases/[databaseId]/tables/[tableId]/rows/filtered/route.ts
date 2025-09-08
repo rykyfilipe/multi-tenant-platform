@@ -466,7 +466,7 @@ class PrismaQueryBuilder {
 				cells: {
 					some: {
 						columnId: Number(columnId),
-						value: { equals: parseFloat(value) },
+						value: parseFloat(value),
 					},
 				},
 			};
@@ -476,7 +476,7 @@ class PrismaQueryBuilder {
 				cells: {
 					some: {
 						columnId: Number(columnId),
-						value: { equals: value === "true" || value === true },
+						value: value === "true" || value === true,
 					},
 				},
 			};
@@ -486,7 +486,7 @@ class PrismaQueryBuilder {
 				cells: {
 					some: {
 						columnId: Number(columnId),
-						value: { equals: new Date(value) },
+						value: new Date(value),
 					},
 				},
 			};
@@ -500,7 +500,7 @@ class PrismaQueryBuilder {
 			cells: {
 				some: {
 					columnId: Number(columnId),
-					value: { equals: value.toString().trim() },
+					value: value.toString().trim(),
 				},
 			},
 		};
@@ -516,7 +516,7 @@ class PrismaQueryBuilder {
 				cells: {
 					none: {
 						columnId: Number(columnId),
-						value: { equals: parseFloat(value) },
+						value: parseFloat(value),
 					},
 				},
 			};
@@ -530,7 +530,7 @@ class PrismaQueryBuilder {
 			cells: {
 				none: {
 					columnId: Number(columnId),
-					value: { equals: value.toString().trim() },
+					value: value.toString().trim(),
 				},
 			},
 		};
