@@ -194,7 +194,7 @@ export function TableView({
 														{column[meta.key] ? "Yes" : "No"}
 													</span>
 												) : meta.key === "referenceTableId" ? (
-													<span className="text-blue-600">
+													<span className="text-slate-600">
 														{column[meta.key] 
 															? tables?.find(t => t.id === column[meta.key])?.name || `Table ID: ${column[meta.key]}`
 															: "Not set"
@@ -214,7 +214,7 @@ export function TableView({
 													size='sm'
 													onClick={() => onEditColumn(column)}
 													disabled={!tablePermissions.canEditTable()}
-													className='h-8 px-3 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50'>
+													className='h-8 px-3 text-xs text-slate-600 hover:text-slate-700 hover:bg-slate-50'>
 													Edit
 												</Button>
 												)}

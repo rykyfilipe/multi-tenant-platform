@@ -26,7 +26,7 @@ interface PDFPreviewModalProps {
   onClose: () => void;
   invoiceId: number;
   invoiceNumber: string;
-  onDownload?: (invoiceId: number, invoiceNumber: string) => void;
+  onDownload?: (invoiceId: number, invoiceNumber: string, language?: string) => void;
 }
 
 export function PDFPreviewModal({ 
@@ -70,15 +70,22 @@ export function PDFPreviewModal({
           );
 
           if (!response.ok) {
-            throw new Error('Failed to generate PDF preview');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Failed to generate PDF preview (${response.status})`);
           }
 
           const blob = await response.blob();
+          
+          // Check if the response is actually a PDF
+          if (blob.type !== 'application/pdf') {
+            throw new Error('Invalid PDF response from server');
+          }
+          
           const url = URL.createObjectURL(blob);
           setPdfUrl(url);
         } catch (err) {
           console.error('Error generating PDF preview:', err);
-          setError('Failed to load PDF preview');
+          setError(err instanceof Error ? err.message : 'Failed to load PDF preview');
         } finally {
           setIsLoading(false);
         }
@@ -96,7 +103,7 @@ export function PDFPreviewModal({
 
   const handleDownload = () => {
     if (onDownload) {
-      onDownload(invoiceId, invoiceNumber);
+      onDownload(invoiceId, invoiceNumber, selectedLanguage);
     }
   };
 

@@ -656,8 +656,8 @@ export default function EditColumnForm({
 					)}
 
 				{editedColumn.primary && editedColumn.required === false && (
-					<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-						<p className='text-sm text-blue-800'>
+					<div className='p-3 bg-slate-50 border border-slate-200 rounded-lg'>
+						<p className='text-sm text-slate-800'>
 							💡 Primary keys are usually required
 						</p>
 					</div>

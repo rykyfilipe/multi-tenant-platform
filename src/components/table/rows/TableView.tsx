@@ -272,7 +272,7 @@ export const TableView = memo(function TableView({
 			<div className='px-8 py-6 bg-gradient-to-r from-white via-slate-50 to-white border-b border-slate-200/60'>
 				<div className='flex items-center justify-between'>
 					<div className='flex items-center gap-4'>
-						<div className='p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg'>
+						<div className='p-3 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg'>
 							<TableIcon className='w-6 h-6 text-white' />
 						</div>
 						<div>
@@ -346,7 +346,7 @@ export const TableView = memo(function TableView({
 								onClick={onAddRow}
 								variant='default'
 								size='sm'
-								className='h-9 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl'
+								className='h-9 px-4 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl'
 								title='Add new row'>
 								<Plus className='w-4 h-4 mr-1.5' />
 								<span className='text-xs font-medium'>Add Row</span>
@@ -379,7 +379,7 @@ export const TableView = memo(function TableView({
 											}
 											onCheckedChange={handleSelectAll}
 											disabled={!tablePermissions.canEditTable()}
-											className='data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 w-4 h-4'
+											className='data-[state=checked]:bg-slate-800 data-[state=checked]:border-slate-800 w-4 h-4'
 										/>
 									</div>
 								</th>
@@ -392,7 +392,7 @@ export const TableView = memo(function TableView({
 										<div className='flex items-center gap-2'>
 											<span className='truncate font-medium text-slate-800'>{col.name}</span>
 											{col.type && (
-												<span className='inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-md flex-shrink-0'>
+												<span className='inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-700 rounded-md flex-shrink-0'>
 													{col.type}
 												</span>
 											)}
@@ -453,9 +453,9 @@ export const TableView = memo(function TableView({
 													rowHasPendingChanges &&
 														"bg-amber-50/80 border-l-4 border-l-amber-400 shadow-sm",
 													selectedRows.has(String(row.id)) &&
-														"bg-blue-50/80 border-l-4 border-l-blue-500 shadow-sm",
+														"bg-slate-50/80 border-l-4 border-l-slate-500 shadow-sm",
 													row.isOptimistic &&
-														"bg-blue-50/80 border-l-4 border-l-blue-400 shadow-sm",
+														"bg-slate-50/80 border-l-4 border-l-slate-400 shadow-sm",
 													deletingRows.has(String(row.id)) &&
 														"opacity-60 bg-red-50/80",
 												)}>
@@ -471,7 +471,7 @@ export const TableView = memo(function TableView({
 																)
 															}
 															disabled={!tablePermissions.canEditTable()}
-															className='data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 w-4 h-4'
+															className='data-[state=checked]:bg-slate-800 data-[state=checked]:border-slate-800 w-4 h-4'
 														/>
 													</div>
 												</td>

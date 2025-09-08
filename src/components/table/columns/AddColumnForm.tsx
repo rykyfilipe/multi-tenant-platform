@@ -843,8 +843,8 @@ export default function AddColumnForm({
 					)}
 
 				{currentColumn.primary && currentColumn.required === false && (
-					<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-						<p className='text-sm text-blue-800'>
+					<div className='p-3 bg-slate-50 border border-slate-200 rounded-lg'>
+						<p className='text-sm text-slate-800'>
 							💡 Primary keys are usually required
 						</p>
 					</div>
@@ -882,8 +882,8 @@ export default function AddColumnForm({
 								(col) => col && typeof col === "object" && col.primary,
 							),
 					).length === 0 && (
-						<div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-							<p className='text-sm text-blue-800'>
+						<div className='p-3 bg-slate-50 border border-slate-200 rounded-lg'>
+							<p className='text-sm text-slate-800'>
 								💡 No tables with primary keys available for linking. Tables
 								must have a primary key defined before they can be linked.
 							</p>

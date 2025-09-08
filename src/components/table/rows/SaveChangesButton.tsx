@@ -146,7 +146,7 @@ export const SaveChangesButton = memo(function SaveChangesButton({
 			{totalChanges > 0 && (
 				<div className="flex items-center gap-1 text-xs text-muted-foreground">
 					{newRowsCount > 0 && (
-						<span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+						<span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full">
 							+{newRowsCount} {t("table.saveChanges.newRows")}
 						</span>
 					)}

@@ -32,6 +32,37 @@ export interface EmailOptions {
 
 export class EnhancedPDFGenerator {
 	/**
+	 * Remove diacritics from text to prevent PDF encoding issues
+	 */
+	private static removeDiacritics(text: string): string {
+		if (!text) return '';
+		
+		const diacriticsMap: Record<string, string> = {
+			'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't',
+			'Ă': 'A', 'Â': 'A', 'Î': 'I', 'Ș': 'S', 'Ț': 'T',
+			'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a', 'æ': 'ae',
+			'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A', 'Æ': 'AE',
+			'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+			'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+			'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+			'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+			'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o', 'ø': 'o',
+			'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O', 'Ø': 'O',
+			'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+			'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+			'ý': 'y', 'ÿ': 'y',
+			'Ý': 'Y', 'Ÿ': 'Y',
+			'ñ': 'n', 'Ñ': 'N',
+			'ç': 'c', 'Ç': 'C',
+			'ß': 'ss'
+		};
+
+		return text.replace(/[^\u0000-\u007E]/g, (char) => {
+			return diacriticsMap[char] || char;
+		});
+	}
+
+	/**
 	 * Generate a professional PDF invoice with enhanced features
 	 */
 	static async generateInvoicePDF(options: PDFGenerationOptions): Promise<Buffer> {
@@ -237,7 +268,7 @@ export class EnhancedPDFGenerator {
 					companyEmail: true,
 					address: true,
 					defaultCurrency: true,
-					logo: true,
+					logoUrl: true,
 					website: true,
 					phone: true,
 					vatNumber: true,
@@ -338,7 +369,7 @@ export class EnhancedPDFGenerator {
 		const { width } = page.getSize();
 		
 		// Company logo and name
-		page.drawText(tenantBranding.name || 'Company Name', {
+		page.drawText(this.removeDiacritics(tenantBranding.name || 'Company Name'), {
 			x: 50,
 			y: 750,
 			size: 24,
@@ -388,7 +419,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		currentY -= 20;
-		page.drawText(tenantBranding.name || 'Company Name', {
+		page.drawText(this.removeDiacritics(tenantBranding.name || 'Company Name'), {
 			x: 50,
 			y: currentY,
 			size: 12,
@@ -398,7 +429,7 @@ export class EnhancedPDFGenerator {
 
 		if (tenantBranding.address) {
 			currentY -= 15;
-			page.drawText(tenantBranding.address, {
+			page.drawText(this.removeDiacritics(tenantBranding.address), {
 				x: 50,
 				y: currentY,
 				size: 10,
@@ -409,7 +440,7 @@ export class EnhancedPDFGenerator {
 
 		if (tenantBranding.companyEmail) {
 			currentY -= 15;
-			page.drawText(tenantBranding.companyEmail, {
+			page.drawText(this.removeDiacritics(tenantBranding.companyEmail), {
 				x: 50,
 				y: currentY,
 				size: 10,
@@ -420,7 +451,7 @@ export class EnhancedPDFGenerator {
 
 		if (tenantBranding.phone) {
 			currentY -= 15;
-			page.drawText(tenantBranding.phone, {
+			page.drawText(this.removeDiacritics(tenantBranding.phone), {
 				x: 50,
 				y: currentY,
 				size: 10,
@@ -454,7 +485,7 @@ export class EnhancedPDFGenerator {
 
 		if (invoiceData.customer) {
 			currentY -= 20;
-			page.drawText(invoiceData.customer.customer_name || 'Customer Name', {
+			page.drawText(this.removeDiacritics(invoiceData.customer.customer_name || 'Customer Name'), {
 				x: width - 200,
 				y: currentY,
 				size: 12,
@@ -464,7 +495,7 @@ export class EnhancedPDFGenerator {
 
 			if (invoiceData.customer.customer_address) {
 				currentY -= 15;
-				page.drawText(invoiceData.customer.customer_address, {
+				page.drawText(this.removeDiacritics(invoiceData.customer.customer_address), {
 					x: width - 200,
 					y: currentY,
 					size: 10,
@@ -475,7 +506,7 @@ export class EnhancedPDFGenerator {
 
 			if (invoiceData.customer.customer_email) {
 				currentY -= 15;
-				page.drawText(invoiceData.customer.customer_email, {
+				page.drawText(this.removeDiacritics(invoiceData.customer.customer_email), {
 					x: width - 200,
 					y: currentY,
 					size: 10,
@@ -544,7 +575,7 @@ export class EnhancedPDFGenerator {
 				font: boldFont,
 				color: textColor,
 			});
-			page.drawText(invoiceData.invoice.payment_terms, {
+			page.drawText(this.removeDiacritics(invoiceData.invoice.payment_terms), {
 				x: 150,
 				y: currentY,
 				size: 12,
@@ -581,7 +612,7 @@ export class EnhancedPDFGenerator {
 		const headers = ['Description', 'Quantity', 'Price', 'VAT', 'Total'];
 		let x = 50;
 		headers.forEach((header, index) => {
-			page.drawText(header, {
+			page.drawText(this.removeDiacritics(header), {
 				x: x + 5,
 				y: y - 20,
 				size: 10,
@@ -616,7 +647,7 @@ export class EnhancedPDFGenerator {
 			];
 
 			itemData.forEach((data, dataIndex) => {
-				page.drawText(data, {
+				page.drawText(this.removeDiacritics(data), {
 					x: x + 5,
 					y: currentY - 10,
 					size: 9,
@@ -729,7 +760,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		if (tenantBranding.website) {
-			page.drawText(tenantBranding.website, {
+			page.drawText(this.removeDiacritics(tenantBranding.website), {
 				x: 50,
 				y: y - 15,
 				size: 10,
@@ -750,7 +781,7 @@ export class EnhancedPDFGenerator {
 	): Promise<void> {
 		const { width, height } = page.getSize();
 		
-		page.drawText(tenantBranding.name || 'CONFIDENTIAL', {
+		page.drawText(this.removeDiacritics(tenantBranding.name || 'CONFIDENTIAL'), {
 			x: width / 2 - 50,
 			y: height / 2,
 			size: 48,
@@ -837,63 +868,63 @@ export class EnhancedPDFGenerator {
 		// Language-specific translations
 		const languageTranslations: Record<string, Record<string, string>> = {
 			ro: {
-				invoice: 'Factură',
-				invoiceNumber: 'Numărul Facturii',
+				invoice: 'Factura',
+				invoiceNumber: 'Numarul Facturii',
 				date: 'Data',
-				dueDate: 'Data Scadenței',
+				dueDate: 'Data Scadentei',
 				customer: 'Client',
 				company: 'Companie',
 				description: 'Descriere',
 				quantity: 'Cantitate',
-				unitPrice: 'Preț Unit',
+				unitPrice: 'Pret Unit',
 				total: 'Total',
 				subtotal: 'Subtotal',
 				tax: 'TVA',
 				grandTotal: 'Total General',
-				paymentTerms: 'Termeni de Plată',
-				paymentMethod: 'Metoda de Plată',
+				paymentTerms: 'Termeni de Plata',
+				paymentMethod: 'Metoda de Plata',
 				notes: 'Note',
-				thankYou: 'Vă mulțumim pentru afacerea cu noi!',
+				thankYou: 'Va multumim pentru afacerea cu noi!',
 				page: 'Pagina',
 				of: 'din',
 			},
 			es: {
 				invoice: 'Factura',
-				invoiceNumber: 'Número de Factura',
+				invoiceNumber: 'Numero de Factura',
 				date: 'Fecha',
 				dueDate: 'Fecha de Vencimiento',
 				customer: 'Cliente',
 				company: 'Empresa',
-				description: 'Descripción',
+				description: 'Descripcion',
 				quantity: 'Cantidad',
 				unitPrice: 'Precio Unitario',
 				total: 'Total',
 				subtotal: 'Subtotal',
 				tax: 'Impuestos',
 				grandTotal: 'Total General',
-				paymentTerms: 'Términos de Pago',
-				paymentMethod: 'Método de Pago',
+				paymentTerms: 'Terminos de Pago',
+				paymentMethod: 'Metodo de Pago',
 				notes: 'Notas',
-				thankYou: '¡Gracias por su negocio!',
-				page: 'Página',
+				thankYou: 'Gracias por su negocio!',
+				page: 'Pagina',
 				of: 'de',
 			},
 			fr: {
 				invoice: 'Facture',
-				invoiceNumber: 'Numéro de Facture',
+				invoiceNumber: 'Numero de Facture',
 				date: 'Date',
-				dueDate: 'Date d\'Échéance',
+				dueDate: 'Date d\'Echeance',
 				customer: 'Client',
 				company: 'Entreprise',
 				description: 'Description',
-				quantity: 'Quantité',
+				quantity: 'Quantite',
 				unitPrice: 'Prix Unitaire',
 				total: 'Total',
 				subtotal: 'Sous-total',
 				tax: 'Taxes',
-				grandTotal: 'Total Général',
+				grandTotal: 'Total General',
 				paymentTerms: 'Conditions de Paiement',
-				paymentMethod: 'Méthode de Paiement',
+				paymentMethod: 'Methode de Paiement',
 				notes: 'Notes',
 				thankYou: 'Merci pour votre entreprise!',
 				page: 'Page',

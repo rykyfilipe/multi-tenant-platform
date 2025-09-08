@@ -400,21 +400,41 @@ export async function GET(
 		const includeQRCode = url.searchParams.get('qrcode') === 'true';
 		const includeBarcode = url.searchParams.get('barcode') === 'true';
 		const useEnhanced = url.searchParams.get('enhanced') === 'true';
+		const language = url.searchParams.get('language') || 'en';
+		const isPreview = url.searchParams.get('preview') === 'true';
+
+		console.log('PDF Generation Parameters:', {
+			tenantId,
+			invoiceId,
+			useEnhanced,
+			language,
+			isPreview,
+			includeWatermark,
+			includeQRCode,
+			includeBarcode
+		});
 
 		// Generate PDF
 		try {
 			let pdfBuffer: Buffer;
 
 			if (useEnhanced) {
-				// Use enhanced PDF generator
-				pdfBuffer = await EnhancedPDFGenerator.generateInvoicePDF({
-					tenantId: tenantId,
-					databaseId: database.id,
-					invoiceId: Number(invoiceId),
-					includeWatermark,
-					includeQRCode,
-					includeBarcode,
-				});
+				try {
+					// Use enhanced PDF generator
+					pdfBuffer = await EnhancedPDFGenerator.generateInvoicePDF({
+						tenantId: tenantId,
+						databaseId: database.id,
+						invoiceId: Number(invoiceId),
+						includeWatermark,
+						includeQRCode,
+						includeBarcode,
+						language: language,
+					});
+				} catch (enhancedError) {
+					console.warn('Enhanced PDF generation failed, falling back to basic generator:', enhancedError);
+					// Fallback to original PDF generator if enhanced fails
+					pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData);
+				}
 			} else {
 				// Use original PDF generator
 				pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData);
@@ -437,11 +457,16 @@ export async function GET(
 			});
 
 			// Return PDF with appropriate headers
+			const contentDisposition = isPreview 
+				? `inline; filename="factura-${invoiceData.invoice_number}.pdf"`
+				: `attachment; filename="factura-${invoiceData.invoice_number}.pdf"`;
+			
 			return new NextResponse(pdfBuffer, {
 				headers: {
 					"Content-Type": "application/pdf",
-					"Content-Disposition": `attachment; filename="factura-${invoiceData.invoice_number}.pdf"`,
+					"Content-Disposition": contentDisposition,
 					"Content-Length": pdfBuffer.length.toString(),
+					"Cache-Control": isPreview ? "no-cache, no-store, must-revalidate" : "public, max-age=3600",
 				},
 			});
 		} catch (error) {

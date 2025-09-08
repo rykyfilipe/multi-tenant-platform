@@ -302,9 +302,9 @@ export function EnhancedInvoiceList({
 		}
 	};
 
-	const handleDownloadPDF = async (invoiceId: number, invoiceNumber: string) => {
+	const handleDownloadPDF = async (invoiceId: number, invoiceNumber: string, language: string = 'en') => {
 		try {
-			const response = await fetch(`/api/tenants/${tenant?.id}/invoices/${invoiceId}/download`, {
+			const response = await fetch(`/api/tenants/${tenant?.id}/invoices/${invoiceId}/download?enhanced=true&language=${language}`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
