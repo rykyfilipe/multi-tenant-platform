@@ -46,18 +46,6 @@ function useColumnsTableEditor() {
 					"ZAR", "BGN", "HRK", "RSD", "UAH", "MDL"
 				];
 
-				// Update local state first with both semantic type and column type
-				setColumns(
-					columns.map((col) =>
-						col.id.toString() === columnId ? { 
-							...col, 
-							[fieldName]: value,
-							type: "customArray",
-							customOptions: currencyCodes
-						} : col,
-					),
-				);
-
 				// Prepare update data for both fields
 				const updateData = {
 					semanticType: value,
@@ -65,7 +53,7 @@ function useColumnsTableEditor() {
 					customOptions: currencyCodes
 				};
 
-				// Update the column on the server
+				// Update the column on the server first
 				const response = await fetch(
 					`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${columnId}`,
 					{
@@ -86,7 +74,7 @@ function useColumnsTableEditor() {
 
 				const updatedColumnData = await response.json();
 				
-				// Update state with server response
+				// Update local state with server response (optimistic update)
 				setColumns(
 					columns.map((col) =>
 						col.id.toString() === columnId
@@ -98,53 +86,6 @@ function useColumnsTableEditor() {
 				showAlert("Currency column auto-configured successfully! Column type set to Custom Array with all supported currency codes.", "success");
 				setEditingCell(null);
 				return;
-			}
-
-			// Special handling for column type change to customArray
-			if (fieldName === "type" && value === "customArray") {
-				// If changing to customArray, ensure customOptions exist
-				const currentColumn = columns.find(col => col.id.toString() === columnId);
-				if (currentColumn && (!currentColumn.customOptions || currentColumn.customOptions.length === 0)) {
-					// Initialize with empty customOptions if none exist
-					setColumns(
-						columns.map((col) =>
-							col.id.toString() === columnId ? { 
-								...col, 
-								[fieldName]: value,
-								customOptions: []
-							} : col,
-						),
-					);
-				} else {
-					// Regular update
-					setColumns(
-						columns.map((col) =>
-							col.id.toString() === columnId ? { ...col, [fieldName]: value } : col,
-						),
-					);
-				}
-			} else if (fieldName === "customOptions") {
-				// Special handling for customOptions updates
-				setColumns(
-					columns.map((col) =>
-						col.id.toString() === columnId ? { ...col, [fieldName]: value } : col,
-					),
-				);
-			} else {
-				// Regular column update logic for other fields
-				// Update local state first
-				setColumns(
-					columns.map((col) =>
-						col.id.toString() === columnId ? { ...col, [fieldName]: value } : col,
-					),
-				);
-			}
-
-			const updatedColumn = columns.find(
-				(col) => col.id.toString() === columnId,
-			);
-			if (!updatedColumn) {
-				throw new Error("Column not found");
 			}
 
 			// Construim obiectul de update cu câmpul specific
@@ -162,8 +103,13 @@ function useColumnsTableEditor() {
 				updateData[fieldName] = value;
 			}
 
-			if (process.env.NODE_ENV === "development") {
-				// Column update initiated
+			// Special handling for column type change to customArray
+			if (fieldName === "type" && value === "customArray") {
+				// If changing to customArray, ensure customOptions exist
+				const currentColumn = columns.find(col => col.id.toString() === columnId);
+				if (currentColumn && (!currentColumn.customOptions || currentColumn.customOptions.length === 0)) {
+					updateData.customOptions = [];
+				}
 			}
 
 			const response = await fetch(
@@ -185,11 +131,8 @@ function useColumnsTableEditor() {
 			}
 
 			const updatedColumnData = await response.json();
-			if (process.env.NODE_ENV === "development") {
-				// Column update completed
-			}
 
-			// Actualizăm state-ul cu datele de la server
+			// Actualizăm state-ul cu datele de la server (optimistic update)
 			setColumns(
 				columns.map((col) =>
 					col.id.toString() === columnId

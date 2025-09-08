@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, KeyboardEvent, useMemo, JSX, memo, useEffect } from "react";
+import { useState, KeyboardEvent, useMemo, JSX, memo, useEffect, useRef } from "react";
 import { Cell, Column, Row, Table } from "@/types/database";
 import { Input } from "../../ui/input";
 import {
@@ -25,6 +25,164 @@ import { useTablePermissions } from "@/hooks/useTablePermissions";
 import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Switch } from "../../ui/switch";
+import { AbsoluteDropdown } from "../../ui/absolute-dropdown";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Custom Select component with absolute positioning
+const AbsoluteSelect = ({
+	value,
+	onValueChange,
+	options,
+	placeholder = "Select an option",
+	className,
+}: {
+	value: string;
+	onValueChange: (value: string) => void;
+	options: string[];
+	placeholder?: string;
+	className?: string;
+}) => {
+	const [isOpen, setIsOpen] = useState(false);
+	const [highlightedIndex, setHighlightedIndex] = useState(-1);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// Handle keyboard navigation
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (!isOpen) return;
+
+			switch (event.key) {
+				case "ArrowDown":
+					event.preventDefault();
+					setHighlightedIndex((prev) =>
+						prev < options.length - 1 ? prev + 1 : 0,
+					);
+					break;
+				case "ArrowUp":
+					event.preventDefault();
+					setHighlightedIndex((prev) =>
+						prev > 0 ? prev - 1 : options.length - 1,
+					);
+					break;
+				case "Enter":
+					event.preventDefault();
+					if (highlightedIndex >= 0 && options[highlightedIndex]) {
+						onValueChange(options[highlightedIndex]);
+						setIsOpen(false);
+						setHighlightedIndex(-1);
+					}
+					break;
+				case "Escape":
+					event.preventDefault();
+					setIsOpen(false);
+					setHighlightedIndex(-1);
+					break;
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, highlightedIndex, options, onValueChange]);
+
+	// Auto-scroll to highlighted option
+	useEffect(() => {
+		if (highlightedIndex >= 0 && dropdownRef.current) {
+			const highlightedElement = dropdownRef.current.children[
+				highlightedIndex
+			] as HTMLElement;
+			if (highlightedElement) {
+				highlightedElement.scrollIntoView({
+					block: "nearest",
+					behavior: "smooth",
+				});
+			}
+		}
+	}, [highlightedIndex]);
+
+	const selectOption = (option: string) => {
+		onValueChange(option);
+		setIsOpen(false);
+		setHighlightedIndex(-1);
+	};
+
+	const toggleDropdown = () => {
+		setIsOpen(!isOpen);
+	};
+
+	return (
+		<div ref={containerRef} className={cn("relative", className)}>
+			{/* Main trigger button */}
+			<div
+				className={cn(
+					"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer",
+					isOpen && "ring-2 ring-ring ring-offset-2",
+				)}
+				onClick={toggleDropdown}>
+				<div className='flex-1 flex items-center'>
+					{value ? (
+						<span className='truncate' title={value}>
+							{value}
+						</span>
+					) : (
+						<span className='text-muted-foreground'>{placeholder}</span>
+					)}
+				</div>
+				<div className='flex items-center'>
+					{isOpen ? (
+						<ChevronUp className='h-4 w-4 text-muted-foreground' />
+					) : (
+						<ChevronDown className='h-4 w-4 text-muted-foreground' />
+					)}
+				</div>
+			</div>
+
+			{/* Absolute Dropdown */}
+			<AbsoluteDropdown
+				isOpen={isOpen}
+				onClose={() => {
+					setIsOpen(false);
+					setHighlightedIndex(-1);
+				}}
+				triggerRef={containerRef}
+				className="w-full min-w-[200px] max-w-[300px]"
+				placement="bottom-start">
+				{/* Options list */}
+				<div
+					ref={dropdownRef}
+					className="overflow-auto p-1 max-h-60"
+					role='listbox'>
+					{options.length > 0 ? (
+						options.map((option, index) => (
+							<div
+								key={option}
+								className={cn(
+									"relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
+									"hover:bg-accent hover:text-accent-foreground",
+									index === highlightedIndex &&
+										"bg-accent text-accent-foreground",
+									option === value &&
+										"bg-primary text-primary-foreground",
+								)}
+								onClick={() => selectOption(option)}
+								role='option'
+								aria-selected={option === value}>
+								<span className='truncate' title={option}>
+									{option}
+								</span>
+							</div>
+						))
+					) : (
+						<div className='px-2 py-4 text-center text-sm text-muted-foreground'>
+							No options available
+						</div>
+					)}
+				</div>
+			</AbsoluteDropdown>
+		</div>
+	);
+};
 
 // Componenta pentru tooltip-ul cu toate referințele
 const MultipleReferencesTooltip = ({
@@ -533,26 +691,12 @@ export function EditableCell({
 				) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
 					referenceSelect
 				) : column.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
-					<Select
+					<AbsoluteSelect
 						value={String(value || "")}
-						onValueChange={(v) => setValue(v)}>
-						<SelectTrigger>
-							<SelectValue placeholder='Select an option' />
-						</SelectTrigger>
-						<SelectContent>
-							{column.customOptions && column.customOptions.length > 0 ? (
-								column.customOptions.map((option) => (
-									<SelectItem key={option} value={option}>
-										{option}
-									</SelectItem>
-								))
-							) : (
-								<SelectItem disabled value='no-options'>
-									No options available
-								</SelectItem>
-							)}
-						</SelectContent>
-					</Select>
+						onValueChange={(v) => setValue(v)}
+						options={column.customOptions || []}
+						placeholder='Select an option'
+					/>
 				) : (
 					<Input
 						className='w-max'
@@ -695,18 +839,18 @@ export function EditableCell({
 			display === "Double-click to add values"
 		) {
 			baseStyle =
-				"text-gray-400 italic rounded px-2 py-1 cursor-pointer hover:translate-y-[-1px] transition-colors";
+				"text-muted-foreground/60 italic rounded-lg px-3 py-2 cursor-pointer hover:translate-y-[-1px] hover:bg-muted/30 transition-all duration-200 text-sm font-medium";
 		} else if (display.startsWith("⚠️")) {
 			baseStyle =
-				"text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1";
+				"text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-sm font-medium";
 		} else {
 			baseStyle =
-				"cursor-pointer hover:translate-y-[-1px] rounded px-1 transition-colors";
+				"cursor-pointer hover:translate-y-[-1px] hover:bg-muted/20 rounded-lg px-3 py-2 transition-all duration-200 text-sm font-medium text-foreground/90";
 		}
 
 		// Adaugă styling pentru modificări pending
 		if (hasPendingChange) {
-			baseStyle += " bg-amber-50 border-l-4 border-amber-400 shadow-sm";
+			baseStyle += " bg-amber-50/50 border-l-4 border-amber-400 shadow-sm";
 		}
 
 		return baseStyle;
@@ -763,7 +907,7 @@ export function EditableCell({
 						/>
 					) : null;
 				})()}
-			<p className='max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis select-none'>
+			<p className='max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis select-none leading-relaxed'>
 				{display}
 			</p>
 		</div>

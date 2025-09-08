@@ -46,6 +46,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { convertCurrency } from '@/lib/currency-exchange-client';
 import { SeriesManager } from './SeriesManager';
+import { PDFPreviewModal } from './PDFPreviewModal';
 
 interface EnhancedInvoiceListProps {
 	onEditInvoice?: (invoice: any) => void;
@@ -97,6 +98,9 @@ export function EnhancedInvoiceList({
 	// Pagination states
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
+	
+	// PDF Preview state
+	const [previewInvoice, setPreviewInvoice] = useState<{ id: number; number: string } | null>(null);
 
 	// Sync optimistic state with props
 	useEffect(() => {
@@ -323,6 +327,10 @@ export function EnhancedInvoiceList({
 			console.error('Error downloading PDF:', error);
 			showAlert('Failed to download invoice PDF', 'error');
 		}
+	};
+
+	const handlePreviewPDF = (invoiceId: number, invoiceNumber: string) => {
+		setPreviewInvoice({ id: invoiceId, number: invoiceNumber });
 	};
 
 	const clearFilters = () => {
@@ -635,6 +643,15 @@ export function EnhancedInvoiceList({
 										<Button
 											variant="outline"
 											size="sm"
+											onClick={() => handlePreviewPDF(invoice.id, invoice.invoice_number)}
+											title="Preview PDF"
+											className="hover:bg-primary/10 hover:border-primary/20"
+										>
+											<Eye className="h-4 w-4" />
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
 											onClick={() => handleDownloadPDF(invoice.id, invoice.invoice_number)}
 											title="Download PDF"
 										>
@@ -730,6 +747,15 @@ export function EnhancedInvoiceList({
 									Invoice #{viewingInvoice.invoice?.invoice_number || 'N/A'}
 								</h2>
 								<div className="flex items-center gap-2">
+									<Button 
+										variant="outline" 
+										size="sm"
+										onClick={() => handlePreviewPDF(viewingInvoice.invoice?.id, viewingInvoice.invoice?.invoice_number)}
+										className="hover:bg-primary/10 hover:border-primary/20"
+									>
+										<Eye className="h-4 w-4 mr-2" />
+										Preview PDF
+									</Button>
 									<Button 
 										variant="outline" 
 										size="sm"
@@ -875,6 +901,17 @@ export function EnhancedInvoiceList({
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* PDF Preview Modal */}
+			{previewInvoice && (
+				<PDFPreviewModal
+					isOpen={!!previewInvoice}
+					onClose={() => setPreviewInvoice(null)}
+					invoiceId={previewInvoice.id}
+					invoiceNumber={previewInvoice.number}
+					onDownload={handleDownloadPDF}
+				/>
+			)}
 
 		</div>
 	);

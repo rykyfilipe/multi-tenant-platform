@@ -61,10 +61,19 @@ export class InvoiceCalculationService {
 
 		// Process items sequentially to handle async exchange rate calls
 		for (const item of items) {
-			// Ensure we have valid numeric values
-			const safePrice = typeof item.price === 'number' && !isNaN(item.price) && isFinite(item.price) ? item.price : 0;
-			const safeQuantity = typeof item.quantity === 'number' && !isNaN(item.quantity) && isFinite(item.quantity) ? item.quantity : 1;
-			const safeVatRate = typeof item.product_vat === 'number' && !isNaN(item.product_vat) && isFinite(item.product_vat) ? item.product_vat : 0;
+			// Ensure we have valid numeric values with better validation
+			const safePrice = typeof item.price === 'number' && !isNaN(item.price) && isFinite(item.price) && item.price >= 0 ? item.price : 0;
+			const safeQuantity = typeof item.quantity === 'number' && !isNaN(item.quantity) && isFinite(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+			const safeVatRate = typeof item.product_vat === 'number' && !isNaN(item.product_vat) && isFinite(item.product_vat) && item.product_vat >= 0 ? item.product_vat : 0;
+			
+			console.log(`Processing item ${item.id}:`, {
+				originalPrice: item.price,
+				safePrice,
+				originalQuantity: item.quantity,
+				safeQuantity,
+				originalVat: item.product_vat,
+				safeVatRate
+			});
 			
 			// Calculate total for this item (price * quantity) - same as calculatedTotal in InvoiceForm
 			const calculatedTotal = safePrice * safeQuantity;
@@ -87,9 +96,19 @@ export class InvoiceCalculationService {
 					config.baseCurrency,
 					config.exchangeRates,
 				);
-				const safeConversionRate = typeof conversionRate === 'number' && !isNaN(conversionRate) && isFinite(conversionRate) ? conversionRate : 1;
+				const safeConversionRate = typeof conversionRate === 'number' && !isNaN(conversionRate) && isFinite(conversionRate) && conversionRate > 0 ? conversionRate : 1;
 				const convertedSubtotal = calculatedTotal * safeConversionRate;
 				const convertedVat = itemVat * safeConversionRate;
+				
+				console.log(`Currency conversion for ${currency} to ${config.baseCurrency}:`, {
+					conversionRate,
+					safeConversionRate,
+					calculatedTotal,
+					convertedSubtotal,
+					itemVat,
+					convertedVat
+				});
+				
 				subtotalInBaseCurrency += convertedSubtotal;
 				vatTotalInBaseCurrency += convertedVat;
 			}
@@ -98,13 +117,29 @@ export class InvoiceCalculationService {
 		const grandTotalInBaseCurrency =
 			subtotalInBaseCurrency + vatTotalInBaseCurrency;
 
-		return {
-			subtotal: subtotalInBaseCurrency,
-			vatTotal: vatTotalInBaseCurrency,
-			grandTotal: grandTotalInBaseCurrency,
+		// Ensure all totals are valid numbers
+		const safeSubtotal = typeof subtotalInBaseCurrency === 'number' && !isNaN(subtotalInBaseCurrency) && isFinite(subtotalInBaseCurrency) ? subtotalInBaseCurrency : 0;
+		const safeVatTotal = typeof vatTotalInBaseCurrency === 'number' && !isNaN(vatTotalInBaseCurrency) && isFinite(vatTotalInBaseCurrency) ? vatTotalInBaseCurrency : 0;
+		const safeGrandTotal = typeof grandTotalInBaseCurrency === 'number' && !isNaN(grandTotalInBaseCurrency) && isFinite(grandTotalInBaseCurrency) ? grandTotalInBaseCurrency : 0;
+
+		console.log("Final totals calculation:", {
 			subtotalInBaseCurrency,
+			safeSubtotal,
 			vatTotalInBaseCurrency,
+			safeVatTotal,
 			grandTotalInBaseCurrency,
+			safeGrandTotal,
+			totalsByCurrency,
+			vatTotalsByCurrency
+		});
+
+		return {
+			subtotal: safeSubtotal,
+			vatTotal: safeVatTotal,
+			grandTotal: safeGrandTotal,
+			subtotalInBaseCurrency: safeSubtotal,
+			vatTotalInBaseCurrency: safeVatTotal,
+			grandTotalInBaseCurrency: safeGrandTotal,
 			baseCurrency: config.baseCurrency,
 			totalsByCurrency,
 			vatTotalsByCurrency,

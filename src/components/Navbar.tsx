@@ -172,8 +172,8 @@ export function MobileBottomNavbar() {
 			initial={{ y: 100, opacity: 0 }}
 			animate={{ y: 0, opacity: 1 }}
 			transition={{ duration: 0.5, ease: "easeOut" }}>
-			{/* Premium glass effect background */}
-			<div className='bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-white/20 dark:border-white/10 shadow-2xl'>
+			{/* Clean background */}
+			<div className='bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800'>
 				{/* Main navigation - Icons only */}
 				<div className='flex items-center justify-between px-2 py-3 overflow-x-auto scrollbar-hide' style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 					{getMobileNavigationItems(t, user?.role, tenant, user).map(
@@ -189,19 +189,15 @@ export function MobileBottomNavbar() {
 									<Link
 										href={item.url}
 										className={cn(
-											"flex items-center justify-center p-3 rounded-xl transition-all duration-200 min-w-0",
-											"hover:bg-white/20 dark:hover:bg-white/10 active:scale-95",
+											"flex items-center justify-center p-3 rounded-xl min-w-0",
 											"w-12 h-12", // Fixed size for consistency
 											isActive
-												? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-												: "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white",
+												? "bg-primary text-primary-foreground"
+												: "text-gray-600 dark:text-gray-300",
 										)}>
-										<motion.div
-											whileHover={{ scale: 1.05 }}
-											whileTap={{ scale: 0.95 }}
-											className="flex items-center justify-center">
+										<div className="flex items-center justify-center">
 											<item.icon className='w-5 h-5' />
-										</motion.div>
+										</div>
 									</Link>
 								</motion.div>
 							);
@@ -213,10 +209,10 @@ export function MobileBottomNavbar() {
 						<div className="flex-shrink-0">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<button className='flex items-center justify-center p-3 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 active:scale-95 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-200 w-12 h-12'>
-										<Avatar className='w-6 h-6 ring-2 ring-white/20 dark:ring-white/10'>
+									<button className='flex items-center justify-center p-3 rounded-xl text-gray-600 dark:text-gray-300 w-12 h-12'>
+										<Avatar className='w-6 h-6'>
 											<AvatarImage src={session.user.image || undefined} />
-											<AvatarFallback className='bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-xs'>
+											<AvatarFallback className='bg-primary/10 text-primary font-semibold text-xs'>
 												{session.user.firstName?.[0]}
 												{session.user.lastName?.[0]}
 											</AvatarFallback>
@@ -227,7 +223,7 @@ export function MobileBottomNavbar() {
 							<DropdownMenuContent
 								align='end'
 								side='top'
-								className='mb-2 professional-card shadow-xl w-48 sm:w-56'>
+								className='mb-2 w-48 sm:w-56'>
 								<div className='p-3 sm:p-4 border-b border-border'>
 									<p className='font-medium text-foreground text-xs sm:text-sm'>
 										{session.user.firstName} {session.user.lastName}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, Search, X, CheckIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AbsoluteDropdown } from "@/components/ui/absolute-dropdown";
 
 interface ReferenceOption {
 	id: number;
@@ -158,22 +159,7 @@ export function MultipleReferenceSelect({
 		}
 	}, [selectedValues, transformedOptions, onValidationChange]);
 
-	// Handle click outside to close dropdown
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				containerRef.current &&
-				!containerRef.current.contains(event.target as Node)
-			) {
-				setIsOpen(false);
-				setSearchTerm("");
-				setHighlightedIndex(-1);
-			}
-		};
-
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, []);
+	// Handle click outside to close dropdown - now handled by AbsoluteDropdown
 
 	// Handle keyboard navigation
 	useEffect(() => {
@@ -356,11 +342,11 @@ export function MultipleReferenceSelect({
 	};
 
 	return (
-		<div ref={containerRef} className={cn("relative z-50", className)}>
+		<div ref={containerRef} className={cn("relative", className)}>
 			{/* Main trigger button */}
 			<div
 				className={cn(
-					"z-50 flex h-auto min-h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer transition-all duration-200 hover:border-border/80 hover:shadow-sm",
+					"flex h-auto min-h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer transition-all duration-200 hover:border-border/80 hover:shadow-sm",
 					hasError && "border-destructive focus-within:ring-destructive",
 					isOpen && "ring-2 ring-ring ring-offset-2 border-ring shadow-md",
 				)}
@@ -456,164 +442,166 @@ export function MultipleReferenceSelect({
 				</div>
 			</div>
 
-			{/* Dropdown */}
-			{isOpen && (
+			{/* Absolute Dropdown */}
+			<AbsoluteDropdown
+				isOpen={isOpen}
+				onClose={() => {
+					setIsOpen(false);
+					setSearchTerm("");
+					setHighlightedIndex(-1);
+				}}
+				triggerRef={containerRef}
+				className="w-80 max-w-[90vw]"
+				placement="bottom-start">
+				{/* Search input */}
+				<div className='p-2.5 border-b border-border bg-muted/30'>
+					<div className='relative'>
+						<Search className='absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground' />
+						<Input
+							ref={inputRef}
+							type='text'
+							placeholder={`Search ${referencedTableName || "options"}...`}
+							value={searchTerm}
+							onChange={(e) => {
+								setSearchTerm(e.target.value);
+								setHighlightedIndex(-1);
+							}}
+							className='pl-8 h-8 bg-background border-border/50 focus:border-primary text-sm'
+							autoFocus
+						/>
+					</div>
+				</div>
+
+				{/* Options list */}
 				<div
+					ref={dropdownRef}
 					className={cn(
-						"absolute z-50 w-full bg-popover border border-border rounded-md shadow-2xl",
-						// Position below with proper spacing
-						"top-full mt-1",
-					)}>
-					{/* Search input */}
-					<div className='p-2.5 border-b border-border bg-muted/30'>
-						<div className='relative'>
-							<Search className='absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground' />
-							<Input
-								ref={inputRef}
-								type='text'
-								placeholder={`Search ${referencedTableName || "options"}...`}
-								value={searchTerm}
-								onChange={(e) => {
-									setSearchTerm(e.target.value);
-									setHighlightedIndex(-1);
-								}}
-								className='pl-8 h-8 bg-background border-border/50 focus:border-primary text-sm'
-								autoFocus
-							/>
+						"overflow-auto p-2",
+						// Standard height for dropdown - always show max 8 items
+						"max-h-64 min-h-32",
+					)}
+					role='listbox'>
+					{isLoading ? (
+						<div className='px-3 py-8 text-center text-sm text-muted-foreground'>
+							<div className='mb-3'>
+								<div className='w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto'></div>
+							</div>
+							Loading {referencedTableName || "options"}...
+							<br />
+							<span className='text-xs mt-1 text-muted-foreground/70'>
+								Please wait while we fetch the data
+							</span>
 						</div>
-					</div>
-
-					{/* Options list */}
-					<div
-						ref={dropdownRef}
-						className={cn(
-							"overflow-auto p-2",
-							// Standard height for dropdown - always show max 8 items
-							"max-h-64 min-h-32",
-						)}
-						role='listbox'>
-						{isLoading ? (
-							<div className='px-3 py-8 text-center text-sm text-muted-foreground'>
-								<div className='mb-3'>
-									<div className='w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto'></div>
-								</div>
-								Loading {referencedTableName || "options"}...
-								<br />
-								<span className='text-xs mt-1 text-muted-foreground/70'>
-									Please wait while we fetch the data
-								</span>
-							</div>
-						) : loadingError ? (
-							<div className='px-3 py-8 text-center text-sm text-destructive'>
-								<div className='mb-2 text-lg'>⚠️</div>
-								Error loading {referencedTableName || "options"}
-								<br />
-								<span className='text-xs mt-1 text-muted-foreground/70'>
-									{loadingError}
-								</span>
-							</div>
-						) : filteredOptions.length > 0 ? (
-							filteredOptions.map((option, index) => {
-								const isSelected = selectedValues.some(
-									(val) =>
-										val?.toString() ===
-										(option.primaryKeyValue?.toString() || ""),
-								);
-								return (
-									<div
-										key={option.id}
-										className={cn(
-											"relative flex cursor-pointer select-none items-center rounded-md px-2.5 py-2 text-sm outline-none transition-all duration-200",
-											"hover:bg-accent hover:text-accent-foreground",
-											index === highlightedIndex &&
-												"bg-accent text-accent-foreground ring-2 ring-primary/20",
-											isSelected &&
-												"bg-primary/10 text-primary border border-primary/20 shadow-sm",
-										)}
-										onClick={() => toggleOption(option)}
-										role='option'
-										aria-selected={isSelected}>
-										{isMultiple && (
-											<div className='mr-2.5 flex items-center justify-center w-4 h-4 rounded border-2 border-muted-foreground/30'>
-												{isSelected && (
-													<CheckIcon className='h-2.5 w-2.5 text-primary' />
-												)}
-											</div>
-										)}
-										<span
-											className='truncate font-medium text-sm'
-											title={option.displayValue}>
-											{option.displayValue}
-										</span>
-									</div>
-								);
-							})
-						) : (
-							<div className='px-3 py-8 text-center text-sm text-muted-foreground'>
-								{searchTerm.trim() ? (
-									<>
-										<div className='mb-2 text-lg'>🔍</div>
-										No results found for "{searchTerm}"
-										<br />
-										<span className='text-xs mt-1 text-muted-foreground/70'>
-											Try a different search term
-										</span>
-									</>
-								) : (
-									<>
-										<div className='mb-2 text-lg'>📋</div>
-										No {referencedTableName || "options"} available
-									</>
-								)}
-							</div>
-						)}
-					</div>
-
-					{/* Footer info */}
-					{!isLoading &&
-						!loadingError &&
-						(filteredOptions.length > 0 || isOpen) && (
-							<div className='border-t border-border px-2.5 py-2 text-xs text-muted-foreground bg-muted/20'>
-								<div className='flex items-center justify-between'>
-									{filteredOptions.length > 0 ? (
-										<span>
-											{filteredOptions.length} of {transformedOptions.length}{" "}
-											{referencedTableName || "items"}
-											{searchTerm.trim() && ` matching "${searchTerm}"`}
-										</span>
-									) : (
-										<span>0 {referencedTableName || "items"} available</span>
+					) : loadingError ? (
+						<div className='px-3 py-8 text-center text-sm text-destructive'>
+							<div className='mb-2 text-lg'>⚠️</div>
+							Error loading {referencedTableName || "options"}
+							<br />
+							<span className='text-xs mt-1 text-muted-foreground/70'>
+								{loadingError}
+							</span>
+						</div>
+					) : filteredOptions.length > 0 ? (
+						filteredOptions.map((option, index) => {
+							const isSelected = selectedValues.some(
+								(val) =>
+									val?.toString() ===
+									(option.primaryKeyValue?.toString() || ""),
+							);
+							return (
+								<div
+									key={option.id}
+									className={cn(
+										"relative flex cursor-pointer select-none items-center rounded-md px-2.5 py-2 text-sm outline-none transition-all duration-200",
+										"hover:bg-accent hover:text-accent-foreground",
+										index === highlightedIndex &&
+											"bg-accent text-accent-foreground ring-2 ring-primary/20",
+										isSelected &&
+											"bg-primary/10 text-primary border border-primary/20 shadow-sm",
 									)}
-									{isMultiple && selectedValues.length > 0 && (
-										<div className='flex items-center gap-1.5'>
-											{/* Show warning if there are invalid references */}
-											{!validateSelectedValues() && (
-												<span className='text-destructive font-medium bg-destructive/10 px-1.5 py-0.5 rounded-full text-xs'>
-													⚠️{" "}
-													{selectedValues.length -
-														getValidSelectedValues().length}{" "}
-													invalid
-												</span>
+									onClick={() => toggleOption(option)}
+									role='option'
+									aria-selected={isSelected}>
+									{isMultiple && (
+										<div className='mr-2.5 flex items-center justify-center w-4 h-4 rounded border-2 border-muted-foreground/30'>
+											{isSelected && (
+												<CheckIcon className='h-2.5 w-2.5 text-primary' />
 											)}
-											<span className='text-primary font-medium bg-primary/10 px-1.5 py-0.5 rounded-full text-xs'>
-												{selectedValues.length} selected
-											</span>
 										</div>
 									)}
+									<span
+										className='truncate font-medium text-sm'
+										title={option.displayValue}>
+										{option.displayValue}
+									</span>
 								</div>
-							</div>
-						)}
-					{/* Loading footer */}
-					{isLoading && (
-						<div className='border-t border-border px-2.5 py-2 text-xs text-muted-foreground bg-muted/20'>
-							<div className='flex items-center gap-2'>
-								<div className='w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin'></div>
-								<span>Loading {referencedTableName || "data"}...</span>
-							</div>
+							);
+						})
+					) : (
+						<div className='px-3 py-8 text-center text-sm text-muted-foreground'>
+							{searchTerm.trim() ? (
+								<>
+									<div className='mb-2 text-lg'>🔍</div>
+									No results found for "{searchTerm}"
+									<br />
+									<span className='text-xs mt-1 text-muted-foreground/70'>
+										Try a different search term
+									</span>
+								</>
+							) : (
+								<>
+									<div className='mb-2 text-lg'>📋</div>
+									No {referencedTableName || "options"} available
+								</>
+							)}
 						</div>
 					)}
 				</div>
-			)}
+
+				{/* Footer info */}
+				{!isLoading &&
+					!loadingError &&
+					(filteredOptions.length > 0 || isOpen) && (
+						<div className='border-t border-border px-2.5 py-2 text-xs text-muted-foreground bg-muted/20'>
+							<div className='flex items-center justify-between'>
+								{filteredOptions.length > 0 ? (
+									<span>
+										{filteredOptions.length} of {transformedOptions.length}{" "}
+										{referencedTableName || "items"}
+										{searchTerm.trim() && ` matching "${searchTerm}"`}
+									</span>
+								) : (
+									<span>0 {referencedTableName || "items"} available</span>
+								)}
+								{isMultiple && selectedValues.length > 0 && (
+									<div className='flex items-center gap-1.5'>
+										{/* Show warning if there are invalid references */}
+										{!validateSelectedValues() && (
+											<span className='text-destructive font-medium bg-destructive/10 px-1.5 py-0.5 rounded-full text-xs'>
+												⚠️{" "}
+												{selectedValues.length -
+													getValidSelectedValues().length}{" "}
+												invalid
+											</span>
+										)}
+										<span className='text-primary font-medium bg-primary/10 px-1.5 py-0.5 rounded-full text-xs'>
+											{selectedValues.length} selected
+										</span>
+									</div>
+								)}
+							</div>
+						</div>
+					)}
+				{/* Loading footer */}
+				{isLoading && (
+					<div className='border-t border-border px-2.5 py-2 text-xs text-muted-foreground bg-muted/20'>
+						<div className='flex items-center gap-2'>
+							<div className='w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin'></div>
+							<span>Loading {referencedTableName || "data"}...</span>
+						</div>
+					</div>
+				)}
+			</AbsoluteDropdown>
 		</div>
 	);
 }

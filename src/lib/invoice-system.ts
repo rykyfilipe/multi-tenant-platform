@@ -1349,16 +1349,147 @@ export class InvoiceSystemService {
 		tenantId: number,
 		databaseId: number,
 	): Promise<void> {
+		console.log(`=== UPDATING INVOICE TABLES SCHEMA ===`);
+		console.log(`TenantId: ${tenantId}, DatabaseId: ${databaseId}`);
+		
 		// Get existing invoice tables
 		const existingTables = await this.getInvoiceTables(tenantId, databaseId);
+		console.log("Existing tables found:", {
+			invoices: !!existingTables.invoices,
+			invoice_items: !!existingTables.invoice_items
+		});
 
-		if (!existingTables.invoice_items) {
-			console.log("No existing invoice_items table found, nothing to update");
-			return;
+		// Update invoices table columns
+		if (existingTables.invoices) {
+			console.log("Updating invoices table schema...");
+			console.log("Invoices table columns before update:", existingTables.invoices.columns?.map((c: any) => ({
+				name: c.name,
+				semanticType: c.semanticType
+			})));
+			await this.updateInvoicesTableSchema(existingTables.invoices, databaseId);
+		} else {
+			console.log("No invoices table found, skipping schema update");
 		}
 
-		// Check which required columns are missing
-		const existingColumns = existingTables.invoice_items.columns || [];
+		// Update invoice_items table columns
+		if (existingTables.invoice_items) {
+			console.log("Updating invoice_items table schema...");
+			await this.updateInvoiceItemsTableSchema(existingTables.invoice_items);
+		} else {
+			console.log("No invoice_items table found, skipping schema update");
+		}
+		
+		console.log("=== SCHEMA UPDATE COMPLETED ===");
+	}
+
+	/**
+	 * Update invoices table schema to ensure all required columns exist with correct semantic types
+	 */
+	private static async updateInvoicesTableSchema(invoicesTable: any, databaseId: number): Promise<void> {
+		const existingColumns = invoicesTable.columns || [];
+		
+		console.log("=== UPDATING INVOICES TABLE SCHEMA ===");
+		console.log("Table ID:", invoicesTable.id);
+		console.log("Existing columns:", existingColumns.map((c: any) => ({
+			id: c.id,
+			name: c.name,
+			semanticType: c.semanticType,
+			type: c.type
+		})));
+		
+		// Required columns for invoices table
+		const requiredColumns = [
+			{ name: "invoice_number", type: "string", semanticType: SemanticColumnType.INVOICE_NUMBER, order: 1 },
+			{ name: "invoice_series", type: "string", semanticType: SemanticColumnType.INVOICE_SERIES, order: 2 },
+			{ name: "date", type: "date", semanticType: SemanticColumnType.INVOICE_DATE, order: 3 },
+			{ name: "due_date", type: "date", semanticType: SemanticColumnType.INVOICE_DUE_DATE, order: 4 },
+			{ name: "customer_id", type: "reference", semanticType: SemanticColumnType.INVOICE_CUSTOMER_ID, order: 5 },
+			{ name: "status", type: "string", semanticType: SemanticColumnType.INVOICE_STATUS, order: 6 },
+			{ name: "total_amount", type: "number", semanticType: SemanticColumnType.INVOICE_TOTAL_AMOUNT, order: 7 },
+		];
+		
+		console.log("Required columns:", requiredColumns.map(c => ({
+			name: c.name,
+			semanticType: c.semanticType
+		})));
+
+		// Check for missing columns or incorrect semantic types
+		const columnsToUpdate: any[] = [];
+		const columnsToCreate: any[] = [];
+
+		for (const requiredCol of requiredColumns) {
+			const existingCol = existingColumns.find((c: any) => c.name === requiredCol.name);
+			
+			console.log(`Checking column ${requiredCol.name}:`, {
+				exists: !!existingCol,
+				currentSemanticType: existingCol?.semanticType,
+				requiredSemanticType: requiredCol.semanticType,
+				needsUpdate: existingCol && existingCol.semanticType !== requiredCol.semanticType
+			});
+			
+			if (!existingCol) {
+				// Column doesn't exist, create it
+				columnsToCreate.push(requiredCol);
+			} else if (existingCol.semanticType !== requiredCol.semanticType) {
+				// Column exists but has wrong semantic type, update it
+				columnsToUpdate.push({
+					id: existingCol.id,
+					semanticType: requiredCol.semanticType,
+					order: requiredCol.order
+				});
+			}
+		}
+
+		// Create missing columns
+		for (const col of columnsToCreate) {
+			await prisma.column.create({
+				data: {
+					name: col.name,
+					type: col.type,
+					semanticType: col.semanticType,
+					required: true,
+					primary: false,
+					order: col.order,
+					isLocked: true,
+					tableId: invoicesTable.id,
+					// Set reference table ID for customer_id column
+					referenceTableId: col.name === "customer_id" ? 
+						(await prisma.table.findFirst({ 
+							where: { name: "customers", databaseId } 
+						}))?.id : undefined
+				},
+			});
+		}
+
+		// Update existing columns with correct semantic types
+		for (const col of columnsToUpdate) {
+			console.log(`Updating column ${col.id} with semanticType: ${col.semanticType}`);
+			await prisma.column.update({
+				where: { id: col.id },
+				data: { 
+					semanticType: col.semanticType,
+					order: col.order
+				},
+			});
+		}
+
+		if (columnsToCreate.length > 0 || columnsToUpdate.length > 0) {
+			console.log(`Updated invoices table: created ${columnsToCreate.length} columns, updated ${columnsToUpdate.length} columns`);
+			
+			// Invalidate cache to ensure fresh data is fetched
+			try {
+				await prisma.$queryRaw`SELECT 1`; // Simple query to refresh cache
+			} catch (error) {
+				console.warn("Cache invalidation failed:", error);
+			}
+		}
+	}
+
+	/**
+	 * Update invoice_items table schema to include missing columns
+	 */
+	private static async updateInvoiceItemsTableSchema(invoiceItemsTable: any): Promise<void> {
+		const existingColumns = invoiceItemsTable.columns || [];
 		const requiredColumns = [
 			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 15 },
 			{ name: "price", type: "number", semanticType: SemanticColumnType.UNIT_PRICE, order: 6 },
@@ -1369,7 +1500,7 @@ export class InvoiceSystemService {
 		);
 
 		if (missingColumns.length === 0) {
-			console.log("All required columns already exist, no update needed");
+			console.log("All required columns already exist in invoice_items table, no update needed");
 			return;
 		}
 
@@ -1386,7 +1517,7 @@ export class InvoiceSystemService {
 					primary: false,
 					order: col.order,
 					isLocked: false,
-					tableId: existingTables.invoice_items.id,
+					tableId: invoiceItemsTable.id,
 				},
 			});
 		}

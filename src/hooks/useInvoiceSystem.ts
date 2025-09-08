@@ -206,16 +206,26 @@ export function useInvoiceSystem() {
 
 				const data = await response.json();
 
-				// Add to local state immediately (optimistic update)
+				// Add to local state immediately (optimistic update) with all calculated data
 				const newInvoice = {
 					id: data.invoice.id,
 					invoice_number: data.invoice.invoice_number,
 					customer_id: data.invoice.customer_id,
-					date: new Date().toISOString(),
-					items_count: data.invoice.items_count,
+					date: data.invoice.date || new Date().toISOString(),
+					due_date: data.invoice.due_date,
+					status: data.invoice.status || "draft",
+					base_currency: data.invoice.base_currency,
+					payment_terms: data.invoice.payment_terms,
+					payment_method: data.invoice.payment_method,
+					notes: data.invoice.notes,
+					items_count: data.invoice.items_count || 0,
+					subtotal: data.invoice.subtotal || 0,
+					vat_total: data.invoice.vat_total || 0,
+					total_amount: data.invoice.total_amount || 0,
 					// Add other fields that might be needed
 				};
 
+				console.log("✅ Adding invoice to local state:", newInvoice);
 				setInvoices((prev) => [newInvoice, ...prev]);
 
 				return data.invoice;

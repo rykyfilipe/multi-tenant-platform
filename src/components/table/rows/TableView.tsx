@@ -12,6 +12,9 @@ import {
 	Clock,
 	ChevronLeft,
 	ChevronRight,
+	ChevronUp,
+	ChevronDown,
+	Search,
 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
@@ -199,7 +202,7 @@ export const TableView = memo(function TableView({
 					</th>
 					{visibleColumns.map((col) => (
 						<th
-							className='text-start p-3 sm:p-4 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20'
+							className='text-start px-6 py-5 text-sm font-semibold text-foreground/80 uppercase tracking-wide border-b border-border/20 bg-gradient-to-r from-muted/50 via-muted/40 to-muted/50'
 							key={col.id}>
 							{col.name}
 						</th>
@@ -215,6 +218,15 @@ export const TableView = memo(function TableView({
 			handleSelectAll,
 		],
 	);
+
+	// Calculate table width based on number of columns
+	const tableWidth = useMemo(() => {
+		const baseWidth = 60; // Selection column
+		const dataColumnsWidth = safeColumns.length * 200; // 200px per data column
+		const actionsWidth = 80; // Actions column
+		const totalWidth = baseWidth + dataColumnsWidth + actionsWidth;
+		return Math.max(totalWidth, 800); // Minimum 800px width
+	}, [safeColumns.length]);
 
 	// Memoize pagination info pentru a evita re-render-uri inutile
 	const paginationInfo = useMemo(() => {
@@ -235,59 +247,123 @@ export const TableView = memo(function TableView({
 	// TableEditor gestionează skeleton și "Access Denied" - aici doar filtrăm datele
 
 	return (
-		<div className='w-full'>
-			{/* Enhanced Table Header with Modern Design */}
-			<div className='bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30 border-b border-border/20 px-6 py-4'>
-				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-					{/* Left Section - Table Info & Selection Status */}
-					<div className='flex items-center gap-4'>
-						<div className='flex items-center gap-3'>
-							<div className='flex items-center justify-center w-8 h-8 bg-primary/10 rounded-lg'>
-								<TableIcon className='w-4 h-4 text-primary' />
-							</div>
-							<div>
-								<h2 className='text-lg font-semibold text-foreground'>
-									Table Data
-								</h2>
-								<div className='flex items-center gap-4 text-sm text-muted-foreground'>
-									{paginationInfo}
-									{selectedRows.size > 0 && (
-										<span className='inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full font-medium'>
-											<CheckCircle className='w-3 h-3' />
-											{selectedRows.size} selected
-										</span>
-									)}
-								</div>
-							</div>
-						</div>
+		<div className='w-full h-full bg-white flex flex-col'>
+			{/* Modern Header Section - Like in Image */}
+			<div className='px-6 py-6 border-b border-gray-200'>
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6'>
+					{/* Left Section - Title and Subtitle */}
+					<div className='flex flex-col'>
+						<h1 className='text-3xl font-bold text-gray-900 mb-1'>
+							{table.name || 'Table Data'}
+						</h1>
+						<p className='text-gray-600 text-lg'>
+							Manage your data
+						</p>
 					</div>
 
-					{/* Right Section - Bulk Actions */}
+					{/* Right Section - Action Buttons */}
 					<div className='flex items-center gap-3'>
-					{selectedRows.size > 0 && onBulkDelete && (
+						{selectedRows.size > 0 && onBulkDelete && (
+							<Button
+								onClick={handleBulkDeleteClick}
+								variant='outline'
+								size='sm'
+								disabled={!tablePermissions.canEditTable()}
+								className='border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2'>
+								<Trash2 className='w-4 h-4 mr-2' />
+								Delete Selected ({selectedRows.size})
+							</Button>
+						)}
 						<Button
-							onClick={handleBulkDeleteClick}
-							variant='destructive'
+							variant='default'
 							size='sm'
-							disabled={!tablePermissions.canEditTable()}
-							className='bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'>
-							<Trash2 className='w-4 h-4 mr-2' />
-							Delete Selected ({selectedRows.size})
+							className='bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 font-medium'>
+							Add Row
 						</Button>
-					)}
 					</div>
 				</div>
 			</div>
 
-			{/* Modern Table Container */}
-			<div className='overflow-hidden'>
-				<div className='overflow-x-auto'>
-					<table className='w-full min-w-full'>
-						{/* Enhanced Table Header */}
-						<thead className='bg-muted/30 border-b border-border/20'>
+			{/* Filter Bar Section - Like in Image */}
+			<div className='px-6 py-4 bg-gray-50 border-b border-gray-200'>
+				<div className='flex flex-wrap items-center gap-3'>
+					{/* Active Filters Display */}
+					<div className='flex flex-wrap items-center gap-2'>
+						{selectedRows.size > 0 && (
+							<div className='inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium'>
+								<span>Selected: {selectedRows.size}</span>
+								<button 
+									onClick={() => setSelectedRows(new Set())}
+									className='ml-1 hover:bg-blue-200 rounded-full p-0.5'
+								>
+									×
+								</button>
+							</div>
+						)}
+						{totalItems > 0 && (
+							<div className='inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium'>
+								<span>Total: {totalItems} rows</span>
+								<button className='ml-1 hover:bg-gray-200 rounded-full p-0.5'>
+									×
+								</button>
+							</div>
+						)}
+					</div>
+
+					{/* Clear All Button */}
+					{selectedRows.size > 0 && (
+						<Button
+							variant='ghost'
+							size='sm'
+							onClick={() => setSelectedRows(new Set())}
+							className='text-gray-600 hover:text-gray-800 px-3 py-1'>
+							Clear all
+						</Button>
+					)}
+
+					{/* Search Input */}
+					<div className='flex-1 max-w-md'>
+						<div className='relative'>
+							<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
+							<input
+								type='text'
+								placeholder='Search...'
+								className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+							/>
+						</div>
+					</div>
+
+					{/* Sort Button */}
+					<Button
+						variant='outline'
+						size='sm'
+						className='border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2'>
+						<ChevronUp className='w-4 h-4 mr-1' />
+						<ChevronDown className='w-4 h-4' />
+					</Button>
+
+					{/* Add Filter Button */}
+					<Button
+						variant='outline'
+						size='sm'
+						className='border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2'>
+						<Database className='w-4 h-4 mr-2' />
+						Add filter
+					</Button>
+				</div>
+			</div>
+
+			{/* Clean Table Container - Full Width */}
+			<div className='flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col'>
+				<div className='flex-1 overflow-auto'>
+					<table 
+						className='w-full'
+						style={{ minWidth: `${tableWidth}px` }}>
+						{/* Clean Table Header - Sticky */}
+						<thead className='sticky top-0 z-30 bg-gray-50 border-b border-gray-200'>
 							<tr>
 								{/* Selection Column */}
-								<th className='sticky left-0 z-20 bg-muted/30 backdrop-blur-sm border-r border-border/20 px-2 sm:px-4 py-2 sm:py-3 text-left'>
+								<th className='sticky left-0 z-40 bg-gray-50 border-r border-gray-200 px-6 py-4 text-left min-w-[60px]'>
 									<div className='flex items-center justify-center'>
 										<Checkbox
 											checked={
@@ -300,7 +376,7 @@ export const TableView = memo(function TableView({
 											}
 											onCheckedChange={handleSelectAll}
 											disabled={!tablePermissions.canEditTable()}
-											className='data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary/50 data-[state=indeterminate]:border-primary/50'
+											className='data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600'
 										/>
 									</div>
 								</th>
@@ -309,11 +385,11 @@ export const TableView = memo(function TableView({
 								{safeColumns.map((col) => (
 									<th
 										key={col.id}
-										className='px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 min-w-[120px]'>
-										<div className='flex items-center gap-1 sm:gap-2'>
+										className='px-6 py-4 text-left text-sm font-semibold text-gray-900 min-w-[150px] max-w-[300px]'>
+										<div className='flex items-center gap-2'>
 											<span className='truncate'>{col.name}</span>
 											{col.type && (
-												<span className='hidden sm:inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium bg-muted/50 text-muted-foreground rounded-md'>
+												<span className='inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md'>
 													{col.type}
 												</span>
 											)}
@@ -322,14 +398,14 @@ export const TableView = memo(function TableView({
 								))}
 
 								{/* Actions Column */}
-								<th className='px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-foreground bg-muted/30 backdrop-blur-sm border-r border-border/20 last:border-r-0 w-16 sm:w-20'>
+								<th className='sticky right-0 z-40 bg-gray-50 border-l border-gray-200 px-6 py-4 text-center text-sm font-semibold text-gray-900 min-w-[80px]'>
 									Actions
 								</th>
 							</tr>
 						</thead>
 
-						{/* Enhanced Table Body */}
-						<tbody className='divide-y divide-border/10'>
+						{/* Clean Table Body */}
+						<tbody className='divide-y divide-gray-200'>
 							{validatedRows.length === 0 ? (
 								<tr>
 									<td
@@ -340,14 +416,14 @@ export const TableView = memo(function TableView({
 										}
 										className='px-6 py-16 text-center'>
 										<div className='flex flex-col items-center gap-4'>
-											<div className='w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center'>
-												<Database className='w-8 h-8 text-muted-foreground' />
+											<div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center'>
+												<Database className='w-8 h-8 text-gray-400' />
 											</div>
 											<div className='text-center'>
-												<h3 className='text-lg font-semibold text-foreground mb-2'>
+												<h3 className='text-lg font-semibold text-gray-900 mb-2'>
 													No data available
 												</h3>
-												<p className='text-muted-foreground max-w-md'>
+												<p className='text-gray-600 max-w-md'>
 													This table doesn't have any rows yet. Start by adding
 													your first row using the "Add Row" button above.
 												</p>
@@ -370,18 +446,18 @@ export const TableView = memo(function TableView({
 												exit={{ opacity: 0, y: -20 }}
 												transition={{ duration: 0.3, delay: index * 0.05 }}
 												className={cn(
-													"hover:bg-muted/20 transition-all duration-200 group",
+													"hover:bg-gray-50 transition-colors duration-200 group",
 													rowHasPendingChanges &&
-														"bg-amber-50/20 border-l-4 border-l-amber-400",
+														"bg-amber-50 border-l-4 border-l-amber-400",
 													selectedRows.has(String(row.id)) &&
-														"bg-primary/5 border-l-4 border-l-primary",
+														"bg-blue-50 border-l-4 border-l-blue-500",
 													row.isOptimistic &&
-														"bg-blue-50/30 border-l-4 border-l-blue-400",
+														"bg-blue-50 border-l-4 border-l-blue-400",
 													deletingRows.has(String(row.id)) &&
-														"opacity-50 bg-destructive/5",
+														"opacity-60 bg-red-50",
 												)}>
 												{/* Selection Cell */}
-												<td className='sticky left-0 z-10 bg-background group-hover:bg-muted/20 border-r border-border/20 px-4 py-4'>
+												<td className='sticky left-0 z-20 bg-white group-hover:bg-gray-50 border-r border-gray-200 px-6 py-4 min-w-[60px]'>
 													<div className='flex items-center justify-center'>
 														<Checkbox
 															checked={selectedRows.has(String(row.id))}
@@ -392,7 +468,7 @@ export const TableView = memo(function TableView({
 																)
 															}
 															disabled={!tablePermissions.canEditTable()}
-															className='data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+															className='data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600'
 														/>
 													</div>
 												</td>
@@ -403,7 +479,7 @@ export const TableView = memo(function TableView({
 														return (
 															<td
 																key={`${row.id}-${col.id}-virtual`}
-																className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+																className='px-6 py-4 group-hover:bg-gray-50 transition-colors duration-200 min-w-[150px] max-w-[300px]'>
 																<EditableCell
 																	columns={safeColumns}
 																	cell={{
@@ -432,7 +508,7 @@ export const TableView = memo(function TableView({
 														return (
 															<td
 																key={`${row.id}-${col.id}-missing`}
-																className='px-4 py-4 border-r border-border/20 last:border-r-0'>
+																className='px-6 py-4 group-hover:bg-gray-50 transition-colors duration-200 min-w-[150px] max-w-[300px]'>
 																<EditableCell
 																	columns={safeColumns}
 																	cell={{
@@ -457,7 +533,7 @@ export const TableView = memo(function TableView({
 													return (
 														<td
 															key={`${row.id}-${col.id}-${cell.id}`}
-															className='px-4 py-4 border-r border-border/20'>
+															className='px-6 py-4 group-hover:bg-gray-50 transition-colors duration-200 min-w-[150px] max-w-[300px]'>
 															<EditableCell
 																columns={safeColumns}
 																cell={cell}
@@ -474,15 +550,15 @@ export const TableView = memo(function TableView({
 												})}
 
 												{/* Actions Cell */}
-												<td className='px-4 py-4 text-center border-r border-border/20 last:border-r-0'>
+												<td className='sticky right-0 z-20 bg-white group-hover:bg-gray-50 border-l border-gray-200 px-6 py-4 text-center min-w-[80px]'>
 													<Button
 														onClick={() => onDeleteRow(String(row.id))}
 														variant='ghost'
 														size='sm'
 														disabled={deletingRows.has(String(row.id)) || !tablePermissions.canEditTable()}
-														className='h-8 w-8 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive/10 transition-all duration-200'>
+														className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 rounded-lg'>
 														{deletingRows.has(String(row.id)) ? (
-															<div className='w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin' />
+															<div className='w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin' />
 														) : (
 															<Trash2 className='w-4 h-4' />
 														)}
@@ -499,43 +575,44 @@ export const TableView = memo(function TableView({
 				</div>
 			</div>
 
-			{/* Enhanced Pagination */}
+			{/* Modern Pagination - Like in Image */}
 			{showPagination && (
-				<div className='bg-muted/20 border-t border-border/20 px-6 py-4'>
+				<div className='bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0'>
 					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-						<div className='flex items-center gap-4 text-sm text-muted-foreground'>
+						{/* Left Section - Results Info */}
+						<div className='flex items-center gap-4 text-sm text-gray-600'>
 							<span>
-								Showing {(currentPage - 1) * pageSize + 1} to{" "}
-								{Math.min(currentPage * pageSize, totalItems)} of {totalItems}{" "}
-								results
+								{(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalItems)} of {totalItems} Results per page
 							</span>
+							{onPageSizeChange && (
+								<select
+									value={pageSize}
+									onChange={(e) => onPageSizeChange(Number(e.target.value))}
+									className='border border-gray-300 rounded px-2 py-1 text-sm'>
+									<option value={10}>10</option>
+									<option value={25}>25</option>
+									<option value={50}>50</option>
+									<option value={100}>100</option>
+								</select>
+							)}
 						</div>
 
+						{/* Right Section - Navigation */}
 						<div className='flex items-center gap-2'>
 							<Button
 								variant='outline'
 								size='sm'
 								onClick={() => onPageChange(currentPage - 1)}
 								disabled={currentPage <= 1}
-								className='h-8 px-3'>
+								className='h-8 w-8 p-0 border-gray-300 text-gray-700 hover:bg-gray-50'>
 								<ChevronLeft className='w-4 h-4' />
-								Previous
 							</Button>
 
+							{/* Page Numbers */}
 							<div className='flex items-center gap-1'>
-								{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-									const page = i + 1;
-									return (
-										<Button
-											key={page}
-											variant={page === currentPage ? "default" : "outline"}
-											size='sm'
-											onClick={() => onPageChange(page)}
-											className='h-8 w-8 p-0'>
-											{page}
-										</Button>
-									);
-								})}
+								<span className='text-sm text-gray-600 px-2'>
+									{currentPage}/{totalPages}
+								</span>
 							</div>
 
 							<Button
@@ -543,8 +620,7 @@ export const TableView = memo(function TableView({
 								size='sm'
 								onClick={() => onPageChange(currentPage + 1)}
 								disabled={currentPage >= totalPages}
-								className='h-8 px-3'>
-								Next
+								className='h-8 w-8 p-0 border-gray-300 text-gray-700 hover:bg-gray-50'>
 								<ChevronRight className='w-4 h-4' />
 							</Button>
 						</div>

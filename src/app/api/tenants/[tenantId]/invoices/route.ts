@@ -340,9 +340,31 @@ export async function POST(
 		const dueDateColumn = invoiceTables.invoices!.columns!.find(
 			(c: any) => c.semanticType === "invoice_due_date",
 		);
-		const customerIdColumn = invoiceTables.invoices!.columns!.find(
+		let customerIdColumn = invoiceTables.invoices!.columns!.find(
 			(c: any) => c.semanticType === "invoice_customer_id",
 		);
+		
+		// If not found by semantic type, look for customer_id column and fix it
+		if (!customerIdColumn) {
+			console.log("customer_id column not found by semantic type, looking for column by name...");
+			const customerIdColumnByName = invoiceTables.invoices!.columns!.find(
+				(c: any) => c.name === "customer_id",
+			);
+			
+			if (customerIdColumnByName) {
+				console.log("Found customer_id column by name, updating semantic type...");
+				try {
+					await prisma.column.update({
+						where: { id: customerIdColumnByName.id },
+						data: { semanticType: "invoice_customer_id" }
+					});
+					customerIdColumn = { ...customerIdColumnByName, semanticType: "invoice_customer_id" };
+					console.log("✅ Successfully updated customer_id column semantic type");
+				} catch (error) {
+					console.error("❌ Failed to update customer_id column:", error);
+				}
+			}
+		}
 
 		// Validate that all required columns exist
 		if (
@@ -844,7 +866,17 @@ export async function POST(
 				id: invoiceRow.id,
 				invoice_number: invoiceNumber,
 				customer_id: parsedData.customer_id,
+				date: new Date().toISOString(),
+				due_date: parsedData.due_date,
+				status: parsedData.status || "draft",
+				base_currency: parsedData.base_currency,
+				payment_terms: parsedData.payment_terms,
+				payment_method: parsedData.payment_method,
+				notes: parsedData.notes,
 				items_count: parsedData.products.length,
+				subtotal: totals.subtotal,
+				vat_total: totals.vatTotal,
+				total_amount: totals.grandTotal,
 			},
 		});
 	} catch (error) {

@@ -48,6 +48,9 @@ export class EnhancedPDFGenerator {
 			// Get tenant branding
 			const tenantBranding = await this.getTenantBranding(options.tenantId);
 
+			// Get translations for the selected language
+			const translations = await this.getTranslations(options.language || 'en');
+
 			// Create PDF document
 			const pdfDoc = await PDFDocument.create();
 			const page = pdfDoc.addPage(PageSizes.A4);
@@ -63,23 +66,23 @@ export class EnhancedPDFGenerator {
 			const textColor = rgb(0.1, 0.1, 0.1);
 
 			// Header section
-			await this.drawHeader(page, invoiceData, tenantBranding, font, boldFont, primaryColor, textColor);
+			await this.drawHeader(page, invoiceData, tenantBranding, font, boldFont, primaryColor, textColor, translations);
 
 			// Company and customer information
-			await this.drawCompanyInfo(page, invoiceData, tenantBranding, font, boldFont, textColor);
-			await this.drawCustomerInfo(page, invoiceData, font, boldFont, textColor);
+			await this.drawCompanyInfo(page, invoiceData, tenantBranding, font, boldFont, textColor, translations);
+			await this.drawCustomerInfo(page, invoiceData, font, boldFont, textColor, translations);
 
 			// Invoice details
-			await this.drawInvoiceDetails(page, invoiceData, font, boldFont, textColor);
+			await this.drawInvoiceDetails(page, invoiceData, font, boldFont, textColor, translations);
 
 			// Items table
-			await this.drawItemsTable(page, invoiceData, font, boldFont, textColor, secondaryColor);
+			await this.drawItemsTable(page, invoiceData, font, boldFont, textColor, secondaryColor, translations);
 
 			// Totals section
-			await this.drawTotalsSection(page, invoiceData, font, boldFont, textColor, primaryColor);
+			await this.drawTotalsSection(page, invoiceData, font, boldFont, textColor, primaryColor, translations);
 
 			// Footer
-			await this.drawFooter(page, invoiceData, tenantBranding, font, textColor, secondaryColor);
+			await this.drawFooter(page, invoiceData, tenantBranding, font, textColor, secondaryColor, translations);
 
 			// Add watermarks if requested
 			if (options.includeWatermark) {
@@ -800,6 +803,125 @@ export class EnhancedPDFGenerator {
 			console.error('Error sending email:', error);
 			return false;
 		}
+	}
+
+	/**
+	 * Get translations for PDF content
+	 */
+	private static async getTranslations(language: string): Promise<Record<string, string>> {
+		const translations: Record<string, string> = {
+			// Default English translations
+			invoice: 'Invoice',
+			invoiceNumber: 'Invoice Number',
+			date: 'Date',
+			dueDate: 'Due Date',
+			customer: 'Customer',
+			company: 'Company',
+			description: 'Description',
+			quantity: 'Qty',
+			unitPrice: 'Unit Price',
+			total: 'Total',
+			subtotal: 'Subtotal',
+			tax: 'Tax',
+			grandTotal: 'Grand Total',
+			paymentTerms: 'Payment Terms',
+			paymentMethod: 'Payment Method',
+			notes: 'Notes',
+			thankYou: 'Thank you for your business!',
+			page: 'Page',
+			of: 'of',
+		};
+
+		// Language-specific translations
+		const languageTranslations: Record<string, Record<string, string>> = {
+			ro: {
+				invoice: 'Factură',
+				invoiceNumber: 'Numărul Facturii',
+				date: 'Data',
+				dueDate: 'Data Scadenței',
+				customer: 'Client',
+				company: 'Companie',
+				description: 'Descriere',
+				quantity: 'Cantitate',
+				unitPrice: 'Preț Unit',
+				total: 'Total',
+				subtotal: 'Subtotal',
+				tax: 'TVA',
+				grandTotal: 'Total General',
+				paymentTerms: 'Termeni de Plată',
+				paymentMethod: 'Metoda de Plată',
+				notes: 'Note',
+				thankYou: 'Vă mulțumim pentru afacerea cu noi!',
+				page: 'Pagina',
+				of: 'din',
+			},
+			es: {
+				invoice: 'Factura',
+				invoiceNumber: 'Número de Factura',
+				date: 'Fecha',
+				dueDate: 'Fecha de Vencimiento',
+				customer: 'Cliente',
+				company: 'Empresa',
+				description: 'Descripción',
+				quantity: 'Cantidad',
+				unitPrice: 'Precio Unitario',
+				total: 'Total',
+				subtotal: 'Subtotal',
+				tax: 'Impuestos',
+				grandTotal: 'Total General',
+				paymentTerms: 'Términos de Pago',
+				paymentMethod: 'Método de Pago',
+				notes: 'Notas',
+				thankYou: '¡Gracias por su negocio!',
+				page: 'Página',
+				of: 'de',
+			},
+			fr: {
+				invoice: 'Facture',
+				invoiceNumber: 'Numéro de Facture',
+				date: 'Date',
+				dueDate: 'Date d\'Échéance',
+				customer: 'Client',
+				company: 'Entreprise',
+				description: 'Description',
+				quantity: 'Quantité',
+				unitPrice: 'Prix Unitaire',
+				total: 'Total',
+				subtotal: 'Sous-total',
+				tax: 'Taxes',
+				grandTotal: 'Total Général',
+				paymentTerms: 'Conditions de Paiement',
+				paymentMethod: 'Méthode de Paiement',
+				notes: 'Notes',
+				thankYou: 'Merci pour votre entreprise!',
+				page: 'Page',
+				of: 'de',
+			},
+			de: {
+				invoice: 'Rechnung',
+				invoiceNumber: 'Rechnungsnummer',
+				date: 'Datum',
+				dueDate: 'Fälligkeitsdatum',
+				customer: 'Kunde',
+				company: 'Unternehmen',
+				description: 'Beschreibung',
+				quantity: 'Menge',
+				unitPrice: 'Einzelpreis',
+				total: 'Gesamt',
+				subtotal: 'Zwischensumme',
+				tax: 'Steuern',
+				grandTotal: 'Gesamtbetrag',
+				paymentTerms: 'Zahlungsbedingungen',
+				paymentMethod: 'Zahlungsmethode',
+				notes: 'Notizen',
+				thankYou: 'Vielen Dank für Ihr Geschäft!',
+				page: 'Seite',
+				of: 'von',
+			},
+		};
+
+		// Return translations for the specified language or default to English
+		return { ...translations, ...(languageTranslations[language] || {}) };
 	}
 
 	/**

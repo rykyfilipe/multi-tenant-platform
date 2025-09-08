@@ -359,30 +359,41 @@ export function InvoiceForm({
 	// Initialize form with edit data
 	useEffect(() => {
 		if (editInvoice && !isInitialized) {
+			console.log("=== INITIALIZING EDIT MODE ===");
+			console.log("editInvoice structure:", editInvoice);
+			
 			// Set customer
 			if (editInvoice.customer?.id) {
 				setSelectedCustomer(editInvoice.customer.id);
 			}
 
-			// Set base currency
-			if (editInvoice.invoice?.base_currency) {
-				setBaseCurrency(editInvoice.invoice.base_currency);
+			// Set base currency - check both invoice and direct properties
+			const baseCurrency = editInvoice.invoice?.base_currency || editInvoice.base_currency;
+			if (baseCurrency) {
+				setBaseCurrency(baseCurrency);
 			}
 
-			// Set invoice form fields
-			if (editInvoice.invoice) {
-				setInvoiceForm({
-					due_date: editInvoice.invoice.due_date || "",
-					payment_terms:
-						editInvoice.invoice.payment_terms || t("invoice.form.paymentTerms"),
-					payment_method:
-						editInvoice.invoice.payment_method ||
-						t("invoice.form.paymentMethod"),
-					notes: editInvoice.invoice.notes || "",
-					status: editInvoice.invoice.status || "draft",
-					invoice_series: editInvoice.invoice.invoice_series || "",
-				});
-			}
+			// Set invoice form fields - check both invoice and direct properties
+			const invoiceData = editInvoice.invoice || editInvoice;
+			console.log("Invoice data for form:", invoiceData);
+			
+			setInvoiceForm({
+				due_date: invoiceData.due_date || "",
+				payment_terms: invoiceData.payment_terms || t("invoice.form.paymentTerms"),
+				payment_method: invoiceData.payment_method || t("invoice.form.paymentMethod"),
+				notes: invoiceData.notes || "",
+				status: invoiceData.status || "draft",
+				invoice_series: invoiceData.invoice_series || "",
+			});
+			
+			console.log("Form initialized with:", {
+				due_date: invoiceData.due_date,
+				payment_terms: invoiceData.payment_terms,
+				payment_method: invoiceData.payment_method,
+				notes: invoiceData.notes,
+				status: invoiceData.status,
+				invoice_series: invoiceData.invoice_series,
+			});
 
 			// Set selected table from first product if available and load table rows
 			if (editInvoice.items && editInvoice.items.length > 0) {
@@ -659,6 +670,7 @@ export function InvoiceForm({
 					price: p.extractedPrice, // Add price for update
 				})),
 			};
+	
 
 			if (isEditMode && editInvoice?.invoice?.id) {
 				// Update existing invoice
@@ -711,10 +723,7 @@ export function InvoiceForm({
 		}
 	};
 
-	const getTableDisplayName = (tableName: string) => {
-		const table = availableTables.find((t) => t.name === tableName);
-		return table?.description || tableName;
-	};
+
 
 	const getRowDisplayName = (tableName: string, rowId: number) => {
 		if (!tableName || tableName === "" || tableName !== selectedTable)
@@ -2198,14 +2207,7 @@ export function InvoiceForm({
 
 						{/* Submit Button */}
 						<div className='flex justify-end pt-4'>
-							{(() => {
-								const isDisabled = !validationResult || !canSubmitForm(validationResult);
-								console.log("=== BUTTON STATE DEBUG ===");
-								console.log("Validation Result:", validationResult);
-								console.log("Can Submit Form:", validationResult ? canSubmitForm(validationResult) : false);
-								console.log("Button Disabled:", isDisabled);
-								return null;
-							})()}
+							
 							<Button
 								type='submit'
 								size='lg'

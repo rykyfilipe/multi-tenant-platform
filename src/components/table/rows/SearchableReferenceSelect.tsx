@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AbsoluteDropdown } from "@/components/ui/absolute-dropdown";
 
 interface ReferenceOption {
 	id: number;
@@ -65,22 +66,7 @@ export function SearchableReferenceSelect({
 		(opt) => opt.primaryKeyValue === value,
 	);
 
-	// Handle click outside to close dropdown
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				containerRef.current &&
-				!containerRef.current.contains(event.target as Node)
-			) {
-				setIsOpen(false);
-				setSearchTerm("");
-				setHighlightedIndex(-1);
-			}
-		};
-
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, []);
+	// Handle click outside to close dropdown - now handled by AbsoluteDropdown
 
 	// Handle keyboard navigation
 	useEffect(() => {
@@ -195,81 +181,88 @@ export function SearchableReferenceSelect({
 				</div>
 			</div>
 
-			{/* Dropdown */}
-			{isOpen && (
-				<div className='absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg'>
-					{/* Search input */}
-					<div className='p-2 border-b border-border'>
-						<div className='relative'>
-							<Search className='absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-							<Input
-								ref={inputRef}
-								type='text'
-								placeholder={`Search ${referencedTableName || "options"}...`}
-								value={searchTerm}
-								onChange={(e) => {
-									setSearchTerm(e.target.value);
-									setHighlightedIndex(-1);
-								}}
-								className='pl-8 h-8'
-								autoFocus
-							/>
-						</div>
+			{/* Absolute Dropdown */}
+			<AbsoluteDropdown
+				isOpen={isOpen}
+				onClose={() => {
+					setIsOpen(false);
+					setSearchTerm("");
+					setHighlightedIndex(-1);
+				}}
+				triggerRef={containerRef}
+				className="w-80 max-w-[90vw]"
+				placement="bottom-start">
+				{/* Search input */}
+				<div className='p-2 border-b border-border'>
+					<div className='relative'>
+						<Search className='absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+						<Input
+							ref={inputRef}
+							type='text'
+							placeholder={`Search ${referencedTableName || "options"}...`}
+							value={searchTerm}
+							onChange={(e) => {
+								setSearchTerm(e.target.value);
+								setHighlightedIndex(-1);
+							}}
+							className='pl-8 h-8'
+							autoFocus
+						/>
 					</div>
+				</div>
 
-					{/* Options list */}
-					<div
-						ref={dropdownRef}
-						className={cn(
-							'overflow-auto p-1',
-							filteredOptions.length <= 3 ? 'max-h-none' : 'max-h-60'
-						)}
-						role='listbox'>
-						{filteredOptions.length > 0 ? (
-							filteredOptions.map((option, index) => (
-								<div
-									key={option.id}
-									className={cn(
-										"relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
-										"hover:bg-accent hover:text-accent-foreground",
-										index === highlightedIndex &&
-											"bg-accent text-accent-foreground",
-										option.primaryKeyValue === value &&
-											"bg-primary text-primary-foreground",
-									)}
-									onClick={() => selectOption(option)}
-									role='option'
-									aria-selected={option.primaryKeyValue === value}>
-									<span className='truncate' title={option.displayValue}>
-										{option.displayValue}
-									</span>
-								</div>
-							))
-						) : (
-							<div className='px-2 py-4 text-center text-sm text-muted-foreground'>
-								{searchTerm.trim() ? (
-									<>
-										No results found for "{searchTerm}"
-										<br />
-										<span className='text-xs'>Try a different search term</span>
-									</>
-								) : (
-									`No ${referencedTableName || "options"} available`
+				{/* Options list */}
+				<div
+					ref={dropdownRef}
+					className={cn(
+						'overflow-auto p-1',
+						filteredOptions.length <= 3 ? 'max-h-none' : 'max-h-60'
+					)}
+					role='listbox'>
+					{filteredOptions.length > 0 ? (
+						filteredOptions.map((option, index) => (
+							<div
+								key={option.id}
+								className={cn(
+									"relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
+									"hover:bg-accent hover:text-accent-foreground",
+									index === highlightedIndex &&
+										"bg-accent text-accent-foreground",
+									option.primaryKeyValue === value &&
+										"bg-primary text-primary-foreground",
 								)}
+								onClick={() => selectOption(option)}
+								role='option'
+								aria-selected={option.primaryKeyValue === value}>
+								<span className='truncate' title={option.displayValue}>
+									{option.displayValue}
+								</span>
 							</div>
-						)}
-					</div>
-
-					{/* Footer info */}
-					{filteredOptions.length > 0 && (
-						<div className='border-t border-border px-2 py-1 text-xs text-muted-foreground'>
-							{filteredOptions.length} of {transformedOptions.length}{" "}
-							{referencedTableName || "items"}
-							{searchTerm.trim() && ` matching "${searchTerm}"`}
+						))
+					) : (
+						<div className='px-2 py-4 text-center text-sm text-muted-foreground'>
+							{searchTerm.trim() ? (
+								<>
+									No results found for "{searchTerm}"
+									<br />
+									<span className='text-xs'>Try a different search term</span>
+								</>
+							) : (
+								`No ${referencedTableName || "options"} available`
+							)}
 						</div>
 					)}
 				</div>
-			)}
+
+				{/* Footer info */}
+				{filteredOptions.length > 0 && (
+					<div className='border-t border-border px-2 py-1 text-xs text-muted-foreground'>
+						{filteredOptions.length} of {transformedOptions.length}{" "}
+						{referencedTableName || "items"}
+						{searchTerm.trim() && ` matching "${searchTerm}"`}
+					</div>
+				)}
+			</AbsoluteDropdown>
 		</div>
 	);
 }
