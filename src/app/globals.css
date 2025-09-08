@@ -50,6 +50,36 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	display: none;  /* Safari and Chrome */
 }
 
+/* Premium scrollbar styles */
+.scrollbar-thin {
+	scrollbar-width: thin;
+	scrollbar-color: rgb(203 213 225) rgb(241 245 249);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+	background: rgb(241 245 249);
+	border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+	background: rgb(203 213 225);
+	border-radius: 3px;
+	transition: background-color 0.2s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+	background: rgb(148 163 184);
+}
+
+.scrollbar-thin::-webkit-scrollbar-corner {
+	background: rgb(241 245 249);
+}
+
 /*---break--- */
 
 /* PREMIUM DESIGN CLASSES FOR SOPHISTICATED LAYOUT */

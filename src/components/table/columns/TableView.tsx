@@ -195,7 +195,10 @@ export function TableView({
 													</span>
 												) : meta.key === "referenceTableId" ? (
 													<span className="text-blue-600">
-														{column[meta.key] || "Not set"}
+														{column[meta.key] 
+															? tables?.find(t => t.id === column[meta.key])?.name || `Table ID: ${column[meta.key]}`
+															: "Not set"
+														}
 													</span>
 												) : (
 													<span>{column[meta.key] || "-"}</span>
@@ -232,7 +235,7 @@ export function TableView({
 												)}
 											</div>
 										</td>
-									)}
+											
 								</tr>
 							))
 						)}

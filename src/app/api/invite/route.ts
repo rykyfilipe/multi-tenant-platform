@@ -97,10 +97,9 @@ export async function POST(request: NextRequest) {
 						tenantId: invitation.tenantId,
 						userId: user.id,
 						tableId: table.id,
-						canDelete: false,
+						canDelete: invitation.role === "EDITOR" || invitation.role === "ADMIN" || invitation.role === "VIEWER",
 						canRead: true,
-						canEdit:
-							invitation.role === "EDITOR" || invitation.role === "ADMIN",
+						canEdit: invitation.role === "EDITOR" || invitation.role === "ADMIN" || invitation.role === "VIEWER",
 					},
 				}),
 			),
@@ -116,8 +115,7 @@ export async function POST(request: NextRequest) {
 							userId: user.id,
 							columnId: column.id,
 							canRead: true,
-							canEdit:
-								invitation.role === "EDITOR" || invitation.role === "ADMIN",
+							canEdit: invitation.role === "EDITOR" || invitation.role === "ADMIN" || invitation.role === "VIEWER",
 							tableId: table.id,
 						},
 					}),

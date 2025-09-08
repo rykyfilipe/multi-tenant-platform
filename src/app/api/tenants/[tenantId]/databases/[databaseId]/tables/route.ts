@@ -97,18 +97,50 @@ export async function POST(
 			},
 		});
 
-		Promise.all(
-			users.map((user: { id: number }) =>
+		// Get the tenant's subscription plan to determine permissions
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: Number(tenantId) },
+			include: { adminOf: true },
+		});
+
+		const subscriptionPlan = tenant?.adminOf?.subscriptionPlan || "Free";
+
+		// Create table permissions for all users
+		await Promise.all(
+			users.map((user: { id: number; role: string }) =>
 				prisma.tablePermission.create({
 					data: {
 						userId: user.id,
 						tableId: table.id,
 						tenantId: Number(tenantId),
-						canDelete: role === "ADMIN",
+						canDelete: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
 						canRead: true,
-						canEdit: role === "ADMIN",
+						canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
 					},
 				}),
+			),
+		);
+
+		// Get columns for the table to create column permissions
+		const columns = await prisma.column.findMany({
+			where: { tableId: table.id },
+		});
+
+		// Create column permissions for all users
+		await Promise.all(
+			users.flatMap((user: { id: number; role: string }) =>
+				columns.map((column: { id: number }) =>
+					prisma.columnPermission.create({
+						data: {
+							userId: user.id,
+							columnId: column.id,
+							tableId: table.id,
+							tenantId: Number(tenantId),
+							canRead: true,
+							canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
+						},
+					}),
+				),
 			),
 		);
 

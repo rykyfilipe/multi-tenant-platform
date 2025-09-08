@@ -205,6 +205,21 @@ export async function POST(
 			}
 		}
 
+		// Get all users in the tenant to create column permissions
+		const users = await prisma.user.findMany({
+			where: {
+				tenantId: Number(tenantId),
+			},
+		});
+
+		// Get the tenant's subscription plan to determine permissions
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: Number(tenantId) },
+			include: { adminOf: true },
+		});
+
+		const subscriptionPlan = tenant?.adminOf?.subscriptionPlan || "Free";
+
 		// Creăm coloanele
 		const createdColumns = [];
 		for (let i = 0; i < parsedData.columns.length; i++) {
@@ -231,6 +246,22 @@ export async function POST(
 			});
 
 			createdColumns.push(column);
+
+			// Create column permissions for all users
+			await Promise.all(
+				users.map((user: { id: number; role: string }) =>
+					prisma.columnPermission.create({
+						data: {
+							userId: user.id,
+							columnId: column.id,
+							tableId: Number(tableId),
+							tenantId: Number(tenantId),
+							canRead: true,
+							canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
+						},
+					}),
+				),
+			);
 
 			// Adăugăm valori implicite pentru coloanele existente
 			if (table.rows.length > 0) {

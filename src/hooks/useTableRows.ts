@@ -351,7 +351,7 @@ function useTableRows(
 		fetchRows,
 	]);
 
-	// Aplică filtre cu reset la prima pagină
+	// Aplică filtre cu reset la prima pagină - OPTIMISTIC UPDATE
 	const applyFilters = useCallback(
 		async (
 			filtersParam: FilterConfig[],
@@ -359,7 +359,7 @@ function useTableRows(
 			sortByParam: string = "id",
 			sortOrderParam: "asc" | "desc" = "asc",
 		) => {
-			console.log("🔍 useTableRows - applyFilters called:", {
+			console.log("🔍 useTableRows - applyFilters called (optimistic):", {
 				filtersParam,
 				globalSearchParam,
 				sortByParam,
@@ -368,7 +368,14 @@ function useTableRows(
 				tableId
 			});
 
-			// Reset la prima pagină când se aplică filtre noi
+			// OPTIMISTIC UPDATE: Actualizează state-ul local imediat
+			setFilters(filtersParam);
+			setGlobalSearch(globalSearchParam);
+			setSortBy(sortByParam);
+			setSortOrder(sortOrderParam);
+			setCurrentPage(1);
+
+			// Apoi face fetch-ul în background
 			try {
 				await fetchRows(
 					1,
@@ -382,6 +389,8 @@ function useTableRows(
 				console.log("✅ useTableRows - applyFilters completed successfully");
 			} catch (error) {
 				console.error("❌ useTableRows - applyFilters failed:", error);
+				// Revert optimistic update on error
+				setError(error instanceof Error ? error.message : "Filter application failed");
 			}
 		},
 		[currentPageSize, fetchRows, tableId],

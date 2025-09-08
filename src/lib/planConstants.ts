@@ -69,7 +69,7 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canImportData: true,
 		canExportData: true,
 		canUseAdvancedFeatures: false,
-		canManagePermissions: false,
+		canManagePermissions: true, // Enable permission management for Free plan
 		canAccessAnalytics: true, // Now enabled for Free plan - basic analytics
 		canUseCustomIntegrations: false,
 		canAccessAdvancedSecurity: false,

@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { X } from "lucide-react";
-import ImportExportControls from "./ImportExportControls";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
@@ -1140,14 +1139,6 @@ const TableEditor = memo(function TableEditor({
 								showSidebar={showSidebar}
 								setShowSidebar={setShowSidebar}
 								activeFiltersCount={activeFiltersCount}
-							/>
-							<ImportExportControls
-								rows={paginatedRows || []}
-								columns={columns}
-								table={table}
-								globalSearch={globalSearch}
-								filters={filters}
-								onRefresh={refetchRows}
 							/>
 						</div>
 					</div>
