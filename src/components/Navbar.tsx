@@ -167,39 +167,30 @@ export function MobileBottomNavbar() {
 	};
 
 	return (
-		<motion.div
-			className='fixed bottom-0 left-0 right-0 z-50 md:hidden'
-			initial={{ y: 100, opacity: 0 }}
-			animate={{ y: 0, opacity: 1 }}
-			transition={{ duration: 0.5, ease: "easeOut" }}>
+		<div className='fixed bottom-0 left-0 right-0 z-50 md:hidden'>
 			{/* Clean background */}
 			<div className='bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800'>
 				{/* Main navigation - Icons only */}
 				<div className='flex items-center justify-between px-2 py-3 overflow-x-auto scrollbar-hide' style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 					{getMobileNavigationItems(t, user?.role, tenant, user).map(
-						(item, index) => {
+						(item) => {
 							const isActive = pathname === item.url;
 							return (
-								<motion.div
-									key={item.title}
-									initial={{ opacity: 0, y: 20 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.3, delay: index * 0.1 }}
-									className="flex-shrink-0">
+								<div key={item.title} className="flex-shrink-0">
 									<Link
 										href={item.url}
 										className={cn(
-											"flex items-center justify-center p-3 rounded-xl min-w-0",
+											"flex items-center justify-center p-3 rounded-lg min-w-0",
 											"w-12 h-12", // Fixed size for consistency
 											isActive
-												? "bg-primary text-primary-foreground"
+												? "bg-gray-900 text-white"
 												: "text-gray-600 dark:text-gray-300",
 										)}>
 										<div className="flex items-center justify-center">
 											<item.icon className='w-5 h-5' />
 										</div>
 									</Link>
-								</motion.div>
+								</div>
 							);
 						},
 					)}
@@ -209,10 +200,10 @@ export function MobileBottomNavbar() {
 						<div className="flex-shrink-0">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<button className='flex items-center justify-center p-3 rounded-xl text-gray-600 dark:text-gray-300 w-12 h-12'>
+									<button className='flex items-center justify-center p-3 rounded-lg text-gray-600 dark:text-gray-300 w-12 h-12'>
 										<Avatar className='w-6 h-6'>
 											<AvatarImage src={session.user.image || undefined} />
-											<AvatarFallback className='bg-primary/10 text-primary font-semibold text-xs'>
+											<AvatarFallback className='bg-gray-100 text-gray-600 font-semibold text-xs'>
 												{session.user.firstName?.[0]}
 												{session.user.lastName?.[0]}
 											</AvatarFallback>
@@ -224,17 +215,17 @@ export function MobileBottomNavbar() {
 								align='end'
 								side='top'
 								className='mb-2 w-48 sm:w-56'>
-								<div className='p-3 sm:p-4 border-b border-border'>
-									<p className='font-medium text-foreground text-xs sm:text-sm'>
+								<div className='p-3 sm:p-4 border-b border-gray-200'>
+									<p className='font-medium text-gray-900 text-xs sm:text-sm'>
 										{session.user.firstName} {session.user.lastName}
 									</p>
-									<p className='text-xs text-muted-foreground'>
+									<p className='text-xs text-gray-500'>
 										{session.user.email}
 									</p>
 									{user?.role && (
 										<Badge
 											variant='secondary'
-											className='mt-1 text-xs premium-hover-subtle'>
+											className='mt-1 text-xs bg-gray-100 text-gray-700'>
 											{user.role}
 										</Badge>
 									)}
@@ -245,7 +236,7 @@ export function MobileBottomNavbar() {
 										const newTheme = currentTheme === "dark" ? "light" : "dark";
 										setTheme(newTheme);
 									}}
-									className='cursor-pointer premium-interaction'>
+									className='cursor-pointer'>
 									{currentTheme === "dark" ? (
 										<Sun className='w-4 h-4 mr-2' />
 									) : (
@@ -260,7 +251,7 @@ export function MobileBottomNavbar() {
 
 								<DropdownMenuItem
 									onClick={() => router.push("/")}
-									className='cursor-pointer premium-interaction'>
+									className='cursor-pointer'>
 									<Home className='w-4 h-4 mr-2' />
 									{t("ui.home")}
 								</DropdownMenuItem>
@@ -269,7 +260,7 @@ export function MobileBottomNavbar() {
 
 								<DropdownMenuItem
 									onClick={handleSignOut}
-									className='cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 premium-interaction'>
+									className='cursor-pointer text-red-600 hover:bg-red-50'>
 									<LogOut className='w-4 h-4 mr-2' />
 									{t("ui.signOut")}
 								</DropdownMenuItem>
@@ -279,7 +270,7 @@ export function MobileBottomNavbar() {
 					)}
 				</div>
 			</div>
-		</motion.div>
+		</div>
 	);
 }
 
@@ -310,22 +301,17 @@ export function AppSidebar() {
 	};
 
 	return (
-		<motion.div
+		<div
 			className={cn(
-				"relative flex flex-col h-full transition-all duration-300 ease-in-out",
-				"border-r shadow-2xl backdrop-blur-xl",
-				// Premium glass effect
-				"bg-white/80 border-white/20 shadow-black/5",
-				"dark:bg-black/80 dark:border-white/10 dark:shadow-white/5",
+				"relative flex flex-col h-full transition-all duration-200",
+				"border-r border-gray-200",
+				"bg-white dark:bg-gray-900",
 				isCollapsed ? "w-16" : "w-20",
 				// Ascuns pe mobile
 				"hidden md:flex",
-			)}
-			initial={{ x: -100, opacity: 0 }}
-			animate={{ x: 0, opacity: 1 }}
-			transition={{ duration: 0.5, ease: "easeOut" }}>
-			{/* Premium Header - Logo Only */}
-			<div className='relative p-4 border-b border-white/10 dark:border-white/5'>
+			)}>
+			{/* Clean Header - Logo Only */}
+			<div className='relative p-4 border-b border-gray-200 dark:border-gray-700'>
 				<div className="flex items-center justify-center">
 					<TenantLogo size='lg' showText={false} />
 				</div>
@@ -337,7 +323,7 @@ export function AppSidebar() {
 					onClick={toggleSidebar}
 					variant='ghost'
 					size='sm'
-					className='h-8 w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/20 dark:hover:bg-white/10 rounded-full transition-all duration-200'>
+					className='h-8 w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg'>
 					{isCollapsed ? <ChevronRight className='h-4 w-4' /> : <ChevronLeft className='h-4 w-4' />}
 				</Button>
 			</div>
@@ -346,62 +332,46 @@ export function AppSidebar() {
 			<div className='flex-1 p-2 overflow-hidden'>
 				<nav className='space-y-2'>
 					{getNavigationItems(t, user?.role, tenant, user).map(
-						(item, index) => {
+						(item) => {
 							const isActive = pathname === item.url;
 							return (
-								<motion.div
-									key={item.title}
-									initial={{ opacity: 0, x: -20 }}
-									animate={{ opacity: 1, x: 0 }}
-									transition={{ duration: 0.3, delay: index * 0.1 }}>
+								<div key={item.title}>
 									<Link
 										href={item.url}
 										className={cn(
-											"group relative flex items-center justify-center rounded-xl transition-all duration-200",
-											"hover:bg-white/20 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-white/10",
+											"group relative flex items-center justify-center rounded-lg transition-colors duration-200",
 											"p-3",
 											isActive && [
-												"bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10",
-												"shadow-lg shadow-primary/20",
-												"text-primary",
+												"bg-gray-900 text-white",
 											],
 											!isActive &&
-												"text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white",
+												"text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800",
 										)}>
-										<motion.div
-											className="flex items-center justify-center"
-											whileHover={{ scale: 1.1 }}
-											whileTap={{ scale: 0.9 }}>
+										<div className="flex items-center justify-center">
 											<item.icon className='w-5 h-5' />
-										</motion.div>
+										</div>
 
-										{/* Premium Tooltip */}
-										<div className='absolute left-full ml-3 px-3 py-2 bg-gray-900/95 dark:bg-gray-800/95 text-white text-sm rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 backdrop-blur-sm border border-gray-700/50 dark:border-gray-600/50 transition-all duration-200'>
-											<div className='font-medium'>
-												{item.title}
-											</div>
-											<div className='text-xs text-gray-300 dark:text-gray-400 mt-1'>
-												{item.description}
-											</div>
-											<div className='absolute top-1/2 -left-1 w-2 h-2 bg-gray-900/95 dark:bg-gray-800/95 border-l border-b border-gray-700/50 dark:border-gray-600/50 rotate-45 transform -translate-y-1/2'></div>
+										{/* Simple Tooltip */}
+										<div className='absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity duration-200'>
+											{item.title}
 										</div>
 									</Link>
-								</motion.div>
+								</div>
 							);
 						},
 					)}
 				</nav>
 			</div>
 
-			{/* Premium Footer - User Avatar Only */}
-			<div className='p-3 border-t border-white/10 dark:border-white/5'>
+			{/* Clean Footer - User Avatar Only */}
+			<div className='p-3 border-t border-gray-200 dark:border-gray-700'>
 				{session?.user && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<div className="flex items-center justify-center cursor-pointer p-2 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200 group">
-								<Avatar className='w-8 h-8 ring-2 ring-white/20 dark:ring-white/10 group-hover:ring-primary/30 transition-all duration-200'>
+							<div className="flex items-center justify-center cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 group">
+								<Avatar className='w-8 h-8'>
 									<AvatarImage src={session.user.image || undefined} />
-									<AvatarFallback className='bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-sm'>
+									<AvatarFallback className='bg-gray-100 text-gray-600 font-semibold text-sm'>
 										{session.user.firstName?.[0]}
 										{session.user.lastName?.[0]}
 									</AvatarFallback>
@@ -411,8 +381,8 @@ export function AppSidebar() {
 
 						<DropdownMenuContent
 							align={isCollapsed ? "center" : "start"}
-							className='w-44 sm:w-48 professional-card shadow-xl'>
-							<div className='p-3 sm:p-4 border-b border-black/5 dark:border-white/10'>
+							className='w-44 sm:w-48'>
+							<div className='p-3 sm:p-4 border-b border-gray-200'>
 								<p className='font-medium text-gray-900 dark:text-white text-xs sm:text-sm'>
 									{session.user.firstName} {session.user.lastName}
 								</p>
@@ -422,7 +392,7 @@ export function AppSidebar() {
 								{user?.role && (
 									<Badge
 										variant='secondary'
-										className='mt-1 text-xs bg-gray-900/10 dark:bg-white/20 text-gray-900 dark:text-white border-gray-900/20 dark:border-white/20 premium-hover-subtle'>
+										className='mt-1 text-xs bg-gray-100 text-gray-700'>
 										{user.role}
 									</Badge>
 								)}
@@ -433,7 +403,7 @@ export function AppSidebar() {
 									const newTheme = currentTheme === "dark" ? "light" : "dark";
 									setTheme(newTheme);
 								}}
-								className='cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 focus:bg-black/5 dark:focus:bg-white/10 text-gray-900 dark:text-gray-100 premium-interaction'>
+								className='cursor-pointer'>
 								{currentTheme === "dark" ? (
 									<Sun className='w-4 h-4 mr-2' />
 								) : (
@@ -444,20 +414,20 @@ export function AppSidebar() {
 									: t("ui.switchToDarkTheme")}
 							</DropdownMenuItem>
 
-							<DropdownMenuSeparator className='bg-black/10 dark:bg-white/10' />
+							<DropdownMenuSeparator />
 
 							<DropdownMenuItem
 								onClick={() => router.push("/")}
-								className='cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 focus:bg-black/5 dark:focus:bg-white/10 text-gray-900 dark:text-gray-100 premium-interaction'>
+								className='cursor-pointer'>
 								<Home className='w-4 h-4 mr-2' />
 								{t("ui.home")}
 							</DropdownMenuItem>
 
-							<DropdownMenuSeparator className='bg-black/10 dark:bg-white/10' />
+							<DropdownMenuSeparator />
 
 							<DropdownMenuItem
 								onClick={handleSignOut}
-								className='cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 focus:text-red-700 dark:focus:text-red-300 premium-interaction'>
+								className='cursor-pointer text-red-600 hover:bg-red-50'>
 								<LogOut className='w-4 h-4 mr-2' />
 								{t("ui.signOut")}
 							</DropdownMenuItem>
@@ -465,6 +435,6 @@ export function AppSidebar() {
 					</DropdownMenu>
 				)}
 			</div>
-		</motion.div>
+		</div>
 	);
 }

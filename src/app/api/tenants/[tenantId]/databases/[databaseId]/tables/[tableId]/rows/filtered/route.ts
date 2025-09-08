@@ -276,7 +276,12 @@ class PrismaQueryBuilder {
 		const column = this.tableColumns.find((col) => col.id === columnId);
 		if (!column) return {};
 
-		const columnType = column.type === "reference" ? "text" : column.type;
+		// Handle reference columns specially
+		if (column.type === "reference") {
+			return this.buildReferenceFilter(columnId, operator, value);
+		}
+
+		const columnType = column.type;
 
 		switch (operator) {
 			// String operators
@@ -347,6 +352,70 @@ class PrismaQueryBuilder {
 	}
 
 	// Helper methods pentru construirea filtrelor
+	private buildReferenceFilter(
+		columnId: number,
+		operator: string,
+		value: any,
+	): any {
+		// Skip filters with empty values
+		if (!value || value.toString().trim() === "") {
+			return {};
+		}
+
+		const trimmedValue = value.toString().trim();
+
+		switch (operator) {
+			case "equals":
+				return {
+					cells: {
+						some: {
+							columnId: Number(columnId),
+							value: {
+								array_contains: trimmedValue,
+							},
+						},
+					},
+				};
+			case "not_equals":
+				return {
+					cells: {
+						none: {
+							columnId: Number(columnId),
+							value: {
+								array_contains: trimmedValue,
+							},
+						},
+					},
+				};
+			case "is_empty":
+				return {
+					cells: {
+						some: {
+							columnId: Number(columnId),
+							value: {
+								equals: [],
+							},
+						},
+					},
+				};
+			case "is_not_empty":
+				return {
+					cells: {
+						some: {
+							columnId: Number(columnId),
+							value: {
+								not: {
+									equals: [],
+								},
+							},
+						},
+					},
+				};
+			default:
+				return {};
+		}
+	}
+
 	private buildStringFilter(
 		columnId: number,
 		operator: string,

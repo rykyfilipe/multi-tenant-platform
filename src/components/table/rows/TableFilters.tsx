@@ -115,6 +115,9 @@ export function TableFilters({
 	const [filters, setFilters] = useState<FilterConfig[]>([]);
 	const [globalSearch, setGlobalSearch] = useState("");
 
+	// Use optimized reference data hook
+	const { referenceData, isLoading: referenceDataLoading } = useOptimizedReferenceData(tables);
+
 	// Use external state if provided
 	useEffect(() => {
 		if (externalShowSidebar !== undefined) {
@@ -129,8 +132,21 @@ export function TableFilters({
 	}, [showSidebar, externalSetSidebar]);
 
 	const applyFilters = async () => {
+		console.log("🔍 TableFilters - applyFilters called:", {
+			filters,
+			globalSearch,
+			hasOnApplyFilters: !!onApplyFilters
+		});
+		
 		if (onApplyFilters) {
-			await onApplyFilters(filters, globalSearch);
+			try {
+				await onApplyFilters(filters, globalSearch);
+				console.log("✅ TableFilters - applyFilters completed successfully");
+			} catch (error) {
+				console.error("❌ TableFilters - applyFilters failed:", error);
+			}
+		} else {
+			console.warn("⚠️ TableFilters - onApplyFilters not provided");
 		}
 	};
 
@@ -155,50 +171,21 @@ export function TableFilters({
 		if (
 			column.type !== "reference" ||
 			!column.referenceTableId ||
-			!tables ||
-			!Array.isArray(tables)
+			!referenceData
 		) {
 			return [];
 		}
 
-		const referencedTable = tables.find(
-			(t) => t && t.id === column.referenceTableId,
-		);
-		if (
-			!referencedTable ||
-			!referencedTable.rows ||
-			!Array.isArray(referencedTable.rows)
-		)
+		const tableReferenceData = referenceData[column.referenceTableId];
+		if (!tableReferenceData || !Array.isArray(tableReferenceData)) {
 			return [];
+		}
 
-		const options: { value: string; label: string }[] = [];
-
-		// Optimizare: procesăm doar rândurile cu celule
-		referencedTable.rows.forEach((row) => {
-			if (
-				row &&
-				row.cells &&
-				Array.isArray(row.cells) &&
-				row.cells.length > 0
-			) {
-				const primaryKeyCell = row.cells.find((cell) => {
-					if (!cell) return false;
-					const refColumn = referencedTable.columns?.find(
-						(col) => col && col.id === cell.columnId,
-					);
-					return refColumn?.primary;
-				});
-
-				if (primaryKeyCell?.value) {
-					options.push({
-						value: primaryKeyCell.value.toString(),
-						label: primaryKeyCell.value.toString(),
-					});
-				}
-			}
-		});
-
-		return options;
+		// Convert reference data to options format
+		return tableReferenceData.map((item) => ({
+			value: item.primaryKeyValue?.toString() || item.id.toString(),
+			label: item.displayValue,
+		}));
 	};
 
 	const getOperators = (columnType: string) => {
@@ -466,14 +453,28 @@ export function TableFilters({
 						value={filter.value?.toString() || ""}
 						onValueChange={(value) => updateFilter(filter.id, "value", value)}>
 						<SelectTrigger className='w-full'>
-							<SelectValue placeholder='Select reference...' />
+							<SelectValue placeholder={
+								referenceDataLoading 
+									? 'Loading options...' 
+									: 'Select reference...'
+							} />
 						</SelectTrigger>
 						<SelectContent>
-							{referenceOptions.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
+							{referenceDataLoading ? (
+								<SelectItem value="" disabled>
+									Loading options...
 								</SelectItem>
-							))}
+							) : referenceOptions.length === 0 ? (
+								<SelectItem value="" disabled>
+									No options available
+								</SelectItem>
+							) : (
+								referenceOptions.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))
+							)}
 						</SelectContent>
 					</Select>
 				);

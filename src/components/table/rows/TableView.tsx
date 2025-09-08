@@ -15,6 +15,10 @@ import {
 	ChevronUp,
 	ChevronDown,
 	Search,
+	Plus,
+	Upload,
+	Download,
+	Filter,
 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { EditableCell } from "./EditableCell";
@@ -248,108 +252,138 @@ export const TableView = memo(function TableView({
 
 	return (
 		<div className='w-full h-full bg-white flex flex-col'>
-			{/* Modern Header Section - Like in Image */}
+			{/* Clean Header Section - Title Only */}
 			<div className='px-6 py-6 border-b border-gray-200'>
-				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6'>
-					{/* Left Section - Title and Subtitle */}
-					<div className='flex flex-col'>
-						<h1 className='text-3xl font-bold text-gray-900 mb-1'>
-							{table.name || 'Table Data'}
-						</h1>
-						<p className='text-gray-600 text-lg'>
-							Manage your data
-						</p>
+				<div className='flex flex-col'>
+					<h1 className='text-3xl font-bold text-gray-900 mb-1'>
+						{table.name || 'Table Data'}
+					</h1>
+					<p className='text-gray-600 text-lg'>
+						Manage your data
+					</p>
+				</div>
+			</div>
+
+			{/* Enhanced Filter Bar - With Action Buttons */}
+			<div className='px-6 py-4 bg-gray-50 border-b border-gray-200'>
+				<div className='flex flex-col lg:flex-row lg:items-center gap-4'>
+					{/* Top Row - Filters and Search */}
+					<div className='flex flex-wrap items-center gap-3 flex-1'>
+						{/* Active Filters Display */}
+						<div className='flex flex-wrap items-center gap-2'>
+							{selectedRows.size > 0 && (
+								<div className='inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium'>
+									<span>Selected: {selectedRows.size}</span>
+									<button 
+										onClick={() => setSelectedRows(new Set())}
+										className='ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors'
+										title='Clear selection'
+									>
+										×
+									</button>
+								</div>
+							)}
+							{totalItems > 0 && (
+								<div className='inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium'>
+									<span>Total: {totalItems} rows</span>
+									<button className='ml-1 hover:bg-gray-200 rounded-full p-0.5 transition-colors'>
+										×
+									</button>
+								</div>
+							)}
+						</div>
+
+						{/* Clear All Button */}
+						{selectedRows.size > 0 && (
+							<Button
+								variant='ghost'
+								size='sm'
+								onClick={() => setSelectedRows(new Set())}
+								className='text-gray-600 hover:text-gray-800 px-3 py-1 transition-colors'
+								title='Clear all selections'>
+								Clear all
+							</Button>
+						)}
+
+						{/* Search Input */}
+						<div className='flex-1 max-w-md min-w-[200px]'>
+							<div className='relative'>
+								<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
+								<input
+									type='text'
+									placeholder='Search...'
+									className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all'
+								/>
+							</div>
+						</div>
 					</div>
 
-					{/* Right Section - Action Buttons */}
-					<div className='flex items-center gap-3'>
+					{/* Bottom Row - Action Buttons */}
+					<div className='flex flex-wrap items-center gap-2'>
+						{/* Sort Button */}
+						<Button
+							variant='outline'
+							size='sm'
+							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
+							title='Sort data'>
+							<ChevronUp className='w-4 h-4 mr-1' />
+							<ChevronDown className='w-4 h-4' />
+						</Button>
+
+						{/* Add Filter Button */}
+						<Button
+							variant='outline'
+							size='sm'
+							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
+							title='Add filter'>
+							<Filter className='w-4 h-4 mr-2' />
+							<span className='hidden sm:inline'>Add filter</span>
+						</Button>
+
+						{/* Import Button */}
+						<Button
+							variant='outline'
+							size='sm'
+							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
+							title='Import data'>
+							<Upload className='w-4 h-4 mr-2' />
+							<span className='hidden sm:inline'>Import</span>
+						</Button>
+
+						{/* Export Button */}
+						<Button
+							variant='outline'
+							size='sm'
+							className='border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 transition-all'
+							title='Export data'>
+							<Download className='w-4 h-4 mr-2' />
+							<span className='hidden sm:inline'>Export</span>
+						</Button>
+
+						{/* Bulk Actions */}
 						{selectedRows.size > 0 && onBulkDelete && (
 							<Button
 								onClick={handleBulkDeleteClick}
 								variant='outline'
 								size='sm'
 								disabled={!tablePermissions.canEditTable()}
-								className='border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2'>
+								className='border-red-300 text-red-700 hover:bg-red-50 px-3 py-2 transition-all'
+								title='Delete selected rows'>
 								<Trash2 className='w-4 h-4 mr-2' />
-								Delete Selected ({selectedRows.size})
+								Delete ({selectedRows.size})
 							</Button>
 						)}
+
+						{/* Add Row Button */}
 						<Button
 							variant='default'
 							size='sm'
-							className='bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 font-medium'>
+							className='bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 font-medium transition-all'
+							title='Add new row'>
+							<Plus className='w-4 h-4 mr-2' />
 							Add Row
 						</Button>
 					</div>
-				</div>
-			</div>
-
-			{/* Filter Bar Section - Like in Image */}
-			<div className='px-6 py-4 bg-gray-50 border-b border-gray-200'>
-				<div className='flex flex-wrap items-center gap-3'>
-					{/* Active Filters Display */}
-					<div className='flex flex-wrap items-center gap-2'>
-						{selectedRows.size > 0 && (
-							<div className='inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium'>
-								<span>Selected: {selectedRows.size}</span>
-								<button 
-									onClick={() => setSelectedRows(new Set())}
-									className='ml-1 hover:bg-blue-200 rounded-full p-0.5'
-								>
-									×
-								</button>
-							</div>
-						)}
-						{totalItems > 0 && (
-							<div className='inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium'>
-								<span>Total: {totalItems} rows</span>
-								<button className='ml-1 hover:bg-gray-200 rounded-full p-0.5'>
-									×
-								</button>
-							</div>
-						)}
-					</div>
-
-					{/* Clear All Button */}
-					{selectedRows.size > 0 && (
-						<Button
-							variant='ghost'
-							size='sm'
-							onClick={() => setSelectedRows(new Set())}
-							className='text-gray-600 hover:text-gray-800 px-3 py-1'>
-							Clear all
-						</Button>
-					)}
-
-					{/* Search Input */}
-					<div className='flex-1 max-w-md'>
-						<div className='relative'>
-							<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
-							<input
-								type='text'
-								placeholder='Search...'
-								className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-							/>
-						</div>
-					</div>
-
-					{/* Sort Button */}
-					<Button
-						variant='outline'
-						size='sm'
-						className='border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2'>
-						<ChevronUp className='w-4 h-4 mr-1' />
-						<ChevronDown className='w-4 h-4' />
-					</Button>
-
-					{/* Add Filter Button */}
-					<Button
-						variant='outline'
-						size='sm'
-						className='border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2'>
-						<Database className='w-4 h-4 mr-2' />
-						Add filter
-					</Button>
 				</div>
 			</div>
 

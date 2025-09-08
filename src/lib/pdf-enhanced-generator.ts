@@ -187,7 +187,9 @@ export class EnhancedPDFGenerator {
 							column: {
 								name: 'invoice_id',
 							},
-							value: options.invoiceId.toString(),
+							value: {
+								equals: options.invoiceId,
+							},
 						},
 					},
 				},
