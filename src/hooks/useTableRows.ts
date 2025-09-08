@@ -238,7 +238,7 @@ function useTableRows(
 
 				console.log("🌐 useTableRows - Making API request:", {
 					url: url.toString(),
-					filtersParam,
+					filtersParam: JSON.stringify(filtersParam, null, 2),
 					globalSearchParam,
 					page,
 					pageSize

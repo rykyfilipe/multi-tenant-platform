@@ -1,7 +1,6 @@
 /** @format */
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,20 +122,34 @@ export function PDFPreviewModal({
     setZoom(100);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
-        className={`${isFullscreen ? 'max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh]' : 'max-w-6xl max-h-[90vh] w-[90vw]'} p-0 overflow-hidden`}
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal Content */}
+      <div 
+        className={`relative bg-background border rounded-lg shadow-2xl overflow-hidden ${
+          isFullscreen 
+            ? 'w-[98vw] h-[98vh] max-w-[98vw] max-h-[98vh]' 
+            : 'w-[95vw] h-[95vh] max-w-[95vw] max-h-[95vh]'
+        }`}
       >
-        <DialogHeader className="flex flex-row items-center justify-between p-6 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+        {/* Header */}
+        <div className="flex flex-row items-center justify-between p-6 border-b bg-gradient-to-r from-primary/5 to-primary/10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-semibold">
+              <h2 className="text-xl font-semibold">
                 {t('invoice.preview.title', { number: invoiceNumber })}
-              </DialogTitle>
+              </h2>
               <p className="text-sm text-muted-foreground">
                 {t('invoice.preview.subtitle')}
               </p>
@@ -225,10 +238,10 @@ export function PDFPreviewModal({
               </Button>
             </div>
           </div>
-        </DialogHeader>
+        </div>
 
         {/* PDF Content */}
-        <div className="flex-1 overflow-hidden bg-muted/20">
+        <div className="flex-1 overflow-hidden bg-muted/20" style={{ height: 'calc(100% - 140px)' }}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center space-y-4">
@@ -263,18 +276,20 @@ export function PDFPreviewModal({
               </div>
             </div>
           ) : pdfUrl ? (
-            <div className="h-full overflow-auto p-4">
+            <div className="h-full overflow-auto p-2">
               <div 
-                className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden"
+                className="mx-auto bg-white shadow-2xl rounded-lg overflow-hidden"
                 style={{ 
                   width: `${zoom}%`,
                   maxWidth: '100%',
-                  transition: 'width 0.3s ease'
+                  transition: 'width 0.3s ease',
+                  minHeight: 'calc(100vh - 200px)'
                 }}
               >
                 <iframe
                   src={pdfUrl}
-                  className="w-full h-[80vh] border-0"
+                  className="w-full border-0"
+                  style={{ height: 'calc(100vh - 200px)' }}
                   title={`Invoice ${invoiceNumber} Preview`}
                   onLoad={() => setIsLoading(false)}
                 />
@@ -300,7 +315,7 @@ export function PDFPreviewModal({
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

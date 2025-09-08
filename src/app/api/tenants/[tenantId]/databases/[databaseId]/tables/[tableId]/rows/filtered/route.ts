@@ -7,6 +7,7 @@ import { z } from "zod";
 
 // Schema de validare pentru filtre
 const FilterSchema = z.object({
+	id: z.string().optional(), // Frontend sends this but it's not required for filtering
 	columnId: z.number().positive(),
 	columnName: z.string().min(1),
 	columnType: z.string().min(1),
@@ -85,13 +86,19 @@ class PrismaQueryBuilder {
 
 	// Adaugă filtre pentru coloane
 	addColumnFilters(filters: FilterConfig[]): this {
+		console.log("🔍 PrismaQueryBuilder - addColumnFilters called with:", JSON.stringify(filters, null, 2));
+		
 		if (filters.length === 0) {
+			console.log("🔍 PrismaQueryBuilder - No filters to process");
 			return this;
 		}
 
 		const validFilters = filters.filter((filter) => this.isValidFilter(filter));
+		
+		console.log("🔍 PrismaQueryBuilder - Valid filters:", JSON.stringify(validFilters, null, 2));
 
 		if (validFilters.length === 0) {
+			console.log("🔍 PrismaQueryBuilder - No valid filters after validation");
 			return this;
 		}
 
@@ -111,23 +118,48 @@ class PrismaQueryBuilder {
 
 	// Validează un filtru
 	private isValidFilter(filter: FilterConfig): boolean {
+		console.log("🔍 PrismaQueryBuilder - isValidFilter checking:", {
+			filter,
+			hasColumnId: !!filter.columnId,
+			hasOperator: !!filter.operator
+		});
+		
 		if (!filter.columnId || !filter.operator) {
+			console.log("🔍 PrismaQueryBuilder - Invalid filter: missing columnId or operator");
 			return false;
 		}
 
 		const column = this.tableColumns.find((col) => col.id === filter.columnId);
+		console.log("🔍 PrismaQueryBuilder - Column lookup:", {
+			columnId: filter.columnId,
+			columnIdType: typeof filter.columnId,
+			availableColumns: this.tableColumns.map(col => ({ id: col.id, name: col.name, type: col.type })),
+			foundColumn: column ? { id: column.id, name: column.name, type: column.type } : null
+		});
+		
 		if (!column) {
+			console.log("🔍 PrismaQueryBuilder - Invalid filter: column not found for ID:", filter.columnId);
 			return false;
 		}
 
 		// Verifică dacă operatorul este valid pentru tipul de coloană
 		const validOperators = this.getValidOperators(column.type);
 		if (!validOperators.includes(filter.operator)) {
+			console.log("🔍 PrismaQueryBuilder - Invalid filter: operator not valid for column type", {
+				operator: filter.operator,
+				columnType: column.type,
+				validOperators
+			});
 			return false;
 		}
 
 		// Verifică dacă valorile sunt valide pentru operator
 		const isValid = this.validateFilterValues(filter, column.type);
+		console.log("🔍 PrismaQueryBuilder - Filter validation result:", {
+			filter,
+			columnType: column.type,
+			isValid
+		});
 		return isValid;
 	}
 
@@ -274,7 +306,16 @@ class PrismaQueryBuilder {
 	private buildFilterCondition(filter: FilterConfig): any {
 		const { columnId, operator, value, secondValue } = filter;
 		const column = this.tableColumns.find((col) => col.id === columnId);
-		if (!column) return {};
+		
+		console.log("🔍 PrismaQueryBuilder - buildFilterCondition:", {
+			filter,
+			column: column ? { id: column.id, name: column.name, type: column.type } : null
+		});
+		
+		if (!column) {
+			console.log("🔍 PrismaQueryBuilder - Column not found for ID:", columnId);
+			return {};
+		}
 
 		// Handle reference columns specially
 		if (column.type === "reference") {
@@ -461,15 +502,32 @@ class PrismaQueryBuilder {
 		value: any,
 		columnType: string,
 	): any {
+		console.log("🔍 PrismaQueryBuilder - buildEqualsFilter:", {
+			columnId,
+			value,
+			columnType,
+			parsedValue: columnType === "number" ? parseFloat(value) : value
+		});
+		
 		if (columnType === "number") {
-			return {
+			const parsedValue = parseFloat(value);
+			console.log("🔍 PrismaQueryBuilder - buildEqualsFilter parsing:", {
+				originalValue: value,
+				parsedValue,
+				isNaN: isNaN(parsedValue),
+				isFinite: isFinite(parsedValue)
+			});
+			
+			const result = {
 				cells: {
 					some: {
 						columnId: Number(columnId),
-						value: parseFloat(value),
+						value: parsedValue,
 					},
 				},
 			};
+			console.log("🔍 PrismaQueryBuilder - buildEqualsFilter result (number):", JSON.stringify(result, null, 2));
+			return result;
 		}
 		if (columnType === "boolean") {
 			return {
@@ -917,7 +975,27 @@ export async function GET(
 			sortOrder: url.searchParams.get("sortOrder") || "asc",
 		};
 
+		console.log("🔍 API /filtered - Raw query params:", {
+			...queryParams,
+			filters: queryParams.filters ? JSON.parse(decodeURIComponent(queryParams.filters)) : []
+		});
+
 		// Validare parametri cu Zod
+		try {
+			const validatedParams = QueryParamsSchema.parse(queryParams);
+			
+			console.log("🔍 API /filtered - Validated params:", {
+				...validatedParams,
+				filters: JSON.stringify(validatedParams.filters, null, 2)
+			});
+		} catch (zodError) {
+			console.error("🔍 API /filtered - Zod validation error:", zodError);
+			return NextResponse.json(
+				{ error: "Invalid query parameters", details: zodError },
+				{ status: 400 }
+			);
+		}
+		
 		const validatedParams = QueryParamsSchema.parse(queryParams);
 
 		// Obține coloanele tabelului pentru validare filtre
@@ -942,6 +1020,8 @@ export async function GET(
 			.addColumnFilters(validatedParams.filters);
 
 		const whereClause = queryBuilder.getWhereClause();
+		
+		console.log("🔍 API /filtered - Final whereClause:", JSON.stringify(whereClause, null, 2));
 
 		// Obține numărul total de rânduri pentru paginare
 		const totalRows = await prisma.row.count({
