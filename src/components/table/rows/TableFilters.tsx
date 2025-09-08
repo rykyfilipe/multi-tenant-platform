@@ -197,9 +197,9 @@ export function TableFilters({
 		}
 
 		// Convert reference data to options format
-		return tableReferenceData.map((item) => ({
-			value: item.primaryKeyValue?.toString() || item.id.toString(),
-			label: item.displayValue,
+		return tableReferenceData.map((item, index) => ({
+			value: item.primaryKeyValue?.toString() || item.id?.toString() || `option_${index}`,
+			label: item.displayValue || `Option ${index + 1}`,
 		}));
 	};
 
@@ -476,11 +476,11 @@ export function TableFilters({
 						</SelectTrigger>
 						<SelectContent>
 							{referenceDataLoading ? (
-								<SelectItem value="" disabled>
+								<SelectItem value="__loading__" disabled>
 									Loading options...
 								</SelectItem>
 							) : referenceOptions.length === 0 ? (
-								<SelectItem value="" disabled>
+								<SelectItem value="__no_options__" disabled>
 									No options available
 								</SelectItem>
 							) : (
@@ -504,11 +504,13 @@ export function TableFilters({
 							<SelectValue placeholder='Select option...' />
 						</SelectTrigger>
 						<SelectContent>
-							{column.customOptions.map((option) => (
-								<SelectItem key={option} value={option}>
-									{option}
-								</SelectItem>
-							))}
+							{column.customOptions
+								.filter(option => option && option.trim() !== "")
+								.map((option) => (
+									<SelectItem key={option} value={option}>
+										{option}
+									</SelectItem>
+								))}
 						</SelectContent>
 					</Select>
 				);
