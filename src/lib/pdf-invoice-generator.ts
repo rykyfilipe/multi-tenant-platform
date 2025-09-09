@@ -105,11 +105,98 @@ export class PDFInvoiceGenerator {
 	}
 
 	/**
+	 * Get translations for the specified language
+	 */
+	private static getTranslations(language: string): Record<string, string> {
+		const translations: Record<string, Record<string, string>> = {
+			en: {
+				invoice: 'INVOICE',
+				supplier: 'SUPPLIER (ISSUER):',
+				customer: 'CUSTOMER (BILL TO):',
+				company: 'Company:',
+				taxId: 'Tax ID:',
+				regNo: 'Reg. No:',
+				address: 'Address:',
+				invoiceDetails: 'INVOICE DETAILS:',
+				issueDate: 'Issue Date:',
+				currency: 'Currency:',
+				paymentDetails: 'PAYMENT DETAILS:',
+				paymentTerms: 'Payment Terms: Net 30',
+				paymentMethod: 'Payment Method: Bank Transfer / Credit Card',
+				descriptionOfGoods: 'DESCRIPTION OF GOODS/SERVICES:',
+				no: 'No.',
+				description: 'Description of goods/services',
+				um: 'U.M.',
+				quantity: 'Quantity',
+				unitPrice: 'Unit price',
+				currencyCol: 'Currency',
+				vatPercent: 'VAT %',
+				vatValue: 'VAT value',
+				lineTotal: 'Line total',
+				subtotalExclVat: 'Subtotal (excl. VAT):',
+				vatTotal: 'VAT Total:',
+				grandTotalInclVat: 'GRAND TOTAL (incl. VAT):',
+				totalInWords: 'Total in words:',
+				paymentInformation: 'PAYMENT INFORMATION:',
+				paymentMethodLabel: 'Payment Method:',
+				paymentTermsLabel: 'Payment Terms:',
+				legalNotices: 'LEGAL NOTICES:',
+				legalText1: 'This invoice is a fiscal document according to legislation in force.',
+				legalText2: 'Invoice serves as receipt if payment is made through bank.',
+				documentGenerated: 'Document automatically generated on',
+				page: 'Page',
+			},
+			ro: {
+				invoice: 'FACTURĂ',
+				supplier: 'FURNIZOR (EMITENT):',
+				customer: 'CLIENT (FACTURAT CĂTRE):',
+				company: 'Compania:',
+				taxId: 'CUI:',
+				regNo: 'Nr. Reg.:',
+				address: 'Adresa:',
+				invoiceDetails: 'DETALII FACTURĂ:',
+				issueDate: 'Data emiterii:',
+				currency: 'Moneda:',
+				paymentDetails: 'DETALII PLATĂ:',
+				paymentTerms: 'Termeni de plată: Net 30',
+				paymentMethod: 'Metoda de plată: Transfer bancar / Card de credit',
+				descriptionOfGoods: 'DESCRIEREA BUNURILOR/SERVICIILOR:',
+				no: 'Nr.',
+				description: 'Descrierea bunurilor/serviciilor',
+				um: 'U.M.',
+				quantity: 'Cantitatea',
+				unitPrice: 'Preț unitar',
+				currencyCol: 'Moneda',
+				vatPercent: 'TVA %',
+				vatValue: 'Valoarea TVA',
+				lineTotal: 'Total linie',
+				subtotalExclVat: 'Subtotal (fără TVA):',
+				vatTotal: 'Total TVA:',
+				grandTotalInclVat: 'TOTAL GENERAL (cu TVA):',
+				totalInWords: 'Totalul în cuvinte:',
+				paymentInformation: 'INFORMAȚII DE PLATĂ:',
+				paymentMethodLabel: 'Metoda de plată:',
+				paymentTermsLabel: 'Termeni de plată:',
+				legalNotices: 'AVIZE LEGALE:',
+				legalText1: 'Această factură este un document fiscal conform legislației în vigoare.',
+				legalText2: 'Factura servește ca chitanță dacă plata se face prin bancă.',
+				documentGenerated: 'Document generat automat pe',
+				page: 'Pagina',
+			},
+		};
+
+		return translations[language] || translations.en;
+	}
+
+	/**
 	 * Generate professional PDF invoice using pdf-lib
 	 */
-	static async generateInvoicePDF(data: InvoicePDFData): Promise<Buffer> {
+	static async generateInvoicePDF(data: InvoicePDFData, language: string = 'en'): Promise<Buffer> {
 		// Dynamic import to avoid SSR issues
 		const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib");
+		
+		// Get translations for the specified language
+		const t = this.getTranslations(language);
 		
 		// Create a new PDF document
 		const pdfDoc = await PDFDocument.create();
@@ -134,6 +221,7 @@ export class PDFInvoiceGenerator {
 			currentY,
 			margin,
 			contentWidth,
+			t,
 		);
 
 		// Company and Customer Info
@@ -145,6 +233,7 @@ export class PDFInvoiceGenerator {
 			currentY,
 			margin,
 			contentWidth,
+			t,
 		);
 
 		// Invoice Details
@@ -156,6 +245,7 @@ export class PDFInvoiceGenerator {
 			currentY,
 			margin,
 			contentWidth,
+			t,
 		);
 
 		// Items Table
@@ -167,6 +257,7 @@ export class PDFInvoiceGenerator {
 			currentY,
 			margin,
 			contentWidth,
+			t,
 		);
 
 		// Totals
@@ -178,6 +269,7 @@ export class PDFInvoiceGenerator {
 			currentY,
 			margin,
 			contentWidth,
+			t,
 		);
 
 		// Payment Details
@@ -189,10 +281,11 @@ export class PDFInvoiceGenerator {
 			currentY,
 			margin,
 			contentWidth,
+			t,
 		);
 
 		// Legal Notice
-		this.drawLegalNotice(page, data, font, currentY, margin, contentWidth);
+		this.drawLegalNotice(page, data, font, currentY, margin, contentWidth, t);
 
 		// Save the PDF
 		const pdfBytes = await pdfDoc.save();
@@ -207,6 +300,7 @@ export class PDFInvoiceGenerator {
 		currentY: number,
 		margin: number,
 		contentWidth: number,
+		t: Record<string, string>,
 	): number {
 		// Draw header border
 		page.drawRectangle({
@@ -218,8 +312,8 @@ export class PDFInvoiceGenerator {
 			borderWidth: 1,
 		});
 
-		// Title - English version
-		const title = "INVOICE";
+		// Title - using translations
+		const title = t.invoice;
 		const titleWidth = boldFont.widthOfTextAtSize(title, 28);
 		PDFInvoiceGenerator.drawTextSafe(page, title, {
 			x: (page.getWidth() - titleWidth) / 2,
@@ -230,7 +324,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Invoice number
-		const invoiceText = `Series: ${data.invoice.series || "A"} No: ${
+		const invoiceText = `Serie: ${data.invoice.series || "A"} Nr: ${
 			data.invoice.number
 		}`;
 		const invoiceWidth = boldFont.widthOfTextAtSize(invoiceText, 14);
@@ -253,6 +347,7 @@ export class PDFInvoiceGenerator {
 		currentY: number,
 		margin: number,
 		contentWidth: number,
+		t: Record<string, string>,
 	): number {
 		const columnWidth = (contentWidth - 20) / 2; // Add spacing between columns
 		const leftX = margin;
@@ -280,7 +375,7 @@ export class PDFInvoiceGenerator {
 
 		// Company Information (Left) - MANDATORY ELEMENTS
 		let leftY = currentY - 10;
-		PDFInvoiceGenerator.drawTextSafe(page, "SUPPLIER (ISSUER):", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.supplier, {
 			x: leftX + 5,
 			y: leftY,
 			size: 12,
@@ -292,7 +387,7 @@ export class PDFInvoiceGenerator {
 		// Company name (MANDATORY)
 		PDFInvoiceGenerator.drawTextSafe(
 			page,
-			`Company: ${data.company.name || "-"}`,
+			`${t.company} ${data.company.name || "-"}`,
 			{
 				x: leftX + 5,
 				y: leftY,
@@ -304,7 +399,7 @@ export class PDFInvoiceGenerator {
 		leftY -= 16;
 
 		// Tax ID (MANDATORY)
-		page.drawText(`Tax ID: ${data.company.taxId || "-"}`, {
+		page.drawText(`${t.taxId} ${data.company.taxId || "-"}`, {
 			x: leftX + 5,
 			y: leftY,
 			size: 9,
@@ -314,7 +409,7 @@ export class PDFInvoiceGenerator {
 		leftY -= 14;
 
 		// Registration number (MANDATORY)
-		page.drawText(`Reg. No: ${data.company.registrationNumber || "-"}`, {
+		page.drawText(`${t.regNo} ${data.company.registrationNumber || "-"}`, {
 			x: leftX + 5,
 			y: leftY,
 			size: 9,
@@ -325,7 +420,7 @@ export class PDFInvoiceGenerator {
 
 		// Registered address (MANDATORY)
 		if (data.company.address) {
-			page.drawText(`Address:`, {
+			page.drawText(`${t.address}`, {
 				x: leftX + 5,
 				y: leftY,
 				size: 9,
@@ -376,7 +471,7 @@ export class PDFInvoiceGenerator {
 				leftY -= 12;
 			}
 		} else {
-			page.drawText(`Address: -`, {
+			page.drawText(`${t.address} -`, {
 				x: leftX + 5,
 				y: leftY,
 				size: 9,
@@ -434,7 +529,7 @@ export class PDFInvoiceGenerator {
 
 		// Customer Information (Right) - MANDATORY ELEMENTS
 		let rightY = currentY - 10;
-		PDFInvoiceGenerator.drawTextSafe(page, "CUSTOMER (BILL TO):", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.customer, {
 			x: rightX + 5,
 			y: rightY,
 			size: 12,
@@ -446,7 +541,7 @@ export class PDFInvoiceGenerator {
 		// Company/person name (MANDATORY)
 		PDFInvoiceGenerator.drawTextSafe(
 			page,
-			`Company: ${data.customer.name || "-"}`,
+			`${t.company} ${data.customer.name || "-"}`,
 			{
 				x: rightX + 5,
 				y: rightY,
@@ -458,7 +553,7 @@ export class PDFInvoiceGenerator {
 		rightY -= 16;
 
 		// Tax ID (MANDATORY if required)
-		page.drawText(`Tax ID: ${data.customer.taxId || "-"}`, {
+		page.drawText(`${t.taxId} ${data.customer.taxId || "-"}`, {
 			x: rightX + 5,
 			y: rightY,
 			size: 9,
@@ -469,7 +564,7 @@ export class PDFInvoiceGenerator {
 
 		// Complete address (MANDATORY)
 		if (data.customer.address) {
-			page.drawText(`Address:`, {
+			page.drawText(`${t.address}`, {
 				x: rightX + 5,
 				y: rightY,
 				size: 9,
@@ -520,7 +615,7 @@ export class PDFInvoiceGenerator {
 				rightY -= 12;
 			}
 		} else {
-			page.drawText(`Address: -`, {
+			page.drawText(`${t.address} -`, {
 				x: rightX + 5,
 				y: rightY,
 				size: 9,
@@ -564,13 +659,14 @@ export class PDFInvoiceGenerator {
 		currentY: number,
 		margin: number,
 		contentWidth: number,
+		t: Record<string, string>,
 	): number {
 		const columnWidth = contentWidth / 2;
 		const leftX = margin;
 		const rightX = margin + columnWidth;
 
 		// Invoice Information (Left)
-		PDFInvoiceGenerator.drawTextSafe(page, "INVOICE DETAILS:", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.invoiceDetails, {
 			x: leftX,
 			y: currentY,
 			size: 12,
@@ -581,7 +677,7 @@ export class PDFInvoiceGenerator {
 
 		PDFInvoiceGenerator.drawTextSafe(
 			page,
-			`Issue Date: ${this.formatDate(data.invoice.date)}`,
+			`${t.issueDate} ${this.formatDate(data.invoice.date)}`,
 			{
 				x: leftX,
 				y: currentY,
@@ -594,7 +690,7 @@ export class PDFInvoiceGenerator {
 
 		PDFInvoiceGenerator.drawTextSafe(
 			page,
-			`Currency: ${data.invoice.currency}`,
+			`${t.currency} ${data.invoice.currency}`,
 			{
 				x: leftX,
 				y: currentY,
@@ -607,7 +703,7 @@ export class PDFInvoiceGenerator {
 
 		// Payment Details (Right)
 		currentY += 50; // Reset Y for right column
-		PDFInvoiceGenerator.drawTextSafe(page, "PAYMENT DETAILS:", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.paymentDetails, {
 			x: rightX,
 			y: currentY,
 			size: 12,
@@ -616,7 +712,7 @@ export class PDFInvoiceGenerator {
 		});
 		currentY -= 20;
 
-		PDFInvoiceGenerator.drawTextSafe(page, "Payment Terms: Net 30", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.paymentTerms, {
 			x: rightX,
 			y: currentY,
 			size: 10,
@@ -627,7 +723,7 @@ export class PDFInvoiceGenerator {
 
 		PDFInvoiceGenerator.drawTextSafe(
 			page,
-			"Payment Method: Bank Transfer / Credit Card",
+			t.paymentMethod,
 			{
 				x: rightX,
 				y: currentY,
@@ -649,24 +745,25 @@ export class PDFInvoiceGenerator {
 		currentY: number,
 		margin: number,
 		contentWidth: number,
+		t: Record<string, string>,
 	): number {
 		// Table headers - MANDATORY ELEMENTS according to legislation
 		const headers = [
-			"No.",
-			"Description of goods/services",
-			"U.M.",
-			"Quantity",
-			"Unit price",
-			"Currency",
-			"VAT %",
-			"VAT value",
-			"Line total",
+			t.no,
+			t.description,
+			t.um,
+			t.quantity,
+			t.unitPrice,
+			t.currencyCol,
+			t.vatPercent,
+			t.vatValue,
+			t.lineTotal,
 		];
 		const columnWidths = [25, 180, 30, 40, 50, 35, 30, 40, 50];
 		const tableHeight = 25 + data.items.length * 20 + 10;
 
 		// Draw section title
-		PDFInvoiceGenerator.drawTextSafe(page, "DESCRIPTION OF GOODS/SERVICES:", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.descriptionOfGoods, {
 			x: margin,
 			y: currentY,
 			size: 12,
@@ -847,6 +944,7 @@ export class PDFInvoiceGenerator {
 		currentY: number,
 		margin: number,
 		contentWidth: number,
+		t: Record<string, string>,
 	): number {
 		const totalsWidth = 220;
 		const totalsX = margin + contentWidth - totalsWidth;
@@ -862,7 +960,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Subtotal without VAT (MANDATORY)
-		PDFInvoiceGenerator.drawTextSafe(page, "Subtotal (excl. VAT):", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.subtotalExclVat, {
 			x: totalsX + 5,
 			y: currentY - 15,
 			size: 10,
@@ -881,7 +979,7 @@ export class PDFInvoiceGenerator {
 		);
 
 		// VAT Total (MANDATORY)
-		PDFInvoiceGenerator.drawTextSafe(page, "VAT Total:", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.vatTotal, {
 			x: totalsX + 5,
 			y: currentY - 35,
 			size: 10,
@@ -918,7 +1016,7 @@ export class PDFInvoiceGenerator {
 			borderWidth: 1,
 		});
 
-		PDFInvoiceGenerator.drawTextSafe(page, "GRAND TOTAL (incl. VAT):", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.grandTotalInclVat, {
 			x: totalsX + 5,
 			y: currentY - 70,
 			size: 12,
@@ -939,7 +1037,7 @@ export class PDFInvoiceGenerator {
 		currentY -= 120;
 
 		// Total in words - using ASCII only (MANDATORY)
-		const totalInWords = `Total in words: ${this.numberToWords(
+		const totalInWords = `${t.totalInWords} ${this.numberToWords(
 			data.totals.grandTotal,
 		)} ${data.totals.currency}`;
 
@@ -973,6 +1071,7 @@ export class PDFInvoiceGenerator {
 		currentY: number,
 		margin: number,
 		contentWidth: number,
+		t: Record<string, string>,
 	): number {
 		// Draw payment details section
 		page.drawRectangle({
@@ -986,7 +1085,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Section title
-		PDFInvoiceGenerator.drawTextSafe(page, "PAYMENT INFORMATION:", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.paymentInformation, {
 			x: margin + 5,
 			y: currentY - 15,
 			size: 11,
@@ -996,7 +1095,7 @@ export class PDFInvoiceGenerator {
 
 		// Payment method (MANDATORY)
 		const paymentMethod = data.invoice.paymentMethod || "Bank Transfer";
-		PDFInvoiceGenerator.drawTextSafe(page, `Payment Method: ${paymentMethod}`, {
+		PDFInvoiceGenerator.drawTextSafe(page, `${t.paymentMethodLabel} ${paymentMethod}`, {
 			x: margin + 5,
 			y: currentY - 30,
 			size: 9,
@@ -1006,7 +1105,7 @@ export class PDFInvoiceGenerator {
 
 		// Payment terms (MANDATORY)
 		const paymentTerms = data.invoice.paymentTerms || "Net 30 days";
-		PDFInvoiceGenerator.drawTextSafe(page, `Payment Terms: ${paymentTerms}`, {
+		PDFInvoiceGenerator.drawTextSafe(page, `${t.paymentTermsLabel} ${paymentTerms}`, {
 			x: margin + 200,
 			y: currentY - 30,
 			size: 9,
@@ -1024,6 +1123,7 @@ export class PDFInvoiceGenerator {
 		currentY: number,
 		margin: number,
 		contentWidth: number,
+		t: Record<string, string>,
 	): void {
 		// Draw legal notice section with border
 		page.drawRectangle({
@@ -1037,7 +1137,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Legal notice title
-		PDFInvoiceGenerator.drawTextSafe(page, "LEGAL NOTICES:", {
+		PDFInvoiceGenerator.drawTextSafe(page, t.legalNotices, {
 			x: margin + 5,
 			y: currentY - 15,
 			size: 11,
@@ -1046,8 +1146,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Legal text 1 (MANDATORY)
-		const legalText1 =
-			"This invoice is a fiscal document according to legislation in force.";
+		const legalText1 = t.legalText1;
 		PDFInvoiceGenerator.drawTextSafe(page, legalText1, {
 			x: margin + 5,
 			y: currentY - 30,
@@ -1057,8 +1156,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Legal text 2 (MANDATORY)
-		const legalText2 =
-			"Invoice serves as receipt if payment is made through bank.";
+		const legalText2 = t.legalText2;
 		PDFInvoiceGenerator.drawTextSafe(page, legalText2, {
 			x: margin + 2,
 			y: currentY - 45,
@@ -1079,7 +1177,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Footer with generation info
-		const footerText = `Document automatically generated on ${this.formatDate(
+		const footerText = `${t.documentGenerated} ${this.formatDate(
 			new Date().toISOString(),
 		)}`;
 		const footerWidth = font.widthOfTextAtSize(footerText, 8);
@@ -1093,7 +1191,7 @@ export class PDFInvoiceGenerator {
 		});
 
 		// Add page number (for future multi-page support)
-		PDFInvoiceGenerator.drawTextSafe(page, "Page 1", {
+		PDFInvoiceGenerator.drawTextSafe(page, `${t.page} 1`, {
 			x: margin + contentWidth - 50,
 			y: 42,
 			size: 8,

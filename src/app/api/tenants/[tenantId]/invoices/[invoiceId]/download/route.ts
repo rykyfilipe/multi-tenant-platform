@@ -263,6 +263,7 @@ export async function GET(
 				companyPostalCode: true,
 				companyIban: true,
 				companyBank: true,
+				language: true,
 			},
 		});
 
@@ -400,7 +401,7 @@ export async function GET(
 		const includeQRCode = url.searchParams.get('qrcode') === 'true';
 		const includeBarcode = url.searchParams.get('barcode') === 'true';
 		const useEnhanced = url.searchParams.get('enhanced') === 'true';
-		const language = url.searchParams.get('language') || 'en';
+		const language = url.searchParams.get('language') || tenantInfo?.language || 'en';
 		const isPreview = url.searchParams.get('preview') === 'true';
 
 		console.log('PDF Generation Parameters:', {
@@ -433,11 +434,11 @@ export async function GET(
 				} catch (enhancedError) {
 					console.warn('Enhanced PDF generation failed, falling back to basic generator:', enhancedError);
 					// Fallback to original PDF generator if enhanced fails
-					pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData);
+					pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData, language);
 				}
 			} else {
 				// Use original PDF generator
-				pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData);
+				pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData, language);
 			}
 
 			// Log PDF generation

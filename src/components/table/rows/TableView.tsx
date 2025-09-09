@@ -57,7 +57,6 @@ interface Props {
 		value: any,
 	) => void;
 	onCancelEdit: () => void;
-	onDeleteRow: (rowId: string) => void;
 	onBulkDelete?: (rowIds: string[]) => void;
 	deletingRows?: Set<string>;
 
@@ -94,7 +93,6 @@ export const TableView = memo(function TableView({
 	onEditCell,
 	onSaveCell,
 	onCancelEdit,
-	onDeleteRow,
 	onBulkDelete,
 	deletingRows = new Set(),
 	currentPage,
@@ -241,10 +239,9 @@ export const TableView = memo(function TableView({
 
 	// Calculate table width based on number of columns - optimized for many columns
 	const tableWidth = useMemo(() => {
-		const baseWidth = 50; // Selection column
+		const baseWidth = 40; // Selection column
 		const dataColumnsWidth = safeColumns.length * 140; // 140px per data column (further reduced)
-		const actionsWidth = 60; // Actions column
-		const totalWidth = baseWidth + dataColumnsWidth + actionsWidth;
+		const totalWidth = baseWidth + dataColumnsWidth;
 		// Use a more reasonable minimum width and cap the maximum
 		return Math.min(Math.max(totalWidth, 800), 2000);
 	}, [safeColumns.length]);
@@ -371,7 +368,7 @@ export const TableView = memo(function TableView({
 						<thead className='sticky top-0 z-30 bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 border-b border-slate-200/60'>
 							<tr>
 								{/* Selection Column */}
-								<th className='sticky left-0 z-40 bg-gradient-to-r from-slate-50 to-slate-100 border-r border-slate-200/60 px-4 py-3 text-left min-w-[50px]'>
+								<th className='sticky left-0 z-40 bg-gradient-to-r from-slate-50 to-slate-100 border-r border-slate-200/60 px-4 py-3 text-left min-w-[40px]'>
 									<div className='flex items-center justify-center'>
 										<Checkbox
 											checked={
@@ -406,10 +403,6 @@ export const TableView = memo(function TableView({
 									</th>
 								))}
 
-								{/* Actions Column */}
-								<th className='sticky right-0 z-40 bg-gradient-to-r from-slate-100 to-slate-50 border-l border-slate-200/60 px-4 py-3 text-center text-xs font-semibold text-slate-700 min-w-[60px]'>
-									Actions
-								</th>
 							</tr>
 						</thead>
 
@@ -420,8 +413,7 @@ export const TableView = memo(function TableView({
 									<td
 										colSpan={
 											1 + // Selection column (always visible)
-											safeColumns.length + // Data columns
-											1 // Actions column (always visible)
+											safeColumns.length // Data columns
 										}
 										className='px-8 py-20 text-center'>
 										<div className='flex flex-col items-center gap-6'>
@@ -466,7 +458,7 @@ export const TableView = memo(function TableView({
 														"opacity-60 bg-red-50/80",
 												)}>
 												{/* Selection Cell */}
-												<td className='sticky left-0 z-20 bg-white group-hover:bg-slate-50/50 border-r border-slate-200/60 px-4 py-3 min-w-[50px]'>
+												<td className='sticky left-0 z-20 bg-white group-hover:bg-slate-50/50 border-r border-slate-200/60 px-4 py-3 min-w-[40px]'>
 													<div className='flex items-center justify-center'>
 														<Checkbox
 															checked={selectedRows.has(String(row.id))}
@@ -558,21 +550,6 @@ export const TableView = memo(function TableView({
 													);
 												})}
 
-												{/* Actions Cell - Premium Style */}
-												<td className='sticky right-0 z-20 bg-white group-hover:bg-slate-50/50 border-l border-slate-200/60 px-4 py-3 text-center min-w-[60px]'>
-													<Button
-														onClick={() => onDeleteRow(String(row.id))}
-														variant='ghost'
-														size='sm'
-														disabled={deletingRows.has(String(row.id)) || !tablePermissions.canEditTable()}
-														className='h-7 w-7 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-md group'>
-														{deletingRows.has(String(row.id)) ? (
-															<div className='w-3.5 h-3.5 border-2 border-red-600 border-t-transparent rounded-full animate-spin' />
-														) : (
-															<Trash2 className='w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200' />
-														)}
-													</Button>
-												</td>
 
 											</motion.tr>
 										);

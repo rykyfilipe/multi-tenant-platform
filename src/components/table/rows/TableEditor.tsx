@@ -1243,7 +1243,6 @@ const TableEditor = memo(function TableEditor({
 							onEditCell={handleEditCell}
 							onSaveCell={handleSaveCellWrapper}
 							onCancelEdit={handleCancelEdit}
-							onDeleteRow={handleDelete}
 							onBulkDelete={handleBulkDelete}
 							deletingRows={deletingRows}
 							currentPage={pagination?.page || 1}

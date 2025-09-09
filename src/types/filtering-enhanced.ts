@@ -28,7 +28,8 @@ export type ColumnType =
   | 'datetime' 
   | 'time' 
   | 'json' 
-  | 'reference';
+  | 'reference'
+  | 'customArray';
 
 // Strict filter values based on column type
 export type FilterValue = 
@@ -46,6 +47,7 @@ export interface OperatorMapping {
   boolean: BooleanOperator[];
   date: DateOperator[];
   reference: ReferenceOperator[];
+  customArray: ReferenceOperator[];
 }
 
 // Text operators
@@ -168,7 +170,8 @@ export const OPERATOR_COMPATIBILITY: OperatorMapping = {
   number: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
   boolean: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
   date: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
-  reference: ['equals', 'not_equals', 'is_empty', 'is_not_empty']
+  reference: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
+  customArray: ['equals', 'not_equals', 'is_empty', 'is_not_empty']
 };
 
 // Value type mapping
@@ -185,5 +188,6 @@ export const VALUE_TYPE_MAPPING: Record<ColumnType, string> = {
   datetime: 'string',
   time: 'string',
   json: 'object',
-  reference: 'number'
+  reference: 'number',
+  customArray: 'string'
 };

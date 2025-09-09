@@ -42,7 +42,7 @@ const FilterSchema = z.object({
 	id: z.string().min(1),
 	columnId: z.number().positive(),
 	columnName: z.string().min(1),
-	columnType: z.enum(['text', 'string', 'email', 'url', 'number', 'integer', 'decimal', 'boolean', 'date', 'datetime', 'time', 'json', 'reference']),
+	columnType: z.enum(['text', 'string', 'email', 'url', 'number', 'integer', 'decimal', 'boolean', 'date', 'datetime', 'time', 'json', 'reference', 'customArray']),
 	operator: z.string().min(1),
 	value: z.any().optional().nullable(),
 	secondValue: z.any().optional().nullable(),
@@ -53,16 +53,26 @@ const QueryParamsSchema = z.object({
 	pageSize: z.string().transform((val) => Math.min(Math.max(1, parseInt(val) || 25), 100)),
 	includeCells: z.string().optional().transform((val) => val !== "false"),
 	search: z.string().optional().transform((val) => val?.trim() || ""),
-	filters: z.string().optional().transform((val) => {
-		if (!val) return [];
-		try {
-			const parsed = JSON.parse(decodeURIComponent(val));
-			return z.array(FilterSchema).parse(parsed);
-		} catch (error) {
-			logger.warn("Failed to parse filters", { error, filters: val });
-			throw new Error("Invalid filters format");
-		}
-	}),
+		filters: z.string().optional().transform((val) => {
+			if (!val) return [];
+			try {
+				// Handle potential double encoding
+				let decoded = val;
+				try {
+					decoded = decodeURIComponent(val);
+				} catch (e) {
+					// If decodeURIComponent fails, use the original value
+					decoded = val;
+				}
+				
+				const parsed = JSON.parse(decoded);
+				logger.info("Parsed filters successfully", { original: val, decoded, parsed });
+				return z.array(FilterSchema).parse(parsed);
+			} catch (error) {
+				logger.warn("Failed to parse filters", { error, filters: val, errorMessage: error instanceof Error ? error.message : String(error) });
+				throw new Error("Invalid filters format");
+			}
+		}),
 	sortBy: z.string().optional().transform((val) => val || "id"),
 	sortOrder: z.string().optional().transform((val) => (val === "desc" ? "desc" : "asc")),
 });
@@ -603,11 +613,20 @@ export async function GET(
 		}));
 
 		// Validate filters using the new validator
+		logger.info("Validating filters", { 
+			filters: convertedFilters, 
+			tableColumns: tableColumns.map(col => ({ id: col.id, name: col.name, type: col.type })),
+			tenantId: String(tenantId), 
+			tableId: String(tableId), 
+			userId: String(userId) 
+		});
+		
 		const validationResult = FilterValidator.validateFilters(convertedFilters, tableColumns);
 		if (!validationResult.isValid) {
 			logger.warn("Invalid filters provided", { 
 				errors: validationResult.errors, 
 				filters: convertedFilters, 
+				tableColumns: tableColumns.map(col => ({ id: col.id, name: col.name, type: col.type })),
 				tenantId: String(tenantId), 
 				tableId: String(tableId), 
 				userId: String(userId) 
