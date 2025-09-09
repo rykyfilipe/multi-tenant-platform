@@ -312,11 +312,23 @@ export function EnhancedInvoiceList({
 				throw new Error('Failed to download PDF');
 			}
 
+			// Get language-specific filename
+			const getInvoiceFilename = (lang: string) => {
+				const filenameMap: Record<string, string> = {
+					'en': 'invoice',
+					'ro': 'factura',
+					'es': 'factura',
+					'fr': 'facture',
+					'de': 'rechnung'
+				};
+				return filenameMap[lang] || 'invoice';
+			};
+
 			const blob = await response.blob();
 			const url = window.URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `factura-${invoiceNumber}.pdf`;
+			a.download = `${getInvoiceFilename(language)}-${invoiceNumber}.pdf`;
 			document.body.appendChild(a);
 			a.click();
 			window.URL.revokeObjectURL(url);

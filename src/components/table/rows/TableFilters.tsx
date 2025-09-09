@@ -155,7 +155,19 @@ export function TableFilters({
 		
 		if (onApplyFilters) {
 			try {
-				await onApplyFilters(filters, globalSearch);
+				// Filter out empty filters before applying
+				const validFilters = filters.filter(filter => {
+					// Keep filters that don't require values (like "is_empty", "today", etc.)
+					const operatorsWithoutValues = ["is_empty", "is_not_empty", "today", "yesterday", "this_week", "this_month", "this_year"];
+					if (operatorsWithoutValues.includes(filter.operator)) {
+						return true;
+					}
+					
+					// For other operators, check if they have valid values
+					return filter.value !== null && filter.value !== undefined && filter.value !== "";
+				});
+				
+				await onApplyFilters(validFilters, globalSearch);
 				console.log("✅ TableFilters - applyFilters completed successfully");
 			} catch (error) {
 				console.error("❌ TableFilters - applyFilters failed:", error);

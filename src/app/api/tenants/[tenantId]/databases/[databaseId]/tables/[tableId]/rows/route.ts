@@ -484,16 +484,23 @@ async function applyStringFilters(
 		return stringFilters.every((filter) => {
 			const cell = row.cells?.find((c: any) => c.columnId === filter.columnId);
 			
-			// Handle empty/null cells
+			// Handle is_empty and is_not_empty operators first
+			if (filter.operator === "is_empty") {
+				// Check if cell is empty
+				return !cell || cell.value === null || cell.value === undefined || cell.value === "";
+			} else if (filter.operator === "is_not_empty") {
+				// Check if cell is not empty
+				return cell && cell.value !== null && cell.value !== undefined && cell.value !== "";
+			}
+
+			// Handle empty/null cells for other operators
 			if (!cell || cell.value === null || cell.value === undefined || cell.value === "") {
-				// For "is_empty" and "is_not_empty" operators, handle them here
-				if (filter.operator === "is_empty") {
-					return true; // Cell is empty, so it matches
-				} else if (filter.operator === "is_not_empty") {
-					return false; // Cell is empty, so it doesn't match
-				} else {
-					return false; // For other operators, empty cell doesn't match
-				}
+				return false; // For other operators, empty cell doesn't match
+			}
+
+			// For other operators, check if filter value is empty
+			if (filter.value === null || filter.value === undefined || filter.value === "") {
+				return false; // Empty filter value doesn't match anything
 			}
 
 			const cellValue = String(cell.value);
@@ -1014,8 +1021,41 @@ export async function GET(
 			);
 		}
 
-		// Recalculate total rows after applying string filters
-		const finalTotalRows = filteredRows.length;
+		// For string filters, we need to get the total count differently
+		// since we can't efficiently count with string filters in Prisma
+		let finalTotalRows = totalRows;
+		if (parsedFilters.length > 0) {
+			// If we have string filters, we need to get all rows to count them
+			// This is not ideal for performance but necessary for accurate pagination
+			const allRows = await prisma.row.findMany({
+				where: whereClause,
+				include: {
+					cells: includeCells
+						? {
+								include: {
+									column: {
+										select: {
+											id: true,
+											name: true,
+											type: true,
+											order: true,
+											semanticType: true,
+										},
+									},
+								},
+						  }
+						: false,
+				},
+				orderBy: [orderByClause],
+			});
+			
+			const allFilteredRows = await applyStringFilters(
+				allRows,
+				parsedFilters,
+				tableColumns,
+			);
+			finalTotalRows = allFilteredRows.length;
+		}
 
 		// Sortăm coloanele după ordine în aplicație dacă includem cells
 		const sortedRows = includeCells

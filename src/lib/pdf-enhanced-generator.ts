@@ -34,8 +34,11 @@ export class EnhancedPDFGenerator {
 	/**
 	 * Remove diacritics from text to prevent PDF encoding issues
 	 */
-	private static removeDiacritics(text: string): string {
+	private static removeDiacritics(text: any): string {
 		if (!text) return '';
+		
+		// Convert to string if not already
+		const textStr = String(text);
 		
 		const diacriticsMap: Record<string, string> = {
 			'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't',
@@ -57,7 +60,7 @@ export class EnhancedPDFGenerator {
 			'ß': 'ss'
 		};
 
-		return text.replace(/[^\u0000-\u007E]/g, (char) => {
+		return textStr.replace(/[^\u0000-\u007E]/g, (char) => {
 			return diacriticsMap[char] || char;
 		});
 	}
@@ -364,7 +367,8 @@ export class EnhancedPDFGenerator {
 		font: any,
 		boldFont: any,
 		primaryColor: any,
-		textColor: any
+		textColor: any,
+		translations: Record<string, string>
 	): Promise<void> {
 		const { width } = page.getSize();
 		
@@ -377,8 +381,8 @@ export class EnhancedPDFGenerator {
 			color: primaryColor,
 		});
 
-		// Invoice title
-		page.drawText('INVOICE', {
+		// Invoice title - use translation
+		page.drawText(this.removeDiacritics(translations.invoice || 'INVOICE'), {
 			x: width - 150,
 			y: 750,
 			size: 28,
@@ -386,8 +390,8 @@ export class EnhancedPDFGenerator {
 			color: primaryColor,
 		});
 
-		// Invoice number
-		page.drawText(`Invoice #: ${invoiceData.invoice?.invoice_number || 'N/A'}`, {
+		// Invoice number - use translation
+		page.drawText(`${translations.invoiceNumber || 'Invoice #'}: ${invoiceData.invoice?.invoice_number || 'N/A'}`, {
 			x: width - 150,
 			y: 720,
 			size: 12,
@@ -405,12 +409,13 @@ export class EnhancedPDFGenerator {
 		tenantBranding: any,
 		font: any,
 		boldFont: any,
-		textColor: any
+		textColor: any,
+		translations: Record<string, string>
 	): Promise<void> {
 		const y = 680;
 		let currentY = y;
 
-		page.drawText('From:', {
+		page.drawText(this.removeDiacritics(translations.company || 'From:'), {
 			x: 50,
 			y: currentY,
 			size: 14,
@@ -469,13 +474,14 @@ export class EnhancedPDFGenerator {
 		invoiceData: any,
 		font: any,
 		boldFont: any,
-		textColor: any
+		textColor: any,
+		translations: Record<string, string>
 	): Promise<void> {
 		const { width } = page.getSize();
 		const y = 680;
 		let currentY = y;
 
-		page.drawText('Bill To:', {
+		page.drawText(this.removeDiacritics(translations.customer || 'Bill To:'), {
 			x: width - 200,
 			y: currentY,
 			size: 14,
@@ -525,13 +531,14 @@ export class EnhancedPDFGenerator {
 		invoiceData: any,
 		font: any,
 		boldFont: any,
-		textColor: any
+		textColor: any,
+		translations: Record<string, string>
 	): Promise<void> {
 		const y = 580;
 		let currentY = y;
 
 		// Invoice date
-		page.drawText('Invoice Date:', {
+		page.drawText(`${translations.date || 'Invoice Date'}:`, {
 			x: 50,
 			y: currentY,
 			size: 12,
@@ -549,7 +556,7 @@ export class EnhancedPDFGenerator {
 		// Due date
 		if (invoiceData.invoice?.due_date) {
 			currentY -= 20;
-			page.drawText('Due Date:', {
+			page.drawText(`${translations.dueDate || 'Due Date'}:`, {
 				x: 50,
 				y: currentY,
 				size: 12,
@@ -568,7 +575,7 @@ export class EnhancedPDFGenerator {
 		// Payment terms
 		if (invoiceData.invoice?.payment_terms) {
 			currentY -= 20;
-			page.drawText('Payment Terms:', {
+			page.drawText(`${translations.paymentTerms || 'Payment Terms'}:`, {
 				x: 50,
 				y: currentY,
 				size: 12,
@@ -594,7 +601,8 @@ export class EnhancedPDFGenerator {
 		font: any,
 		boldFont: any,
 		textColor: any,
-		secondaryColor: any
+		secondaryColor: any,
+		translations: Record<string, string>
 	): Promise<void> {
 		const y = 500;
 		const tableWidth = 500;
@@ -609,7 +617,13 @@ export class EnhancedPDFGenerator {
 			color: secondaryColor,
 		});
 
-		const headers = ['Description', 'Quantity', 'Price', 'VAT', 'Total'];
+		const headers = [
+			translations.description || 'Description',
+			translations.quantity || 'Quantity',
+			translations.unitPrice || 'Price',
+			translations.tax || 'VAT',
+			translations.total || 'Total'
+		];
 		let x = 50;
 		headers.forEach((header, index) => {
 			page.drawText(this.removeDiacritics(header), {
@@ -670,14 +684,15 @@ export class EnhancedPDFGenerator {
 		font: any,
 		boldFont: any,
 		textColor: any,
-		primaryColor: any
+		primaryColor: any,
+		translations: Record<string, string>
 	): Promise<void> {
 		const { width } = page.getSize();
 		const y = 200;
 		let currentY = y;
 
 		// Subtotal
-		page.drawText('Subtotal:', {
+		page.drawText(`${translations.subtotal || 'Subtotal'}:`, {
 			x: width - 200,
 			y: currentY,
 			size: 12,
@@ -695,7 +710,7 @@ export class EnhancedPDFGenerator {
 		// VAT
 		if (invoiceData.totals.vatTotal > 0) {
 			currentY -= 20;
-			page.drawText('VAT:', {
+			page.drawText(`${translations.tax || 'VAT'}:`, {
 				x: width - 200,
 				y: currentY,
 				size: 12,
@@ -713,7 +728,7 @@ export class EnhancedPDFGenerator {
 
 		// Grand total
 		currentY -= 30;
-		page.drawText('Total:', {
+		page.drawText(`${translations.grandTotal || 'Total'}:`, {
 			x: width - 200,
 			y: currentY,
 			size: 16,
@@ -738,7 +753,8 @@ export class EnhancedPDFGenerator {
 		tenantBranding: any,
 		font: any,
 		textColor: any,
-		secondaryColor: any
+		secondaryColor: any,
+		translations: Record<string, string>
 	): Promise<void> {
 		const y = 100;
 
@@ -751,7 +767,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		// Footer text
-		page.drawText('Thank you for your business!', {
+		page.drawText(this.removeDiacritics(translations.thankYou || 'Thank you for your business!'), {
 			x: 50,
 			y: y,
 			size: 12,

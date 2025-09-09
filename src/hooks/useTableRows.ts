@@ -209,7 +209,7 @@ function useTableRows(
 			try {
 				// Construiește URL-ul cu parametrii optimizați
 				const url = new URL(
-					`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows/filtered`,
+					`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows`,
 					window.location.origin,
 				);
 
@@ -220,7 +220,7 @@ function useTableRows(
 
 				// Parametri de filtrare
 				if (globalSearchParam.trim()) {
-					url.searchParams.set("globalSearch", globalSearchParam.trim());
+					url.searchParams.set("search", globalSearchParam.trim());
 				}
 				
 				if (filtersParam.length > 0) {

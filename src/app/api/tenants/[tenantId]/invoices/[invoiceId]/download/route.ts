@@ -456,10 +456,22 @@ export async function GET(
 				},
 			});
 
-			// Return PDF with appropriate headers
-			const contentDisposition = isPreview 
-				? `inline; filename="factura-${invoiceData.invoice_number}.pdf"`
-				: `attachment; filename="factura-${invoiceData.invoice_number}.pdf"`;
+		// Get language-specific filename
+		const getInvoiceFilename = (lang: string) => {
+			const filenameMap: Record<string, string> = {
+				'en': 'invoice',
+				'ro': 'factura',
+				'es': 'factura',
+				'fr': 'facture',
+				'de': 'rechnung'
+			};
+			return filenameMap[lang] || 'invoice';
+		};
+
+		const filename = getInvoiceFilename(language);
+		const contentDisposition = isPreview 
+			? `inline; filename="${filename}-${invoiceData.invoice_number}.pdf"`
+			: `attachment; filename="${filename}-${invoiceData.invoice_number}.pdf"`;
 			
 			return new NextResponse(pdfBuffer, {
 				headers: {
