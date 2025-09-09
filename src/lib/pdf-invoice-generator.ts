@@ -183,6 +183,191 @@ export class PDFInvoiceGenerator {
 				documentGenerated: 'Document generat automat pe',
 				page: 'Pagina',
 			},
+			es: {
+				invoice: 'FACTURA',
+				supplier: 'PROVEEDOR (EMISOR):',
+				customer: 'CLIENTE (FACTURAR A):',
+				company: 'Empresa:',
+				taxId: 'CIF:',
+				regNo: 'Nº Reg.:',
+				address: 'Direccion:',
+				invoiceDetails: 'DETALLES FACTURA:',
+				issueDate: 'Fecha de emision:',
+				currency: 'Moneda:',
+				paymentDetails: 'DETALLES PAGO:',
+				paymentTerms: 'Terminos de pago: Net 30',
+				paymentMethod: 'Metodo de pago: Transferencia bancaria / Tarjeta de credito',
+				descriptionOfGoods: 'DESCRIPCION DE BIENES/SERVICIOS:',
+				no: 'Nº',
+				description: 'Descripcion de bienes/servicios',
+				um: 'U.M.',
+				quantity: 'Cantidad',
+				unitPrice: 'Precio unitario',
+				currencyCol: 'Moneda',
+				vatPercent: 'IVA %',
+				vatValue: 'Valor IVA',
+				lineTotal: 'Total linea',
+				subtotalExclVat: 'Subtotal (sin IVA):',
+				vatTotal: 'Total IVA:',
+				grandTotalInclVat: 'TOTAL GENERAL (con IVA):',
+				totalInWords: 'Total en palabras:',
+				paymentInformation: 'INFORMACION DE PAGO:',
+				paymentMethodLabel: 'Metodo de pago:',
+				paymentTermsLabel: 'Terminos de pago:',
+				legalNotices: 'AVISOS LEGALES:',
+				legalText1: 'Esta factura es un documento fiscal segun la legislacion vigente.',
+				legalText2: 'La factura sirve como recibo si el pago se realiza a traves del banco.',
+				documentGenerated: 'Documento generado automaticamente el',
+				page: 'Pagina',
+			},
+			fr: {
+				invoice: 'FACTURE',
+				supplier: 'FOURNISSEUR (EMETTEUR):',
+				customer: 'CLIENT (FACTURER A):',
+				company: 'Societe:',
+				taxId: 'SIRET:',
+				regNo: 'N° Reg.:',
+				address: 'Adresse:',
+				invoiceDetails: 'DETAILS FACTURE:',
+				issueDate: 'Date d\'emission:',
+				currency: 'Devise:',
+				paymentDetails: 'DETAILS PAIEMENT:',
+				paymentTerms: 'Conditions de paiement: Net 30',
+				paymentMethod: 'Methode de paiement: Virement bancaire / Carte de credit',
+				descriptionOfGoods: 'DESCRIPTION DES BIENS/SERVICES:',
+				no: 'N°',
+				description: 'Description des biens/services',
+				um: 'U.M.',
+				quantity: 'Quantite',
+				unitPrice: 'Prix unitaire',
+				currencyCol: 'Devise',
+				vatPercent: 'TVA %',
+				vatValue: 'Valeur TVA',
+				lineTotal: 'Total ligne',
+				subtotalExclVat: 'Sous-total (sans TVA):',
+				vatTotal: 'Total TVA:',
+				grandTotalInclVat: 'TOTAL GENERAL (avec TVA):',
+				totalInWords: 'Total en mots:',
+				paymentInformation: 'INFORMATIONS PAIEMENT:',
+				paymentMethodLabel: 'Methode de paiement:',
+				paymentTermsLabel: 'Conditions de paiement:',
+				legalNotices: 'AVIS LEGAUX:',
+				legalText1: 'Cette facture est un document fiscal selon la legislation en vigueur.',
+				legalText2: 'La facture sert de recu si le paiement est effectue par banque.',
+				documentGenerated: 'Document genere automatiquement le',
+				page: 'Page',
+			},
+			de: {
+				invoice: 'RECHNUNG',
+				supplier: 'LIEFERANT (AUSSTELLER):',
+				customer: 'KUNDE (RECHNUNG AN):',
+				company: 'Unternehmen:',
+				taxId: 'USt-IdNr:',
+				regNo: 'Reg.-Nr.:',
+				address: 'Adresse:',
+				invoiceDetails: 'RECHNUNGSDETAILS:',
+				issueDate: 'Ausstellungsdatum:',
+				currency: 'Wahrung:',
+				paymentDetails: 'ZAHLUNGSDETAILS:',
+				paymentTerms: 'Zahlungsbedingungen: Netto 30',
+				paymentMethod: 'Zahlungsmethode: Bankuberweisung / Kreditkarte',
+				descriptionOfGoods: 'BESCHREIBUNG WAREN/DIENSTLEISTUNGEN:',
+				no: 'Nr.',
+				description: 'Beschreibung Waren/Dienstleistungen',
+				um: 'Einh.',
+				quantity: 'Menge',
+				unitPrice: 'Einzelpreis',
+				currencyCol: 'Wahrung',
+				vatPercent: 'MwSt %',
+				vatValue: 'MwSt-Wert',
+				lineTotal: 'Zeilen-Summe',
+				subtotalExclVat: 'Zwischensumme (ohne MwSt):',
+				vatTotal: 'MwSt-Gesamt:',
+				grandTotalInclVat: 'GESAMTSUMME (mit MwSt):',
+				totalInWords: 'Gesamtsumme in Worten:',
+				paymentInformation: 'ZAHLUNGSINFORMATIONEN:',
+				paymentMethodLabel: 'Zahlungsmethode:',
+				paymentTermsLabel: 'Zahlungsbedingungen:',
+				legalNotices: 'RECHTLICHE HINWEISE:',
+				legalText1: 'Diese Rechnung ist ein Steuerdokument nach geltendem Recht.',
+				legalText2: 'Die Rechnung dient als Quittung bei Bankzahlung.',
+				documentGenerated: 'Dokument automatisch generiert am',
+				page: 'Seite',
+			},
+			zh: {
+				invoice: '发票',
+				supplier: '供应商（开票方）:',
+				customer: '客户（开票给）:',
+				company: '公司:',
+				taxId: '税号:',
+				regNo: '注册号:',
+				address: '地址:',
+				invoiceDetails: '发票详情:',
+				issueDate: '开票日期:',
+				currency: '货币:',
+				paymentDetails: '付款详情:',
+				paymentTerms: '付款条件: 净30天',
+				paymentMethod: '付款方式: 银行转账 / 信用卡',
+				descriptionOfGoods: '商品/服务描述:',
+				no: '编号',
+				description: '商品/服务描述',
+				um: '单位',
+				quantity: '数量',
+				unitPrice: '单价',
+				currencyCol: '货币',
+				vatPercent: '增值税%',
+				vatValue: '增值税额',
+				lineTotal: '行总计',
+				subtotalExclVat: '小计（不含增值税）:',
+				vatTotal: '增值税总计:',
+				grandTotalInclVat: '总计（含增值税）:',
+				totalInWords: '总金额（大写）:',
+				paymentInformation: '付款信息:',
+				paymentMethodLabel: '付款方式:',
+				paymentTermsLabel: '付款条件:',
+				legalNotices: '法律声明:',
+				legalText1: '本发票是根据现行法律规定的税务文件。',
+				legalText2: '通过银行付款时，发票作为收据。',
+				documentGenerated: '文档自动生成于',
+				page: '页',
+			},
+			ru: {
+				invoice: 'СЧЕТ-ФАКТУРА',
+				supplier: 'ПОСТАВЩИК (ЭМИТЕНТ):',
+				customer: 'КЛИЕНТ (СЧЕТ ВЫСТАВЛЕН):',
+				company: 'Компания:',
+				taxId: 'ИНН:',
+				regNo: 'Рег. №:',
+				address: 'Адрес:',
+				invoiceDetails: 'ДЕТАЛИ СЧЕТА:',
+				issueDate: 'Дата выставления:',
+				currency: 'Валюта:',
+				paymentDetails: 'ДЕТАЛИ ПЛАТЕЖА:',
+				paymentTerms: 'Условия оплаты: Чистые 30',
+				paymentMethod: 'Способ оплаты: Банковский перевод / Кредитная карта',
+				descriptionOfGoods: 'ОПИСАНИЕ ТОВАРОВ/УСЛУГ:',
+				no: '№',
+				description: 'Описание товаров/услуг',
+				um: 'Ед.',
+				quantity: 'Количество',
+				unitPrice: 'Цена за единицу',
+				currencyCol: 'Валюта',
+				vatPercent: 'НДС %',
+				vatValue: 'Сумма НДС',
+				lineTotal: 'Итого по строке',
+				subtotalExclVat: 'Промежуточный итог (без НДС):',
+				vatTotal: 'Итого НДС:',
+				grandTotalInclVat: 'ОБЩИЙ ИТОГ (с НДС):',
+				totalInWords: 'Итого прописью:',
+				paymentInformation: 'ИНФОРМАЦИЯ О ПЛАТЕЖЕ:',
+				paymentMethodLabel: 'Способ оплаты:',
+				paymentTermsLabel: 'Условия оплаты:',
+				legalNotices: 'ПРАВОВЫЕ УВЕДОМЛЕНИЯ:',
+				legalText1: 'Данный счет-фактура является налоговым документом согласно действующему законодательству.',
+				legalText2: 'Счет-фактура служит квитанцией при оплате через банк.',
+				documentGenerated: 'Документ автоматически сгенерирован',
+				page: 'Страница',
+			},
 		};
 
 		return translations[language] || translations.en;
@@ -284,8 +469,7 @@ export class PDFInvoiceGenerator {
 			t,
 		);
 
-		// Legal Notice
-		this.drawLegalNotice(page, data, font, currentY, margin, contentWidth, t);
+		// Footer section is now handled in drawPaymentDetails
 
 		// Save the PDF
 		const pdfBytes = await pdfDoc.save();
@@ -302,41 +486,81 @@ export class PDFInvoiceGenerator {
 		contentWidth: number,
 		t: Record<string, string>,
 	): number {
-		// Draw header border
-		page.drawRectangle({
-			x: margin,
-			y: currentY - 50,
-			width: contentWidth,
-			height: 60,
-			borderColor: rgb(0.8, 0.8, 0.8),
-			borderWidth: 1,
+		const { width } = page.getSize();
+		
+		// Company logo placeholder (grid pattern like in image)
+		this.drawCompanyLogo(page, margin, currentY - 20);
+		
+		// Company name
+		PDFInvoiceGenerator.drawTextSafe(page, data.company.name || "Pin Box", {
+			x: margin + 60,
+			y: currentY - 10,
+			size: 18,
+			font: boldFont,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		
+		PDFInvoiceGenerator.drawTextSafe(page, "Private Limited", {
+			x: margin + 60,
+			y: currentY - 30,
+			size: 12,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
 		});
 
-		// Title - using translations
-		const title = t.invoice;
-		const titleWidth = boldFont.widthOfTextAtSize(title, 28);
-		PDFInvoiceGenerator.drawTextSafe(page, title, {
-			x: (page.getWidth() - titleWidth) / 2,
-			y: currentY - 20,
-			size: 28,
+		// Invoice title - right side
+		PDFInvoiceGenerator.drawTextSafe(page, t.invoice, {
+			x: width - 150,
+			y: currentY - 10,
+			size: 32,
 			font: boldFont,
 			color: rgb(0.1, 0.1, 0.1),
 		});
 
-		// Invoice number
-		const invoiceText = `Serie: ${data.invoice.series || "A"} Nr: ${
-			data.invoice.number
-		}`;
-		const invoiceWidth = boldFont.widthOfTextAtSize(invoiceText, 14);
-		PDFInvoiceGenerator.drawTextSafe(page, invoiceText, {
-			x: (page.getWidth() - invoiceWidth) / 2,
+		// Invoice number and date
+		PDFInvoiceGenerator.drawTextSafe(page, `Invoice# ${data.invoice.number}`, {
+			x: width - 150,
 			y: currentY - 40,
-			size: 14,
+			size: 12,
 			font: boldFont,
 			color: rgb(0.2, 0.2, 0.2),
 		});
 
+		PDFInvoiceGenerator.drawTextSafe(page, `Date: ${this.formatDate(data.invoice.date)}`, {
+			x: width - 150,
+			y: currentY - 55,
+			size: 12,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
+		});
+
 		return currentY - 80;
+	}
+
+	private static drawCompanyLogo(page: any, x: number, y: number): void {
+		// Draw a 3x3 grid pattern like in the image
+		const gridSize = 6;
+		const spacing = 2;
+		
+		// Draw 8 squares in a 3x3 grid (missing center square)
+		const positions = [
+			{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 },
+			{ row: 1, col: 0 }, { row: 1, col: 2 },
+			{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }
+		];
+		
+		positions.forEach(pos => {
+			const squareX = x + pos.col * (gridSize + spacing);
+			const squareY = y - pos.row * (gridSize + spacing);
+			
+			page.drawRectangle({
+				x: squareX,
+				y: squareY,
+				width: gridSize,
+				height: gridSize,
+				color: rgb(0, 0, 0),
+			});
+		});
 	}
 
 	private static drawCompanyCustomerInfo(
@@ -349,188 +573,15 @@ export class PDFInvoiceGenerator {
 		contentWidth: number,
 		t: Record<string, string>,
 	): number {
-		const columnWidth = (contentWidth - 20) / 2; // Add spacing between columns
+		const { width } = page.getSize();
 		const leftX = margin;
-		const rightX = margin + columnWidth + 20;
+		const rightX = width - 200;
 		const startY = currentY;
 
-		// Draw borders for both sections
-		page.drawRectangle({
-			x: leftX,
-			y: currentY - 140,
-			width: columnWidth,
-			height: 140,
-			borderColor: rgb(0.8, 0.8, 0.8),
-			borderWidth: 1,
-		});
-
-		page.drawRectangle({
-			x: rightX,
-			y: currentY - 140,
-			width: columnWidth,
-			height: 140,
-			borderColor: rgb(0.8, 0.8, 0.8),
-			borderWidth: 1,
-		});
-
-		// Company Information (Left) - MANDATORY ELEMENTS
-		let leftY = currentY - 10;
-		PDFInvoiceGenerator.drawTextSafe(page, t.supplier, {
-			x: leftX + 5,
-			y: leftY,
-			size: 12,
-			font: boldFont,
-			color: rgb(0.1, 0.1, 0.1),
-		});
-		leftY -= 20;
-
-		// Company name (MANDATORY)
-		PDFInvoiceGenerator.drawTextSafe(
-			page,
-			`${t.company} ${data.company.name || "-"}`,
-			{
-				x: leftX + 5,
-				y: leftY,
-				size: 10,
-				font: boldFont,
-				color: rgb(0.2, 0.2, 0.2),
-			},
-		);
-		leftY -= 16;
-
-		// Tax ID (MANDATORY)
-		page.drawText(`${t.taxId} ${data.company.taxId || "-"}`, {
-			x: leftX + 5,
-			y: leftY,
-			size: 9,
-			font: font,
-			color: rgb(0.3, 0.3, 0.3),
-		});
-		leftY -= 14;
-
-		// Registration number (MANDATORY)
-		page.drawText(`${t.regNo} ${data.company.registrationNumber || "-"}`, {
-			x: leftX + 5,
-			y: leftY,
-			size: 9,
-			font: font,
-			color: rgb(0.3, 0.3, 0.3),
-		});
-		leftY -= 14;
-
-		// Registered address (MANDATORY)
-		if (data.company.address) {
-			page.drawText(`${t.address}`, {
-				x: leftX + 5,
-				y: leftY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			leftY -= 12;
-
-			// Split long addresses
-			const addressText = data.company.address;
-			if (addressText.length > 30) {
-				const words = addressText.split(" ");
-				let line1 = "";
-				let line2 = "";
-				for (const word of words) {
-					if (line1.length + word.length < 30) {
-						line1 += (line1 ? " " : "") + word;
-					} else {
-						line2 += (line2 ? " " : "") + word;
-					}
-				}
-				PDFInvoiceGenerator.drawTextSafe(page, line1, {
-					x: leftX + 10,
-					y: leftY,
-					size: 8,
-					font: font,
-					color: rgb(0.3, 0.3, 0.3),
-				});
-				leftY -= 10;
-				if (line2) {
-					PDFInvoiceGenerator.drawTextSafe(page, line2, {
-						x: leftX + 10,
-						y: leftY,
-						size: 8,
-						font: font,
-						color: rgb(0.3, 0.3, 0.3),
-					});
-					leftY -= 10;
-				}
-			} else {
-				PDFInvoiceGenerator.drawTextSafe(page, addressText, {
-					x: leftX + 10,
-					y: leftY,
-					size: 8,
-					font: font,
-					color: rgb(0.3, 0.3, 0.3),
-				});
-				leftY -= 12;
-			}
-		} else {
-			page.drawText(`${t.address} -`, {
-				x: leftX + 5,
-				y: leftY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			leftY -= 14;
-		}
-
-		// IBAN + Bank (RECOMMENDED)
-		if (data.company.iban) {
-			page.drawText(`IBAN: ${data.company.iban}`, {
-				x: leftX + 5,
-				y: leftY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			leftY -= 14;
-		}
-
-		if (data.company.bank) {
-			page.drawText(`Bank: ${data.company.bank}`, {
-				x: leftX + 5,
-				y: leftY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			leftY -= 14;
-		}
-
-		// Contact details (RECOMMENDED)
-		if (data.company.phone) {
-			page.drawText(`Phone: ${data.company.phone}`, {
-				x: leftX + 5,
-				y: leftY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			leftY -= 14;
-		}
-
-		if (data.company.email) {
-			page.drawText(`Email: ${data.company.email}`, {
-				x: leftX + 5,
-				y: leftY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			leftY -= 14;
-		}
-
-		// Customer Information (Right) - MANDATORY ELEMENTS
+		// Bill To section (Right side)
 		let rightY = currentY - 10;
-		PDFInvoiceGenerator.drawTextSafe(page, t.customer, {
-			x: rightX + 5,
+		PDFInvoiceGenerator.drawTextSafe(page, "Bill To:", {
+			x: rightX,
 			y: rightY,
 			size: 12,
 			font: boldFont,
@@ -538,117 +589,58 @@ export class PDFInvoiceGenerator {
 		});
 		rightY -= 20;
 
-		// Company/person name (MANDATORY)
-		PDFInvoiceGenerator.drawTextSafe(
-			page,
-			`${t.company} ${data.customer.name || "-"}`,
-			{
-				x: rightX + 5,
-				y: rightY,
-				size: 10,
-				font: boldFont,
-				color: rgb(0.2, 0.2, 0.2),
-			},
-		);
-		rightY -= 16;
-
-		// Tax ID (MANDATORY if required)
-		page.drawText(`${t.taxId} ${data.customer.taxId || "-"}`, {
-			x: rightX + 5,
+		// Customer name
+		PDFInvoiceGenerator.drawTextSafe(page, data.customer.name || "Jonathon Deo", {
+			x: rightX,
 			y: rightY,
-			size: 9,
+			size: 12,
+			font: boldFont,
+			color: rgb(0.2, 0.2, 0.2),
+		});
+		rightY -= 15;
+
+		// Customer address
+		PDFInvoiceGenerator.drawTextSafe(page, data.customer.address || "123 Street, Town/City, County", {
+			x: rightX,
+			y: rightY,
+			size: 10,
 			font: font,
 			color: rgb(0.3, 0.3, 0.3),
 		});
-		rightY -= 14;
+		rightY -= 15;
 
-		// Complete address (MANDATORY)
-		if (data.customer.address) {
-			page.drawText(`${t.address}`, {
-				x: rightX + 5,
-				y: rightY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			rightY -= 12;
-
-			// Split long addresses
-			const addressText = data.customer.address;
-			if (addressText.length > 30) {
-				const words = addressText.split(" ");
-				let line1 = "";
-				let line2 = "";
-				for (const word of words) {
-					if (line1.length + word.length < 30) {
-						line1 += (line1 ? " " : "") + word;
-					} else {
-						line2 += (line2 ? " " : "") + word;
-					}
-				}
-				PDFInvoiceGenerator.drawTextSafe(page, line1, {
-					x: rightX + 10,
-					y: rightY,
-					size: 8,
-					font: font,
-					color: rgb(0.3, 0.3, 0.3),
-				});
-				rightY -= 10;
-				if (line2) {
-					PDFInvoiceGenerator.drawTextSafe(page, line2, {
-						x: rightX + 10,
-						y: rightY,
-						size: 8,
-						font: font,
-						color: rgb(0.3, 0.3, 0.3),
-					});
-					rightY -= 10;
-				}
-			} else {
-				PDFInvoiceGenerator.drawTextSafe(page, addressText, {
-					x: rightX + 10,
-					y: rightY,
-					size: 8,
-					font: font,
-					color: rgb(0.3, 0.3, 0.3),
-				});
-				rightY -= 12;
-			}
-		} else {
-			page.drawText(`${t.address} -`, {
-				x: rightX + 5,
-				y: rightY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			rightY -= 14;
-		}
-
-		// Contact details (RECOMMENDED)
+		// Customer phone
 		if (data.customer.phone) {
-			page.drawText(`Phone: ${data.customer.phone}`, {
-				x: rightX + 5,
+			PDFInvoiceGenerator.drawTextSafe(page, data.customer.phone, {
+				x: rightX,
 				y: rightY,
-				size: 9,
+				size: 10,
 				font: font,
 				color: rgb(0.3, 0.3, 0.3),
 			});
-			rightY -= 14;
 		}
 
-		if (data.customer.email) {
-			page.drawText(`Email: ${data.customer.email}`, {
-				x: rightX + 5,
-				y: rightY,
-				size: 9,
-				font: font,
-				color: rgb(0.3, 0.3, 0.3),
-			});
-			rightY -= 14;
-		}
+		// Total Due section
+		const totalDueY = currentY - 10;
+		PDFInvoiceGenerator.drawTextSafe(page, "Total Due:", {
+			x: rightX,
+			y: totalDueY - 60,
+			size: 12,
+			font: boldFont,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		
+		const currency = data.invoice.currency || "USD";
+		const grandTotal = data.totals.grandTotal || 0;
+		PDFInvoiceGenerator.drawTextSafe(page, `${currency}: $ ${grandTotal.toFixed(2)}`, {
+			x: rightX,
+			y: totalDueY - 80,
+			size: 14,
+			font: boldFont,
+			color: rgb(0.1, 0.1, 0.1),
+		});
 
-		return currentY - 160;
+		return currentY - 100;
 	}
 
 	private static drawInvoiceDetails(
@@ -747,30 +739,15 @@ export class PDFInvoiceGenerator {
 		contentWidth: number,
 		t: Record<string, string>,
 	): number {
-		// Table headers - MANDATORY ELEMENTS according to legislation
+		// Table headers matching the image
 		const headers = [
-			t.no,
-			t.description,
-			t.um,
-			t.quantity,
-			t.unitPrice,
-			t.currencyCol,
-			t.vatPercent,
-			t.vatValue,
-			t.lineTotal,
+			"ITEM DESCRIPTION",
+			"PRICE",
+			"QTY",
+			"TOTAL"
 		];
-		const columnWidths = [25, 180, 30, 40, 50, 35, 30, 40, 50];
-		const tableHeight = 25 + data.items.length * 20 + 10;
-
-		// Draw section title
-		PDFInvoiceGenerator.drawTextSafe(page, t.descriptionOfGoods, {
-			x: margin,
-			y: currentY,
-			size: 12,
-			font: boldFont,
-			color: rgb(0.1, 0.1, 0.1),
-		});
-		currentY -= 25;
+		const columnWidths = [300, 80, 60, 80];
+		const tableHeight = 25 + data.items.length * 30 + 10;
 
 		// Draw table border
 		page.drawRectangle({
@@ -788,7 +765,7 @@ export class PDFInvoiceGenerator {
 			y: currentY - 20,
 			width: contentWidth,
 			height: 20,
-			color: rgb(0.9, 0.9, 0.9),
+			color: rgb(0.95, 0.95, 0.95),
 			borderColor: rgb(0.8, 0.8, 0.8),
 			borderWidth: 1,
 		});
@@ -809,9 +786,9 @@ export class PDFInvoiceGenerator {
 		currentX = margin;
 		headers.forEach((header, index) => {
 			PDFInvoiceGenerator.drawTextSafe(page, header, {
-				x: currentX + 2,
+				x: currentX + 5,
 				y: currentY - 14,
-				size: 8,
+				size: 10,
 				font: boldFont,
 				color: rgb(0.1, 0.1, 0.1),
 			});
@@ -834,103 +811,57 @@ export class PDFInvoiceGenerator {
 
 			currentX = margin;
 
-			// Nr. crt.
-			page.drawText((index + 1).toString(), {
-				x: currentX + 2,
-				y: currentY - 14,
+			// Item description with sub-description
+			const description = item.description || "Web Design";
+			const subDescription = "Contrary to popular belief Lorem Ipsum simply";
+			
+			PDFInvoiceGenerator.drawTextSafe(page, description, {
+				x: currentX + 5,
+				y: currentY - 12,
+				size: 10,
+				font: boldFont,
+				color: rgb(0.2, 0.2, 0.2),
+			});
+			
+			PDFInvoiceGenerator.drawTextSafe(page, subDescription, {
+				x: currentX + 5,
+				y: currentY - 25,
 				size: 8,
 				font: font,
-				color: rgb(0.2, 0.2, 0.2),
+				color: rgb(0.4, 0.4, 0.4),
 			});
 			currentX += columnWidths[0];
 
-			// Description - handle long text
-			let description = item.description || "-";
-			if (description.length > 25) {
-				description = description.substring(0, 22) + "...";
-			}
-			PDFInvoiceGenerator.drawTextSafe(page, description, {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
+			// Price
+			PDFInvoiceGenerator.drawTextSafe(page, `$${this.formatPrice(item.unitPrice || 0)}`, {
+				x: currentX + 5,
+				y: currentY - 12,
+				size: 10,
 				font: font,
 				color: rgb(0.2, 0.2, 0.2),
 			});
 			currentX += columnWidths[1];
 
-			// Unit of Measure (U.M.)
-			const unitOfMeasure = "buc"; // Default unit of measure
-			PDFInvoiceGenerator.drawTextSafe(page, unitOfMeasure, {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
+			// Quantity
+			PDFInvoiceGenerator.drawTextSafe(page, (item.quantity || 0).toString(), {
+				x: currentX + 5,
+				y: currentY - 12,
+				size: 10,
 				font: font,
 				color: rgb(0.2, 0.2, 0.2),
 			});
 			currentX += columnWidths[2];
 
-			// Quantity
-			page.drawText((item.quantity || 0).toString(), {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
+			// Total
+			PDFInvoiceGenerator.drawTextSafe(page, `$${this.formatPrice(item.total || 0)}`, {
+				x: currentX + 5,
+				y: currentY - 12,
+				size: 10,
 				font: font,
 				color: rgb(0.2, 0.2, 0.2),
 			});
-			currentX += columnWidths[3];
 
-			// Unit Price
-			page.drawText(this.formatPrice(item.unitPrice || 0), {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
-				font: font,
-				color: rgb(0.2, 0.2, 0.2),
-			});
-			currentX += columnWidths[4];
-
-			// Currency
-			page.drawText(item.currency || "-", {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
-				font: font,
-				color: rgb(0.2, 0.2, 0.2),
-			});
-			currentX += columnWidths[5];
-
-			// VAT Rate
-			const vatRate = item.vatRate || 0;
-			page.drawText(`${vatRate}%`, {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
-				font: font,
-				color: rgb(0.2, 0.2, 0.2),
-			});
-			currentX += columnWidths[6];
-
-			// VAT Amount
-			const vatAmount = item.vatAmount || 0;
-			page.drawText(this.formatPrice(vatAmount), {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
-				font: font,
-				color: rgb(0.2, 0.2, 0.2),
-			});
-			currentX += columnWidths[7];
-
-			// Total line
-			page.drawText(this.formatPrice(item.total || 0), {
-				x: currentX + 2,
-				y: currentY - 14,
-				size: 8,
-				font: boldFont,
-				color: rgb(0.2, 0.2, 0.2),
-			});
-
-			currentY -= 20;
+			currentY -= 30;
 		});
 
 		return currentY - 20;
@@ -946,118 +877,86 @@ export class PDFInvoiceGenerator {
 		contentWidth: number,
 		t: Record<string, string>,
 	): number {
-		const totalsWidth = 220;
-		const totalsX = margin + contentWidth - totalsWidth;
+		const { width } = page.getSize();
+		const totalsWidth = 200;
+		const totalsX = width - totalsWidth - margin;
 
-		// Draw totals border
-		page.drawRectangle({
+		// Subtotal
+		PDFInvoiceGenerator.drawTextSafe(page, "SUB TOTAL", {
 			x: totalsX,
-			y: currentY - 110,
-			width: totalsWidth,
-			height: 110,
-			borderColor: rgb(0.8, 0.8, 0.8),
-			borderWidth: 1,
-		});
-
-		// Subtotal without VAT (MANDATORY)
-		PDFInvoiceGenerator.drawTextSafe(page, t.subtotalExclVat, {
-			x: totalsX + 5,
-			y: currentY - 15,
+			y: currentY,
 			size: 10,
 			font: boldFont,
 			color: rgb(0.2, 0.2, 0.2),
 		});
-		page.drawText(
-			`${this.formatPrice(data.totals.subtotal)} ${data.totals.currency}`,
-			{
-				x: totalsX + 130,
-				y: currentY - 15,
-				size: 10,
-				font: font,
-				color: rgb(0.2, 0.2, 0.2),
-			},
-		);
+		PDFInvoiceGenerator.drawTextSafe(page, `$${this.formatPrice(data.totals.subtotal)}`, {
+			x: totalsX + 120,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: rgb(0.2, 0.2, 0.2),
+		});
+		currentY -= 20;
 
-		// VAT Total (MANDATORY)
-		PDFInvoiceGenerator.drawTextSafe(page, t.vatTotal, {
-			x: totalsX + 5,
-			y: currentY - 35,
+		// Tax VAT 18%
+		PDFInvoiceGenerator.drawTextSafe(page, "Tax Vat 18%", {
+			x: totalsX,
+			y: currentY,
 			size: 10,
 			font: boldFont,
 			color: rgb(0.2, 0.2, 0.2),
 		});
-		page.drawText(
-			`${this.formatPrice(data.totals.vatTotal)} ${data.totals.currency}`,
-			{
-				x: totalsX + 130,
-				y: currentY - 35,
-				size: 10,
-				font: font,
-				color: rgb(0.2, 0.2, 0.2),
-			},
-		);
+		PDFInvoiceGenerator.drawTextSafe(page, `$${this.formatPrice(data.totals.vatTotal)}`, {
+			x: totalsX + 120,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: rgb(0.2, 0.2, 0.2),
+		});
+		currentY -= 20;
+
+		// Discount 10%
+		const discount = data.totals.subtotal * 0.1;
+		PDFInvoiceGenerator.drawTextSafe(page, "Discount 10%", {
+			x: totalsX,
+			y: currentY,
+			size: 10,
+			font: boldFont,
+			color: rgb(0.2, 0.2, 0.2),
+		});
+		PDFInvoiceGenerator.drawTextSafe(page, `-$${this.formatPrice(discount)}`, {
+			x: totalsX + 120,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: rgb(0.2, 0.2, 0.2),
+		});
+		currentY -= 20;
 
 		// Draw separator line
 		page.drawLine({
-			start: { x: totalsX + 5, y: currentY - 45 },
-			end: { x: totalsX + totalsWidth - 5, y: currentY - 45 },
+			start: { x: totalsX, y: currentY + 10 },
+			end: { x: totalsX + totalsWidth, y: currentY + 10 },
 			color: rgb(0.6, 0.6, 0.6),
 			thickness: 1,
 		});
+		currentY -= 20;
 
-		// Grand Total cu TVA (OBLIGATORIU)
-		page.drawRectangle({
-			x: totalsX + 2,
-			y: currentY - 95,
-			width: totalsWidth - 4,
-			height: 35,
-			color: rgb(0.95, 0.95, 0.95),
-			borderColor: rgb(0.8, 0.8, 0.8),
-			borderWidth: 1,
-		});
-
-		PDFInvoiceGenerator.drawTextSafe(page, t.grandTotalInclVat, {
-			x: totalsX + 5,
-			y: currentY - 70,
-			size: 12,
+		// Grand Total
+		const grandTotal = data.totals.grandTotal - discount;
+		PDFInvoiceGenerator.drawTextSafe(page, "Grand Total", {
+			x: totalsX,
+			y: currentY,
+			size: 14,
 			font: boldFont,
 			color: rgb(0.1, 0.1, 0.1),
 		});
-		page.drawText(
-			`${this.formatPrice(data.totals.grandTotal)} ${data.totals.currency}`,
-			{
-				x: totalsX + 5,
-				y: currentY - 90,
-				size: 14,
-				font: boldFont,
-				color: rgb(0.8, 0.2, 0.2),
-			},
-		);
-
-		currentY -= 120;
-
-		// Total in words - using ASCII only (MANDATORY)
-		const totalInWords = `${t.totalInWords} ${this.numberToWords(
-			data.totals.grandTotal,
-		)} ${data.totals.currency}`;
-
-		// Draw background for total in words
-		page.drawRectangle({
-			x: margin,
-			y: currentY - 5,
-			width: contentWidth,
-			height: 20,
-			color: rgb(0.98, 0.98, 0.98),
-			borderColor: rgb(0.9, 0.9, 0.9),
-			borderWidth: 1,
-		});
-
-		PDFInvoiceGenerator.drawTextSafe(page, totalInWords, {
-			x: margin + 5,
-			y: currentY + 5,
-			size: 10,
-			font: font,
-			color: rgb(0.4, 0.4, 0.4),
+		PDFInvoiceGenerator.drawTextSafe(page, `$${this.formatPrice(grandTotal)}`, {
+			x: totalsX + 120,
+			y: currentY,
+			size: 14,
+			font: boldFont,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 
 		return currentY - 30;
@@ -1073,47 +972,134 @@ export class PDFInvoiceGenerator {
 		contentWidth: number,
 		t: Record<string, string>,
 	): number {
-		// Draw payment details section
-		page.drawRectangle({
-			x: margin,
-			y: currentY - 50,
-			width: contentWidth,
-			height: 50,
-			color: rgb(0.97, 0.97, 0.97),
-			borderColor: rgb(0.8, 0.8, 0.8),
-			borderWidth: 1,
-		});
+		const { width } = page.getSize();
+		const leftX = margin;
+		const rightX = width - 200;
 
-		// Section title
-		PDFInvoiceGenerator.drawTextSafe(page, t.paymentInformation, {
-			x: margin + 5,
-			y: currentY - 15,
-			size: 11,
-			font: boldFont,
+		// Left side - Payment Method
+		let leftY = currentY;
+		PDFInvoiceGenerator.drawTextSafe(page, "Payment Method:", {
+			x: leftX,
+			y: leftY,
+			size: 10,
+			font: font,
 			color: rgb(0.1, 0.1, 0.1),
 		});
-
-		// Payment method (MANDATORY)
-		const paymentMethod = data.invoice.paymentMethod || "Bank Transfer";
-		PDFInvoiceGenerator.drawTextSafe(page, `${t.paymentMethodLabel} ${paymentMethod}`, {
-			x: margin + 5,
-			y: currentY - 30,
+		leftY -= 15;
+		PDFInvoiceGenerator.drawTextSafe(page, "Payment: Visa, Master Card", {
+			x: leftX,
+			y: leftY,
+			size: 9,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
+		});
+		leftY -= 12;
+		PDFInvoiceGenerator.drawTextSafe(page, "We accept Cheque", {
+			x: leftX,
+			y: leftY,
+			size: 9,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
+		});
+		leftY -= 12;
+		PDFInvoiceGenerator.drawTextSafe(page, `Paypal: ${data.company.email || 'paypal@company.com'}`, {
+			x: leftX,
+			y: leftY,
 			size: 9,
 			font: font,
 			color: rgb(0.3, 0.3, 0.3),
 		});
 
-		// Payment terms (MANDATORY)
-		const paymentTerms = data.invoice.paymentTerms || "Net 30 days";
-		PDFInvoiceGenerator.drawTextSafe(page, `${t.paymentTermsLabel} ${paymentTerms}`, {
-			x: margin + 200,
-			y: currentY - 30,
+		leftY -= 20;
+		// Contact
+		PDFInvoiceGenerator.drawTextSafe(page, "Contact:", {
+			x: leftX,
+			y: leftY,
+			size: 10,
+			font: font,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		leftY -= 15;
+		PDFInvoiceGenerator.drawTextSafe(page, data.company.address || "123 Street, Town Postal, County", {
+			x: leftX,
+			y: leftY,
 			size: 9,
 			font: font,
-			color: rgb(0.3, 0.3, 0.6),
+			color: rgb(0.3, 0.3, 0.3),
+		});
+		leftY -= 12;
+		PDFInvoiceGenerator.drawTextSafe(page, data.company.phone || "+999 123 456 789", {
+			x: leftX,
+			y: leftY,
+			size: 9,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
+		});
+		leftY -= 12;
+		PDFInvoiceGenerator.drawTextSafe(page, data.company.email || "info@yourname", {
+			x: leftX,
+			y: leftY,
+			size: 9,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
+		});
+		leftY -= 12;
+		PDFInvoiceGenerator.drawTextSafe(page, data.company.website || "www.domainname.com", {
+			x: leftX,
+			y: leftY,
+			size: 9,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
 		});
 
-		return currentY - 60;
+		leftY -= 20;
+		// Terms & Condition
+		PDFInvoiceGenerator.drawTextSafe(page, "Terms & Condition:", {
+			x: leftX,
+			y: leftY,
+			size: 10,
+			font: font,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		leftY -= 15;
+		PDFInvoiceGenerator.drawTextSafe(page, "Contrary to popular belief Lorem Ipsum not ipsum simply lorem ispum dolor ipsum.", {
+			x: leftX,
+			y: leftY,
+			size: 9,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
+		});
+
+		// Right side - Signature
+		PDFInvoiceGenerator.drawTextSafe(page, "Signature:", {
+			x: rightX,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		page.drawLine({
+			start: { x: rightX, y: currentY - 20 },
+			end: { x: rightX + 100, y: currentY - 20 },
+			thickness: 1,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		PDFInvoiceGenerator.drawTextSafe(page, "Mark Williams", {
+			x: rightX,
+			y: currentY - 35,
+			size: 9,
+			font: font,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		PDFInvoiceGenerator.drawTextSafe(page, "Manager", {
+			x: rightX,
+			y: currentY - 50,
+			size: 8,
+			font: font,
+			color: rgb(0.3, 0.3, 0.3),
+		});
+
+		return currentY - 100;
 	}
 
 	private static drawLegalNotice(

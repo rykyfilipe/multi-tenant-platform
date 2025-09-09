@@ -457,23 +457,24 @@ export async function GET(
 				},
 			});
 
-		// Get language-specific filename
-		const getInvoiceFilename = (lang: string) => {
-			const filenameMap: Record<string, string> = {
-				'en': 'invoice',
-				'ro': 'factura',
-				'es': 'factura',
-				'fr': 'facture',
-				'de': 'rechnung'
+			// Get language-specific filename
+			const getInvoiceFilename = (lang: string) => {
+				const filenameMap: Record<string, string> = {
+					'en': 'invoice',
+					'ro': 'factura',
+					'es': 'factura',
+					'fr': 'facture',
+					'de': 'rechnung',
+					'zh': 'fapiao'
+				};
+				return filenameMap[lang] || 'invoice';
 			};
-			return filenameMap[lang] || 'invoice';
-		};
 
-		const filename = getInvoiceFilename(language);
-		const contentDisposition = isPreview 
-			? `inline; filename="${filename}-${invoiceData.invoice_number}.pdf"`
-			: `attachment; filename="${filename}-${invoiceData.invoice_number}.pdf"`;
-			
+			const filename = getInvoiceFilename(language);
+			const contentDisposition = isPreview 
+				? `inline; filename="${filename}-${invoiceData.invoice_number}.pdf"`
+				: `attachment; filename="${filename}-${invoiceData.invoice_number}.pdf"`;
+				
 			return new NextResponse(pdfBuffer, {
 				headers: {
 					"Content-Type": "application/pdf",

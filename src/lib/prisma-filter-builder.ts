@@ -10,6 +10,12 @@ export class PrismaFilterBuilder {
   private whereClause: any = {};
   private tableId: number;
   private tableColumns: any[];
+  private postProcessFilters: Array<{
+    columnId: number;
+    operator: string;
+    value: any;
+    columnType: string;
+  }> = [];
 
   constructor(tableId: number, tableColumns: any[]) {
     this.tableId = tableId;
@@ -30,7 +36,6 @@ export class PrismaFilterBuilder {
     this.whereClause.cells = {
       some: {
         value: {
-          path: ['$'],
           string_contains: trimmedSearch
         }
       }
@@ -128,12 +133,12 @@ export class PrismaFilterBuilder {
           columnId: Number(columnId),
           OR: isEmpty ? [
             { value: null },
-            { value: { path: ['$'], equals: null } },
-            { value: { path: ['$'], equals: '' } }
+            { value: { equals: null } },
+            { value: { equals: '' } }
           ] : [
             { value: { not: null } },
-            { value: { path: ['$'], not: null } },
-            { value: { path: ['$'], not: '' } }
+            { value: { not: { equals: null } } },
+            { value: { not: { equals: '' } } }
           ]
         }
       }
@@ -152,7 +157,6 @@ export class PrismaFilterBuilder {
           some: {
             columnId: Number(columnId),
             value: {
-              path: ['$'],
               [isBetween ? 'gte' : 'not']: Number(value),
               [isBetween ? 'lte' : 'not']: Number(secondValue)
             }
@@ -167,7 +171,6 @@ export class PrismaFilterBuilder {
           some: {
             columnId: Number(columnId),
             value: {
-              path: ['$'],
               [isBetween ? 'gte' : 'not']: new Date(value).toISOString(),
               [isBetween ? 'lte' : 'not']: new Date(secondValue).toISOString()
             }
@@ -192,7 +195,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 gte: new Date(value).toISOString(),
                 lt: new Date(new Date(value).getTime() + 24 * 60 * 60 * 1000).toISOString()
               }
@@ -206,7 +208,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 not: {
                   gte: new Date(value).toISOString(),
                   lt: new Date(new Date(value).getTime() + 24 * 60 * 60 * 1000).toISOString()
@@ -222,7 +223,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 lt: new Date(value).toISOString()
               }
             }
@@ -235,7 +235,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 gt: new Date(value).toISOString()
               }
             }
@@ -273,10 +272,12 @@ export class PrismaFilterBuilder {
 
   /**
    * Build numeric conditions
+   * Note: Values are stored as strings, so we need to convert them for comparison
    */
   private buildNumericCondition(columnId: number, operator: string, value: any, columnType: string): any {
     const columnIdNum = Number(columnId);
     const numericValue = Number(value);
+    const stringValue = String(value);
 
     switch (operator) {
       case 'equals':
@@ -285,8 +286,7 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                equals: numericValue
+                equals: stringValue
               }
             }
           }
@@ -298,8 +298,7 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                not: numericValue
+                not: stringValue
               }
             }
           }
@@ -311,8 +310,7 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                gt: numericValue
+                gt: stringValue
               }
             }
           }
@@ -324,8 +322,7 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                gte: numericValue
+                gte: stringValue
               }
             }
           }
@@ -337,8 +334,7 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                lt: numericValue
+                lt: stringValue
               }
             }
           }
@@ -350,8 +346,7 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                lte: numericValue
+                lte: stringValue
               }
             }
           }
@@ -376,7 +371,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 string_contains: stringValue
               }
             }
@@ -389,7 +383,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 not: {
                   string_contains: stringValue
                 }
@@ -404,7 +397,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 equals: stringValue
               }
             }
@@ -417,7 +409,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 not: stringValue
               }
             }
@@ -425,30 +416,24 @@ export class PrismaFilterBuilder {
         };
 
       case 'starts_with':
-        return {
-          cells: {
-            some: {
-              columnId: columnIdNum,
-              value: {
-                path: ['$'],
-                string_starts_with: stringValue
-              }
-            }
-          }
-        };
+        // Add to post-process filters since Prisma doesn't support starts_with
+        this.postProcessFilters.push({
+          columnId: columnIdNum,
+          operator: 'starts_with',
+          value: stringValue,
+          columnType
+        });
+        return null; // Don't add to Prisma query
 
       case 'ends_with':
-        return {
-          cells: {
-            some: {
-              columnId: columnIdNum,
-              value: {
-                path: ['$'],
-                string_ends_with: stringValue
-              }
-            }
-          }
-        };
+        // Add to post-process filters since Prisma doesn't support ends_with
+        this.postProcessFilters.push({
+          columnId: columnIdNum,
+          operator: 'ends_with',
+          value: stringValue,
+          columnType
+        });
+        return null; // Don't add to Prisma query
 
       case 'regex':
         return {
@@ -456,7 +441,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 string_matches: stringValue
               }
             }
@@ -482,7 +466,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 equals: booleanValue
               }
             }
@@ -495,7 +478,6 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
                 not: booleanValue
               }
             }
@@ -509,10 +491,11 @@ export class PrismaFilterBuilder {
 
   /**
    * Build reference conditions
+   * Note: Reference values are stored as arrays, so we need to check if the value is in the array
    */
   private buildReferenceCondition(columnId: number, operator: string, value: any, columnType: string): any {
     const columnIdNum = Number(columnId);
-    const referenceValue = Number(value);
+    const referenceValue = String(value);
 
     switch (operator) {
       case 'equals':
@@ -521,8 +504,7 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                equals: referenceValue
+                array_contains: [referenceValue]
               }
             }
           }
@@ -534,8 +516,9 @@ export class PrismaFilterBuilder {
             some: {
               columnId: columnIdNum,
               value: {
-                path: ['$'],
-                not: referenceValue
+                not: {
+                  array_contains: [referenceValue]
+                }
               }
             }
           }
@@ -569,7 +552,7 @@ export class PrismaFilterBuilder {
     return columnType === 'reference';
   }
 
-  private isValidFilter(filter: FilterConfig): boolean {
+  private isValidFilter(filter: FilterConfig): boolean | number {
     return filter && 
            filter.columnId && 
            filter.operator && 
@@ -585,6 +568,53 @@ export class PrismaFilterBuilder {
   }
 
   /**
+   * Get post-process filters that need to be applied after Prisma query
+   */
+  getPostProcessFilters(): Array<{
+    columnId: number;
+    operator: string;
+    value: any;
+    columnType: string;
+  }> {
+    return this.postProcessFilters;
+  }
+
+  /**
+   * Check if there are any post-process filters
+   */
+  hasPostProcessFilters(): boolean {
+    return this.postProcessFilters.length > 0;
+  }
+
+  /**
+   * Apply post-process filters to the results
+   */
+  applyPostProcessFilters(rows: any[]): any[] {
+    if (this.postProcessFilters.length === 0) {
+      return rows;
+    }
+
+    return rows.filter(row => {
+      return this.postProcessFilters.every(filter => {
+        const cell = row.cells?.find((c: any) => c.columnId === filter.columnId);
+        if (!cell) return false;
+
+        const cellValue = String(cell.value || '');
+        const filterValue = String(filter.value || '');
+
+        switch (filter.operator) {
+          case 'starts_with':
+            return cellValue.startsWith(filterValue);
+          case 'ends_with':
+            return cellValue.endsWith(filterValue);
+          default:
+            return true;
+        }
+      });
+    });
+  }
+
+  /**
    * Date helper methods
    */
   private buildTodayCondition(columnId: number): any {
@@ -597,7 +627,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfDay.toISOString(),
             lt: endOfDay.toISOString()
           }
@@ -617,7 +646,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfDay.toISOString(),
             lt: endOfDay.toISOString()
           }
@@ -639,7 +667,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfWeek.toISOString(),
             lt: endOfWeek.toISOString()
           }
@@ -661,7 +688,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfLastWeek.toISOString(),
             lt: endOfLastWeek.toISOString()
           }
@@ -680,7 +706,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfMonth.toISOString(),
             lt: endOfMonth.toISOString()
           }
@@ -699,7 +724,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfLastMonth.toISOString(),
             lt: endOfLastMonth.toISOString()
           }
@@ -718,7 +742,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfYear.toISOString(),
             lt: endOfYear.toISOString()
           }
@@ -737,7 +760,6 @@ export class PrismaFilterBuilder {
         some: {
           columnId,
           value: {
-            path: ['$'],
             gte: startOfLastYear.toISOString(),
             lt: endOfLastYear.toISOString()
           }

@@ -239,7 +239,7 @@ export const TableView = memo(function TableView({
 
 	// Calculate table width based on number of columns - optimized for many columns
 	const tableWidth = useMemo(() => {
-		const baseWidth = 40; // Selection column
+		const baseWidth = 40; // Selection column (w-10 = 40px)
 		const dataColumnsWidth = safeColumns.length * 140; // 140px per data column (further reduced)
 		const totalWidth = baseWidth + dataColumnsWidth;
 		// Use a more reasonable minimum width and cap the maximum
@@ -368,7 +368,7 @@ export const TableView = memo(function TableView({
 						<thead className='sticky top-0 z-30 bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 border-b border-slate-200/60'>
 							<tr>
 								{/* Selection Column */}
-								<th className='sticky left-0 z-40 bg-gradient-to-r from-slate-50 to-slate-100 border-r border-slate-200/60 px-4 py-3 text-left min-w-[15px]'>
+								<th className='sticky left-0 z-40 bg-gradient-to-r from-slate-50 to-slate-100 border-r border-slate-200/60 px-2 py-3 text-left w-10'>
 									<div className='flex items-center justify-center'>
 										<Checkbox
 											checked={
@@ -458,7 +458,7 @@ export const TableView = memo(function TableView({
 														"opacity-60 bg-red-50/80",
 												)}>
 												{/* Selection Cell */}
-												<td className='sticky left-0 z-20 bg-white group-hover:bg-slate-50/50 border-r border-slate-200/60 px-4 py-3 min-w-[15px]'>
+												<td className='sticky left-0 z-20 bg-white group-hover:bg-slate-50/50 border-r border-slate-200/60 px-2 py-3 w-10'>
 													<div className='flex items-center justify-center'>
 														<Checkbox
 															checked={selectedRows.has(String(row.id))}

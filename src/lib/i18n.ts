@@ -1,10 +1,10 @@
 /** @format */
 
-export type Language = "en" | "ro" | "es" | "fr" | "de";
+export type Language = "en" | "ro" | "es" | "fr" | "de" | "zh";
 
 export interface Translations {
 	[key: string]: {
-		[lang in Language]: string;
+		[lang in Language]?: string;
 	};
 }
 
@@ -17,6 +17,7 @@ export const translations: Translations = {
 		es: "Análisis",
 		fr: "Analyse",
 		de: "Analyse",
+		zh: "分析",
 	},
 	"nav.organization": {
 		en: "Organization Management",
@@ -272,6 +273,7 @@ export const translations: Translations = {
 		es: "ID Fiscal (CUI/CIF)",
 		fr: "ID Fiscal (CUI/CIF)",
 		de: "Steuer-ID (CUI/CIF)",
+		zh: "税务ID (CUI/CIF)",
 	},
 	"invoice.registrationNumber": {
 		en: "Registration Number",
@@ -372,6 +374,137 @@ export const translations: Translations = {
 		es: "Vista Previa",
 		fr: "Aperçu",
 		de: "Vorschau",
+		zh: "预览",
+	},
+	
+	// Invoice content translations for PDF
+	"invoice.content.invoice": {
+		en: "Invoice",
+		ro: "Factură",
+		es: "Factura",
+		fr: "Facture",
+		de: "Rechnung",
+		zh: "发票",
+	},
+	"invoice.content.invoiceNumber": {
+		en: "Invoice #",
+		ro: "Factura #",
+		es: "Factura #",
+		fr: "Facture #",
+		de: "Rechnung #",
+		zh: "发票 #",
+	},
+	"invoice.content.company": {
+		en: "From",
+		ro: "De la",
+		es: "De",
+		fr: "De",
+		de: "Von",
+		zh: "来自",
+	},
+	"invoice.content.customer": {
+		en: "Bill To",
+		ro: "Facturat către",
+		es: "Facturar a",
+		fr: "Facturer à",
+		de: "Rechnung an",
+		zh: "开票给",
+	},
+	"invoice.content.date": {
+		en: "Date",
+		ro: "Data",
+		es: "Fecha",
+		fr: "Date",
+		de: "Datum",
+		zh: "日期",
+	},
+	"invoice.content.dueDate": {
+		en: "Due Date",
+		ro: "Data scadenței",
+		es: "Fecha de vencimiento",
+		fr: "Date d'échéance",
+		de: "Fälligkeitsdatum",
+		zh: "到期日期",
+	},
+	"invoice.content.paymentTerms": {
+		en: "Payment Terms",
+		ro: "Termeni de plată",
+		es: "Términos de pago",
+		fr: "Conditions de paiement",
+		de: "Zahlungsbedingungen",
+		zh: "付款条件",
+	},
+	"invoice.content.item": {
+		en: "Item",
+		ro: "Articol",
+		es: "Artículo",
+		fr: "Article",
+		de: "Artikel",
+		zh: "商品",
+	},
+	"invoice.content.description": {
+		en: "Description",
+		ro: "Descriere",
+		es: "Descripción",
+		fr: "Description",
+		de: "Beschreibung",
+		zh: "描述",
+	},
+	"invoice.content.quantity": {
+		en: "Qty",
+		ro: "Cantitate",
+		es: "Cantidad",
+		fr: "Quantité",
+		de: "Menge",
+		zh: "数量",
+	},
+	"invoice.content.unitPrice": {
+		en: "Price",
+		ro: "Preț",
+		es: "Precio",
+		fr: "Prix",
+		de: "Preis",
+		zh: "价格",
+	},
+	"invoice.content.total": {
+		en: "Total",
+		ro: "Total",
+		es: "Total",
+		fr: "Total",
+		de: "Gesamt",
+		zh: "总计",
+	},
+	"invoice.content.subtotal": {
+		en: "SUB TOTAL",
+		ro: "SUBTOTAL",
+		es: "SUBTOTAL",
+		fr: "SOUS-TOTAL",
+		de: "ZWISCHENSUMME",
+		zh: "小计",
+	},
+	"invoice.content.tax": {
+		en: "Tax VAT 18%",
+		ro: "TVA 18%",
+		es: "IVA 18%",
+		fr: "TVA 18%",
+		de: "MwSt 18%",
+		zh: "增值税 18%",
+	},
+	"invoice.content.grandTotal": {
+		en: "GRAND TOTAL",
+		ro: "TOTAL GENERAL",
+		es: "TOTAL GENERAL",
+		fr: "TOTAL GÉNÉRAL",
+		de: "GESAMTSUMME",
+		zh: "总金额",
+	},
+	"invoice.content.thankYou": {
+		en: "Thank you for your business!",
+		ro: "Vă mulțumim pentru încredere!",
+		es: "¡Gracias por su confianza!",
+		fr: "Merci pour votre confiance!",
+		de: "Vielen Dank für Ihr Vertrauen!",
+		zh: "感谢您的信任！",
 	},
 
 	// PDF System
@@ -1978,6 +2111,7 @@ export const translations: Translations = {
 		es: "Vista Previa de Factura #{number}",
 		fr: "Aperçu de la Facture #{number}",
 		de: "Rechnungsvorschau #{number}",
+		zh: "发票预览 #{number}",
 	},
 	"invoice.preview.subtitle": {
 		en: "Preview your invoice before downloading",
@@ -1985,6 +2119,7 @@ export const translations: Translations = {
 		es: "Vista previa de su factura antes de descargar",
 		fr: "Aperçu de votre facture avant le téléchargement",
 		de: "Vorschau Ihrer Rechnung vor dem Herunterladen",
+		zh: "下载前预览您的发票",
 	},
 	"invoice.preview.download": {
 		en: "Download PDF",
@@ -1992,6 +2127,7 @@ export const translations: Translations = {
 		es: "Descargar PDF",
 		fr: "Télécharger PDF",
 		de: "PDF Herunterladen",
+		zh: "下载PDF",
 	},
 	"invoice.preview.loading": {
 		en: "Generating PDF preview...",
@@ -1999,6 +2135,7 @@ export const translations: Translations = {
 		es: "Generando vista previa del PDF...",
 		fr: "Génération de l'aperçu PDF...",
 		de: "PDF-Vorschau wird generiert...",
+		zh: "正在生成PDF预览...",
 	},
 	"invoice.preview.generating": {
 		en: "Generating in {language}...",
@@ -2006,6 +2143,7 @@ export const translations: Translations = {
 		es: "Generando en {language}...",
 		fr: "Génération en {language}...",
 		de: "Wird in {language} generiert...",
+		zh: "正在生成{language}预览...",
 	},
 	"invoice.preview.error": {
 		en: "Failed to load PDF preview",
@@ -2013,6 +2151,7 @@ export const translations: Translations = {
 		es: "Error al cargar la vista previa del PDF",
 		fr: "Échec du chargement de l'aperçu PDF",
 		de: "PDF-Vorschau konnte nicht geladen werden",
+		zh: "无法加载PDF预览",
 	},
 	"invoice.preview.retry": {
 		en: "Retry",
@@ -2020,6 +2159,7 @@ export const translations: Translations = {
 		es: "Reintentar",
 		fr: "Réessayer",
 		de: "Wiederholen",
+		zh: "重试",
 	},
 	"invoice.preview.language": {
 		en: "Language",
@@ -2027,6 +2167,7 @@ export const translations: Translations = {
 		es: "Idioma",
 		fr: "Langue",
 		de: "Sprache",
+		zh: "语言",
 	},
 	"invoice.preview.zoom": {
 		en: "Zoom",
@@ -2034,6 +2175,7 @@ export const translations: Translations = {
 		es: "Zoom",
 		fr: "Zoom",
 		de: "Zoom",
+		zh: "缩放",
 	},
 	"invoice.preview.previewMode": {
 		en: "Preview Mode",
@@ -2041,6 +2183,7 @@ export const translations: Translations = {
 		es: "Modo Vista Previa",
 		fr: "Mode Aperçu",
 		de: "Vorschau-Modus",
+		zh: "预览模式",
 	},
 	"invoice.form.exchangeRatesUsed": {
 		en: "Exchange Rates Used",

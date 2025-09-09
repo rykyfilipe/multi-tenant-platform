@@ -169,6 +169,8 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 		{ code: "es", name: t("languages.spanish") },
 		{ code: "fr", name: t("languages.french") },
 		{ code: "de", name: t("languages.german") },
+		{ code: "zh", name: t("languages.chinese") },
+		{ code: "ru", name: t("languages.russian") },
 	];
 
 	const themes = [

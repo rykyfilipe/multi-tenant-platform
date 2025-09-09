@@ -573,6 +573,10 @@ export async function GET(
 		}
 		
 		const { page, pageSize, includeCells, search, filters, sortBy, sortOrder } = validatedParams;
+		
+		logger.info("🔍 GET /rows - Starting database and table verification", {
+			page, pageSize, includeCells, search, filters, sortBy, sortOrder
+		});
 
 		// Verify database exists and belongs to tenant
 		const database = await prisma.database.findFirst({
@@ -583,12 +587,14 @@ export async function GET(
 		});
 
 		if (!database) {
-			logger.warn("Database not found", { tenantId: String(tenantId), databaseId: String(databaseId), userId: String(userId) });
+			logger.warn("❌ Database not found", { tenantId: String(tenantId), databaseId: String(databaseId), userId: String(userId) });
 			return NextResponse.json(
 				{ error: "Database not found" },
 				{ status: 404 },
 			);
 		}
+		
+		logger.info("✅ Database found", { databaseId: String(databaseId), databaseName: database.name });
 
 		// Verify table exists
 		const table = await prisma.table.findFirst({
@@ -599,9 +605,11 @@ export async function GET(
 		});
 
 		if (!table) {
-			logger.warn("Table not found", { tenantId: String(tenantId), databaseId: String(databaseId), tableId: String(tableId), userId: String(userId) });
+			logger.warn("❌ Table not found", { tenantId: String(tenantId), databaseId: String(databaseId), tableId: String(tableId), userId: String(userId) });
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
+		
+		logger.info("✅ Table found", { tableId: String(tableId), tableName: table.name });
 
 		// Get table columns for filtering
 		const tableColumns = await prisma.column.findMany({
@@ -679,6 +687,15 @@ export async function GET(
 				userId: String(userId) 
 			});
 		}
+		
+		logger.info("✅ Filter validation successful, proceeding with query", {
+			convertedFilters,
+			search,
+			sortBy,
+			sortOrder,
+			page,
+			pageSize
+		});
 
 		// Generate cache key
 		const cacheKey = filterCache.generateCacheKey(
@@ -722,41 +739,86 @@ export async function GET(
 			.addColumnFilters(convertedFilters);
 
 		const whereClause = filterBuilder.getWhereClause();
+		const hasPostProcessFilters = filterBuilder.hasPostProcessFilters();
 
 		// Execute optimized query with Prisma
-		logger.info("Executing filtered query", { 
+		logger.info("🔍 Executing filtered query", { 
 			whereClause: JSON.stringify(whereClause, null, 2),
 			tenantId: String(tenantId), 
 			tableId: String(tableId), 
 			userId: String(userId),
 			filtersCount: convertedFilters.length,
-			hasGlobalSearch: !!search
+			hasGlobalSearch: !!search,
+			hasPostProcessFilters
 		});
 
-		// Get total count for pagination
-		const totalRows = await prisma.row.count({
-			where: whereClause
+		let totalRows: number;
+		let rows: any[];
+
+		if (hasPostProcessFilters) {
+			// If we have post-process filters, we need to get all rows first
+			// then apply post-process filtering
+			const allRows = await prisma.row.findMany({
+				where: whereClause,
+				include: {
+					cells: includeCells ? {
+								include: {
+							column: true
+						}
+					} : false
+				}
+			});
+
+			// Apply post-process filters
+			const filteredRows = filterBuilder.applyPostProcessFilters(allRows);
+			totalRows = filteredRows.length;
+
+			// Apply pagination to filtered results
+			const skip = (page - 1) * pageSize;
+			rows = filteredRows.slice(skip, skip + pageSize);
+		} else {
+			// Normal flow without post-process filters
+			totalRows = await prisma.row.count({
+				where: whereClause
+			});
+			
+			// Calculate pagination
+			const totalPages = Math.ceil(totalRows / pageSize);
+			const skip = (page - 1) * pageSize;
+
+			// Execute the main query
+			rows = await prisma.row.findMany({
+				where: whereClause,
+				include: {
+					cells: includeCells ? {
+								include: {
+							column: true
+						}
+					} : false
+				},
+				skip,
+				take: pageSize,
+				orderBy: {
+					[sortBy]: sortOrder
+				}
+			});
+		}
+		
+		logger.info("📊 Query count result", { 
+			totalRows, 
+			tenantId: String(tenantId), 
+			tableId: String(tableId) 
 		});
 
 		// Calculate pagination
 		const totalPages = Math.ceil(totalRows / pageSize);
-		const skip = (page - 1) * pageSize;
-
-		// Execute the main query
-		const rows = await prisma.row.findMany({
-			where: whereClause,
-			include: {
-				cells: includeCells ? {
-							include: {
-						column: true
-					}
-				} : false
-			},
-			skip,
-			take: pageSize,
-			orderBy: {
-				[sortBy]: sortOrder
-			}
+		
+		logger.info("📋 Query rows result", { 
+			rowsCount: rows.length, 
+			tenantId: String(tenantId), 
+			tableId: String(tableId),
+			includeCells,
+			hasPostProcessFilters
 		});
 
 		// Build pagination info
@@ -780,14 +842,21 @@ export async function GET(
 
 		const executionTime = Date.now() - startTime;
 
-		logger.info("Filtered query completed", { 
+		logger.info("✅ Filtered query completed successfully", { 
 			tenantId: String(tenantId), 
 			tableId: String(tableId), 
 			userId: String(userId),
 			rowsReturned: rows.length,
 			totalRows,
 			executionTime,
-			cacheHit: false
+			cacheHit: false,
+			pagination: {
+				page,
+				pageSize,
+				totalPages,
+				hasNext: page < totalPages,
+				hasPrev: page > 1
+			}
 		});
 
 		return NextResponse.json({

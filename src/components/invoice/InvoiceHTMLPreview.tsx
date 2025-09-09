@@ -53,6 +53,13 @@ interface TenantBranding {
   phone?: string;
   companyTaxId?: string;
   registrationNumber?: string;
+  companyCity?: string;
+  companyCountry?: string;
+  companyPostalCode?: string;
+  companyIban?: string;
+  companyBank?: string;
+  companyStreet?: string;
+  companyStreetNumber?: string;
 }
 
 interface InvoiceHTMLPreviewProps {
@@ -139,8 +146,20 @@ export function InvoiceHTMLPreview({
             <h3 className="text-sm font-semibold text-gray-700 mb-3">{translations.company || 'From'}:</h3>
             <div className="space-y-1 text-sm">
               <div className="font-semibold text-gray-900">{tenantBranding.name}</div>
-              {tenantBranding.address && (
-                <div className="text-gray-600">{tenantBranding.address}</div>
+              {/* Build address from tenant data */}
+              {(tenantBranding.companyStreet || tenantBranding.address) && (
+                <div className="text-gray-600">
+                  {tenantBranding.companyStreet && tenantBranding.companyStreetNumber
+                    ? `${tenantBranding.companyStreet} ${tenantBranding.companyStreetNumber}`
+                    : tenantBranding.address || tenantBranding.companyStreet}
+                </div>
+              )}
+              {(tenantBranding.companyCity || tenantBranding.companyPostalCode) && (
+                <div className="text-gray-600">
+                  {[tenantBranding.companyPostalCode, tenantBranding.companyCity, tenantBranding.companyCountry]
+                    .filter(Boolean)
+                    .join(', ')}
+                </div>
               )}
               {tenantBranding.companyEmail && (
                 <div className="text-gray-600">{tenantBranding.companyEmail}</div>
@@ -148,9 +167,17 @@ export function InvoiceHTMLPreview({
               {tenantBranding.phone && (
                 <div className="text-gray-600">{tenantBranding.phone}</div>
               )}
+              {tenantBranding.website && (
+                <div className="text-gray-600">{tenantBranding.website}</div>
+              )}
               {tenantBranding.companyTaxId && (
                 <div className="text-gray-600">
                   Tax ID: {tenantBranding.companyTaxId}
+                </div>
+              )}
+              {tenantBranding.registrationNumber && (
+                <div className="text-gray-600">
+                  Reg. No: {tenantBranding.registrationNumber}
                 </div>
               )}
             </div>
@@ -318,17 +345,44 @@ export function InvoiceHTMLPreview({
               <div className="text-sm text-gray-600 space-y-1">
                 <div>Payment: Visa, Master Card</div>
                 <div>We accept Cheque</div>
-                <div>Paypal: {tenantBranding.companyEmail || 'paypal@company.com'}</div>
+                {tenantBranding.companyIban && (
+                  <div>IBAN: {tenantBranding.companyIban}</div>
+                )}
+                {tenantBranding.companyBank && (
+                  <div>Bank: {tenantBranding.companyBank}</div>
+                )}
+                {tenantBranding.companyEmail && (
+                  <div>Paypal: {tenantBranding.companyEmail}</div>
+                )}
               </div>
             </div>
             
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-2">Contact:</h4>
               <div className="text-sm text-gray-600 space-y-1">
-                <div>{tenantBranding.address || '123 Street, Town Postal, County'}</div>
-                <div>{tenantBranding.phone || '+999 123 456 789'}</div>
-                <div>{tenantBranding.companyEmail || 'info@yourname'}</div>
-                <div>{tenantBranding.website || 'www.domainname.com'}</div>
+                {(tenantBranding.companyStreet || tenantBranding.address) && (
+                  <div>
+                    {tenantBranding.companyStreet && tenantBranding.companyStreetNumber
+                      ? `${tenantBranding.companyStreet} ${tenantBranding.companyStreetNumber}`
+                      : tenantBranding.address || tenantBranding.companyStreet}
+                  </div>
+                )}
+                {(tenantBranding.companyCity || tenantBranding.companyPostalCode) && (
+                  <div>
+                    {[tenantBranding.companyPostalCode, tenantBranding.companyCity, tenantBranding.companyCountry]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </div>
+                )}
+                {tenantBranding.phone && (
+                  <div>{tenantBranding.phone}</div>
+                )}
+                {tenantBranding.companyEmail && (
+                  <div>{tenantBranding.companyEmail}</div>
+                )}
+                {tenantBranding.website && (
+                  <div>{tenantBranding.website}</div>
+                )}
               </div>
             </div>
             
