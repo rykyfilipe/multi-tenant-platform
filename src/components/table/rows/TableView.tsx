@@ -368,7 +368,7 @@ export const TableView = memo(function TableView({
 						<thead className='sticky top-0 z-30 bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 border-b border-slate-200/60'>
 							<tr>
 								{/* Selection Column */}
-								<th className='sticky left-0 z-40 bg-gradient-to-r from-slate-50 to-slate-100 border-r border-slate-200/60 px-4 py-3 text-left min-w-[40px]'>
+								<th className='sticky left-0 z-40 bg-gradient-to-r from-slate-50 to-slate-100 border-r border-slate-200/60 px-4 py-3 text-left min-w-[15px]'>
 									<div className='flex items-center justify-center'>
 										<Checkbox
 											checked={
@@ -458,7 +458,7 @@ export const TableView = memo(function TableView({
 														"opacity-60 bg-red-50/80",
 												)}>
 												{/* Selection Cell */}
-												<td className='sticky left-0 z-20 bg-white group-hover:bg-slate-50/50 border-r border-slate-200/60 px-4 py-3 min-w-[40px]'>
+												<td className='sticky left-0 z-20 bg-white group-hover:bg-slate-50/50 border-r border-slate-200/60 px-4 py-3 min-w-[15px]'>
 													<div className='flex items-center justify-center'>
 														<Checkbox
 															checked={selectedRows.has(String(row.id))}

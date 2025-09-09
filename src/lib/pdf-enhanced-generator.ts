@@ -448,7 +448,8 @@ export class EnhancedPDFGenerator {
 		// Total Due
 		const totalAmount = invoiceData.invoice?.total_amount || 0;
 		const currency = invoiceData.invoice?.base_currency || 'USD';
-		page.drawText(`Total Due: ${this.removeDiacritics(currency)} ${this.removeDiacritics(totalAmount.toFixed(2))}`, {
+		const safeTotalAmount = typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount) || 0;
+		page.drawText(`Total Due: ${this.removeDiacritics(currency)} ${this.removeDiacritics(safeTotalAmount.toFixed(2))}`, {
 			x: width - 200,
 			y: 700,
 			size: 14,
@@ -725,11 +726,13 @@ export class EnhancedPDFGenerator {
 
 			// Item data
 			x = 50;
+			const unitPrice = parseFloat(item.unit_price || '0') || 0;
+			const quantity = parseFloat(item.quantity || '0') || 0;
 			const itemData = [
 				item.product_name || item.description || 'Item',
-				`${parseFloat(item.unit_price || '0').toFixed(2)}`,
+				`${unitPrice.toFixed(2)}`,
 				item.quantity || '0',
-				`${(parseFloat(item.quantity || '0') * parseFloat(item.unit_price || '0')).toFixed(2)}`,
+				`${(quantity * unitPrice).toFixed(2)}`,
 			];
 
 			itemData.forEach((data, dataIndex) => {
@@ -764,6 +767,7 @@ export class EnhancedPDFGenerator {
 		let currentY = y;
 
 		// Subtotal
+		const safeSubtotal = typeof invoiceData.totals.subtotal === 'number' ? invoiceData.totals.subtotal : parseFloat(invoiceData.totals.subtotal) || 0;
 		page.drawText(`${this.removeDiacritics(translations.subtotal || 'SUB TOTAL')}:`, {
 			x: width - 200,
 			y: currentY,
@@ -771,7 +775,7 @@ export class EnhancedPDFGenerator {
 			font: boldFont,
 			color: textColor,
 		});
-		page.drawText(this.removeDiacritics(invoiceData.totals.subtotal.toFixed(2)), {
+		page.drawText(this.removeDiacritics(safeSubtotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
 			size: 10,
@@ -780,7 +784,8 @@ export class EnhancedPDFGenerator {
 		});
 
 		// VAT
-		if (invoiceData.totals.vatTotal > 0) {
+		const safeVatTotal = typeof invoiceData.totals.vatTotal === 'number' ? invoiceData.totals.vatTotal : parseFloat(invoiceData.totals.vatTotal) || 0;
+		if (safeVatTotal > 0) {
 			currentY -= 15;
 			page.drawText(`${this.removeDiacritics(translations.tax || 'Tax VAT 18%')}:`, {
 				x: width - 200,
@@ -789,7 +794,7 @@ export class EnhancedPDFGenerator {
 				font: boldFont,
 				color: textColor,
 			});
-			page.drawText(this.removeDiacritics(invoiceData.totals.vatTotal.toFixed(2)), {
+			page.drawText(this.removeDiacritics(safeVatTotal.toFixed(2)), {
 				x: width - 100,
 				y: currentY,
 				size: 10,
@@ -800,7 +805,7 @@ export class EnhancedPDFGenerator {
 
 		// Discount
 		currentY -= 15;
-		const discount = invoiceData.totals.subtotal * 0.1;
+		const discount = safeSubtotal * 0.1;
 		page.drawText('Discount 10%:', {
 			x: width - 200,
 			y: currentY,
@@ -826,6 +831,7 @@ export class EnhancedPDFGenerator {
 		});
 		currentY -= 20;
 		
+		const safeGrandTotal = typeof invoiceData.totals.grandTotal === 'number' ? invoiceData.totals.grandTotal : parseFloat(invoiceData.totals.grandTotal) || 0;
 		page.drawText(`${this.removeDiacritics(translations.grandTotal || 'GRAND TOTAL')}:`, {
 			x: width - 200,
 			y: currentY,
@@ -833,7 +839,7 @@ export class EnhancedPDFGenerator {
 			font: boldFont,
 			color: textColor,
 		});
-		page.drawText(this.removeDiacritics(invoiceData.totals.grandTotal.toFixed(2)), {
+		page.drawText(this.removeDiacritics(safeGrandTotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
 			size: 14,
@@ -1082,15 +1088,15 @@ export class EnhancedPDFGenerator {
 		// Language-specific translations
 		const languageTranslations: Record<string, Record<string, string>> = {
 			ro: {
-				invoice: 'FACTURĂ',
+				invoice: 'FACTURA',
 				invoiceNumber: 'Factura#',
 				date: 'Data',
 				dueDate: 'Data Scadentei',
-				customer: 'Facturat către',
+				customer: 'Facturat catre',
 				company: 'De la',
 				description: 'Descriere',
 				quantity: 'CANTITATE',
-				unitPrice: 'PREȚ',
+				unitPrice: 'PRET',
 				total: 'TOTAL',
 				subtotal: 'SUBTOTAL',
 				tax: 'TVA 18%',
@@ -1098,7 +1104,7 @@ export class EnhancedPDFGenerator {
 				paymentTerms: 'Termeni de Plata',
 				paymentMethod: 'Metoda de Plata',
 				notes: 'Note',
-				thankYou: 'Vă mulțumim pentru încredere!',
+				thankYou: 'Va multumim pentru incredere!',
 				page: 'Pagina',
 				of: 'din',
 				item: 'Produs',
@@ -1106,17 +1112,17 @@ export class EnhancedPDFGenerator {
 				vatRate: 'TVA %',
 				vatAmount: 'Valoare TVA',
 				lineTotal: 'Total linie',
-				subtotalExclVat: 'Subtotal (fără TVA)',
+				subtotalExclVat: 'Subtotal (fara TVA)',
 				vatTotal: 'Total TVA',
 				grandTotalInclVat: 'TOTAL GENERAL (cu TVA)',
-				paymentInformation: 'INFORMAȚII DE PLATĂ',
+				paymentInformation: 'INFORMATII DE PLATA',
 				legalNotices: 'AVIZE LEGALE',
-				termsAndConditions: 'Termeni și Condiții',
-				signature: 'Semnătură',
+				termsAndConditions: 'Termeni si Conditii',
+				signature: 'Semnatura',
 				manager: 'Manager',
 				contact: 'Contact',
 				from: 'De la',
-				billTo: 'Facturat către',
+				billTo: 'Facturat catre',
 			},
 			es: {
 				invoice: 'FACTURA',

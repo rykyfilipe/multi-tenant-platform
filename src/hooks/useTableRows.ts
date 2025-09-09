@@ -219,7 +219,12 @@ function useTableRows(
 				query.set("sortOrder", sortOrderParam);
 				const url = `${baseUrl}?${query.toString()}`;
 
-				console.log("🌐 useTableRows - Making GET API request:", { url });
+				console.log("🌐 useTableRows - Making GET API request:", { 
+					url, 
+					queryParams: Object.fromEntries(query.entries()),
+					filtersParam,
+					encodedFilters: query.get("filters")
+				});
 
 				const res = await fetch(url, {
 					method: "GET",

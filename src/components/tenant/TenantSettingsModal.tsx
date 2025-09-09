@@ -179,15 +179,15 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 
 	return (
 		<Dialog open={true} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-3xl max-h-[90vh] overflow-y-auto'>
-				<DialogHeader className='text-center pb-6'>
-					<div className='p-4 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full w-fit mx-auto mb-4'>
-						<Settings className='w-8 h-8 text-primary' />
+			<DialogContent className='w-[95vw] max-w-[95vw] sm:max-w-3xl max-h-[95vh] overflow-y-auto'>
+				<DialogHeader className='text-center pb-3 sm:pb-6'>
+					<div className='p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full w-fit mx-auto mb-3 sm:p-4 sm:mb-4'>
+						<Settings className='w-6 h-6 text-primary sm:w-8 sm:h-8' />
 					</div>
-					<DialogTitle className='text-2xl font-bold tracking-tight'>
+					<DialogTitle className='text-lg font-bold tracking-tight sm:text-2xl'>
 						{t("tenant.enterpriseConfiguration")}
 					</DialogTitle>
-					<p className='text-sm text-muted-foreground font-medium'>
+					<p className='text-xs text-muted-foreground font-medium sm:text-sm'>
 						{t("tenant.manageOrganizationSettings")}
 					</p>
 				</DialogHeader>
@@ -196,34 +196,38 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 					value={activeTab}
 					onValueChange={setActiveTab}
 					className='w-full'>
-					<PremiumTabsList className='grid w-full grid-cols-4 h-12'>
+					<PremiumTabsList className='grid w-full grid-cols-2 h-10 sm:grid-cols-4 sm:h-12'>
 						<PremiumTabsTrigger
 							value='general'
-							className='flex items-center gap-2 font-semibold'>
-							<Building2 className='w-4 h-4' />
-							{t("tenant.general")}
+							className='flex items-center gap-1 font-semibold text-xs sm:gap-2 sm:text-sm'>
+							<Building2 className='w-3 h-3 sm:w-4 sm:h-4' />
+							<span className="hidden sm:inline">{t("tenant.general")}</span>
+							<span className="sm:hidden">Gen</span>
 						</PremiumTabsTrigger>
 						<PremiumTabsTrigger
 							value='contact'
-							className='flex items-center gap-2 font-semibold'>
-							<Globe className='w-4 h-4' />
-							{t("tenant.contact")}
+							className='flex items-center gap-1 font-semibold text-xs sm:gap-2 sm:text-sm'>
+							<Globe className='w-3 h-3 sm:w-4 sm:h-4' />
+							<span className="hidden sm:inline">{t("tenant.contact")}</span>
+							<span className="sm:hidden">Contact</span>
 						</PremiumTabsTrigger>
 						<PremiumTabsTrigger
 							value='invoice'
-							className='flex items-center gap-2 font-semibold'>
-							<TrendingUp className='w-4 h-4' />
-							{t("tenant.invoice")}
+							className='flex items-center gap-1 font-semibold text-xs sm:gap-2 sm:text-sm'>
+							<TrendingUp className='w-3 h-3 sm:w-4 sm:h-4' />
+							<span className="hidden sm:inline">{t("tenant.invoice")}</span>
+							<span className="sm:hidden">Invoice</span>
 						</PremiumTabsTrigger>
 						<PremiumTabsTrigger
 							value='appearance'
-							className='flex items-center gap-2 font-semibold'>
-							<Palette className='w-4 h-4' />
-							{t("tenant.appearance")}
+							className='flex items-center gap-1 font-semibold text-xs sm:gap-2 sm:text-sm'>
+							<Palette className='w-3 h-3 sm:w-4 sm:h-4' />
+							<span className="hidden sm:inline">{t("tenant.appearance")}</span>
+							<span className="sm:hidden">Theme</span>
 						</PremiumTabsTrigger>
 					</PremiumTabsList>
 
-					<form onSubmit={handleSubmit} className='space-y-8 mt-8'>
+					<form onSubmit={handleSubmit} className='space-y-4 mt-4 sm:space-y-8 sm:mt-8'>
 						{/* General Settings */}
 						<PremiumTabsContent value='general' className='space-y-6'>
 							<div className='space-y-3'>
@@ -245,7 +249,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 								/>
 							</div>
 
-							<div className='grid grid-cols-2 gap-4'>
+							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
 								<div className='space-y-2'>
 									<Label htmlFor='timezone'>{t("tenant.timezone")}</Label>
 									<select
@@ -294,7 +298,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 								</div>
 							</div>
 
-							<div className='grid grid-cols-2 gap-4'>
+							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
 								<div className='space-y-2'>
 									<Label htmlFor='language'>{t("tenant.language")}</Label>
 									<select
@@ -397,7 +401,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 								</p>
 							</div>
 
-							<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
 								<div className='space-y-2'>
 									<Label htmlFor='companyTaxId'>
 										{t("invoice.companyTaxId")} *
@@ -442,7 +446,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 									{t("invoice.companyAddress")}
 								</h4>
 
-								<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+								<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'>
 									<div className='space-y-2 md:col-span-2'>
 										<Label htmlFor='companyStreet'>
 											{t("invoice.companyStreet")} *
@@ -482,7 +486,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 									</div>
 								</div>
 
-								<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+								<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'>
 									<div className='space-y-2'>
 										<Label htmlFor='companyCity'>
 											{t("invoice.companyCity")} *
@@ -547,7 +551,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 									{t("invoice.bankingDetails")}
 								</h4>
 
-								<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+								<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
 									<div className='space-y-2'>
 										<Label htmlFor='companyIban'>
 											{t("invoice.companyIban")}
@@ -595,7 +599,7 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 									{t("invoice.numberingSettingsDescription")}
 								</p>
 
-								<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+								<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'>
 									<div className='space-y-2'>
 										<Label htmlFor='invoiceSeriesPrefix'>
 											{t("invoice.series")}
@@ -714,12 +718,12 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 						</PremiumTabsContent>
 
 						{/* Action Buttons */}
-						<div className='flex gap-4 pt-6 border-t'>
+						<div className='flex flex-col gap-2 pt-4 border-t sm:flex-row sm:gap-4 sm:pt-6'>
 							<Button
 								type='button'
 								variant='outline'
 								onClick={onClose}
-								className='flex-1 h-12 text-base font-semibold'>
+								className='flex-1 h-10 text-sm font-semibold sm:h-12 sm:text-base'>
 								{t("common.cancel")}
 							</Button>
 							<Button
@@ -736,8 +740,8 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 											!formData.companyCountry.trim() ||
 											!formData.companyPostalCode.trim()))
 								}
-								className='flex-1 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 gap-2'>
-								<Save className='w-4 h-4' />
+								className='flex-1 h-10 text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200 gap-2 sm:h-12 sm:text-base'>
+								<Save className='w-3 h-3 sm:w-4 sm:h-4' />
 								{loading ? t("common.loading") : t("tenant.saveConfiguration")}
 							</Button>
 						</div>

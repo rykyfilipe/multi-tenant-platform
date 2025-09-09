@@ -263,31 +263,31 @@ export function PDFPreviewModal({
         className={`relative bg-background border rounded-lg shadow-2xl overflow-hidden ${
           isFullscreen 
             ? 'w-[98vw] h-[98vh] max-w-[98vw] max-h-[98vh]' 
-            : 'w-[70vw] h-[80vh] max-w-[70vw] max-h-[80vh] min-w-[600px] min-h-[500px]'
+            : 'w-[95vw] h-[90vh] max-w-[95vw] max-h-[90vh] min-w-[320px] min-h-[400px] sm:w-[70vw] sm:h-[80vh] sm:max-w-[70vw] sm:max-h-[80vh] sm:min-w-[600px] sm:min-h-[500px]'
         }`}
       >
         {/* Header */}
-        <div className="flex flex-row items-center justify-between p-6 border-b bg-gradient-to-r from-primary/5 to-primary/10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <FileText className="h-5 w-5 text-primary" />
+        <div className="flex flex-col gap-3 p-3 border-b bg-gradient-to-r from-primary/5 to-primary/10 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 bg-primary/10 rounded-lg sm:p-2">
+              <FileText className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <h2 className="text-xl font-semibold">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold truncate sm:text-xl">
                 {t('invoice.preview.title', { number: invoiceNumber })}
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground sm:text-sm">
                 {t('invoice.preview.subtitle')}
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
             {/* Language Selector */}
             <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-              <SelectTrigger className="w-32 h-9">
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
+              <SelectTrigger className="w-full h-8 text-xs sm:w-32 sm:h-9 sm:text-sm">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
                   <SelectValue />
                 </div>
               </SelectTrigger>
@@ -310,15 +310,15 @@ export function PDFPreviewModal({
                 size="sm"
                 onClick={() => handleZoomChange(zoom - 25)}
                 disabled={zoom <= 25}
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0 sm:h-7 sm:w-7"
               >
-                <ZoomOut className="h-3 w-3" />
+                <ZoomOut className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={resetZoom}
-                className="h-7 px-2 text-xs"
+                className="h-6 px-1.5 text-xs sm:h-7 sm:px-2"
               >
                 {zoom}%
               </Button>
@@ -327,47 +327,51 @@ export function PDFPreviewModal({
                 size="sm"
                 onClick={() => handleZoomChange(zoom + 25)}
                 disabled={zoom >= 200}
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0 sm:h-7 sm:w-7"
               >
-                <ZoomIn className="h-3 w-3" />
+                <ZoomIn className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               </Button>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={toggleFullscreen}
-                className="h-9"
+                className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
               >
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                {isFullscreen ? <Minimize2 className="h-3 w-3 sm:h-4 sm:w-4" /> : <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4" />}
+                <span className="sr-only sm:not-sr-only sm:ml-2 sm:inline">
+                  {isFullscreen ? 'Minimize' : 'Maximize'}
+                </span>
               </Button>
               
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDownload}
-                className="h-9"
+                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
               >
-                <Download className="h-4 w-4 mr-2" />
-                {t('invoice.preview.download')}
+                <Download className="h-3 w-3 mr-1 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('invoice.preview.download')}</span>
+                <span className="sm:hidden">PDF</span>
               </Button>
               
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="h-9 w-9 p-0"
+                className="h-8 w-8 p-0 sm:h-9 sm:w-9"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
         </div>
 
         {/* PDF Content */}
-        <div className="flex-1 overflow-hidden bg-muted/20" style={{ height: 'calc(100% - 140px)' }}>
+        <div className="flex-1 overflow-hidden bg-muted/20" style={{ height: 'calc(100% - 120px)' }}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center space-y-4">
@@ -415,19 +419,19 @@ export function PDFPreviewModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t bg-muted/30 p-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="text-xs">
+        <div className="border-t bg-muted/30 p-2 sm:p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
                 {t('invoice.preview.language')}: {languages.find(l => l.code === selectedLanguage)?.name}
               </Badge>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
                 {t('invoice.preview.zoom')}: {zoom}%
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Eye className="h-3 w-3" />
-              <span>{t('invoice.preview.previewMode')}</span>
+              <span className="text-xs">{t('invoice.preview.previewMode')}</span>
             </div>
           </div>
         </div>

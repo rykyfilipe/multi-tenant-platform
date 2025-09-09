@@ -53,7 +53,7 @@ const QueryParamsSchema = z.object({
 	pageSize: z.string().transform((val) => Math.min(Math.max(1, parseInt(val) || 25), 100)),
 	includeCells: z.string().optional().transform((val) => val !== "false"),
 	search: z.string().optional().transform((val) => val?.trim() || ""),
-		filters: z.string().optional().transform((val) => {
+	filters: z.string().optional().transform((val) => {
 			if (!val) return [];
 			try {
 				// Handle potential double encoding
@@ -532,6 +532,15 @@ export async function GET(
 	try {
 		// Parse and validate query parameters
 		const url = new URL(request.url);
+		logger.info("🔍 GET /rows - Request details", {
+			fullUrl: request.url,
+			tenantId: String(tenantId),
+			databaseId: String(databaseId),
+			tableId: String(tableId),
+			userId: String(userId),
+			searchParams: Object.fromEntries(url.searchParams.entries())
+		});
+		
 		const queryParams = {
 			page: url.searchParams.get("page") || "1",
 			pageSize: url.searchParams.get("pageSize") || "25",
@@ -541,8 +550,28 @@ export async function GET(
 			sortBy: url.searchParams.get("sortBy") || "id",
 			sortOrder: url.searchParams.get("sortOrder") || "asc",
 		};
+		
+		logger.info("🔍 GET /rows - Parsed query params", { queryParams });
 
-		const validatedParams = QueryParamsSchema.parse(queryParams);
+		let validatedParams;
+		try {
+			validatedParams = QueryParamsSchema.parse(queryParams);
+			logger.info("✅ GET /rows - Query params validation successful", { validatedParams });
+		} catch (validationError) {
+			logger.error("❌ GET /rows - Query params validation failed", validationError as Error, { 
+				queryParams,
+				errorMessage: validationError instanceof Error ? validationError.message : String(validationError)
+			});
+			return NextResponse.json(
+				{ 
+					error: "Invalid query parameters", 
+					details: validationError instanceof Error ? validationError.message : String(validationError),
+					receivedParams: queryParams
+				}, 
+				{ status: 400 }
+			);
+		}
+		
 		const { page, pageSize, includeCells, search, filters, sortBy, sortOrder } = validatedParams;
 
 		// Verify database exists and belongs to tenant
@@ -615,7 +644,7 @@ export async function GET(
 		// Validate filters using the new validator
 		logger.info("Validating filters", { 
 			filters: convertedFilters, 
-			tableColumns: tableColumns.map(col => ({ id: col.id, name: col.name, type: col.type })),
+			tableColumns: tableColumns.map((col : any) => ({ id: col.id, name: col.name, type: col.type })),
 			tenantId: String(tenantId), 
 			tableId: String(tableId), 
 			userId: String(userId) 
@@ -626,7 +655,7 @@ export async function GET(
 			logger.warn("Invalid filters provided", { 
 				errors: validationResult.errors, 
 				filters: convertedFilters, 
-				tableColumns: tableColumns.map(col => ({ id: col.id, name: col.name, type: col.type })),
+				tableColumns: tableColumns.map((col: any) => ({ id: col.id, name: col.name, type: col.type })),
 				tenantId: String(tenantId), 
 				tableId: String(tableId), 
 				userId: String(userId) 
