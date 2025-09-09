@@ -9,7 +9,7 @@ import { UserManagementGrid } from "@/components/users/UserManagementGrid";
 import { InvitationManagementList } from "@/components/users/InvitationManagementList";
 import { InvitationCreationForm } from "@/components/users/InvitationCreationForm";
 import { UsersLoadingState } from "@/components/ui/loading-states";
-import TourProv from "@/contexts/TourProvider";
+import TourProvider from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
 import { tourUtils } from "@/lib/tour-config";
 import { Shield, Users, Plus, Search, Mail } from "lucide-react";
@@ -252,7 +252,7 @@ const UsersPage = () => {
 	// All authenticated users can view coworkers, but only admins can manage them
 
 	return (
-		<TourProv
+		<TourProvider
 			steps={tourUtils.getUsersTourSteps(
 				users.length > 0,
 				invitations.length > 0,
@@ -337,7 +337,7 @@ const UsersPage = () => {
 							</div>
 							
 							{/* Mobile Stats Grid */}
-							<div className='grid grid-cols-2 sm:grid-cols-3 gap-4'>
+							<div className='grid grid-cols-2 sm:grid-cols-4 gap-4'>
 								<div className='text-center p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm'>
 									<div className='text-xl sm:text-2xl font-bold text-slate-900 dark:text-white'>{users.length}</div>
 									<div className='text-xs sm:text-sm text-slate-500 dark:text-slate-400'>Total Members</div>
@@ -346,15 +346,13 @@ const UsersPage = () => {
 									<div className='text-xl sm:text-2xl font-bold text-green-600'>{users.filter(u => u.role === 'ADMIN').length}</div>
 									<div className='text-xs sm:text-sm text-slate-500 dark:text-slate-400'>Administrators</div>
 								</div>
+								<div className='text-center p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm'>
+									<div className='text-xl sm:text-2xl font-bold text-blue-600'>{users.filter(u => u.role === 'EDITOR').length}</div>
+									<div className='text-xs sm:text-sm text-slate-500 dark:text-slate-400'>Editors</div>
+								</div>
 								<div className='text-center p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm sm:col-span-1 col-span-2'>
 									<div className='text-xl sm:text-2xl font-bold text-amber-600'>{invitations.length}</div>
 									<div className='text-xs sm:text-sm text-slate-500 dark:text-slate-400'>Pending Invites</div>
-								</div>
-							</div>
-						</div>
-								<div className='text-center'>
-									<div className='text-2xl font-bold text-blue-600'>{users.filter(u => u.role === 'EDITOR').length}</div>
-									<div className='text-sm text-slate-500 dark:text-slate-400'>Editors</div>
 								</div>
 							</div>
 						</div>
@@ -433,9 +431,10 @@ const UsersPage = () => {
 							</div>
 						)}
 					</div>
+					
 				</div>
 			</div>
-		</TourProv>
+		</TourProvider>
 	);
 };
 
