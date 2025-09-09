@@ -22,6 +22,11 @@ import {
 	trackUserAction,
 	trackDatabaseOperationFromResponse,
 } from "@/lib/api-tracker";
+import { FilterConfig } from "@/types/filtering-enhanced";
+import { FilterValidator } from "@/lib/filter-validator";
+import { PrismaFilterBuilder } from "@/lib/prisma-filter-builder";
+import { filterCache } from "@/lib/filter-cache";
+import { logger } from "@/lib/error-logger";
 
 const RowSchema = z.object({
 	cells: z.array(
@@ -30,6 +35,36 @@ const RowSchema = z.object({
 			value: z.any(),
 		}),
 	),
+});
+
+// Enhanced filter validation schema
+const FilterSchema = z.object({
+	id: z.string().min(1),
+	columnId: z.number().positive(),
+	columnName: z.string().min(1),
+	columnType: z.enum(['text', 'string', 'email', 'url', 'number', 'integer', 'decimal', 'boolean', 'date', 'datetime', 'time', 'json', 'reference']),
+	operator: z.string().min(1),
+	value: z.any().optional().nullable(),
+	secondValue: z.any().optional().nullable(),
+});
+
+const QueryParamsSchema = z.object({
+	page: z.string().transform((val) => Math.max(1, parseInt(val) || 1)),
+	pageSize: z.string().transform((val) => Math.min(Math.max(1, parseInt(val) || 25), 100)),
+	includeCells: z.string().optional().transform((val) => val !== "false"),
+	search: z.string().optional().transform((val) => val?.trim() || ""),
+	filters: z.string().optional().transform((val) => {
+		if (!val) return [];
+		try {
+			const parsed = JSON.parse(decodeURIComponent(val));
+			return z.array(FilterSchema).parse(parsed);
+		} catch (error) {
+			logger.warn("Failed to parse filters", { error, filters: val });
+			throw new Error("Invalid filters format");
+		}
+	}),
+	sortBy: z.string().optional().transform((val) => val || "id"),
+	sortOrder: z.string().optional().transform((val) => (val === "desc" ? "desc" : "asc")),
 });
 
 export async function POST(
@@ -460,75 +495,6 @@ export async function POST(
 	}
 }
 
-// Function to apply string filters that couldn't be handled by Prisma
-async function applyStringFilters(
-	rows: any[],
-	filters: any[],
-	tableColumns: any[],
-): Promise<any[]> {
-	const stringFilters = filters.filter((filter) => {
-		const column = tableColumns.find((col) => col.id === filter.columnId);
-		if (!column) return false;
-
-		return (
-			["text", "string", "email", "url"].includes(column.type) &&
-			["starts_with", "ends_with", "contains", "not_contains", "equals", "not_equals", "is_empty", "is_not_empty"].includes(
-				filter.operator,
-			)
-		);
-	});
-
-	if (stringFilters.length === 0) return rows;
-
-	return rows.filter((row) => {
-		return stringFilters.every((filter) => {
-			const cell = row.cells?.find((c: any) => c.columnId === filter.columnId);
-			
-			// Handle is_empty and is_not_empty operators first
-			if (filter.operator === "is_empty") {
-				// Check if cell is empty
-				return !cell || cell.value === null || cell.value === undefined || cell.value === "";
-			} else if (filter.operator === "is_not_empty") {
-				// Check if cell is not empty
-				return cell && cell.value !== null && cell.value !== undefined && cell.value !== "";
-			}
-
-			// Handle empty/null cells for other operators
-			if (!cell || cell.value === null || cell.value === undefined || cell.value === "") {
-				return false; // For other operators, empty cell doesn't match
-			}
-
-			// For other operators, check if filter value is empty
-			if (filter.value === null || filter.value === undefined || filter.value === "") {
-				return false; // Empty filter value doesn't match anything
-			}
-
-			const cellValue = String(cell.value);
-			const filterValue = String(filter.value);
-
-			switch (filter.operator) {
-				case "starts_with":
-					return cellValue.toLowerCase().startsWith(filterValue.toLowerCase());
-				case "ends_with":
-					return cellValue.toLowerCase().endsWith(filterValue.toLowerCase());
-				case "contains":
-					return cellValue.toLowerCase().includes(filterValue.toLowerCase());
-				case "not_contains":
-					return !cellValue.toLowerCase().includes(filterValue.toLowerCase());
-				case "equals":
-					return cellValue === filterValue;
-				case "not_equals":
-					return cellValue !== filterValue;
-				case "is_empty":
-					return false; // Cell has value, so it's not empty
-				case "is_not_empty":
-					return true; // Cell has value, so it's not empty
-				default:
-					return true;
-			}
-		});
-	});
-}
 
 export async function GET(
 	request: NextRequest,
@@ -538,7 +504,9 @@ export async function GET(
 		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
 	},
 ) {
+	const startTime = Date.now();
 	const { tenantId, databaseId, tableId } = await params;
+	
 	const sessionResult = await requireAuthResponse();
 	if (sessionResult instanceof NextResponse) {
 		return sessionResult;
@@ -552,7 +520,22 @@ export async function GET(
 	}
 
 	try {
-		// Verificăm că baza de date există și aparține tenant-ului
+		// Parse and validate query parameters
+		const url = new URL(request.url);
+		const queryParams = {
+			page: url.searchParams.get("page") || "1",
+			pageSize: url.searchParams.get("pageSize") || "25",
+			includeCells: url.searchParams.get("includeCells") || "true",
+			search: url.searchParams.get("search") || "",
+			filters: url.searchParams.get("filters") || "",
+			sortBy: url.searchParams.get("sortBy") || "id",
+			sortOrder: url.searchParams.get("sortOrder") || "asc",
+		};
+
+		const validatedParams = QueryParamsSchema.parse(queryParams);
+		const { page, pageSize, includeCells, search, filters, sortBy, sortOrder } = validatedParams;
+
+		// Verify database exists and belongs to tenant
 		const database = await prisma.database.findFirst({
 			where: {
 				id: Number(databaseId),
@@ -561,12 +544,14 @@ export async function GET(
 		});
 
 		if (!database) {
+			logger.warn("Database not found", { tenantId: String(tenantId), databaseId: String(databaseId), userId: String(userId) });
 			return NextResponse.json(
 				{ error: "Database not found" },
 				{ status: 404 },
 			);
 		}
 
+		// Verify table exists
 		const table = await prisma.table.findFirst({
 			where: {
 				id: Number(tableId),
@@ -575,6 +560,7 @@ export async function GET(
 		});
 
 		if (!table) {
+			logger.warn("Table not found", { tenantId: String(tenantId), databaseId: String(databaseId), tableId: String(tableId), userId: String(userId) });
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
@@ -591,7 +577,7 @@ export async function GET(
 			orderBy: { order: "asc" },
 		});
 
-		// Verificăm permisiunile pentru utilizatorii non-admin
+		// Check permissions for non-admin users
 		if (sessionResult.user.role !== "ADMIN") {
 			const permission = await prisma.tablePermission.findFirst({
 				where: {
@@ -602,996 +588,186 @@ export async function GET(
 			});
 
 			if (!permission) {
+			logger.warn("Access denied to table", { tenantId: String(tenantId), tableId: String(tableId), userId: String(userId) });
 				return NextResponse.json({ error: "Access denied" }, { status: 403 });
 			}
 		}
 
-		// Get pagination and filter parameters from URL
-		const url = new URL(request.url);
-		const page = parseInt(url.searchParams.get("page") || "1");
-		const pageSize = parseInt(url.searchParams.get("pageSize") || "25");
-		const includeCells = url.searchParams.get("includeCells") !== "false"; // Default to true for backwards compatibility
+		// Convert filters to proper FilterConfig format
+		const convertedFilters: FilterConfig[] = filters.map(filter => ({
+			...filter,
+			columnType: filter.columnType as any,
+			operator: filter.operator as any,
+			value: filter.value ?? null,
+			secondValue: filter.secondValue ?? null
+		}));
 
-		// Filter parameters
-		const globalSearch = url.searchParams.get("search") || "";
-		const filters = url.searchParams.get("filters") || "";
-		const sortBy = url.searchParams.get("sortBy") || "id";
-		const sortOrder = url.searchParams.get("sortOrder") || "asc";
-
-		// Validate pagination parameters
-		const validPage = Math.max(1, page);
-		const validPageSize = Math.min(Math.max(1, pageSize), 100); // Limit page size to 100
-		const skip = (validPage - 1) * validPageSize;
-
-		// Build where clause for filtering
-		let whereClause: any = {
-			tableId: Number(tableId),
-		};
-
-		// Parse filters from URL parameter
-		let parsedFilters: any[] = [];
-		try {
-			if (filters) {
-				parsedFilters = JSON.parse(decodeURIComponent(filters));
-			}
-		} catch (error) {
-			console.warn("Failed to parse filters:", error);
-		}
-
-		// Apply column filters
-		if (parsedFilters.length > 0) {
-			console.log("🔍 API - Processing filters:", parsedFilters);
-			const filterConditions = parsedFilters.map((filter: any) => {
-				const { columnId, operator, value, secondValue } = filter;
-				
-				// Find the column to determine the correct data type
-				const column = tableColumns.find((col: any) => col.id === Number(columnId));
-				if (!column) {
-					console.warn(`Column with ID ${columnId} not found`);
-					return {};
-				}
-				
-				// Convert values to appropriate types based on column type
-				let convertedValue = value;
-				let convertedSecondValue = secondValue;
-				
-				if (["number", "integer", "decimal"].includes(column.type)) {
-					convertedValue = value !== null && value !== undefined && value !== "" ? Number(value) : null;
-					convertedSecondValue = secondValue !== null && secondValue !== undefined && secondValue !== "" ? Number(secondValue) : null;
-				} else if (["boolean"].includes(column.type)) {
-					convertedValue = value === "true" || value === true;
-				}
-				
-				console.log(`🔍 API - Filter ${operator} on column ${column.name} (${column.type}):`, {
-					originalValue: value,
-					convertedValue,
-					originalSecondValue: secondValue,
-					convertedSecondValue
-				});
-
-				switch (operator) {
-					case "contains":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										string_contains: value,
-									},
-								},
-							},
-						};
-					case "not_contains":
-						return {
-							cells: {
-								none: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										string_contains: value,
-									},
-								},
-							},
-						};
-					case "equals":
-						// For string columns, handle in post-processing
-						if (["text", "string", "email", "url"].includes(column.type)) {
-							return {};
-						}
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										equals: convertedValue,
-									},
-								},
-							},
-						};
-					case "not_equals":
-					case "notEquals":
-						// For string columns, handle in post-processing
-						if (["text", "string", "email", "url"].includes(column.type)) {
-							return {};
-						}
-						return {
-							cells: {
-								none: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										equals: convertedValue,
-									},
-								},
-							},
-						};
-					case "starts_with":
-					case "ends_with":
-						// These will be handled by post-processing string filters
-						return {};
-					case "regex":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										string_matches: value,
-									},
-								},
-							},
-						};
-					case "greater_than":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gt: convertedValue,
-									},
-								},
-							},
-						};
-					case "greater_than_or_equal":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gte: convertedValue,
-									},
-								},
-							},
-						};
-					case "less_than":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										lt: convertedValue,
-									},
-								},
-							},
-						};
-					case "less_than_or_equal":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										lte: convertedValue,
-									},
-								},
-							},
-						};
-					case "between":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gte: convertedValue,
-										lte: convertedSecondValue,
-									},
-								},
-							},
-						};
-					case "not_between":
-						return {
-							cells: {
-								none: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gte: convertedValue,
-										lte: convertedSecondValue,
-									},
-								},
-							},
-						};
-					case "today":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										equals: new Date().toISOString().split("T")[0],
-									},
-								},
-							},
-						};
-					case "yesterday":
-						const yesterday = new Date();
-						yesterday.setDate(yesterday.getDate() - 1);
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										equals: yesterday.toISOString().split("T")[0],
-									},
-								},
-							},
-						};
-					case "this_week":
-						const now = new Date();
-						const startOfWeek = new Date(now);
-						startOfWeek.setDate(now.getDate() - now.getDay());
-						startOfWeek.setHours(0, 0, 0, 0);
-						const endOfWeek = new Date(startOfWeek);
-						endOfWeek.setDate(startOfWeek.getDate() + 6);
-						endOfWeek.setHours(23, 59, 59, 999);
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gte: startOfWeek.toISOString(),
-										lte: endOfWeek.toISOString(),
-									},
-								},
-							},
-						};
-					case "this_month":
-						const currentMonth = new Date();
-						const startOfMonth = new Date(
-							currentMonth.getFullYear(),
-							currentMonth.getMonth(),
-							1,
-						);
-						const endOfMonth = new Date(
-							currentMonth.getFullYear(),
-							currentMonth.getMonth() + 1,
-							0,
-						);
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gte: startOfMonth.toISOString(),
-										lte: endOfMonth.toISOString(),
-									},
-								},
-							},
-						};
-					case "this_year":
-						const currentYear = new Date().getFullYear();
-						const startOfYear = new Date(currentYear, 0, 1);
-						const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59, 999);
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gte: startOfYear.toISOString(),
-										lte: endOfYear.toISOString(),
-									},
-								},
-							},
-						};
-					case "is_empty":
-					case "is_not_empty":
-						// These will be handled by post-processing string filters
-						return {};
-					case "before":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										lt: new Date(convertedValue).toISOString(),
-									},
-								},
-							},
-						};
-					case "after":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										gt: new Date(convertedValue).toISOString(),
-									},
-								},
-							},
-						};
-					default:
-						console.warn(`Unsupported filter operator: ${operator}`);
-						return {};
-				}
+		// Validate filters using the new validator
+		const validationResult = FilterValidator.validateFilters(convertedFilters, tableColumns);
+		if (!validationResult.isValid) {
+			logger.warn("Invalid filters provided", { 
+				errors: validationResult.errors, 
+				filters: convertedFilters, 
+				tenantId: String(tenantId), 
+				tableId: String(tableId), 
+				userId: String(userId) 
 			});
-
-			// Combine all filter conditions with AND logic
-			if (filterConditions.length > 0) {
-				console.log("🔍 API - Filter conditions:", filterConditions);
-				whereClause = {
-					...whereClause,
-					AND: filterConditions,
-				};
-			}
-		}
-
-		// Apply global search if provided
-		if (globalSearch.trim()) {
-			const searchTerm = globalSearch.trim();
-			// Combine global search with existing filters using AND logic
-			if (whereClause.AND) {
-				whereClause = {
-					...whereClause,
-					AND: [
-						...whereClause.AND,
-						{
-							cells: {
-								some: {
-									value: {
-										path: ["$"],
-										string_contains: searchTerm,
-									},
-								},
-							},
-						},
-					],
-				};
-			} else {
-				whereClause = {
-					...whereClause,
-					cells: {
-						some: {
-							value: {
-								path: ["$"],
-								string_contains: searchTerm,
-							},
-						},
-					},
-				};
-			}
-		}
-
-		// Get total count for pagination info with filters applied
-		console.log("🔍 API - Final whereClause:", JSON.stringify(whereClause, null, 2));
-		const totalRows = await prisma.row.count({
-			where: whereClause,
-		});
-
-		// Build orderBy clause
-		let orderByClause: any = {};
-		if (sortBy === "id") {
-			orderByClause.id = sortOrder;
-		} else if (sortBy === "createdAt") {
-			orderByClause.createdAt = sortOrder;
-		} else {
-			// Default to id ordering
-			orderByClause.id = "asc";
-		}
-
-		// Optimized query with proper indexing support and filters
-		const rows = await prisma.row.findMany({
-			where: whereClause,
-			include: {
-				cells: includeCells
-					? {
-							include: {
-								column: {
-									select: {
-										id: true,
-										name: true,
-										type: true,
-										order: true,
-										semanticType: true,
-									},
-								},
-							},
-					  }
-					: false,
-			},
-			orderBy: [orderByClause],
-			skip,
-			take: validPageSize,
-		});
-
-		// Apply string filters that couldn't be handled by Prisma
-		let filteredRows = rows;
-		if (parsedFilters.length > 0) {
-			filteredRows = await applyStringFilters(
-				rows,
-				parsedFilters,
-				tableColumns,
-			);
-		}
-
-		// For string filters, we need to get the total count differently
-		// since we can't efficiently count with string filters in Prisma
-		let finalTotalRows = totalRows;
-		if (parsedFilters.length > 0) {
-			// If we have string filters, we need to get all rows to count them
-			// This is not ideal for performance but necessary for accurate pagination
-			const allRows = await prisma.row.findMany({
-				where: whereClause,
-				include: {
-					cells: includeCells
-						? {
-								include: {
-									column: {
-										select: {
-											id: true,
-											name: true,
-											type: true,
-											order: true,
-											semanticType: true,
-										},
-									},
-								},
-						  }
-						: false,
-				},
-				orderBy: [orderByClause],
-			});
-			
-			const allFilteredRows = await applyStringFilters(
-				allRows,
-				parsedFilters,
-				tableColumns,
-			);
-			finalTotalRows = allFilteredRows.length;
-		}
-
-		// Sortăm coloanele după ordine în aplicație dacă includem cells
-		const sortedRows = includeCells
-			? filteredRows.map((row: any) => ({
-					...row,
-					cells: row.cells.sort((a: any, b: any) => {
-						// TypeScript assertion: when includeCells is true, cells include column relation
-						const cellA = a as any;
-						const cellB = b as any;
-						return cellA.column.order - cellB.column.order;
-					}),
-			  }))
-			: filteredRows;
-
-		const totalPages = Math.ceil(finalTotalRows / validPageSize);
-
-		return NextResponse.json({
-			data: sortedRows,
-			pagination: {
-				page: validPage,
-				pageSize: validPageSize,
-				totalRows: finalTotalRows,
-				totalPages,
-				hasNext: validPage < totalPages,
-				hasPrev: validPage > 1,
-			},
-			filters: {
-				applied: parsedFilters.length > 0 || globalSearch.trim() !== "",
-				globalSearch,
-				columnFilters: parsedFilters,
-			},
-		});
-	} catch (error) {
-		console.error("Error fetching rows:", error);
 		return NextResponse.json(
-			{ error: "Failed to fetch rows" },
-			{ status: 500 },
-		);
-	}
-}
-
-// POST endpoint for filtering rows with JSON body
-export async function POST_FILTER(
-	request: NextRequest,
-	{
-		params,
-	}: {
-		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
-	},
-) {
-	const { tenantId, databaseId, tableId } = await params;
-
-	// Verificare autentificare
-	const sessionResult = await requireAuthResponse();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-	const userId = getUserId(sessionResult);
-
-	// Verificare acces tenant
-	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
-	if (tenantAccessError) {
-		return tenantAccessError;
-	}
-
-	try {
-		// Parse request body
-		const body = await request.json();
-		
-		// Validate required fields
-		if (!body.page || !body.pageSize) {
-			return NextResponse.json(
-				{ error: "Missing required fields: page, pageSize" },
+				{ 
+					error: "Invalid filters", 
+					details: validationResult.errors,
+					warnings: validationResult.warnings 
+				}, 
 				{ status: 400 }
 			);
 		}
 
-		// Extract filter parameters from body
-		const {
-			page = 1,
-			pageSize = 25,
-			includeCells = true,
-			globalSearch = "",
-			filters = [],
-			sortBy = "id",
-			sortOrder = "asc"
-		} = body;
-
-		// Validate pagination parameters
-		const validPage = Math.max(1, parseInt(page.toString()));
-		const validPageSize = Math.min(Math.max(1, parseInt(pageSize.toString())), 100);
-		const skip = (validPage - 1) * validPageSize;
-
-		// Verificare existență database și table
-		const database = await prisma.database.findFirst({
-			where: {
-				id: Number(databaseId),
-				tenantId: Number(tenantId),
-			},
-		});
-
-		if (!database) {
-			return NextResponse.json(
-				{ error: "Database not found" },
-				{ status: 404 },
-			);
-		}
-
-		const table = await prisma.table.findFirst({
-			where: {
-				id: Number(tableId),
-				databaseId: Number(databaseId),
-			},
-		});
-
-		if (!table) {
-			return NextResponse.json({ error: "Table not found" }, { status: 404 });
-		}
-
-		// Verificare permisiuni pentru utilizatorii non-admin
-		if (sessionResult.user.role !== "ADMIN") {
-			const permission = await prisma.tablePermission.findFirst({
-				where: {
-					userId: userId,
-					tableId: Number(tableId),
-					canRead: true,
-				},
+		// Log warnings if any
+		if (validationResult.warnings.length > 0) {
+			logger.info("Filter validation warnings", { 
+				warnings: validationResult.warnings, 
+				tenantId: String(tenantId), 
+				tableId: String(tableId), 
+				userId: String(userId) 
 			});
-
-			if (!permission) {
-				return NextResponse.json({ error: "Access denied" }, { status: 403 });
-			}
 		}
 
-		// Obține coloanele tabelului
-		const tableColumns = await prisma.column.findMany({
-			where: { tableId: Number(tableId) },
-			select: {
-				id: true,
-				name: true,
-				type: true,
-				referenceTableId: true,
-				order: true,
-				semanticType: true,
-			},
-			orderBy: { order: "asc" },
-		});
+		// Generate cache key
+		const cacheKey = filterCache.generateCacheKey(
+			Number(tableId),
+			convertedFilters,
+			search,
+			sortBy,
+			sortOrder,
+			page,
+			pageSize
+		);
 
-		// Build where clause for filtering
-		let whereClause: any = {
-			tableId: Number(tableId),
-		};
-
-		// Apply global search
-		if (globalSearch && globalSearch.trim()) {
-			whereClause.cells = {
-				some: {
-					value: {
-						string_contains: globalSearch.trim(),
-					},
-				},
-			};
-		}
-
-		// Apply column filters
-		if (filters && filters.length > 0) {
-			console.log("🔍 POST API - Processing filters:", filters);
-			const filterConditions = filters.map((filter: any) => {
-				const { columnId, operator, value, secondValue } = filter;
-				
-				// Find the column to determine the correct data type
-				const column = tableColumns.find((col: any) => col.id === Number(columnId));
-				if (!column) {
-					console.warn(`Column with ID ${columnId} not found`);
-					return {};
-				}
-				
-				// Convert values to appropriate types based on column type
-				let convertedValue = value;
-				let convertedSecondValue = secondValue;
-				
-				if (["number", "integer", "decimal"].includes(column.type)) {
-					convertedValue = value !== null && value !== undefined && value !== "" ? Number(value) : null;
-					convertedSecondValue = secondValue !== null && secondValue !== undefined && secondValue !== "" ? Number(secondValue) : null;
-				} else if (["boolean"].includes(column.type)) {
-					convertedValue = value === "true" || value === true;
-				}
-				
-				console.log(`🔍 POST API - Filter ${operator} on column ${column.name} (${column.type}):`, {
-					originalValue: value,
-					convertedValue,
-					originalSecondValue: secondValue,
-					convertedSecondValue
-				});
-
-				switch (operator) {
-					case "contains":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										string_contains: value,
-									},
-								},
-							},
-						};
-					case "not_contains":
-						return {
-							cells: {
-								none: {
-									columnId: Number(columnId),
-									value: {
-										path: ["$"],
-										string_contains: value,
-									},
-								},
-							},
-						};
-					case "equals":
-						// For string columns, handle in post-processing
-						if (["text", "string", "email", "url"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: value,
-									},
-								},
-							};
-						}
-						// For numeric columns
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: convertedValue,
-									},
-								},
-							};
-						}
-						// For boolean columns
-						if (column.type === "boolean") {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: convertedValue,
-									},
-								},
-							};
-						}
-						// For date columns
-						if (["date", "datetime"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: new Date(value),
-									},
-								},
-							};
-						}
-						return {};
-					case "not_equals":
-						if (["text", "string", "email", "url"].includes(column.type)) {
-							return {
-								cells: {
-									none: {
-										columnId: Number(columnId),
-										value: value,
-									},
-								},
-							};
-						}
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									none: {
-										columnId: Number(columnId),
-										value: convertedValue,
-									},
-								},
-							};
-						}
-						if (column.type === "boolean") {
-							return {
-								cells: {
-									none: {
-										columnId: Number(columnId),
-										value: convertedValue,
-									},
-								},
-							};
-						}
-						return {};
-					case "greater_than":
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: { gt: convertedValue },
-									},
-								},
-							};
-						}
-						return {};
-					case "greater_than_or_equal":
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: { gte: convertedValue },
-									},
-								},
-							};
-						}
-						return {};
-					case "less_than":
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: { lt: convertedValue },
-									},
-								},
-							};
-						}
-						return {};
-					case "less_than_or_equal":
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: { lte: convertedValue },
-									},
-								},
-							};
-						}
-						return {};
-					case "between":
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: {
-											gte: convertedValue,
-											lte: convertedSecondValue,
-										},
-									},
-								},
-							};
-						}
-						if (["date", "datetime"].includes(column.type)) {
-							return {
-								cells: {
-									some: {
-										columnId: Number(columnId),
-										value: {
-											gte: new Date(value),
-											lte: new Date(secondValue),
-										},
-									},
-								},
-							};
-						}
-						return {};
-					case "not_between":
-						if (["number", "integer", "decimal"].includes(column.type)) {
-							return {
-								cells: {
-									none: {
-										columnId: Number(columnId),
-										value: {
-											gte: convertedValue,
-											lte: convertedSecondValue,
-										},
-									},
-								},
-							};
-						}
-						if (["date", "datetime"].includes(column.type)) {
-							return {
-								cells: {
-									none: {
-										columnId: Number(columnId),
-										value: {
-											gte: new Date(value),
-											lte: new Date(secondValue),
-										},
-									},
-								},
-							};
-						}
-						return {};
-					case "is_empty":
-						return {
-							cells: {
-								none: {
-									columnId: Number(columnId),
-									value: { not: null },
-								},
-							},
-						};
-					case "is_not_empty":
-						return {
-							cells: {
-								some: {
-									columnId: Number(columnId),
-									value: { not: null },
-								},
-							},
-						};
-					default:
-						return {};
-				}
+		// Check cache first
+		const cachedData = filterCache.get(cacheKey);
+		if (cachedData) {
+			logger.info("Cache hit for filtered rows", { 
+				cacheKey, 
+				tenantId: String(tenantId), 
+				tableId: String(tableId), 
+				userId: String(userId),
+				executionTime: Date.now() - startTime
 			});
-
-			// Add filter conditions to where clause
-			const nonEmptyConditions = filterConditions.filter(
-				(condition: any) => Object.keys(condition).length > 0,
-			);
-			if (nonEmptyConditions.length > 0) {
-				whereClause.AND = nonEmptyConditions;
-			}
+			
+			return NextResponse.json({
+				data: cachedData.data,
+				pagination: cachedData.pagination,
+				filters: convertedFilters,
+				appliedFilters: convertedFilters,
+				globalSearch: search,
+				sortBy,
+				sortOrder,
+				executionTime: Date.now() - startTime,
+				cacheHit: true
+			});
 		}
+
+		// Build optimized where clause using PrismaFilterBuilder
+		const filterBuilder = new PrismaFilterBuilder(Number(tableId), tableColumns);
+		filterBuilder
+			.addGlobalSearch(search)
+			.addColumnFilters(convertedFilters);
+
+		const whereClause = filterBuilder.getWhereClause();
+
+		// Execute optimized query with Prisma
+		logger.info("Executing filtered query", { 
+			whereClause: JSON.stringify(whereClause, null, 2),
+			tenantId: String(tenantId), 
+			tableId: String(tableId), 
+			userId: String(userId),
+			filtersCount: convertedFilters.length,
+			hasGlobalSearch: !!search
+		});
 
 		// Get total count for pagination
 		const totalRows = await prisma.row.count({
-			where: whereClause,
+			where: whereClause
 		});
 
-		// Build order by clause
-		let orderByClause: any = {};
-		if (sortBy === "id") {
-			orderByClause.id = sortOrder;
-		} else if (sortBy === "createdAt") {
-			orderByClause.createdAt = sortOrder;
-		} else {
-			orderByClause.id = "asc";
-		}
+		// Calculate pagination
+		const totalPages = Math.ceil(totalRows / pageSize);
+		const skip = (page - 1) * pageSize;
 
-		// Fetch rows with pagination
+		// Execute the main query
 		const rows = await prisma.row.findMany({
 			where: whereClause,
 			include: {
-				cells: includeCells
-					? {
+				cells: includeCells ? {
 							include: {
-								column: {
-									select: {
-										id: true,
-										name: true,
-										type: true,
-										order: true,
-										referenceTableId: true,
-										semanticType: true,
-									},
-								},
-							},
-					  }
-					: false,
+						column: true
+					}
+				} : false
 			},
-			orderBy: [orderByClause],
-			skip: skip,
-			take: validPageSize,
+			skip,
+			take: pageSize,
+			orderBy: {
+				[sortBy]: sortOrder
+			}
 		});
 
-		// Apply string filters that couldn't be handled by Prisma
-		let filteredRows = rows;
-		if (filters && filters.length > 0) {
-			filteredRows = await applyStringFilters(
+		// Build pagination info
+		const pagination = {
+			page,
+			pageSize,
+			totalRows,
+			totalPages,
+			hasNext: page < totalPages,
+			hasPrev: page > 1
+		};
+
+		// Cache the results
+		filterCache.set(
+			cacheKey,
 				rows,
-				filters,
-				tableColumns,
-			);
-		}
+			pagination,
+			Number(tableId),
+			convertedFilters
+		);
 
-		// Sort cells by column order
-		const sortedRows = includeCells
-			? filteredRows.map((row: any) => ({
-					...row,
-					cells: row.cells.sort((a: any, b: any) => {
-						const cellA = a as any;
-						const cellB = b as any;
-						return cellA.column.order - cellB.column.order;
-					}),
-			  }))
-			: filteredRows;
+		const executionTime = Date.now() - startTime;
 
-		const totalPages = Math.ceil(totalRows / validPageSize);
+		logger.info("Filtered query completed", { 
+			tenantId: String(tenantId), 
+			tableId: String(tableId), 
+			userId: String(userId),
+			rowsReturned: rows.length,
+			totalRows,
+			executionTime,
+			cacheHit: false
+		});
 
 		return NextResponse.json({
-			data: sortedRows,
-			pagination: {
-				page: validPage,
-				pageSize: validPageSize,
-				totalRows: totalRows,
-				totalPages,
-				hasNext: validPage < totalPages,
-				hasPrev: validPage > 1,
-			},
-			filters: {
-				applied: filters.length > 0 || globalSearch !== "",
-				globalSearch: globalSearch,
-				columnFilters: filters,
-				validFiltersCount: filters.length,
-			},
+			data: rows,
+			pagination,
+			filters: convertedFilters,
+			appliedFilters: convertedFilters,
+			globalSearch: search,
+			sortBy,
+			sortOrder,
+			executionTime,
+			cacheHit: false
 		});
 
 	} catch (error) {
-		console.error("Error in POST filtering:", error);
+		logger.error("Error in filtered rows query", error as Error, {
+			tenantId: String(tenantId),
+			tableId: String(tableId),
+			userId: String(userId),
+			executionTime: Date.now() - startTime
+		});
+
 		return NextResponse.json(
-			{ error: "Failed to filter rows" },
-			{ status: 500 },
+			{ 
+				error: "Failed to fetch filtered rows", 
+				details: error instanceof Error ? error.message : "Unknown error"
+			},
+			{ status: 500 }
 		);
 	}
 }

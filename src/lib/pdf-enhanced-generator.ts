@@ -372,30 +372,95 @@ export class EnhancedPDFGenerator {
 	): Promise<void> {
 		const { width } = page.getSize();
 		
-		// Company logo and name
+		// Draw border line
+		page.drawLine({
+			start: { x: 50, y: 780 },
+			end: { x: width - 50, y: 780 },
+			thickness: 2,
+			color: textColor,
+		});
+
+		// Company logo placeholder (circle with first letter)
+		const companyInitial = (tenantBranding.name || 'C').charAt(0).toUpperCase();
+		page.drawCircle({
+			x: 60,
+			y: 760,
+			size: 20,
+			borderColor: textColor,
+			borderWidth: 2,
+		});
+		page.drawText(this.removeDiacritics(companyInitial), {
+			x: 55,
+			y: 750,
+			size: 16,
+			font: boldFont,
+			color: textColor,
+		});
+
+		// Company name
 		page.drawText(this.removeDiacritics(tenantBranding.name || 'Company Name'), {
-			x: 50,
-			y: 750,
-			size: 24,
+			x: 100,
+			y: 760,
+			size: 20,
 			font: boldFont,
-			color: primaryColor,
+			color: textColor,
 		});
-
-		// Invoice title - use translation
-		page.drawText(this.removeDiacritics(translations.invoice || 'INVOICE'), {
-			x: width - 150,
-			y: 750,
-			size: 28,
-			font: boldFont,
-			color: primaryColor,
-		});
-
-		// Invoice number - use translation
-		page.drawText(`${this.removeDiacritics(translations.invoiceNumber || 'Invoice #')}: ${this.removeDiacritics(invoiceData.invoice?.invoice_number || 'N/A')}`, {
-			x: width - 150,
-			y: 720,
+		page.drawText('Private Limited', {
+			x: 100,
+			y: 740,
 			size: 12,
 			font: font,
+			color: textColor,
+		});
+
+		// Invoice title - right side
+		page.drawText(this.removeDiacritics(translations.invoice || 'INVOICE'), {
+			x: width - 200,
+			y: 760,
+			size: 32,
+			font: boldFont,
+			color: textColor,
+		});
+
+		// Invoice number and date
+		const invoiceNumber = invoiceData.invoice?.invoice_series ? 
+			`${invoiceData.invoice.invoice_series}-${invoiceData.invoice.invoice_number}` : 
+			invoiceData.invoice?.invoice_number || 'N/A';
+		
+		page.drawText(`${this.removeDiacritics(translations.invoiceNumber || 'Invoice#')} ${this.removeDiacritics(invoiceNumber)}`, {
+			x: width - 200,
+			y: 730,
+			size: 12,
+			font: boldFont,
+			color: textColor,
+		});
+
+		// Date
+		const invoiceDate = new Date(invoiceData.invoice?.date || new Date()).toLocaleDateString();
+		page.drawText(`${this.removeDiacritics(translations.date || 'Date')}: ${this.removeDiacritics(invoiceDate)}`, {
+			x: width - 200,
+			y: 715,
+			size: 12,
+			font: font,
+			color: textColor,
+		});
+
+		// Total Due
+		const totalAmount = invoiceData.invoice?.total_amount || 0;
+		const currency = invoiceData.invoice?.base_currency || 'USD';
+		page.drawText(`Total Due: ${this.removeDiacritics(currency)} ${this.removeDiacritics(totalAmount.toFixed(2))}`, {
+			x: width - 200,
+			y: 700,
+			size: 14,
+			font: boldFont,
+			color: textColor,
+		});
+
+		// Draw bottom border line
+		page.drawLine({
+			start: { x: 50, y: 680 },
+			end: { x: width - 50, y: 680 },
+			thickness: 2,
 			color: textColor,
 		});
 	}
@@ -412,13 +477,13 @@ export class EnhancedPDFGenerator {
 		textColor: any,
 		translations: Record<string, string>
 	): Promise<void> {
-		const y = 680;
+		const y = 650;
 		let currentY = y;
 
-		page.drawText(this.removeDiacritics(translations.company || 'From:'), {
+		page.drawText(`${this.removeDiacritics(translations.company || 'From')}:`, {
 			x: 50,
 			y: currentY,
-			size: 14,
+			size: 12,
 			font: boldFont,
 			color: textColor,
 		});
@@ -428,7 +493,7 @@ export class EnhancedPDFGenerator {
 			x: 50,
 			y: currentY,
 			size: 12,
-			font: font,
+			font: boldFont,
 			color: textColor,
 		});
 
@@ -478,13 +543,13 @@ export class EnhancedPDFGenerator {
 		translations: Record<string, string>
 	): Promise<void> {
 		const { width } = page.getSize();
-		const y = 680;
+		const y = 650;
 		let currentY = y;
 
-		page.drawText(this.removeDiacritics(translations.customer || 'Bill To:'), {
+		page.drawText(`${this.removeDiacritics(translations.customer || 'Bill To')}:`, {
 			x: width - 200,
 			y: currentY,
-			size: 14,
+			size: 12,
 			font: boldFont,
 			color: textColor,
 		});
@@ -495,7 +560,7 @@ export class EnhancedPDFGenerator {
 				x: width - 200,
 				y: currentY,
 				size: 12,
-				font: font,
+				font: boldFont,
 				color: textColor,
 			});
 
@@ -606,23 +671,32 @@ export class EnhancedPDFGenerator {
 	): Promise<void> {
 		const y = 500;
 		const tableWidth = 500;
-		const colWidths = [200, 80, 80, 80, 60];
+		const colWidths = [200, 80, 80, 60];
 
-		// Table header
+		// Table header background
 		page.drawRectangle({
 			x: 50,
 			y: y - 30,
 			width: tableWidth,
 			height: 30,
-			color: secondaryColor,
+			color: rgb(0.95, 0.95, 0.95),
+		});
+
+		// Table header border
+		page.drawRectangle({
+			x: 50,
+			y: y - 30,
+			width: tableWidth,
+			height: 30,
+			borderColor: textColor,
+			borderWidth: 1,
 		});
 
 		const headers = [
-			translations.description || 'Description',
-			translations.quantity || 'Quantity',
-			translations.unitPrice || 'Price',
-			translations.tax || 'VAT',
-			translations.total || 'Total'
+			`${translations.item || 'ITEM'} ${translations.description || 'DESCRIPTION'}`,
+			translations.unitPrice || 'PRICE',
+			translations.quantity || 'QTY',
+			translations.total || 'TOTAL'
 		];
 		let x = 50;
 		headers.forEach((header, index) => {
@@ -631,7 +705,7 @@ export class EnhancedPDFGenerator {
 				y: y - 20,
 				size: 10,
 				font: boldFont,
-				color: rgb(1, 1, 1),
+				color: textColor,
 			});
 			x += colWidths[index];
 		});
@@ -639,25 +713,23 @@ export class EnhancedPDFGenerator {
 		// Table rows
 		let currentY = y - 50;
 		invoiceData.items.forEach((item: any, index: number) => {
-			// Alternate row colors
-			if (index % 2 === 0) {
-				page.drawRectangle({
-					x: 50,
-					y: currentY - 20,
-					width: tableWidth,
-					height: 20,
-					color: rgb(0.95, 0.95, 0.95),
-				});
-			}
+			// Draw row border
+			page.drawRectangle({
+				x: 50,
+				y: currentY - 20,
+				width: tableWidth,
+				height: 20,
+				borderColor: textColor,
+				borderWidth: 1,
+			});
 
 			// Item data
 			x = 50;
 			const itemData = [
 				item.product_name || item.description || 'Item',
+				`${parseFloat(item.unit_price || '0').toFixed(2)}`,
 				item.quantity || '0',
-				`${parseFloat(item.price || '0').toFixed(2)}`,
-				`${parseFloat(item.product_vat || '0').toFixed(1)}%`,
-				`${(parseFloat(item.quantity || '0') * parseFloat(item.price || '0')).toFixed(2)}`,
+				`${(parseFloat(item.quantity || '0') * parseFloat(item.unit_price || '0')).toFixed(2)}`,
 			];
 
 			itemData.forEach((data, dataIndex) => {
@@ -692,55 +764,81 @@ export class EnhancedPDFGenerator {
 		let currentY = y;
 
 		// Subtotal
-		page.drawText(`${this.removeDiacritics(translations.subtotal || 'Subtotal')}:`, {
+		page.drawText(`${this.removeDiacritics(translations.subtotal || 'SUB TOTAL')}:`, {
 			x: width - 200,
 			y: currentY,
-			size: 12,
-			font: font,
+			size: 10,
+			font: boldFont,
 			color: textColor,
 		});
 		page.drawText(this.removeDiacritics(invoiceData.totals.subtotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
-			size: 12,
+			size: 10,
 			font: font,
 			color: textColor,
 		});
 
 		// VAT
 		if (invoiceData.totals.vatTotal > 0) {
-			currentY -= 20;
-			page.drawText(`${this.removeDiacritics(translations.tax || 'VAT')}:`, {
+			currentY -= 15;
+			page.drawText(`${this.removeDiacritics(translations.tax || 'Tax VAT 18%')}:`, {
 				x: width - 200,
 				y: currentY,
-				size: 12,
-				font: font,
+				size: 10,
+				font: boldFont,
 				color: textColor,
 			});
 			page.drawText(this.removeDiacritics(invoiceData.totals.vatTotal.toFixed(2)), {
 				x: width - 100,
 				y: currentY,
-				size: 12,
+				size: 10,
 				font: font,
 				color: textColor,
 			});
 		}
 
-		// Grand total
-		currentY -= 30;
-		page.drawText(`${this.removeDiacritics(translations.grandTotal || 'Total')}:`, {
+		// Discount
+		currentY -= 15;
+		const discount = invoiceData.totals.subtotal * 0.1;
+		page.drawText('Discount 10%:', {
 			x: width - 200,
 			y: currentY,
-			size: 16,
+			size: 10,
 			font: boldFont,
-			color: primaryColor,
+			color: textColor,
+		});
+		page.drawText(`-${this.removeDiacritics(discount.toFixed(2))}`, {
+			x: width - 100,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: textColor,
+		});
+
+		// Grand total with border
+		currentY -= 20;
+		page.drawLine({
+			start: { x: width - 200, y: currentY + 10 },
+			end: { x: width - 50, y: currentY + 10 },
+			thickness: 2,
+			color: textColor,
+		});
+		currentY -= 20;
+		
+		page.drawText(`${this.removeDiacritics(translations.grandTotal || 'GRAND TOTAL')}:`, {
+			x: width - 200,
+			y: currentY,
+			size: 14,
+			font: boldFont,
+			color: textColor,
 		});
 		page.drawText(this.removeDiacritics(invoiceData.totals.grandTotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
-			size: 16,
+			size: 14,
 			font: boldFont,
-			color: primaryColor,
+			color: textColor,
 		});
 	}
 
@@ -757,33 +855,133 @@ export class EnhancedPDFGenerator {
 		translations: Record<string, string>
 	): Promise<void> {
 		const y = 100;
+		const { width } = page.getSize();
 
 		// Footer line
 		page.drawLine({
 			start: { x: 50, y: y + 20 },
-			end: { x: 550, y: y + 20 },
+			end: { x: width - 50, y: y + 20 },
 			thickness: 1,
-			color: secondaryColor,
+			color: textColor,
 		});
 
-		// Footer text
-		page.drawText(this.removeDiacritics(translations.thankYou || 'Thank you for your business!'), {
+		// Left side - Payment and Contact
+		let currentY = y;
+		
+		// Payment Method
+		page.drawText('Payment Method:', {
 			x: 50,
-			y: y,
-			size: 12,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 15;
+		page.drawText('Payment: Visa, Master Card', {
+			x: 50,
+			y: currentY,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 12;
+		page.drawText('We accept Cheque', {
+			x: 50,
+			y: currentY,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 12;
+		page.drawText(`Paypal: ${tenantBranding.companyEmail || 'paypal@company.com'}`, {
+			x: 50,
+			y: currentY,
+			size: 9,
 			font: font,
 			color: textColor,
 		});
 
-		if (tenantBranding.website) {
-			page.drawText(this.removeDiacritics(tenantBranding.website), {
-				x: 50,
-				y: y - 15,
-				size: 10,
-				font: font,
-				color: secondaryColor,
-			});
-		}
+		currentY -= 20;
+		// Contact
+		page.drawText('Contact:', {
+			x: 50,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 15;
+		page.drawText(tenantBranding.address || '123 Street, Town Postal, County', {
+			x: 50,
+			y: currentY,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 12;
+		page.drawText(tenantBranding.phone || '+999 123 456 789', {
+			x: 50,
+			y: currentY,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 12;
+		page.drawText(tenantBranding.companyEmail || 'info@yourname', {
+			x: 50,
+			y: currentY,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 12;
+		page.drawText(tenantBranding.website || 'www.domainname.com', {
+			x: 50,
+			y: currentY,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
+
+		currentY -= 20;
+		// Terms & Condition
+		page.drawText('Terms & Condition:', {
+			x: 50,
+			y: currentY,
+			size: 10,
+			font: font,
+			color: textColor,
+		});
+		currentY -= 15;
+		page.drawText('Contrary to popular belief Lorem Ipsum not ipsum simply lorem ispum dolor ipsum.', {
+			x: 50,
+			y: currentY,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
+
+		// Right side - Signature
+		page.drawText('Signature:', {
+			x: width - 200,
+			y: y,
+			size: 10,
+			font: font,
+			color: textColor,
+		});
+		page.drawLine({
+			start: { x: width - 200, y: y - 20 },
+			end: { x: width - 100, y: y - 20 },
+			thickness: 1,
+			color: textColor,
+		});
+		page.drawText('Manager', {
+			x: width - 200,
+			y: y - 35,
+			size: 9,
+			font: font,
+			color: textColor,
+		});
 	}
 
 	/**
@@ -860,19 +1058,19 @@ export class EnhancedPDFGenerator {
 	private static async getTranslations(language: string): Promise<Record<string, string>> {
 		const translations: Record<string, string> = {
 			// Default English translations
-			invoice: 'Invoice',
-			invoiceNumber: 'Invoice Number',
+			invoice: 'INVOICE',
+			invoiceNumber: 'Invoice#',
 			date: 'Date',
 			dueDate: 'Due Date',
-			customer: 'Customer',
-			company: 'Company',
+			customer: 'Bill To',
+			company: 'From',
 			description: 'Description',
-			quantity: 'Qty',
-			unitPrice: 'Unit Price',
-			total: 'Total',
-			subtotal: 'Subtotal',
-			tax: 'Tax',
-			grandTotal: 'Grand Total',
+			quantity: 'QTY',
+			unitPrice: 'PRICE',
+			total: 'TOTAL',
+			subtotal: 'SUB TOTAL',
+			tax: 'Tax VAT 18%',
+			grandTotal: 'GRAND TOTAL',
 			paymentTerms: 'Payment Terms',
 			paymentMethod: 'Payment Method',
 			notes: 'Notes',
@@ -884,86 +1082,86 @@ export class EnhancedPDFGenerator {
 		// Language-specific translations
 		const languageTranslations: Record<string, Record<string, string>> = {
 			ro: {
-				invoice: 'Factura',
-				invoiceNumber: 'Numarul Facturii',
+				invoice: 'FACTURĂ',
+				invoiceNumber: 'Factura#',
 				date: 'Data',
 				dueDate: 'Data Scadentei',
-				customer: 'Client',
-				company: 'Companie',
+				customer: 'Facturat către',
+				company: 'De la',
 				description: 'Descriere',
-				quantity: 'Cantitate',
-				unitPrice: 'Pret Unit',
-				total: 'Total',
-				subtotal: 'Subtotal',
-				tax: 'TVA',
-				grandTotal: 'Total General',
+				quantity: 'CANTITATE',
+				unitPrice: 'PREȚ',
+				total: 'TOTAL',
+				subtotal: 'SUBTOTAL',
+				tax: 'TVA 18%',
+				grandTotal: 'TOTAL GENERAL',
 				paymentTerms: 'Termeni de Plata',
 				paymentMethod: 'Metoda de Plata',
 				notes: 'Note',
-				thankYou: 'Va multumim pentru afacerea cu noi!',
+				thankYou: 'Vă mulțumim pentru încredere!',
 				page: 'Pagina',
 				of: 'din',
 			},
 			es: {
-				invoice: 'Factura',
-				invoiceNumber: 'Numero de Factura',
+				invoice: 'FACTURA',
+				invoiceNumber: 'Factura#',
 				date: 'Fecha',
 				dueDate: 'Fecha de Vencimiento',
-				customer: 'Cliente',
-				company: 'Empresa',
+				customer: 'Facturar a',
+				company: 'De',
 				description: 'Descripcion',
-				quantity: 'Cantidad',
-				unitPrice: 'Precio Unitario',
-				total: 'Total',
-				subtotal: 'Subtotal',
-				tax: 'Impuestos',
-				grandTotal: 'Total General',
+				quantity: 'CANTIDAD',
+				unitPrice: 'PRECIO',
+				total: 'TOTAL',
+				subtotal: 'SUBTOTAL',
+				tax: 'IVA 18%',
+				grandTotal: 'TOTAL GENERAL',
 				paymentTerms: 'Terminos de Pago',
 				paymentMethod: 'Metodo de Pago',
 				notes: 'Notas',
-				thankYou: 'Gracias por su negocio!',
+				thankYou: '¡Gracias por su confianza!',
 				page: 'Pagina',
 				of: 'de',
 			},
 			fr: {
-				invoice: 'Facture',
-				invoiceNumber: 'Numero de Facture',
+				invoice: 'FACTURE',
+				invoiceNumber: 'Facture#',
 				date: 'Date',
 				dueDate: 'Date d\'Echeance',
-				customer: 'Client',
-				company: 'Entreprise',
+				customer: 'Facturer à',
+				company: 'De',
 				description: 'Description',
-				quantity: 'Quantite',
-				unitPrice: 'Prix Unitaire',
-				total: 'Total',
-				subtotal: 'Sous-total',
-				tax: 'Taxes',
-				grandTotal: 'Total General',
+				quantity: 'QUANTITÉ',
+				unitPrice: 'PRIX',
+				total: 'TOTAL',
+				subtotal: 'SOUS-TOTAL',
+				tax: 'TVA 18%',
+				grandTotal: 'TOTAL GÉNÉRAL',
 				paymentTerms: 'Conditions de Paiement',
 				paymentMethod: 'Methode de Paiement',
 				notes: 'Notes',
-				thankYou: 'Merci pour votre entreprise!',
+				thankYou: 'Merci pour votre confiance!',
 				page: 'Page',
 				of: 'de',
 			},
 			de: {
-				invoice: 'Rechnung',
-				invoiceNumber: 'Rechnungsnummer',
+				invoice: 'RECHNUNG',
+				invoiceNumber: 'Rechnung#',
 				date: 'Datum',
 				dueDate: 'Fälligkeitsdatum',
-				customer: 'Kunde',
-				company: 'Unternehmen',
+				customer: 'Rechnung an',
+				company: 'Von',
 				description: 'Beschreibung',
-				quantity: 'Menge',
-				unitPrice: 'Einzelpreis',
-				total: 'Gesamt',
-				subtotal: 'Zwischensumme',
-				tax: 'Steuern',
-				grandTotal: 'Gesamtbetrag',
+				quantity: 'MENGE',
+				unitPrice: 'PREIS',
+				total: 'GESAMT',
+				subtotal: 'ZWISCHENSUMME',
+				tax: 'MwSt 18%',
+				grandTotal: 'GESAMTSUMME',
 				paymentTerms: 'Zahlungsbedingungen',
 				paymentMethod: 'Zahlungsmethode',
 				notes: 'Notizen',
-				thankYou: 'Vielen Dank für Ihr Geschäft!',
+				thankYou: 'Vielen Dank für Ihr Vertrauen!',
 				page: 'Seite',
 				of: 'von',
 			},

@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Row, Column, Table } from "@/types/database";
+import { FilterConfig, ColumnType, FilterOperator } from "@/types/filtering-enhanced";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -42,15 +43,6 @@ import { cn } from "@/lib/utils";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 
-interface FilterConfig {
-	id: string; // Unique identifier for each filter
-	columnId: number;
-	columnName: string;
-	columnType: string;
-	operator: string;
-	value: any;
-	secondValue?: any; // For range filters
-}
 
 interface TableFiltersProps {
 	columns: Column[];
@@ -215,8 +207,16 @@ export function TableFilters({
 		}));
 	};
 
-	const getOperators = (columnType: string) => {
-		switch (columnType) {
+	const getOperators = (columnType: ColumnType | string) => {
+		// Handle customArray as a special case since it's not in the enhanced types
+		if (columnType === "customArray") {
+			return ["equals", "not_equals", "is_empty", "is_not_empty"] as FilterOperator[];
+		}
+		
+		// Cast to ColumnType for the switch statement
+		const enhancedColumnType = columnType as ColumnType;
+		
+		switch (enhancedColumnType) {
 			case "string":
 			case "text":
 			case "email":
@@ -231,7 +231,7 @@ export function TableFilters({
 					"regex",
 					"is_empty",
 					"is_not_empty",
-				];
+				] as FilterOperator[];
 			case "number":
 			case "integer":
 			case "decimal":
@@ -246,11 +246,12 @@ export function TableFilters({
 					"not_between",
 					"is_empty",
 					"is_not_empty",
-				];
+				] as FilterOperator[];
 			case "boolean":
-				return ["equals", "not_equals", "is_empty", "is_not_empty"];
+				return ["equals", "not_equals", "is_empty", "is_not_empty"] as FilterOperator[];
 			case "date":
 			case "datetime":
+			case "time":
 				return [
 					"equals",
 					"not_equals",
@@ -265,13 +266,11 @@ export function TableFilters({
 					"this_year",
 					"is_empty",
 					"is_not_empty",
-				];
+				] as FilterOperator[];
 			case "reference":
-				return ["equals", "not_equals", "is_empty", "is_not_empty"];
-			case "customArray":
-				return ["equals", "not_equals", "is_empty", "is_not_empty"];
+				return ["equals", "not_equals", "is_empty", "is_not_empty"] as FilterOperator[];
 			default:
-				return ["equals", "not_equals", "is_empty", "is_not_empty"];
+				return ["equals", "not_equals", "is_empty", "is_not_empty"] as FilterOperator[];
 		}
 	};
 
@@ -280,14 +279,14 @@ export function TableFilters({
 		const column = columns.find((col) => col.id === filter.columnId);
 		if (!column) return null;
 
-		switch (column.type) {
+		switch (column.type as ColumnType | string) {
 			case USER_FRIENDLY_COLUMN_TYPES.text:
 				if (filter.operator === "regex") {
 					return (
 						<div className='space-y-2'>
 							<Input
 								placeholder='Enter regex pattern...'
-								value={filter.value || ""}
+								value={String(filter.value || "")}
 								onChange={(e) =>
 									updateFilter(filter.id, "value", e.target.value)
 								}
@@ -302,7 +301,7 @@ export function TableFilters({
 				return (
 					<Input
 						placeholder='Enter value...'
-						value={filter.value || ""}
+						value={String(filter.value || "")}
 						onChange={(e) => updateFilter(filter.id, "value", e.target.value)}
 						className='w-full'
 					/>
@@ -318,7 +317,7 @@ export function TableFilters({
 							<Input
 								placeholder='Min'
 								type='number'
-								value={filter.value || ""}
+								value={String(filter.value || "")}
 								onChange={(e) =>
 									updateFilter(filter.id, "value", e.target.value)
 								}
@@ -327,7 +326,7 @@ export function TableFilters({
 							<Input
 								placeholder='Max'
 								type='number'
-								value={filter.secondValue || ""}
+								value={String(filter.secondValue || "")}
 								onChange={(e) =>
 									updateFilter(filter.id, "secondValue", e.target.value)
 								}
@@ -340,7 +339,7 @@ export function TableFilters({
 					<Input
 						placeholder='Enter number...'
 						type='number'
-						value={filter.value || ""}
+						value={String(filter.value || "")}
 						onChange={(e) => updateFilter(filter.id, "value", e.target.value)}
 						className='w-full'
 					/>
@@ -396,7 +395,7 @@ export function TableFilters({
 											!filter.value && "text-muted-foreground",
 										)}>
 										<CalendarIcon className='mr-2 h-4 w-4' />
-										{filter.value
+										{filter.value && typeof filter.value === 'string'
 											? format(new Date(filter.value), "PPP")
 											: "Start date"}
 									</Button>
@@ -404,7 +403,7 @@ export function TableFilters({
 								<PopoverContent className='w-auto p-0'>
 									<Calendar
 										mode='single'
-										selected={filter.value ? new Date(filter.value) : undefined}
+										selected={filter.value && typeof filter.value === 'string' ? new Date(filter.value) : undefined}
 										onSelect={(date) =>
 											updateFilter(filter.id, "value", date?.toISOString())
 										}
@@ -420,7 +419,7 @@ export function TableFilters({
 											!filter.secondValue && "text-muted-foreground",
 										)}>
 										<CalendarIcon className='mr-2 h-4 w-4' />
-										{filter.secondValue
+										{filter.secondValue && typeof filter.secondValue === 'string'
 											? format(new Date(filter.secondValue), "PPP")
 											: "End date"}
 									</Button>
@@ -429,7 +428,7 @@ export function TableFilters({
 									<Calendar
 										mode='single'
 										selected={
-											filter.secondValue
+											filter.secondValue && typeof filter.secondValue === 'string'
 												? new Date(filter.secondValue)
 												: undefined
 										}
@@ -456,7 +455,7 @@ export function TableFilters({
 									!filter.value && "text-muted-foreground",
 								)}>
 								<CalendarIcon className='mr-2 h-4 w-4' />
-								{filter.value
+								{filter.value && typeof filter.value === 'string'
 									? format(new Date(filter.value), "PPP")
 									: "Pick a date"}
 							</Button>
@@ -464,7 +463,7 @@ export function TableFilters({
 						<PopoverContent className='w-auto p-0'>
 							<Calendar
 								mode='single'
-								selected={filter.value ? new Date(filter.value) : undefined}
+								selected={filter.value && typeof filter.value === 'string' ? new Date(filter.value) : undefined}
 								onSelect={(date) =>
 									updateFilter(filter.id, "value", date?.toISOString())
 								}
@@ -510,7 +509,7 @@ export function TableFilters({
 				if (!column.customOptions) return null;
 				return (
 					<Select
-						value={filter.value || ""}
+						value={String(filter.value || "")}
 						onValueChange={(value) => updateFilter(filter.id, "value", value)}>
 						<SelectTrigger className='w-full'>
 							<SelectValue placeholder='Select option...' />
@@ -531,7 +530,7 @@ export function TableFilters({
 				return (
 					<Input
 						placeholder='Enter value...'
-						value={filter.value || ""}
+						value={String(filter.value || "")}
 						onChange={(e) => updateFilter(filter.id, "value", e.target.value)}
 						className='w-full'
 					/>
@@ -556,7 +555,7 @@ export function TableFilters({
 	};
 
 	// Check if operator requires a value
-	const operatorRequiresValue = (operator: string) => {
+	const operatorRequiresValue = (operator: FilterOperator) => {
 		return ![
 			"today",
 			"yesterday",
@@ -567,7 +566,7 @@ export function TableFilters({
 	};
 
 	// Get operator description
-	const getOperatorDescription = (operator: string) => {
+	const getOperatorDescription = (operator: FilterOperator) => {
 		const descriptions: Record<string, string> = {
 			contains: "Text contains the specified value",
 			not_contains: "Text does not contain the specified value",
@@ -608,7 +607,7 @@ export function TableFilters({
 			id: `filter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
 			columnId: availableColumn.id,
 			columnName: availableColumn.name,
-			columnType: availableColumn.type,
+			columnType: availableColumn.type as ColumnType,
 			operator: getOperators(availableColumn.type)[0],
 			value: operatorRequiresValue(getOperators(availableColumn.type)[0])
 				? "" // Folosește string gol în loc de null
@@ -676,33 +675,32 @@ export function TableFilters({
 
 				switch (filter.operator) {
 					case "contains":
-						return cellValue
+						return filter.value && typeof filter.value === 'string' ? cellValue
 							?.toString()
 							.toLowerCase()
-							.includes(filter.value?.toLowerCase());
+							.includes(filter.value.toLowerCase()) : false;
 					case "not_contains":
-						return !cellValue
+						return filter.value && typeof filter.value === 'string' ? !cellValue
 							?.toString()
 							.toLowerCase()
-							.includes(filter.value?.toLowerCase());
+							.includes(filter.value.toLowerCase()) : false;
 					case "equals":
 						return cellValue === filter.value;
 					case "not_equals":
 						return cellValue !== filter.value;
 					case "starts_with":
-						return cellValue
+						return filter.value && typeof filter.value === 'string' ? cellValue
 							?.toString()
 							.toLowerCase()
-							.startsWith(filter.value?.toLowerCase());
+							.startsWith(filter.value.toLowerCase()) : false;
 					case "ends_with":
-						return cellValue
+						return filter.value && typeof filter.value === 'string' ? cellValue
 							?.toString()
 							.toLowerCase()
-							.endsWith(filter.value?.toLowerCase());
+							.endsWith(filter.value.toLowerCase()) : false;
 					case "regex":
 						try {
-							const regex = new RegExp(filter.value, "i");
-							return regex.test(cellValue?.toString() || "");
+							return filter.value && typeof filter.value === 'string' ? new RegExp(filter.value, "i").test(cellValue?.toString() || "") : false;
 						} catch {
 							return false;
 						}
@@ -715,36 +713,38 @@ export function TableFilters({
 					case "less_than_or_equal":
 						return Number(cellValue) <= Number(filter.value);
 					case "before":
-						return new Date(cellValue) < new Date(filter.value);
+						return filter.value && typeof filter.value === 'string' ? new Date(cellValue) < new Date(filter.value) : false;
 					case "after":
-						return new Date(cellValue) > new Date(filter.value);
+						return filter.value && typeof filter.value === 'string' ? new Date(cellValue) > new Date(filter.value) : false;
 					case "between":
-						if (column.type === USER_FRIENDLY_COLUMN_TYPES.number) {
+						if ((column.type as ColumnType) === USER_FRIENDLY_COLUMN_TYPES.number) {
 							const numValue = Number(cellValue);
 							return (
 								numValue >= Number(filter.value) &&
 								numValue <= Number(filter.secondValue)
 							);
-						} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.date) {
+						} else if ((column.type as ColumnType) === USER_FRIENDLY_COLUMN_TYPES.date) {
 							const dateValue = new Date(cellValue);
 							return (
+								filter.value && typeof filter.value === 'string' && filter.secondValue && typeof filter.secondValue === 'string' &&
 								dateValue >= new Date(filter.value) &&
 								dateValue <= new Date(filter.secondValue)
 							);
 						}
 						return true;
 					case "not_between":
-						if (column.type === USER_FRIENDLY_COLUMN_TYPES.number) {
+						if ((column.type as ColumnType) === USER_FRIENDLY_COLUMN_TYPES.number) {
 							const numValue = Number(cellValue);
 							return (
 								numValue < Number(filter.value) ||
 								numValue > Number(filter.secondValue)
 							);
-						} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.date) {
+						} else if ((column.type as ColumnType) === USER_FRIENDLY_COLUMN_TYPES.date) {
 							const dateValue = new Date(cellValue);
 							return (
-								dateValue < new Date(filter.value) ||
-								dateValue > new Date(filter.secondValue)
+								filter.value && typeof filter.value === 'string' && filter.secondValue && typeof filter.secondValue === 'string' &&
+								(dateValue < new Date(filter.value) ||
+								dateValue > new Date(filter.secondValue))
 							);
 						}
 						return true;
@@ -887,8 +887,8 @@ export function TableFilters({
 																	.substr(2, 9)}`,
 																columnId: column.id,
 																columnName: column.name,
-																columnType: column.type,
-																operator: "equals",
+																columnType: column.type as ColumnType,
+																operator: "equals" as FilterOperator,
 																value: value,
 															};
 															setFilters((prev) => [...prev, newFilter]);
@@ -965,7 +965,7 @@ export function TableFilters({
 																						...f,
 																						columnId: newColumn.id,
 																						columnName: newColumn.name,
-																						columnType: newColumn.type,
+																						columnType: newColumn.type as ColumnType,
 																						operator: newOperator,
 																						value: operatorRequiresValue(
 																							newOperator,
@@ -999,7 +999,7 @@ export function TableFilters({
 															onValueChange={(value) => {
 																updateFilter(filter.id, "operator", value);
 																// Clear value if operator doesn't require it
-																if (!operatorRequiresValue(value)) {
+																if (!operatorRequiresValue(value as FilterOperator)) {
 																	updateFilter(filter.id, "value", undefined);
 																	updateFilter(filter.id, "secondValue", "");
 																}

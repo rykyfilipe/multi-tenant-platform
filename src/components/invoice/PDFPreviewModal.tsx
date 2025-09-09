@@ -263,7 +263,7 @@ export function PDFPreviewModal({
         className={`relative bg-background border rounded-lg shadow-2xl overflow-hidden ${
           isFullscreen 
             ? 'w-[98vw] h-[98vh] max-w-[98vw] max-h-[98vh]' 
-            : 'w-[95vw] h-[95vh] max-w-[95vw] max-h-[95vh]'
+            : 'w-[70vw] h-[80vh] max-w-[70vw] max-h-[80vh] min-w-[600px] min-h-[500px]'
         }`}
       >
         {/* Header */}

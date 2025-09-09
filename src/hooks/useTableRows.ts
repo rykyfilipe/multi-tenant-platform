@@ -3,7 +3,7 @@
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { Row } from "@/types/database";
-import { FilterConfig, FilterPayload, FilteredRowsResponse } from "@/types/filtering";
+import { FilterConfig, FilterPayload, FilteredRowsResponse } from "@/types/filtering-enhanced";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 
 interface PaginationInfo {
@@ -15,7 +15,7 @@ interface PaginationInfo {
 	hasPrev: boolean;
 }
 
-// FilterConfig is now imported from types/filtering
+// FilterConfig is now imported from types/filtering-enhanced
 
 interface UseTableRowsResult {
 	rows: Row[];
@@ -230,7 +230,8 @@ function useTableRows(
 				});
 
 				if (!res.ok) {
-					throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+					const errorData = await res.json().catch(() => ({}));
+					throw new Error(`HTTP ${res.status}: ${errorData.error || res.statusText}`);
 				}
 
 				const data: FilteredRowsResponse = await res.json();
@@ -260,7 +261,15 @@ function useTableRows(
 					throw new Error("Invalid response format from server");
 				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Unknown error");
+				const errorMessage = err instanceof Error ? err.message : "Unknown error";
+				
+				// Check if it's a validation error
+				if (errorMessage.includes("Invalid filters")) {
+					setError("Invalid filter configuration. Please check your filters and try again.");
+				} else {
+					setError(errorMessage);
+				}
+				
 				setRows([]);
 				setPagination(null);
 			} finally {

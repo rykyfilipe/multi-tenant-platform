@@ -87,12 +87,14 @@ export function InvoiceHTMLPreview({
 
   return (
     <div 
-      className="bg-white shadow-2xl border border-gray-200"
+      className="bg-white shadow-2xl border border-gray-200 mx-auto"
       style={{ 
         width: `${zoom}%`,
         maxWidth: '100%',
         transition: 'width 0.3s ease',
-        minHeight: 'calc(100vh - 200px)',
+        // A4 aspect ratio: 210mm x 297mm = 0.707 (width/height)
+        aspectRatio: '210/297',
+        minHeight: '600px',
         fontFamily: 'Arial, sans-serif'
       }}
     >
