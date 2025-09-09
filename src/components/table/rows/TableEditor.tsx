@@ -1062,36 +1062,37 @@ const TableEditor = memo(function TableEditor({
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-x-hidden'>
-			{/* Mobile-First Sticky Header */}
+			{/* Sticky Header with Modern Design */}
 			<div className='sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/20 shadow-sm'>
 				<div className='w-full mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='space-y-4 py-4 sm:py-6'>
-						{/* Mobile Table Info */}
-						<div className='flex items-start gap-3'>
-							<div className='flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl'>
-								<Database className='w-5 h-5 sm:w-6 sm:h-6 text-primary' />
+					<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-6'>
+						{/* Left Section - Table Info & Actions */}
+						<div className='flex flex-col sm:flex-row sm:items-center gap-4'>
+							{/* Table Title & Info */}
+							<div className='flex items-center gap-3'>
+								<div className='flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl'>
+									<Database className='w-6 h-6 text-primary' />
+								</div>
+								<div>
+									<h1 className='text-2xl font-bold text-foreground'>
+										{table?.name || "Table"}
+									</h1>
+									<p className='text-sm text-muted-foreground'>
+										{columns?.length || 0} columns •{" "}
+										{pagination?.totalRows || 0} rows
+									</p>
+								</div>
 							</div>
-							<div className='flex-1 min-w-0'>
-								<h1 className='text-xl sm:text-2xl font-bold text-foreground truncate'>
-									{table?.name || "Table"}
-								</h1>
-								<p className='text-xs sm:text-sm text-muted-foreground'>
-									{columns?.length || 0} columns •{" "}
-									{pagination?.totalRows || 0} rows
-								</p>
-							</div>
-						</div>
 
-						{/* Mobile Action Buttons */}
-						<div className='flex flex-col sm:flex-row gap-3'>
-							<div className='flex flex-col sm:flex-row gap-2 flex-1'>
+							{/* Action Buttons */}
+							<div className='flex items-center gap-3'>
 								<Button
 									onClick={() => {
 										setShowForm((prev) => !prev);
 										setServerError(null);
 									}}
 									disabled={!tablePermissions.canEditTable()}
-									className='w-full sm:w-auto h-12 mobile-touch-feedback bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200'
+									className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
 									size='lg'>
 									{showForm ? (
 										<>
@@ -1106,30 +1107,27 @@ const TableEditor = memo(function TableEditor({
 									)}
 								</Button>
 
-								{/* Unified Save Changes Button - Mobile Optimized */}
-								<div className='w-full sm:flex-1'>
-									<SaveChangesButton
-										pendingNewRows={pendingNewRows}
-										isSavingNewRows={isSavingNewRows}
-										onSaveNewRows={handleSaveNewRows}
-										onDiscardNewRows={handleDiscardNewRows}
-										pendingChanges={pendingChanges}
-										isSavingChanges={isSaving}
-										onSaveChanges={savePendingChanges}
-										onDiscardChanges={discardPendingChanges}
-									/>
-								</div>
+								{/* Unified Save Changes Button */}
+								<SaveChangesButton
+									pendingNewRows={pendingNewRows}
+									isSavingNewRows={isSavingNewRows}
+									onSaveNewRows={handleSaveNewRows}
+									onDiscardNewRows={handleDiscardNewRows}
+									pendingChanges={pendingChanges}
+									isSavingChanges={isSaving}
+									onSaveChanges={savePendingChanges}
+									onDiscardChanges={discardPendingChanges}
+								/>
 
 								<Link
 									href={`/home/database/table/${table?.id}/columns`}
-									className='w-full sm:w-auto'>
+									className='inline-flex'>
 									<Button
 										variant='outline'
 										size='lg'
-										className='w-full sm:w-auto h-12 mobile-touch-feedback border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200'>
+										className='border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200'>
 										<Settings className='w-4 h-4 mr-2' />
-										<span className='hidden sm:inline'>Manage Columns</span>
-										<span className='sm:hidden'>Columns</span>
+										Manage Columns
 									</Button>
 								</Link>
 							</div>
