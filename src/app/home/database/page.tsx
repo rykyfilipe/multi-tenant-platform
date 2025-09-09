@@ -76,86 +76,102 @@ export function DatabaseContent() {
 				tourUtils.markTourSeen("database");
 			}}>
 			<div className='min-h-full bg-background'>
-				{/* Header */}
+				{/* Mobile-First Header */}
 				<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
-					<div className='px-3 sm:px-4 md:px-6 py-3 sm:py-4'>
-						{/* Title and Description */}
-						<div className='mb-4 sm:mb-0'>
-							<h1 className='text-lg sm:text-xl font-semibold text-foreground'>
-								Database
-							</h1>
-							<p className='text-xs sm:text-sm text-muted-foreground'>
-								Manage your data tables and schemas
-							</p>
-						</div>
-
-						{/* Database Selector */}
-						<div className='mb-4 sm:mb-0'>
-							<DatabaseSelector />
-						</div>
-
-						{/* Action Buttons */}
-						{selectedDatabase && (
-							<div className='flex flex-col sm:flex-row justify-end gap-2 sm:gap-3'>
-								<div className='flex-1 sm:flex-none'>
-									<TableTemplateSelector />
-								</div>
-								<Button
-									onClick={() => setShowAddTableModal(true)}
-									className='w-full sm:w-auto add-table-button'
-									disabled={!selectedDatabase}>
-									<Plus className='w-4 h-4 mr-2' />
-									Add Table
-								</Button>
+					<div className='px-4 py-4'>
+						{/* Mobile Header Layout */}
+						<div className='space-y-4'>
+							{/* Title and Description */}
+							<div>
+								<h1 className='text-xl sm:text-2xl font-bold text-foreground'>
+									Database
+								</h1>
+								<p className='text-sm text-muted-foreground mt-1'>
+									Manage your data tables and schemas
+								</p>
 							</div>
-						)}
+
+							{/* Database Selector - Mobile Optimized */}
+							<div>
+								<DatabaseSelector />
+							</div>
+
+							{/* Action Buttons - Mobile First */}
+							{selectedDatabase && (
+								<div className='flex flex-col sm:flex-row gap-3'>
+									<div className='w-full sm:flex-1'>
+										<TableTemplateSelector />
+									</div>
+									<Button
+										onClick={() => setShowAddTableModal(true)}
+										className='w-full sm:w-auto h-12 mobile-touch-feedback add-table-button'
+										disabled={!selectedDatabase}>
+										<Plus className='w-5 h-5 mr-2' />
+										Add Table
+									</Button>
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 
-				{/* Main Content */}
-				<div className='p-3 sm:p-4 md:p-6'>
-					<div className='max-w-7xl mx-auto'>
+				{/* Main Content - Mobile Optimized */}
+				<div className='p-4 sm:p-6'>
+					<div className='max-w-7xl mx-auto space-y-6'>
 						{/* Loading state */}
 						{loading && <DatabaseLoadingState />}
 
-
-						{/* Selected database info */}
+						{/* Selected database info - Mobile Card */}
 						{!loading && selectedDatabase && (
-							<div className='mb-6 p-4 bg-card rounded-lg border'>
-								<h2 className='text-lg font-semibold text-foreground mb-2'>
-									{selectedDatabase.name}
-								</h2>
-								<p className='text-sm text-muted-foreground'>
-									Created on{" "}
-									{new Date(selectedDatabase.createdAt).toLocaleDateString()}
-								</p>
+							<div className='bg-card rounded-xl border border-border/20 p-4 sm:p-6 shadow-sm'>
+								<div className='flex items-start justify-between'>
+									<div className='flex-1'>
+										<h2 className='text-lg sm:text-xl font-semibold text-foreground mb-1'>
+											{selectedDatabase.name}
+										</h2>
+										<p className='text-sm text-muted-foreground'>
+											Created on{" "}
+											{new Date(selectedDatabase.createdAt).toLocaleDateString()}
+										</p>
+									</div>
+									<div className='ml-4'>
+										<div className='w-3 h-3 rounded-full bg-green-500 animate-pulse'></div>
+									</div>
+								</div>
 							</div>
 						)}
 
-						{/* Tables grid or No tables message */}
+						{/* Tables grid or No tables message - Mobile Optimized */}
 						{!loading && selectedDatabase && tables && (
 							<>
 								{tables.length > 0 ? (
-									<div className='table-grid space-y-6'>
-										<TableGrid tables={tables} />
+									<div className='space-y-4'>
+										<div className='flex items-center justify-between'>
+											<h3 className='text-lg font-semibold text-foreground'>
+												Tables ({tables.length})
+											</h3>
+										</div>
+										<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+											<TableGrid tables={tables} />
+										</div>
 									</div>
 								) : (
-									<div className='text-center py-12'>
-										<div className='max-w-md mx-auto'>
-											<div className='w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4'>
-												<Plus className='w-8 h-8 text-muted-foreground' />
+									<div className='text-center py-12 px-4'>
+										<div className='max-w-sm mx-auto'>
+											<div className='w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-6'>
+												<Plus className='w-10 h-10 text-primary' />
 											</div>
-											<h3 className='text-lg font-semibold text-foreground mb-2'>
+											<h3 className='text-xl font-semibold text-foreground mb-3'>
 												No tables yet
 											</h3>
-											<p className='text-muted-foreground mb-6'>
+											<p className='text-muted-foreground mb-8 leading-relaxed'>
 												Create your first table in "{selectedDatabase.name}" to
 												start managing your data
 											</p>
 											<Button
 												onClick={() => setShowAddTableModal(true)}
-												className='add-table-button'>
-												<Plus className='w-4 h-4 mr-2' />
+												className='h-12 px-8 mobile-touch-feedback add-table-button'>
+												<Plus className='w-5 h-5 mr-2' />
 												Create First Table
 											</Button>
 										</div>
@@ -164,17 +180,17 @@ export function DatabaseContent() {
 							</>
 						)}
 
-						{/* No database selected */}
+						{/* No database selected - Mobile Optimized */}
 						{!loading && !selectedDatabase && (
-							<div className='text-center py-12'>
-								<div className='max-w-md mx-auto'>
-									<div className='w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4'>
-										<Plus className='w-8 h-8 text-muted-foreground' />
+							<div className='text-center py-16 px-4'>
+								<div className='max-w-sm mx-auto'>
+									<div className='w-20 h-20 bg-gradient-to-br from-muted/20 to-muted/40 rounded-2xl flex items-center justify-center mx-auto mb-6'>
+										<Plus className='w-10 h-10 text-muted-foreground' />
 									</div>
-									<h3 className='text-lg font-semibold text-foreground mb-2'>
+									<h3 className='text-xl font-semibold text-foreground mb-3'>
 										Select a Database
 									</h3>
-									<p className='text-muted-foreground mb-6'>
+									<p className='text-muted-foreground leading-relaxed'>
 										Choose a database from the dropdown above to start managing
 										your tables
 									</p>

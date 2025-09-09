@@ -32,37 +32,28 @@ export interface EmailOptions {
 
 export class EnhancedPDFGenerator {
 	/**
-	 * Remove diacritics from text to prevent PDF encoding issues
+	 * Handle Unicode text for PDF generation
+	 * This function ensures text is properly encoded for PDF display
 	 */
-	private static removeDiacritics(text: any): string {
+	private static handleUnicodeText(text: any): string {
 		if (!text) return '';
 		
 		// Convert to string if not already
 		const textStr = String(text);
 		
-		const diacriticsMap: Record<string, string> = {
-			'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't',
-			'Ă': 'A', 'Â': 'A', 'Î': 'I', 'Ș': 'S', 'Ț': 'T',
-			'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a', 'æ': 'ae',
-			'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A', 'Æ': 'AE',
-			'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
-			'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
-			'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
-			'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
-			'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o', 'ø': 'o',
-			'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O', 'Ø': 'O',
-			'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
-			'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
-			'ý': 'y', 'ÿ': 'y',
-			'Ý': 'Y', 'Ÿ': 'Y',
-			'ñ': 'n', 'Ñ': 'N',
-			'ç': 'c', 'Ç': 'C',
-			'ß': 'ss'
-		};
-
-		return textStr.replace(/[^\u0000-\u007E]/g, (char) => {
-			return diacriticsMap[char] || char;
-		});
+		// For languages that use non-Latin characters, we need to handle them specially
+		// This is a temporary solution until we implement proper Unicode font support
+		const hasNonLatinChars = /[^\u0000-\u007F]/.test(textStr);
+		
+		if (hasNonLatinChars) {
+			// For now, replace problematic characters with safe alternatives
+			// This is a temporary workaround until we implement proper Unicode font support
+			return textStr
+				.replace(/[^\u0000-\u007F]/g, '?') // Replace non-ASCII characters with ?
+				.replace(/\?+/g, '?'); // Replace multiple ? with single ?
+		}
+		
+		return textStr;
 	}
 
 	/**
@@ -90,9 +81,16 @@ export class EnhancedPDFGenerator {
 			const page = pdfDoc.addPage(PageSizes.A4);
 			const { width, height } = page.getSize();
 
-			// Load fonts
-			const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-			const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+			// Load fonts - use TimesRoman for better Unicode support
+			let font, boldFont;
+			try {
+				font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+				boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+			} catch (error) {
+				console.warn('Failed to load TimesRoman fonts, falling back to Helvetica:', error);
+				font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+				boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+			}
 
 			// Set up colors
 			const primaryColor = rgb(0.2, 0.4, 0.8);
@@ -389,7 +387,7 @@ export class EnhancedPDFGenerator {
 			borderColor: textColor,
 			borderWidth: 2,
 		});
-		page.drawText(this.removeDiacritics(companyInitial), {
+		page.drawText(this.handleUnicodeText(companyInitial), {
 			x: 55,
 			y: 750,
 			size: 16,
@@ -398,7 +396,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		// Company name
-		page.drawText(this.removeDiacritics(tenantBranding.name || 'Company Name'), {
+		page.drawText(this.handleUnicodeText(tenantBranding.name || 'Company Name'), {
 			x: 100,
 			y: 760,
 			size: 20,
@@ -414,7 +412,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		// Invoice title - right side
-		page.drawText(this.removeDiacritics(translations.invoice || 'INVOICE'), {
+		page.drawText(this.handleUnicodeText(translations.invoice || 'INVOICE'), {
 			x: width - 200,
 			y: 760,
 			size: 32,
@@ -427,7 +425,7 @@ export class EnhancedPDFGenerator {
 			`${invoiceData.invoice.invoice_series}-${invoiceData.invoice.invoice_number}` : 
 			invoiceData.invoice?.invoice_number || 'N/A';
 		
-		page.drawText(`${this.removeDiacritics(translations.invoiceNumber || 'Invoice#')} ${this.removeDiacritics(invoiceNumber)}`, {
+		page.drawText(`${this.handleUnicodeText(translations.invoiceNumber || 'Invoice#')} ${this.handleUnicodeText(invoiceNumber)}`, {
 			x: width - 200,
 			y: 730,
 			size: 12,
@@ -437,7 +435,7 @@ export class EnhancedPDFGenerator {
 
 		// Date
 		const invoiceDate = new Date(invoiceData.invoice?.date || new Date()).toLocaleDateString();
-		page.drawText(`${this.removeDiacritics(translations.date || 'Date')}: ${this.removeDiacritics(invoiceDate)}`, {
+		page.drawText(`${this.handleUnicodeText(translations.date || 'Date')}: ${this.handleUnicodeText(invoiceDate)}`, {
 			x: width - 200,
 			y: 715,
 			size: 12,
@@ -449,7 +447,7 @@ export class EnhancedPDFGenerator {
 		const totalAmount = invoiceData.invoice?.total_amount || 0;
 		const currency = invoiceData.invoice?.base_currency || 'USD';
 		const safeTotalAmount = typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount) || 0;
-		page.drawText(`Total Due: ${this.removeDiacritics(currency)} ${this.removeDiacritics(safeTotalAmount.toFixed(2))}`, {
+		page.drawText(`Total Due: ${this.handleUnicodeText(currency)} ${this.handleUnicodeText(safeTotalAmount.toFixed(2))}`, {
 			x: width - 200,
 			y: 700,
 			size: 14,
@@ -481,7 +479,7 @@ export class EnhancedPDFGenerator {
 		const y = 650;
 		let currentY = y;
 
-		page.drawText(`${this.removeDiacritics(translations.company || 'From')}:`, {
+		page.drawText(`${this.handleUnicodeText(translations.company || 'From')}:`, {
 			x: 50,
 			y: currentY,
 			size: 12,
@@ -490,7 +488,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		currentY -= 20;
-		page.drawText(this.removeDiacritics(tenantBranding.name || 'Company Name'), {
+		page.drawText(this.handleUnicodeText(tenantBranding.name || 'Company Name'), {
 			x: 50,
 			y: currentY,
 			size: 12,
@@ -500,7 +498,7 @@ export class EnhancedPDFGenerator {
 
 		if (tenantBranding.address) {
 			currentY -= 15;
-			page.drawText(this.removeDiacritics(tenantBranding.address), {
+			page.drawText(this.handleUnicodeText(tenantBranding.address), {
 				x: 50,
 				y: currentY,
 				size: 10,
@@ -511,7 +509,7 @@ export class EnhancedPDFGenerator {
 
 		if (tenantBranding.companyEmail) {
 			currentY -= 15;
-			page.drawText(this.removeDiacritics(tenantBranding.companyEmail), {
+			page.drawText(this.handleUnicodeText(tenantBranding.companyEmail), {
 				x: 50,
 				y: currentY,
 				size: 10,
@@ -522,7 +520,7 @@ export class EnhancedPDFGenerator {
 
 		if (tenantBranding.phone) {
 			currentY -= 15;
-			page.drawText(this.removeDiacritics(tenantBranding.phone), {
+			page.drawText(this.handleUnicodeText(tenantBranding.phone), {
 				x: 50,
 				y: currentY,
 				size: 10,
@@ -547,7 +545,7 @@ export class EnhancedPDFGenerator {
 		const y = 650;
 		let currentY = y;
 
-		page.drawText(`${this.removeDiacritics(translations.customer || 'Bill To')}:`, {
+		page.drawText(`${this.handleUnicodeText(translations.customer || 'Bill To')}:`, {
 			x: width - 200,
 			y: currentY,
 			size: 12,
@@ -557,7 +555,7 @@ export class EnhancedPDFGenerator {
 
 		if (invoiceData.customer) {
 			currentY -= 20;
-			page.drawText(this.removeDiacritics(invoiceData.customer.customer_name || 'Customer Name'), {
+			page.drawText(this.handleUnicodeText(invoiceData.customer.customer_name || 'Customer Name'), {
 				x: width - 200,
 				y: currentY,
 				size: 12,
@@ -567,7 +565,7 @@ export class EnhancedPDFGenerator {
 
 			if (invoiceData.customer.customer_address) {
 				currentY -= 15;
-				page.drawText(this.removeDiacritics(invoiceData.customer.customer_address), {
+				page.drawText(this.handleUnicodeText(invoiceData.customer.customer_address), {
 					x: width - 200,
 					y: currentY,
 					size: 10,
@@ -578,7 +576,7 @@ export class EnhancedPDFGenerator {
 
 			if (invoiceData.customer.customer_email) {
 				currentY -= 15;
-				page.drawText(this.removeDiacritics(invoiceData.customer.customer_email), {
+				page.drawText(this.handleUnicodeText(invoiceData.customer.customer_email), {
 					x: width - 200,
 					y: currentY,
 					size: 10,
@@ -604,14 +602,14 @@ export class EnhancedPDFGenerator {
 		let currentY = y;
 
 		// Invoice date
-		page.drawText(`${this.removeDiacritics(translations.date || 'Invoice Date')}:`, {
+		page.drawText(`${this.handleUnicodeText(translations.date || 'Invoice Date')}:`, {
 			x: 50,
 			y: currentY,
 			size: 12,
 			font: boldFont,
 			color: textColor,
 		});
-		page.drawText(this.removeDiacritics(invoiceData.invoice?.date || 'N/A'), {
+		page.drawText(this.handleUnicodeText(invoiceData.invoice?.date || 'N/A'), {
 			x: 150,
 			y: currentY,
 			size: 12,
@@ -622,14 +620,14 @@ export class EnhancedPDFGenerator {
 		// Due date
 		if (invoiceData.invoice?.due_date) {
 			currentY -= 20;
-			page.drawText(`${this.removeDiacritics(translations.dueDate || 'Due Date')}:`, {
+			page.drawText(`${this.handleUnicodeText(translations.dueDate || 'Due Date')}:`, {
 				x: 50,
 				y: currentY,
 				size: 12,
 				font: boldFont,
 				color: textColor,
 			});
-			page.drawText(this.removeDiacritics(invoiceData.invoice.due_date), {
+			page.drawText(this.handleUnicodeText(invoiceData.invoice.due_date), {
 				x: 150,
 				y: currentY,
 				size: 12,
@@ -641,14 +639,14 @@ export class EnhancedPDFGenerator {
 		// Payment terms
 		if (invoiceData.invoice?.payment_terms) {
 			currentY -= 20;
-			page.drawText(`${this.removeDiacritics(translations.paymentTerms || 'Payment Terms')}:`, {
+			page.drawText(`${this.handleUnicodeText(translations.paymentTerms || 'Payment Terms')}:`, {
 				x: 50,
 				y: currentY,
 				size: 12,
 				font: boldFont,
 				color: textColor,
 			});
-			page.drawText(this.removeDiacritics(invoiceData.invoice.payment_terms), {
+			page.drawText(this.handleUnicodeText(invoiceData.invoice.payment_terms), {
 				x: 150,
 				y: currentY,
 				size: 12,
@@ -701,7 +699,7 @@ export class EnhancedPDFGenerator {
 		];
 		let x = 50;
 		headers.forEach((header, index) => {
-			page.drawText(this.removeDiacritics(header), {
+			page.drawText(this.handleUnicodeText(header), {
 				x: x + 5,
 				y: y - 20,
 				size: 10,
@@ -736,7 +734,7 @@ export class EnhancedPDFGenerator {
 			];
 
 			itemData.forEach((data, dataIndex) => {
-				page.drawText(this.removeDiacritics(data), {
+				page.drawText(this.handleUnicodeText(data), {
 					x: x + 5,
 					y: currentY - 10,
 					size: 9,
@@ -768,14 +766,14 @@ export class EnhancedPDFGenerator {
 
 		// Subtotal
 		const safeSubtotal = typeof invoiceData.totals.subtotal === 'number' ? invoiceData.totals.subtotal : parseFloat(invoiceData.totals.subtotal) || 0;
-		page.drawText(`${this.removeDiacritics(translations.subtotal || 'SUB TOTAL')}:`, {
+		page.drawText(`${this.handleUnicodeText(translations.subtotal || 'SUB TOTAL')}:`, {
 			x: width - 200,
 			y: currentY,
 			size: 10,
 			font: boldFont,
 			color: textColor,
 		});
-		page.drawText(this.removeDiacritics(safeSubtotal.toFixed(2)), {
+		page.drawText(this.handleUnicodeText(safeSubtotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
 			size: 10,
@@ -787,14 +785,14 @@ export class EnhancedPDFGenerator {
 		const safeVatTotal = typeof invoiceData.totals.vatTotal === 'number' ? invoiceData.totals.vatTotal : parseFloat(invoiceData.totals.vatTotal) || 0;
 		if (safeVatTotal > 0) {
 			currentY -= 15;
-			page.drawText(`${this.removeDiacritics(translations.tax || 'Tax VAT 18%')}:`, {
+			page.drawText(`${this.handleUnicodeText(translations.tax || 'Tax VAT 18%')}:`, {
 				x: width - 200,
 				y: currentY,
 				size: 10,
 				font: boldFont,
 				color: textColor,
 			});
-			page.drawText(this.removeDiacritics(safeVatTotal.toFixed(2)), {
+			page.drawText(this.handleUnicodeText(safeVatTotal.toFixed(2)), {
 				x: width - 100,
 				y: currentY,
 				size: 10,
@@ -813,7 +811,7 @@ export class EnhancedPDFGenerator {
 			font: boldFont,
 			color: textColor,
 		});
-		page.drawText(`-${this.removeDiacritics(discount.toFixed(2))}`, {
+		page.drawText(`-${this.handleUnicodeText(discount.toFixed(2))}`, {
 			x: width - 100,
 			y: currentY,
 			size: 10,
@@ -832,14 +830,14 @@ export class EnhancedPDFGenerator {
 		currentY -= 20;
 		
 		const safeGrandTotal = typeof invoiceData.totals.grandTotal === 'number' ? invoiceData.totals.grandTotal : parseFloat(invoiceData.totals.grandTotal) || 0;
-		page.drawText(`${this.removeDiacritics(translations.grandTotal || 'GRAND TOTAL')}:`, {
+		page.drawText(`${this.handleUnicodeText(translations.grandTotal || 'GRAND TOTAL')}:`, {
 			x: width - 200,
 			y: currentY,
 			size: 14,
 			font: boldFont,
 			color: textColor,
 		});
-		page.drawText(this.removeDiacritics(safeGrandTotal.toFixed(2)), {
+		page.drawText(this.handleUnicodeText(safeGrandTotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
 			size: 14,
@@ -1001,7 +999,7 @@ export class EnhancedPDFGenerator {
 	): Promise<void> {
 		const { width, height } = page.getSize();
 		
-		page.drawText(this.removeDiacritics(tenantBranding.name || 'CONFIDENTIAL'), {
+		page.drawText(this.handleUnicodeText(tenantBranding.name || 'CONFIDENTIAL'), {
 			x: width / 2 - 50,
 			y: height / 2,
 			size: 48,

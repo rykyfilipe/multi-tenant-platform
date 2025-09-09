@@ -165,63 +165,73 @@ export const AnalyticsDashboard: React.FC = () => {
 			animate={{ opacity: 1 }}
 			transition={{ duration: 0.5 }}
 			className='h-full bg-background'>
-			{/* Header */}
+			{/* Mobile-First Header */}
 			<div className='border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50'>
-				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 md:px-6 py-3 sm:py-4 gap-3 sm:gap-4'>
-					<div data-tour-id="dashboard-stats">
-						<h1 className='text-xl sm:text-2xl font-bold text-foreground'>
-							Analytics Dashboard
-						</h1>
-						<p className='text-sm sm:text-base text-muted-foreground'>
-							Comprehensive insights and performance metrics for your platform
-						</p>
-					</div>
+				<div className='px-4 sm:px-6 py-4 sm:py-6'>
+					<div className='space-y-4'>
+						{/* Title and Description */}
+						<div data-tour-id="dashboard-stats">
+							<h1 className='text-2xl sm:text-3xl font-bold text-foreground'>
+								Analytics Dashboard
+							</h1>
+							<p className='text-sm sm:text-base text-muted-foreground mt-1'>
+								Comprehensive insights and performance metrics for your platform
+							</p>
+						</div>
 
-					<div className='flex items-center gap-2 sm:gap-3 flex-wrap' data-tour-id="quick-actions">
-						<Select
-							value={timeFilter}
-							onValueChange={(value) => setTimeFilter(value as TimeFilter)}>
-							<SelectTrigger className='w-28 sm:w-32'>
-								<Calendar className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value='7d'>Last 7 days</SelectItem>
-								<SelectItem value='30d'>Last 30 days</SelectItem>
-								<SelectItem value='90d'>Last 90 days</SelectItem>
-								<SelectItem value='1y'>Last year</SelectItem>
-							</SelectContent>
-						</Select>
+						{/* Mobile Controls */}
+						<div className='flex flex-col sm:flex-row gap-3 sm:gap-4' data-tour-id="quick-actions">
+							{/* Time Filter */}
+							<div className='flex-1 sm:flex-none'>
+								<Select
+									value={timeFilter}
+									onValueChange={(value) => setTimeFilter(value as TimeFilter)}>
+									<SelectTrigger className='w-full sm:w-36 h-11 mobile-touch-feedback'>
+										<Calendar className='w-4 h-4 mr-2' />
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='7d'>Last 7 days</SelectItem>
+										<SelectItem value='30d'>Last 30 days</SelectItem>
+										<SelectItem value='90d'>Last 90 days</SelectItem>
+										<SelectItem value='1y'>Last year</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
 
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={handleExportData}
-							className='text-xs sm:text-sm'>
-							<Download className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
-							<span className='hidden sm:inline'>Export</span>
-						</Button>
+							{/* Action Buttons */}
+							<div className='flex gap-2'>
+								<Button
+									variant='outline'
+									size='sm'
+									onClick={handleExportData}
+									className='flex-1 sm:flex-none h-11 mobile-touch-feedback'>
+									<Download className='w-4 h-4 mr-2' />
+									<span className='hidden sm:inline'>Export</span>
+								</Button>
 
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => window.location.reload()}
-							className='text-xs sm:text-sm'>
-							<RefreshCw className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
-							<span className='hidden sm:inline'>Refresh</span>
-						</Button>
+								<Button
+									variant='outline'
+									size='sm'
+									onClick={() => window.location.reload()}
+									className='flex-1 sm:flex-none h-11 mobile-touch-feedback'>
+									<RefreshCw className='w-4 h-4 mr-2' />
+									<span className='hidden sm:inline'>Refresh</span>
+								</Button>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
 
-			{/* Main Content */}
-			<div className='p-3 sm:p-4 md:p-6 max-w-[1400px] mx-auto space-y-4 sm:space-y-6 md:space-y-8'>
-				{/* KPI Cards */}
+			{/* Main Content - Mobile Optimized */}
+			<div className='p-4 sm:p-6 max-w-[1400px] mx-auto space-y-6 sm:space-y-8'>
+				{/* KPI Cards - Mobile Grid */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, delay: 0.1 }}>
-					<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6'>
+					<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6'>
 						<KPICard
 							title='Total Databases'
 							value={kpis.totalDatabases}

@@ -125,12 +125,42 @@ function Page() {
 					</div>
 				</div>
 
-				{/* Main Content */}
-				<div className='p-6 max-w-7xl mx-auto'>
-					<div className='grid grid-cols-1 lg:grid-cols-4 gap-8'>
-						{/* Sidebar */}
-						<div className='lg:col-span-1'>
-							<Card className='sticky top-8 border-border/20  backdrop-blur-sm settings-navigation shadow-xl border-0 bg-card'>
+				{/* Main Content - Mobile First */}
+				<div className='p-4 sm:p-6 max-w-7xl mx-auto'>
+					{/* Mobile Navigation */}
+					<div className='lg:hidden mb-6'>
+						<Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
+							<TabsList className='grid w-full grid-cols-2 sm:grid-cols-3 mb-4'>
+								<TabsTrigger value='profile' className='text-xs sm:text-sm'>
+									<User className='h-4 w-4 mr-1' />
+									<span className='hidden sm:inline'>Profile</span>
+								</TabsTrigger>
+								<TabsTrigger value='security' className='text-xs sm:text-sm'>
+									<Shield className='h-4 w-4 mr-1' />
+									<span className='hidden sm:inline'>Security</span>
+								</TabsTrigger>
+								<TabsTrigger value='subscription' className='text-xs sm:text-sm'>
+									<CreditCard className='h-4 w-4 mr-1' />
+									<span className='hidden sm:inline'>Plan</span>
+								</TabsTrigger>
+							</TabsList>
+							<TabsList className='grid w-full grid-cols-2'>
+								<TabsTrigger value='usage' className='text-xs sm:text-sm'>
+									<BarChart3 className='h-4 w-4 mr-1' />
+									Usage
+								</TabsTrigger>
+								<TabsTrigger value='privacy' className='text-xs sm:text-sm'>
+									<Shield className='h-4 w-4 mr-1' />
+									Privacy
+								</TabsTrigger>
+							</TabsList>
+						</Tabs>
+					</div>
+
+					<div className='grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8'>
+						{/* Desktop Sidebar */}
+						<div className='hidden lg:block lg:col-span-1'>
+							<Card className='sticky top-8 border-border/20 backdrop-blur-sm settings-navigation shadow-xl border-0 bg-card'>
 								<CardHeader className='pb-4'>
 									<CardTitle className='text-lg flex items-center gap-2 text-foreground'>
 										<div className='p-2 bg-primary/10 rounded-xl'>
@@ -182,8 +212,8 @@ function Page() {
 							</Card>
 						</div>
 
-						{/* Main Content Area */}
-						<div className='lg:col-span-3 space-y-8'>
+						{/* Main Content Area - Mobile Optimized */}
+						<div className='lg:col-span-3 space-y-6 lg:space-y-8'>
 							{/* Profile Tab */}
 							<PremiumTabContentWrapper isActive={activeTab === "profile"}>
 								<div className='space-y-6'>

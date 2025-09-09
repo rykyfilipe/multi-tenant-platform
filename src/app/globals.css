@@ -1465,6 +1465,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	@apply p-3 sm:p-4 md:p-6 lg:p-8;
 }
 
+/* Enhanced Mobile-First Responsive Design */
+
 /* Mobile Optimizations */
 @media (max-width: 640px) {
 	.analytics-tabs .tabs-list {
@@ -1492,9 +1494,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 		@apply p-4;
 	}
 
-	/* Mobile touch feedback */
+	/* Enhanced Mobile touch feedback */
 	.mobile-touch-feedback {
-		@apply active:scale-95 active:bg-primary/5;
+		@apply active:scale-95 active:bg-primary/5 transition-transform duration-150 ease-out;
+	}
+
+	.mobile-touch-feedback:active {
+		transform: scale(0.95);
 	}
 
 	/* Mobile table optimizations */
@@ -1515,9 +1521,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 		@apply space-y-2;
 	}
 
-	/* Mobile button optimizations */
+	/* Enhanced Mobile button optimizations */
 	.mobile-button {
-		@apply min-h-[44px] min-w-[44px];
+		@apply min-h-[44px] min-w-[44px] touch-manipulation;
 	}
 
 	/* Mobile modal optimizations */
@@ -1612,5 +1618,148 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 	.mobile-m-4 {
 		@apply m-4;
+	}
+}
+
+/* Tablet Optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+	/* Tablet-specific grid adjustments */
+	.tablet-grid-2 {
+		@apply grid-cols-2;
+	}
+
+	.tablet-grid-3 {
+		@apply grid-cols-3;
+	}
+
+	/* Tablet navigation */
+	.tablet-nav-item {
+		@apply flex-row items-center justify-start p-3 min-h-[48px];
+	}
+
+	/* Tablet card adjustments */
+	.tablet-card {
+		@apply p-6;
+	}
+
+	/* Tablet text adjustments */
+	.tablet-text-sm {
+		@apply text-sm;
+	}
+
+	.tablet-text-base {
+		@apply text-base;
+	}
+
+	.tablet-text-lg {
+		@apply text-lg;
+	}
+}
+
+/* Desktop Optimizations */
+@media (min-width: 1025px) {
+	/* Desktop-specific enhancements */
+	.desktop-grid-4 {
+		@apply grid-cols-4;
+	}
+
+	.desktop-grid-6 {
+		@apply grid-cols-6;
+	}
+
+	/* Desktop hover effects */
+	.desktop-hover-lift {
+		@apply hover:-translate-y-1 hover:shadow-lg transition-all duration-300;
+	}
+
+	/* Desktop navigation */
+	.desktop-nav-item {
+		@apply flex-row items-center justify-start p-4 min-h-[52px];
+	}
+}
+
+/* Foldable Device Optimizations */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+	/* Landscape tablet/foldable adjustments */
+	.foldable-grid {
+		@apply grid-cols-3;
+	}
+
+	.foldable-nav {
+		@apply flex-row;
+	}
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+	/* Ensure crisp rendering on high DPI displays */
+	.mobile-touch-feedback {
+		-webkit-tap-highlight-color: transparent;
+	}
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+	/* Touch-specific optimizations */
+	.touch-target {
+		@apply min-h-[44px] min-w-[44px];
+	}
+
+	.touch-button {
+		@apply active:scale-95 transition-transform duration-100;
+	}
+
+	/* Remove hover effects on touch devices */
+	.no-touch-hover:hover {
+		@apply transform-none shadow-none;
+	}
+}
+
+/* Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+	/* Disable animations for users who prefer reduced motion */
+	.mobile-touch-feedback,
+	.mobile-card-hover,
+	.mobile-button-press {
+		@apply transition-none;
+	}
+
+	.animate-mobile-slide-up,
+	.animate-mobile-slide-in,
+	.animate-mobile-scale-in,
+	.animate-mobile-bounce,
+	.animate-mobile-shake {
+		animation: none;
+	}
+}
+
+/* Dark Mode Mobile Optimizations */
+@media (max-width: 640px) {
+	.dark .mobile-touch-feedback:active {
+		@apply bg-primary/10;
+	}
+
+	.dark .mobile-card {
+		@apply bg-card/95 border-border/30;
+	}
+
+	.dark .mobile-button {
+		@apply bg-card/90 border-border/40;
+	}
+}
+
+/* Print Optimizations */
+@media print {
+	.mobile-bottom-nav,
+	.mobile-header,
+	.tablet-header,
+	.desktop-header {
+		@apply hidden;
+	}
+
+	.mobile-card,
+	.tablet-card,
+	.desktop-card {
+		@apply shadow-none border border-gray-300;
 	}
 }

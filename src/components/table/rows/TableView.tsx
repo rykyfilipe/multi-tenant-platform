@@ -266,91 +266,95 @@ export const TableView = memo(function TableView({
 
 	return (
 		<div className='w-full h-full bg-gradient-to-br from-slate-50 via-white to-slate-50 flex flex-col'>
-			{/* Premium Header Section */}
-			<div className='px-8 py-6 bg-gradient-to-r from-white via-slate-50 to-white border-b border-slate-200/60'>
-				<div className='flex items-center justify-between'>
-					<div className='flex items-center gap-4'>
-						<div className='p-3 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg'>
-							<TableIcon className='w-6 h-6 text-white' />
-						</div>
-						<div>
-							<h1 className='text-2xl font-bold text-slate-900 tracking-tight'>
-								{table.name || 'Table Data'}
-							</h1>
-							<p className='text-slate-600 text-sm font-medium'>
-								{validatedRows.length} row{validatedRows.length !== 1 ? 's' : ''} • {safeColumns.length} column{safeColumns.length !== 1 ? 's' : ''}
-							</p>
+			{/* Mobile-First Header Section */}
+			<div className='px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gradient-to-r from-white via-slate-50 to-white border-b border-slate-200/60'>
+				{/* Mobile Layout */}
+				<div className='space-y-4'>
+					{/* Title and Stats */}
+					<div className='flex items-start justify-between'>
+						<div className='flex items-center gap-3 flex-1 min-w-0'>
+							<div className='p-2 sm:p-3 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg'>
+								<TableIcon className='w-5 h-5 sm:w-6 sm:h-6 text-white' />
+							</div>
+							<div className='flex-1 min-w-0'>
+								<h1 className='text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight truncate'>
+									{table.name || 'Table Data'}
+								</h1>
+								<p className='text-slate-600 text-xs sm:text-sm font-medium'>
+									{validatedRows.length} row{validatedRows.length !== 1 ? 's' : ''} • {safeColumns.length} column{safeColumns.length !== 1 ? 's' : ''}
+								</p>
+							</div>
 						</div>
 					</div>
 					
-					{/* Compact Action Buttons */}
-					<div className='flex items-center gap-2'>
-						{/* Filter Button */}
-						{onFilter && (
-							<Button
-								onClick={onFilter}
-								variant='outline'
-								size='sm'
-								className='h-9 px-3 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm'
-								title='Add filter'>
-								<Filter className='w-4 h-4 mr-1.5' />
-								<span className='text-xs font-medium'>Filter</span>
-							</Button>
-						)}
+					{/* Mobile Action Buttons */}
+					<div className='flex flex-col sm:flex-row gap-2 sm:gap-3'>
+						<div className='flex gap-2 flex-1'>
+							{/* Filter Button */}
+							{onFilter && (
+								<Button
+									onClick={onFilter}
+									variant='outline'
+									size='sm'
+									className='flex-1 h-10 mobile-touch-feedback border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm'
+									title='Add filter'>
+									<Filter className='w-4 h-4 mr-1.5' />
+									<span className='text-xs font-medium'>Filter</span>
+								</Button>
+							)}
 
-						{/* Import Button */}
-						{onImport && (
-							<Button
-								onClick={onImport}
-								variant='outline'
-								size='sm'
-								className='h-9 px-3 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm'
-								title='Import data'>
-								<Upload className='w-4 h-4 mr-1.5' />
-								<span className='text-xs font-medium'>Import</span>
-							</Button>
-						)}
+							{/* Import Button */}
+							{onImport && (
+								<Button
+									onClick={onImport}
+									variant='outline'
+									size='sm'
+									className='h-10 mobile-touch-feedback border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm'
+									title='Import data'>
+									<Upload className='w-4 h-4' />
+								</Button>
+							)}
 
-						{/* Export Button */}
-						{onExport && (
-							<Button
-								onClick={onExport}
-								variant='outline'
-								size='sm'
-								className='h-9 px-3 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm'
-								title='Export data'>
-								<Download className='w-4 h-4 mr-1.5' />
-								<span className='text-xs font-medium'>Export</span>
-							</Button>
-						)}
+							{/* Export Button */}
+							{onExport && (
+								<Button
+									onClick={onExport}
+									variant='outline'
+									size='sm'
+									className='h-10 mobile-touch-feedback border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm'
+									title='Export data'>
+									<Download className='w-4 h-4' />
+								</Button>
+							)}
+						</div>
 
-						{/* Bulk Actions */}
-						{selectedRows.size > 0 && onBulkDelete && (
-							<Button
-								onClick={handleBulkDeleteClick}
-								variant='outline'
-								size='sm'
-								disabled={!tablePermissions.canEditTable()}
-								className='h-9 px-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm'
-								title='Delete selected rows'>
-								<Trash2 className='w-4 h-4 mr-1.5' />
-								<span className='text-xs font-medium'>Delete ({selectedRows.size})</span>
-							</Button>
-						)}
-
-						{/* Add Row Button - Premium Style */}
+						{/* Add Row Button - Mobile Optimized */}
 						{onAddRow && (
 							<Button
 								onClick={onAddRow}
 								variant='default'
 								size='sm'
-								className='h-9 px-4 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl'
+								className='w-full sm:w-auto h-10 mobile-touch-feedback bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg hover:shadow-xl transition-all duration-200'
 								title='Add new row'>
-								<Plus className='w-4 h-4 mr-1.5' />
-								<span className='text-xs font-medium'>Add Row</span>
+								<Plus className='w-4 h-4 mr-2' />
+								<span className='text-sm font-medium'>Add Row</span>
 							</Button>
 						)}
 					</div>
+
+					{/* Bulk Actions - Mobile Row */}
+					{selectedRows.size > 0 && onBulkDelete && (
+						<Button
+							onClick={handleBulkDeleteClick}
+							variant='destructive'
+							size='sm'
+							disabled={!tablePermissions.canEditTable()}
+							className='w-full h-10 mobile-touch-feedback'
+							title='Delete selected rows'>
+							<Trash2 className='w-4 h-4 mr-2' />
+							<span className='text-sm font-medium'>Delete Selected ({selectedRows.size})</span>
+						</Button>
+					)}
 				</div>
 			</div>
 

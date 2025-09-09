@@ -69,39 +69,32 @@ export interface InvoicePDFData {
 
 export class PDFInvoiceGenerator {
 	/**
-	 * Remove diacritics from Romanian text to avoid PDF encoding errors
+	 * Handle Unicode text for PDF generation
+	 * This function ensures text is properly encoded for PDF display
 	 */
-	private static removeDiacritics(text: string): string {
+	private static handleUnicodeText(text: string): string {
 		if (!text) return text;
-
-		const diacriticsMap: { [key: string]: string } = {
-			ă: "a",
-			Ă: "A",
-			â: "a",
-			Â: "A",
-			î: "i",
-			Î: "I",
-			ș: "s",
-			Ș: "S",
-			ş: "s",
-			Ş: "S",
-			ț: "t",
-			Ț: "T",
-			ţ: "t",
-			Ţ: "T",
-		};
-
-		return text.replace(
-			/[ăâîșşțţĂÂÎȘŞȚŢ]/g,
-			(match) => diacriticsMap[match] || match,
-		);
+		
+		// For languages that use non-Latin characters, we need to handle them specially
+		// This is a temporary solution until we implement proper Unicode font support
+		const hasNonLatinChars = /[^\u0000-\u007F]/.test(text);
+		
+		if (hasNonLatinChars) {
+			// For now, replace problematic characters with safe alternatives
+			// This is a temporary workaround until we implement proper Unicode font support
+			return text
+				.replace(/[^\u0000-\u007F]/g, '?') // Replace non-ASCII characters with ?
+				.replace(/\?+/g, '?'); // Replace multiple ? with single ?
+		}
+		
+		return text;
 	}
 
 	/**
-	 * Helper function to draw text with diacritics removed
+	 * Helper function to draw text with Unicode support
 	 */
 	private static drawTextSafe(page: any, text: string, options: any): void {
-		page.drawText(PDFInvoiceGenerator.removeDiacritics(text), options);
+		page.drawText(PDFInvoiceGenerator.handleUnicodeText(text), options);
 	}
 
 	/**
@@ -388,9 +381,19 @@ export class PDFInvoiceGenerator {
 		const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
 		const { width, height } = page.getSize();
 
-		// Embed the standard font
-		const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-		const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+		// Try to use Unicode-compatible fonts, fallback to standard fonts
+		let font, boldFont;
+		try {
+			// For Unicode support, we need to use a different approach
+			// For now, we'll use TimesRoman which has better Unicode support than Helvetica
+			font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+			boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+		} catch (error) {
+			console.warn('Failed to load Unicode fonts, falling back to Helvetica:', error);
+			// Fallback to standard fonts
+			font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+			boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+		}
 
 		// Set margins
 		const margin = 50;

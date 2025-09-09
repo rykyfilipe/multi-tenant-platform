@@ -264,30 +264,30 @@ const UsersPage = () => {
 				tourUtils.markTourSeen("users");
 			}}>
 			<div className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800'>
-				{/* Premium Header */}
+				{/* Mobile-First Header */}
 				<div className='relative overflow-hidden'>
 					<div className='absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5' />
 					<div className='relative border-b border-border/20 bg-background/95 backdrop-blur-xl'>
-						<div className='max-w-7xl mx-auto px-6 py-8'>
-							<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
-								{/* Header Content */}
-								<div className='flex items-start gap-4'>
+						<div className='max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8'>
+							<div className='space-y-6'>
+								{/* Mobile Header Content */}
+								<div className='flex items-start gap-3 sm:gap-4'>
 									<div className='relative'>
-										<div className='w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25'>
-											<Users className='w-8 h-8 text-white' />
+										<div className='w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25'>
+											<Users className='w-6 h-6 sm:w-8 sm:h-8 text-white' />
 										</div>
-										<div className='absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center'>
-											<div className='w-3 h-3 bg-white rounded-full' />
+										<div className='absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center'>
+											<div className='w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full' />
 										</div>
 									</div>
-									<div className='space-y-2'>
-										<h1 className='text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent'>
+									<div className='space-y-2 flex-1 min-w-0'>
+										<h1 className='text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent'>
 											Team Management
 										</h1>
-										<p className='text-slate-600 dark:text-slate-400 text-lg max-w-2xl'>
+										<p className='text-slate-600 dark:text-slate-400 text-sm sm:text-base lg:text-lg'>
 											Manage your team members, roles, and permissions with precision and ease.
 										</p>
-										<div className='flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400'>
+										<div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500 dark:text-slate-400'>
 											<div className='flex items-center gap-2'>
 												<div className='w-2 h-2 bg-green-500 rounded-full' />
 												<span>{users.length} Active Members</span>
@@ -302,12 +302,12 @@ const UsersPage = () => {
 									</div>
 								</div>
 
-								{/* Action Buttons */}
-								<div className='flex items-center gap-3'>
+								{/* Mobile Action Buttons */}
+								<div className='flex flex-col sm:flex-row gap-3'>
 									{currentUser?.role === "ADMIN" && (
 										<Button
 											onClick={() => setShowInviteForm(!showInviteForm)}
-											className='h-12 px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200 rounded-xl font-medium'>
+											className='w-full sm:w-auto h-12 px-6 mobile-touch-feedback bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200 rounded-xl font-medium'>
 											<Plus className='w-5 h-5 mr-2' />
 											{showInviteForm ? "Cancel Invite" : "Invite Member"}
 										</Button>
@@ -318,35 +318,40 @@ const UsersPage = () => {
 					</div>
 				</div>
 
-				{/* Main Content */}
-				<div className='max-w-7xl mx-auto px-6 py-8'>
-					<div className='space-y-8'>
-						{/* Search and Stats Bar */}
-						<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
-							<div className='flex-1 max-w-md'>
+				{/* Main Content - Mobile Optimized */}
+				<div className='max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8'>
+					<div className='space-y-6 sm:space-y-8'>
+						{/* Mobile Search and Stats */}
+						<div className='space-y-4'>
+							{/* Search Bar */}
+							<div className='w-full'>
 								<div className='relative group'>
-									<Search className='absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors' />
+									<Search className='absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-focus-within:text-primary transition-colors' />
 									<Input
 										placeholder='Search team members...'
 										value={searchTerm}
 										onChange={(e) => setSearchTerm(e.target.value)}
-										className='pl-12 h-12 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 focus:border-primary/50 rounded-xl text-base shadow-sm hover:shadow-md transition-all duration-200'
+										className='pl-10 sm:pl-12 h-11 sm:h-12 mobile-touch-feedback bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 focus:border-primary/50 rounded-xl text-sm sm:text-base shadow-sm hover:shadow-md transition-all duration-200'
 									/>
 								</div>
 							</div>
 							
-							{/* Quick Stats */}
-							<div className='flex items-center gap-6'>
-								<div className='text-center'>
-									<div className='text-2xl font-bold text-slate-900 dark:text-white'>{users.length}</div>
-									<div className='text-sm text-slate-500 dark:text-slate-400'>Total Members</div>
+							{/* Mobile Stats Grid */}
+							<div className='grid grid-cols-2 sm:grid-cols-3 gap-4'>
+								<div className='text-center p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm'>
+									<div className='text-xl sm:text-2xl font-bold text-slate-900 dark:text-white'>{users.length}</div>
+									<div className='text-xs sm:text-sm text-slate-500 dark:text-slate-400'>Total Members</div>
 								</div>
-								<div className='w-px h-8 bg-slate-200 dark:bg-slate-700' />
-								<div className='text-center'>
-									<div className='text-2xl font-bold text-green-600'>{users.filter(u => u.role === 'ADMIN').length}</div>
-									<div className='text-sm text-slate-500 dark:text-slate-400'>Administrators</div>
+								<div className='text-center p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm'>
+									<div className='text-xl sm:text-2xl font-bold text-green-600'>{users.filter(u => u.role === 'ADMIN').length}</div>
+									<div className='text-xs sm:text-sm text-slate-500 dark:text-slate-400'>Administrators</div>
 								</div>
-								<div className='w-px h-8 bg-slate-200 dark:bg-slate-700' />
+								<div className='text-center p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm sm:col-span-1 col-span-2'>
+									<div className='text-xl sm:text-2xl font-bold text-amber-600'>{invitations.length}</div>
+									<div className='text-xs sm:text-sm text-slate-500 dark:text-slate-400'>Pending Invites</div>
+								</div>
+							</div>
+						</div>
 								<div className='text-center'>
 									<div className='text-2xl font-bold text-blue-600'>{users.filter(u => u.role === 'EDITOR').length}</div>
 									<div className='text-sm text-slate-500 dark:text-slate-400'>Editors</div>
