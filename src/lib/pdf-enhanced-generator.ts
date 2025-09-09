@@ -274,7 +274,7 @@ export class EnhancedPDFGenerator {
 					logoUrl: true,
 					website: true,
 					phone: true,
-					vatNumber: true,
+					companyTaxId: true,
 					registrationNumber: true,
 				},
 			});
@@ -391,7 +391,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		// Invoice number - use translation
-		page.drawText(`${translations.invoiceNumber || 'Invoice #'}: ${invoiceData.invoice?.invoice_number || 'N/A'}`, {
+		page.drawText(`${this.removeDiacritics(translations.invoiceNumber || 'Invoice #')}: ${this.removeDiacritics(invoiceData.invoice?.invoice_number || 'N/A')}`, {
 			x: width - 150,
 			y: 720,
 			size: 12,
@@ -538,14 +538,14 @@ export class EnhancedPDFGenerator {
 		let currentY = y;
 
 		// Invoice date
-		page.drawText(`${translations.date || 'Invoice Date'}:`, {
+		page.drawText(`${this.removeDiacritics(translations.date || 'Invoice Date')}:`, {
 			x: 50,
 			y: currentY,
 			size: 12,
 			font: boldFont,
 			color: textColor,
 		});
-		page.drawText(invoiceData.invoice?.date || 'N/A', {
+		page.drawText(this.removeDiacritics(invoiceData.invoice?.date || 'N/A'), {
 			x: 150,
 			y: currentY,
 			size: 12,
@@ -556,14 +556,14 @@ export class EnhancedPDFGenerator {
 		// Due date
 		if (invoiceData.invoice?.due_date) {
 			currentY -= 20;
-			page.drawText(`${translations.dueDate || 'Due Date'}:`, {
+			page.drawText(`${this.removeDiacritics(translations.dueDate || 'Due Date')}:`, {
 				x: 50,
 				y: currentY,
 				size: 12,
 				font: boldFont,
 				color: textColor,
 			});
-			page.drawText(invoiceData.invoice.due_date, {
+			page.drawText(this.removeDiacritics(invoiceData.invoice.due_date), {
 				x: 150,
 				y: currentY,
 				size: 12,
@@ -575,7 +575,7 @@ export class EnhancedPDFGenerator {
 		// Payment terms
 		if (invoiceData.invoice?.payment_terms) {
 			currentY -= 20;
-			page.drawText(`${translations.paymentTerms || 'Payment Terms'}:`, {
+			page.drawText(`${this.removeDiacritics(translations.paymentTerms || 'Payment Terms')}:`, {
 				x: 50,
 				y: currentY,
 				size: 12,
@@ -692,14 +692,14 @@ export class EnhancedPDFGenerator {
 		let currentY = y;
 
 		// Subtotal
-		page.drawText(`${translations.subtotal || 'Subtotal'}:`, {
+		page.drawText(`${this.removeDiacritics(translations.subtotal || 'Subtotal')}:`, {
 			x: width - 200,
 			y: currentY,
 			size: 12,
 			font: font,
 			color: textColor,
 		});
-		page.drawText(invoiceData.totals.subtotal.toFixed(2), {
+		page.drawText(this.removeDiacritics(invoiceData.totals.subtotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
 			size: 12,
@@ -710,14 +710,14 @@ export class EnhancedPDFGenerator {
 		// VAT
 		if (invoiceData.totals.vatTotal > 0) {
 			currentY -= 20;
-			page.drawText(`${translations.tax || 'VAT'}:`, {
+			page.drawText(`${this.removeDiacritics(translations.tax || 'VAT')}:`, {
 				x: width - 200,
 				y: currentY,
 				size: 12,
 				font: font,
 				color: textColor,
 			});
-			page.drawText(invoiceData.totals.vatTotal.toFixed(2), {
+			page.drawText(this.removeDiacritics(invoiceData.totals.vatTotal.toFixed(2)), {
 				x: width - 100,
 				y: currentY,
 				size: 12,
@@ -728,14 +728,14 @@ export class EnhancedPDFGenerator {
 
 		// Grand total
 		currentY -= 30;
-		page.drawText(`${translations.grandTotal || 'Total'}:`, {
+		page.drawText(`${this.removeDiacritics(translations.grandTotal || 'Total')}:`, {
 			x: width - 200,
 			y: currentY,
 			size: 16,
 			font: boldFont,
 			color: primaryColor,
 		});
-		page.drawText(invoiceData.totals.grandTotal.toFixed(2), {
+		page.drawText(this.removeDiacritics(invoiceData.totals.grandTotal.toFixed(2)), {
 			x: width - 100,
 			y: currentY,
 			size: 16,

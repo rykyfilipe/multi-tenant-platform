@@ -200,33 +200,33 @@ function useTableRows(
 			lastFetchParamsRef.current = paramsString;
 
 			try {
-				// Construiește URL-ul pentru POST request
-				const url = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows`;
+				// Construiește URL-ul pentru GET request cu query params
+				const baseUrl = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows`;
+				const query = new URLSearchParams();
+				query.set("page", String(page));
+				query.set("pageSize", String(pageSize));
+				query.set("includeCells", "true");
+				query.set("search", globalSearchParam.trim());
+				// Encode filters ca JSON în query param
+				try {
+					const encodedFilters = encodeURIComponent(JSON.stringify(filtersParam || []));
+					query.set("filters", encodedFilters);
+				} catch (e) {
+					console.warn("Failed to encode filters, falling back to empty array", e);
+					query.set("filters", encodeURIComponent("[]"));
+				}
+				query.set("sortBy", sortByParam);
+				query.set("sortOrder", sortOrderParam);
+				const url = `${baseUrl}?${query.toString()}`;
 
-				// Construiește payload-ul JSON pentru POST
-				const payload: FilterPayload = {
-					page,
-					pageSize,
-					includeCells: true,
-					globalSearch: globalSearchParam.trim(),
-					filters: filtersParam,
-					sortBy: sortByParam,
-					sortOrder: sortOrderParam
-				};
-
-				console.log("🌐 useTableRows - Making POST API request:", {
-					url,
-					payload: JSON.stringify(payload, null, 2)
-				});
+				console.log("🌐 useTableRows - Making GET API request:", { url });
 
 				const res = await fetch(url, {
-					method: "POST",
+					method: "GET",
 					headers: {
 						Authorization: `Bearer ${token}`,
-						"Content-Type": "application/json",
-						"Cache-Control": "no-cache", // Pentru date dinamice
+						"Cache-Control": "no-cache",
 					},
-					body: JSON.stringify(payload),
 				});
 
 				if (!res.ok) {
