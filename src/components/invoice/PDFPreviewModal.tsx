@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useApp } from '@/contexts/AppContext';
+import { InvoiceHTMLPreview } from './InvoiceHTMLPreview';
 
 interface PDFPreviewModalProps {
   isOpen: boolean;
@@ -41,7 +42,9 @@ export function PDFPreviewModal({
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [invoiceData, setInvoiceData] = useState<any>(null);
+  const [tenantBranding, setTenantBranding] = useState<any>(null);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
   const [zoom, setZoom] = useState(100);
 
   const languages = [
@@ -52,17 +55,17 @@ export function PDFPreviewModal({
     { code: 'de', name: 'Deutsch', flag: '🇩🇪' }
   ];
 
-  // Generate PDF URL with language parameter
+  // Fetch invoice data for HTML preview
   useEffect(() => {
     if (isOpen && invoiceId && tenant?.id) {
-      const generatePDFUrl = async () => {
+      const fetchInvoiceData = async () => {
         try {
           setIsLoading(true);
           setError(null);
           
-          // Fetch PDF as blob and convert to data URL
+          // Fetch invoice data
           const response = await fetch(
-            `/api/tenants/${tenant.id}/invoices/${invoiceId}/download?language=${selectedLanguage}&enhanced=true&preview=true`,
+            `/api/tenants/${tenant.id}/invoices/${invoiceId}?language=${selectedLanguage}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -70,41 +73,74 @@ export function PDFPreviewModal({
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `Failed to generate PDF preview (${response.status})`);
+            throw new Error(errorData.error || `Failed to fetch invoice data (${response.status})`);
           }
 
-          const blob = await response.blob();
+          const data = await response.json();
+          // Transform the data to match our component interface
+          const transformedData = {
+            invoice: data.invoice,
+            customer: data.customer,
+            items: data.items.map((item: any) => ({
+              product_name: item.product_name || 'Product',
+              description: item.description || item.product_description || '',
+              quantity: Number(item.quantity) || 0,
+              unit_price: Number(item.price) || 0,
+              total: Number(item.quantity) * Number(item.price) || 0,
+              vat_rate: Number(item.product_vat) || 0
+            })),
+            totals: {
+              subtotal: data.totals.subtotal || 0,
+              vatTotal: data.totals.vat_total || 0,
+              grandTotal: data.totals.grand_total || 0
+            }
+          };
+          setInvoiceData(transformedData);
           
-          // Check if the response is actually a PDF
-          if (blob.type !== 'application/pdf') {
-            throw new Error('Invalid PDF response from server');
+          // Fetch tenant branding
+          const brandingResponse = await fetch(
+            `/api/tenants/${tenant.id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          
+          if (brandingResponse.ok) {
+            const brandingData = await brandingResponse.json();
+            setTenantBranding(brandingData);
           }
           
-          // Convert blob to data URL for iframe
-          const reader = new FileReader();
-          reader.onload = () => {
-            setPdfUrl(reader.result as string);
-          };
-          reader.onerror = () => {
-            setError('Failed to process PDF data');
-          };
-          reader.readAsDataURL(blob);
+          // Set basic translations
+          setTranslations({
+            invoice: 'Invoice',
+            invoiceNumber: 'Invoice #',
+            company: 'From',
+            customer: 'Bill To',
+            date: 'Invoice Date',
+            dueDate: 'Due Date',
+            paymentTerms: 'Payment Terms',
+            item: 'Item',
+            description: 'Description',
+            quantity: 'Qty',
+            unitPrice: 'Unit Price',
+            total: 'Total',
+            subtotal: 'Subtotal',
+            tax: 'VAT',
+            grandTotal: 'Total',
+            thankYou: 'Thank you for your business!',
+            download: 'Download PDF'
+          });
+          
         } catch (err) {
-          console.error('Error generating PDF preview:', err);
-          setError(err instanceof Error ? err.message : 'Failed to load PDF preview');
+          console.error('Error fetching invoice data:', err);
+          setError(err instanceof Error ? err.message : 'Failed to load invoice data');
         } finally {
           setIsLoading(false);
         }
       };
 
-      generatePDFUrl();
+      fetchInvoiceData();
     }
-
-    return () => {
-      if (pdfUrl && pdfUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(pdfUrl);
-      }
-    };
   }, [isOpen, invoiceId, tenant?.id, selectedLanguage, token]);
 
   const handleDownload = () => {
@@ -282,26 +318,15 @@ export function PDFPreviewModal({
                 </div>
               </div>
             </div>
-          ) : pdfUrl ? (
+          ) : invoiceData && tenantBranding ? (
             <div className="h-full overflow-auto p-2">
-              <div 
-                className="mx-auto bg-white shadow-2xl rounded-lg overflow-hidden"
-                style={{ 
-                  width: `${zoom}%`,
-                  maxWidth: '100%',
-                  transition: 'width 0.3s ease',
-                  minHeight: 'calc(100vh - 200px)'
-                }}
-              >
-                <iframe
-                  src={pdfUrl}
-                  className="w-full border-0"
-                  style={{ height: 'calc(100vh - 200px)' }}
-                  title={`Invoice ${invoiceNumber} Preview`}
-                  onLoad={() => setIsLoading(false)}
-                  onError={() => setError('Failed to load PDF in iframe')}
-                />
-              </div>
+              <InvoiceHTMLPreview
+                invoiceData={invoiceData}
+                tenantBranding={tenantBranding}
+                translations={translations}
+                zoom={zoom}
+                onDownload={handleDownload}
+              />
             </div>
           ) : null}
         </div>

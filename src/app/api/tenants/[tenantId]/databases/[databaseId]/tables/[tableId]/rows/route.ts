@@ -703,7 +703,10 @@ export async function GET(
 							cells: {
 								some: {
 									columnId: Number(columnId),
-									value: convertedValue,
+									value: {
+										path: ["$"],
+										equals: convertedValue,
+									},
 								},
 							},
 						};
@@ -717,7 +720,10 @@ export async function GET(
 							cells: {
 								none: {
 									columnId: Number(columnId),
-									value: convertedValue,
+									value: {
+										path: ["$"],
+										equals: convertedValue,
+									},
 								},
 							},
 						};
@@ -743,6 +749,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										gt: convertedValue,
 									},
 								},
@@ -754,6 +761,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										gte: convertedValue,
 									},
 								},
@@ -765,6 +773,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										lt: convertedValue,
 									},
 								},
@@ -776,6 +785,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										lte: convertedValue,
 									},
 								},
@@ -787,6 +797,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										gte: convertedValue,
 										lte: convertedSecondValue,
 									},
@@ -799,6 +810,7 @@ export async function GET(
 								none: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										gte: convertedValue,
 										lte: convertedSecondValue,
 									},
@@ -901,6 +913,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										lt: new Date(convertedValue).toISOString(),
 									},
 								},
@@ -912,6 +925,7 @@ export async function GET(
 								some: {
 									columnId: Number(columnId),
 									value: {
+										path: ["$"],
 										gt: new Date(convertedValue).toISOString(),
 									},
 								},

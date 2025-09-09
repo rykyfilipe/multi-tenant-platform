@@ -17,6 +17,7 @@ import {
 	GripVertical,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 import {
 	DndContext,
@@ -138,6 +139,7 @@ export function ColumnOrderManager({
 	onClose,
 }: ColumnOrderManagerProps) {
 	const { token, tenant, showAlert } = useApp();
+	const { refreshAfterChange } = useDatabaseRefresh();
 	const [reorderedColumns, setReorderedColumns] = useState<Column[]>(columns);
 
 	const sensors = useSensors(
@@ -231,6 +233,10 @@ export function ColumnOrderManager({
 			// Actualizează starea locală
 			setColumns(reorderedColumns);
 			showAlert("Column order saved successfully!", "success");
+			
+			// Actualizăm contextul global pentru sincronizare
+			await refreshAfterChange();
+			
 			onClose();
 		} catch (error) {
 			console.error("Error saving column order:", error);

@@ -86,7 +86,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				if (setColumns && columns) {
 					setColumns(columns.filter((col) => col.id.toString() !== columnId));
 				}
-				// Nu mai facem refresh complet, folosim actualizarea optimistă
+				// Actualizăm contextul global pentru sincronizare
+				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to delete column");
@@ -150,7 +151,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 				}
 
 				setEditingColumn(null);
-				// Nu mai facem refresh complet, folosim actualizarea optimistă
+				// Actualizăm contextul global pentru sincronizare
+				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to update column");
@@ -231,8 +233,8 @@ export default function TableEditor({ table, columns, setColumns }: Props) {
 					setColumns([...columns, ...createdColumns]);
 				}
 
-				// Nu mai facem refresh complet, folosim actualizarea optimistă
-				// await refreshAfterChange();
+				// Actualizăm contextul global pentru sincronizare
+				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to add column");
