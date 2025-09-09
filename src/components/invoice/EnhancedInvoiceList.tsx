@@ -664,14 +664,6 @@ export function EnhancedInvoiceList({
 										<Button
 											variant="outline"
 											size="sm"
-											onClick={() => handleDownloadPDF(invoice.id, invoice.invoice_number)}
-											title="Download PDF"
-										>
-											<Download className="h-4 w-4" />
-										</Button>
-										<Button
-											variant="outline"
-											size="sm"
 											onClick={() => handleEditInvoice(invoice)}
 											title="Edit Invoice"
 										>
@@ -767,14 +759,6 @@ export function EnhancedInvoiceList({
 									>
 										<Eye className="h-4 w-4 mr-2" />
 										Preview PDF
-									</Button>
-									<Button 
-										variant="outline" 
-										size="sm"
-										onClick={() => handleDownloadPDF(viewingInvoice.invoice?.id, viewingInvoice.invoice?.invoice_number)}
-									>
-										<Download className="h-4 w-4 mr-2" />
-										Download PDF
 									</Button>
 									<Button variant="ghost" size="sm" onClick={() => setViewingInvoice(null)}>
 										×

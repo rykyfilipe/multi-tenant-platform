@@ -87,57 +87,55 @@ export function InvoiceHTMLPreview({
 
   return (
     <div 
-      className="bg-white shadow-2xl rounded-lg overflow-hidden"
+      className="bg-white shadow-2xl border border-gray-200"
       style={{ 
         width: `${zoom}%`,
         maxWidth: '100%',
         transition: 'width 0.3s ease',
-        minHeight: 'calc(100vh - 200px)'
+        minHeight: 'calc(100vh - 200px)',
+        fontFamily: 'Arial, sans-serif'
       }}
     >
       {/* Invoice Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8">
+      <div className="border-b-2 border-gray-300 p-8">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">
-              {translations.invoice || 'INVOICE'}
-            </h1>
-            <div className="flex items-center gap-4 text-blue-100">
-              <div className="flex items-center gap-2">
-                <Hash className="w-4 h-4" />
-                <span className="font-medium">
-                  {invoiceData.invoice.invoice_series && `${invoiceData.invoice.invoice_series}-`}
-                  {invoiceData.invoice.invoice_number}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gray-800 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
+                  {tenantBranding.name?.charAt(0) || 'C'}
                 </span>
               </div>
-              <Badge variant="secondary" className="bg-blue-500 text-white">
-                {invoiceData.invoice.status}
-              </Badge>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {tenantBranding.name || 'Company Name'}
+                </h1>
+                <p className="text-sm text-gray-600">Private Limited</p>
+              </div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold">
-              {formatCurrency(invoiceData.invoice.total_amount)}
-            </div>
-            <div className="text-blue-100 text-sm">
-              {translations.grandTotal || 'Total Amount'}
+            <h2 className="text-4xl font-bold text-gray-900 mb-2">{translations.invoice || 'INVOICE'}</h2>
+            <div className="space-y-1 text-sm">
+              <div className="font-semibold">
+                {translations.invoiceNumber || 'Invoice#'} {invoiceData.invoice.invoice_series && `${invoiceData.invoice.invoice_series}-`}{invoiceData.invoice.invoice_number}
+              </div>
+              <div>{translations.date || 'Date'}: {formatDate(invoiceData.invoice.date)}</div>
+              <div className="text-lg font-bold text-gray-900 mt-2">
+                Total Due: {formatCurrency(invoiceData.invoice.total_amount)}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Company and Customer Info */}
+      {/* Bill To Section */}
       <div className="p-8 border-b border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Company Info */}
+          {/* Company Info - Left side */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                {translations.company || 'From'}
-              </h3>
-            </div>
-            <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">{translations.company || 'From'}:</h3>
+            <div className="space-y-1 text-sm">
               <div className="font-semibold text-gray-900">{tenantBranding.name}</div>
               {tenantBranding.address && (
                 <div className="text-gray-600">{tenantBranding.address}</div>
@@ -149,22 +147,17 @@ export function InvoiceHTMLPreview({
                 <div className="text-gray-600">{tenantBranding.phone}</div>
               )}
               {tenantBranding.companyTaxId && (
-                <div className="text-sm text-gray-500">
+                <div className="text-gray-600">
                   Tax ID: {tenantBranding.companyTaxId}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Customer Info */}
+          {/* Customer Info - Right side */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <User className="w-5 h-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                {translations.customer || 'Bill To'}
-              </h3>
-            </div>
-            <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">{translations.customer || 'Bill To'}:</h3>
+            <div className="space-y-1 text-sm">
               <div className="font-semibold text-gray-900">
                 {invoiceData.customer.customer_name}
               </div>
@@ -224,42 +217,43 @@ export function InvoiceHTMLPreview({
       {/* Items Table */}
       <div className="p-8">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                  {translations.item || 'Item'}
+              <tr className="bg-gray-50">
+                <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  {translations.item || 'ITEM'} {translations.description || 'DESCRIPTION'}
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                  {translations.description || 'Description'}
+                <th className="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  {translations.unitPrice || 'PRICE'}
                 </th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                  {translations.quantity || 'Qty'}
+                <th className="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  {translations.quantity || 'QTY'}
                 </th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                  {translations.unitPrice || 'Unit Price'}
-                </th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                  {translations.total || 'Total'}
+                <th className="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  {translations.total || 'TOTAL'}
                 </th>
               </tr>
             </thead>
             <tbody>
               {invoiceData.items.map((item, index) => (
-                <tr key={index} className="border-b border-gray-100">
-                  <td className="py-3 px-4 font-medium text-gray-900">
-                    {item.product_name}
+                <tr key={index} className="border-b border-gray-200">
+                  <td className="py-4 px-4">
+                    <div className="font-medium text-gray-900 text-sm">
+                      {item.product_name}
+                    </div>
+                    {item.description && (
+                      <div className="text-gray-600 text-xs mt-1">
+                        {item.description}
+                      </div>
+                    )}
                   </td>
-                  <td className="py-3 px-4 text-gray-600">
-                    {item.description || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-900">
-                    {item.quantity}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-900">
+                  <td className="py-4 px-4 text-right text-gray-900 text-sm">
                     {formatCurrency(item.unit_price)}
                   </td>
-                  <td className="py-3 px-4 text-right font-medium text-gray-900">
+                  <td className="py-4 px-4 text-right text-gray-900 text-sm">
+                    {item.quantity}
+                  </td>
+                  <td className="py-4 px-4 text-right font-medium text-gray-900 text-sm">
                     {formatCurrency(item.total)}
                   </td>
                 </tr>
@@ -270,32 +264,41 @@ export function InvoiceHTMLPreview({
 
         {/* Totals */}
         <div className="mt-8 flex justify-end">
-          <div className="w-80 space-y-2">
-            <div className="flex justify-between py-2">
-              <span className="text-gray-600">
-                {translations.subtotal || 'Subtotal'}:
+          <div className="w-80 space-y-1">
+            <div className="flex justify-between py-1 text-sm">
+              <span className="text-gray-700 font-semibold">
+                {translations.subtotal || 'SUB TOTAL'}:
               </span>
-              <span className="font-medium">
+              <span className="font-medium text-gray-900">
                 {formatCurrency(invoiceData.totals.subtotal)}
               </span>
             </div>
             
             {invoiceData.totals.vatTotal > 0 && (
-              <div className="flex justify-between py-2">
-                <span className="text-gray-600">
-                  {translations.tax || 'VAT'}:
+              <div className="flex justify-between py-1 text-sm">
+                <span className="text-gray-700 font-semibold">
+                  {translations.tax || 'Tax VAT 18%'}:
                 </span>
-                <span className="font-medium">
+                <span className="font-medium text-gray-900">
                   {formatCurrency(invoiceData.totals.vatTotal)}
                 </span>
               </div>
             )}
             
-            <div className="flex justify-between py-3 border-t border-gray-200">
-              <span className="text-lg font-semibold text-gray-900">
-                {translations.grandTotal || 'Total'}:
+            <div className="flex justify-between py-1 text-sm">
+              <span className="text-gray-700 font-semibold">
+                Discount 10%:
               </span>
-              <span className="text-lg font-bold text-blue-600">
+              <span className="font-medium text-red-600">
+                -{formatCurrency(invoiceData.totals.subtotal * 0.1)}
+              </span>
+            </div>
+            
+            <div className="flex justify-between py-3 border-t-2 border-gray-300 mt-4">
+              <span className="text-lg font-bold text-gray-900">
+                {translations.grandTotal || 'GRAND TOTAL'}:
+              </span>
+              <span className="text-lg font-bold text-gray-900">
                 {formatCurrency(invoiceData.totals.grandTotal)}
               </span>
             </div>
@@ -304,32 +307,58 @@ export function InvoiceHTMLPreview({
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-50 p-8 border-t border-gray-200">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-blue-600" />
-            <span className="text-lg font-semibold text-gray-900">
-              {translations.thankYou || 'Thank you for your business!'}
-            </span>
-          </div>
-          
-          {tenantBranding.website && (
-            <div className="text-gray-600 mb-4">
-              {tenantBranding.website}
+      <div className="p-8 border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left side - Payment and Contact */}
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Payment Method:</h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <div>Payment: Visa, Master Card</div>
+                <div>We accept Cheque</div>
+                <div>Paypal: {tenantBranding.companyEmail || 'paypal@company.com'}</div>
+              </div>
             </div>
-          )}
+            
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Contact:</h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <div>{tenantBranding.address || '123 Street, Town Postal, County'}</div>
+                <div>{tenantBranding.phone || '+999 123 456 789'}</div>
+                <div>{tenantBranding.companyEmail || 'info@yourname'}</div>
+                <div>{tenantBranding.website || 'www.domainname.com'}</div>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Terms & Condition:</h4>
+              <div className="text-sm text-gray-600">
+                Contrary to popular belief Lorem Ipsum not ipsum simply lorem ispum dolor ipsum.
+              </div>
+            </div>
+          </div>
 
-          {onDownload && (
-            <Button 
-              onClick={onDownload}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {translations.download || 'Download PDF'}
-            </Button>
-          )}
+          {/* Right side - Signature and Download */}
+          <div className="flex flex-col items-end justify-end">
+            <div className="mb-6">
+              <div className="text-sm text-gray-600 mb-2">Signature:</div>
+              <div className="w-32 h-16 border-b-2 border-gray-400 mb-2"></div>
+              <div className="text-sm font-semibold text-gray-900">Manager</div>
+            </div>
+            
+            {onDownload && (
+              <Button 
+                onClick={onDownload}
+                className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {translations.download || 'Download PDF'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

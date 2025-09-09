@@ -110,26 +110,109 @@ export function PDFPreviewModal({
             setTenantBranding(brandingData);
           }
           
-          // Set basic translations
-          setTranslations({
-            invoice: 'Invoice',
-            invoiceNumber: 'Invoice #',
-            company: 'From',
-            customer: 'Bill To',
-            date: 'Invoice Date',
-            dueDate: 'Due Date',
-            paymentTerms: 'Payment Terms',
-            item: 'Item',
-            description: 'Description',
-            quantity: 'Qty',
-            unitPrice: 'Unit Price',
-            total: 'Total',
-            subtotal: 'Subtotal',
-            tax: 'VAT',
-            grandTotal: 'Total',
-            thankYou: 'Thank you for your business!',
-            download: 'Download PDF'
-          });
+          // Set translations based on selected language
+          const getTranslations = (lang: string) => {
+            const translations: Record<string, Record<string, string>> = {
+              en: {
+                invoice: 'Invoice',
+                invoiceNumber: 'Invoice #',
+                company: 'From',
+                customer: 'Bill To',
+                date: 'Date',
+                dueDate: 'Due Date',
+                paymentTerms: 'Payment Terms',
+                item: 'Item',
+                description: 'Description',
+                quantity: 'Qty',
+                unitPrice: 'Price',
+                total: 'Total',
+                subtotal: 'SUB TOTAL',
+                tax: 'Tax VAT 18%',
+                grandTotal: 'GRAND TOTAL',
+                thankYou: 'Thank you for your business!',
+                download: 'Download PDF'
+              },
+              ro: {
+                invoice: 'Factură',
+                invoiceNumber: 'Factura #',
+                company: 'De la',
+                customer: 'Facturat către',
+                date: 'Data',
+                dueDate: 'Data scadenței',
+                paymentTerms: 'Termeni de plată',
+                item: 'Articol',
+                description: 'Descriere',
+                quantity: 'Cantitate',
+                unitPrice: 'Preț',
+                total: 'Total',
+                subtotal: 'SUBTOTAL',
+                tax: 'TVA 18%',
+                grandTotal: 'TOTAL GENERAL',
+                thankYou: 'Vă mulțumim pentru încredere!',
+                download: 'Descarcă PDF'
+              },
+              es: {
+                invoice: 'Factura',
+                invoiceNumber: 'Factura #',
+                company: 'De',
+                customer: 'Facturar a',
+                date: 'Fecha',
+                dueDate: 'Fecha de vencimiento',
+                paymentTerms: 'Términos de pago',
+                item: 'Artículo',
+                description: 'Descripción',
+                quantity: 'Cantidad',
+                unitPrice: 'Precio',
+                total: 'Total',
+                subtotal: 'SUBTOTAL',
+                tax: 'IVA 18%',
+                grandTotal: 'TOTAL GENERAL',
+                thankYou: '¡Gracias por su confianza!',
+                download: 'Descargar PDF'
+              },
+              fr: {
+                invoice: 'Facture',
+                invoiceNumber: 'Facture #',
+                company: 'De',
+                customer: 'Facturer à',
+                date: 'Date',
+                dueDate: 'Date d\'échéance',
+                paymentTerms: 'Conditions de paiement',
+                item: 'Article',
+                description: 'Description',
+                quantity: 'Quantité',
+                unitPrice: 'Prix',
+                total: 'Total',
+                subtotal: 'SOUS-TOTAL',
+                tax: 'TVA 18%',
+                grandTotal: 'TOTAL GÉNÉRAL',
+                thankYou: 'Merci pour votre confiance!',
+                download: 'Télécharger PDF'
+              },
+              de: {
+                invoice: 'Rechnung',
+                invoiceNumber: 'Rechnung #',
+                company: 'Von',
+                customer: 'Rechnung an',
+                date: 'Datum',
+                dueDate: 'Fälligkeitsdatum',
+                paymentTerms: 'Zahlungsbedingungen',
+                item: 'Artikel',
+                description: 'Beschreibung',
+                quantity: 'Menge',
+                unitPrice: 'Preis',
+                total: 'Gesamt',
+                subtotal: 'ZWISCHENSUMME',
+                tax: 'MwSt 18%',
+                grandTotal: 'GESAMTSUMME',
+                thankYou: 'Vielen Dank für Ihr Vertrauen!',
+                download: 'PDF herunterladen'
+              }
+            };
+            return translations[lang] || translations.en;
+          };
+          
+          setTranslations(getTranslations(selectedLanguage));
           
         } catch (err) {
           console.error('Error fetching invoice data:', err);
