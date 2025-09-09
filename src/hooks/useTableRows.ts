@@ -3,6 +3,7 @@
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { Row } from "@/types/database";
+import { FilterConfig, FilterPayload, FilteredRowsResponse } from "@/types/filtering";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 
 interface PaginationInfo {
@@ -14,15 +15,7 @@ interface PaginationInfo {
 	hasPrev: boolean;
 }
 
-interface FilterConfig {
-	id: string; // Unique identifier for each filter
-	columnId: number;
-	columnName: string;
-	columnType: string;
-	operator: string;
-	value: any;
-	secondValue?: any; // For range filters
-}
+// FilterConfig is now imported from types/filtering
 
 interface UseTableRowsResult {
 	rows: Row[];
@@ -207,56 +200,40 @@ function useTableRows(
 			lastFetchParamsRef.current = paramsString;
 
 			try {
-				// Construiește URL-ul cu parametrii optimizați
-				const url = new URL(
-					`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows`,
-					window.location.origin,
-				);
+				// Construiește URL-ul pentru POST request
+				const url = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows`;
 
-				// Parametri de bază
-				url.searchParams.set("page", page.toString());
-				url.searchParams.set("pageSize", pageSize.toString());
-				url.searchParams.set("includeCells", "true");
-
-				// Parametri de filtrare
-				if (globalSearchParam.trim()) {
-					url.searchParams.set("search", globalSearchParam.trim());
-				}
-				
-				if (filtersParam.length > 0) {
-					url.searchParams.set(
-						"filters",
-						encodeURIComponent(JSON.stringify(filtersParam)),
-					);
-				}
-				if (sortByParam && sortByParam !== "id") {
-					url.searchParams.set("sortBy", sortByParam);
-				}
-				if (sortOrderParam && sortOrderParam !== "asc") {
-					url.searchParams.set("sortOrder", sortOrderParam);
-				}
-
-				console.log("🌐 useTableRows - Making API request:", {
-					url: url.toString(),
-					filtersParam: JSON.stringify(filtersParam, null, 2),
-					globalSearchParam,
+				// Construiește payload-ul JSON pentru POST
+				const payload: FilterPayload = {
 					page,
-					pageSize
+					pageSize,
+					includeCells: true,
+					globalSearch: globalSearchParam.trim(),
+					filters: filtersParam,
+					sortBy: sortByParam,
+					sortOrder: sortOrderParam
+				};
+
+				console.log("🌐 useTableRows - Making POST API request:", {
+					url,
+					payload: JSON.stringify(payload, null, 2)
 				});
 
-				const res = await fetch(url.toString(), {
-					method: "GET",
+				const res = await fetch(url, {
+					method: "POST",
 					headers: {
 						Authorization: `Bearer ${token}`,
+						"Content-Type": "application/json",
 						"Cache-Control": "no-cache", // Pentru date dinamice
 					},
+					body: JSON.stringify(payload),
 				});
 
 				if (!res.ok) {
 					throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 				}
 
-				const data = await res.json();
+				const data: FilteredRowsResponse = await res.json();
 				console.log("🔍 useTableRows - API Response:", data);
 
 				// Validează răspunsul

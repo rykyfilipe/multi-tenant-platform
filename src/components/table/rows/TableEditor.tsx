@@ -1061,10 +1061,10 @@ const TableEditor = memo(function TableEditor({
 	if (!token || !user) return null;
 
 	return (
-		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
+		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-x-hidden'>
 			{/* Sticky Header with Modern Design */}
 			<div className='sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/20 shadow-sm'>
-				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+				<div className='w-full mx-auto px-4 sm:px-6 lg:px-8'>
 					<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-6'>
 						{/* Left Section - Table Info & Actions */}
 						<div className='flex flex-col sm:flex-row sm:items-center gap-4'>
@@ -1146,7 +1146,7 @@ const TableEditor = memo(function TableEditor({
 			</div>
 
 			{/* Main Content */}
-			<div className='max-w-7xl min-w-max mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+			<div className='w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-auto'>
 				{/* Add Row Form - Modern Floating Design */}
 				{showForm && (
 					<div className='mb-8'>

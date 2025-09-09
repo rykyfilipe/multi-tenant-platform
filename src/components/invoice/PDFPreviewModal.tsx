@@ -60,7 +60,7 @@ export function PDFPreviewModal({
           setIsLoading(true);
           setError(null);
           
-          // Generate PDF with selected language
+          // Fetch PDF as blob and convert to data URL
           const response = await fetch(
             `/api/tenants/${tenant.id}/invoices/${invoiceId}/download?language=${selectedLanguage}&enhanced=true&preview=true`,
             {
@@ -80,8 +80,15 @@ export function PDFPreviewModal({
             throw new Error('Invalid PDF response from server');
           }
           
-          const url = URL.createObjectURL(blob);
-          setPdfUrl(url);
+          // Convert blob to data URL for iframe
+          const reader = new FileReader();
+          reader.onload = () => {
+            setPdfUrl(reader.result as string);
+          };
+          reader.onerror = () => {
+            setError('Failed to process PDF data');
+          };
+          reader.readAsDataURL(blob);
         } catch (err) {
           console.error('Error generating PDF preview:', err);
           setError(err instanceof Error ? err.message : 'Failed to load PDF preview');
@@ -94,7 +101,7 @@ export function PDFPreviewModal({
     }
 
     return () => {
-      if (pdfUrl) {
+      if (pdfUrl && pdfUrl.startsWith('blob:')) {
         URL.revokeObjectURL(pdfUrl);
       }
     };
@@ -292,6 +299,7 @@ export function PDFPreviewModal({
                   style={{ height: 'calc(100vh - 200px)' }}
                   title={`Invoice ${invoiceNumber} Preview`}
                   onLoad={() => setIsLoading(false)}
+                  onError={() => setError('Failed to load PDF in iframe')}
                 />
               </div>
             </div>

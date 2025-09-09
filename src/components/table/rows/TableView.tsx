@@ -241,11 +241,12 @@ export const TableView = memo(function TableView({
 
 	// Calculate table width based on number of columns - optimized for many columns
 	const tableWidth = useMemo(() => {
-		const baseWidth = 50; // Selection column (reduced)
-		const dataColumnsWidth = safeColumns.length * 160; // 160px per data column (reduced from 200px)
-		const actionsWidth = 60; // Actions column (reduced)
+		const baseWidth = 50; // Selection column
+		const dataColumnsWidth = safeColumns.length * 140; // 140px per data column (further reduced)
+		const actionsWidth = 60; // Actions column
 		const totalWidth = baseWidth + dataColumnsWidth + actionsWidth;
-		return Math.max(totalWidth, 1200); // Increased minimum width for better column accommodation
+		// Use a more reasonable minimum width and cap the maximum
+		return Math.min(Math.max(totalWidth, 800), 2000);
 	}, [safeColumns.length]);
 
 	// Memoize pagination info pentru a evita re-render-uri inutile
@@ -359,9 +360,13 @@ export const TableView = memo(function TableView({
 			{/* Premium Table Container */}
 			<div className='flex-1 bg-white border border-slate-200/60 rounded-xl overflow-hidden flex flex-col shadow-sm'>
 				<div className='flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100'>
-					<table 
-						className='w-full'
-						style={{ minWidth: `${tableWidth}px` }}>
+					<div className='min-w-full'>
+						<table 
+							className='w-full table-fixed'
+							style={{ 
+								minWidth: `${tableWidth}px`,
+								width: safeColumns.length > 8 ? '100%' : 'auto'
+							}}>
 						{/* Premium Table Header - Sticky */}
 						<thead className='sticky top-0 z-30 bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 border-b border-slate-200/60'>
 							<tr>
@@ -388,11 +393,12 @@ export const TableView = memo(function TableView({
 								{safeColumns.map((col) => (
 									<th
 										key={col.id}
-										className='px-4 py-3 text-left text-xs font-semibold text-slate-700 min-w-[140px] max-w-[200px] bg-gradient-to-r from-slate-50 to-slate-100'>
-										<div className='flex items-center gap-2'>
+										className='px-3 py-3 text-left text-xs font-semibold text-slate-700 min-w-[120px] max-w-[180px] bg-gradient-to-r from-slate-50 to-slate-100'
+										style={{ width: `${Math.min(140, Math.max(120, 140 - (safeColumns.length - 5) * 2))}px` }}>
+										<div className='flex items-center gap-1'>
 											<span className='truncate font-medium text-slate-800'>{col.name}</span>
 											{col.type && (
-												<span className='inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-700 rounded-md flex-shrink-0'>
+												<span className='inline-flex items-center px-1 py-0.5 text-xs font-medium bg-slate-100 text-slate-700 rounded flex-shrink-0'>
 													{col.type}
 												</span>
 											)}
@@ -575,6 +581,7 @@ export const TableView = memo(function TableView({
 							)}
 						</tbody>
 					</table>
+					</div>
 				</div>
 			</div>
 

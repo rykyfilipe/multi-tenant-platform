@@ -1142,3 +1142,239 @@ export async function GET(
 		);
 	}
 }
+
+// POST endpoint for filtering rows with JSON body (alternative to GET)
+export async function POST(
+	request: NextRequest,
+	{
+		params,
+	}: {
+		params: Promise<{ tenantId: string; databaseId: string; tableId: string }>;
+	},
+) {
+	const { tenantId, databaseId, tableId } = await params;
+
+	// Verificare autentificare
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const userId = getUserId(sessionResult);
+
+	// Verificare acces tenant
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
+
+	try {
+		// Parse request body
+		const body = await request.json();
+		
+		// Validate required fields
+		if (!body.page || !body.pageSize) {
+			return NextResponse.json(
+				{ error: "Missing required fields: page, pageSize" },
+				{ status: 400 }
+			);
+		}
+
+		// Extract filter parameters from body
+		const {
+			page = 1,
+			pageSize = 25,
+			includeCells = true,
+			globalSearch = "",
+			filters = [],
+			sortBy = "id",
+			sortOrder = "asc"
+		} = body;
+
+		// Validate pagination parameters
+		const validPage = Math.max(1, parseInt(page.toString()));
+		const validPageSize = Math.min(Math.max(1, parseInt(pageSize.toString())), 100);
+		const skip = (validPage - 1) * validPageSize;
+
+		// Verificare existență database și table
+		const database = await prisma.database.findFirst({
+			where: {
+				id: Number(databaseId),
+				tenantId: Number(tenantId),
+			},
+		});
+
+		if (!database) {
+			return NextResponse.json(
+				{ error: "Database not found" },
+				{ status: 404 },
+			);
+		}
+
+		const table = await prisma.table.findFirst({
+			where: {
+				id: Number(tableId),
+				databaseId: Number(databaseId),
+			},
+		});
+
+		if (!table) {
+			return NextResponse.json({ error: "Table not found" }, { status: 404 });
+		}
+
+		// Verificare permisiuni pentru utilizatorii non-admin
+		if (sessionResult.user.role !== "ADMIN") {
+			const permission = await prisma.tablePermission.findFirst({
+				where: {
+					userId: userId,
+					tableId: Number(tableId),
+					canRead: true,
+				},
+			});
+
+			if (!permission) {
+				return NextResponse.json({ error: "Access denied" }, { status: 403 });
+			}
+		}
+
+		// Obține coloanele tabelului pentru validare filtre
+		const tableColumns = await prisma.column.findMany({
+			where: { tableId: Number(tableId) },
+			select: {
+				id: true,
+				name: true,
+				type: true,
+				referenceTableId: true,
+				order: true,
+				semanticType: true,
+			},
+			orderBy: { order: "asc" },
+		});
+
+		// Construiește query-ul Prisma optimizat
+		const queryBuilder = new PrismaQueryBuilder(Number(tableId), tableColumns);
+
+		queryBuilder
+			.addGlobalSearch(globalSearch)
+			.addColumnFilters(filters);
+
+		const whereClause = queryBuilder.getWhereClause();
+		
+		console.log("🔍 POST API /filtered - Final whereClause:", JSON.stringify(whereClause, null, 2));
+
+		// Obține numărul total de rânduri pentru paginare
+		const totalRows = await prisma.row.count({
+			where: whereClause,
+		});
+
+		// Construiește clauza de sortare
+		let orderByClause: any = {};
+		if (sortBy === "id") {
+			orderByClause.id = sortOrder;
+		} else if (sortBy === "createdAt") {
+			orderByClause.createdAt = sortOrder;
+		} else {
+			// Sortare implicită după ID
+			orderByClause.id = "asc";
+		}
+
+		// Query optimizat cu filtrare și paginare
+		const rows = await prisma.row.findMany({
+			where: whereClause,
+			include: {
+				cells: includeCells
+					? {
+							include: {
+								column: {
+									select: {
+										id: true,
+										name: true,
+										type: true,
+										order: true,
+										referenceTableId: true,
+										semanticType: true,
+									},
+								},
+							},
+					  }
+					: false,
+			},
+			orderBy: [orderByClause],
+			skip: skip,
+			take: validPageSize,
+		});
+
+		// Apply string filters that couldn't be handled by Prisma
+		let filteredRows = rows;
+		if (filters && filters.length > 0) {
+			filteredRows = await applyStringFilters(
+				rows,
+				filters,
+				tableColumns,
+			);
+		}
+
+		// Sortare coloane după ordine în aplicație
+		const sortedRows = includeCells
+			? filteredRows.map((row: any) => ({
+					...row,
+					cells: row.cells.sort((a: any, b: any) => {
+						const cellA = a as any;
+						const cellB = b as any;
+						return cellA.column.order - cellB.column.order;
+					}),
+			  }))
+			: filteredRows;
+
+		// Folosim totalRows calculat înainte de paginare pentru calculul corect al totalPages
+		const totalPages = Math.ceil(totalRows / validPageSize);
+
+		// Răspuns optimizat cu informații complete
+		return NextResponse.json({
+			data: sortedRows,
+			pagination: {
+				page: validPage,
+				pageSize: validPageSize,
+				totalRows: totalRows,
+				totalPages,
+				hasNext: validPage < totalPages,
+				hasPrev: validPage > 1,
+			},
+			filters: {
+				applied: filters.length > 0 || globalSearch !== "",
+				globalSearch: globalSearch,
+				columnFilters: filters,
+				validFiltersCount: filters.length,
+			},
+			performance: {
+				queryTime: Date.now(), // Pentru tracking performanță
+				filteredRows: totalRows,
+				originalTableSize: await prisma.row.count({
+					where: { tableId: Number(tableId) },
+				}),
+			},
+		});
+
+	} catch (error) {
+		console.error("Error in POST filtering:", error);
+
+		// Răspuns de eroare detaliat pentru debugging
+		if (error instanceof z.ZodError) {
+			return NextResponse.json(
+				{
+					error: "Invalid query parameters",
+					details: error.errors,
+					code: "VALIDATION_ERROR",
+				},
+				{ status: 400 },
+			);
+		}
+
+		return NextResponse.json(
+			{
+				error: "Failed to fetch filtered rows",
+				code: "INTERNAL_ERROR",
+			},
+			{ status: 500 },
+		);
+	}
+}
