@@ -343,11 +343,31 @@ export function ColumnToolbar({
 
 	const currentData = isAddingNew ? newColumn : formData;
 	const isDisabled = !isOpen;
+	const isModuleColumn = selectedColumn?.isModuleColumn || false;
+	const isPredefinedColumn = selectedColumn?.isPredefined || false;
+	const isProtectedColumn = isModuleColumn || isPredefinedColumn;
 
 	return (
 		<div className={`bg-white border border-neutral-200 rounded-2xl shadow-md transition-all duration-200 ${
 			isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
 		}`}>
+			{/* Protection Banner */}
+			{isProtectedColumn && (
+				<div className="px-3 sm:px-4 pt-2 pb-1">
+					<div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+						<div className="flex items-center gap-2">
+							<AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+							<span className="text-sm text-amber-800">
+								{isModuleColumn 
+									? "This is a module column and cannot be modified. It will be automatically managed by the system."
+									: "This is a predefined column and cannot be modified. It's required for system functionality."
+								}
+							</span>
+						</div>
+					</div>
+				</div>
+			)}
+
 			{/* Modern Horizontal Toolbar - Mobile Optimized */}
 			<div className="px-3 sm:px-4 py-2">
 				{/* Mobile Layout */}
@@ -365,7 +385,7 @@ export function ColumnToolbar({
 									onSelectColumn(column || null);
 								}
 							}}
-							disabled={isDisabled}
+							disabled={isDisabled || isProtectedColumn}
 						>
 							<SelectTrigger className="flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 								<SelectValue placeholder={isDisabled ? "Select column" : "Column"} />
@@ -398,7 +418,7 @@ export function ColumnToolbar({
 							onChange={(e) => handleInputChange("name", e.target.value)}
 							className={cn("flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.name && "border-red-500")}
 							placeholder="Column name"
-							disabled={isDisabled}
+							disabled={isDisabled || isProtectedColumn}
 						/>
 						{errors.name && (
 							<div className="flex items-center gap-1 text-xs text-red-600">
@@ -415,7 +435,7 @@ export function ColumnToolbar({
 							<Select
 								value={currentData?.type || ""}
 								onValueChange={(value) => handleInputChange("type", value)}
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							>
 								<SelectTrigger className={cn("flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.type && "border-red-500")}>
 									<SelectValue placeholder="Type" />
@@ -435,7 +455,7 @@ export function ColumnToolbar({
 							<Select
 								value={currentData?.semanticType || ""}
 								onValueChange={handleSemanticTypeChange}
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							>
 								<SelectTrigger className="flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 									<SelectValue placeholder="Semantic" />
@@ -465,7 +485,7 @@ export function ColumnToolbar({
 								id="required"
 								checked={currentData?.required || false}
 								onCheckedChange={(checked) => handleInputChange("required", checked)}
-								disabled={isDisabled || currentData?.primary}
+								disabled={isDisabled || currentData?.primary || isProtectedColumn}
 								className="data-[state=checked]:bg-neutral-900"
 							/>
 							<Label htmlFor="required" className="text-xs font-medium text-neutral-700">Required</Label>
@@ -476,7 +496,7 @@ export function ColumnToolbar({
 								id="unique"
 								checked={currentData?.unique || false}
 								onCheckedChange={(checked) => handleInputChange("unique", checked)}
-								disabled={isDisabled || currentData?.primary}
+								disabled={isDisabled || currentData?.primary || isProtectedColumn}
 								className="data-[state=checked]:bg-neutral-900"
 							/>
 							<Label htmlFor="unique" className="text-xs font-medium text-neutral-700">Unique</Label>
@@ -487,7 +507,7 @@ export function ColumnToolbar({
 								id="primary"
 								checked={currentData?.primary || false}
 								onCheckedChange={(checked) => handleInputChange("primary", checked)}
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 								className="data-[state=checked]:bg-neutral-900"
 							/>
 							<Label htmlFor="primary" className="text-xs font-medium text-neutral-700">Primary</Label>
@@ -512,7 +532,7 @@ export function ColumnToolbar({
 						<Button
 							size="sm"
 							onClick={handleSave}
-							disabled={isDisabled || isSubmitting}
+							disabled={isDisabled || isSubmitting || isProtectedColumn}
 							className="flex-1 h-8 text-xs bg-neutral-900 hover:bg-neutral-800 text-white"
 						>
 							{isSubmitting ? (
@@ -545,7 +565,7 @@ export function ColumnToolbar({
 									onSelectColumn(column || null);
 								}
 							}}
-							disabled={isDisabled}
+							disabled={isDisabled || isProtectedColumn}
 						>
 							<SelectTrigger className="w-40 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 								<SelectValue placeholder={isDisabled ? "Select column" : "Column"} />
@@ -581,7 +601,7 @@ export function ColumnToolbar({
 							onChange={(e) => handleInputChange("name", e.target.value)}
 							className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.name && "border-red-500")}
 							placeholder="Column name"
-							disabled={isDisabled}
+							disabled={isDisabled || isProtectedColumn}
 						/>
 						{errors.name && (
 							<div className="flex items-center gap-1 text-xs text-red-600">
@@ -597,7 +617,7 @@ export function ColumnToolbar({
 						<Select
 							value={currentData?.type || ""}
 							onValueChange={(value) => handleInputChange("type", value)}
-							disabled={isDisabled}
+							disabled={isDisabled || isProtectedColumn}
 						>
 							<SelectTrigger className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.type && "border-red-500")}>
 								<SelectValue placeholder="Type" />
@@ -624,7 +644,7 @@ export function ColumnToolbar({
 						<Select
 							value={currentData?.semanticType || ""}
 							onValueChange={handleSemanticTypeChange}
-							disabled={isDisabled}
+							disabled={isDisabled || isProtectedColumn}
 						>
 							<SelectTrigger className="h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 								<SelectValue placeholder="Semantic" />
@@ -653,7 +673,7 @@ export function ColumnToolbar({
 							<Select
 								value={currentData?.defaultValue || ""}
 								onValueChange={(value) => handleInputChange("defaultValue", value)}
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							>
 								<SelectTrigger className="h-8 w-20 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 									<SelectValue placeholder="-" />
@@ -668,7 +688,7 @@ export function ColumnToolbar({
 							<Select
 								value={currentData?.defaultValue || ""}
 								onValueChange={(value) => handleInputChange("defaultValue", value)}
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							>
 								<SelectTrigger className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 									<SelectValue placeholder="-" />
@@ -690,7 +710,7 @@ export function ColumnToolbar({
 								onChange={(e) => handleInputChange("defaultValue", e.target.value)}
 								className="h-8 w-28 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
 								placeholder="YYYY-MM-DD"
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							/>
 						) : currentData?.type === USER_FRIENDLY_COLUMN_TYPES.number ? (
 							<Input
@@ -700,7 +720,7 @@ export function ColumnToolbar({
 								onChange={(e) => handleInputChange("defaultValue", e.target.value)}
 								className="h-8 w-20 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
 								placeholder="0"
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							/>
 						) : (
 							<Input
@@ -709,7 +729,7 @@ export function ColumnToolbar({
 								onChange={(e) => handleInputChange("defaultValue", e.target.value)}
 								className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
 								placeholder="Default"
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							/>
 						)}
 					</div>
@@ -721,7 +741,7 @@ export function ColumnToolbar({
 							<Select
 								value={currentData?.referenceTableId?.toString() || ""}
 								onValueChange={(value) => handleInputChange("referenceTableId", parseInt(value))}
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							>
 								<SelectTrigger className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.referenceTableId && "border-red-500")}>
 									<SelectValue placeholder="Table" />
@@ -753,7 +773,7 @@ export function ColumnToolbar({
 								id="required"
 								checked={currentData?.required || false}
 								onCheckedChange={(checked) => handleInputChange("required", checked)}
-								disabled={isDisabled}
+								disabled={isDisabled || currentData?.primary || isProtectedColumn}
 								className="data-[state=checked]:bg-neutral-900"
 							/>
 							<Label htmlFor="required" className="text-xs font-medium text-neutral-700">Required</Label>
@@ -764,7 +784,7 @@ export function ColumnToolbar({
 								id="unique"
 								checked={currentData?.unique || false}
 								onCheckedChange={(checked) => handleInputChange("unique", checked)}
-								disabled={isDisabled}
+								disabled={isDisabled || currentData?.primary || isProtectedColumn}
 								className="data-[state=checked]:bg-neutral-900"
 							/>
 							<Label htmlFor="unique" className="text-xs font-medium text-neutral-700">Unique</Label>
@@ -775,7 +795,7 @@ export function ColumnToolbar({
 								id="primary"
 								checked={currentData?.primary || false}
 								onCheckedChange={(checked) => handleInputChange("primary", checked)}
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 								className="data-[state=checked]:bg-neutral-900"
 							/>
 							<Label htmlFor="primary" className="text-xs font-medium text-neutral-700">Primary</Label>
@@ -803,7 +823,7 @@ export function ColumnToolbar({
 						<Button
 							size="sm"
 							onClick={handleSave}
-							disabled={isDisabled || isSubmitting}
+							disabled={isDisabled || isSubmitting || isProtectedColumn}
 							className="h-8 px-4 text-xs bg-neutral-900 hover:bg-neutral-800 text-white"
 						>
 							{isSubmitting ? (
@@ -832,7 +852,7 @@ export function ColumnToolbar({
 									onChange={(e) => setNewOption(e.target.value)}
 									placeholder="Add option..."
 									className="h-7 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
-									disabled={isDisabled}
+									disabled={isDisabled || isProtectedColumn}
 									onKeyDown={(e) => {
 										if (e.key === 'Enter') {
 											e.preventDefault();
@@ -861,7 +881,7 @@ export function ColumnToolbar({
 											<button
 												type="button"
 												onClick={() => removeCustomOption(option)}
-												disabled={isDisabled}
+												disabled={isDisabled || isProtectedColumn}
 												className="text-neutral-500 hover:text-red-600"
 											>
 												×
@@ -885,7 +905,7 @@ export function ColumnToolbar({
 								onChange={(e) => handleInputChange("description", e.target.value)}
 								placeholder="Column description..."
 								className="h-7 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
-								disabled={isDisabled}
+								disabled={isDisabled || isProtectedColumn}
 							/>
 						</div>
 					</div>
