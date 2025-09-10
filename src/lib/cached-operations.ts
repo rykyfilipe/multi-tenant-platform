@@ -424,9 +424,7 @@ export const cachedOperations = {
 					{ 
 						where: { 
 							table: { 
-								database: { tenantId },
-								isModuleTable: false,
-								isProtected: false,
+								database: { tenantId }
 							} 
 						} 
 					},

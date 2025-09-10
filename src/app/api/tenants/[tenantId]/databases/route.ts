@@ -46,7 +46,12 @@ export async function GET(
 					name: true,
 					tenantId: true,
 					// Optimized: Only get essential table metadata, not full data
+					// Exclude predefined tables (isProtected or isModuleTable)
 					tables: {
+						where: {
+							isProtected: false,
+							isModuleTable: false,
+						},
 						select: {
 							id: true,
 							name: true,
