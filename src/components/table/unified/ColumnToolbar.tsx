@@ -53,6 +53,8 @@ export function ColumnToolbar({
 	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [isAddingNew, setIsAddingNew] = useState(false);
+	const [customOptions, setCustomOptions] = useState<string[]>([]);
+	const [newOption, setNewOption] = useState<string>("");
 
 	useEffect(() => {
 		if (selectedColumn) {
@@ -68,9 +70,11 @@ export function ColumnToolbar({
 				description: selectedColumn.description || "",
 				order: selectedColumn.order || 0,
 			});
+			setCustomOptions(selectedColumn.customOptions || []);
 			setIsAddingNew(false);
 		} else {
 			setFormData({});
+			setCustomOptions([]);
 			setIsAddingNew(true);
 			setNewColumn({
 				name: "",
@@ -155,14 +159,125 @@ export function ColumnToolbar({
 
 	const handleInputChange = (field: keyof Column | keyof CreateColumnRequest, value: any) => {
 		if (isAddingNew && newColumn) {
-			setNewColumn({ ...newColumn, [field]: value });
+			const updatedColumn = { ...newColumn, [field]: value };
+			setNewColumn(updatedColumn);
+			
+			// Update custom options if type changes to customArray
+			if (field === 'type' && value === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+				setCustomOptions(updatedColumn.customOptions || []);
+			}
 		} else {
-			setFormData(prev => ({ ...prev, [field]: value }));
+			const updatedData = { ...formData, [field]: value };
+			setFormData(updatedData);
+			
+			// Update custom options if type changes to customArray
+			if (field === 'type' && value === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+				setCustomOptions(updatedData.customOptions || []);
+			}
 		}
 		
 		// Clear error when user starts typing
 		if (errors[field as string]) {
 			setErrors(prev => ({ ...prev, [field as string]: "" }));
+		}
+	};
+
+	const handleSemanticTypeChange = (semanticType: string) => {
+		// Auto-update column type and properties based on semantic type
+		const semanticTypeMapping: Record<string, { type: string; required?: boolean; unique?: boolean }> = {
+			'email': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true, unique: true },
+			'phone': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'url': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'name': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'description': { type: USER_FRIENDLY_COLUMN_TYPES.text },
+			'age': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
+			'price': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
+			'quantity': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
+			'date_of_birth': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
+			'created_at': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
+			'updated_at': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
+			'is_active': { type: USER_FRIENDLY_COLUMN_TYPES.boolean, required: true },
+			'is_verified': { type: USER_FRIENDLY_COLUMN_TYPES.boolean, required: true },
+			'status': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+			'category': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+			'priority': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+		};
+
+		const mapping = semanticTypeMapping[semanticType];
+		if (mapping) {
+			if (isAddingNew && newColumn) {
+				const updatedColumn = {
+					...newColumn,
+					semanticType,
+					type: mapping.type,
+					required: mapping.required ?? newColumn.required,
+					unique: mapping.unique ?? newColumn.unique,
+				};
+				setNewColumn(updatedColumn);
+				
+				// Set default custom options for certain semantic types
+				if (mapping.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+					const defaultOptions: Record<string, string[]> = {
+						'status': ['Active', 'Inactive', 'Pending', 'Suspended'],
+						'category': ['General', 'Important', 'Urgent', 'Low Priority'],
+						'priority': ['Low', 'Medium', 'High', 'Critical'],
+					};
+					const options = defaultOptions[semanticType] || [];
+					setCustomOptions(options);
+					updatedColumn.customOptions = options;
+				}
+			} else {
+				const updatedData = {
+					...formData,
+					semanticType,
+					type: mapping.type,
+					required: mapping.required ?? formData.required,
+					unique: mapping.unique ?? formData.unique,
+				};
+				setFormData(updatedData);
+				
+				// Set default custom options for certain semantic types
+				if (mapping.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+					const defaultOptions: Record<string, string[]> = {
+						'status': ['Active', 'Inactive', 'Pending', 'Suspended'],
+						'category': ['General', 'Important', 'Urgent', 'Low Priority'],
+						'priority': ['Low', 'Medium', 'High', 'Critical'],
+					};
+					const options = defaultOptions[semanticType] || [];
+					setCustomOptions(options);
+					updatedData.customOptions = options;
+				}
+			}
+		} else {
+			// If no mapping found, just set the semantic type
+			handleInputChange('semanticType', semanticType);
+		}
+	};
+
+	const addCustomOption = () => {
+		if (newOption.trim() && !customOptions.includes(newOption.trim())) {
+			const updatedOptions = [...customOptions, newOption.trim()];
+			setCustomOptions(updatedOptions);
+			setNewOption("");
+			
+			// Update the column data
+			if (isAddingNew && newColumn) {
+				setNewColumn({ ...newColumn, customOptions: updatedOptions });
+			} else {
+				setFormData(prev => ({ ...prev, customOptions: updatedOptions }));
+			}
+		}
+	};
+
+	const removeCustomOption = (option: string) => {
+		const updatedOptions = customOptions.filter(opt => opt !== option);
+		setCustomOptions(updatedOptions);
+		
+		// Update the column data
+		if (isAddingNew && newColumn) {
+			setNewColumn({ ...newColumn, customOptions: updatedOptions });
+		} else {
+			setFormData(prev => ({ ...prev, customOptions: updatedOptions }));
 		}
 	};
 
@@ -267,7 +382,7 @@ export function ColumnToolbar({
 						<Label htmlFor="semanticType" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Semantic</Label>
 						<Select
 							value={currentData?.semanticType || ""}
-							onValueChange={(value) => handleInputChange("semanticType", value)}
+							onValueChange={handleSemanticTypeChange}
 							disabled={isDisabled}
 						>
 							<SelectTrigger className="h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
@@ -290,17 +405,72 @@ export function ColumnToolbar({
 						</Select>
 					</div>
 
-					{/* Default Value */}
+					{/* Default Value - Dynamic based on column type */}
 					<div className="flex items-center gap-2 min-w-0">
 						<Label htmlFor="defaultValue" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Default</Label>
-						<Input
-							id="defaultValue"
-							value={currentData?.defaultValue || ""}
-							onChange={(e) => handleInputChange("defaultValue", e.target.value)}
-							className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
-							placeholder="Default"
-							disabled={isDisabled}
-						/>
+						{currentData?.type === USER_FRIENDLY_COLUMN_TYPES.boolean ? (
+							<Select
+								value={currentData?.defaultValue || ""}
+								onValueChange={(value) => handleInputChange("defaultValue", value)}
+								disabled={isDisabled}
+							>
+								<SelectTrigger className="h-8 w-20 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
+									<SelectValue placeholder="-" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="">-</SelectItem>
+									<SelectItem value="true">Yes</SelectItem>
+									<SelectItem value="false">No</SelectItem>
+								</SelectContent>
+							</Select>
+						) : currentData?.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
+							<Select
+								value={currentData?.defaultValue || ""}
+								onValueChange={(value) => handleInputChange("defaultValue", value)}
+								disabled={isDisabled}
+							>
+								<SelectTrigger className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
+									<SelectValue placeholder="-" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="">-</SelectItem>
+									{customOptions.map((option) => (
+										<SelectItem key={option} value={option}>
+											{option}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : currentData?.type === USER_FRIENDLY_COLUMN_TYPES.date ? (
+							<Input
+								id="defaultValue"
+								type="date"
+								value={currentData?.defaultValue || ""}
+								onChange={(e) => handleInputChange("defaultValue", e.target.value)}
+								className="h-8 w-28 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+								placeholder="YYYY-MM-DD"
+								disabled={isDisabled}
+							/>
+						) : currentData?.type === USER_FRIENDLY_COLUMN_TYPES.number ? (
+							<Input
+								id="defaultValue"
+								type="number"
+								value={currentData?.defaultValue || ""}
+								onChange={(e) => handleInputChange("defaultValue", e.target.value)}
+								className="h-8 w-20 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+								placeholder="0"
+								disabled={isDisabled}
+							/>
+						) : (
+							<Input
+								id="defaultValue"
+								value={currentData?.defaultValue || ""}
+								onChange={(e) => handleInputChange("defaultValue", e.target.value)}
+								className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+								placeholder="Default"
+								disabled={isDisabled}
+							/>
+						)}
 					</div>
 
 					{/* Reference Table */}
@@ -409,6 +579,59 @@ export function ColumnToolbar({
 						</Button>
 					</div>
 				</div>
+
+				{/* Custom Options for customArray type */}
+				{currentData?.type === USER_FRIENDLY_COLUMN_TYPES.customArray && (
+					<div className="mt-3 pt-3 border-t border-neutral-100">
+						<div className="space-y-2">
+							<Label className="text-xs font-medium text-neutral-700">Custom Options</Label>
+							<div className="flex items-center gap-2">
+								<Input
+									value={newOption}
+									onChange={(e) => setNewOption(e.target.value)}
+									placeholder="Add option..."
+									className="h-7 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+									disabled={isDisabled}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											addCustomOption();
+										}
+									}}
+								/>
+								<Button
+									type="button"
+									size="sm"
+									onClick={addCustomOption}
+									disabled={isDisabled || !newOption.trim()}
+									className="h-7 px-2 text-xs"
+								>
+									Add
+								</Button>
+							</div>
+							{customOptions.length > 0 && (
+								<div className="flex flex-wrap gap-1">
+									{customOptions.map((option) => (
+										<div
+											key={option}
+											className="flex items-center gap-1 bg-neutral-100 text-neutral-700 px-2 py-1 rounded text-xs"
+										>
+											<span>{option}</span>
+											<button
+												type="button"
+												onClick={() => removeCustomOption(option)}
+												disabled={isDisabled}
+												className="text-neutral-500 hover:text-red-600"
+											>
+												×
+											</button>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					</div>
+				)}
 
 				{/* Description - Compact horizontal input */}
 				{currentData?.description && (
