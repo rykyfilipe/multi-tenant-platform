@@ -53,6 +53,7 @@ import { InlineRowCreator } from "./InlineRowCreator";
 import { TableFilters } from "../rows/TableFilters";
 import { SaveChangesButton } from "../rows/SaveChangesButton";
 import AddRowForm from "../rows/AddRowForm";
+import { Pagination } from "../../ui/pagination";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -118,6 +119,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		globalSearch,
 		filters,
 		setRows,
+		updateGlobalSearch,
+		updateSorting,
 	} = useTableRows(table.id?.toString() || "", 25);
 
 	// Row editing hook
@@ -401,19 +404,15 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	// Toolbar functions
 	const handleSearch = useCallback((query: string) => {
 		setSearchQuery(query);
-		// Use updateGlobalSearch from the hook
-		// globalSearch is a string, not a function
-	}, []);
+		updateGlobalSearch(query);
+	}, [updateGlobalSearch]);
 
 	const handleSort = useCallback((columnId: string) => {
-		if (sortColumn === columnId) {
-			setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-		} else {
-			setSortColumn(columnId);
-			setSortDirection("asc");
-		}
-		// TODO: Implement actual sorting logic
-	}, [sortColumn]);
+		const newDirection = sortColumn === columnId && sortDirection === "asc" ? "desc" : "asc";
+		setSortColumn(columnId);
+		setSortDirection(newDirection);
+		updateSorting(columnId, newDirection);
+	}, [sortColumn, sortDirection, updateSorting]);
 
 	const handleColumnResize = useCallback((columnId: number, width: number) => {
 		setColumnWidths(prev => ({
@@ -1206,6 +1205,22 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				</div>
 			</div>
 
+			{/* Pagination Controls */}
+			{pagination && pagination.totalPages > 1 && (
+				<div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+					<div className="bg-white border border-neutral-200 rounded-xl shadow-sm p-4">
+						<Pagination
+							currentPage={pagination.page}
+							totalPages={pagination.totalPages}
+							onPageChange={(page) => fetchRows(page, pagination.pageSize)}
+							pageSize={pagination.pageSize}
+							totalItems={pagination.totalRows}
+							onPageSizeChange={(newPageSize) => fetchRows(1, newPageSize)}
+							pageSizeOptions={[10, 25, 50, 100]}
+						/>
+					</div>
+				</div>
+			)}
 
 			{/* Add Column Form Modal */}
 			{showAddColumnForm && (
