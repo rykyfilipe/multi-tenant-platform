@@ -961,10 +961,54 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				</div>
 			</div>
 
-			{/* Modern Toolbar */}
-			<div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
-				<div className="bg-white border border-neutral-200 rounded-xl shadow-sm p-4">
-					<div className="flex items-center gap-4 flex-wrap">
+			{/* Modern Toolbar - Mobile Optimized */}
+			<div className="w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+				<div className="bg-white border border-neutral-200 rounded-xl shadow-sm p-3 sm:p-4">
+					{/* Mobile Layout */}
+					<div className="block sm:hidden space-y-3">
+						{/* Search - Full width on mobile */}
+						<div className="flex items-center gap-2 bg-neutral-50 rounded-lg px-3 py-2">
+							<Search className="w-4 h-4 text-neutral-500 flex-shrink-0" />
+							<input
+								type="text"
+								placeholder="Search rows..."
+								value={searchQuery}
+								onChange={(e) => handleSearch(e.target.value)}
+								className="flex-1 h-6 text-sm border-0 bg-transparent focus:ring-0 p-0"
+							/>
+						</div>
+
+						{/* Action buttons - Horizontal on mobile */}
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleSort(columns?.[0]?.id?.toString() || "")}
+								className="flex-1 h-8 text-sm border-neutral-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
+							>
+								{sortDirection === "asc" ? <SortAsc className="w-4 h-4 mr-1" /> : <SortDesc className="w-4 h-4 mr-1" />}
+								Sort
+							</Button>
+
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setShowFilters(!showFilters)}
+								className="flex-1 h-8 text-sm border-neutral-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 relative"
+							>
+								<Filter className="w-4 h-4 mr-1" />
+								Filter
+								{activeFiltersCount > 0 && (
+									<span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
+										{activeFiltersCount}
+									</span>
+								)}
+							</Button>
+						</div>
+					</div>
+
+					{/* Desktop Layout */}
+					<div className="hidden sm:flex items-center gap-4 flex-wrap">
 						{/* Search */}
 						<div className="flex items-center gap-2 min-w-0 flex-1">
 							<Search className="w-4 h-4 text-neutral-500" />
@@ -1030,8 +1074,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				/>
 			</div>
 
-			{/* Main Content */}
-			<div className='w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-auto'>
+			{/* Main Content - Mobile Optimized */}
+			<div className='w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8'>
 				{/* Add Row Form */}
 				{showAddRowForm && (
 					<div className='mb-8'>
@@ -1083,38 +1127,39 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					</div>
 				)}
 
-				{/* Modern Table Grid */}
+				{/* Modern Table Grid - Mobile Optimized */}
 				<div className='bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden'>
 					{rowsLoading ? (
 						<motion.div
-							className='flex flex-col items-center justify-center py-16 px-8'
+							className='flex flex-col items-center justify-center py-12 sm:py-16 px-4 sm:px-8'
 							{...fadeInUp}>
 							<div className='relative'>
-								<div className='w-16 h-16 border-4 border-primary/20 rounded-full'></div>
+								<div className='w-12 h-12 sm:w-16 sm:h-16 border-4 border-primary/20 rounded-full'></div>
 								<motion.div
-									className='absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full'
+									className='absolute top-0 left-0 w-12 h-12 sm:w-16 sm:h-16 border-4 border-primary border-t-transparent rounded-full'
 									{...spinAnimation}></motion.div>
 							</div>
 							<motion.div
-								className='mt-6 text-center'
+								className='mt-4 sm:mt-6 text-center'
 								initial={{ opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{ delay: 0.2 }}>
-								<h3 className='text-lg font-semibold text-foreground mb-2'>
+								<h3 className='text-base sm:text-lg font-semibold text-foreground mb-2'>
 									Loading Table Data
 								</h3>
-								<p className='text-muted-foreground'>
+								<p className='text-sm sm:text-base text-muted-foreground'>
 									Please wait while we fetch your data...
 								</p>
 							</motion.div>
 						</motion.div>
 					) : (
 						<div className='overflow-x-auto'>
-							{/* Modern Column Headers */}
-							<div className='flex border-b border-neutral-200 bg-neutral-50'>
+							{/* Modern Column Headers - Mobile Optimized */}
+							<div className='flex border-b border-neutral-200 bg-neutral-50 min-w-max'>
 								{/* Selection column */}
-								<div className='w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2'>
-									<span className='text-xs font-semibold text-neutral-700'>Select</span>
+								<div className='w-12 sm:w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-2 sm:px-4 py-2'>
+									<span className='text-xs font-semibold text-neutral-700 hidden sm:inline'>Select</span>
+									<span className='text-xs font-semibold text-neutral-700 sm:hidden'>✓</span>
 								</div>
 								
 								{/* Data columns */}
@@ -1122,7 +1167,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 									<div
 										key={column.id}
 										className="flex items-center group relative"
-										style={{ width: columnWidths[column.id] || 200 }}
+										style={{ width: Math.max(columnWidths[column.id] || 200, 120) }}
 									>
 										<ColumnHeader
 											column={column}
@@ -1156,7 +1201,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								
 								{/* Add column button */}
 								{tablePermissions.canEditTable() && (
-									<div className='w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2'>
+									<div className='w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100 flex items-center justify-center px-2 sm:px-4 py-2'>
 										<Button
 											variant='ghost'
 											size='sm'
@@ -1164,9 +1209,9 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 												setSelectedColumn(null);
 												setShowColumnToolbar(true);
 											}}
-											className='h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600 transition-all duration-200'
+											className='h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-blue-100 hover:text-blue-600 transition-all duration-200'
 											title="Add new column">
-											<Plus className='w-4 h-4' />
+											<Plus className='w-3 h-3 sm:w-4 sm:h-4' />
 										</Button>
 									</div>
 								)}
@@ -1205,10 +1250,10 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				</div>
 			</div>
 
-			{/* Pagination Controls */}
+			{/* Pagination Controls - Mobile Optimized */}
 			{pagination && pagination.totalPages > 1 && (
-				<div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
-					<div className="bg-white border border-neutral-200 rounded-xl shadow-sm p-4">
+				<div className="w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+					<div className="bg-white border border-neutral-200 rounded-xl shadow-sm p-3 sm:p-4">
 						<Pagination
 							currentPage={pagination.page}
 							totalPages={pagination.totalPages}

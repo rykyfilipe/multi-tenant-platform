@@ -93,10 +93,10 @@ export function RowGrid({
 
 	return (
 		<div className="overflow-x-auto">
-			{/* Modern Select All Header */}
-			<div className="flex border-b border-neutral-200 bg-neutral-50">
+			{/* Modern Select All Header - Mobile Optimized */}
+			<div className="flex border-b border-neutral-200 bg-neutral-50 min-w-max">
 				<div 
-					className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2 cursor-pointer hover:bg-neutral-200 transition-colors duration-200"
+					className="w-12 sm:w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-2 sm:px-4 py-2 cursor-pointer hover:bg-neutral-200 transition-colors duration-200"
 					onClick={() => handleSelectAll(!isAllSelected)}
 				>
 					<Checkbox
@@ -105,13 +105,13 @@ export function RowGrid({
 						ref={(el) => {
 							if (el) (el as any).indeterminate = isIndeterminate;
 						}}
-						className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 pointer-events-none"
+						className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 pointer-events-none w-4 h-4"
 					/>
 				</div>
 				
-				{/* Data columns header */}
-				<div className="flex-1 flex items-center justify-between px-4 py-2">
-					<span className="text-sm font-semibold text-neutral-700">
+				{/* Data columns header - Mobile Optimized */}
+				<div className="flex-1 flex items-center justify-between px-2 sm:px-4 py-2 min-w-0">
+					<span className="text-xs sm:text-sm font-semibold text-neutral-700 truncate">
 						{selectedRows.size > 0 ? `${selectedRows.size} row${selectedRows.size === 1 ? '' : 's'} selected` : 'Select rows to manage'}
 					</span>
 					
@@ -121,16 +121,17 @@ export function RowGrid({
 							variant="destructive"
 							size="sm"
 							onClick={handleDeleteSelected}
-							className="h-7 px-3 text-xs hover:bg-red-600 transition-colors duration-200"
+							className="h-6 sm:h-7 px-2 sm:px-3 text-xs hover:bg-red-600 transition-colors duration-200 flex-shrink-0"
 						>
 							<Trash2 className="w-3 h-3 mr-1" />
-							Delete ({selectedRows.size})
+							<span className="hidden sm:inline">Delete ({selectedRows.size})</span>
+							<span className="sm:hidden">({selectedRows.size})</span>
 						</Button>
 					)}
 				</div>
 				
 				{/* Empty space for add column button */}
-				<div className="w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100" />
+				<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100" />
 			</div>
 
 			{/* Data Rows */}
@@ -143,21 +144,21 @@ export function RowGrid({
 					<div
 						key={row.id}
 						className={cn(
-							"flex border-b border-neutral-200 hover:bg-neutral-100 transition-all duration-200 group",
+							"flex border-b border-neutral-200 hover:bg-neutral-100 transition-all duration-200 group min-w-max",
 							isSelected && "bg-blue-50",
 							isDeleting && "opacity-50",
 							isLocalRow && "bg-yellow-50 border-yellow-200"
 						)}
 					>
-						{/* Row Selection */}
+						{/* Row Selection - Mobile Optimized */}
 						<div 
-							className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 flex items-center justify-center px-4 py-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
+							className="w-12 sm:w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 flex items-center justify-center px-2 sm:px-4 py-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
 							onClick={() => handleSelectRow(row.id.toString(), !isSelected)}
 						>
 							<Checkbox
 								checked={isSelected}
 								onCheckedChange={(checked) => handleSelectRow(row.id.toString(), checked as boolean)}
-								className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 pointer-events-none"
+								className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 pointer-events-none w-4 h-4"
 							/>
 						</div>
 
@@ -172,11 +173,12 @@ export function RowGrid({
 								<div
 									key={`${row.id}-${column.id}`}
 									className={cn(
-										"flex-1 min-w-[120px] border-r border-neutral-200 px-4 py-2 hover:bg-neutral-50 transition-all duration-200 cursor-pointer",
+										"flex-1 min-w-[100px] sm:min-w-[120px] border-r border-neutral-200 px-2 sm:px-4 py-2 hover:bg-neutral-50 transition-all duration-200 cursor-pointer",
 										hasPending && "bg-yellow-50 border-yellow-200",
 										"group/cell"
 									)}
 									onClick={() => canEdit && onEditCell(row.id.toString(), column.id.toString(), "virtual")}
+									style={{ width: Math.max(200, 100) }}
 								>
 									{isEditing ? (
 										<EditableCell
@@ -195,15 +197,15 @@ export function RowGrid({
 											tables={[]} // Will be passed from parent if needed
 										/>
 									) : (
-										<div className="w-full h-8 flex items-center">
-											<span className="text-sm text-neutral-700 truncate">
+										<div className="w-full h-6 sm:h-8 flex items-center">
+											<span className="text-xs sm:text-sm text-neutral-700 truncate">
 												{cellValue !== null && cellValue !== undefined 
 													? String(cellValue) 
 													: <span className="text-neutral-400 italic">empty</span>
 												}
 											</span>
 											{hasPending && (
-												<span className="ml-2 text-xs text-yellow-600 font-medium bg-yellow-100 px-2 py-1 rounded">
+												<span className="ml-1 sm:ml-2 text-xs text-yellow-600 font-medium bg-yellow-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded">
 													{pendingValue !== null && pendingValue !== undefined 
 														? String(pendingValue) 
 														: "empty"
@@ -217,7 +219,7 @@ export function RowGrid({
 						})}
 
 						{/* Empty space for add column button */}
-						<div className="w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-50" />
+						<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-50" />
 					</div>
 				);
 			})}

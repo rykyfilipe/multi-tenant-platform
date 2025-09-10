@@ -72,7 +72,7 @@ export async function PATCH(
 		}
 
 		// Prevent editing of module columns or predefined columns
-		if (existingColumn.isModuleColumn || existingColumn.isPredefined) {
+		if (existingColumn.isModuleColumn) {
 			const columnType = existingColumn.isModuleColumn ? "module" : "predefined";
 			return NextResponse.json(
 				{ error: `Cannot edit ${columnType} column. This column is required for system functionality.` },

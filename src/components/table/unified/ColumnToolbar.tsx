@@ -18,7 +18,8 @@ import {
 	Settings, 
 	X, 
 	AlertCircle,
-	ChevronDown
+	ChevronDown,
+	Check
 } from "lucide-react";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 import { SemanticColumnType, SEMANTIC_TYPE_LABELS, SEMANTIC_TYPE_GROUPS } from "@/lib/semantic-types";
@@ -347,9 +348,190 @@ export function ColumnToolbar({
 		<div className={`bg-white border border-neutral-200 rounded-2xl shadow-md transition-all duration-200 ${
 			isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
 		}`}>
-			{/* Modern Horizontal Toolbar */}
-			<div className="px-4 py-2">
-				<div className="flex items-center gap-4 flex-wrap">
+			{/* Modern Horizontal Toolbar - Mobile Optimized */}
+			<div className="px-3 sm:px-4 py-2">
+				{/* Mobile Layout */}
+				<div className="block sm:hidden space-y-3">
+					{/* Column Selector - Full width on mobile */}
+					<div className="flex items-center gap-2 min-w-0">
+						<Settings className="w-4 h-4 text-neutral-600 flex-shrink-0" />
+						<Select
+							value={selectedColumn?.id?.toString() || "new"}
+							onValueChange={(value) => {
+								if (value === "new") {
+									onSelectColumn(null);
+								} else {
+									const column = columns.find(col => col.id.toString() === value);
+									onSelectColumn(column || null);
+								}
+							}}
+							disabled={isDisabled}
+						>
+							<SelectTrigger className="flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
+								<SelectValue placeholder={isDisabled ? "Select column" : "Column"} />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="new">
+									<div className="flex items-center gap-2">
+										<Plus className="w-3 h-3" />
+										Add New
+									</div>
+								</SelectItem>
+								{columns.map((column) => (
+									<SelectItem key={column.id} value={column.id.toString()}>
+										<div className="flex items-center gap-2">
+											<span className="font-medium">{column.name}</span>
+											<span className="text-xs text-neutral-500">({column.type})</span>
+										</div>
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					{/* Column Name - Full width on mobile */}
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="name" className="text-xs font-medium text-neutral-700 whitespace-nowrap w-12">Name</Label>
+						<Input
+							id="name"
+							value={currentData?.name || ""}
+							onChange={(e) => handleInputChange("name", e.target.value)}
+							className={cn("flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.name && "border-red-500")}
+							placeholder="Column name"
+							disabled={isDisabled}
+						/>
+						{errors.name && (
+							<div className="flex items-center gap-1 text-xs text-red-600">
+								<AlertCircle className="w-3 h-3" />
+								{errors.name}
+							</div>
+						)}
+					</div>
+
+					{/* Type and Semantic - Side by side on mobile */}
+					<div className="flex items-center gap-2">
+						<div className="flex-1 flex items-center gap-2 min-w-0">
+							<Label htmlFor="type" className="text-xs font-medium text-neutral-700 whitespace-nowrap w-12">Type</Label>
+							<Select
+								value={currentData?.type || ""}
+								onValueChange={(value) => handleInputChange("type", value)}
+								disabled={isDisabled}
+							>
+								<SelectTrigger className={cn("flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.type && "border-red-500")}>
+									<SelectValue placeholder="Type" />
+								</SelectTrigger>
+								<SelectContent>
+									{Object.entries(USER_FRIENDLY_COLUMN_TYPES).map(([key, value]) => (
+										<SelectItem key={key} value={value}>
+											{key}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="flex-1 flex items-center gap-2 min-w-0">
+							<Label htmlFor="semanticType" className="text-xs font-medium text-neutral-700 whitespace-nowrap w-12">Semantic</Label>
+							<Select
+								value={currentData?.semanticType || ""}
+								onValueChange={handleSemanticTypeChange}
+								disabled={isDisabled}
+							>
+								<SelectTrigger className="flex-1 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
+									<SelectValue placeholder="Semantic" />
+								</SelectTrigger>
+								<SelectContent className="max-h-60">
+									{Object.entries(SEMANTIC_TYPE_GROUPS).map(([groupName, types]) => (
+										<div key={groupName}>
+											<div className="px-2 py-1.5 text-xs font-semibold text-neutral-500 bg-neutral-50">
+												{groupName}
+											</div>
+											{types.map((type) => (
+												<SelectItem key={type} value={type}>
+													{type}
+												</SelectItem>
+											))}
+										</div>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+
+					{/* Switches - Horizontal on mobile */}
+					<div className="flex items-center gap-4">
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="required"
+								checked={currentData?.required || false}
+								onCheckedChange={(checked) => handleInputChange("required", checked)}
+								disabled={isDisabled || currentData?.primary}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="required" className="text-xs font-medium text-neutral-700">Required</Label>
+						</div>
+
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="unique"
+								checked={currentData?.unique || false}
+								onCheckedChange={(checked) => handleInputChange("unique", checked)}
+								disabled={isDisabled || currentData?.primary}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="unique" className="text-xs font-medium text-neutral-700">Unique</Label>
+						</div>
+
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="primary"
+								checked={currentData?.primary || false}
+								onCheckedChange={(checked) => handleInputChange("primary", checked)}
+								disabled={isDisabled}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="primary" className="text-xs font-medium text-neutral-700">Primary</Label>
+						</div>
+					</div>
+
+					{/* Actions - Full width on mobile */}
+					<div className="flex items-center gap-2 pt-2 border-t border-neutral-100">
+						{selectedColumn && !selectedColumn.primary && !selectedColumn.isModuleColumn && !selectedColumn.isPredefined && (
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleDelete}
+								disabled={isDisabled || isSubmitting}
+								className="flex-1 h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+							>
+								<Trash2 className="w-3 h-3 mr-1" />
+								Delete
+							</Button>
+						)}
+
+						<Button
+							size="sm"
+							onClick={handleSave}
+							disabled={isDisabled || isSubmitting}
+							className="flex-1 h-8 text-xs bg-neutral-900 hover:bg-neutral-800 text-white"
+						>
+							{isSubmitting ? (
+								<>
+									<div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full mr-1 animate-spin" />
+									Saving...
+								</>
+							) : (
+								<>
+									<Check className="w-3 h-3 mr-1" />
+									Save
+								</>
+							)}
+						</Button>
+					</div>
+				</div>
+
+				{/* Desktop Layout */}
+				<div className="hidden sm:flex items-center gap-4 flex-wrap">
 					{/* Column Selector */}
 					<div className="flex items-center gap-2 min-w-0">
 						<Settings className="w-4 h-4 text-neutral-600 flex-shrink-0" />
