@@ -234,15 +234,20 @@ export async function POST(
 					? columnData.order
 					: table.columns.length + i;
 
+			// Force required and unique for primary key columns
+			const isPrimary = columnData.primary || false;
+			const required = isPrimary ? true : (columnData.required || false);
+			const unique = isPrimary ? true : (columnData.unique || false);
+
 			const column = await prisma.column.create({
 				data: {
 					name: columnData.name,
 					type: columnData.type,
 					description: columnData.description || null,
 					semanticType: columnData.semanticType || null,
-					required: columnData.required || false,
-					primary: columnData.primary || false,
-					unique: columnData.unique || false,
+					required: required,
+					primary: isPrimary,
+					unique: unique,
 					referenceTableId: columnData.referenceTableId || null,
 					customOptions: columnData.customOptions || undefined,
 					defaultValue: columnData.defaultValue || null,

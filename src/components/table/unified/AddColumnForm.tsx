@@ -64,7 +64,15 @@ export function AddColumnForm({
 
 	const handleInputChange = (field: keyof CreateColumnRequest, value: any) => {
 		if (newColumn) {
-			setNewColumn({ ...newColumn, [field]: value });
+			const updatedColumn = { ...newColumn, [field]: value };
+			
+			// Force required and unique for primary key columns
+			if (field === 'primary' && value === true) {
+				updatedColumn.required = true;
+				updatedColumn.unique = true;
+			}
+			
+			setNewColumn(updatedColumn);
 		}
 		
 		// Clear error when user starts typing

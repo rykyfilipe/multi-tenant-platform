@@ -160,6 +160,13 @@ export function ColumnToolbar({
 	const handleInputChange = (field: keyof Column | keyof CreateColumnRequest, value: any) => {
 		if (isAddingNew && newColumn) {
 			const updatedColumn = { ...newColumn, [field]: value };
+			
+			// Force required and unique for primary key columns
+			if (field === 'primary' && value === true) {
+				updatedColumn.required = true;
+				updatedColumn.unique = true;
+			}
+			
 			setNewColumn(updatedColumn);
 			
 			// Update custom options if type changes to customArray
@@ -168,6 +175,13 @@ export function ColumnToolbar({
 			}
 		} else {
 			const updatedData = { ...formData, [field]: value };
+			
+			// Force required and unique for primary key columns
+			if (field === 'primary' && value === true) {
+				updatedData.required = true;
+				updatedData.unique = true;
+			}
+			
 			setFormData(updatedData);
 			
 			// Update custom options if type changes to customArray

@@ -5,6 +5,106 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkTableEditPermission } from "@/lib/auth";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 
+export async function PATCH(
+	request: NextRequest,
+	{
+		params,
+	}: {
+		params: Promise<{ tenantId: string; databaseId: string; tableId: string; columnId: string }>;
+	},
+) {
+	const { tenantId, databaseId, tableId, columnId } = await params;
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+	const userId = getUserId(sessionResult);
+
+	// Check tenant access
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
+
+	// Check table edit permissions
+	const canEdit = await checkTableEditPermission(
+		userId,
+		Number(tableId),
+		Number(tenantId),
+	);
+	if (!canEdit) {
+		return NextResponse.json(
+			{ error: "Insufficient permissions to edit columns in this table" },
+			{ status: 403 },
+		);
+	}
+
+	try {
+		// Verify the table exists and belongs to the tenant
+		const table = await prisma.table.findFirst({
+			where: {
+				id: Number(tableId),
+				databaseId: Number(databaseId),
+				database: { tenantId: Number(tenantId) },
+			},
+		});
+
+		if (!table) {
+			return NextResponse.json(
+				{ error: "Table not found" },
+				{ status: 404 },
+			);
+		}
+
+		// Find the column to update
+		const existingColumn = await prisma.column.findFirst({
+			where: {
+				id: Number(columnId),
+				tableId: Number(tableId),
+			},
+		});
+
+		if (!existingColumn) {
+			return NextResponse.json(
+				{ error: "Column not found" },
+				{ status: 404 },
+			);
+		}
+
+		// Prevent editing of module columns or predefined columns
+		if (existingColumn.isModuleColumn || existingColumn.isPredefined) {
+			const columnType = existingColumn.isModuleColumn ? "module" : "predefined";
+			return NextResponse.json(
+				{ error: `Cannot edit ${columnType} column. This column is required for system functionality.` },
+				{ status: 403 },
+			);
+		}
+
+		const body = await request.json();
+		const updateData = { ...body };
+
+		// Force required and unique for primary key columns
+		if (updateData.primary === true) {
+			updateData.required = true;
+			updateData.unique = true;
+		}
+
+		// Update the column
+		const updatedColumn = await prisma.column.update({
+			where: { id: Number(columnId) },
+			data: updateData,
+		});
+
+		return NextResponse.json(updatedColumn);
+	} catch (error) {
+		console.error("Error updating column:", error);
+		return NextResponse.json(
+			{ error: "Failed to update column" },
+			{ status: 500 },
+		);
+	}
+}
+
 export async function DELETE(
 	request: NextRequest,
 	{
