@@ -100,10 +100,10 @@ export async function POST(
 		// Get the tenant's subscription plan to determine permissions
 		const tenant = await prisma.tenant.findUnique({
 			where: { id: Number(tenantId) },
-			include: { adminOf: true },
+			include: { admin: true },
 		});
 
-		const subscriptionPlan = tenant?.adminOf?.subscriptionPlan || "Free";
+		const subscriptionPlan = tenant?.admin?.subscriptionPlan || "Free";
 
 		// Create table permissions for all users
 		await Promise.all(

@@ -66,7 +66,7 @@ export class InvoiceCalculationService {
 		for (const item of items) {
 			// Ensure we have valid numeric values with better validation
 			const safePrice = typeof item.price === 'number' && !isNaN(item.price) && isFinite(item.price) && item.price >= 0 ? item.price : 0;
-			const safeQuantity = typeof item.quantity === 'number' && !isNaN(item.quantity) && isFinite(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+			const safeQuantity = typeof item.quantity === 'number' && !isNaN(item.quantity) && isFinite(item.quantity) && item.quantity >= 0 ? item.quantity : 0;
 			const safeVatRate = typeof item.product_vat === 'number' && !isNaN(item.product_vat) && isFinite(item.product_vat) && item.product_vat >= 0 ? item.product_vat : 0;
 			
 			console.log(`Processing item ${item.id}:`, {

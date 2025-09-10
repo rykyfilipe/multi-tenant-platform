@@ -70,7 +70,7 @@ describe("Column Enhancements API", () => {
 
 		mockPrisma.tenant.findUnique.mockResolvedValue({
 			id: 1,
-			adminOf: { subscriptionPlan: "Free" },
+			admin: { subscriptionPlan: "Free" },
 		} as any);
 	});
 

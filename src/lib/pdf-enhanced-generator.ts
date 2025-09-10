@@ -400,13 +400,26 @@ export class EnhancedPDFGenerator {
 
 		// Company logo placeholder (circle with first letter)
 		const companyInitial = (tenantBranding.name || 'C').charAt(0).toUpperCase();
-		page.drawCircle({
-			x: 60,
-			y: 760,
-			size: 20,
-			borderColor: textColor,
-			borderWidth: 2,
-		});
+		// Draw circle using drawCircle (if available) or drawRectangle as fallback
+		try {
+			page.drawCircle({
+				x: 60,
+				y: 760,
+				size: 20,
+				borderColor: textColor,
+				borderWidth: 2,
+			});
+		} catch (error) {
+			// Fallback to rectangle if drawCircle is not available
+			page.drawRectangle({
+				x: 40,
+				y: 740,
+				width: 40,
+				height: 40,
+				borderColor: textColor,
+				borderWidth: 2,
+			});
+		}
 		page.drawText(this.handleUnicodeText(companyInitial), {
 			x: 55,
 			y: 750,
