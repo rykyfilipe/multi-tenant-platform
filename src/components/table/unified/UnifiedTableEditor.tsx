@@ -497,7 +497,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	}, []);
 
 	const handleAdd = useCallback(
-		(e: FormEvent) => {
+		async (e: FormEvent) => {
 			e.preventDefault();
 
 			if (!tablePermissions.canEditTable()) {
@@ -512,7 +512,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 			const tempRowId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-			const localRow = {
+			// Create optimistic row
+			const optimisticRow = {
 				id: tempRowId,
 				tableId: table?.id || 0,
 				createdAt: new Date().toISOString(),
@@ -523,19 +524,57 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					value: cell.value,
 					column: columns?.find((col) => col.id === cell.columnId) || null,
 				})),
-				isLocalOnly: true,
-				isPending: true,
+				isOptimistic: true,
 			};
 
-			setRows((currentRows) => [localRow, ...currentRows]);
-			setPendingNewRows((currentPending) => [...currentPending, localRow]);
+			// Add optimistic row immediately to UI
+			setRows((currentRows) => [optimisticRow, ...currentRows]);
 
-			showAlert("Row added locally. Click 'Save Changes' to persist to server.", "info");
+			// Close form and reset
 			setShowAddRowForm(false);
 			setCells([]);
 			setIsAddingRow(false);
+
+			// Make API call in background
+			try {
+				const response = await fetch(
+					`/api/tenants/${tenantId}/databases/${table?.databaseId}/tables/${table?.id}/rows`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({
+							cells: cells.map((cell) => ({
+								columnId: cell.columnId,
+								value: cell.value,
+							})),
+						}),
+					},
+				);
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+
+				const createdRow = await response.json();
+
+				// Replace optimistic row with real row
+				setRows((currentRows) =>
+					currentRows.map((row) =>
+						row.id === tempRowId ? { ...createdRow, isOptimistic: false } : row
+					)
+				);
+
+				showAlert("Row added successfully!", "success");
+			} catch (error: any) {
+				// Remove optimistic row on failure
+				setRows((currentRows) => currentRows.filter((row) => row.id !== tempRowId));
+				showAlert(error.message || "Failed to add row. Please try again.", "error");
+			}
 		},
-		[cells, setRows, isAddingRow, showAlert, tablePermissions, columns, table?.id],
+		[cells, setRows, isAddingRow, showAlert, tablePermissions, columns, table?.id, token, tenantId],
 	);
 
 	const handleSaveNewRows = useCallback(async () => {
