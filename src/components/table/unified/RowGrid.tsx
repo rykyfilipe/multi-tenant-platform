@@ -95,14 +95,17 @@ export function RowGrid({
 		<div className="overflow-x-auto">
 			{/* Modern Select All Header */}
 			<div className="flex border-b border-neutral-200 bg-neutral-50">
-				<div className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2">
+				<div 
+					className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2 cursor-pointer hover:bg-neutral-200 transition-colors duration-200"
+					onClick={() => handleSelectAll(!isAllSelected)}
+				>
 					<Checkbox
 						checked={isAllSelected}
 						onCheckedChange={handleSelectAll}
 						ref={(el) => {
 							if (el) (el as any).indeterminate = isIndeterminate;
 						}}
-						className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+						className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 pointer-events-none"
 					/>
 				</div>
 				
@@ -147,11 +150,14 @@ export function RowGrid({
 						)}
 					>
 						{/* Row Selection */}
-						<div className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 flex items-center justify-center px-4 py-2">
+						<div 
+							className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 flex items-center justify-center px-4 py-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
+							onClick={() => handleSelectRow(row.id.toString(), !isSelected)}
+						>
 							<Checkbox
 								checked={isSelected}
 								onCheckedChange={(checked) => handleSelectRow(row.id.toString(), checked as boolean)}
-								className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+								className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 pointer-events-none"
 							/>
 						</div>
 
