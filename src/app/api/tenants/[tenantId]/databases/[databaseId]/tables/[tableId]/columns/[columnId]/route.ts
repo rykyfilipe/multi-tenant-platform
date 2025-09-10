@@ -71,10 +71,11 @@ export async function DELETE(
 			);
 		}
 
-		// Prevent deletion of module columns
-		if (column.isModuleColumn) {
+		// Prevent deletion of module columns or predefined columns
+		if (column.isModuleColumn || column.isPredefined) {
+			const columnType = column.isModuleColumn ? "module" : "predefined";
 			return NextResponse.json(
-				{ error: "Cannot delete module column. This column is required for system functionality." },
+				{ error: `Cannot delete ${columnType} column. This column is required for system functionality.` },
 				{ status: 403 },
 			);
 		}

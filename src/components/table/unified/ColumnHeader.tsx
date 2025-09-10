@@ -103,6 +103,9 @@ export function ColumnHeader({ column, onEdit, onDelete, canEdit }: Props) {
 						{column.isModuleColumn && (
 							<span className="text-xs font-semibold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded" title="Module column - cannot be deleted">M</span>
 						)}
+						{column.isPredefined && (
+							<span className="text-xs font-semibold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded" title="Predefined column - cannot be deleted">P</span>
+						)}
 					</div>
 				</div>
 			</div>
