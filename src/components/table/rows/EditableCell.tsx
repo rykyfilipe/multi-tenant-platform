@@ -486,6 +486,24 @@ export function EditableCell({
 		return initialValue;
 	});
 
+	// Update local value when cell value changes (but not when editing)
+	useEffect(() => {
+		if (!isEditing) {
+			const newValue = hasPendingChange ? pendingValue : cell?.value;
+			const column = columns?.find((col) => col.id === cell?.columnId);
+			
+			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+				if (Array.isArray(newValue)) {
+					setValue(newValue);
+				} else {
+					setValue(newValue ? [newValue] : []);
+				}
+			} else {
+				setValue(newValue);
+			}
+		}
+	}, [cell?.value, hasPendingChange, pendingValue, isEditing, columns]);
+
 	// Ref pentru container-ul de editare
 	const editContainerRef = useRef<HTMLDivElement>(null);
 
@@ -738,7 +756,11 @@ export function EditableCell({
 								? "number"
 								: "text"
 						}
-						value={value ?? ""}
+						value={
+							column.type === USER_FRIENDLY_COLUMN_TYPES.date && value
+								? new Date(value).toISOString().split('T')[0]
+								: value ?? ""
+						}
 						onChange={(e) => setValue(e.target.value)}
 						onKeyDown={handleKey}
 						autoFocus
