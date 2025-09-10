@@ -536,6 +536,105 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		showAlert(`Discarded ${pendingNewRows.length} unsaved row(s).`, "info");
 	}, [pendingNewRows, setRows, showAlert]);
 
+	const handleDeleteRow = async (rowId: string) => {
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canDeleteTable()) {
+			showAlert("You don't have permission to delete rows in this table", "error");
+			return;
+		}
+
+		setDeletingRows(prev => new Set(prev).add(rowId));
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}`,
+				{
+					method: "DELETE",
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
+
+			if (response.ok) {
+				showAlert("Row deleted successfully!", "success");
+				await refreshAfterChange();
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to delete row");
+			}
+		} catch (error: any) {
+			console.error("Error deleting row:", error);
+			showAlert(error.message || "Failed to delete row. Please try again.", "error");
+		} finally {
+			setDeletingRows(prev => {
+				const newSet = new Set(prev);
+				newSet.delete(rowId);
+				return newSet;
+			});
+		}
+	};
+
+	const handleDeleteMultipleRows = async (rowIds: string[]) => {
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canDeleteTable()) {
+			showAlert("You don't have permission to delete rows in this table", "error");
+			return;
+		}
+
+		if (rowIds.length === 0) return;
+
+		// Add all rows to deleting state
+		setDeletingRows(prev => {
+			const newSet = new Set(prev);
+			rowIds.forEach(id => newSet.add(id));
+			return newSet;
+		});
+
+		try {
+			// Delete rows in parallel
+			const deletePromises = rowIds.map(rowId =>
+				fetch(
+					`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}`,
+					{
+						method: "DELETE",
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				)
+			);
+
+			const responses = await Promise.all(deletePromises);
+			const failedDeletes = responses.filter(response => !response.ok);
+
+			if (failedDeletes.length === 0) {
+				showAlert(`${rowIds.length} rows deleted successfully!`, "success");
+				await refreshAfterChange();
+			} else {
+				showAlert(`Failed to delete ${failedDeletes.length} out of ${rowIds.length} rows`, "error");
+			}
+		} catch (error: any) {
+			console.error("Error deleting multiple rows:", error);
+			showAlert(error.message || "Failed to delete rows. Please try again.", "error");
+		} finally {
+			// Remove all rows from deleting state
+			setDeletingRows(prev => {
+				const newSet = new Set(prev);
+				rowIds.forEach(id => newSet.delete(id));
+				return newSet;
+			});
+		}
+	};
+
 	const handleSaveCellWrapper = useCallback(
 		async (columnId: string, rowId: string, cellId: string, value: any) => {
 			if (!token) return;
@@ -819,11 +918,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 										</Button>
 									</div>
 								)}
-								
-								{/* Actions column */}
-								<div className='w-16 flex-shrink-0 border-l border-border/20 bg-muted/50 flex items-center justify-center p-2'>
-									<span className='text-xs font-medium text-muted-foreground'>Actions</span>
-								</div>
 							</div>
 
 							{/* Inline Row Creator */}
@@ -845,7 +939,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								onEditCell={handleEditCell}
 								onSaveCell={handleSaveCellWrapper}
 								onCancelEdit={handleCancelEdit}
-								onDeleteRow={() => {}}
+								onDeleteRow={handleDeleteRow}
+								onDeleteMultipleRows={handleDeleteMultipleRows}
 								deletingRows={deletingRows}
 								hasPendingChange={hasPendingChange}
 								getPendingValue={getPendingValue}

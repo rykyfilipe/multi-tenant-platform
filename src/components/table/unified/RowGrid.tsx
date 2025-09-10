@@ -5,14 +5,7 @@ import { useState } from "react";
 import { Column, Row } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Edit, MoreHorizontal } from "lucide-react";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Trash2 } from "lucide-react";
 import { EditableCell } from "../rows/EditableCell";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +17,7 @@ interface Props {
 	onSaveCell: (columnId: string, rowId: string, cellId: string, value: any) => Promise<void>;
 	onCancelEdit: () => void;
 	onDeleteRow: (rowId: string) => void;
+	onDeleteMultipleRows: (rowIds: string[]) => void;
 	deletingRows: Set<string>;
 	hasPendingChange: (rowId: string, columnId: string) => boolean;
 	getPendingValue: (rowId: string, columnId: string) => any;
@@ -39,6 +33,7 @@ export function RowGrid({
 	onSaveCell,
 	onCancelEdit,
 	onDeleteRow,
+	onDeleteMultipleRows,
 	deletingRows,
 	hasPendingChange,
 	getPendingValue,
@@ -63,6 +58,13 @@ export function RowGrid({
 		if (checked) {
 			setSelectedRows(new Set(rows.map(row => row.id.toString())));
 		} else {
+			setSelectedRows(new Set());
+		}
+	};
+
+	const handleDeleteSelected = () => {
+		if (selectedRows.size > 0) {
+			onDeleteMultipleRows(Array.from(selectedRows));
 			setSelectedRows(new Set());
 		}
 	};
@@ -103,13 +105,27 @@ export function RowGrid({
 					/>
 				</div>
 				
-				{/* Empty space for data columns */}
-				<div className="flex-1" />
+				{/* Data columns header */}
+				<div className="flex-1 flex items-center justify-between px-4">
+					<span className="text-sm font-medium text-muted-foreground">
+						{selectedRows.size > 0 ? `${selectedRows.size} row${selectedRows.size === 1 ? '' : 's'} selected` : 'Select rows to manage'}
+					</span>
+					
+					{/* Delete selected button */}
+					{selectedRows.size > 0 && canDelete && (
+						<Button
+							variant="destructive"
+							size="sm"
+							onClick={handleDeleteSelected}
+							className="h-7 px-3 text-xs"
+						>
+							<Trash2 className="w-3 h-3 mr-1" />
+							Delete ({selectedRows.size})
+						</Button>
+					)}
+				</div>
 				
 				{/* Empty space for add column button */}
-				<div className="w-16 flex-shrink-0 border-l border-border/20 bg-muted/50" />
-				
-				{/* Empty space for actions */}
 				<div className="w-16 flex-shrink-0 border-l border-border/20 bg-muted/50" />
 			</div>
 
@@ -203,42 +219,6 @@ export function RowGrid({
 
 						{/* Empty space for add column button */}
 						<div className="w-16 flex-shrink-0 border-l border-border/20 bg-muted/20" />
-
-						{/* Actions */}
-						<div className="w-16 flex-shrink-0 border-l border-border/20 bg-muted/20 flex items-center justify-center p-2">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="ghost"
-										size="sm"
-										className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-muted-foreground/10"
-									>
-										<MoreHorizontal className="w-3 h-3" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end" className="w-48">
-									{canEdit && (
-										<DropdownMenuItem disabled>
-											<Edit className="w-4 h-4 mr-2" />
-											Edit Row
-										</DropdownMenuItem>
-									)}
-									
-									<DropdownMenuSeparator />
-									
-									{canDelete && (
-										<DropdownMenuItem 
-											onClick={() => onDeleteRow(row.id.toString())}
-											className="text-destructive focus:text-destructive"
-											disabled={isDeleting}
-										>
-											<Trash2 className="w-4 h-4 mr-2" />
-											{isDeleting ? "Deleting..." : "Delete Row"}
-										</DropdownMenuItem>
-									)}
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
 					</div>
 				);
 			})}
