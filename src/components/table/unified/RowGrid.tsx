@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Column, Row } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2 } from "lucide-react";
+import { Trash2, FileText } from "lucide-react";
 import { EditableCell } from "../rows/EditableCell";
 import { cn } from "@/lib/utils";
 
@@ -81,7 +81,7 @@ export function RowGrid({
 		return (
 			<div className="flex flex-col items-center justify-center py-16 px-8 text-center">
 				<div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mb-4">
-					<Edit className="w-8 h-8 text-muted-foreground" />
+					<FileText className="w-8 h-8 text-muted-foreground" />
 				</div>
 				<h3 className="text-lg font-semibold text-foreground mb-2">No Data</h3>
 				<p className="text-muted-foreground">
