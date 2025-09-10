@@ -219,6 +219,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 	const handleSelectColumn = (column: Column | null) => {
 		setSelectedColumn(column);
+		setShowColumnToolbar(true); // Always show toolbar when selecting a column
 	};
 
 	const handleUpdateColumn = async (updatedColumn: Partial<Column>) => {
@@ -812,7 +813,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 												setSelectedColumn(null);
 												setShowColumnToolbar(true);
 											}}
-											className='h-8 w-8 p-0 hover:bg-primary/10'>
+											className='h-8 w-8 p-0 hover:bg-primary/10'
+											title="Add new column">
 											<Plus className='w-4 h-4' />
 										</Button>
 									</div>
@@ -856,22 +858,24 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				</div>
 			</div>
 
-			{/* Column Toolbar */}
-			<ColumnToolbar
-				columns={columns || []}
-				selectedColumn={selectedColumn}
-				onSelectColumn={handleSelectColumn}
-				onSave={handleUpdateColumn}
-				onDelete={handleDeleteColumn}
-				onAdd={handleAddColumn}
-				tables={tables || []}
-				isSubmitting={isAddingColumn || isUpdatingColumn}
-				isOpen={showColumnToolbar}
-				onClose={() => {
-					setShowColumnToolbar(false);
-					setSelectedColumn(null);
-				}}
-			/>
+			{/* Column Toolbar - Always visible */}
+			<div className="mb-6">
+				<ColumnToolbar
+					columns={columns || []}
+					selectedColumn={selectedColumn}
+					onSelectColumn={handleSelectColumn}
+					onSave={handleUpdateColumn}
+					onDelete={handleDeleteColumn}
+					onAdd={handleAddColumn}
+					tables={tables || []}
+					isSubmitting={isAddingColumn || isUpdatingColumn}
+					isOpen={showColumnToolbar}
+					onClose={() => {
+						setShowColumnToolbar(false);
+						setSelectedColumn(null);
+					}}
+				/>
+			</div>
 
 			{/* Add Column Form Modal */}
 			{showAddColumnForm && (

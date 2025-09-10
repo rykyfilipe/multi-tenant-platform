@@ -166,31 +166,27 @@ export function ColumnToolbar({
 		}
 	};
 
-	if (!isOpen) return null;
-
 	const currentData = isAddingNew ? newColumn : formData;
+	const isDisabled = !isOpen;
 
 	return (
-		<div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-card border border-border/20 rounded-xl shadow-2xl backdrop-blur-sm w-full max-w-4xl mx-4">
+		<div className={`bg-card border border-border/20 rounded-lg shadow-sm transition-all duration-200 ${
+			isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
+		}`}>
 			<div className="p-4">
 				{/* Header */}
-				<div className="flex items-center justify-between mb-4">
-					<div className="flex items-center gap-3">
-						<div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-							<Settings className="w-4 h-4 text-primary" />
-						</div>
-						<div>
-							<h3 className="font-semibold text-foreground">
-								{isAddingNew ? "Add New Column" : `Edit Column: ${selectedColumn?.name}`}
-							</h3>
-							<p className="text-xs text-muted-foreground">
-								{isAddingNew ? "Configure column properties" : "Update column settings"}
-							</p>
-						</div>
+				<div className="flex items-center gap-3 mb-4">
+					<div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+						<Settings className="w-4 h-4 text-primary" />
 					</div>
-					<Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-						<X className="w-4 h-4" />
-					</Button>
+					<div>
+						<h3 className="font-semibold text-foreground">
+							{isDisabled ? "Column Editor" : isAddingNew ? "Add New Column" : `Edit Column: ${selectedColumn?.name}`}
+						</h3>
+						<p className="text-xs text-muted-foreground">
+							{isDisabled ? "Select a column to edit or add a new one" : isAddingNew ? "Configure column properties" : "Update column settings"}
+						</p>
+					</div>
 				</div>
 
 				{/* Column Selector */}
@@ -206,9 +202,10 @@ export function ColumnToolbar({
 								onSelectColumn(column || null);
 							}
 						}}
+						disabled={isDisabled}
 					>
 						<SelectTrigger className="w-48">
-							<SelectValue placeholder="Select column" />
+							<SelectValue placeholder={isDisabled ? "Select a column" : "Select column"} />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="new">
@@ -240,6 +237,7 @@ export function ColumnToolbar({
 							onChange={(e) => handleInputChange("name", e.target.value)}
 							className={cn("h-8", errors.name && "border-destructive")}
 							placeholder="Column name"
+							disabled={isDisabled}
 						/>
 						{errors.name && (
 							<p className="text-xs text-destructive flex items-center gap-1">
@@ -255,6 +253,7 @@ export function ColumnToolbar({
 						<Select
 							value={currentData?.type || ""}
 							onValueChange={(value) => handleInputChange("type", value)}
+							disabled={isDisabled}
 						>
 							<SelectTrigger className={cn("h-8", errors.type && "border-destructive")}>
 								<SelectValue placeholder="Select type" />
@@ -281,6 +280,7 @@ export function ColumnToolbar({
 						<Select
 							value={currentData?.semanticType || ""}
 							onValueChange={(value) => handleInputChange("semanticType", value)}
+							disabled={isDisabled}
 						>
 							<SelectTrigger className="h-8">
 								<SelectValue placeholder="Select semantic type" />
@@ -311,6 +311,7 @@ export function ColumnToolbar({
 							onChange={(e) => handleInputChange("defaultValue", e.target.value)}
 							className="h-8"
 							placeholder="Default value"
+							disabled={isDisabled}
 						/>
 					</div>
 
@@ -321,6 +322,7 @@ export function ColumnToolbar({
 							<Select
 								value={currentData?.referenceTableId?.toString() || ""}
 								onValueChange={(value) => handleInputChange("referenceTableId", parseInt(value))}
+								disabled={isDisabled}
 							>
 								<SelectTrigger className={cn("h-8", errors.referenceTableId && "border-destructive")}>
 									<SelectValue placeholder="Select table" />
@@ -350,6 +352,7 @@ export function ColumnToolbar({
 							id="required"
 							checked={currentData?.required || false}
 							onCheckedChange={(checked) => handleInputChange("required", checked)}
+							disabled={isDisabled}
 						/>
 						<Label htmlFor="required" className="text-xs font-medium">Required</Label>
 					</div>
@@ -359,6 +362,7 @@ export function ColumnToolbar({
 							id="unique"
 							checked={currentData?.unique || false}
 							onCheckedChange={(checked) => handleInputChange("unique", checked)}
+							disabled={isDisabled}
 						/>
 						<Label htmlFor="unique" className="text-xs font-medium">Unique</Label>
 					</div>
@@ -368,6 +372,7 @@ export function ColumnToolbar({
 							id="primary"
 							checked={currentData?.primary || false}
 							onCheckedChange={(checked) => handleInputChange("primary", checked)}
+							disabled={isDisabled}
 						/>
 						<Label htmlFor="primary" className="text-xs font-medium">Primary Key</Label>
 					</div>
@@ -383,6 +388,7 @@ export function ColumnToolbar({
 						placeholder="Column description..."
 						rows={2}
 						className="resize-none"
+						disabled={isDisabled}
 					/>
 				</div>
 
@@ -394,6 +400,7 @@ export function ColumnToolbar({
 								variant="outline"
 								size="sm"
 								onClick={handleDelete}
+								disabled={isDisabled || isSubmitting}
 								className="text-destructive hover:text-destructive hover:bg-destructive/10"
 							>
 								<Trash2 className="w-4 h-4 mr-2" />
@@ -403,13 +410,10 @@ export function ColumnToolbar({
 					</div>
 
 					<div className="flex items-center gap-2">
-						<Button variant="outline" size="sm" onClick={onClose}>
-							Cancel
-						</Button>
 						<Button
 							size="sm"
 							onClick={handleSave}
-							disabled={isSubmitting}
+							disabled={isDisabled || isSubmitting}
 							className="bg-primary hover:bg-primary/90"
 						>
 							{isSubmitting ? (
