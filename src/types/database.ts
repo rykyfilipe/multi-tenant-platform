@@ -18,6 +18,8 @@ export interface Table {
 	predefinedType?: string;
 	isProtected?: boolean;
 	protectedType?: string;
+	isModuleTable?: boolean; // Flag to identify module tables
+	moduleType?: string; // Type of module (e.g., 'billing')
 	columns?: Column[];
 	rows?: Row[];
 	columnsCount?: number; // For display purposes
@@ -39,6 +41,7 @@ export interface Column {
 	referenceTableId?: number;
 	isPredefined?: boolean;
 	isLocked?: boolean;
+	isModuleColumn?: boolean; // Flag to identify module columns
 	customOptions?: string[]; // Opțiuni pentru tipul customArray
 	defaultValue?: string; // Default value for the column
 	order: number; // Ordinea coloanei în tabel

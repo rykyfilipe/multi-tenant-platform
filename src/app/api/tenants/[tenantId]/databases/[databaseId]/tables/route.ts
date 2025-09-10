@@ -297,10 +297,10 @@ export async function DELETE(
 			);
 		}
 
-		// Prevent deletion of protected tables
-		if (table.isProtected) {
+		// Prevent deletion of protected or module tables
+		if (table.isProtected || table.isModuleTable) {
 			return NextResponse.json(
-				{ error: "Cannot delete protected table. This table is required for system functionality." },
+				{ error: "Cannot delete protected or module table. This table is required for system functionality." },
 				{ status: 403 },
 			);
 		}

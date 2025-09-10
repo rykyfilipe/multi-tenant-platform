@@ -56,6 +56,7 @@ export function TableCard({ table }: { table: Table }) {
 						tableId={table.id.toString()}
 						onConfirm={handleDeleteTable}
 						isProtected={table.isPredefined}
+						isModuleTable={table.isModuleTable}
 						rowsCount={table.rowsCount ?? (Array.isArray(table.rows) ? table.rows.length : 0)}
 						columnsCount={table.columnsCount ?? (Array.isArray(table.columns) ? table.columns.length : 0)}
 						disabled={user?.role === "VIEWER"}

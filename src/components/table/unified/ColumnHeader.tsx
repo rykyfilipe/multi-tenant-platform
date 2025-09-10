@@ -100,6 +100,9 @@ export function ColumnHeader({ column, onEdit, onDelete, canEdit }: Props) {
 						{column.unique && (
 							<span className="text-xs font-semibold text-green-600 bg-green-100 px-1.5 py-0.5 rounded">U</span>
 						)}
+						{column.isModuleColumn && (
+							<span className="text-xs font-semibold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded" title="Module column - cannot be deleted">M</span>
+						)}
 					</div>
 				</div>
 			</div>

@@ -23,6 +23,7 @@ interface DeleteTableDialogProps {
 	tableId: string;
 	onConfirm: (tableId: string) => void;
 	isProtected?: boolean;
+	isModuleTable?: boolean;
 	rowsCount?: number;
 	columnsCount?: number;
 }
@@ -32,6 +33,7 @@ export function DeleteTableDialog({
 	tableId,
 	onConfirm,
 	isProtected = false,
+	isModuleTable = false,
 	rowsCount = 0,
 	columnsCount = 0,
 }: DeleteTableDialogProps) {
@@ -50,11 +52,11 @@ export function DeleteTableDialog({
 		}
 	};
 
-	if (isProtected) {
+	if (isProtected || isModuleTable) {
 		return (
 			<div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
 				<Database className="w-3 h-3" />
-				Protected
+				{isModuleTable ? "Module" : "Protected"}
 			</div>
 		);
 	}

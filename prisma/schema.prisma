@@ -142,6 +142,7 @@ model Column {
   defaultValue      String?
   order             Int                @default(0)
   isLocked          Boolean            @default(false)
+  isModuleColumn    Boolean            @default(false)
   semanticType      String?
   cells             Cell[]
   referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])

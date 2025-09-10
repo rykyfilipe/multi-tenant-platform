@@ -82,6 +82,7 @@ async function createModuleTableColumns(
 				primary: columnDef.primary,
 				order: columnDef.order,
 				isLocked: columnDef.isLocked,
+				isModuleColumn: true,
 				tableId,
 				referenceTableId,
 			},

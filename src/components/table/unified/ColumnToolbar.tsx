@@ -152,7 +152,7 @@ export function ColumnToolbar({
 	};
 
 	const handleDelete = () => {
-		if (selectedColumn && !selectedColumn.primary) {
+		if (selectedColumn && !selectedColumn.primary && !selectedColumn.isModuleColumn) {
 			onDelete(selectedColumn.id.toString());
 		}
 	};
@@ -591,7 +591,7 @@ export function ColumnToolbar({
 
 					{/* Actions */}
 					<div className="flex items-center gap-2">
-						{selectedColumn && !selectedColumn.primary && (
+						{selectedColumn && !selectedColumn.primary && !selectedColumn.isModuleColumn && (
 							<Button
 								variant="outline"
 								size="sm"
