@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkTableEditPermission } from "@/lib/auth";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { updateMemoryAfterRowChange } from "@/lib/memory-middleware";
+import { validateUniqueConstraint } from "@/lib/unique-constraint";
 import { z } from "zod";
 
 const CellUpdateSchema = z.object({
@@ -157,6 +158,20 @@ export async function PATCH(
 					}
 				}
 			}
+		}
+
+		// Verificăm unique constraint dacă este cazul
+		const uniqueValidation = await validateUniqueConstraint(
+			cellWithContext.columnId,
+			parsedData.value,
+			Number(rowId)
+		);
+
+		if (!uniqueValidation.isValid) {
+			return NextResponse.json(
+				{ error: uniqueValidation.error },
+				{ status: 409 }
+			);
 		}
 
 		// Verificăm permisiunile pentru utilizatorii non-admin (doar dacă e necesar)

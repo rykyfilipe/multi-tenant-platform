@@ -1,0 +1,843 @@
+/** @format */
+"use client";
+
+import {
+	FormEvent,
+	useEffect,
+	useState,
+	useCallback,
+	useMemo,
+	memo,
+} from "react";
+import { Table, CreateColumnRequest, Column, Row } from "@/types/database";
+import { useApp } from "@/contexts/AppContext";
+import { useDatabase } from "@/contexts/DatabaseContext";
+import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+	Plus, 
+	Settings, 
+	Database, 
+	Filter, 
+	Download, 
+	Upload, 
+	RefreshCw,
+	MoreHorizontal,
+	Edit,
+	Trash2,
+	Move,
+	Eye,
+	EyeOff
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { fadeInUp, spinAnimation } from "@/lib/animations";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
+import { useTablePermissions } from "@/hooks/useTablePermissions";
+import useTableRows from "@/hooks/useTableRows";
+import useRowsTableEditor from "@/hooks/useRowsTableEditor";
+import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
+import { ColumnHeader } from "./ColumnHeader";
+import { RowGrid } from "./RowGrid";
+import { ColumnPropertiesSidebar } from "./ColumnPropertiesSidebar";
+import { AddColumnForm } from "./AddColumnForm";
+import { TableFilters } from "../rows/TableFilters";
+import { SaveChangesButton } from "../rows/SaveChangesButton";
+import AddRowForm from "../rows/AddRowForm";
+import { cn } from "@/lib/utils";
+
+interface Props {
+	columns: Column[] | null;
+	setColumns: (cols: Column[] | null) => void;
+	table: Table;
+	refreshTable?: () => void;
+}
+
+export const UnifiedTableEditor = memo(function UnifiedTableEditor({ 
+	table, 
+	columns, 
+	setColumns, 
+	refreshTable 
+}: Props) {
+	const { showAlert, token, user, tenant } = useApp();
+	const { selectedDatabase, tables } = useDatabase();
+	const [showColumnSidebar, setShowColumnSidebar] = useState(false);
+	const [showFilters, setShowFilters] = useState(false);
+	const [showAddColumnForm, setShowAddColumnForm] = useState(false);
+	const [showAddRowForm, setShowAddRowForm] = useState(false);
+	const [editingColumn, setEditingColumn] = useState<Column | null>(null);
+	const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+	const [serverError, setServerError] = useState<string | null>(null);
+	const [cells, setCells] = useState<any[]>([]);
+	const [isAddingRow, setIsAddingRow] = useState(false);
+	const [deletingRows, setDeletingRows] = useState<Set<string>>(new Set());
+	const [pendingNewRows, setPendingNewRows] = useState<any[]>([]);
+	const [isSavingNewRows, setIsSavingNewRows] = useState(false);
+	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
+	const [isAddingColumn, setIsAddingColumn] = useState(false);
+	const [isUpdatingColumn, setIsUpdatingColumn] = useState(false);
+
+	// Permissions
+	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
+	const tablePermissions = useTablePermissions(
+		table.id,
+		userPermissions?.tablePermissions || [],
+		userPermissions?.columnsPermissions || [],
+	);
+
+	const { refreshAfterChange } = useDatabaseRefresh();
+	const tenantId = tenant?.id;
+
+	// Use server-side pagination hook
+	const {
+		rows: paginatedRows,
+		loading: rowsLoading,
+		error: rowsError,
+		pagination,
+		fetchRows,
+		refetch: refetchRows,
+		silentRefresh,
+		applyFilters,
+		globalSearch,
+		filters,
+		setRows,
+	} = useTableRows(table.id?.toString() || "", 25);
+
+	// Row editing hook
+	const {
+		editingCell,
+		handleCancelEdit,
+		handleEditCell,
+		handleSaveCell,
+		pendingChanges,
+		pendingChangesCount,
+		isSaving,
+		hasPendingChange,
+		getPendingValue,
+		savePendingChanges,
+		discardPendingChanges,
+	} = useRowsTableEditor({
+		table,
+		onCellsUpdated: (updatedCells) => {
+			setRows((currentRows: any[]) =>
+				currentRows.map((row) => {
+					const updatedRow = { ...row };
+					updatedCells.forEach((updatedCell) => {
+						if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
+							const cellIndex = updatedRow.cells.findIndex(
+								(cell: any) => cell.id === updatedCell.id,
+							);
+							if (cellIndex >= 0) {
+								updatedRow.cells[cellIndex] = updatedCell;
+							}
+						}
+					});
+					return updatedRow;
+				}),
+			);
+		},
+	});
+
+	// Column management functions
+	const handleAddColumn = async (e: FormEvent) => {
+		e.preventDefault();
+
+		if (!token || !tenantId || !newColumn) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to add columns to this table", "error");
+			return;
+		}
+
+		// Validate column
+		const nameExists = columns?.find((col) => col.name === newColumn?.name);
+		const hasValidReference = newColumn?.type === "reference" 
+			? newColumn.referenceTableId !== undefined && newColumn.referenceTableId !== null
+			: true;
+		const hasValidPrimaryKey = !(newColumn?.primary && columns?.some((col) => col.primary));
+
+		if (nameExists || !hasValidReference || !hasValidPrimaryKey) {
+			showAlert("Please fix validation errors", "error");
+			return;
+		}
+
+		if (isAddingColumn) return;
+
+		setIsAddingColumn(true);
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ columns: [newColumn] }),
+				},
+			);
+
+			if (response.ok) {
+				const createdColumns = await response.json();
+				showAlert("Column added successfully!", "success");
+				setNewColumn(null);
+				setShowAddColumnForm(false);
+
+				if (setColumns && columns) {
+					setColumns([...columns, ...createdColumns]);
+				}
+
+				await refreshAfterChange();
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to add column");
+			}
+		} catch (error: any) {
+			console.error("Error adding column:", error);
+			showAlert(error.message || "Failed to add column. Please try again.", "error");
+		} finally {
+			setIsAddingColumn(false);
+		}
+	};
+
+	const handleEditColumn = (column: Column) => {
+		setEditingColumn(column);
+		setShowColumnSidebar(true);
+	};
+
+	const handleUpdateColumn = async (updatedColumn: Partial<Column>) => {
+		if (!token || !tenantId || !editingColumn) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to edit columns in this table", "error");
+			return;
+		}
+
+		setIsUpdatingColumn(true);
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${editingColumn.id}`,
+				{
+					method: "PATCH",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify(updatedColumn),
+				},
+			);
+
+			if (response.ok) {
+				const updatedColumnData = await response.json();
+				showAlert("Column updated successfully!", "success");
+
+				if (setColumns && columns) {
+					setColumns(
+						columns.map((col) =>
+							col.id === editingColumn.id ? { ...col, ...updatedColumnData } : col,
+						),
+					);
+				}
+
+				setEditingColumn(null);
+				setShowColumnSidebar(false);
+				await refreshAfterChange();
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to update column");
+			}
+		} catch (error: any) {
+			console.error("Error updating column:", error);
+			showAlert(error.message || "Failed to update column. Please try again.", "error");
+		} finally {
+			setIsUpdatingColumn(false);
+		}
+	};
+
+	const handleDeleteColumn = async (columnId: string) => {
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to delete columns from this table", "error");
+			return;
+		}
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${columnId}`,
+				{
+					method: "DELETE",
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
+
+			if (response.ok) {
+				showAlert("Column deleted successfully!", "success");
+				if (setColumns && columns) {
+					setColumns(columns.filter((col) => col.id.toString() !== columnId));
+				}
+				await refreshAfterChange();
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to delete column");
+			}
+		} catch (error: any) {
+			console.error("Error deleting column:", error);
+			showAlert(error.message || "Failed to delete column. Please try again.", "error");
+		}
+	};
+
+	// Row management functions
+	const handleAddRow = useCallback(() => {
+		setShowAddRowForm(true);
+	}, []);
+
+	const handleAdd = useCallback(
+		(e: FormEvent) => {
+			e.preventDefault();
+
+			if (!tablePermissions.canEditTable()) {
+				showAlert("You don't have permission to add rows to this table", "error");
+				return;
+			}
+
+			if (isAddingRow) return;
+
+			setServerError(null);
+			setIsAddingRow(true);
+
+			const tempRowId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+			const localRow = {
+				id: tempRowId,
+				tableId: table?.id || 0,
+				createdAt: new Date().toISOString(),
+				cells: cells.map((cell) => ({
+					id: `temp_cell_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+					rowId: tempRowId,
+					columnId: cell.columnId,
+					value: cell.value,
+					column: columns?.find((col) => col.id === cell.columnId) || null,
+				})),
+				isLocalOnly: true,
+				isPending: true,
+			};
+
+			setRows((currentRows) => [localRow, ...currentRows]);
+			setPendingNewRows((currentPending) => [...currentPending, localRow]);
+
+			showAlert("Row added locally. Click 'Save Changes' to persist to server.", "info");
+			setShowAddRowForm(false);
+			setCells([]);
+			setIsAddingRow(false);
+		},
+		[cells, setRows, isAddingRow, showAlert, tablePermissions, columns, table?.id],
+	);
+
+	const handleSaveNewRows = useCallback(async () => {
+		if (!token || !tenantId || pendingNewRows.length === 0) return;
+
+		setIsSavingNewRows(true);
+
+		try {
+			const validationErrors: string[] = [];
+			
+			pendingNewRows.forEach((row, rowIndex) => {
+				if (!row.cells || !Array.isArray(row.cells)) {
+					validationErrors.push(`Row ${rowIndex + 1}: Invalid cell data`);
+					return;
+				}
+
+				columns?.forEach((column) => {
+					if (column.required) {
+						const cell = row.cells.find((c: any) => c.columnId === column.id);
+						if (!cell || cell.value === null || cell.value === undefined || cell.value === '') {
+							validationErrors.push(`Row ${rowIndex + 1}: ${column.name} is required`);
+						}
+					}
+				});
+			});
+
+			if (validationErrors.length > 0) {
+				showAlert(`Validation errors found:\n${validationErrors.join('\n')}`, "error");
+				return;
+			}
+
+			const batchData = pendingNewRows.map((row) => ({
+				cells: row.cells.map((cell: any) => ({
+					columnId: cell.columnId,
+					value: cell.value,
+				})),
+			}));
+
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table?.databaseId || 0}/tables/${
+					table?.id || 0
+				}/rows/batch`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ rows: batchData }),
+				},
+			);
+
+			if (response.ok) {
+				const result = await response.json();
+				const savedRows = result.rows || [];
+
+				setRows((currentRows) => {
+					const updatedRows = [...currentRows];
+					const filteredRows = updatedRows.filter((row) => !row.isLocalOnly);
+					return [...savedRows, ...filteredRows];
+				});
+
+				setPendingNewRows([]);
+				showAlert(`Successfully saved ${savedRows.length} row(s) to server!`, "success");
+
+				if (pagination) {
+					const newTotalRows = pagination.totalRows + savedRows.length;
+					await fetchRows(1, pagination.pageSize);
+				}
+			} else {
+				let errorMessage = "Failed to save rows";
+				try {
+					const errorData = await response.json();
+					errorMessage = errorData.error || errorData.message || errorMessage;
+				} catch (parseError) {
+					errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+				}
+				
+				console.error("Server error:", errorMessage);
+				showAlert(errorMessage, "error");
+			}
+		} catch (error: any) {
+			console.error("Error saving new rows:", error);
+			const errorMessage = error.message || "Network error. Please check your connection and try again.";
+			showAlert(errorMessage, "error");
+		} finally {
+			setIsSavingNewRows(false);
+		}
+	}, [
+		token,
+		tenantId,
+		table?.databaseId,
+		table?.id,
+		pendingNewRows,
+		setRows,
+		showAlert,
+		pagination,
+		fetchRows,
+		columns,
+	]);
+
+	const handleDiscardNewRows = useCallback(() => {
+		if (pendingNewRows.length === 0) return;
+
+		setRows((currentRows) => currentRows.filter((row) => !row.isLocalOnly));
+		setPendingNewRows([]);
+		showAlert(`Discarded ${pendingNewRows.length} unsaved row(s).`, "info");
+	}, [pendingNewRows, setRows, showAlert]);
+
+	const handleSaveCellWrapper = useCallback(
+		async (columnId: string, rowId: string, cellId: string, value: any) => {
+			if (!token) return;
+
+			await handleSaveCell(
+				columnId,
+				rowId,
+				cellId,
+				paginatedRows,
+				async (updatedCell?: any) => {
+					if (updatedCell) {
+						setRows((currentRows: any[]) =>
+							currentRows.map((row) => {
+								if (row.id.toString() === rowId) {
+									const existingCellIndex = row.cells.findIndex(
+										(cell: any) =>
+											cell.id === updatedCell.id ||
+											(cell.columnId.toString() === columnId && cell.id === "virtual"),
+									);
+
+									let updatedCells = [...row.cells];
+
+									if (existingCellIndex >= 0) {
+										updatedCells[existingCellIndex] = updatedCell;
+									} else {
+										updatedCells.push(updatedCell);
+									}
+
+									return {
+										...row,
+										cells: updatedCells,
+									};
+								}
+								return row;
+							}),
+						);
+					}
+				},
+				value,
+				table,
+				token,
+				user,
+				showAlert,
+			);
+		},
+		[handleSaveCell, paginatedRows, table, token, user, showAlert, setRows],
+	);
+
+	// Loading state
+	if (rowsLoading || permissionsLoading) {
+		return (
+			<div className='space-y-6'>
+				<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
+					<div className='flex items-center gap-2'>
+						<Skeleton className='h-6 w-6' />
+						<Skeleton className='h-6 w-32' />
+					</div>
+					<div className='flex items-center gap-2'>
+						<Skeleton className='h-9 w-24' />
+						<Skeleton className='h-9 w-24' />
+					</div>
+				</div>
+
+				<Card className='shadow-lg'>
+					<CardContent className='p-6'>
+						<div className='flex gap-4 mb-4 pb-4 border-b border-border/20'>
+							{Array.from({ length: Math.min(columns?.length || 4, 4) }).map((_, i) => (
+								<Skeleton key={i} className='h-4 w-20' />
+							))}
+							<Skeleton className='h-4 w-16 ml-auto' />
+						</div>
+
+						<div className='space-y-3'>
+							{Array.from({ length: 3 }).map((_, rowIndex) => (
+								<div key={rowIndex} className='flex gap-4 items-center py-2'>
+									{Array.from({ length: Math.min(columns?.length || 4, 4) }).map((_, colIndex) => (
+										<Skeleton key={colIndex} className='h-8 w-24' />
+									))}
+									<Skeleton className='h-8 w-8 ml-auto' />
+								</div>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
+
+	// Access check
+	if (!tablePermissions.canReadTable()) {
+		return (
+			<div className='space-y-6'>
+				<div className='text-center py-12'>
+					<div className='text-muted-foreground'>
+						<p className='text-lg font-medium mb-2'>Access Denied</p>
+						<p className='text-sm'>You don't have permission to view this table.</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (!table || !columns || !token || !user) return null;
+
+	return (
+		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-x-hidden'>
+			{/* Sticky Header */}
+			<div className='sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/20 shadow-sm unified-table-header'>
+				<div className='w-full mx-auto px-4 sm:px-6 lg:px-8'>
+					<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-6'>
+						{/* Left Section - Table Info & Actions */}
+						<div className='flex flex-col sm:flex-row sm:items-center gap-4'>
+							<div className='flex items-center gap-3'>
+								<div className='flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl'>
+									<Database className='w-6 h-6 text-primary' />
+								</div>
+								<div>
+									<h1 className='text-2xl font-bold text-foreground'>
+										{table?.name || "Table"}
+									</h1>
+									<p className='text-sm text-muted-foreground'>
+										{columns?.length || 0} columns • {pagination?.totalRows || 0} rows
+									</p>
+								</div>
+							</div>
+
+							<div className='flex items-center gap-3'>
+								<Button
+									onClick={() => {
+										setShowAddRowForm((prev) => !prev);
+										setServerError(null);
+									}}
+									disabled={!tablePermissions.canEditTable()}
+									className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
+									size='lg'>
+									{showAddRowForm ? (
+										<>
+											<RefreshCw className='w-4 h-4 mr-2' />
+											Cancel
+										</>
+									) : (
+										<>
+											<Plus className='w-4 h-4 mr-2' />
+											Add Row
+										</>
+									)}
+								</Button>
+
+								<SaveChangesButton
+									pendingNewRows={pendingNewRows}
+									isSavingNewRows={isSavingNewRows}
+									onSaveNewRows={handleSaveNewRows}
+									onDiscardNewRows={handleDiscardNewRows}
+									pendingChanges={pendingChanges}
+									isSavingChanges={isSaving}
+									onSaveChanges={savePendingChanges}
+									onDiscardChanges={discardPendingChanges}
+								/>
+							</div>
+						</div>
+
+						{/* Right Section - Tools & Filters */}
+						<div className='flex items-center gap-3'>
+							<Button
+								variant='outline'
+								size='lg'
+								onClick={() => setShowFilters(!showFilters)}
+								className='border-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200'>
+								<Filter className='w-4 h-4 mr-2' />
+								Filters
+								{activeFiltersCount > 0 && (
+									<span className='ml-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full'>
+										{activeFiltersCount}
+									</span>
+								)}
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Main Content */}
+			<div className='w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-auto'>
+				{/* Add Row Form */}
+				{showAddRowForm && (
+					<div className='mb-8'>
+						<div className='bg-card border border-border/20 rounded-2xl shadow-2xl backdrop-blur-sm bg-gradient-to-br from-card to-card/80'>
+							<div className='p-8'>
+								<div className='flex items-center gap-3 mb-6'>
+									<div className='w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center'>
+										<Plus className='w-5 h-5 text-primary' />
+									</div>
+									<div>
+										<h2 className='text-xl font-semibold text-foreground'>Add New Row</h2>
+										<p className='text-sm text-muted-foreground'>
+											Fill in the form below to create a new row
+										</p>
+									</div>
+								</div>
+
+								<AddRowForm
+									columns={columns}
+									cells={cells}
+									setCells={setCells}
+									onAdd={handleAdd}
+									tables={tables || []}
+									serverError={serverError}
+									isSubmitting={isAddingRow}
+								/>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{/* Filters Section */}
+				{showFilters && (
+					<div className='mb-6'>
+						<TableFilters
+							columns={columns}
+							rows={paginatedRows || []}
+							tables={tables || []}
+							onFilterChange={() => {}}
+							onApplyFilters={applyFilters}
+							showToggleButton={false}
+							showSidebar={showFilters}
+							setShowSidebar={setShowFilters}
+							onActiveFiltersChange={setActiveFiltersCount}
+							loading={rowsLoading}
+							currentFilters={filters}
+							currentGlobalSearch={globalSearch}
+						/>
+					</div>
+				)}
+
+				{/* Excel-like Grid */}
+				<div className='bg-card rounded-2xl border border-border/20 shadow-lg overflow-hidden'>
+					{rowsLoading ? (
+						<motion.div
+							className='flex flex-col items-center justify-center py-16 px-8'
+							{...fadeInUp}>
+							<div className='relative'>
+								<div className='w-16 h-16 border-4 border-primary/20 rounded-full'></div>
+								<motion.div
+									className='absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full'
+									{...spinAnimation}></motion.div>
+							</div>
+							<motion.div
+								className='mt-6 text-center'
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 0.2 }}>
+								<h3 className='text-lg font-semibold text-foreground mb-2'>
+									Loading Table Data
+								</h3>
+								<p className='text-muted-foreground'>
+									Please wait while we fetch your data...
+								</p>
+							</motion.div>
+						</motion.div>
+					) : (
+						<div className='overflow-x-auto'>
+							{/* Column Headers */}
+							<div className='flex border-b border-border/20 bg-muted/30 column-header'>
+								{/* Row number column */}
+								<div className='w-16 flex-shrink-0 border-r border-border/20 bg-muted/50 flex items-center justify-center p-2'>
+									<span className='text-xs font-medium text-muted-foreground'>#</span>
+								</div>
+								
+								{/* Data columns */}
+								{columns?.map((column) => (
+									<ColumnHeader
+										key={column.id}
+										column={column}
+										onEdit={handleEditColumn}
+										onDelete={handleDeleteColumn}
+										canEdit={tablePermissions.canEditTable()}
+									/>
+								))}
+								
+								{/* Add column button */}
+								{tablePermissions.canEditTable() && (
+									<div className='w-16 flex-shrink-0 border-l border-border/20 bg-muted/50 flex items-center justify-center p-2'>
+										<Button
+											variant='ghost'
+											size='sm'
+											onClick={() => {
+												setShowAddColumnForm(true);
+												setNewColumn({
+													name: "",
+													type: USER_FRIENDLY_COLUMN_TYPES.text,
+													semanticType: "",
+													required: false,
+													primary: false,
+													referenceTableId: undefined,
+													customOptions: [],
+													order: 0,
+												});
+											}}
+											className='h-8 w-8 p-0 hover:bg-primary/10'>
+											<Plus className='w-4 h-4' />
+										</Button>
+									</div>
+								)}
+								
+								{/* Actions column */}
+								<div className='w-16 flex-shrink-0 border-l border-border/20 bg-muted/50 flex items-center justify-center p-2'>
+									<span className='text-xs font-medium text-muted-foreground'>Actions</span>
+								</div>
+							</div>
+
+							{/* Data Rows */}
+							<div className="data-grid">
+								<RowGrid
+								columns={columns || []}
+								rows={paginatedRows || []}
+								editingCell={editingCell}
+								onEditCell={handleEditCell}
+								onSaveCell={handleSaveCellWrapper}
+								onCancelEdit={handleCancelEdit}
+								onDeleteRow={() => {}}
+								deletingRows={deletingRows}
+								hasPendingChange={hasPendingChange}
+								getPendingValue={getPendingValue}
+								canEdit={tablePermissions.canEditTable()}
+								canDelete={tablePermissions.canDeleteTable()}
+							/>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* Column Properties Sidebar */}
+			<ColumnPropertiesSidebar
+				column={editingColumn}
+				isOpen={showColumnSidebar}
+				onClose={() => {
+					setShowColumnSidebar(false);
+					setEditingColumn(null);
+				}}
+				onSave={handleUpdateColumn}
+				tables={tables || []}
+				existingColumns={columns || []}
+				isSubmitting={isUpdatingColumn}
+			/>
+
+			{/* Add Column Form Modal */}
+			{showAddColumnForm && (
+				<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+					<div className='bg-card border border-border/20 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto'>
+						<div className='p-8'>
+							<div className='flex items-center gap-3 mb-6'>
+								<div className='w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center'>
+									<Plus className='w-5 h-5 text-primary' />
+								</div>
+								<div>
+									<h2 className='text-xl font-semibold text-foreground'>Add New Column</h2>
+									<p className='text-sm text-muted-foreground'>
+										Configure the properties for your new column
+									</p>
+								</div>
+							</div>
+
+							<AddColumnForm
+								setNewColumn={setNewColumn}
+								newColumn={newColumn}
+								onAdd={handleAddColumn}
+								tables={tables || []}
+								existingColumns={columns || []}
+								isSubmitting={isAddingColumn}
+							/>
+
+							<div className='flex justify-end gap-3 mt-6'>
+								<Button
+									variant='outline'
+									onClick={() => setShowAddColumnForm(false)}>
+									Cancel
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+});

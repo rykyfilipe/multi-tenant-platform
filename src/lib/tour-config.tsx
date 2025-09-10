@@ -91,6 +91,91 @@ export const databaseTourSteps: StepType[] = [
 	},
 ];
 
+// Unified Table Editor tour steps
+export const unifiedTableEditorTourSteps: StepType[] = [
+	{
+		selector: ".unified-table-header",
+		content: (
+			<div className='space-y-3'>
+				<h3 className='text-lg font-semibold text-gray-900'>
+					Unified Table Editor
+				</h3>
+				<p className='text-gray-600 leading-relaxed'>
+					This is your Excel-like table editor where you can manage both columns and rows in one place. 
+					The header shows table information and quick actions.
+				</p>
+				<div className='bg-blue-50 p-3 rounded-lg'>
+					<p className='text-sm text-blue-700'>
+						💡 <strong>Tip:</strong> This unified interface combines column management and row editing for a seamless experience.
+					</p>
+				</div>
+			</div>
+		),
+		position: "bottom",
+		styles: {
+			popover: (base) => ({
+				...base,
+				borderRadius: "16px",
+				boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+			}),
+		},
+	},
+	{
+		selector: ".column-header",
+		content: (
+			<div className='space-y-3'>
+				<h3 className='text-lg font-semibold text-gray-900'>
+					Column Headers
+				</h3>
+				<p className='text-gray-600 leading-relaxed'>
+					Each column header shows the column name, type, and properties. Click on a column header to edit its properties, 
+					or use the + button to add a new column.
+				</p>
+				<div className='bg-green-50 p-3 rounded-lg'>
+					<p className='text-sm text-green-700'>
+						✨ <strong>Feature:</strong> Hover over column headers to see edit options and properties.
+					</p>
+				</div>
+			</div>
+		),
+		position: "bottom",
+		styles: {
+			popover: (base) => ({
+				...base,
+				borderRadius: "16px",
+				boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+			}),
+		},
+	},
+	{
+		selector: ".data-grid",
+		content: (
+			<div className='space-y-3'>
+				<h3 className='text-lg font-semibold text-gray-900'>
+					Data Grid
+				</h3>
+				<p className='text-gray-600 leading-relaxed'>
+					This is where your data lives. Click on any cell to edit it directly, just like in Excel. 
+					Use the row numbers to select rows, and the action buttons to manage them.
+				</p>
+				<div className='bg-purple-50 p-3 rounded-lg'>
+					<p className='text-sm text-purple-700'>
+						🔍 <strong>Quick Actions:</strong> Select multiple rows, edit cells inline, and manage your data efficiently.
+					</p>
+				</div>
+			</div>
+		),
+		position: "top",
+		styles: {
+			popover: (base) => ({
+				...base,
+				borderRadius: "16px",
+				boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+			}),
+		},
+	},
+];
+
 // Conditional database tour steps (only shown when tables exist)
 export const databaseTourStepsWithTables: StepType[] = [
 	...databaseTourSteps,
@@ -123,18 +208,16 @@ export const databaseTourStepsWithTables: StepType[] = [
 		},
 	},
 	{
-		selector: ".columns-button",
+		selector: ".unified-editor-button",
 		content: (
 			<div className='space-y-3'>
-				<h3 className='text-lg font-semibold text-gray-900'>Manage Columns</h3>
+				<h3 className='text-lg font-semibold text-gray-900'>Unified Table Editor</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					This button takes you to the columns editor where you can define the
-					structure of your table, including data types and constraints.
+					This button opens the unified table editor where you can manage both columns and rows in one Excel-like interface.
 				</p>
 				<div className='bg-blue-50 p-3 rounded-lg'>
 					<p className='text-sm text-blue-700'>
-						📊 <strong>Structure:</strong> Define your table schema with various
-						column types and properties.
+						📊 <strong>All-in-One:</strong> Edit columns, manage rows, and configure table properties in one place.
 					</p>
 				</div>
 			</div>
@@ -149,18 +232,16 @@ export const databaseTourStepsWithTables: StepType[] = [
 		},
 	},
 	{
-		selector: ".rows-button",
+		selector: ".unified-editor-button",
 		content: (
 			<div className='space-y-3'>
-				<h3 className='text-lg font-semibold text-gray-900'>Manage Data</h3>
+				<h3 className='text-lg font-semibold text-gray-900'>Unified Table Editor</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					This button takes you to the rows editor where you can add, edit, and
-					manage the actual data in your table.
+					This button opens the unified table editor where you can manage both columns and rows in one Excel-like interface.
 				</p>
 				<div className='bg-green-50 p-3 rounded-lg'>
 					<p className='text-sm text-green-700'>
-						📝 <strong>Data Entry:</strong> Add, edit, and organize your table
-						data with an intuitive interface.
+						📝 <strong>All-in-One:</strong> Edit columns, manage rows, and configure table properties in one place.
 					</p>
 				</div>
 			</div>
@@ -264,18 +345,16 @@ export const columnsEditorTourStepsWithColumns: StepType[] = [
 		},
 	},
 	{
-		selector: ".rows-button",
+		selector: ".unified-editor-button",
 		content: (
 			<div className='space-y-3'>
-				<h3 className='text-lg font-semibold text-gray-900'>Data Management</h3>
+				<h3 className='text-lg font-semibold text-gray-900'>Unified Table Editor</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					Switch to the rows editor to add and manage the actual data in your
-					table.
+					This button opens the unified table editor where you can manage both columns and rows in one Excel-like interface.
 				</p>
 				<div className='bg-green-50 p-3 rounded-lg'>
 					<p className='text-sm text-green-700'>
-						📊 <strong>Data Entry:</strong> Start adding data once your columns
-						are configured.
+						📊 <strong>All-in-One:</strong> Edit columns, manage rows, and configure table properties in one place.
 					</p>
 				</div>
 			</div>
@@ -320,20 +399,18 @@ export const rowsEditorTourSteps: StepType[] = [
 		},
 	},
 	{
-		selector: ".columns-button",
+		selector: ".unified-editor-button",
 		content: (
 			<div className='space-y-3'>
 				<h3 className='text-lg font-semibold text-gray-900'>
-					Column Management
+					Unified Table Editor
 				</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					Switch to the columns editor to modify the table structure or add new
-					columns.
+					This button opens the unified table editor where you can manage both columns and rows in one Excel-like interface.
 				</p>
 				<div className='bg-blue-50 p-3 rounded-lg'>
 					<p className='text-sm text-blue-700'>
-						⚙️ <strong>Structure:</strong> Modify column types and properties as
-						needed.
+						⚙️ <strong>All-in-One:</strong> Edit columns, manage rows, and configure table properties in one place.
 					</p>
 				</div>
 			</div>
@@ -903,5 +980,10 @@ export const tourUtils = {
 		} else {
 			return usersTourSteps;
 		}
+	},
+
+	// Helper function to get unified table editor tour steps
+	getUnifiedTableEditorTourSteps: (showUnified: boolean) => {
+		return showUnified ? unifiedTableEditorTourSteps : [];
 	},
 };

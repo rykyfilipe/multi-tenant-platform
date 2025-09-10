@@ -19,11 +19,15 @@ const ColumnUpdateSchema = z.object({
 			"customArray",
 		])
 		.optional(), // Remove the transform
+	description: z.string().optional(), // Column description
 	semanticType: z.string().optional(), // What this column represents
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
+	unique: z.boolean().optional(), // Unique constraint
 	autoIncrement: z.boolean().optional(),
 	referenceTableId: z.number().optional(),
+	customOptions: z.array(z.string()).optional(), // doar pt type "customArray"
+	defaultValue: z.string().optional(), // Default value for the column
 	order: z.number().optional(),
 });
 
@@ -90,17 +94,21 @@ export async function PATCH(
 		}
 
 		// Validate the update data
+		const validatedData = ColumnUpdateSchema.parse(body);
 		const updateData: any = {};
 		
 		// Only allow updating specific fields
-		if (body.name !== undefined) updateData.name = body.name;
-		if (body.type !== undefined) updateData.type = body.type;
-		if (body.semanticType !== undefined) updateData.semanticType = body.semanticType;
-		if (body.required !== undefined) updateData.required = body.required;
-		if (body.primary !== undefined) updateData.primary = body.primary;
-		if (body.referenceTableId !== undefined) updateData.referenceTableId = body.referenceTableId;
-		if (body.customOptions !== undefined) updateData.customOptions = body.customOptions;
-		if (body.order !== undefined) updateData.order = body.order;
+		if (validatedData.name !== undefined) updateData.name = validatedData.name;
+		if (validatedData.type !== undefined) updateData.type = validatedData.type;
+		if (validatedData.description !== undefined) updateData.description = validatedData.description;
+		if (validatedData.semanticType !== undefined) updateData.semanticType = validatedData.semanticType;
+		if (validatedData.required !== undefined) updateData.required = validatedData.required;
+		if (validatedData.primary !== undefined) updateData.primary = validatedData.primary;
+		if (validatedData.unique !== undefined) updateData.unique = validatedData.unique;
+		if (validatedData.referenceTableId !== undefined) updateData.referenceTableId = validatedData.referenceTableId;
+		if (validatedData.customOptions !== undefined) updateData.customOptions = validatedData.customOptions;
+		if (validatedData.defaultValue !== undefined) updateData.defaultValue = validatedData.defaultValue;
+		if (validatedData.order !== undefined) updateData.order = validatedData.order;
 
 		// Update the column
 		const updatedColumn = await prisma.column.update({

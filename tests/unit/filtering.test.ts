@@ -4,8 +4,8 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { GET } from '@/app/api/tenants/[tenantId]/databases/[databaseId]/tables/[tableId]/rows/route';
-import prisma from '@/lib/prisma';
+import { GET } from '../../src/app/api/tenants/[tenantId]/databases/[databaseId]/tables/[tableId]/rows/route';
+import prisma from '../../src/lib/prisma';
 import { createTestUser, createTestTenant, createTestDatabase, createTestTable, createTestColumns, createTestRows } from '../utils/test-helpers';
 
 describe('Table Filtering System', () => {

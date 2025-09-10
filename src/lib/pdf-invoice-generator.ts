@@ -64,6 +64,9 @@ export interface InvoicePDFData {
 		vatTotal: number;
 		grandTotal: number;
 		currency: string;
+		discountAmount?: number;
+		discountRate?: number;
+		vatRate?: number;
 	};
 }
 
@@ -901,40 +904,49 @@ export class PDFInvoiceGenerator {
 		});
 		currentY -= 20;
 
-		// Tax VAT 18%
-		PDFInvoiceGenerator.drawTextSafe(page, "Tax Vat 18%", {
-			x: totalsX,
-			y: currentY,
-			size: 10,
-			font: boldFont,
-			color: rgb(0.2, 0.2, 0.2),
-		});
-		PDFInvoiceGenerator.drawTextSafe(page, `$${this.formatPrice(data.totals.vatTotal)}`, {
-			x: totalsX + 120,
-			y: currentY,
-			size: 10,
-			font: font,
-			color: rgb(0.2, 0.2, 0.2),
-		});
-		currentY -= 20;
+		// Tax VAT (only show if VAT amount > 0)
+		const vatAmount = data.totals.vatTotal || 0;
+		if (vatAmount > 0) {
+			const vatRate = data.totals.vatRate || 0;
+			const vatLabel = vatRate > 0 ? `Tax VAT ${vatRate}%` : 'Tax VAT';
+			PDFInvoiceGenerator.drawTextSafe(page, vatLabel, {
+				x: totalsX,
+				y: currentY,
+				size: 10,
+				font: boldFont,
+				color: rgb(0.2, 0.2, 0.2),
+			});
+			PDFInvoiceGenerator.drawTextSafe(page, `$${this.formatPrice(data.totals.vatTotal)}`, {
+				x: totalsX + 120,
+				y: currentY,
+				size: 10,
+				font: font,
+				color: rgb(0.2, 0.2, 0.2),
+			});
+			currentY -= 20;
+		}
 
-		// Discount 10%
-		const discount = data.totals.subtotal * 0.1;
-		PDFInvoiceGenerator.drawTextSafe(page, "Discount 10%", {
-			x: totalsX,
-			y: currentY,
-			size: 10,
-			font: boldFont,
-			color: rgb(0.2, 0.2, 0.2),
-		});
-		PDFInvoiceGenerator.drawTextSafe(page, `-$${this.formatPrice(discount)}`, {
-			x: totalsX + 120,
-			y: currentY,
-			size: 10,
-			font: font,
-			color: rgb(0.2, 0.2, 0.2),
-		});
-		currentY -= 20;
+		// Discount (only show if discount amount > 0)
+		const discountAmount = data.totals.discountAmount || 0;
+		if (discountAmount > 0) {
+			const discountRate = data.totals.discountRate || 0;
+			const discountLabel = discountRate > 0 ? `Discount ${discountRate}%` : 'Discount';
+			PDFInvoiceGenerator.drawTextSafe(page, discountLabel, {
+				x: totalsX,
+				y: currentY,
+				size: 10,
+				font: boldFont,
+				color: rgb(0.2, 0.2, 0.2),
+			});
+			PDFInvoiceGenerator.drawTextSafe(page, `-$${this.formatPrice(discountAmount)}`, {
+				x: totalsX + 120,
+				y: currentY,
+				size: 10,
+				font: font,
+				color: rgb(0.2, 0.2, 0.2),
+			});
+			currentY -= 20;
+		}
 
 		// Draw separator line
 		page.drawLine({
@@ -946,7 +958,7 @@ export class PDFInvoiceGenerator {
 		currentY -= 20;
 
 		// Grand Total
-		const grandTotal = data.totals.grandTotal - discount;
+		const grandTotal = data.totals.grandTotal - (data.totals.discountAmount || 0);
 		PDFInvoiceGenerator.drawTextSafe(page, "Grand Total", {
 			x: totalsX,
 			y: currentY,

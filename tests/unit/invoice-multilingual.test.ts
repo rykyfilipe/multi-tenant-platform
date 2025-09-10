@@ -1,6 +1,6 @@
 /** @format */
 
-import { EnhancedPDFGenerator } from '@/lib/pdf-enhanced-generator';
+import { EnhancedPDFGenerator } from '../../src/lib/pdf-enhanced-generator';
 
 // Mock pdf-lib
 jest.mock('pdf-lib', () => ({

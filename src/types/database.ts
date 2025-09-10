@@ -31,13 +31,16 @@ export interface Column {
 	name: string;
 	type: string;
 	semanticType?: string; // What this column represents (product_name, product_price, etc.)
+	description?: string; // Column description
 	required: boolean;
 	primary: boolean;
+	unique?: boolean; // Unique constraint
 	tableId: number;
 	referenceTableId?: number;
 	isPredefined?: boolean;
 	isLocked?: boolean;
 	customOptions?: string[]; // Opțiuni pentru tipul customArray
+	defaultValue?: string; // Default value for the column
 	order: number; // Ordinea coloanei în tabel
 	createdAt?: string;
 	updatedAt?: string;
@@ -80,9 +83,12 @@ export interface CreateColumnRequest {
 	name: string;
 	type: string;
 	semanticType?: string; // What this column represents (product_name, product_price, etc.)
+	description?: string; // Column description
 	required?: boolean;
 	primary?: boolean;
+	unique?: boolean; // Unique constraint
 	referenceTableId?: number;
 	customOptions?: string[]; // Opțiuni pentru tipul customArray
+	defaultValue?: string; // Default value for the column
 	order?: number;
 }

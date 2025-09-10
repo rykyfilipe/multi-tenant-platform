@@ -26,6 +26,9 @@ export interface InvoiceTotals {
 	totalsByCurrency: Record<string, number>;
 	vatTotalsByCurrency: Record<string, number>;
 	itemsCount: number;
+	discountAmount?: number;
+	discountRate?: number;
+	vatRate?: number;
 }
 
 export interface ExchangeRate {

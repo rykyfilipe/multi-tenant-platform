@@ -41,6 +41,9 @@ interface InvoiceData {
     subtotal: number;
     vatTotal: number;
     grandTotal: number;
+    discountAmount?: number;
+    discountRate?: number;
+    vatRate?: number;
   };
 }
 
@@ -306,7 +309,7 @@ export function InvoiceHTMLPreview({
             {invoiceData.totals.vatTotal > 0 && (
               <div className="flex justify-between py-1 text-sm">
                 <span className="text-gray-700 font-semibold">
-                  {translations.tax || 'Tax VAT 18%'}:
+                  {translations.tax || 'Tax VAT'}:
                 </span>
                 <span className="font-medium text-gray-900">
                   {formatCurrency(invoiceData.totals.vatTotal)}
@@ -314,14 +317,16 @@ export function InvoiceHTMLPreview({
               </div>
             )}
             
-            <div className="flex justify-between py-1 text-sm">
-              <span className="text-gray-700 font-semibold">
-                Discount 10%:
-              </span>
-              <span className="font-medium text-red-600">
-                -{formatCurrency(invoiceData.totals.subtotal * 0.1)}
-              </span>
-            </div>
+            {(invoiceData.totals.discountAmount || 0) > 0 && (
+              <div className="flex justify-between py-1 text-sm">
+                <span className="text-gray-700 font-semibold">
+                  {translations.discount || 'Discount'}:
+                </span>
+                <span className="font-medium text-red-600">
+                  -{formatCurrency(invoiceData.totals.discountAmount || 0)}
+                </span>
+              </div>
+            )}
             
             <div className="flex justify-between py-3 border-t-2 border-gray-300 mt-4">
               <span className="text-lg font-bold text-gray-900">

@@ -333,25 +333,45 @@ export class EnhancedPDFGenerator {
 	private static calculateTotals(items: any[]): any {
 		let subtotal = 0;
 		let vatTotal = 0;
+		let discountAmount = 0;
+		let discountRate = 0;
+		let vatRate = 0;
 
 		items.forEach(item => {
 			const quantity = parseFloat(item.quantity || '0');
 			const price = parseFloat(item.price || '0');
-			const vatRate = parseFloat(item.product_vat || '0');
+			const itemVatRate = parseFloat(item.product_vat || '0');
+			const itemDiscountRate = parseFloat(item.discount_rate || '0');
+			const itemDiscountAmount = parseFloat(item.discount_amount || '0');
 			
 			const itemTotal = quantity * price;
-			const itemVat = (itemTotal * vatRate) / 100;
+			const itemVat = (itemTotal * itemVatRate) / 100;
+			const itemDiscount = itemDiscountAmount > 0 ? itemDiscountAmount : (itemTotal * itemDiscountRate) / 100;
 			
 			subtotal += itemTotal;
 			vatTotal += itemVat;
+			discountAmount += itemDiscount;
+			
+			// Use the highest VAT rate found
+			if (itemVatRate > vatRate) {
+				vatRate = itemVatRate;
+			}
+			
+			// Use the highest discount rate found
+			if (itemDiscountRate > discountRate) {
+				discountRate = itemDiscountRate;
+			}
 		});
 
-		const grandTotal = subtotal + vatTotal;
+		const grandTotal = subtotal + vatTotal - discountAmount;
 
 		return {
 			subtotal,
 			vatTotal,
 			grandTotal,
+			discountAmount,
+			discountRate: discountAmount > 0 && discountRate === 0 ? (discountAmount / subtotal) * 100 : discountRate,
+			vatRate,
 		};
 	}
 
@@ -785,7 +805,9 @@ export class EnhancedPDFGenerator {
 		const safeVatTotal = typeof invoiceData.totals.vatTotal === 'number' ? invoiceData.totals.vatTotal : parseFloat(invoiceData.totals.vatTotal) || 0;
 		if (safeVatTotal > 0) {
 			currentY -= 15;
-			page.drawText(`${this.handleUnicodeText(translations.tax || 'Tax VAT 18%')}:`, {
+			const vatRate = invoiceData.totals.vatRate || 0;
+			const vatLabel = vatRate > 0 ? `Tax VAT ${vatRate}%` : (translations.tax || 'Tax VAT');
+			page.drawText(`${this.handleUnicodeText(vatLabel)}:`, {
 				x: width - 200,
 				y: currentY,
 				size: 10,
@@ -801,23 +823,27 @@ export class EnhancedPDFGenerator {
 			});
 		}
 
-		// Discount
-		currentY -= 15;
-		const discount = safeSubtotal * 0.1;
-		page.drawText('Discount 10%:', {
-			x: width - 200,
-			y: currentY,
-			size: 10,
-			font: boldFont,
-			color: textColor,
-		});
-		page.drawText(`-${this.handleUnicodeText(discount.toFixed(2))}`, {
-			x: width - 100,
-			y: currentY,
-			size: 10,
-			font: font,
-			color: textColor,
-		});
+		// Discount (only show if discount amount > 0)
+		const discountAmount = invoiceData.totals.discountAmount || 0;
+		if (discountAmount > 0) {
+			currentY -= 15;
+			const discountRate = invoiceData.totals.discountRate || 0;
+			const discountLabel = discountRate > 0 ? `Discount ${discountRate}%` : 'Discount';
+			page.drawText(discountLabel, {
+				x: width - 200,
+				y: currentY,
+				size: 10,
+				font: boldFont,
+				color: textColor,
+			});
+			page.drawText(`-${this.handleUnicodeText(discountAmount.toFixed(2))}`, {
+				x: width - 100,
+				y: currentY,
+				size: 10,
+				font: font,
+				color: textColor,
+			});
+		}
 
 		// Grand total with border
 		currentY -= 20;
@@ -873,7 +899,7 @@ export class EnhancedPDFGenerator {
 		let currentY = y;
 		
 		// Payment Method
-		page.drawText('Payment Method:', {
+		page.drawText(this.handleUnicodeText(translations.paymentMethod || 'Payment Method:'), {
 			x: 50,
 			y: currentY,
 			size: 10,
@@ -881,7 +907,7 @@ export class EnhancedPDFGenerator {
 			color: textColor,
 		});
 		currentY -= 15;
-		page.drawText('Payment: Visa, Master Card', {
+		page.drawText(this.handleUnicodeText(translations.paymentMethods || 'Payment: Visa, Master Card'), {
 			x: 50,
 			y: currentY,
 			size: 9,
@@ -889,7 +915,7 @@ export class EnhancedPDFGenerator {
 			color: textColor,
 		});
 		currentY -= 12;
-		page.drawText('We accept Cheque', {
+		page.drawText(this.handleUnicodeText(translations.acceptCheque || 'We accept Cheque'), {
 			x: 50,
 			y: currentY,
 			size: 9,
@@ -907,7 +933,7 @@ export class EnhancedPDFGenerator {
 
 		currentY -= 20;
 		// Contact
-		page.drawText('Contact:', {
+		page.drawText(this.handleUnicodeText(translations.contact || 'Contact:'), {
 			x: 50,
 			y: currentY,
 			size: 10,
@@ -949,7 +975,7 @@ export class EnhancedPDFGenerator {
 
 		currentY -= 20;
 		// Terms & Condition
-		page.drawText('Terms & Condition:', {
+		page.drawText(this.handleUnicodeText(translations.termsAndConditions || 'Terms & Condition:'), {
 			x: 50,
 			y: currentY,
 			size: 10,
@@ -957,7 +983,7 @@ export class EnhancedPDFGenerator {
 			color: textColor,
 		});
 		currentY -= 15;
-		page.drawText('Contrary to popular belief Lorem Ipsum not ipsum simply lorem ispum dolor ipsum.', {
+		page.drawText(this.handleUnicodeText(translations.termsText || 'Please refer to our terms and conditions for detailed information.'), {
 			x: 50,
 			y: currentY,
 			size: 9,
@@ -966,7 +992,7 @@ export class EnhancedPDFGenerator {
 		});
 
 		// Right side - Signature
-		page.drawText('Signature:', {
+		page.drawText(this.handleUnicodeText(translations.signature || 'Signature:'), {
 			x: width - 200,
 			y: y,
 			size: 10,
@@ -979,7 +1005,7 @@ export class EnhancedPDFGenerator {
 			thickness: 1,
 			color: textColor,
 		});
-		page.drawText('Manager', {
+		page.drawText(this.handleUnicodeText(translations.manager || 'Manager'), {
 			x: width - 200,
 			y: y - 35,
 			size: 9,
@@ -1073,10 +1099,17 @@ export class EnhancedPDFGenerator {
 			unitPrice: 'PRICE',
 			total: 'TOTAL',
 			subtotal: 'SUB TOTAL',
-			tax: 'Tax VAT 18%',
+			tax: 'Tax VAT',
 			grandTotal: 'GRAND TOTAL',
 			paymentTerms: 'Payment Terms',
 			paymentMethod: 'Payment Method',
+			paymentMethods: 'Payment: Visa, Master Card',
+			acceptCheque: 'We accept Cheque',
+			contact: 'Contact',
+			termsAndConditions: 'Terms & Condition',
+			termsText: 'Please refer to our terms and conditions for detailed information.',
+			signature: 'Signature',
+			manager: 'Manager',
 			notes: 'Notes',
 			thankYou: 'Thank you for your business!',
 			page: 'Page',

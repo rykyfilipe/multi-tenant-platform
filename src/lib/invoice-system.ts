@@ -770,10 +770,14 @@ export class InvoiceSystemService {
 			seriesIdentifier = `${series}-${currentYear}`;
 		}
 
-		// Get the last invoice number for this series
-		const lastInvoice = await prisma.findFirstWithCache(
-			prisma.row,
-			{
+		// Use database transaction with locking to prevent race conditions
+		// This ensures only one process can generate the next invoice number at a time
+		const lastInvoice = await prisma.$transaction(async (tx: any) => {
+			// Lock the invoices table to prevent concurrent access
+			await tx.$executeRaw`SELECT * FROM "Row" WHERE "tableId" = ${invoicesTable.id} FOR UPDATE`;
+			
+			// Get the most recent invoice
+			return await tx.row.findFirst({
 				where: { tableId: invoicesTable.id },
 				include: {
 					cells: {
@@ -783,9 +787,8 @@ export class InvoiceSystemService {
 					},
 				},
 				orderBy: { id: "desc" },
-			},
-			DEFAULT_CACHE_STRATEGIES.row,
-		);
+			});
+		});
 
 		let lastNumber = options.startNumber || 0;
 		if (lastInvoice && lastInvoice.cells) {
@@ -898,9 +901,14 @@ export class InvoiceSystemService {
 			throw new Error("Invoices table not found");
 		}
 
-		const lastInvoice = await prisma.findFirstWithCache(
-			prisma.row,
-			{
+		// Use database transaction with locking to prevent race conditions
+		// This ensures only one process can generate the next invoice number at a time
+		const lastInvoice = await prisma.$transaction(async (tx: any) => {
+			// Lock the invoices table to prevent concurrent access
+			await tx.$executeRaw`SELECT * FROM "Row" WHERE "tableId" = ${invoicesTable.id} FOR UPDATE`;
+			
+			// Get the most recent invoice
+			return await tx.row.findFirst({
 				where: { tableId: invoicesTable.id },
 				include: {
 					cells: {
@@ -910,9 +918,8 @@ export class InvoiceSystemService {
 					},
 				},
 				orderBy: { id: "desc" },
-			},
-			DEFAULT_CACHE_STRATEGIES.row,
-		);
+			});
+		});
 
 		let lastNumber = defaultConfig.startNumber - 1;
 		if (lastInvoice && lastInvoice.cells) {

@@ -67,7 +67,7 @@ export default function PrivacySettingsPage() {
 
 			logger.info("User data export completed", {
 				component: "PrivacySettings",
-				userId: user?.id,
+				userId: user?.id.toString(),
 			});
 
 		} catch (error) {
@@ -78,7 +78,7 @@ export default function PrivacySettingsPage() {
 
 			logger.error("Failed to export user data", error as Error, {
 				component: "PrivacySettings",
-				userId: user?.id,
+				userId: user?.id.toString(),
 			});
 		} finally {
 			setIsExporting(false);
@@ -121,7 +121,7 @@ export default function PrivacySettingsPage() {
 
 			logger.warn("User account deletion completed", {
 				component: "PrivacySettings",
-				userId: user?.id,
+				userId: user?.id.toString(),
 				reason: deleteReason,
 			});
 
@@ -138,7 +138,7 @@ export default function PrivacySettingsPage() {
 
 			logger.error("Failed to delete user account", error as Error, {
 				component: "PrivacySettings",
-				userId: user?.id,
+				userId: user?.id.toString(),
 			});
 		} finally {
 			setIsDeleting(false);

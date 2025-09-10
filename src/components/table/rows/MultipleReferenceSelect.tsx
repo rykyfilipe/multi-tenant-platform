@@ -346,7 +346,7 @@ export function MultipleReferenceSelect({
 			{/* Main trigger button */}
 			<div
 				className={cn(
-					"flex h-auto min-h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer transition-all duration-200 hover:border-border/80 hover:shadow-sm",
+					"flex h-auto min-h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer transition-all duration-200 hover:border-border/80 hover:shadow-sm",
 					hasError && "border-destructive focus-within:ring-destructive",
 					isOpen && "ring-2 ring-ring ring-offset-2 border-ring shadow-md",
 				)}
@@ -451,7 +451,7 @@ export function MultipleReferenceSelect({
 					setHighlightedIndex(-1);
 				}}
 				triggerRef={containerRef}
-				className="w-80 max-w-[90vw]"
+				className="w-full min-w-[280px] max-w-[95vw] sm:max-w-[400px]"
 				placement="bottom-start">
 				{/* Search input */}
 				<div className='p-2.5 border-b border-border bg-muted/30'>
@@ -466,7 +466,7 @@ export function MultipleReferenceSelect({
 								setSearchTerm(e.target.value);
 								setHighlightedIndex(-1);
 							}}
-							className='pl-8 h-8 bg-background border-border/50 focus:border-primary text-sm'
+							className='pl-8 h-10 bg-background border-border/50 focus:border-primary text-base sm:text-sm'
 							autoFocus
 						/>
 					</div>
@@ -512,7 +512,7 @@ export function MultipleReferenceSelect({
 								<div
 									key={option.id}
 									className={cn(
-										"relative flex cursor-pointer select-none items-center rounded-md px-2.5 py-2 text-sm outline-none transition-all duration-200",
+										"relative flex cursor-pointer select-none items-center rounded-md px-3 py-3 text-base sm:text-sm outline-none transition-all duration-200",
 										"hover:bg-accent hover:text-accent-foreground",
 										index === highlightedIndex &&
 											"bg-accent text-accent-foreground ring-2 ring-primary/20",
@@ -530,7 +530,7 @@ export function MultipleReferenceSelect({
 										</div>
 									)}
 									<span
-										className='truncate font-medium text-sm'
+										className='truncate font-medium text-base sm:text-sm'
 										title={option.displayValue}>
 										{option.displayValue}
 									</span>

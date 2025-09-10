@@ -132,11 +132,14 @@ model Column {
   id                Int                @id @default(autoincrement())
   name              String
   type              String
+  description       String?
   required          Boolean            @default(false)
   primary           Boolean            @default(false)
+  unique            Boolean            @default(false)
   tableId           Int
   referenceTableId  Int?
   customOptions     String[]           @default([])
+  defaultValue      String?
   order             Int                @default(0)
   isLocked          Boolean            @default(false)
   semanticType      String?

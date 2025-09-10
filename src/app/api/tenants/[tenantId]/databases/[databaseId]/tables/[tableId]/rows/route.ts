@@ -175,6 +175,26 @@ export async function POST(
 			const processedCells = [];
 			const validationErrors = [];
 
+			// Creăm un map cu celulele existente pentru acces rapid
+			const providedCellsMap = new Map(
+				cells.map((cell: any) => [cell.columnId, cell.value])
+			);
+
+			// Pentru fiecare coloană din tabel, verificăm dacă există o celulă
+			// Dacă nu există și coloana are defaultValue, o adăugăm
+			for (const column of table.columns) {
+				if (!providedCellsMap.has(column.id)) {
+					// Dacă coloana are defaultValue, o folosim
+					if (column.defaultValue !== null && column.defaultValue !== undefined) {
+						cells.push({
+							columnId: column.id,
+							value: column.defaultValue
+						});
+						providedCellsMap.set(column.id, column.defaultValue);
+					}
+				}
+			}
+
 			// Verificăm că toate coloanele required au valori
 			const requiredColumns = table.columns.filter((col: any) => col.required);
 			const providedColumnIds = new Set(

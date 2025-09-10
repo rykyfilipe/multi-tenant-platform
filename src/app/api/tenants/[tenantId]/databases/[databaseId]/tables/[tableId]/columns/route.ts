@@ -20,12 +20,15 @@ const ColumnSchema = z.object({
 		"reference",
 		"customArray",
 	]), // Remove the transform - keep "text" as "text"
+	description: z.string().optional(), // Column description
 	semanticType: z.string().optional(), // What this column represents (product_name, product_price, etc.)
 	required: z.boolean().optional(),
 	primary: z.boolean().optional(),
+	unique: z.boolean().optional(), // Unique constraint
 	autoIncrement: z.boolean().optional(),
 	referenceTableId: z.number().optional(), // doar pt type "reference"
 	customOptions: z.array(z.string()).optional(), // doar pt type "customArray"
+	defaultValue: z.string().optional(), // Default value for the column
 	order: z.number().optional(), // Ordinea coloanei
 });
 
@@ -235,11 +238,14 @@ export async function POST(
 				data: {
 					name: columnData.name,
 					type: columnData.type,
+					description: columnData.description || null,
 					semanticType: columnData.semanticType || null,
 					required: columnData.required || false,
 					primary: columnData.primary || false,
+					unique: columnData.unique || false,
 					referenceTableId: columnData.referenceTableId || null,
 					customOptions: columnData.customOptions || undefined,
+					defaultValue: columnData.defaultValue || null,
 					order: order,
 					tableId: Number(tableId),
 				},
@@ -268,7 +274,7 @@ export async function POST(
 				const cells = table.rows.map((row: { id: number }) => ({
 					rowId: row.id,
 					columnId: column.id,
-					value: getDefaultValue(columnData.type, columnData.required),
+					value: columnData.defaultValue || getDefaultValue(columnData.type, columnData.required),
 				}));
 
 				await prisma.cell.createMany({

@@ -35,8 +35,11 @@ export function AbsoluteDropdown({
 		const triggerRect = triggerRef.current.getBoundingClientRect();
 		const viewportWidth = window.innerWidth;
 		const viewportHeight = window.innerHeight;
-		const dropdownWidth = 300; // Default width, will be adjusted after render
-		const dropdownHeight = 200; // Default height, will be adjusted after render
+		
+		// Mobile-first responsive sizing
+		const isMobile = viewportWidth < 768;
+		const dropdownWidth = isMobile ? Math.min(viewportWidth - 16, 400) : 300;
+		const dropdownHeight = isMobile ? Math.min(viewportHeight * 0.6, 300) : 200;
 
 		let top = 0;
 		let left = 0;
@@ -49,10 +52,16 @@ export function AbsoluteDropdown({
 		}
 
 		// Ensure dropdown doesn't go off-screen horizontally
+		// On mobile, center the dropdown if it would go off-screen
 		if (left < 8) {
 			left = 8;
 		} else if (left + dropdownWidth > viewportWidth - 8) {
-			left = viewportWidth - dropdownWidth - 8;
+			if (isMobile) {
+				// Center on mobile
+				left = Math.max(8, (viewportWidth - dropdownWidth) / 2);
+			} else {
+				left = viewportWidth - dropdownWidth - 8;
+			}
 		}
 
 		// Calculate vertical position
@@ -73,7 +82,10 @@ export function AbsoluteDropdown({
 		}
 
 		// Final check to ensure dropdown is within viewport
-		top = Math.max(8, Math.min(top, viewportHeight - dropdownHeight - 8));
+		// On mobile, allow more flexibility with positioning
+		const minTop = isMobile ? 4 : 8;
+		const maxTop = isMobile ? viewportHeight - dropdownHeight - 4 : viewportHeight - dropdownHeight - 8;
+		top = Math.max(minTop, Math.min(top, maxTop));
 
 		setPosition({ top, left });
 		setIsVisible(true);

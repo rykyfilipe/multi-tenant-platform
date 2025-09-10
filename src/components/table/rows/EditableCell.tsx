@@ -116,7 +116,7 @@ const AbsoluteSelect = ({
 			{/* Main trigger button */}
 			<div
 				className={cn(
-					"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer",
+					"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer",
 					isOpen && "ring-2 ring-ring ring-offset-2",
 				)}
 				onClick={toggleDropdown}>
@@ -146,7 +146,7 @@ const AbsoluteSelect = ({
 					setHighlightedIndex(-1);
 				}}
 				triggerRef={containerRef}
-				className="w-full min-w-[200px] max-w-[300px]"
+				className="w-full min-w-[250px] max-w-[90vw] sm:max-w-[400px]"
 				placement="bottom-start">
 				{/* Options list */}
 				<div
@@ -158,7 +158,7 @@ const AbsoluteSelect = ({
 							<div
 								key={option}
 								className={cn(
-									"relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
+									"relative flex cursor-pointer select-none items-center rounded-sm px-3 py-3 text-base sm:text-sm outline-none transition-colors",
 									"hover:bg-accent hover:text-accent-foreground",
 									index === highlightedIndex &&
 										"bg-accent text-accent-foreground",
@@ -681,58 +681,68 @@ export function EditableCell({
 		}
 
 		return (
-			<div className='flex items-start gap-2'>
-				{column.type === "boolean" ? (
-					<Switch
-						checked={value === true}
-						onCheckedChange={(checked) => setValue(checked)}>
-						<span className='sr-only'>{t("table.toggleBoolean")}</span>
-					</Switch>
-				) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
-					referenceSelect
-				) : column.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
-					<AbsoluteSelect
-						value={String(value || "")}
-						onValueChange={(v) => setValue(v)}
-						options={column.customOptions || []}
-						placeholder='Select an option'
-					/>
-				) : (
-					<Input
-						className='w-max'
-						type={
-							column.type === USER_FRIENDLY_COLUMN_TYPES.date
-								? "date"
-								: column.type === USER_FRIENDLY_COLUMN_TYPES.number
-								? "number"
-								: "text"
+			<div className='flex flex-col sm:flex-row items-start gap-2 w-full'>
+				<div className='flex-1 w-full'>
+					{column.type === "boolean" ? (
+						<Switch
+							checked={value === true}
+							onCheckedChange={(checked) => setValue(checked)}>
+							<span className='sr-only'>{t("table.toggleBoolean")}</span>
+						</Switch>
+					) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
+						referenceSelect
+					) : column.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
+						<AbsoluteSelect
+							value={String(value || "")}
+							onValueChange={(v) => setValue(v)}
+							options={column.customOptions || []}
+							placeholder='Select an option'
+							className="w-full"
+						/>
+					) : (
+						<Input
+							className='w-full min-w-[200px] sm:min-w-[250px] md:min-w-[300px] text-base sm:text-lg'
+							type={
+								column.type === USER_FRIENDLY_COLUMN_TYPES.date
+									? "date"
+									: column.type === USER_FRIENDLY_COLUMN_TYPES.number
+									? "number"
+									: "text"
+							}
+							value={value ?? ""}
+							onChange={(e) => setValue(e.target.value)}
+							onKeyDown={handleKey}
+							autoFocus
+						/>
+					)}
+				</div>
+				
+				<div className='flex items-center gap-1 sm:gap-2'>
+					<Button
+						variant='ghost'
+						size='sm'
+						onClick={handleSave}
+						disabled={
+							column.type === USER_FRIENDLY_COLUMN_TYPES.link &&
+							hasInvalidReferences
 						}
-						value={value ?? ""}
-						onChange={(e) => setValue(e.target.value)}
-						onKeyDown={handleKey}
-						autoFocus
-					/>
-				)}
-
-				<Button
-					variant='ghost'
-					size='sm'
-					onClick={handleSave}
-					disabled={
-						column.type === USER_FRIENDLY_COLUMN_TYPES.link &&
-						hasInvalidReferences
-					}
-					title={
-						column.type === USER_FRIENDLY_COLUMN_TYPES.link &&
-						hasInvalidReferences
-							? "Cannot save: Invalid references detected"
-							: "Save"
-					}>
-					{t("common.save")}
-				</Button>
-				<Button variant='ghost' size='sm' onClick={onCancel}>
-					✕
-				</Button>
+						title={
+							column.type === USER_FRIENDLY_COLUMN_TYPES.link &&
+							hasInvalidReferences
+								? "Cannot save: Invalid references detected"
+								: "Save"
+						}
+						className="h-8 px-3 text-sm">
+						{t("common.save")}
+					</Button>
+					<Button 
+						variant='ghost' 
+						size='sm' 
+						onClick={onCancel}
+						className="h-8 px-3 text-sm">
+						✕
+					</Button>
+				</div>
 			</div>
 		);
 	}
@@ -907,7 +917,7 @@ export function EditableCell({
 						/>
 					) : null;
 				})()}
-			<p className='max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis select-none leading-relaxed'>
+			<p className='max-w-[250px] sm:max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis select-none leading-relaxed text-sm sm:text-base'>
 				{display}
 			</p>
 		</div>

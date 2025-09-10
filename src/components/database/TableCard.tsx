@@ -23,13 +23,13 @@ const TableCard = memo(function TableCard({ table }: { table: Table }) {
 							{table.name}
 						</h2>
 					</div>
-					<Link href={`/home/database/table/${table.id}/columns`}>
+					<Link href={`/home/database/table/${table.id}/edit`}>
 						{/* Allow table actions based on permissions rather than hard-coded role check */}
 						{user?.role === "ADMIN" && (
 							<Button
 								variant='ghost'
 								size='icon'
-								className='hover:bg-muted/50 text-muted-foreground hover:text-foreground columns-button flex-shrink-0'>
+								className='hover:bg-muted/50 text-muted-foreground hover:text-foreground unified-editor-button flex-shrink-0'>
 								<Edit className='w-4 h-4' />
 							</Button>
 						)}
@@ -59,9 +59,9 @@ const TableCard = memo(function TableCard({ table }: { table: Table }) {
 
 			<CardFooter className='flex flex-col sm:flex-row justify-between pt-3 sm:pt-4 gap-2 sm:gap-2 flex-shrink-0'>
 				<div className='flex gap-2 w-full sm:w-auto'>
-					<Link href={`/home/database/table/${table.id}/rows`} className='flex-1 sm:flex-none'>
-						<Button variant='outline' size='sm' className='rows-button text-xs w-full sm:w-auto'>
-							{user?.role === "VIEWER" ? "View" : "Edit"} rows
+					<Link href={`/home/database/table/${table.id}/edit`} className='flex-1 sm:flex-none'>
+						<Button variant='outline' size='sm' className='unified-editor-button text-xs w-full sm:w-auto'>
+							{user?.role === "VIEWER" ? "View" : "Edit"} Table
 						</Button>
 					</Link>
 				</div>

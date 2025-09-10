@@ -89,11 +89,14 @@ test.describe('Database Table Management', () => {
   })
 
   test('should add columns to existing table', async ({ page }) => {
-    // Click on table to view details
+    // Click on table to open unified editor
     await page.click('text=users')
     
-    // Click add column button
-    await page.click('[data-testid="add-column-button"]')
+    // Wait for unified editor to load
+    await page.waitForSelector('.unified-table-header')
+    
+    // Click add column button in header
+    await page.click('.column-header .add-column-button')
     
     // Fill column form
     await page.fill('input[name="name"]', 'phone')
@@ -112,11 +115,14 @@ test.describe('Database Table Management', () => {
   })
 
   test('should edit table columns', async ({ page }) => {
-    // Click on table to view details
+    // Click on table to open unified editor
     await page.click('text=users')
     
-    // Click edit button on first column
-    await page.click('[data-testid="edit-column-button"]:first-of-type')
+    // Wait for unified editor to load
+    await page.waitForSelector('.unified-table-header')
+    
+    // Click edit button on first column in header
+    await page.click('.column-header .edit-column-button:first-of-type')
     
     // Modify column properties
     await page.fill('input[name="name"]', 'user_id')
@@ -134,11 +140,14 @@ test.describe('Database Table Management', () => {
   })
 
   test('should delete table columns', async ({ page }) => {
-    // Click on table to view details
+    // Click on table to open unified editor
     await page.click('text=users')
     
-    // Click delete button on first column
-    await page.click('[data-testid="delete-column-button"]:first-of-type')
+    // Wait for unified editor to load
+    await page.waitForSelector('.unified-table-header')
+    
+    // Click delete button on first column in header
+    await page.click('.column-header .delete-column-button:first-of-type')
     
     // Confirm deletion
     await expect(page.locator('text=Are you sure you want to delete this column?')).toBeVisible()

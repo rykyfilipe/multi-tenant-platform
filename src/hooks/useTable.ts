@@ -16,6 +16,7 @@ function useTable(id: string) {
 	const [table, setTable] = useState<Table | null>(null);
 	const [columns, setColumns] = useState<Column[] | null>(null);
 	const [rows, setRows] = useState<Row[] | null>(null);
+	const [refreshTrigger, setRefreshTrigger] = useState(0);
 
 	// Memoize the fetch function to prevent unnecessary re-creates
 	const fetchTable = useCallback(async () => {
@@ -54,12 +55,17 @@ function useTable(id: string) {
 		}
 	}, [id, tenantId, databaseId, token, userId]);
 
+	// Function to refresh table data
+	const refreshTable = useCallback(() => {
+		setRefreshTrigger(prev => prev + 1);
+	}, []);
+
 	useEffect(() => {
-		// Only fetch if we don't have the table data or if the ID changed
-		if (!table || table.id.toString() !== id) {
+		// Fetch table data when ID changes, table is missing, or refresh is triggered
+		if (!table || table.id.toString() !== id || refreshTrigger > 0) {
 			fetchTable();
 		}
-	}, [id, table, fetchTable]);
+	}, [id, table, fetchTable, refreshTrigger]);
 
 	// Memoize the return value to prevent unnecessary re-renders
 	return useMemo(
@@ -71,8 +77,9 @@ function useTable(id: string) {
 			loading,
 			rows,
 			setRows,
+			refreshTable,
 		}),
-		[table, setTable, columns, setColumns, loading, rows, setRows],
+		[table, setTable, columns, setColumns, loading, rows, setRows, refreshTable],
 	);
 }
 

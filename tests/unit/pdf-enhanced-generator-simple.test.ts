@@ -1,10 +1,10 @@
 /** @format */
 
 import { describe, it, expect, jest } from '@jest/globals';
-import { EnhancedPDFGenerator } from '@/lib/pdf-enhanced-generator';
+import { EnhancedPDFGenerator } from '../../src/lib/pdf-enhanced-generator';
 
 // Mock all dependencies
-jest.mock('@/lib/prisma', () => ({
+jest.mock('../../src/lib/prisma', () => ({
 	default: {
 		tenant: { findUnique: jest.fn() },
 		database: { findFirst: jest.fn() },
