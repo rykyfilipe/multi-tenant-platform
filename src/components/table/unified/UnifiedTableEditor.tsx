@@ -42,6 +42,7 @@ import { ColumnHeader } from "./ColumnHeader";
 import { RowGrid } from "./RowGrid";
 import { ColumnPropertiesSidebar } from "./ColumnPropertiesSidebar";
 import { AddColumnForm } from "./AddColumnForm";
+import { ColumnToolbar } from "./ColumnToolbar";
 import { InlineRowCreator } from "./InlineRowCreator";
 import { TableFilters } from "../rows/TableFilters";
 import { SaveChangesButton } from "../rows/SaveChangesButton";
@@ -79,6 +80,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [isAddingColumn, setIsAddingColumn] = useState(false);
 	const [isUpdatingColumn, setIsUpdatingColumn] = useState(false);
 	const [showInlineRowCreator, setShowInlineRowCreator] = useState(false);
+	const [showColumnToolbar, setShowColumnToolbar] = useState(false);
+	const [selectedColumn, setSelectedColumn] = useState<Column | null>(null);
 
 	// Permissions
 	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
@@ -189,6 +192,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				showAlert("Column added successfully!", "success");
 				setNewColumn(null);
 				setShowAddColumnForm(false);
+				setShowColumnToolbar(false);
+				setSelectedColumn(null);
 
 				if (setColumns && columns) {
 					setColumns([...columns, ...createdColumns]);
@@ -208,12 +213,16 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	};
 
 	const handleEditColumn = (column: Column) => {
-		setEditingColumn(column);
-		setShowColumnSidebar(true);
+		setSelectedColumn(column);
+		setShowColumnToolbar(true);
+	};
+
+	const handleSelectColumn = (column: Column | null) => {
+		setSelectedColumn(column);
 	};
 
 	const handleUpdateColumn = async (updatedColumn: Partial<Column>) => {
-		if (!token || !tenantId || !editingColumn) {
+		if (!token || !tenantId || !selectedColumn) {
 			showAlert("Missing required information", "error");
 			return;
 		}
@@ -227,7 +236,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${editingColumn.id}`,
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${selectedColumn.id}`,
 				{
 					method: "PATCH",
 					headers: {
@@ -245,13 +254,13 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				if (setColumns && columns) {
 					setColumns(
 						columns.map((col) =>
-							col.id === editingColumn.id ? { ...col, ...updatedColumnData } : col,
+							col.id === selectedColumn.id ? { ...col, ...updatedColumnData } : col,
 						),
 					);
 				}
 
-				setEditingColumn(null);
-				setShowColumnSidebar(false);
+				setSelectedColumn(null);
+				setShowColumnToolbar(false);
 				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
@@ -292,6 +301,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				if (setColumns && columns) {
 					setColumns(columns.filter((col) => col.id.toString() !== columnId));
 				}
+				setSelectedColumn(null);
+				setShowColumnToolbar(false);
 				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
@@ -798,17 +809,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 											variant='ghost'
 											size='sm'
 											onClick={() => {
-												setShowAddColumnForm(true);
-												setNewColumn({
-													name: "",
-													type: USER_FRIENDLY_COLUMN_TYPES.text,
-													semanticType: "",
-													required: false,
-													primary: false,
-													referenceTableId: undefined,
-													customOptions: [],
-													order: 0,
-												});
+												setSelectedColumn(null);
+												setShowColumnToolbar(true);
 											}}
 											className='h-8 w-8 p-0 hover:bg-primary/10'>
 											<Plus className='w-4 h-4' />
@@ -854,18 +856,21 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				</div>
 			</div>
 
-			{/* Column Properties Sidebar */}
-			<ColumnPropertiesSidebar
-				column={editingColumn}
-				isOpen={showColumnSidebar}
-				onClose={() => {
-					setShowColumnSidebar(false);
-					setEditingColumn(null);
-				}}
+			{/* Column Toolbar */}
+			<ColumnToolbar
+				columns={columns || []}
+				selectedColumn={selectedColumn}
+				onSelectColumn={handleSelectColumn}
 				onSave={handleUpdateColumn}
+				onDelete={handleDeleteColumn}
+				onAdd={handleAddColumn}
 				tables={tables || []}
-				existingColumns={columns || []}
-				isSubmitting={isUpdatingColumn}
+				isSubmitting={isAddingColumn || isUpdatingColumn}
+				isOpen={showColumnToolbar}
+				onClose={() => {
+					setShowColumnToolbar(false);
+					setSelectedColumn(null);
+				}}
 			/>
 
 			{/* Add Column Form Modal */}
