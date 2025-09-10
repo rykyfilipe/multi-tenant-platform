@@ -185,22 +185,57 @@ export function ColumnToolbar({
 	const handleSemanticTypeChange = (semanticType: string) => {
 		// Auto-update column type and properties based on semantic type
 		const semanticTypeMapping: Record<string, { type: string; required?: boolean; unique?: boolean }> = {
+			// Text fields
 			'email': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true, unique: true },
 			'phone': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
 			'url': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
 			'name': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
 			'description': { type: USER_FRIENDLY_COLUMN_TYPES.text },
+			'address': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'city': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'country': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'postal_code': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'tax_id': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'registration_number': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'sku': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true, unique: true },
+			'code': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true, unique: true },
+			'reference': { type: USER_FRIENDLY_COLUMN_TYPES.text },
+			'notes': { type: USER_FRIENDLY_COLUMN_TYPES.text },
+			'comments': { type: USER_FRIENDLY_COLUMN_TYPES.text },
+			'iban': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'bic': { type: USER_FRIENDLY_COLUMN_TYPES.text, required: true },
+			'bank': { type: USER_FRIENDLY_COLUMN_TYPES.text },
+			
+			// Number fields
 			'age': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
 			'price': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
 			'quantity': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
+			'amount': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
+			'weight': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
+			'tax_rate': { type: USER_FRIENDLY_COLUMN_TYPES.number, required: true },
+			'discount_rate': { type: USER_FRIENDLY_COLUMN_TYPES.number },
+			'late_fee': { type: USER_FRIENDLY_COLUMN_TYPES.number },
+			
+			// Date fields
 			'date_of_birth': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
 			'created_at': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
 			'updated_at': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
+			'date': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
+			'due_date': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
+			
+			// Boolean fields
 			'is_active': { type: USER_FRIENDLY_COLUMN_TYPES.yesNo, required: true },
 			'is_verified': { type: USER_FRIENDLY_COLUMN_TYPES.yesNo, required: true },
+			
+			// Custom Array fields
 			'status': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
 			'category': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
 			'priority': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+			'currency': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+			'payment_method': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+			'payment_terms': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+			'unit_of_measure': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
+			'brand': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
 		};
 
 		const mapping = semanticTypeMapping[semanticType];
@@ -218,9 +253,14 @@ export function ColumnToolbar({
 				// Set default custom options for certain semantic types
 				if (mapping.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
 					const defaultOptions: Record<string, string[]> = {
-						'status': ['Active', 'Inactive', 'Pending', 'Suspended'],
-						'category': ['General', 'Important', 'Urgent', 'Low Priority'],
-						'priority': ['Low', 'Medium', 'High', 'Critical'],
+						'status': ['Active', 'Inactive', 'Pending', 'Suspended', 'Draft', 'Completed'],
+						'category': ['General', 'Important', 'Urgent', 'Low Priority', 'Business', 'Personal'],
+						'priority': ['Low', 'Medium', 'High', 'Critical', 'Emergency'],
+						'currency': ['USD - US Dollar', 'EUR - Euro', 'RON - Romanian Leu', 'GBP - British Pound', 'JPY - Japanese Yen', 'CAD - Canadian Dollar', 'AUD - Australian Dollar', 'CHF - Swiss Franc'],
+						'payment_method': ['Cash', 'Bank Transfer', 'Credit Card', 'PayPal', 'Stripe', 'Check', 'Wire Transfer', 'Cryptocurrency'],
+						'payment_terms': ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Due on Receipt', '2/10 Net 30', '1/10 Net 30', 'Cash on Delivery'],
+						'unit_of_measure': ['Piece', 'Kilogram', 'Gram', 'Liter', 'Meter', 'Square Meter', 'Cubic Meter', 'Hour', 'Day', 'Month', 'Year'],
+						'brand': ['Apple', 'Samsung', 'Microsoft', 'Google', 'Amazon', 'Tesla', 'Nike', 'Adidas', 'Coca-Cola', 'Pepsi', 'Other'],
 					};
 					const options = defaultOptions[semanticType] || [];
 					setCustomOptions(options);
@@ -239,9 +279,14 @@ export function ColumnToolbar({
 				// Set default custom options for certain semantic types
 				if (mapping.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
 					const defaultOptions: Record<string, string[]> = {
-						'status': ['Active', 'Inactive', 'Pending', 'Suspended'],
-						'category': ['General', 'Important', 'Urgent', 'Low Priority'],
-						'priority': ['Low', 'Medium', 'High', 'Critical'],
+						'status': ['Active', 'Inactive', 'Pending', 'Suspended', 'Draft', 'Completed'],
+						'category': ['General', 'Important', 'Urgent', 'Low Priority', 'Business', 'Personal'],
+						'priority': ['Low', 'Medium', 'High', 'Critical', 'Emergency'],
+						'currency': ['USD - US Dollar', 'EUR - Euro', 'RON - Romanian Leu', 'GBP - British Pound', 'JPY - Japanese Yen', 'CAD - Canadian Dollar', 'AUD - Australian Dollar', 'CHF - Swiss Franc'],
+						'payment_method': ['Cash', 'Bank Transfer', 'Credit Card', 'PayPal', 'Stripe', 'Check', 'Wire Transfer', 'Cryptocurrency'],
+						'payment_terms': ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Due on Receipt', '2/10 Net 30', '1/10 Net 30', 'Cash on Delivery'],
+						'unit_of_measure': ['Piece', 'Kilogram', 'Gram', 'Liter', 'Meter', 'Square Meter', 'Cubic Meter', 'Hour', 'Day', 'Month', 'Year'],
+						'brand': ['Apple', 'Samsung', 'Microsoft', 'Google', 'Amazon', 'Tesla', 'Nike', 'Adidas', 'Coca-Cola', 'Pepsi', 'Other'],
 					};
 					const options = defaultOptions[semanticType] || [];
 					setCustomOptions(options);
