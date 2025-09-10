@@ -7,10 +7,9 @@ import { useDatabase } from "@/contexts/DatabaseContext";
 import Link from "next/link";
 import { Table } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
-import { memo } from "react";
 import { DeleteTableDialog } from "./DeleteTableDialog";
 
-const TableCard = memo(function TableCard({ table }: { table: Table }) {
+export function TableCard({ table }: { table: Table }) {
 	const { handleDeleteTable } = useDatabase();
 	const { user } = useApp();
 
@@ -79,6 +78,4 @@ const TableCard = memo(function TableCard({ table }: { table: Table }) {
 			</CardFooter>
 		</Card>
 	);
-});
-
-export default TableCard;
+}

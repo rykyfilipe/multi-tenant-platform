@@ -444,8 +444,27 @@ export const DatabaseProvider = ({
 				});
 			}
 
-			// Refresh tables from server to ensure consistency
-			await fetchTables();
+			// Update databases array if it contains the table
+			if (databases) {
+				setDatabases((prevDatabases) =>
+					prevDatabases?.map((db) => {
+						if (db.id === selectedDatabase.id && db.tables) {
+							return {
+								...db,
+								tables: db.tables.filter(
+									(table) => table.id.toString() !== id,
+								),
+							};
+						}
+						return db;
+					}) || null,
+				);
+			}
+
+			// Refresh tables from server to ensure consistency (but don't await to avoid blocking UI)
+			fetchTables().catch((error) => {
+				console.error("Error refreshing tables after deletion:", error);
+			});
 			showAlert(`Table "${tableName}" removed successfully`, "success");
 		} catch (error) {
 			console.error("Error deleting table:", error);

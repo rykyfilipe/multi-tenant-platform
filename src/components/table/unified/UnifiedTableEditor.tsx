@@ -42,6 +42,7 @@ import { ColumnHeader } from "./ColumnHeader";
 import { RowGrid } from "./RowGrid";
 import { ColumnPropertiesSidebar } from "./ColumnPropertiesSidebar";
 import { AddColumnForm } from "./AddColumnForm";
+import { InlineRowCreator } from "./InlineRowCreator";
 import { TableFilters } from "../rows/TableFilters";
 import { SaveChangesButton } from "../rows/SaveChangesButton";
 import AddRowForm from "../rows/AddRowForm";
@@ -77,6 +78,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
 	const [isAddingColumn, setIsAddingColumn] = useState(false);
 	const [isUpdatingColumn, setIsUpdatingColumn] = useState(false);
+	const [showInlineRowCreator, setShowInlineRowCreator] = useState(false);
 
 	// Permissions
 	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
@@ -304,6 +306,73 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	// Row management functions
 	const handleAddRow = useCallback(() => {
 		setShowAddRowForm(true);
+	}, []);
+
+	const handleInlineAddRow = useCallback(() => {
+		setShowInlineRowCreator(true);
+	}, []);
+
+	const handleInlineRowSave = useCallback(async (rowData: Record<string, any>) => {
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to add rows to this table", "error");
+			return;
+		}
+
+		setIsAddingRow(true);
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table?.databaseId || 0}/tables/${
+					table?.id || 0
+				}/rows/batch`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ 
+						rows: [{
+							cells: Object.entries(rowData).map(([columnId, value]) => ({
+								columnId: parseInt(columnId),
+								value: value,
+							}))
+						}]
+					}),
+				},
+			);
+
+			if (response.ok) {
+				const result = await response.json();
+				const savedRows = result.rows || [];
+
+				setRows((currentRows) => [...savedRows, ...currentRows]);
+				showAlert("Row added successfully!", "success");
+				setShowInlineRowCreator(false);
+
+				if (pagination) {
+					const newTotalRows = pagination.totalRows + savedRows.length;
+					await fetchRows(1, pagination.pageSize);
+				}
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to add row");
+			}
+		} catch (error: any) {
+			console.error("Error adding row:", error);
+			showAlert(error.message || "Failed to add row. Please try again.", "error");
+		} finally {
+			setIsAddingRow(false);
+		}
+	}, [token, tenantId, table?.databaseId, table?.id, tablePermissions, showAlert, setRows, pagination, fetchRows]);
+
+	const handleInlineRowCancel = useCallback(() => {
+		setShowInlineRowCreator(false);
 	}, []);
 
 	const handleAdd = useCallback(
@@ -583,24 +652,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 							<div className='flex items-center gap-3'>
 								<Button
-									onClick={() => {
-										setShowAddRowForm((prev) => !prev);
-										setServerError(null);
-									}}
-									disabled={!tablePermissions.canEditTable()}
+									onClick={handleInlineAddRow}
+									disabled={!tablePermissions.canEditTable() || showInlineRowCreator}
 									className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
 									size='lg'>
-									{showAddRowForm ? (
-										<>
-											<RefreshCw className='w-4 h-4 mr-2' />
-											Cancel
-										</>
-									) : (
-										<>
-											<Plus className='w-4 h-4 mr-2' />
-											Add Row
-										</>
-									)}
+									<Plus className='w-4 h-4 mr-2' />
+									Add Row
 								</Button>
 
 								<SaveChangesButton
@@ -764,6 +821,16 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 									<span className='text-xs font-medium text-muted-foreground'>Actions</span>
 								</div>
 							</div>
+
+							{/* Inline Row Creator */}
+							{showInlineRowCreator && (
+								<InlineRowCreator
+									columns={columns || []}
+									onSave={handleInlineRowSave}
+									onCancel={handleInlineRowCancel}
+									isSaving={isAddingRow}
+								/>
+							)}
 
 							{/* Data Rows */}
 							<div className="data-grid">

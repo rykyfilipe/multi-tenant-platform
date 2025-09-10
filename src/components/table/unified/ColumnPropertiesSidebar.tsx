@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { X, Save, AlertCircle } from "lucide-react";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
+import { SemanticColumnType, SEMANTIC_TYPE_LABELS, SEMANTIC_TYPE_GROUPS } from "@/lib/semantic-types";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -181,12 +182,31 @@ export function ColumnPropertiesSidebar({
 
 							<div className="space-y-2">
 								<Label htmlFor="semanticType">Semantic Type (Optional)</Label>
-								<Input
-									id="semanticType"
+								<Select
 									value={formData.semanticType || ""}
-									onChange={(e) => handleInputChange("semanticType", e.target.value)}
-									placeholder="e.g., email, phone, url"
-								/>
+									onValueChange={(value) => handleInputChange("semanticType", value)}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select semantic type" />
+									</SelectTrigger>
+									<SelectContent className="max-h-60">
+										{Object.entries(SEMANTIC_TYPE_GROUPS).map(([groupName, types]) => (
+											<div key={groupName}>
+												<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+													{groupName}
+												</div>
+												{types.map((type) => (
+													<SelectItem key={type} value={type}>
+														{SEMANTIC_TYPE_LABELS[type]}
+													</SelectItem>
+												))}
+											</div>
+										))}
+									</SelectContent>
+								</Select>
+								<p className="text-xs text-muted-foreground">
+									Choose what this column represents for better data organization
+								</p>
 							</div>
 
 							<div className="space-y-2">

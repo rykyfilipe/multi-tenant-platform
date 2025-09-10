@@ -72,47 +72,52 @@ export function ColumnHeader({ column, onEdit, onDelete, canEdit }: Props) {
 	return (
 		<div
 			className={cn(
-				"flex-1 min-w-[120px] border-r border-border/20 bg-muted/30 hover:bg-muted/50 transition-colors duration-200 group relative",
-				column.primary && "bg-primary/10 border-primary/20",
+				"flex-1 min-w-[120px] border-r border-border/20 bg-background hover:bg-muted/30 transition-all duration-200 group relative",
+				column.primary && "bg-primary/5 border-primary/30",
 				column.required && "border-l-2 border-l-orange-500"
 			)}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 		>
-			<div className="flex items-center justify-between p-3 h-full">
-				{/* Column Info */}
+			<div className="flex items-center justify-between px-4 py-3 h-full">
+				{/* Column Name - Clean and Simple */}
 				<div className="flex items-center gap-2 flex-1 min-w-0">
-					<div className="flex items-center gap-1 text-muted-foreground">
+					{/* Type Icon - Subtle */}
+					<div className="text-muted-foreground/60">
 						{getColumnIcon(column.type)}
-						{column.primary && (
-							<span className="text-xs font-bold text-primary">PK</span>
-						)}
-						{column.required && (
-							<span className="text-xs font-bold text-orange-500">*</span>
-						)}
 					</div>
 					
+					{/* Column Name */}
 					<div className="flex-1 min-w-0">
-						<div className="font-medium text-sm truncate" title={column.name}>
+						<div className="font-medium text-sm truncate text-foreground" title={column.name}>
 							{column.name}
 						</div>
-						<div className="text-xs text-muted-foreground truncate">
-							{column.type}
-							{column.semanticType && ` • ${column.semanticType}`}
-						</div>
+					</div>
+
+					{/* Badges - Only show when relevant */}
+					<div className="flex items-center gap-1">
+						{column.primary && (
+							<span className="text-xs font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">PK</span>
+						)}
+						{column.required && (
+							<span className="text-xs font-medium text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">*</span>
+						)}
+						{column.unique && (
+							<span className="text-xs font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">U</span>
+						)}
 					</div>
 				</div>
 
-				{/* Actions */}
-				{canEdit && (isHovered || column.primary || column.required) && (
+				{/* Actions - Only show on hover */}
+				{canEdit && isHovered && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="ghost"
 								size="sm"
-								className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-muted-foreground/10"
+								className="h-7 w-7 p-0 hover:bg-muted-foreground/10 transition-all duration-200"
 							>
-								<MoreHorizontal className="w-3 h-3" />
+								<MoreHorizontal className="w-4 h-4" />
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-48">
