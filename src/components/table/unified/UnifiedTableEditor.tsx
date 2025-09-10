@@ -172,8 +172,28 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 		if (isAddingColumn) return;
 
+		// OPTIMISTIC UPDATE: Add column immediately to UI
+		const tempColumn = {
+			id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+			...newColumn,
+			tableId: table.id,
+			createdAt: new Date().toISOString(),
+			isOptimistic: true,
+		};
+
+		if (setColumns && columns) {
+			setColumns([...columns, tempColumn]);
+		}
+
+		setNewColumn(null);
+		setShowAddColumnForm(false);
+		setShowColumnToolbar(false);
+		setSelectedColumn(null);
+		showAlert("Column added!", "success");
+
 		setIsAddingColumn(true);
 
+		// Background API call
 		try {
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns`,
@@ -189,14 +209,14 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 			if (response.ok) {
 				const createdColumns = await response.json();
-				showAlert("Column added successfully!", "success");
-				setNewColumn(null);
-				setShowAddColumnForm(false);
-				setShowColumnToolbar(false);
-				setSelectedColumn(null);
-
+				
+				// Replace optimistic column with real one
 				if (setColumns && columns) {
-					setColumns([...columns, ...createdColumns]);
+					setColumns(prev => 
+						prev.map(col => 
+							col.id === tempColumn.id ? { ...createdColumns[0], isOptimistic: false } : col
+						)
+					);
 				}
 
 				await refreshAfterChange();
@@ -206,6 +226,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			}
 		} catch (error: any) {
 			console.error("Error adding column:", error);
+			
+			// Revert optimistic update
+			if (setColumns && columns) {
+				setColumns(prev => prev.filter(col => col.id !== tempColumn.id));
+			}
+			
 			showAlert(error.message || "Failed to add column. Please try again.", "error");
 		} finally {
 			setIsAddingColumn(false);
@@ -233,8 +259,25 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			return;
 		}
 
+		// OPTIMISTIC UPDATE: Update column immediately in UI
+		const originalColumn = { ...selectedColumn };
+		const optimisticColumn = { ...selectedColumn, ...updatedColumn, isOptimistic: true };
+
+		if (setColumns && columns) {
+			setColumns(
+				columns.map((col) =>
+					col.id === selectedColumn.id ? optimisticColumn : col,
+				),
+			);
+		}
+
+		showAlert("Column updated!", "success");
+		setSelectedColumn(null);
+		setShowColumnToolbar(false);
+
 		setIsUpdatingColumn(true);
 
+		// Background API call
 		try {
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${selectedColumn.id}`,
@@ -250,18 +293,16 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 			if (response.ok) {
 				const updatedColumnData = await response.json();
-				showAlert("Column updated successfully!", "success");
 
+				// Replace optimistic column with real one
 				if (setColumns && columns) {
 					setColumns(
 						columns.map((col) =>
-							col.id === selectedColumn.id ? { ...col, ...updatedColumnData } : col,
+							col.id === selectedColumn.id ? { ...updatedColumnData, isOptimistic: false } : col,
 						),
 					);
 				}
 
-				setSelectedColumn(null);
-				setShowColumnToolbar(false);
 				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
@@ -269,6 +310,16 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			}
 		} catch (error: any) {
 			console.error("Error updating column:", error);
+			
+			// Revert optimistic update
+			if (setColumns && columns) {
+				setColumns(
+					columns.map((col) =>
+						col.id === selectedColumn.id ? originalColumn : col,
+					),
+				);
+			}
+			
 			showAlert(error.message || "Failed to update column. Please try again.", "error");
 		} finally {
 			setIsUpdatingColumn(false);
@@ -286,6 +337,18 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			return;
 		}
 
+		// OPTIMISTIC UPDATE: Remove column immediately from UI
+		const columnToDelete = columns?.find(col => col.id.toString() === columnId);
+		
+		if (setColumns && columns) {
+			setColumns(columns.filter((col) => col.id.toString() !== columnId));
+		}
+		
+		showAlert("Column deleted!", "success");
+		setSelectedColumn(null);
+		setShowColumnToolbar(false);
+
+		// Background API call
 		try {
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${columnId}`,
@@ -298,12 +361,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			);
 
 			if (response.ok) {
-				showAlert("Column deleted successfully!", "success");
-				if (setColumns && columns) {
-					setColumns(columns.filter((col) => col.id.toString() !== columnId));
-				}
-				setSelectedColumn(null);
-				setShowColumnToolbar(false);
 				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
@@ -311,6 +368,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			}
 		} catch (error: any) {
 			console.error("Error deleting column:", error);
+			
+			// Revert optimistic update
+			if (setColumns && columns && columnToDelete) {
+				setColumns([...columns, columnToDelete]);
+			}
+			
 			showAlert(error.message || "Failed to delete column. Please try again.", "error");
 		}
 	};
@@ -547,8 +610,13 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			return;
 		}
 
-		setDeletingRows(prev => new Set(prev).add(rowId));
+		// OPTIMISTIC UPDATE: Remove row immediately from UI
+		const rowToDelete = paginatedRows?.find(row => row.id.toString() === rowId);
+		
+		setRows((currentRows) => currentRows.filter(row => row.id.toString() !== rowId));
+		showAlert("Row deleted!", "success");
 
+		// Background API call
 		try {
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}`,
@@ -561,7 +629,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			);
 
 			if (response.ok) {
-				showAlert("Row deleted successfully!", "success");
 				await refreshAfterChange();
 			} else {
 				const errorData = await response.json();
@@ -569,13 +636,13 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			}
 		} catch (error: any) {
 			console.error("Error deleting row:", error);
+			
+			// Revert optimistic update
+			if (rowToDelete) {
+				setRows((currentRows) => [rowToDelete, ...currentRows]);
+			}
+			
 			showAlert(error.message || "Failed to delete row. Please try again.", "error");
-		} finally {
-			setDeletingRows(prev => {
-				const newSet = new Set(prev);
-				newSet.delete(rowId);
-				return newSet;
-			});
 		}
 	};
 
@@ -592,13 +659,13 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 		if (rowIds.length === 0) return;
 
-		// Add all rows to deleting state
-		setDeletingRows(prev => {
-			const newSet = new Set(prev);
-			rowIds.forEach(id => newSet.add(id));
-			return newSet;
-		});
+		// OPTIMISTIC UPDATE: Remove rows immediately from UI
+		const rowsToDelete = paginatedRows?.filter(row => rowIds.includes(row.id.toString())) || [];
+		
+		setRows((currentRows) => currentRows.filter(row => !rowIds.includes(row.id.toString())));
+		showAlert(`${rowIds.length} rows deleted!`, "success");
 
+		// Background API call
 		try {
 			// Delete rows in parallel
 			const deletePromises = rowIds.map(rowId =>
@@ -617,21 +684,27 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			const failedDeletes = responses.filter(response => !response.ok);
 
 			if (failedDeletes.length === 0) {
-				showAlert(`${rowIds.length} rows deleted successfully!`, "success");
 				await refreshAfterChange();
 			} else {
+				// Revert optimistic update for failed deletes
+				const failedRowIds = rowIds.filter((_, index) => !responses[index].ok);
+				const failedRows = rowsToDelete.filter(row => failedRowIds.includes(row.id.toString()));
+				
+				if (failedRows.length > 0) {
+					setRows((currentRows) => [...failedRows, ...currentRows]);
+				}
+				
 				showAlert(`Failed to delete ${failedDeletes.length} out of ${rowIds.length} rows`, "error");
 			}
 		} catch (error: any) {
 			console.error("Error deleting multiple rows:", error);
+			
+			// Revert optimistic update
+			if (rowsToDelete.length > 0) {
+				setRows((currentRows) => [...rowsToDelete, ...currentRows]);
+			}
+			
 			showAlert(error.message || "Failed to delete rows. Please try again.", "error");
-		} finally {
-			// Remove all rows from deleting state
-			setDeletingRows(prev => {
-				const newSet = new Set(prev);
-				rowIds.forEach(id => newSet.delete(id));
-				return newSet;
-			});
 		}
 	};
 
@@ -804,6 +877,25 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				</div>
 			</div>
 
+			{/* Column Toolbar - Always visible at top */}
+			<div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+				<ColumnToolbar
+					columns={columns || []}
+					selectedColumn={selectedColumn}
+					onSelectColumn={handleSelectColumn}
+					onSave={handleUpdateColumn}
+					onDelete={handleDeleteColumn}
+					onAdd={handleAddColumn}
+					tables={tables || []}
+					isSubmitting={isAddingColumn || isUpdatingColumn}
+					isOpen={showColumnToolbar}
+					onClose={() => {
+						setShowColumnToolbar(false);
+						setSelectedColumn(null);
+					}}
+				/>
+			</div>
+
 			{/* Main Content */}
 			<div className='w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-auto'>
 				{/* Add Row Form */}
@@ -953,24 +1045,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				</div>
 			</div>
 
-			{/* Column Toolbar - Always visible */}
-			<div className="mb-6">
-				<ColumnToolbar
-					columns={columns || []}
-					selectedColumn={selectedColumn}
-					onSelectColumn={handleSelectColumn}
-					onSave={handleUpdateColumn}
-					onDelete={handleDeleteColumn}
-					onAdd={handleAddColumn}
-					tables={tables || []}
-					isSubmitting={isAddingColumn || isUpdatingColumn}
-					isOpen={showColumnToolbar}
-					onClose={() => {
-						setShowColumnToolbar(false);
-						setSelectedColumn(null);
-					}}
-				/>
-			</div>
 
 			{/* Add Column Form Modal */}
 			{showAddColumnForm && (

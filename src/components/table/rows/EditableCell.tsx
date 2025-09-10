@@ -598,52 +598,59 @@ export function EditableCell({
 		if (e.key === "Escape") onCancel();
 	};
 
-	// Auto-save on value change with debounce
+	// Auto-save on value change with debounce (only for non-reference columns)
 	useEffect(() => {
 		if (!isEditing) return;
+
+		// Don't auto-save reference columns - they should be saved manually
+		if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) return;
 
 		const timeoutId = setTimeout(() => {
 			// Only save if value has actually changed from the original
 			const originalValue = hasPendingChange ? pendingValue : cell?.value;
 			if (value !== originalValue) {
-				// Prevent saving if there are invalid references
-				if (
-					column.type === USER_FRIENDLY_COLUMN_TYPES.link &&
-					hasInvalidReferences
-				) {
-					return; // Don't save invalid references
-				}
-
-				// Process value before saving for reference columns
-				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-					const processedValue = Array.isArray(value)
-						? value
-						: value
-						? [value]
-						: [];
-					onSave(processedValue);
-				} else {
-					onSave(value);
-				}
+				onSave(value);
 			}
-		}, 500); // 500ms debounce
+		}, 1000); // 1 second debounce for better UX
 
 		return () => clearTimeout(timeoutId);
-	}, [value, isEditing, column?.type, hasInvalidReferences, hasPendingChange, pendingValue, cell?.value, onSave]);
+	}, [value, isEditing, column?.type, hasPendingChange, pendingValue, cell?.value, onSave]);
 
-	// Click outside to cancel editing
+	// Click outside to cancel editing - only on actual click, not focus events
 	useEffect(() => {
 		if (!isEditing) return;
 
 		const handleClickOutside = (event: MouseEvent) => {
-			if (editContainerRef.current && !editContainerRef.current.contains(event.target as Node)) {
-				onCancel();
+			// Only handle actual mouse clicks, not programmatic events
+			if (event.isTrusted && editContainerRef.current && !editContainerRef.current.contains(event.target as Node)) {
+				// For reference columns, save before canceling
+				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+					if (!hasInvalidReferences) {
+						const processedValue = Array.isArray(value)
+							? value
+							: value
+							? [value]
+							: [];
+						onSave(processedValue);
+					} else {
+						onCancel();
+					}
+				} else {
+					onCancel();
+				}
 			}
 		};
 
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isEditing, onCancel]);
+		// Use a small delay to prevent immediate cancellation on double-click
+		const timeoutId = setTimeout(() => {
+			document.addEventListener('mousedown', handleClickOutside);
+		}, 100);
+
+		return () => {
+			clearTimeout(timeoutId);
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isEditing, onCancel, column?.type, hasInvalidReferences, value, onSave]);
 
 
 	let referenceSelect: JSX.Element | null = null;
