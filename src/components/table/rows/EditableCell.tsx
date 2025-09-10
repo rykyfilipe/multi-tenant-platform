@@ -486,6 +486,9 @@ export function EditableCell({
 		return initialValue;
 	});
 
+	// Ref pentru container-ul de editare
+	const editContainerRef = useRef<HTMLDivElement>(null);
+
 	// State pentru referințe invalide
 	const [hasInvalidReferences, setHasInvalidReferences] = useState(false);
 
@@ -628,6 +631,20 @@ export function EditableCell({
 		return () => clearTimeout(timeoutId);
 	}, [value, isEditing, column?.type, hasInvalidReferences, hasPendingChange, pendingValue, cell?.value, onSave]);
 
+	// Click outside to cancel editing
+	useEffect(() => {
+		if (!isEditing) return;
+
+		const handleClickOutside = (event: MouseEvent) => {
+			if (editContainerRef.current && !editContainerRef.current.contains(event.target as Node)) {
+				onCancel();
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [isEditing, onCancel]);
+
 
 	let referenceSelect: JSX.Element | null = null;
 	if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
@@ -687,7 +704,7 @@ export function EditableCell({
 		}
 
 		return (
-			<div className='w-full'>
+			<div ref={editContainerRef} className='w-full'>
 				{column.type === "boolean" ? (
 					<Switch
 						checked={value === true}
@@ -706,7 +723,7 @@ export function EditableCell({
 					/>
 				) : (
 					<Input
-						className='w-full min-w-[200px] sm:min-w-[250px] md:min-w-[300px] text-base sm:text-lg'
+						className='w-full border-0 shadow-none focus:ring-0 focus:ring-offset-0 bg-transparent text-sm font-medium px-0 py-1'
 						type={
 							column.type === USER_FRIENDLY_COLUMN_TYPES.date
 								? "date"
@@ -718,6 +735,7 @@ export function EditableCell({
 						onChange={(e) => setValue(e.target.value)}
 						onKeyDown={handleKey}
 						autoFocus
+						placeholder={column.type === "date" ? "YYYY-MM-DD" : "Enter value..."}
 					/>
 				)}
 			</div>
