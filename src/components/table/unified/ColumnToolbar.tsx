@@ -196,8 +196,8 @@ export function ColumnToolbar({
 			'date_of_birth': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
 			'created_at': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
 			'updated_at': { type: USER_FRIENDLY_COLUMN_TYPES.date, required: true },
-			'is_active': { type: USER_FRIENDLY_COLUMN_TYPES.boolean, required: true },
-			'is_verified': { type: USER_FRIENDLY_COLUMN_TYPES.boolean, required: true },
+			'is_active': { type: USER_FRIENDLY_COLUMN_TYPES.yesNo, required: true },
+			'is_verified': { type: USER_FRIENDLY_COLUMN_TYPES.yesNo, required: true },
 			'status': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
 			'category': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
 			'priority': { type: USER_FRIENDLY_COLUMN_TYPES.customArray, required: true },
@@ -408,7 +408,7 @@ export function ColumnToolbar({
 					{/* Default Value - Dynamic based on column type */}
 					<div className="flex items-center gap-2 min-w-0">
 						<Label htmlFor="defaultValue" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Default</Label>
-						{currentData?.type === USER_FRIENDLY_COLUMN_TYPES.boolean ? (
+						{currentData?.type === USER_FRIENDLY_COLUMN_TYPES.yesNo ? (
 							<Select
 								value={currentData?.defaultValue || ""}
 								onValueChange={(value) => handleInputChange("defaultValue", value)}
