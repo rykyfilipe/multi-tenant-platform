@@ -170,93 +170,81 @@ export function ColumnToolbar({
 	const isDisabled = !isOpen;
 
 	return (
-		<div className={`bg-card border border-border/20 rounded-lg shadow-sm transition-all duration-200 ${
+		<div className={`bg-white border border-neutral-200 rounded-2xl shadow-md transition-all duration-200 ${
 			isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
 		}`}>
-			<div className="p-4">
-				{/* Header */}
-				<div className="flex items-center gap-3 mb-4">
-					<div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-						<Settings className="w-4 h-4 text-primary" />
-					</div>
-					<div>
-						<h3 className="font-semibold text-foreground">
-							{isDisabled ? "Column Editor" : isAddingNew ? "Add New Column" : `Edit Column: ${selectedColumn?.name}`}
-						</h3>
-						<p className="text-xs text-muted-foreground">
-							{isDisabled ? "Select a column to edit or add a new one" : isAddingNew ? "Configure column properties" : "Update column settings"}
-						</p>
-					</div>
-				</div>
-
-				{/* Column Selector */}
-				<div className="flex items-center gap-4 mb-4">
-					<Label className="text-sm font-medium whitespace-nowrap">Column:</Label>
-					<Select
-						value={selectedColumn?.id?.toString() || "new"}
-						onValueChange={(value) => {
-							if (value === "new") {
-								onSelectColumn(null);
-							} else {
-								const column = columns.find(col => col.id.toString() === value);
-								onSelectColumn(column || null);
-							}
-						}}
-						disabled={isDisabled}
-					>
-						<SelectTrigger className="w-48">
-							<SelectValue placeholder={isDisabled ? "Select a column" : "Select column"} />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="new">
-								<div className="flex items-center gap-2">
-									<Plus className="w-4 h-4" />
-									Add New Column
-								</div>
-							</SelectItem>
-							{columns.map((column) => (
-								<SelectItem key={column.id} value={column.id.toString()}>
+			{/* Modern Horizontal Toolbar */}
+			<div className="px-4 py-2">
+				<div className="flex items-center gap-4 flex-wrap">
+					{/* Column Selector */}
+					<div className="flex items-center gap-2 min-w-0">
+						<Settings className="w-4 h-4 text-neutral-600 flex-shrink-0" />
+						<Select
+							value={selectedColumn?.id?.toString() || "new"}
+							onValueChange={(value) => {
+								if (value === "new") {
+									onSelectColumn(null);
+								} else {
+									const column = columns.find(col => col.id.toString() === value);
+									onSelectColumn(column || null);
+								}
+							}}
+							disabled={isDisabled}
+						>
+							<SelectTrigger className="w-40 h-8 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
+								<SelectValue placeholder={isDisabled ? "Select column" : "Column"} />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="new">
 									<div className="flex items-center gap-2">
-										<span className="font-medium">{column.name}</span>
-										<span className="text-xs text-muted-foreground">({column.type})</span>
+										<Plus className="w-3 h-3" />
+										Add New
 									</div>
 								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+								{columns.map((column) => (
+									<SelectItem key={column.id} value={column.id.toString()}>
+										<div className="flex items-center gap-2">
+											<span className="font-medium">{column.name}</span>
+											<span className="text-xs text-neutral-500">({column.type})</span>
+										</div>
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
 
-				{/* Form Fields */}
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+					{/* Separator */}
+					<div className="w-px h-6 bg-neutral-200" />
+
 					{/* Column Name */}
-					<div className="space-y-2">
-						<Label htmlFor="name" className="text-xs font-medium">Name</Label>
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="name" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Name</Label>
 						<Input
 							id="name"
 							value={currentData?.name || ""}
 							onChange={(e) => handleInputChange("name", e.target.value)}
-							className={cn("h-8", errors.name && "border-destructive")}
+							className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.name && "border-red-500")}
 							placeholder="Column name"
 							disabled={isDisabled}
 						/>
 						{errors.name && (
-							<p className="text-xs text-destructive flex items-center gap-1">
+							<div className="flex items-center gap-1 text-xs text-red-600">
 								<AlertCircle className="w-3 h-3" />
 								{errors.name}
-							</p>
+							</div>
 						)}
 					</div>
 
 					{/* Data Type */}
-					<div className="space-y-2">
-						<Label htmlFor="type" className="text-xs font-medium">Type</Label>
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="type" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Type</Label>
 						<Select
 							value={currentData?.type || ""}
 							onValueChange={(value) => handleInputChange("type", value)}
 							disabled={isDisabled}
 						>
-							<SelectTrigger className={cn("h-8", errors.type && "border-destructive")}>
-								<SelectValue placeholder="Select type" />
+							<SelectTrigger className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.type && "border-red-500")}>
+								<SelectValue placeholder="Type" />
 							</SelectTrigger>
 							<SelectContent>
 								{Object.entries(USER_FRIENDLY_COLUMN_TYPES).map(([key, value]) => (
@@ -267,28 +255,28 @@ export function ColumnToolbar({
 							</SelectContent>
 						</Select>
 						{errors.type && (
-							<p className="text-xs text-destructive flex items-center gap-1">
+							<div className="flex items-center gap-1 text-xs text-red-600">
 								<AlertCircle className="w-3 h-3" />
 								{errors.type}
-							</p>
+							</div>
 						)}
 					</div>
 
 					{/* Semantic Type */}
-					<div className="space-y-2">
-						<Label htmlFor="semanticType" className="text-xs font-medium">Semantic Type</Label>
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="semanticType" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Semantic</Label>
 						<Select
 							value={currentData?.semanticType || ""}
 							onValueChange={(value) => handleInputChange("semanticType", value)}
 							disabled={isDisabled}
 						>
-							<SelectTrigger className="h-8">
-								<SelectValue placeholder="Select semantic type" />
+							<SelectTrigger className="h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
+								<SelectValue placeholder="Semantic" />
 							</SelectTrigger>
 							<SelectContent className="max-h-60">
 								{Object.entries(SEMANTIC_TYPE_GROUPS).map(([groupName, types]) => (
 									<div key={groupName}>
-										<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+										<div className="px-2 py-1.5 text-xs font-semibold text-neutral-500 bg-neutral-50">
 											{groupName}
 										</div>
 										{types.map((type) => (
@@ -303,29 +291,29 @@ export function ColumnToolbar({
 					</div>
 
 					{/* Default Value */}
-					<div className="space-y-2">
-						<Label htmlFor="defaultValue" className="text-xs font-medium">Default Value</Label>
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="defaultValue" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Default</Label>
 						<Input
 							id="defaultValue"
 							value={currentData?.defaultValue || ""}
 							onChange={(e) => handleInputChange("defaultValue", e.target.value)}
-							className="h-8"
-							placeholder="Default value"
+							className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+							placeholder="Default"
 							disabled={isDisabled}
 						/>
 					</div>
 
 					{/* Reference Table */}
 					{currentData?.type === "reference" && (
-						<div className="space-y-2">
-							<Label htmlFor="referenceTableId" className="text-xs font-medium">Reference Table</Label>
+						<div className="flex items-center gap-2 min-w-0">
+							<Label htmlFor="referenceTableId" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Reference</Label>
 							<Select
 								value={currentData?.referenceTableId?.toString() || ""}
 								onValueChange={(value) => handleInputChange("referenceTableId", parseInt(value))}
 								disabled={isDisabled}
 							>
-								<SelectTrigger className={cn("h-8", errors.referenceTableId && "border-destructive")}>
-									<SelectValue placeholder="Select table" />
+								<SelectTrigger className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.referenceTableId && "border-red-500")}>
+									<SelectValue placeholder="Table" />
 								</SelectTrigger>
 								<SelectContent>
 									{tables.map((table) => (
@@ -336,64 +324,57 @@ export function ColumnToolbar({
 								</SelectContent>
 							</Select>
 							{errors.referenceTableId && (
-								<p className="text-xs text-destructive flex items-center gap-1">
+								<div className="flex items-center gap-1 text-xs text-red-600">
 									<AlertCircle className="w-3 h-3" />
 									{errors.referenceTableId}
-								</p>
+								</div>
 							)}
 						</div>
 					)}
-				</div>
 
-				{/* Switches */}
-				<div className="flex items-center gap-6 mb-4">
-					<div className="flex items-center gap-2">
-						<Switch
-							id="required"
-							checked={currentData?.required || false}
-							onCheckedChange={(checked) => handleInputChange("required", checked)}
-							disabled={isDisabled}
-						/>
-						<Label htmlFor="required" className="text-xs font-medium">Required</Label>
+					{/* Separator */}
+					<div className="w-px h-6 bg-neutral-200" />
+
+					{/* Switches */}
+					<div className="flex items-center gap-4">
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="required"
+								checked={currentData?.required || false}
+								onCheckedChange={(checked) => handleInputChange("required", checked)}
+								disabled={isDisabled}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="required" className="text-xs font-medium text-neutral-700">Required</Label>
+						</div>
+
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="unique"
+								checked={currentData?.unique || false}
+								onCheckedChange={(checked) => handleInputChange("unique", checked)}
+								disabled={isDisabled}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="unique" className="text-xs font-medium text-neutral-700">Unique</Label>
+						</div>
+
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="primary"
+								checked={currentData?.primary || false}
+								onCheckedChange={(checked) => handleInputChange("primary", checked)}
+								disabled={isDisabled}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="primary" className="text-xs font-medium text-neutral-700">Primary</Label>
+						</div>
 					</div>
 
-					<div className="flex items-center gap-2">
-						<Switch
-							id="unique"
-							checked={currentData?.unique || false}
-							onCheckedChange={(checked) => handleInputChange("unique", checked)}
-							disabled={isDisabled}
-						/>
-						<Label htmlFor="unique" className="text-xs font-medium">Unique</Label>
-					</div>
+					{/* Separator */}
+					<div className="w-px h-6 bg-neutral-200" />
 
-					<div className="flex items-center gap-2">
-						<Switch
-							id="primary"
-							checked={currentData?.primary || false}
-							onCheckedChange={(checked) => handleInputChange("primary", checked)}
-							disabled={isDisabled}
-						/>
-						<Label htmlFor="primary" className="text-xs font-medium">Primary Key</Label>
-					</div>
-				</div>
-
-				{/* Description */}
-				<div className="space-y-2 mb-4">
-					<Label htmlFor="description" className="text-xs font-medium">Description</Label>
-					<Textarea
-						id="description"
-						value={currentData?.description || ""}
-						onChange={(e) => handleInputChange("description", e.target.value)}
-						placeholder="Column description..."
-						rows={2}
-						className="resize-none"
-						disabled={isDisabled}
-					/>
-				</div>
-
-				{/* Actions */}
-				<div className="flex items-center justify-between pt-4 border-t border-border/20">
+					{/* Actions */}
 					<div className="flex items-center gap-2">
 						{selectedColumn && !selectedColumn.primary && (
 							<Button
@@ -401,35 +382,50 @@ export function ColumnToolbar({
 								size="sm"
 								onClick={handleDelete}
 								disabled={isDisabled || isSubmitting}
-								className="text-destructive hover:text-destructive hover:bg-destructive/10"
+								className="h-8 px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
 							>
-								<Trash2 className="w-4 h-4 mr-2" />
-								Delete Column
+								<Trash2 className="w-3 h-3 mr-1" />
+								Delete
 							</Button>
 						)}
-					</div>
 
-					<div className="flex items-center gap-2">
 						<Button
 							size="sm"
 							onClick={handleSave}
 							disabled={isDisabled || isSubmitting}
-							className="bg-primary hover:bg-primary/90"
+							className="h-8 px-4 text-xs bg-neutral-900 hover:bg-neutral-800 text-white"
 						>
 							{isSubmitting ? (
 								<>
-									<div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+									<div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
 									{isAddingNew ? "Adding..." : "Saving..."}
 								</>
 							) : (
 								<>
-									<Save className="w-4 h-4 mr-2" />
-									{isAddingNew ? "Add Column" : "Save Changes"}
+									<Save className="w-3 h-3 mr-1" />
+									{isAddingNew ? "Add Column" : "Save"}
 								</>
 							)}
 						</Button>
 					</div>
 				</div>
+
+				{/* Description - Compact horizontal input */}
+				{currentData?.description && (
+					<div className="mt-3 pt-3 border-t border-neutral-100">
+						<div className="flex items-center gap-2">
+							<Label htmlFor="description" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Description</Label>
+							<Input
+								id="description"
+								value={currentData?.description || ""}
+								onChange={(e) => handleInputChange("description", e.target.value)}
+								placeholder="Column description..."
+								className="h-7 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+								disabled={isDisabled}
+							/>
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 	);

@@ -83,38 +83,37 @@ export function AddColumnForm({
 	if (!newColumn) return null;
 
 	return (
-		<form onSubmit={handleSubmit} className="space-y-6">
-			{/* Basic Properties */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-base">Basic Properties</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="name">Column Name</Label>
+		<div className="bg-white border border-neutral-200 rounded-2xl shadow-md transition-all duration-200">
+			{/* Modern Horizontal Toolbar */}
+			<form onSubmit={handleSubmit} className="px-4 py-2">
+				<div className="flex items-center gap-4 flex-wrap">
+					{/* Column Name */}
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="name" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Name</Label>
 						<Input
 							id="name"
 							value={newColumn.name || ""}
 							onChange={(e) => handleInputChange("name", e.target.value)}
-							className={cn(errors.name && "border-destructive")}
-							placeholder="Enter column name..."
+							className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.name && "border-red-500")}
+							placeholder="Column name"
 						/>
 						{errors.name && (
-							<p className="text-sm text-destructive flex items-center gap-1">
+							<div className="flex items-center gap-1 text-xs text-red-600">
 								<AlertCircle className="w-3 h-3" />
 								{errors.name}
-							</p>
+							</div>
 						)}
 					</div>
 
-					<div className="space-y-2">
-						<Label htmlFor="type">Data Type</Label>
+					{/* Data Type */}
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="type" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Type</Label>
 						<Select
 							value={newColumn.type || ""}
 							onValueChange={(value) => handleInputChange("type", value)}
 						>
-							<SelectTrigger className={cn(errors.type && "border-destructive")}>
-								<SelectValue placeholder="Select data type" />
+							<SelectTrigger className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.type && "border-red-500")}>
+								<SelectValue placeholder="Type" />
 							</SelectTrigger>
 							<SelectContent>
 								{Object.entries(USER_FRIENDLY_COLUMN_TYPES).map(([key, value]) => (
@@ -125,26 +124,27 @@ export function AddColumnForm({
 							</SelectContent>
 						</Select>
 						{errors.type && (
-							<p className="text-sm text-destructive flex items-center gap-1">
+							<div className="flex items-center gap-1 text-xs text-red-600">
 								<AlertCircle className="w-3 h-3" />
 								{errors.type}
-							</p>
+							</div>
 						)}
 					</div>
 
-					<div className="space-y-2">
-						<Label htmlFor="semanticType">Semantic Type (Optional)</Label>
+					{/* Semantic Type */}
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="semanticType" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Semantic</Label>
 						<Select
 							value={newColumn.semanticType || ""}
 							onValueChange={(value) => handleInputChange("semanticType", value)}
 						>
-							<SelectTrigger>
-								<SelectValue placeholder="Select semantic type" />
+							<SelectTrigger className="h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
+								<SelectValue placeholder="Semantic" />
 							</SelectTrigger>
 							<SelectContent className="max-h-60">
 								{Object.entries(SEMANTIC_TYPE_GROUPS).map(([groupName, types]) => (
 									<div key={groupName}>
-										<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+										<div className="px-2 py-1.5 text-xs font-semibold text-neutral-500 bg-neutral-50">
 											{groupName}
 										</div>
 										{types.map((type) => (
@@ -156,95 +156,30 @@ export function AddColumnForm({
 								))}
 							</SelectContent>
 						</Select>
-						<p className="text-xs text-muted-foreground">
-							Choose what this column represents for better data organization
-						</p>
 					</div>
 
-					<div className="space-y-2">
-						<Label htmlFor="description">Description (Optional)</Label>
-						<Textarea
-							id="description"
-							value={newColumn.description || ""}
-							onChange={(e) => handleInputChange("description", e.target.value)}
-							placeholder="Describe what this column stores..."
-							rows={3}
-						/>
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Constraints */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-base">Constraints</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="flex items-center justify-between">
-						<div className="space-y-1">
-							<Label htmlFor="required">Required</Label>
-							<p className="text-xs text-muted-foreground">
-								This column must have a value
-							</p>
-						</div>
-						<Switch
-							id="required"
-							checked={newColumn.required || false}
-							onCheckedChange={(checked) => handleInputChange("required", checked)}
+					{/* Default Value */}
+					<div className="flex items-center gap-2 min-w-0">
+						<Label htmlFor="defaultValue" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Default</Label>
+						<Input
+							id="defaultValue"
+							value={newColumn.defaultValue || ""}
+							onChange={(e) => handleInputChange("defaultValue", e.target.value)}
+							className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+							placeholder="Default"
 						/>
 					</div>
 
-					<div className="flex items-center justify-between">
-						<div className="space-y-1">
-							<Label htmlFor="unique">Unique</Label>
-							<p className="text-xs text-muted-foreground">
-								All values in this column must be unique
-							</p>
-						</div>
-						<Switch
-							id="unique"
-							checked={newColumn.unique || false}
-							onCheckedChange={(checked) => handleInputChange("unique", checked)}
-						/>
-					</div>
-
-					<div className="flex items-center justify-between">
-						<div className="space-y-1">
-							<Label htmlFor="primary">Primary Key</Label>
-							<p className="text-xs text-muted-foreground">
-								This column is the primary key for the table
-							</p>
-						</div>
-						<Switch
-							id="primary"
-							checked={newColumn.primary || false}
-							onCheckedChange={(checked) => handleInputChange("primary", checked)}
-						/>
-						{errors.primary && (
-							<p className="text-sm text-destructive flex items-center gap-1">
-								<AlertCircle className="w-3 h-3" />
-								{errors.primary}
-							</p>
-						)}
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Reference Settings */}
-			{newColumn.type === "reference" && (
-				<Card>
-					<CardHeader className="pb-3">
-						<CardTitle className="text-base">Reference Settings</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="referenceTableId">Reference Table</Label>
+					{/* Reference Table */}
+					{newColumn.type === "reference" && (
+						<div className="flex items-center gap-2 min-w-0">
+							<Label htmlFor="referenceTableId" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Reference</Label>
 							<Select
 								value={newColumn.referenceTableId?.toString() || ""}
 								onValueChange={(value) => handleInputChange("referenceTableId", parseInt(value))}
 							>
-								<SelectTrigger className={cn(errors.referenceTableId && "border-destructive")}>
-									<SelectValue placeholder="Select reference table" />
+								<SelectTrigger className={cn("h-8 w-32 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500", errors.referenceTableId && "border-red-500")}>
+									<SelectValue placeholder="Table" />
 								</SelectTrigger>
 								<SelectContent>
 									{tables.map((table) => (
@@ -255,54 +190,92 @@ export function AddColumnForm({
 								</SelectContent>
 							</Select>
 							{errors.referenceTableId && (
-								<p className="text-sm text-destructive flex items-center gap-1">
+								<div className="flex items-center gap-1 text-xs text-red-600">
 									<AlertCircle className="w-3 h-3" />
 									{errors.referenceTableId}
-								</p>
+								</div>
 							)}
 						</div>
-					</CardContent>
-				</Card>
-			)}
-
-			{/* Default Value */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-base">Default Value</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="defaultValue">Default Value (Optional)</Label>
-						<Input
-							id="defaultValue"
-							value={newColumn.defaultValue || ""}
-							onChange={(e) => handleInputChange("defaultValue", e.target.value)}
-							placeholder="Enter default value..."
-						/>
-						<p className="text-xs text-muted-foreground">
-							This value will be used when no value is provided for this column
-						</p>
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Submit Button */}
-			<div className="flex justify-end">
-				<Button 
-					type="submit"
-					disabled={isSubmitting}
-					className="bg-primary hover:bg-primary/90"
-				>
-					{isSubmitting ? (
-						<>
-							<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-							Adding Column...
-						</>
-					) : (
-						"Add Column"
 					)}
-				</Button>
-			</div>
-		</form>
+
+					{/* Separator */}
+					<div className="w-px h-6 bg-neutral-200" />
+
+					{/* Switches */}
+					<div className="flex items-center gap-4">
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="required"
+								checked={newColumn.required || false}
+								onCheckedChange={(checked) => handleInputChange("required", checked)}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="required" className="text-xs font-medium text-neutral-700">Required</Label>
+						</div>
+
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="unique"
+								checked={newColumn.unique || false}
+								onCheckedChange={(checked) => handleInputChange("unique", checked)}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="unique" className="text-xs font-medium text-neutral-700">Unique</Label>
+						</div>
+
+						<div className="flex items-center gap-1.5">
+							<Switch
+								id="primary"
+								checked={newColumn.primary || false}
+								onCheckedChange={(checked) => handleInputChange("primary", checked)}
+								className="data-[state=checked]:bg-neutral-900"
+							/>
+							<Label htmlFor="primary" className="text-xs font-medium text-neutral-700">Primary</Label>
+						</div>
+						{errors.primary && (
+							<div className="flex items-center gap-1 text-xs text-red-600">
+								<AlertCircle className="w-3 h-3" />
+								{errors.primary}
+							</div>
+						)}
+					</div>
+
+					{/* Separator */}
+					<div className="w-px h-6 bg-neutral-200" />
+
+					{/* Submit Button */}
+					<Button 
+						type="submit"
+						disabled={isSubmitting}
+						className="h-8 px-4 text-xs bg-neutral-900 hover:bg-neutral-800 text-white"
+					>
+						{isSubmitting ? (
+							<>
+								<div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+								Adding...
+							</>
+						) : (
+							"Add Column"
+						)}
+					</Button>
+				</div>
+
+				{/* Description - Compact horizontal input */}
+				{newColumn.description && (
+					<div className="mt-3 pt-3 border-t border-neutral-100">
+						<div className="flex items-center gap-2">
+							<Label htmlFor="description" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Description</Label>
+							<Input
+								id="description"
+								value={newColumn.description || ""}
+								onChange={(e) => handleInputChange("description", e.target.value)}
+								placeholder="Column description..."
+								className="h-7 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500"
+							/>
+						</div>
+					</div>
+				)}
+			</form>
+		</div>
 	);
 }
