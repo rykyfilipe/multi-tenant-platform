@@ -64,27 +64,27 @@ export function ColumnHeader({ column, onEdit, onDelete, canEdit }: Props) {
 	return (
 		<div
 			className={cn(
-				"flex-1 min-w-[120px] border-r border-border/20 bg-background hover:bg-muted/30 transition-all duration-200 group relative",
-				column.primary && "bg-primary/5 border-primary/30",
+				"flex-1 min-w-[120px] border-r border-neutral-200 bg-neutral-50 hover:bg-neutral-100 transition-all duration-200 group relative",
+				column.primary && "bg-blue-50 border-blue-200",
 				column.required && "border-l-2 border-l-orange-500",
-				canEdit && "cursor-pointer hover:bg-muted/40"
+				canEdit && "cursor-pointer hover:bg-neutral-100"
 			)}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 			onClick={handleColumnClick}
 			title={canEdit ? "Click to edit column" : "Column"}
 		>
-			<div className="flex items-center px-4 py-3 h-full">
+			<div className="flex items-center px-4 py-2 h-full">
 				{/* Column Name - Clean and Simple */}
 				<div className="flex items-center gap-2 flex-1 min-w-0">
 					{/* Type Icon - Subtle */}
-					<div className="text-muted-foreground/60">
+					<div className="text-neutral-500">
 						{getColumnIcon(column.type)}
 					</div>
 					
 					{/* Column Name */}
 					<div className="flex-1 min-w-0">
-						<div className="font-medium text-sm truncate text-foreground" title={column.name}>
+						<div className="font-semibold text-sm truncate text-neutral-700" title={column.name}>
 							{column.name}
 						</div>
 					</div>
@@ -92,13 +92,13 @@ export function ColumnHeader({ column, onEdit, onDelete, canEdit }: Props) {
 					{/* Badges - Only show when relevant */}
 					<div className="flex items-center gap-1">
 						{column.primary && (
-							<span className="text-xs font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">PK</span>
+							<span className="text-xs font-semibold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">PK</span>
 						)}
 						{column.required && (
-							<span className="text-xs font-medium text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">*</span>
+							<span className="text-xs font-semibold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">*</span>
 						)}
 						{column.unique && (
-							<span className="text-xs font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">U</span>
+							<span className="text-xs font-semibold text-green-600 bg-green-100 px-1.5 py-0.5 rounded">U</span>
 						)}
 					</div>
 				</div>

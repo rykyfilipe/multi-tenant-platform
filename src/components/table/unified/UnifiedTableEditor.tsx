@@ -29,7 +29,13 @@ import {
 	Trash2,
 	Move,
 	Eye,
-	EyeOff
+	EyeOff,
+	Search,
+	SortAsc,
+	SortDesc,
+	GripVertical,
+	ChevronLeft,
+	ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { fadeInUp, spinAnimation } from "@/lib/animations";
@@ -51,7 +57,7 @@ import { cn } from "@/lib/utils";
 
 interface Props {
 	columns: Column[] | null;
-	setColumns: (cols: Column[] | null) => void;
+	setColumns: (cols: Column[] | null | ((prev: Column[] | null) => Column[] | null)) => void;
 	table: Table;
 	refreshTable?: () => void;
 }
@@ -82,6 +88,11 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [showInlineRowCreator, setShowInlineRowCreator] = useState(false);
 	const [showColumnToolbar, setShowColumnToolbar] = useState(false);
 	const [selectedColumn, setSelectedColumn] = useState<Column | null>(null);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [sortColumn, setSortColumn] = useState<string | null>(null);
+	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+	const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+	const [activeCell, setActiveCell] = useState<{ rowId: string; columnId: string } | null>(null);
 
 	// Permissions
 	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
@@ -172,12 +183,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 		// OPTIMISTIC UPDATE: Add column immediately to UI
 		const tempColumn = {
-			id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+			id: Date.now(), // Use timestamp as temporary ID
 			...columnData,
 			tableId: table.id,
 			createdAt: new Date().toISOString(),
 			isOptimistic: true,
-		};
+		} as Column;
 
 		if (setColumns && columns) {
 			setColumns([...columns, tempColumn]);
@@ -210,10 +221,10 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				
 				// Replace optimistic column with real one
 				if (setColumns && columns) {
-					setColumns(prev => 
-						prev.map(col => 
-							col.id === tempColumn.id ? { ...createdColumns[0], isOptimistic: false } : col
-						)
+					setColumns((prev: Column[] | null) => 
+						prev ? prev.map((col: Column) => 
+							col.id === tempColumn.id ? { ...createdColumns[0], isOptimistic: false } as Column : col
+						) : null
 					);
 				}
 
@@ -227,7 +238,9 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			
 			// Revert optimistic update
 			if (setColumns && columns) {
-				setColumns(prev => prev.filter(col => col.id !== tempColumn.id));
+				setColumns((prev: Column[] | null) => 
+					prev ? prev.filter((col: Column) => col.id !== tempColumn.id) : null
+				);
 			}
 			
 			showAlert(error.message || "Failed to add column. Please try again.", "error");
@@ -383,6 +396,41 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 	const handleInlineAddRow = useCallback(() => {
 		setShowInlineRowCreator(true);
+	}, []);
+
+	// Toolbar functions
+	const handleSearch = useCallback((query: string) => {
+		setSearchQuery(query);
+		// Use updateGlobalSearch from the hook
+		// globalSearch is a string, not a function
+	}, []);
+
+	const handleSort = useCallback((columnId: string) => {
+		if (sortColumn === columnId) {
+			setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+		} else {
+			setSortColumn(columnId);
+			setSortDirection("asc");
+		}
+		// TODO: Implement actual sorting logic
+	}, [sortColumn]);
+
+	const handleColumnResize = useCallback((columnId: number, width: number) => {
+		setColumnWidths(prev => ({
+			...prev,
+			[columnId.toString()]: Math.max(100, width) // Minimum width of 100px
+		}));
+	}, []);
+
+	const handleCellClick = useCallback((rowId: string, columnId: string) => {
+		setActiveCell({ rowId, columnId });
+		if (tablePermissions.canEditTable()) {
+			handleEditCell(rowId, columnId, "virtual");
+		}
+	}, [handleEditCell, tablePermissions]);
+
+	const handleCellBlur = useCallback(() => {
+		setActiveCell(null);
 	}, []);
 
 	const handleInlineRowSave = useCallback(async (rowData: Record<string, any>) => {
@@ -812,8 +860,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-x-hidden'>
-			{/* Sticky Header */}
-			<div className='sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/20 shadow-sm unified-table-header'>
+			{/* Modern Sticky Header */}
+			<div className='sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/20 shadow-sm'>
 				<div className='w-full mx-auto px-4 sm:px-6 lg:px-8'>
 					<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-6'>
 						{/* Left Section - Table Info & Actions */}
@@ -866,6 +914,56 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								Filters
 								{activeFiltersCount > 0 && (
 									<span className='ml-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full'>
+										{activeFiltersCount}
+									</span>
+								)}
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Modern Toolbar */}
+			<div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+				<div className="bg-white border border-neutral-200 rounded-xl shadow-sm p-4">
+					<div className="flex items-center gap-4 flex-wrap">
+						{/* Search */}
+						<div className="flex items-center gap-2 min-w-0 flex-1">
+							<Search className="w-4 h-4 text-neutral-500" />
+							<input
+								type="text"
+								placeholder="Search rows..."
+								value={searchQuery}
+								onChange={(e) => handleSearch(e.target.value)}
+								className="flex-1 h-8 px-3 text-sm border border-neutral-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
+							/>
+						</div>
+
+						{/* Sort Controls */}
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleSort(columns?.[0]?.id?.toString() || "")}
+								className="h-8 px-3 text-sm border-neutral-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
+							>
+								{sortDirection === "asc" ? <SortAsc className="w-4 h-4 mr-1" /> : <SortDesc className="w-4 h-4 mr-1" />}
+								Sort
+							</Button>
+						</div>
+
+						{/* View Controls */}
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setShowFilters(!showFilters)}
+								className="h-8 px-3 text-sm border-neutral-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
+							>
+								<Filter className="w-4 h-4 mr-1" />
+								Filter
+								{activeFiltersCount > 0 && (
+									<span className="ml-1 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
 										{activeFiltersCount}
 									</span>
 								)}
@@ -947,8 +1045,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					</div>
 				)}
 
-				{/* Excel-like Grid */}
-				<div className='bg-card rounded-2xl border border-border/20 shadow-lg overflow-hidden'>
+				{/* Modern Table Grid */}
+				<div className='bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden'>
 					{rowsLoading ? (
 						<motion.div
 							className='flex flex-col items-center justify-center py-16 px-8'
@@ -974,27 +1072,53 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 						</motion.div>
 					) : (
 						<div className='overflow-x-auto'>
-							{/* Column Headers */}
-							<div className='flex border-b border-border/20 bg-muted/30 column-header'>
+							{/* Modern Column Headers */}
+							<div className='flex border-b border-neutral-200 bg-neutral-50'>
 								{/* Row number column */}
-								<div className='w-16 flex-shrink-0 border-r border-border/20 bg-muted/50 flex items-center justify-center p-2'>
-									<span className='text-xs font-medium text-muted-foreground'>#</span>
+								<div className='w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2'>
+									<span className='text-xs font-semibold text-neutral-700'>#</span>
 								</div>
 								
 								{/* Data columns */}
 								{columns?.map((column) => (
-									<ColumnHeader
+									<div
 										key={column.id}
-										column={column}
-										onEdit={handleEditColumn}
-										onDelete={handleDeleteColumn}
-										canEdit={tablePermissions.canEditTable()}
-									/>
+										className="flex items-center group relative"
+										style={{ width: columnWidths[column.id] || 200 }}
+									>
+										<ColumnHeader
+											column={column}
+											onEdit={handleEditColumn}
+											onDelete={handleDeleteColumn}
+											canEdit={tablePermissions.canEditTable()}
+										/>
+										{/* Resize handle */}
+										<div
+											className="absolute right-0 top-0 w-1 h-full bg-transparent hover:bg-blue-500 cursor-col-resize opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+											onMouseDown={(e) => {
+												const startX = e.clientX;
+												const startWidth = columnWidths[column.id.toString()] || 200;
+												
+												const handleMouseMove = (e: MouseEvent) => {
+													const newWidth = startWidth + (e.clientX - startX);
+													handleColumnResize(column.id, newWidth);
+												};
+												
+												const handleMouseUp = () => {
+													document.removeEventListener('mousemove', handleMouseMove);
+													document.removeEventListener('mouseup', handleMouseUp);
+												};
+												
+												document.addEventListener('mousemove', handleMouseMove);
+												document.addEventListener('mouseup', handleMouseUp);
+											}}
+										/>
+									</div>
 								))}
 								
 								{/* Add column button */}
 								{tablePermissions.canEditTable() && (
-									<div className='w-16 flex-shrink-0 border-l border-border/20 bg-muted/50 flex items-center justify-center p-2'>
+									<div className='w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2'>
 										<Button
 											variant='ghost'
 											size='sm'
@@ -1002,7 +1126,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 												setSelectedColumn(null);
 												setShowColumnToolbar(true);
 											}}
-											className='h-8 w-8 p-0 hover:bg-primary/10'
+											className='h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600 transition-all duration-200'
 											title="Add new column">
 											<Plus className='w-4 h-4' />
 										</Button>
