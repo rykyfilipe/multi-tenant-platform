@@ -3,14 +3,7 @@
 
 import { useState } from "react";
 import { Column } from "@/types/database";
-import { Button } from "@/components/ui/button";
 import { 
-	MoreHorizontal, 
-	Edit, 
-	Trash2, 
-	Move, 
-	Eye, 
-	EyeOff,
 	Type,
 	Hash,
 	Calendar,
@@ -19,13 +12,6 @@ import {
 	Image,
 	FileText
 } from "lucide-react";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -69,17 +55,26 @@ const getColumnIcon = (type: string) => {
 export function ColumnHeader({ column, onEdit, onDelete, canEdit }: Props) {
 	const [isHovered, setIsHovered] = useState(false);
 
+	const handleColumnClick = () => {
+		if (canEdit) {
+			onEdit(column);
+		}
+	};
+
 	return (
 		<div
 			className={cn(
 				"flex-1 min-w-[120px] border-r border-border/20 bg-background hover:bg-muted/30 transition-all duration-200 group relative",
 				column.primary && "bg-primary/5 border-primary/30",
-				column.required && "border-l-2 border-l-orange-500"
+				column.required && "border-l-2 border-l-orange-500",
+				canEdit && "cursor-pointer hover:bg-muted/40"
 			)}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
+			onClick={handleColumnClick}
+			title={canEdit ? "Click to edit column" : "Column"}
 		>
-			<div className="flex items-center justify-between px-4 py-3 h-full">
+			<div className="flex items-center px-4 py-3 h-full">
 				{/* Column Name - Clean and Simple */}
 				<div className="flex items-center gap-2 flex-1 min-w-0">
 					{/* Type Icon - Subtle */}
@@ -107,47 +102,6 @@ export function ColumnHeader({ column, onEdit, onDelete, canEdit }: Props) {
 						)}
 					</div>
 				</div>
-
-				{/* Actions - Only show on hover */}
-				{canEdit && isHovered && (
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-7 w-7 p-0 hover:bg-muted-foreground/10 transition-all duration-200"
-							>
-								<MoreHorizontal className="w-4 h-4" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-48">
-							<DropdownMenuItem onClick={() => onEdit(column)}>
-								<Edit className="w-4 h-4 mr-2" />
-								Edit Column
-							</DropdownMenuItem>
-							
-							<DropdownMenuItem disabled>
-								<Move className="w-4 h-4 mr-2" />
-								Reorder
-							</DropdownMenuItem>
-							
-							<DropdownMenuItem disabled>
-								<Eye className="w-4 h-4 mr-2" />
-								Hide Column
-							</DropdownMenuItem>
-							
-							<DropdownMenuSeparator />
-							
-							<DropdownMenuItem 
-								onClick={() => onDelete(column.id.toString())}
-								className="text-destructive focus:text-destructive"
-							>
-								<Trash2 className="w-4 h-4 mr-2" />
-								Delete Column
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				)}
 			</div>
 		</div>
 	);
