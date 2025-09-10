@@ -146,18 +146,13 @@ export function RowGrid({
 							isLocalRow && "bg-yellow-50 border-yellow-200"
 						)}
 					>
-						{/* Row Number & Selection */}
+						{/* Row Selection */}
 						<div className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 flex items-center justify-center px-4 py-2">
-							<div className="flex items-center gap-2">
-								<Checkbox
-									checked={isSelected}
-									onCheckedChange={(checked) => handleSelectRow(row.id.toString(), checked as boolean)}
-									className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-								/>
-								<span className="text-xs text-neutral-600 font-mono">
-									{rowIndex + 1}
-								</span>
-							</div>
+							<Checkbox
+								checked={isSelected}
+								onCheckedChange={(checked) => handleSelectRow(row.id.toString(), checked as boolean)}
+								className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+							/>
 						</div>
 
 						{/* Data Cells */}

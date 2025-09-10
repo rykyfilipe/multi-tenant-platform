@@ -1112,9 +1112,9 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 						<div className='overflow-x-auto'>
 							{/* Modern Column Headers */}
 							<div className='flex border-b border-neutral-200 bg-neutral-50'>
-								{/* Row number column */}
+								{/* Selection column */}
 								<div className='w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-4 py-2'>
-									<span className='text-xs font-semibold text-neutral-700'>#</span>
+									<span className='text-xs font-semibold text-neutral-700'>Select</span>
 								</div>
 								
 								{/* Data columns */}
