@@ -30,7 +30,7 @@ interface Props {
 	onSelectColumn: (column: Column | null) => void;
 	onSave: (updatedColumn: Partial<Column>) => void;
 	onDelete: (columnId: string) => void;
-	onAdd: (e: React.FormEvent) => void;
+	onAdd: (columnData: CreateColumnRequest) => void;
 	tables: Table[];
 	isSubmitting: boolean;
 	isOpen: boolean;
@@ -140,7 +140,7 @@ export function ColumnToolbar({
 	const handleSave = () => {
 		if (validateForm()) {
 			if (isAddingNew && newColumn) {
-				onAdd(new Event('submit') as any);
+				onAdd(newColumn);
 			} else {
 				onSave(formData);
 			}

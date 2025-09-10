@@ -145,10 +145,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	});
 
 	// Column management functions
-	const handleAddColumn = async (e: FormEvent) => {
-		e.preventDefault();
-
-		if (!token || !tenantId || !newColumn) {
+	const handleAddColumn = async (columnData: CreateColumnRequest) => {
+		if (!token || !tenantId) {
 			showAlert("Missing required information", "error");
 			return;
 		}
@@ -159,11 +157,11 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		}
 
 		// Validate column
-		const nameExists = columns?.find((col) => col.name === newColumn?.name);
-		const hasValidReference = newColumn?.type === "reference" 
-			? newColumn.referenceTableId !== undefined && newColumn.referenceTableId !== null
+		const nameExists = columns?.find((col) => col.name === columnData?.name);
+		const hasValidReference = columnData?.type === "reference" 
+			? columnData.referenceTableId !== undefined && columnData.referenceTableId !== null
 			: true;
-		const hasValidPrimaryKey = !(newColumn?.primary && columns?.some((col) => col.primary));
+		const hasValidPrimaryKey = !(columnData?.primary && columns?.some((col) => col.primary));
 
 		if (nameExists || !hasValidReference || !hasValidPrimaryKey) {
 			showAlert("Please fix validation errors", "error");
@@ -175,7 +173,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		// OPTIMISTIC UPDATE: Add column immediately to UI
 		const tempColumn = {
 			id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-			...newColumn,
+			...columnData,
 			tableId: table.id,
 			createdAt: new Date().toISOString(),
 			isOptimistic: true,
@@ -203,7 +201,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 						"Content-Type": "application/json",
 						Authorization: `Bearer ${token}`,
 					},
-					body: JSON.stringify({ columns: [newColumn] }),
+					body: JSON.stringify({ columns: [columnData] }),
 				},
 			);
 

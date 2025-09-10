@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 interface Props {
 	newColumn: CreateColumnRequest | null;
 	setNewColumn: (column: CreateColumnRequest | null) => void;
-	onAdd: (e: FormEvent) => void;
+	onAdd: (columnData: CreateColumnRequest) => void;
 	tables: Table[];
 	existingColumns: Column[];
 	isSubmitting: boolean;
@@ -75,8 +75,8 @@ export function AddColumnForm({
 
 	const handleSubmit = (e: FormEvent) => {
 		e.preventDefault();
-		if (validateForm()) {
-			onAdd(e);
+		if (validateForm() && newColumn) {
+			onAdd(newColumn);
 		}
 	};
 
