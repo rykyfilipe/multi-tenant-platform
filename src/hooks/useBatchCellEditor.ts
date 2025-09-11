@@ -92,12 +92,39 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				console.log("🔍 DEBUG: addPendingChange - comparing values", { 
 					newValue, 
 					originalValue, 
-					areEqual: newValue === originalValue,
 					cellKey 
 				});
 
+				// Comparare mai robustă a valorilor
+				const areEqual = (() => {
+					// Cazuri speciale pentru null/undefined
+					if (newValue == null && originalValue == null) return true;
+					if (newValue == null || originalValue == null) return false;
+					
+					// Pentru string-uri, comparăm valorile normalizate
+					if (typeof newValue === 'string' && typeof originalValue === 'string') {
+						return newValue.trim() === originalValue.trim();
+					}
+					
+					// Pentru array-uri, comparăm conținutul
+					if (Array.isArray(newValue) && Array.isArray(originalValue)) {
+						if (newValue.length !== originalValue.length) return false;
+						return newValue.every((val, index) => val === originalValue[index]);
+					}
+					
+					// Pentru obiecte, comparăm JSON-ul
+					if (typeof newValue === 'object' && typeof originalValue === 'object') {
+						return JSON.stringify(newValue) === JSON.stringify(originalValue);
+					}
+					
+					// Comparație strictă pentru restul
+					return newValue === originalValue;
+				})();
+
+				console.log("🔍 DEBUG: Comparison result", { areEqual });
+
 				// Dacă valoarea este aceeași cu originalul, eliminăm din pending
-				if (newValue === originalValue) {
+				if (areEqual) {
 					console.log("🔍 DEBUG: Values are equal, removing from pending changes");
 					newMap.delete(cellKey);
 				} else {

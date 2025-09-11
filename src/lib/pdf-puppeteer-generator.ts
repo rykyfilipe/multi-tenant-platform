@@ -3,6 +3,8 @@
 import puppeteer from 'puppeteer';
 import { InvoiceSystemService } from './invoice-system';
 import prisma from './prisma';
+import { execSync } from 'child_process';
+import fs from 'fs';
 
 export interface PDFGenerationOptions {
 	tenantId: string;
@@ -76,12 +78,64 @@ export interface TenantBranding {
 
 export class PuppeteerPDFGenerator {
 	/**
+	 * Check if Chrome is available and install if needed
+	 */
+	private static async ensureChromeAvailable(): Promise<void> {
+		try {
+			// Try to find Chrome in common locations
+			const possiblePaths = [
+				'/usr/bin/google-chrome',
+				'/usr/bin/google-chrome-stable',
+				'/usr/bin/chromium-browser',
+				'/usr/bin/chromium',
+				'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+				'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+				'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+			];
+
+			let chromePath = null;
+			for (const path of possiblePaths) {
+				if (fs.existsSync(path)) {
+					chromePath = path;
+					break;
+				}
+			}
+
+			if (chromePath) {
+				console.log('Found Chrome at:', chromePath);
+				process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
+				return;
+			}
+
+			// Try to install Chrome via Puppeteer
+			console.log('Chrome not found, attempting to install via Puppeteer...');
+			try {
+				execSync('npx puppeteer browsers install chrome', { 
+					stdio: 'inherit',
+					timeout: 60000 // 60 seconds timeout
+				});
+				console.log('Chrome installed successfully via Puppeteer');
+			} catch (installError) {
+				console.error('Failed to install Chrome via Puppeteer:', installError);
+				throw new Error('Chrome browser not available and could not be installed automatically');
+			}
+		} catch (error) {
+			console.error('Error ensuring Chrome availability:', error);
+			throw error;
+		}
+	}
+
+	/**
 	 * Generate PDF from HTML template using Puppeteer
 	 */
 	static async generateInvoicePDF(options: PDFGenerationOptions): Promise<Buffer> {
 		let browser;
 		try {
 			console.log('PuppeteerPDFGenerator: Starting PDF generation...');
+			
+			// Ensure Chrome is available
+			await this.ensureChromeAvailable();
+			
 			// Get invoice data
 			const invoiceData = await this.getInvoiceData(options);
 			if (!invoiceData) {
@@ -103,7 +157,18 @@ export class PuppeteerPDFGenerator {
 			console.log('PuppeteerPDFGenerator: Launching browser...');
 			browser = await puppeteer.launch({
 				headless: true,
-				args: ['--no-sandbox', '--disable-setuid-sandbox']
+				args: [
+					'--no-sandbox',
+					'--disable-setuid-sandbox',
+					'--disable-dev-shm-usage',
+					'--disable-accelerated-2d-canvas',
+					'--no-first-run',
+					'--no-zygote',
+					'--single-process',
+					'--disable-gpu'
+				],
+				// Try to use system Chrome first, then fallback to bundled
+				executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
 			});
 
 			const page = await browser.newPage();
@@ -130,6 +195,18 @@ export class PuppeteerPDFGenerator {
 			return Buffer.from(pdfBuffer);
 		} catch (error) {
 			console.error('Error generating PDF with Puppeteer:', error);
+			
+			// Check if it's a Chrome installation issue
+			if (error instanceof Error && error.message.includes('Could not find Chrome')) {
+				console.error('Chrome installation issue detected. Possible solutions:');
+				console.error('1. Install Chrome: npx puppeteer browsers install chrome');
+				console.error('2. Set PUPPETEER_EXECUTABLE_PATH environment variable');
+				console.error('3. Set PUPPETEER_CACHE_DIR environment variable');
+				
+				// Try to provide a more helpful error message
+				throw new Error(`PDF generation failed: Chrome browser not found. Please install Chrome or configure PUPPETEER_EXECUTABLE_PATH. Original error: ${error.message}`);
+			}
+			
 			throw error;
 		} finally {
 			if (browser) {

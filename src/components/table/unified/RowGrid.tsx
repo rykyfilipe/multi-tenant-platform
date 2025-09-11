@@ -195,6 +195,8 @@ export function RowGrid({
 											onSave={(value) => onSaveCell(column.id.toString(), row.id.toString(), "virtual", value)}
 											onCancel={onCancelEdit}
 											tables={[]} // Will be passed from parent if needed
+											hasPendingChange={hasPending}
+											pendingValue={pendingValue}
 										/>
 									) : (
 										<div className="w-full h-6 sm:h-8 flex items-center">
