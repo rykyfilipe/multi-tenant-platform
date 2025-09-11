@@ -9,8 +9,9 @@ interface PendingCellChange {
 	rowId: string;
 	columnId: string;
 	cellId: string;
-	value: any;
+	newValue: any;
 	originalValue: any;
+	timestamp: number;
 }
 
 interface BatchCellEditorOptions {
@@ -223,7 +224,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 								rowId: change.rowId,
 								columnId: change.columnId,
 								cellId: change.cellId,
-								value: change.value,
+								value: change.newValue,
 							},
 						})),
 					};
@@ -267,7 +268,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 											Authorization: `Bearer ${token}`,
 										},
 										body: JSON.stringify({
-											value: change.value,
+											value: change.newValue,
 										}),
 									},
 								);
@@ -352,8 +353,9 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	const getPendingValue = useCallback(
 		(rowId: string, columnId: string) => {
 			const cellKey = getCellKey(rowId, columnId);
-			const pendingValue = pendingChanges.get(cellKey)?.value;
-			console.log("🔍 DEBUG: getPendingValue", { rowId, columnId, cellKey, pendingValue, hasPending: pendingChanges.has(cellKey) });
+			const pendingChange = pendingChanges.get(cellKey);
+			const pendingValue = pendingChange?.newValue; // Use newValue instead of value
+			console.log("🔍 DEBUG: getPendingValue", { rowId, columnId, cellKey, pendingValue, hasPending: pendingChanges.has(cellKey), pendingChange });
 			return pendingValue;
 		},
 		[pendingChanges, getCellKey],
