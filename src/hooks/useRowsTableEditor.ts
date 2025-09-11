@@ -87,6 +87,7 @@ function useRowsTableEditor(
 		console.log("🔍 Found original value:", originalValue);
 
 		// Adăugăm modificarea la batch-ul pending
+		console.log("🔍 DEBUG: Adding to pending changes", { rowId, columnId, cellId, value, originalValue });
 		addPendingChange(rowId, columnId, cellId, value, originalValue);
 
 		// Anulăm editarea doar dacă nu este specificat să o păstrăm

@@ -615,6 +615,7 @@ export function EditableCell({
 				onCancel();
 			} else {
 				// For text/number/date, save the current value and cancel
+				console.log("🔍 DEBUG: Saving text/number/date on Enter", { columnType: column.type, value });
 				onSave(value);
 			}
 		}
@@ -655,6 +656,7 @@ export function EditableCell({
 					onCancel();
 				} else {
 					// For text/number/date, save current value and cancel
+					console.log("🔍 DEBUG: Saving text/number/date on click outside", { columnType: column.type, value });
 					onSave(value);
 				}
 			}

@@ -89,14 +89,31 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			setPendingChanges((prev) => {
 				const newMap = new Map(prev);
 
+				console.log("🔍 DEBUG: addPendingChange - comparing values", { 
+					newValue, 
+					originalValue, 
+					areEqual: newValue === originalValue,
+					cellKey 
+				});
+
 				// Dacă valoarea este aceeași cu originalul, eliminăm din pending
 				if (newValue === originalValue) {
-					
+					console.log("🔍 DEBUG: Values are equal, removing from pending changes");
 					newMap.delete(cellKey);
 				} else {
-					
+					// Adăugăm modificarea în pending changes
+					console.log("🔍 DEBUG: Values are different, adding to pending changes");
+					newMap.set(cellKey, {
+						rowId,
+						columnId,
+						cellId,
+						newValue,
+						originalValue,
+						timestamp: Date.now(),
+					});
 				}
 
+				console.log("🔍 DEBUG: Final pending changes map size:", newMap.size);
 				return newMap;
 			});
 
