@@ -49,7 +49,7 @@ const AbsoluteSelect = ({
 
 	// Handle keyboard navigation
 	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
+		const handleKeyDown = (event: globalThis.KeyboardEvent) => {
 			if (!isOpen) return;
 
 			switch (event.key) {
@@ -443,7 +443,7 @@ const createReferenceDataForTable = (table: Table) => {
 				: `Row #${row.id || "unknown"}`;
 
 			options.push({
-				id: row.id || 0,
+				id: typeof row.id === 'string' ? parseInt(row.id) : (row.id || 0),
 				displayValue,
 				primaryKeyValue: primaryKeyValue || row.id,
 			});
