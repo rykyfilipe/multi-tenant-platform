@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, KeyboardEvent, memo, useEffect, useRef, useCallback } from "react";
+import { useState, KeyboardEvent, useMemo, JSX, memo, useEffect, useRef, useCallback } from "react";
 import { Cell, Column, Row, Table } from "@/types/database";
 import { Input } from "../../ui/input";
 import {
@@ -16,7 +16,9 @@ import {
 	USER_FRIENDLY_COLUMN_TYPES,
 	COLUMN_TYPE_LABELS,
 } from "@/lib/columnTypes";
+import { SearchableReferenceSelect } from "./SearchableReferenceSelect";
 import { MultipleReferenceSelect } from "./MultipleReferenceSelect";
+import { Badge } from "../../ui/badge";
 import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
 import { useTablePermissions } from "@/hooks/useTablePermissions";
 import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
@@ -68,10 +70,13 @@ const AbsoluteSelect = ({
 					if (highlightedIndex >= 0 && options[highlightedIndex]) {
 						onValueChange(options[highlightedIndex]);
 						setIsOpen(false);
+						setHighlightedIndex(-1);
 					}
 					break;
 				case "Escape":
+					event.preventDefault();
 					setIsOpen(false);
+					setHighlightedIndex(-1);
 					break;
 			}
 		};
@@ -80,63 +85,267 @@ const AbsoluteSelect = ({
 		return () => document.removeEventListener("keydown", handleKeyDown);
 	}, [isOpen, highlightedIndex, options, onValueChange]);
 
-	const toggleDropdown = () => {
-		setIsOpen(!isOpen);
-		setHighlightedIndex(-1);
-	};
+	// Auto-scroll to highlighted option
+	useEffect(() => {
+		if (highlightedIndex >= 0 && dropdownRef.current) {
+			const highlightedElement = dropdownRef.current.children[
+				highlightedIndex
+			] as HTMLElement;
+			if (highlightedElement) {
+				highlightedElement.scrollIntoView({
+					block: "nearest",
+					behavior: "smooth",
+				});
+			}
+		}
+	}, [highlightedIndex]);
 
 	const selectOption = (option: string) => {
 		onValueChange(option);
 		setIsOpen(false);
+		setHighlightedIndex(-1);
+	};
+
+	const toggleDropdown = () => {
+		setIsOpen(!isOpen);
 	};
 
 	return (
-		<div ref={containerRef} className={`relative ${className}`}>
-			<button
-				type="button"
-				className='flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+		<div ref={containerRef} className={cn("relative", className)}>
+			{/* Main trigger button */}
+			<div
+				className={cn(
+					"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer",
+					isOpen && "ring-2 ring-ring ring-offset-2",
+				)}
 				onClick={toggleDropdown}>
 				<div className='flex-1 flex items-center'>
 					{value ? (
-						<span className='truncate'>
+						<span className='truncate' title={value}>
 							{value}
 						</span>
 					) : (
 						<span className='text-muted-foreground'>{placeholder}</span>
 					)}
 				</div>
-				{isOpen ? (
-					<ChevronUp className='h-4 w-4 opacity-50' />
-				) : (
-					<ChevronDown className='h-4 w-4 opacity-50' />
-				)}
-			</button>
+				<div className='flex items-center'>
+					{isOpen ? (
+						<ChevronUp className='h-4 w-4 text-muted-foreground' />
+					) : (
+						<ChevronDown className='h-4 w-4 text-muted-foreground' />
+					)}
+				</div>
+			</div>
 
-			{isOpen && (
+			{/* Absolute Dropdown */}
+			<AbsoluteDropdown
+				isOpen={isOpen}
+				onClose={() => {
+					setIsOpen(false);
+					setHighlightedIndex(-1);
+				}}
+				triggerRef={containerRef}
+				className="w-full min-w-[250px] max-w-[90vw] sm:max-w-[400px]"
+				placement="bottom-start">
+				{/* Options list */}
 				<div
 					ref={dropdownRef}
-					className='absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto'
+					className="overflow-auto p-1 max-h-60"
+					role='listbox'
 					data-dropdown="true">
-					{options.map((option, index) => (
-						<div
-							key={option}
-							className={cn(
-								"relative flex cursor-pointer select-none items-center rounded-sm px-3 py-3 text-base sm:text-sm outline-none transition-colors",
-								index === highlightedIndex &&
-									"bg-accent text-accent-foreground",
-								option === value &&
-									"bg-accent text-accent-foreground"
-							)}
-							onClick={() => selectOption(option)}
-							onMouseEnter={() => setHighlightedIndex(index)}
-							role='option'
-							aria-selected={option === value}
-							data-dropdown="true">
-							<span className='truncate'>
-								{option}
-							</span>
+					{options.length > 0 ? (
+						options.map((option, index) => (
+							<div
+								key={option}
+								className={cn(
+									"relative flex cursor-pointer select-none items-center rounded-sm px-3 py-3 text-base sm:text-sm outline-none transition-colors",
+									"hover:bg-accent hover:text-accent-foreground",
+									index === highlightedIndex &&
+										"bg-accent text-accent-foreground",
+									option === value &&
+										"bg-primary text-primary-foreground",
+								)}
+								onClick={() => selectOption(option)}
+								role='option'
+								aria-selected={option === value}
+								data-dropdown="true">
+								<span className='truncate' title={option}>
+									{option}
+								</span>
+							</div>
+						))
+					) : (
+						<div className='px-2 py-4 text-center text-sm text-muted-foreground'>
+							No options available
 						</div>
-					))}
+					)}
+				</div>
+			</AbsoluteDropdown>
+		</div>
+	);
+};
+
+// Componenta pentru tooltip-ul cu toate referințele
+const MultipleReferencesTooltip = ({
+	value,
+	referenceTable,
+	column,
+	t,
+}: {
+	value: any[];
+	referenceTable: Table;
+	column: Column;
+	t: (key: string, params?: any) => string;
+}) => {
+	const [isVisible, setIsVisible] = useState(false);
+	const [position, setPosition] = useState<"top" | "bottom">("top");
+
+	// Detectăm poziția optimă pentru tooltip
+	useEffect(() => {
+		if (isVisible) {
+			// Folosim un timeout pentru a permite DOM-ului să se actualizeze
+			const timer = setTimeout(() => {
+				const tooltipElement = document.querySelector(
+					'[data-tooltip="multiple-references"]',
+				);
+				if (tooltipElement) {
+					const rect = tooltipElement.getBoundingClientRect();
+					const viewportHeight = window.innerHeight;
+					const spaceAbove = rect.top;
+					const spaceBelow = viewportHeight - rect.bottom;
+
+					// Dacă avem mai mult spațiu jos și este suficient, afișăm tooltip-ul jos
+					if (spaceBelow > 250 && spaceBelow > spaceAbove) {
+						setPosition("bottom");
+					} else {
+						setPosition("top");
+					}
+				}
+			}, 10);
+
+			return () => clearTimeout(timer);
+		}
+	}, [isVisible]);
+
+	// Reset poziția când tooltip-ul se ascunde
+	useEffect(() => {
+		if (!isVisible) {
+			setPosition("top"); // Reset la poziția default
+		}
+	}, [isVisible]);
+
+	if (!Array.isArray(value) || value.length === 0) return null;
+
+	const refPrimaryKeyColumn = referenceTable.columns?.find(
+		(col) => col.primary,
+	);
+	if (!refPrimaryKeyColumn) return null;
+
+	const referenceRows = value
+		.map((refValue) => {
+			const referenceRow = referenceTable.rows?.find((refRow) => {
+				// Verificăm că refRow există și are celule
+				if (!refRow || !refRow.cells || !Array.isArray(refRow.cells))
+					return false;
+
+				const refPrimaryKeyCell = refRow.cells.find(
+					(refCell) => refCell.columnId === refPrimaryKeyColumn.id,
+				);
+				return refPrimaryKeyCell && refPrimaryKeyCell.value === refValue;
+			});
+			return { refValue, referenceRow };
+		})
+		.filter((item) => item.referenceRow);
+
+	return (
+		<div
+			className='relative inline-block'
+			onMouseEnter={() => setIsVisible(true)}
+			onMouseLeave={() => setIsVisible(false)}>
+			{/* Tooltip */}
+			{isVisible && (
+				<div
+					data-tooltip='multiple-references'
+					className={`absolute z-[9999] ${
+						position === "top"
+							? "bottom-full left-0 mb-2"
+							: "top-full left-0 mt-2"
+					} p-3 bg-popover border border-border rounded-lg shadow-2xl min-w-[300px] max-w-[500px]`}>
+					<div className='mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+						{t("table.references.count", {
+							count: value.length,
+							tableName: referenceTable.name,
+						})}
+					</div>
+					<div className='space-y-2'>
+						{referenceRows.map(({ refValue, referenceRow }, index) => {
+							if (!referenceRow) return null;
+
+							// Construim display value cu informații relevante
+							const displayParts: string[] = [];
+							let addedColumns = 0;
+							const maxColumns = 3;
+
+							referenceTable.columns?.forEach((col) => {
+								if (addedColumns >= maxColumns) return;
+
+								// Verificăm că referenceRow există și are celule
+								if (
+									referenceRow &&
+									referenceRow.cells &&
+									Array.isArray(referenceRow.cells)
+								) {
+									const cell = referenceRow.cells.find(
+										(c) => c.columnId === col.id,
+									);
+									if (
+										cell?.value != null &&
+										cell.value.toString().trim() !== ""
+									) {
+										let formattedValue = cell.value.toString().trim();
+
+										if (formattedValue.length > 20) {
+											formattedValue = formattedValue.substring(0, 20) + "...";
+										}
+
+										if (col.primary) {
+											displayParts.push(formattedValue);
+										} else {
+											// Pentru coloanele non-primary, afișăm numele coloanei + valoarea
+											const columnName =
+												col.name.length > 10
+													? col.name.substring(0, 10) + "..."
+													: col.name;
+											displayParts.push(`${columnName}: ${formattedValue}`);
+										}
+										addedColumns++;
+									}
+								}
+							});
+
+							const displayValue = displayParts.length
+								? displayParts.join(" • ")
+								: t("table.references.rowNumber", { id: referenceRow.id });
+
+							return (
+								<div
+									key={index}
+									className='flex items-center gap-2 p-2 bg-muted/30 rounded-md'>
+									<Badge variant='outline' className='text-xs font-mono'>
+										{index + 1}
+									</Badge>
+									<span className='text-sm'>{displayValue}</span>
+								</div>
+							);
+						})}
+					</div>
+					{/* Arrow - poziționat în funcție de direcția tooltip-ului */}
+					<div
+						className={`absolute ${
+							position === "top"
+								? "top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-popover"
+								: "bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-popover"
+						}`}></div>
 				</div>
 			)}
 		</div>
@@ -155,8 +364,99 @@ interface Props {
 	pendingValue?: any;
 }
 
-// Componenta principală EditableCell - complet simplificată
-const EditableCell = memo(({
+// Funcție optimizată pentru un singur tabel - procesează doar rândurile cu celule
+const createReferenceDataForTable = (table: Table) => {
+	const referenceData: Record<
+		number,
+		{ id: number; displayValue: string; primaryKeyValue: any }[]
+	> = {};
+
+	if (
+		!table ||
+		!table.id ||
+		!Array.isArray(table.rows) ||
+		!Array.isArray(table.columns)
+	) {
+		return referenceData;
+	}
+
+	const options: {
+		id: number;
+		displayValue: string;
+		primaryKeyValue: any;
+	}[] = [];
+
+	// Procesăm doar rândurile care au celule
+	table.rows.forEach((row: Row) => {
+		if (
+			row &&
+			row.id &&
+			row.cells &&
+			Array.isArray(row.cells) &&
+			row.cells.length > 0 &&
+			table.columns &&
+			Array.isArray(table.columns)
+		) {
+			const displayParts: string[] = [];
+			let addedColumns = 0;
+			const maxColumns = 3;
+			let primaryKeyValue: any = null;
+
+			table.columns.forEach((column: Column) => {
+				if (!column || !column.id || addedColumns >= maxColumns) return;
+
+				// Verificăm că row.cells există și este un array
+				if (row.cells && Array.isArray(row.cells)) {
+					const cell = row.cells.find(
+						(c: any) => c && c.columnId === column.id,
+					);
+					if (cell?.value != null && cell.value.toString().trim() !== "") {
+						let formattedValue = cell.value.toString().trim();
+
+						if (formattedValue.length > 15) {
+							formattedValue = formattedValue.substring(0, 15) + "...";
+						}
+
+						if (column.type === "date") {
+							try {
+								formattedValue = new Date(formattedValue).toLocaleDateString(
+									"ro-RO",
+								);
+							} catch {
+								// fallback la valoarea brută
+							}
+						} else if (column.type === "boolean") {
+							formattedValue = formattedValue === "true" ? "✓" : "✗";
+						}
+
+						if (addedColumns === 0 && column.primary) {
+							displayParts.push(formattedValue);
+							primaryKeyValue = cell.value;
+						} else {
+							displayParts.push(formattedValue);
+						}
+						addedColumns++;
+					}
+				}
+			});
+
+			const displayValue = displayParts.length
+				? displayParts.join(" • ").slice(0, 50)
+				: `Row #${row.id || "unknown"}`;
+
+			options.push({
+				id: typeof row.id === 'string' ? parseInt(row.id) : (row.id || 0),
+				displayValue,
+				primaryKeyValue: primaryKeyValue || row.id,
+			});
+		}
+	});
+
+	referenceData[table.id] = options;
+	return referenceData;
+};
+
+export function EditableCell({
 	columns,
 	cell,
 	isEditing,
@@ -166,7 +466,7 @@ const EditableCell = memo(({
 	tables,
 	hasPendingChange = false,
 	pendingValue,
-}: Props) => {
+}: Props) {
 	// TOATE HOOKS-URILE TREBUIE SĂ FIE AICI, ÎNAINTE DE ORICE RETURN CONDIȚIONAL
 
 	// Hook pentru traduceri
@@ -176,13 +476,6 @@ const EditableCell = memo(({
 	const [value, setValue] = useState<any>(() => {
 		// Folosește valoarea pending dacă există, altfel valoarea din celulă
 		const initialValue = hasPendingChange ? pendingValue : cell?.value;
-
-		console.log("🔍 DEBUG: EditableCell useState initialization", { 
-			hasPendingChange, 
-			pendingValue, 
-			cellValue: cell?.value, 
-			initialValue 
-		});
 
 		// Ensure reference columns always have array values
 		const column = columns?.find((col) => col.id === cell?.columnId);
@@ -197,19 +490,9 @@ const EditableCell = memo(({
 
 	// Update local value when cell value changes (but not when editing)
 	useEffect(() => {
-		console.log("🔍 DEBUG: EditableCell useEffect triggered", { 
-			isEditing, 
-			cellValue: cell?.value, 
-			hasPendingChange, 
-			pendingValue,
-			currentValue: value 
-		});
-		
 		if (!isEditing) {
 			const newValue = hasPendingChange ? pendingValue : cell?.value;
 			const column = columns?.find((col) => col.id === cell?.columnId);
-			
-			console.log("🔍 DEBUG: Setting new value", { newValue, columnType: column?.type });
 			
 			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 				if (Array.isArray(newValue)) {
@@ -226,9 +509,6 @@ const EditableCell = memo(({
 	// Optimistic update: immediately update local state when user types
 	const handleValueChange = useCallback((newValue: any) => {
 		setValue(newValue);
-		
-		// Don't call onSave immediately for text/number - let user finish typing
-		// onSave will be called on Enter key or click outside
 	}, []);
 
 	// Ref pentru container-ul de editare
@@ -242,66 +522,121 @@ const EditableCell = memo(({
 	const [loading, setLoading] = useState(false);
 
 	// Găsim coloana pentru această celulă
-	const column = columns?.find((col) => col.id === cell?.columnId);
+	const column = useMemo(() => 
+		columns?.find((col) => col.id === cell?.columnId), 
+		[columns, cell?.columnId]
+	);
+
+	// Fetch la tabelul de referință când este necesar
+	useEffect(() => {
+		let isMounted = true;
+		
+		const fetchReferenceTable = async () => {
+			if (!column?.referenceTableId || !tables || tables.length === 0) return;
+
+			// Găsim tabelul curent pentru a obține tenant și database info
+			const currentTable = tables.find((t) => t.id === column?.tableId);
+			if (!currentTable?.databaseId) return;
+
+			if (isMounted) setLoading(true);
+			
+			try {
+				const token = localStorage.getItem("token") || "";
+				const response = await fetch(
+					`/api/tenants/${currentTable.databaseId}/databases/${currentTable.databaseId}/tables/${column.referenceTableId}/rows?limit=1000&includeCells=true`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+					},
+				);
+				
+				if (!isMounted) return;
+				
+				if (response.ok) {
+					const data = await response.json();
+					setReferenceTable(data);
+				} else if (response.status === 403) {
+					// Utilizatorul nu are permisiuni pentru tabelul de referință
+					setReferenceTable({ rows: [], columns: [] });
+				}
+			} catch (error) {
+				if (isMounted) {
+					console.error("Error fetching reference table:", error);
+					setReferenceTable({ rows: [], columns: [] });
+				}
+			} finally {
+				if (isMounted) setLoading(false);
+			}
+		};
+
+		fetchReferenceTable();
+		
+		return () => {
+			isMounted = false;
+		};
+	}, [column?.referenceTableId, tables, column?.tableId]);
 
 	// Hook pentru datele de referință
-	const { referenceData, isLoading: referenceDataLoading } = useOptimizedReferenceData(
+	const { referenceData } = useOptimizedReferenceData(
 		tables || [],
 		column?.referenceTableId,
 	);
 
-	// Găsim tabelul de referință
-	useEffect(() => {
-		if (!column?.referenceTableId || !tables || tables.length === 0) return;
-
-		const refTable = tables.find((t) => t.id === column.referenceTableId);
-		if (refTable) {
-			setReferenceTable(refTable);
-		}
-	}, [column?.referenceTableId, tables]);
-
-	// Set loading state
-	useEffect(() => {
-		setLoading(referenceDataLoading);
-	}, [referenceDataLoading]);
-
-	// Permissions
+	// Hook pentru permisiuni
 	const { permissions: userPermissions } = useCurrentUserPermissions();
 	const tablePermissions = useTablePermissions(
 		column?.tableId || 0,
 		userPermissions?.tablePermissions || [],
-		userPermissions?.columnsPermissions || []
+		userPermissions?.columnsPermissions || [],
 	);
 
-	// Verificăm dacă utilizatorul poate edita această coloană
-	const canEdit = column ? tablePermissions.canEditColumn(column.id) : false;
+	// ACUM PUTEM FACE RETURN-URI CONDIȚIONALE
 
-	const handleKey = (e: KeyboardEvent) => {
-		if (!column) return;
-		
+	// Handle cases where cell might be undefined or missing properties
+	if (!cell || !cell.columnId || !columns) {
+		return <div className='text-gray-400 italic'>Empty</div>;
+	}
+
+	if (!column) return null;
+
+	// Nu mai afișăm skeleton la nivelul EditableCell - se ocupă TableEditor
+
+	// TableEditor gestionează skeleton și "Access Denied" - aici doar verificăm editarea
+
+	// Verificăm dacă utilizatorul poate edita această coloană
+	const canEdit = useMemo(() => 
+		column ? tablePermissions.canEditColumn(column.id) : false,
+		[tablePermissions, column]
+	);
+
+	const handleKey = useCallback((e: KeyboardEvent) => {
 		if (e.key === "Enter") {
 			// For reference columns, values are already saved on change
 			// Just cancel editing for Enter key
-			if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 				if (hasInvalidReferences) {
 					return; // Don't cancel if there are invalid references
 				}
 				onCancel();
-			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+			} else if (column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
 				// For customArray, values are already saved on change
 				onCancel();
 			} else {
 				// For text/number/date, save the current value and cancel
-				console.log("🔍 DEBUG: Saving text/number/date on Enter", { columnType: column.type, value });
 				onSave(value);
 			}
 		}
 		if (e.key === "Escape") onCancel();
-	};
+	}, [column?.type, hasInvalidReferences, onCancel, onSave, value]);
+
+	// Auto-save is now handled immediately in handleValueChange for better optimistic UX
+	// No need for debounced auto-save since we update UI immediately
 
 	// Click outside to cancel editing - only on actual click, not focus events
 	useEffect(() => {
-		if (!isEditing || !column) return;
+		if (!isEditing) return;
 
 		const handleClickOutside = (event: MouseEvent) => {
 			// Only handle actual mouse clicks, not programmatic events
@@ -330,7 +665,6 @@ const EditableCell = memo(({
 					onCancel();
 				} else {
 					// For text/number/date, save current value and cancel
-					console.log("🔍 DEBUG: Saving text/number/date on click outside", { columnType: column.type, value });
 					onSave(value);
 				}
 			}
@@ -345,138 +679,293 @@ const EditableCell = memo(({
 			clearTimeout(timeoutId);
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, [isEditing, column, hasInvalidReferences, onCancel, onSave, value]);
+	}, [isEditing, onCancel, column?.type, hasInvalidReferences, value, onSave]);
 
-	// Early returns pentru cazurile speciale
-	if (!column) {
-		return <div className="text-xs text-muted-foreground">Unknown column</div>;
-	}
 
-	// Dacă este în modul de editare, afișăm input-ul corespunzător
-	if (isEditing) {
-		const editContainer = (
-			<div ref={editContainerRef} className="w-full">
-				{column.type === USER_FRIENDLY_COLUMN_TYPES.text ||
-				column.type === USER_FRIENDLY_COLUMN_TYPES.number ||
-				column.type === USER_FRIENDLY_COLUMN_TYPES.date ? (
-					<Input
-						value={value || ""}
-						onChange={(e) => handleValueChange(e.target.value)}
-						onKeyDown={handleKey}
-						placeholder={COLUMN_TYPE_LABELS[column.type]}
-						className="w-full"
-						autoFocus
-					/>
-				) : column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo ? (
-					<Switch
-						checked={value || false}
-						onCheckedChange={(checked) => {
-							handleValueChange(checked);
-							onSave(checked); // Save immediately for boolean
-						}}
-					/>
-				) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
+	let referenceSelect: JSX.Element | null = null;
+	if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+		const options = referenceData[column.referenceTableId ?? -1] ?? [];
+
+		const referencedTable = tables?.find(
+			(t) => t.id === column.referenceTableId,
+		);
+
+		// Use MultipleReferenceSelect for all reference columns (always multiple selection)
+		if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+			referenceSelect = (
+				<div className='flex flex-col gap-1'>
 					<MultipleReferenceSelect
 						value={value}
 						onValueChange={(val) => {
-							handleValueChange(val);
-							onSave(val); // Save immediately for reference
+							setValue(val);
+							// For reference columns, save immediately to pending changes
+							onSave(val);
 						}}
-						options={referenceData[column.id] || []}
+						options={options}
+						placeholder={`${t("table.select")} ${
+							referencedTable?.name || t("table.references")
+						}`}
+						referencedTableName={referencedTable?.name}
 						isMultiple={true}
-						isLoading={loading}
-						referencedTableName={referenceTable?.name}
+						onValidationChange={(isValid, invalidCount) =>
+							setHasInvalidReferences(invalidCount > 0)
+						}
 					/>
+
+					{/* Show warning for invalid references */}
+					{hasInvalidReferences && (
+						<div className='text-xs text-destructive bg-destructive/10 px-2 py-1 rounded border border-destructive/20'>
+							⚠️ Some selected references are no longer valid. Please remove
+							them before saving.
+						</div>
+					)}
+
+				</div>
+			);
+		}
+	}
+
+	if (isEditing) {
+		// Verificăm dacă utilizatorul poate edita această coloană
+		if (!canEdit) {
+			return (
+				<div className='p-2 bg-muted rounded text-sm text-muted-foreground'>
+					You don't have permission to edit this column
+				</div>
+			);
+		}
+
+		return (
+			<div ref={editContainerRef} className='w-full'>
+				{column.type === "boolean" ? (
+					<Switch
+						checked={value === true}
+						onCheckedChange={(checked) => {
+							setValue(checked);
+							// Save immediately for boolean changes
+							onSave(checked);
+						}}>
+						<span className='sr-only'>{t("table.toggleBoolean")}</span>
+					</Switch>
+				) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
+					referenceSelect
 				) : column.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
 					<AbsoluteSelect
-						value={value || ""}
-						onValueChange={(val) => {
-							handleValueChange(val);
-							onSave(val); // Save immediately for customArray
+						value={String(value || "")}
+						onValueChange={(v) => {
+							setValue(v);
+							// For customArray, we need to add to pending changes without canceling editing
+							// Call onSave which will handle the pending changes logic
+							onSave(v);
 						}}
 						options={column.customOptions || []}
-						placeholder="Select option"
+						placeholder='Select an option'
 						className="w-full"
 					/>
-				) : column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo ? (
-					<Select
-						value={value || ""}
-						onValueChange={(val) => {
-							handleValueChange(val);
-							onSave(val); // Save immediately for yesno
-						}}>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select option" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="yes">Yes</SelectItem>
-							<SelectItem value="no">No</SelectItem>
-						</SelectContent>
-					</Select>
 				) : (
-					<div className="text-xs text-muted-foreground">
-						Unsupported column type: {column.type}
-					</div>
+					<Input
+						className='w-full h-8 border border-blue-500 shadow-sm focus:ring-1 focus:ring-blue-500 bg-white text-sm font-medium px-3 py-1 rounded'
+						type={
+							column.type === USER_FRIENDLY_COLUMN_TYPES.date
+								? "date"
+								: column.type === USER_FRIENDLY_COLUMN_TYPES.number
+								? "number"
+								: "text"
+						}
+						value={
+							column.type === USER_FRIENDLY_COLUMN_TYPES.date && value
+								? new Date(value).toISOString().split('T')[0]
+								: value 
+						}
+						onChange={(e) => handleValueChange(e.target.value)}
+						onKeyDown={handleKey}
+						autoFocus
+						placeholder={column.type === "date" ? "YYYY-MM-DD" : "Enter value..."}
+					/>
 				)}
 			</div>
 		);
-
-		return editContainer;
 	}
 
-	// Afișare simplificată pentru celulele care nu sunt în editare
-	let display = "";
-	
-	if (value == null || value === "") {
-		display = column.type === "reference" 
-			? "No references" 
-			: "No value";
-	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo) {
-		display = value ? "Yes" : "No";
-	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-		if (Array.isArray(value)) {
-			display = value.length > 0 ? `${value.length} reference${value.length > 1 ? 's' : ''}` : "No references";
-		} else {
-			display = value ? "1 reference" : "No references";
-		}
-	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
-		display = value || "No selection";
-	} else {
-		display = String(value);
-	}
-
-	// Styling simplificat
-	const getDisplayStyle = () => {
-		let baseStyle = "cursor-pointer text-sm text-neutral-700";
-		
+	const display = useMemo(() => {
 		if (value == null || value === "") {
-			baseStyle += " text-neutral-400 italic";
+			return t("table.doubleClickToAddValue");
 		}
 		
+		if (column?.type === "boolean") {
+			return value === true ? t("common.true") : t("common.false");
+		}
+		
+		if (column?.type === "date") {
+			try {
+				return new Date(value).toLocaleDateString();
+			} catch {
+				return String(value);
+			}
+		}
+		
+		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+			// Pentru coloanele customArray, verificăm dacă valoarea există în opțiunile definite
+			if (value && column.customOptions && column.customOptions.includes(value)) {
+				return String(value);
+			} else if (value) {
+				return `⚠️ Invalid: ${value}`;
+			} else {
+				return t("table.doubleClickToAddValue");
+			}
+		}
+		
+		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
+			// Pentru coloanele de referință, folosim datele deja fetch-uite din hooks-urile de sus
+			if (loading) {
+				return "Loading references...";
+			}
+			
+			if (referenceTable && referenceTable.columns) {
+				const refPrimaryKeyColumn = referenceTable.columns.find(
+					(col: any) => col.primary,
+				);
+
+				if (refPrimaryKeyColumn && referenceTable.rows) {
+					// Handle reference values (always multiple)
+					// Ensure value is always treated as array
+					const referenceValues = Array.isArray(value)
+						? value
+						: value
+						? [value]
+						: [];
+
+					if (referenceValues.length === 0) {
+						return "Double-click to add values";
+					}
+					
+					// Pentru multiple references, afișăm doar cheile primare
+					const primaryKeys = referenceValues.map((refValue) => {
+						// Căutăm rândul cu cheia primară specificată
+						const referenceRow = referenceTable.rows.find((refRow: any) => {
+							// Verificăm că refRow există și are celule
+							if (!refRow || !refRow.cells || !Array.isArray(refRow.cells))
+								return false;
+
+							const refPrimaryKeyCell = refRow.cells.find(
+								(refCell: any) => refCell.columnId === refPrimaryKeyColumn.id,
+							);
+							return refPrimaryKeyCell && refPrimaryKeyCell.value === refValue;
+						});
+
+						if (referenceRow) {
+							// Afișăm doar cheia primară fără #
+							const primaryKeyCell = referenceRow.cells.find(
+								(refCell: any) => refCell.columnId === refPrimaryKeyColumn.id,
+							);
+							return primaryKeyCell?.value || `⚠️ Invalid: ${refValue}`;
+						} else {
+							return `⚠️ Invalid: ${refValue}`;
+						}
+					});
+
+					// Pentru multiple references, afișăm doar primul și un contor
+					if (referenceValues.length === 1) {
+						return primaryKeys[0];
+					} else {
+						return `${primaryKeys[0]} +${referenceValues.length - 1} more`;
+					}
+				} else {
+					// Nu există cheie primară în tabelul de referință
+					return `⚠️ No primary key in ${referenceTable.name}`;
+				}
+			} else {
+				// Tabelul de referință nu există - afișăm valoarea normal
+				const referenceValues = Array.isArray(value)
+					? value
+					: value
+					? [value]
+					: [];
+				if (referenceValues.length === 0) {
+					return "Double-click to add values";
+				} else {
+					// Afișăm doar cheile primare separate prin virgulă
+					return referenceValues.join(", ");
+				}
+			}
+		}
+		
+		return String(value);
+	}, [value, column?.type, column?.referenceTableId, loading, referenceTable, t]);
+
+	// Determinăm stilul în funcție de tipul de afișare și starea pending
+	const displayStyle = useMemo(() => {
+		let baseStyle = "";
+
+		if (
+			display === "Double-click to add value" ||
+			display === "Double-click to add values"
+		) {
+			baseStyle =
+				"text-neutral-400 italic cursor-pointer hover:bg-neutral-100 transition-all duration-200 text-sm font-medium";
+		} else if (display.startsWith("⚠️")) {
+			baseStyle =
+				"text-red-600 bg-red-50 border border-red-200 text-sm font-medium";
+		} else {
+			baseStyle =
+				"cursor-pointer hover:bg-neutral-100 transition-all duration-200 text-sm font-medium text-neutral-700";
+		}
+
+		// Adaugă styling pentru modificări pending
 		if (hasPendingChange) {
-			baseStyle += " bg-yellow-50 border-yellow-200";
+			baseStyle += " bg-yellow-50 border-l-4 border-yellow-400";
 		}
-		
+
 		return baseStyle;
-	};
+	}, [display, hasPendingChange]);
 
 	return (
 		<div
-			onClick={() => {
+			onDoubleClick={() => {
 				if (canEdit) {
 					onStartEdit();
 				}
 			}}
-			className={`${getDisplayStyle()} ${
+			title={
+				!canEdit
+					? "You don't have permission to edit this column"
+					: value == null ||
+					  value === "" ||
+					  (Array.isArray(value) && value.length === 0)
+					? column.type === "reference"
+						? "Double-click to add values"
+						: "Double-click to add value"
+					: "Double-click to edit"
+			}
+			className={`${displayStyle} ${
 				!canEdit ? "cursor-not-allowed opacity-60" : ""
 			}`}>
+			{/* Pentru references, afișăm tooltip-ul (always multiple) */}
+			{column?.type === USER_FRIENDLY_COLUMN_TYPES.link && (() => {
+				// Ensure value is always treated as array for reference columns
+				const referenceValues = Array.isArray(value)
+					? value
+					: value
+					? [value]
+					: [];
+				
+				if (referenceValues.length === 0 || !column.referenceTableId || !tables) {
+					return null;
+				}
+				
+				const refTable = tables.find((t) => t.id === column.referenceTableId);
+				return refTable ? (
+					<MultipleReferencesTooltip
+						value={referenceValues}
+						referenceTable={refTable}
+						column={column}
+						t={t}
+					/>
+				) : null;
+			})()}
 			<p className='max-w-[250px] sm:max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis select-none leading-relaxed text-sm sm:text-base'>
 				{display}
 			</p>
 		</div>
 	);
-});
-
-EditableCell.displayName = "EditableCell";
-
-export default EditableCell;
+}
