@@ -501,23 +501,25 @@ export function EditableCell({
 	}, [cell?.value, hasPendingChange, pendingValue, isEditing, columns]);
 
 	// When editing starts, ensure the input is prefilled with the correct value
+	// Only set initial value when entering edit mode, not when already editing
 	useEffect(() => {
-		if (isEditing) {
+		if (isEditing && value === null) {
 			const currentValue = hasPendingChange ? pendingValue : cell?.value;
 			const column = columns?.find((col) => col.id === cell?.columnId);
 			
-			console.log("🔍 DEBUG: Starting edit mode", {
+			console.log("🔍 DEBUG: Starting edit mode - setting initial value", {
 				hasPendingChange,
 				pendingValue,
 				cellValue: cell?.value,
 				currentValue,
-				columnType: column?.type
+				columnType: column?.type,
+				currentLocalValue: value
 			});
 			
 			// Use normalize function for consistent reference handling
 			setValue(normalizeReferenceValue(currentValue, column?.type === USER_FRIENDLY_COLUMN_TYPES.link));
 		}
-	}, [isEditing, hasPendingChange, pendingValue, cell?.value, columns]);
+	}, [isEditing, hasPendingChange, pendingValue, cell?.value, columns, value]);
 
 	// Ref to store the current value for immediate access
 	const currentValueRef = useRef<any>(value);
@@ -673,25 +675,35 @@ export function EditableCell({
 									   target.closest('[role="listbox"]') ||
 									   target.closest('[role="option"]') ||
 									   target.closest('[data-tooltip]') ||
-									   target.closest('.absolute.z-\\[9999\\]');
+									   target.closest('.absolute.z-\\[9999\\]') ||
+									   target.closest('[data-radix-popper-content-wrapper]') ||
+									   target.closest('.absolute') ||
+									   target.closest('[data-portal]') ||
+									   target.classList.contains('fixed') ||
+									   target.classList.contains('z-\\[9999\\]');
 				
 				// Don't cancel editing if clicking on dropdown elements
 				if (isDropdownClick) {
+					console.log("🔍 DEBUG: Click detected on dropdown element, not canceling edit");
 					return;
 				}
 
-				// Standardized behavior for ALL column types:
-				// 1. Check for invalid references (only applies to link columns)
-				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && hasInvalidReferences) {
-					return; // Don't save if there are invalid references
-				}
-				
-				// 2. Normalize value for reference columns before saving
-				const normalizedValue = normalizeReferenceValue(currentValueRef.current, column.type === USER_FRIENDLY_COLUMN_TYPES.link);
-				
-				// 3. Add to pending changes and exit edit mode
-				onSave(normalizedValue);
-				onCancel();
+				// Add a small delay to allow dropdown interactions to complete
+				// This prevents conflicts between dropdown close and edit cancel
+				setTimeout(() => {
+					// Standardized behavior for ALL column types:
+					// 1. Check for invalid references (only applies to link columns)
+					if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && hasInvalidReferences) {
+						return; // Don't save if there are invalid references
+					}
+					
+					// 2. Normalize value for reference columns before saving
+					const normalizedValue = normalizeReferenceValue(currentValueRef.current, column.type === USER_FRIENDLY_COLUMN_TYPES.link);
+					
+					// 3. Add to pending changes and exit edit mode
+					onSave(normalizedValue);
+					onCancel();
+				}, 100); // Small delay to allow dropdown interactions to complete
 			}
 		};
 

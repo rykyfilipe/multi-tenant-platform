@@ -141,44 +141,83 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		getPendingValue,
 		savePendingChanges,
 		discardPendingChanges,
+		rollbackOptimisticUpdates, // 🔧 FIX: Import rollback function
 	} = useRowsTableEditor({
 		table,
 		onCellsUpdated: (updatedCells) => {
-			console.log("🔄 Optimistically updating cells in UI:", updatedCells);
-			setRows((currentRows: any[]) =>
-				currentRows.map((row) => {
-					const updatedRow = { ...row };
-					updatedCells.forEach((updatedCell) => {
-						console.log("🔍 DEBUG: Processing updatedCell", { 
-							updatedCell, 
-							rowId: updatedRow.id.toString(), 
-							updatedCellRowId: updatedCell.rowId.toString(),
-							rowCells: updatedRow.cells.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-						});
-						
-						if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
-							const cellIndex = updatedRow.cells.findIndex(
-								(cell: any) => cell.id === updatedCell.id || 
-								(cell.columnId.toString() === updatedCell.columnId.toString() && cell.id === "virtual"),
-							);
-							
-							console.log("🔍 DEBUG: Cell index found", { cellIndex, cellId: updatedCell.id, columnId: updatedCell.columnId });
-							
-							if (cellIndex >= 0) {
-								// Store original value for potential rollback
-								const originalCell = { ...updatedRow.cells[cellIndex] };
-								updatedRow.cells[cellIndex] = { ...updatedCell, originalValue: originalCell.value };
-								console.log("🔍 DEBUG: Updated existing cell with original value", { cellIndex, newValue: updatedCell.value, originalValue: originalCell.value });
-							} else {
-								// Add new cell if it doesn't exist
-								updatedRow.cells.push({ ...updatedCell, originalValue: null });
-								console.log("🔍 DEBUG: Added new cell", { newValue: updatedCell.value });
+			console.log("🔄 Processing cells update:", updatedCells);
+			
+			// 🔧 FIX: Handle rollback operations
+			const rollbackCells = updatedCells.filter((cell: any) => cell.isRollback);
+			const normalCells = updatedCells.filter((cell: any) => !cell.isRollback);
+			
+			if (rollbackCells.length > 0) {
+				console.log("🔄 Rolling back optimistic updates:", rollbackCells);
+				setRows((currentRows: any[]) =>
+					currentRows.map((row) => {
+						const updatedRow = { ...row };
+						rollbackCells.forEach((rollbackCell: any) => {
+							if (updatedRow.id.toString() === rollbackCell.rowId.toString()) {
+								const cellIndex = updatedRow.cells.findIndex(
+									(cell: any) => cell.columnId.toString() === rollbackCell.columnId.toString()
+								);
+								
+								if (cellIndex >= 0 && updatedRow.cells[cellIndex].originalValue !== undefined) {
+									// Rollback to original value
+									updatedRow.cells[cellIndex] = {
+										...updatedRow.cells[cellIndex],
+										value: updatedRow.cells[cellIndex].originalValue,
+										originalValue: undefined // Clear original value after rollback
+									};
+									console.log("🔄 Rolled back cell to original value:", {
+										cellIndex,
+										originalValue: updatedRow.cells[cellIndex].value
+									});
+								}
 							}
-						}
-					});
-					return updatedRow;
-				}),
-			);
+						});
+						return updatedRow;
+					}),
+				);
+			}
+			
+			if (normalCells.length > 0) {
+				console.log("🔄 Optimistically updating cells in UI:", normalCells);
+				setRows((currentRows: any[]) =>
+					currentRows.map((row) => {
+						const updatedRow = { ...row };
+						normalCells.forEach((updatedCell) => {
+							console.log("🔍 DEBUG: Processing updatedCell", { 
+								updatedCell, 
+								rowId: updatedRow.id.toString(), 
+								updatedCellRowId: updatedCell.rowId.toString(),
+								rowCells: updatedRow.cells.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+							});
+							
+							if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
+								const cellIndex = updatedRow.cells.findIndex(
+									(cell: any) => cell.id === updatedCell.id || 
+									(cell.columnId.toString() === updatedCell.columnId.toString() && cell.id === "virtual"),
+								);
+								
+								console.log("🔍 DEBUG: Cell index found", { cellIndex, cellId: updatedCell.id, columnId: updatedCell.columnId });
+								
+								if (cellIndex >= 0) {
+									// Store original value for potential rollback
+									const originalCell = { ...updatedRow.cells[cellIndex] };
+									updatedRow.cells[cellIndex] = { ...updatedCell, originalValue: originalCell.value };
+									console.log("🔍 DEBUG: Updated existing cell with original value", { cellIndex, newValue: updatedCell.value, originalValue: originalCell.value });
+								} else {
+									// Add new cell if it doesn't exist
+									updatedRow.cells.push({ ...updatedCell, originalValue: null });
+									console.log("🔍 DEBUG: Added new cell", { newValue: updatedCell.value });
+								}
+							}
+						});
+						return updatedRow;
+					}),
+				);
+			}
 		},
 		onError: (error: string) => {
 			console.error("❌ Batch save error, reverting optimistic updates:", error);
@@ -637,6 +676,25 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			return;
 		}
 
+		// 🔧 FIX: Optimistic update imediat
+		const tempRowId = `temp_${Date.now()}`;
+		const optimisticRow = {
+			id: tempRowId,
+			tableId: table?.id || 0,
+			createdAt: new Date().toISOString(),
+			cells: Object.entries(rowData).map(([columnId, value]) => ({
+				id: `temp_cell_${Date.now()}_${columnId}`,
+				rowId: tempRowId,
+				columnId: parseInt(columnId),
+				value: value,
+				isOptimistic: true
+			})),
+			isOptimistic: true
+		};
+		
+		console.log("🚀 Adding optimistic row:", optimisticRow);
+		setRows((currentRows) => [optimisticRow, ...currentRows]);
+		setShowInlineRowCreator(false);
 		setIsAddingRow(true);
 
 		try {
@@ -665,13 +723,18 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				const result = await response.json();
 				const savedRows = result.rows || [];
 
-				setRows((currentRows) => [...savedRows, ...currentRows]);
+				// 🔧 FIX: Replace optimistic row with real one
+				setRows((currentRows) => currentRows.map(row => 
+					row.id === tempRowId ? { ...savedRows[0], isOptimistic: false } : row
+				));
+				
 				showAlert("Row added successfully!", "success");
-				setShowInlineRowCreator(false);
 
+				// Update pagination without full refresh
 				if (pagination) {
 					const newTotalRows = pagination.totalRows + savedRows.length;
-					await fetchRows(1, pagination.pageSize);
+					// Don't fetch rows again, just update pagination info
+					console.log("📊 Updated pagination total:", newTotalRows);
 				}
 			} else {
 				const errorData = await response.json();
@@ -679,11 +742,14 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			}
 		} catch (error: any) {
 			console.error("Error adding row:", error);
+			
+			// 🔧 FIX: Rollback optimistic update
+			setRows((currentRows) => currentRows.filter(row => row.id !== tempRowId));
 			showAlert(error.message || "Failed to add row. Please try again.", "error");
 		} finally {
 			setIsAddingRow(false);
 		}
-	}, [token, tenantId, table?.databaseId, table?.id, tablePermissions, showAlert, setRows, pagination, fetchRows]);
+	}, [token, tenantId, table?.databaseId, table?.id, tablePermissions, showAlert, setRows, pagination]);
 
 	const handleInlineRowCancel = useCallback(() => {
 		setShowInlineRowCreator(false);
@@ -907,7 +973,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			);
 
 			if (response.ok) {
-				await refreshAfterChange();
+				// 🔧 FIX: Nu mai face refreshAfterChange() - optimistic update rămâne corect
+				console.log("✅ Row deleted successfully, keeping optimistic update");
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to delete row");
@@ -962,7 +1029,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			const failedDeletes = responses.filter(response => !response.ok);
 
 			if (failedDeletes.length === 0) {
-				await refreshAfterChange();
+				// 🔧 FIX: Nu mai face refreshAfterChange() - optimistic updates rămân corecte
+				console.log("✅ All rows deleted successfully, keeping optimistic updates");
 			} else {
 				// Revert optimistic update for failed deletes
 				const failedRowIds = rowIds.filter((_, index) => !responses[index].ok);

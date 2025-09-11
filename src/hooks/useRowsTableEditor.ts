@@ -31,6 +31,7 @@ function useRowsTableEditor(
 		addPendingChange,
 		savePendingChanges,
 		discardPendingChanges,
+		rollbackOptimisticUpdates, // 🔧 FIX: Import rollback function
 		saveNow,
 		hasPendingChange,
 		getPendingValue,
@@ -127,6 +128,7 @@ function useRowsTableEditor(
 		getPendingValue,
 		savePendingChanges: saveNow,
 		discardPendingChanges,
+		rollbackOptimisticUpdates, // 🔧 FIX: Export rollback function
 	};
 }
 

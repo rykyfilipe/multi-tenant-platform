@@ -307,6 +307,11 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to save changes";
 			showAlert(errorMessage, "error");
+			
+			// 🔧 FIX: Rollback precis pentru operațiunile eșuate
+			// Nu curăța pending changes imediat, lasă-le pentru retry
+			console.log("❌ Batch save failed, keeping pending changes for potential retry");
+			
 			onError?.(errorMessage);
 		} finally {
 			setIsSaving(false);
@@ -337,6 +342,23 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 		showAlert("Changes discarded", "info");
 	}, [showAlert]);
+
+	// 🔧 FIX: Rollback precis pentru operațiunile eșuate
+	const rollbackOptimisticUpdates = useCallback((failedOperations: string[]) => {
+		console.log("🔄 Rolling back optimistic updates for failed operations:", failedOperations);
+		
+		// Notifică callback-ul pentru rollback în UI
+		onSuccess?.(failedOperations.map(op => {
+			const [rowId, columnId] = op.split('-');
+			return {
+				id: `rollback-${Date.now()}`,
+				rowId: parseInt(rowId),
+				columnId: parseInt(columnId),
+				value: null, // Signal pentru rollback
+				isRollback: true
+			};
+		}));
+	}, [onSuccess]);
 
 	// Verifică dacă o celulă are modificări pending
 	const hasPendingChange = useCallback(
@@ -413,6 +435,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 		addPendingChange,
 		savePendingChanges,
 		discardPendingChanges,
+		rollbackOptimisticUpdates, // 🔧 FIX: Export rollback function
 		saveNow,
 
 		// Helpers

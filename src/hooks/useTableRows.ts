@@ -5,6 +5,7 @@ import { useDatabase } from "@/contexts/DatabaseContext";
 import { Row } from "@/types/database";
 import { FilterConfig, FilterPayload, FilteredRowsResponse } from "@/types/filtering-enhanced";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
+import { useAbortController } from "./useAbortController";
 
 interface PaginationInfo {
 	page: number;
@@ -59,6 +60,9 @@ function useTableRows(
 	const userId = user?.id;
 	const tenantId = tenant?.id;
 	const databaseId = selectedDatabase?.id;
+	
+	// 🔧 FIX: AbortController pentru race conditions
+	const { createNewController, abortPrevious } = useAbortController();
 
 	// State pentru rânduri și paginare
 	const [rows, setRows] = useState<Row[]>([]);
@@ -192,6 +196,9 @@ function useTableRows(
 				lastFetchParamsRef.current = ""; // Clear last fetch params to force new fetch
 			}
 
+			// 🔧 FIX: Create new abort controller for this request
+			const controller = createNewController();
+			
 			// Only set loading state if showLoading is true
 			if (showLoading) {
 				setLoading(true);
@@ -232,6 +239,7 @@ function useTableRows(
 						Authorization: `Bearer ${token}`,
 						"Cache-Control": "no-cache",
 					},
+					signal: controller.signal, // 🔧 FIX: Add abort signal
 				});
 
 				if (!res.ok) {
@@ -266,6 +274,12 @@ function useTableRows(
 					throw new Error("Invalid response format from server");
 				}
 			} catch (err) {
+				// 🔧 FIX: Handle AbortError gracefully
+				if (err instanceof Error && err.name === 'AbortError') {
+					console.log("🚫 Request was aborted, skipping error handling");
+					return; // Don't set error state for aborted requests
+				}
+				
 				const errorMessage = err instanceof Error ? err.message : "Unknown error";
 				
 				// Check if it's a validation error
@@ -293,6 +307,7 @@ function useTableRows(
 			generateCacheKey,
 			getCachedData,
 			setCachedData,
+			createNewController, // 🔧 FIX: Add AbortController dependency
 		],
 	);
 
