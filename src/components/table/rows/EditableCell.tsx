@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, KeyboardEvent, useMemo, JSX, memo, useEffect, useRef, useCallback } from "react";
+import { useState, KeyboardEvent, memo, useEffect, useRef, useCallback } from "react";
 import { Cell, Column, Row, Table } from "@/types/database";
 import { Input } from "../../ui/input";
 import {
@@ -16,7 +16,6 @@ import {
 	USER_FRIENDLY_COLUMN_TYPES,
 	COLUMN_TYPE_LABELS,
 } from "@/lib/columnTypes";
-import { SearchableReferenceSelect } from "./SearchableReferenceSelect";
 import { MultipleReferenceSelect } from "./MultipleReferenceSelect";
 import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
 import { useTablePermissions } from "@/hooks/useTablePermissions";
@@ -156,40 +155,7 @@ interface Props {
 	pendingValue?: any;
 }
 
-// Funcție optimizată pentru un singur tabel - procesează doar rândurile cu celule
-const createReferenceDataForTable = (table: Table) => {
-	const referenceData: Record<
-		number,
-		{
-			value: any;
-			displayName: string;
-			row: Row;
-		}[]
-	> = {};
-
-	// Procesăm doar coloanele care au celule
-	table.columns?.forEach((column) => {
-		const columnCells = table.rows
-			?.filter((row) => row.cells && row.cells.length > 0)
-			?.map((row) => {
-				const cell = row.cells?.find((c) => c.columnId === column.id);
-				return {
-					value: cell?.value,
-					displayName: cell?.value || `Row ${row.id}`,
-					row,
-				};
-			})
-			.filter((item) => item.value != null);
-
-		if (columnCells && columnCells.length > 0) {
-			referenceData[column.id] = columnCells;
-		}
-	});
-
-	return referenceData;
-};
-
-// Componenta principală EditableCell - simplificată
+// Componenta principală EditableCell - complet simplificată
 const EditableCell = memo(({
 	columns,
 	cell,
@@ -294,7 +260,10 @@ const EditableCell = memo(({
 		}
 	}, [column?.referenceTableId, tables]);
 
-	setLoading(referenceDataLoading);
+	// Set loading state
+	useEffect(() => {
+		setLoading(referenceDataLoading);
+	}, [referenceDataLoading]);
 
 	// Permissions
 	const { permissions: userPermissions } = useCurrentUserPermissions();
@@ -303,8 +272,6 @@ const EditableCell = memo(({
 		userPermissions?.tablePermissions || [],
 		userPermissions?.columnsPermissions || []
 	);
-
-	// TableEditor gestionează skeleton și "Access Denied" - aici doar verificăm editarea
 
 	// Verificăm dacă utilizatorul poate edita această coloană
 	const canEdit = column ? tablePermissions.canEditColumn(column.id) : false;
