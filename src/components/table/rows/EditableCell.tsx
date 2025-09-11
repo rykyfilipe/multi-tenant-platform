@@ -364,6 +364,13 @@ interface Props {
 	pendingValue?: any;
 }
 
+// Helper function to normalize reference values consistently
+const normalizeReferenceValue = (value: any, isReferenceColumn: boolean) => {
+	if (!isReferenceColumn) return value;
+	if (Array.isArray(value)) return value;
+	return value ? [value] : [];
+};
+
 // Funcție optimizată pentru un singur tabel - procesează doar rândurile cu celule
 const createReferenceDataForTable = (table: Table) => {
 	const referenceData: Record<
@@ -477,15 +484,9 @@ export function EditableCell({
 		// Folosește valoarea pending dacă există, altfel valoarea din celulă
 		const initialValue = hasPendingChange ? pendingValue : cell?.value;
 
-		// Ensure reference columns always have array values
+		// Use normalize function for consistent reference handling
 		const column = columns?.find((col) => col.id === cell?.columnId);
-		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-			if (Array.isArray(initialValue)) {
-				return initialValue;
-			}
-			return initialValue ? [initialValue] : [];
-		}
-		return initialValue;
+		return normalizeReferenceValue(initialValue, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
 	});
 
 	// Update local value when cell value changes (but not when editing)
@@ -494,15 +495,8 @@ export function EditableCell({
 			const newValue = hasPendingChange ? pendingValue : cell?.value;
 			const column = columns?.find((col) => col.id === cell?.columnId);
 			
-			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-				if (Array.isArray(newValue)) {
-					setValue(newValue);
-				} else {
-					setValue(newValue ? [newValue] : []);
-				}
-			} else {
-				setValue(newValue);
-			}
+			// Use normalize function for consistent reference handling
+			setValue(normalizeReferenceValue(newValue, column?.type === USER_FRIENDLY_COLUMN_TYPES.link));
 		}
 	}, [cell?.value, hasPendingChange, pendingValue, isEditing, columns]);
 
@@ -520,22 +514,26 @@ export function EditableCell({
 				columnType: column?.type
 			});
 			
-			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-				if (Array.isArray(currentValue)) {
-					setValue(currentValue);
-				} else {
-					setValue(currentValue ? [currentValue] : []);
-				}
-			} else {
-				setValue(currentValue);
-			}
+			// Use normalize function for consistent reference handling
+			setValue(normalizeReferenceValue(currentValue, column?.type === USER_FRIENDLY_COLUMN_TYPES.link));
 		}
 	}, [isEditing, hasPendingChange, pendingValue, cell?.value, columns]);
 
+	// Ref to store the current value for immediate access
+	const currentValueRef = useRef<any>(value);
+	
+	// Update ref when value changes
+	useEffect(() => {
+		currentValueRef.current = value;
+	}, [value]);
+
 	// Optimistic update: immediately update local state when user types
+	// NO auto-save - only update local state for immediate UI feedback
 	const handleValueChange = useCallback((newValue: any) => {
 		console.log("🔍 DEBUG: handleValueChange", { newValue, currentValue: value });
 		setValue(newValue);
+		currentValueRef.current = newValue; // Update ref immediately
+		// DO NOT call onSave here - changes should only be committed on Enter/blur
 	}, [value]);
 
 	// Ref pentru container-ul de editare
@@ -641,30 +639,25 @@ export function EditableCell({
 	const handleKey = useCallback((e: KeyboardEvent) => {
 		if (e.key === "Enter") {
 			console.log("🔍 DEBUG: Enter key pressed", { value, columnType: column?.type });
-			// For all column types, just add to pending changes and exit edit mode
-			// Do NOT auto-save - changes should only be committed on batch save
-			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-				if (hasInvalidReferences) {
-					return; // Don't cancel if there are invalid references
-				}
-				// Add to pending changes before canceling
-				onSave(value);
-				onCancel();
-			} else if (column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
-				// Add to pending changes before canceling
-				onSave(value);
-				onCancel();
-			} else {
-				// For text/number/date, add to pending changes and cancel
-				onSave(value);
-				onCancel();
+			
+			// Standardized behavior for ALL column types:
+			// 1. Check for invalid references (only applies to link columns)
+			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link && hasInvalidReferences) {
+				return; // Don't save if there are invalid references
 			}
+			
+			// 2. Normalize value for reference columns before saving
+			const normalizedValue = normalizeReferenceValue(currentValueRef.current, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
+			
+			// 3. Add to pending changes and exit edit mode
+			onSave(normalizedValue);
+			onCancel();
 		}
 		if (e.key === "Escape") onCancel();
-	}, [column?.type, hasInvalidReferences, onCancel, onSave, value]);
+	}, [column?.type, hasInvalidReferences, onCancel, onSave]);
 
-	// Auto-save is now handled immediately in handleValueChange for better optimistic UX
-	// No need for debounced auto-save since we update UI immediately
+	// All onChange handlers now only update local state for optimistic UI
+	// Changes are only committed to pending changes on Enter/blur events
 
 	// Click outside to cancel editing - only on actual click, not focus events
 	useEffect(() => {
@@ -678,31 +671,27 @@ export function EditableCell({
 				const isDropdownClick = target.closest('[data-dropdown]') || 
 									   target.closest('.fixed.z-\\[9999\\]') ||
 									   target.closest('[role="listbox"]') ||
-									   target.closest('[role="option"]');
+									   target.closest('[role="option"]') ||
+									   target.closest('[data-tooltip]') ||
+									   target.closest('.absolute.z-\\[9999\\]');
 				
 				// Don't cancel editing if clicking on dropdown elements
 				if (isDropdownClick) {
 					return;
 				}
 
-				// For all column types, add to pending changes before canceling
-				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-					if (hasInvalidReferences) {
-						// Don't cancel if there are invalid references
-						return;
-					}
-					// Add to pending changes before canceling
-					onSave(value);
-					onCancel();
-				} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
-					// Add to pending changes before canceling
-					onSave(value);
-					onCancel();
-				} else {
-					// For text/number/date, add to pending changes and cancel
-					onSave(value);
-					onCancel();
+				// Standardized behavior for ALL column types:
+				// 1. Check for invalid references (only applies to link columns)
+				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && hasInvalidReferences) {
+					return; // Don't save if there are invalid references
 				}
+				
+				// 2. Normalize value for reference columns before saving
+				const normalizedValue = normalizeReferenceValue(currentValueRef.current, column.type === USER_FRIENDLY_COLUMN_TYPES.link);
+				
+				// 3. Add to pending changes and exit edit mode
+				onSave(normalizedValue);
+				onCancel();
 			}
 		};
 
@@ -715,7 +704,7 @@ export function EditableCell({
 			clearTimeout(timeoutId);
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, [isEditing, onCancel, column?.type, hasInvalidReferences, value, onSave]);
+	}, [isEditing, onCancel, column?.type, hasInvalidReferences, onSave]);
 
 
 	let referenceSelect: JSX.Element | null = null;
@@ -734,8 +723,8 @@ export function EditableCell({
 						value={value}
 						onValueChange={(val) => {
 							setValue(val);
-							// For reference columns, save immediately to pending changes
-							onSave(val);
+							currentValueRef.current = val; // Update ref immediately
+							// DO NOT auto-save - only update local state for optimistic UI
 						}}
 						options={options}
 						placeholder={`${t("table.select")} ${
@@ -778,8 +767,8 @@ export function EditableCell({
 						checked={value === true}
 						onCheckedChange={(checked) => {
 							setValue(checked);
-							// Add to pending changes for boolean changes
-							onSave(checked);
+							currentValueRef.current = checked; // Update ref immediately
+							// DO NOT auto-save - only update local state for optimistic UI
 						}}>
 						<span className='sr-only'>{t("table.toggleBoolean")}</span>
 					</Switch>
@@ -790,8 +779,8 @@ export function EditableCell({
 						value={String(value || "")}
 						onValueChange={(v) => {
 							setValue(v);
-							// Add to pending changes for customArray changes
-							onSave(v);
+							currentValueRef.current = v; // Update ref immediately
+							// DO NOT auto-save - only update local state for optimistic UI
 						}}
 						options={column.customOptions || []}
 						placeholder='Select an option'
@@ -863,19 +852,15 @@ export function EditableCell({
 
 				if (refPrimaryKeyColumn && referenceTable.rows) {
 					// Handle reference values (always multiple)
-					// Ensure value is always treated as array
-					const referenceValues = Array.isArray(value)
-						? value
-						: value
-						? [value]
-						: [];
+					// Use normalize function for consistent array handling
+					const referenceValues = normalizeReferenceValue(value, true);
 
 					if (referenceValues.length === 0) {
 						return "Double-click to add values";
 					}
 					
 					// Pentru multiple references, afișăm doar cheile primare
-					const primaryKeys = referenceValues.map((refValue) => {
+					const primaryKeys = referenceValues.map((refValue: any) => {
 						// Căutăm rândul cu cheia primară specificată
 						const referenceRow = referenceTable.rows.find((refRow: any) => {
 							// Verificăm că refRow există și are celule
@@ -911,11 +896,7 @@ export function EditableCell({
 				}
 			} else {
 				// Tabelul de referință nu există - afișăm valoarea normal
-				const referenceValues = Array.isArray(value)
-					? value
-					: value
-					? [value]
-					: [];
+				const referenceValues = normalizeReferenceValue(value, true);
 				if (referenceValues.length === 0) {
 					return "Double-click to add values";
 				} else {
@@ -977,12 +958,8 @@ export function EditableCell({
 			}`}>
 			{/* Pentru references, afișăm tooltip-ul (always multiple) */}
 			{column?.type === USER_FRIENDLY_COLUMN_TYPES.link && (() => {
-				// Ensure value is always treated as array for reference columns
-				const referenceValues = Array.isArray(value)
-					? value
-					: value
-					? [value]
-					: [];
+				// Use normalize function for consistent array handling
+				const referenceValues = normalizeReferenceValue(value, true);
 				
 				if (referenceValues.length === 0 || !column.referenceTableId || !tables) {
 					return null;

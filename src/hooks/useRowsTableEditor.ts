@@ -8,13 +8,14 @@ import { useBatchCellEditor } from "./useBatchCellEditor";
 interface UseRowsTableEditorOptions {
 	table: Table | null;
 	onCellsUpdated?: (updatedCells: any[]) => void;
+	onError?: (error: string) => void;
 }
 
 function useRowsTableEditor(
 	options: UseRowsTableEditorOptions = { table: null },
 ) {
 	const { user } = useApp();
-	const { table, onCellsUpdated } = options;
+	const { table, onCellsUpdated, onError } = options;
 
 	console.log(
 		"🎣 useRowsTableEditor initialized with table:",
@@ -39,9 +40,9 @@ function useRowsTableEditor(
 		table,
 		autoSaveDelay: -1, // Disable auto-save completely for batch editing
 		onSuccess: onCellsUpdated,
-		onError: (error) => {
+		onError: onError || ((error) => {
 			console.error("Batch save error:", error);
-		},
+		}),
 	});
 
 	const handleCancelEdit = () => cancelEditing();

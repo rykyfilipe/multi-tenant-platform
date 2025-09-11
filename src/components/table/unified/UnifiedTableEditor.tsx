@@ -165,11 +165,13 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							console.log("🔍 DEBUG: Cell index found", { cellIndex, cellId: updatedCell.id, columnId: updatedCell.columnId });
 							
 							if (cellIndex >= 0) {
-								updatedRow.cells[cellIndex] = updatedCell;
-								console.log("🔍 DEBUG: Updated existing cell", { cellIndex, newValue: updatedCell.value });
+								// Store original value for potential rollback
+								const originalCell = { ...updatedRow.cells[cellIndex] };
+								updatedRow.cells[cellIndex] = { ...updatedCell, originalValue: originalCell.value };
+								console.log("🔍 DEBUG: Updated existing cell with original value", { cellIndex, newValue: updatedCell.value, originalValue: originalCell.value });
 							} else {
 								// Add new cell if it doesn't exist
-								updatedRow.cells.push(updatedCell);
+								updatedRow.cells.push({ ...updatedCell, originalValue: null });
 								console.log("🔍 DEBUG: Added new cell", { newValue: updatedCell.value });
 							}
 						}
@@ -177,6 +179,11 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					return updatedRow;
 				}),
 			);
+		},
+		onError: (error: string) => {
+			console.error("❌ Batch save error, reverting optimistic updates:", error);
+			// Refresh the table data to revert optimistic updates
+			refetchRows();
 		},
 	});
 
@@ -981,97 +988,30 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 	const handleSaveCellWrapper = useCallback(
 		async (columnId: string, rowId: string, cellId: string, value: any) => {
-			if (!token) return;
+			console.log("💾 handleSaveCellWrapper called - delegating to hook's handleSaveCell", { 
+				rowId, columnId, cellId, value 
+			});
 
-			// Find the column to check its type
-			const column = columns?.find((col) => col.id.toString() === columnId);
-			const isCustomArray = column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray;
-			const isReference = column?.type === USER_FRIENDLY_COLUMN_TYPES.link;
-
-			// Optimistic update: immediately update UI
-			console.log("🚀 Optimistic update for cell:", { rowId, columnId, cellId, value, isCustomArray, isReference });
-			
-			// Create optimistic cell update
-			const optimisticCell = {
-				id: cellId === "virtual" ? `temp-${Date.now()}` : cellId,
-				rowId: parseInt(rowId),
-				columnId: parseInt(columnId),
-				value: value,
-				isOptimistic: true,
-			};
-
-			// Immediately update UI
-			setRows((currentRows: any[]) =>
-				currentRows.map((row) => {
-					if (row.id.toString() === rowId) {
-						const existingCellIndex = row.cells.findIndex(
-							(cell: any) =>
-								cell.id === optimisticCell.id ||
-								(cell.columnId.toString() === columnId && cell.id === "virtual"),
-						);
-
-						let updatedCells = [...row.cells];
-
-						if (existingCellIndex >= 0) {
-							updatedCells[existingCellIndex] = optimisticCell;
-						} else {
-							updatedCells.push(optimisticCell);
-						}
-
-						return {
-							...row,
-							cells: updatedCells,
-						};
-					}
-					return row;
-				}),
-			);
-
-			// Then call the actual save function
+			// Simply delegate to the hook's handleSaveCell function
+			// This function should only add to pending changes, not do immediate server saves
 			await handleSaveCell(
 				columnId,
 				rowId,
 				cellId,
 				paginatedRows,
-				async (updatedCell?: any) => {
-					if (updatedCell) {
-						// Replace optimistic cell with real one from server
-						setRows((currentRows: any[]) =>
-							currentRows.map((row) => {
-								if (row.id.toString() === rowId) {
-									const existingCellIndex = row.cells.findIndex(
-										(cell: any) =>
-											cell.id === updatedCell.id ||
-											(cell.columnId.toString() === columnId && cell.id === "virtual"),
-									);
-
-									let updatedCells = [...row.cells];
-
-									if (existingCellIndex >= 0) {
-										updatedCells[existingCellIndex] = { ...updatedCell, isOptimistic: false };
-									} else {
-										updatedCells.push({ ...updatedCell, isOptimistic: false });
-									}
-
-									return {
-										...row,
-										cells: updatedCells,
-									};
-								}
-								return row;
-							}),
-						);
-					}
+				() => {
+					// No-op callback since we're not doing immediate server save
+					console.log("💾 Pending change added via hook, no immediate server call");
 				},
 				value,
 				table,
-				token,
+				token || "",
 				user,
 				showAlert,
-				{ keepEditing: isCustomArray || isReference }, // Keep editing open for customArray and reference
+				{ keepEditing: false }, // Don't keep editing open - let EditableCell handle this
 			);
 		},
-		[handleSaveCell, paginatedRows, table, token, user, showAlert, setRows, columns],
+		[handleSaveCell, paginatedRows, table, token, user, showAlert],
 	);
 
 	// Loading state
