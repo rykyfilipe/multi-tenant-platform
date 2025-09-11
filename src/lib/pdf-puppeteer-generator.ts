@@ -85,20 +85,49 @@ export class PuppeteerPDFGenerator {
 			console.log('🔍 DEBUG: ensureChromeAvailable called');
 			console.log('🔍 DEBUG: process.env.HOME:', process.env.HOME);
 			console.log('🔍 DEBUG: process.env.PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
+			console.log('🔍 DEBUG: process.env.NODE_ENV:', process.env.NODE_ENV);
+			console.log('🔍 DEBUG: process.env.VERCEL:', process.env.VERCEL);
 			
-			// Try to find Chrome in common locations
-			const possiblePaths = [
-				// Puppeteer cache locations
-				process.env.HOME + '/.cache/puppeteer/chrome/linux-140.0.7339.82/chrome-linux64/chrome',
-				// System Chrome locations
+			// Set PUPPETEER_CACHE_DIR for production environments
+			if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+				if (!process.env.PUPPETEER_CACHE_DIR) {
+					process.env.PUPPETEER_CACHE_DIR = '/tmp/.puppeteer_cache';
+					console.log('🔍 DEBUG: Set PUPPETEER_CACHE_DIR to:', process.env.PUPPETEER_CACHE_DIR);
+				}
+			}
+			
+			// Build possible paths based on environment
+			const possiblePaths = [];
+			
+			// Add HOME-based paths if HOME is available
+			if (process.env.HOME) {
+				possiblePaths.push(
+					process.env.HOME + '/.cache/puppeteer/chrome/linux-140.0.7339.82/chrome-linux64/chrome',
+					process.env.HOME + '/.cache/puppeteer/chrome/linux-140.0.7339.82/chrome-linux64/chrome'
+				);
+			}
+			
+			// Add production-specific paths
+			possiblePaths.push(
+				// System Chrome locations (Linux)
 				'/usr/bin/google-chrome',
 				'/usr/bin/google-chrome-stable',
 				'/usr/bin/chromium-browser',
 				'/usr/bin/chromium',
+				// Production server paths
+				'/opt/google/chrome/chrome',
+				'/opt/google/chrome/google-chrome',
+				'/usr/local/bin/chrome',
+				'/usr/local/bin/google-chrome',
+				// macOS paths
 				'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+				// Windows paths
 				'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-				'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
-			];
+				'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+				// Vercel/Serverless paths
+				'/tmp/chrome/chrome',
+				'/tmp/puppeteer/chrome/chrome'
+			);
 
 			let chromePath = null;
 			console.log('🔍 DEBUG: Checking possible paths:', possiblePaths);
@@ -113,30 +142,46 @@ export class PuppeteerPDFGenerator {
 			}
 
 			// If not found in common paths, try to find any Chrome in Puppeteer cache
-			if (!chromePath && process.env.HOME) {
-				const puppeteerCacheDir = process.env.HOME + '/.cache/puppeteer/chrome';
-				console.log(`Checking Puppeteer cache directory: ${puppeteerCacheDir}`);
+			if (!chromePath) {
+				const possibleCacheDirs = [];
 				
-				if (fs.existsSync(puppeteerCacheDir)) {
-					try {
-						const versions = fs.readdirSync(puppeteerCacheDir);
-						console.log(`Found versions in cache: ${versions.join(', ')}`);
-						
-						for (const version of versions) {
-							const chromePath = `${puppeteerCacheDir}/${version}/chrome-linux64/chrome`;
-							console.log(`Checking Chrome path: ${chromePath}`);
+				// Add HOME-based cache if available
+				if (process.env.HOME) {
+					possibleCacheDirs.push(process.env.HOME + '/.cache/puppeteer/chrome');
+				}
+				
+				// Add production cache directories
+				possibleCacheDirs.push(
+					'/tmp/puppeteer/chrome',
+					'/opt/puppeteer/chrome',
+					'/var/cache/puppeteer/chrome',
+					process.env.PUPPETEER_CACHE_DIR || '/tmp/.puppeteer_cache'
+				);
+				
+				for (const cacheDir of possibleCacheDirs) {
+					console.log(`Checking Puppeteer cache directory: ${cacheDir}`);
+					
+					if (fs.existsSync(cacheDir)) {
+						try {
+							const versions = fs.readdirSync(cacheDir);
+							console.log(`Found versions in cache: ${versions.join(', ')}`);
 							
-							if (fs.existsSync(chromePath)) {
-								console.log(`Found Chrome in Puppeteer cache: ${chromePath}`);
-								process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
-								return;
+							for (const version of versions) {
+								const chromePath = `${cacheDir}/${version}/chrome-linux64/chrome`;
+								console.log(`Checking Chrome path: ${chromePath}`);
+								
+								if (fs.existsSync(chromePath)) {
+									console.log(`Found Chrome in Puppeteer cache: ${chromePath}`);
+									process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
+									return;
+								}
 							}
+						} catch (error) {
+							console.log('Could not read Puppeteer cache directory:', (error as Error).message);
 						}
-					} catch (error) {
-						console.log('Could not read Puppeteer cache directory:', (error as Error).message);
+					} else {
+						console.log('Puppeteer cache directory does not exist:', cacheDir);
 					}
-				} else {
-					console.log('Puppeteer cache directory does not exist');
 				}
 			}
 
@@ -149,12 +194,26 @@ export class PuppeteerPDFGenerator {
 			// Try to install Chrome via Puppeteer
 			console.log('Chrome not found, attempting to install via Puppeteer...');
 			try {
-				// Try different installation methods
-				const installCommands = [
+				// In production, we might not have npm/npx available
+				// Try different installation methods based on environment
+				const installCommands = [];
+				
+				// Add commands based on what's available
+				if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+					// Production environment - try system package manager first
+					installCommands.push(
+						'apt-get update && apt-get install -y google-chrome-stable',
+						'yum install -y google-chrome-stable',
+						'dnf install -y google-chrome-stable'
+					);
+				}
+				
+				// Add npm-based commands
+				installCommands.push(
 					'npx puppeteer browsers install chrome',
 					'node_modules/.bin/puppeteer browsers install chrome',
 					'./node_modules/.bin/puppeteer browsers install chrome'
-				];
+				);
 
 				let installed = false;
 				for (const cmd of installCommands) {
@@ -174,26 +233,29 @@ export class PuppeteerPDFGenerator {
 				}
 
 				if (!installed) {
-					throw new Error('All installation commands failed');
+					console.log('All installation commands failed, trying fallback...');
+					// Fallback: try to use system Chrome if available
+					const systemChromePaths = [
+						'/usr/bin/google-chrome',
+						'/usr/bin/google-chrome-stable',
+						'/usr/bin/chromium-browser',
+						'/usr/bin/chromium',
+						'/opt/google/chrome/chrome',
+						'/opt/google/chrome/google-chrome'
+					];
+					
+					for (const path of systemChromePaths) {
+						if (fs.existsSync(path)) {
+							console.log(`Using system Chrome at: ${path}`);
+							process.env.PUPPETEER_EXECUTABLE_PATH = path;
+							return;
+						}
+					}
+					
+					throw new Error('Chrome browser not available and could not be installed automatically');
 				}
 			} catch (installError) {
 				console.error('Failed to install Chrome via Puppeteer:', installError);
-				// Fallback: try to use system Chrome if available
-				const systemChromePaths = [
-					'/usr/bin/google-chrome',
-					'/usr/bin/google-chrome-stable',
-					'/usr/bin/chromium-browser',
-					'/usr/bin/chromium'
-				];
-				
-				for (const path of systemChromePaths) {
-					if (fs.existsSync(path)) {
-						console.log(`Using system Chrome at: ${path}`);
-						process.env.PUPPETEER_EXECUTABLE_PATH = path;
-						return;
-					}
-				}
-				
 				throw new Error('Chrome browser not available and could not be installed automatically');
 			}
 		} catch (error) {
