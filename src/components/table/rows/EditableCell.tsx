@@ -616,12 +616,12 @@ export function EditableCell({
 		if (e.key === "Escape") onCancel();
 	};
 
-	// Auto-save on value change with debounce (only for non-reference columns)
+	// Auto-save on value change with debounce (only for non-reference and non-customArray columns)
 	useEffect(() => {
 		if (!isEditing) return;
 
-		// Don't auto-save reference columns - they should be saved manually
-		if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) return;
+		// Don't auto-save reference columns or customArray - they should be saved manually/immediately
+		if (column.type === USER_FRIENDLY_COLUMN_TYPES.link || column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) return;
 
 		const timeoutId = setTimeout(() => {
 			// Only save if value has actually changed from the original
@@ -653,6 +653,9 @@ export function EditableCell({
 					} else {
 						onCancel();
 					}
+				} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+					// For customArray, value is already saved on change, just cancel
+					onCancel();
 				} else {
 					onCancel();
 				}
@@ -741,7 +744,11 @@ export function EditableCell({
 				) : column.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
 					<AbsoluteSelect
 						value={String(value || "")}
-						onValueChange={(v) => setValue(v)}
+						onValueChange={(v) => {
+							setValue(v);
+							// Auto-save for customArray when value changes
+							onSave(v);
+						}}
 						options={column.customOptions || []}
 						placeholder='Select an option'
 						className="w-full"
@@ -781,10 +788,12 @@ export function EditableCell({
 		display = new Date(value).toLocaleDateString();
 	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
 		// Pentru coloanele customArray, verificăm dacă valoarea există în opțiunile definite
-		if (column.customOptions && column.customOptions.includes(value)) {
+		if (value && column.customOptions && column.customOptions.includes(value)) {
 			display = String(value);
-		} else {
+		} else if (value) {
 			display = `⚠️ Invalid: ${value}`;
+		} else {
+			display = t("table.doubleClickToAddValue");
 		}
 	} else if (
 		column.type === USER_FRIENDLY_COLUMN_TYPES.link &&

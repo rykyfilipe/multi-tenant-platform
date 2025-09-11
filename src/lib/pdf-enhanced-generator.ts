@@ -376,7 +376,7 @@ export class EnhancedPDFGenerator {
 	}
 
 	/**
-	 * Draw header section
+	 * Draw header section (matching HTML preview)
 	 */
 	private static async drawHeader(
 		page: any,
@@ -389,71 +389,66 @@ export class EnhancedPDFGenerator {
 		translations: Record<string, string>
 	): Promise<void> {
 		const { width } = page.getSize();
+		const margin = 50;
 		
-		// Draw border line
+		// Draw header border line (matching HTML preview)
 		page.drawLine({
-			start: { x: 50, y: 780 },
-			end: { x: width - 50, y: 780 },
+			start: { x: margin, y: 780 },
+			end: { x: width - margin, y: 780 },
 			thickness: 2,
-			color: textColor,
+			color: rgb(0.8, 0.8, 0.8),
 		});
 
-		// Company logo placeholder (circle with first letter)
+		// Company logo placeholder (matching HTML preview style)
 		const companyInitial = (tenantBranding.name || 'C').charAt(0).toUpperCase();
-		// Draw circle using drawCircle (if available) or drawRectangle as fallback
-		try {
-			page.drawCircle({
-				x: 60,
-				y: 760,
-				size: 20,
-				borderColor: textColor,
-				borderWidth: 2,
-			});
-		} catch (error) {
-			// Fallback to rectangle if drawCircle is not available
+		// Draw a 3x3 grid pattern like in HTML preview
+		const gridSize = 6;
+		const spacing = 2;
+		const positions = [
+			{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 },
+			{ row: 1, col: 0 }, { row: 1, col: 2 },
+			{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }
+		];
+		
+		positions.forEach(pos => {
+			const squareX = margin + pos.col * (gridSize + spacing);
+			const squareY = 760 - pos.row * (gridSize + spacing);
+			
 			page.drawRectangle({
-				x: 40,
-				y: 740,
-				width: 40,
-				height: 40,
-				borderColor: textColor,
-				borderWidth: 2,
+				x: squareX,
+				y: squareY,
+				width: gridSize,
+				height: gridSize,
+				color: rgb(0, 0, 0),
 			});
-		}
-		page.drawText(this.handleUnicodeText(companyInitial), {
-			x: 55,
-			y: 750,
-			size: 16,
-			font: boldFont,
-			color: textColor,
 		});
 
-		// Company name
+		// Company name and details (matching HTML preview layout)
 		page.drawText(this.handleUnicodeText(tenantBranding.name || 'Company Name'), {
-			x: 100,
+			x: margin + 60,
 			y: 760,
 			size: 20,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 		page.drawText('Private Limited', {
-			x: 100,
+			x: margin + 60,
 			y: 740,
 			size: 12,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 
-		// Invoice title - right side
+		// Invoice title - right side (matching HTML preview)
 		page.drawText(this.handleUnicodeText(translations.invoice || 'INVOICE'), {
 			x: width - 200,
 			y: 760,
 			size: 32,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 
-		// Invoice number and date
+		// Invoice number and date (matching HTML preview)
 		const invoiceNumber = invoiceData.invoice?.invoice_series ? 
 			`${invoiceData.invoice.invoice_series}-${invoiceData.invoice.invoice_number}` : 
 			invoiceData.invoice?.invoice_number || 'N/A';
@@ -463,7 +458,7 @@ export class EnhancedPDFGenerator {
 			y: 730,
 			size: 12,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.2, 0.2, 0.2),
 		});
 
 		// Date
@@ -473,10 +468,10 @@ export class EnhancedPDFGenerator {
 			y: 715,
 			size: 12,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 
-		// Total Due
+		// Total Due (matching HTML preview)
 		const totalAmount = invoiceData.invoice?.total_amount || 0;
 		const currency = invoiceData.invoice?.base_currency || 'USD';
 		const safeTotalAmount = typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount) || 0;
@@ -485,20 +480,20 @@ export class EnhancedPDFGenerator {
 			y: 700,
 			size: 14,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 
-		// Draw bottom border line
+		// Draw bottom border line (matching HTML preview)
 		page.drawLine({
-			start: { x: 50, y: 680 },
-			end: { x: width - 50, y: 680 },
+			start: { x: margin, y: 680 },
+			end: { x: width - margin, y: 680 },
 			thickness: 2,
-			color: textColor,
+			color: rgb(0.8, 0.8, 0.8),
 		});
 	}
 
 	/**
-	 * Draw company information
+	 * Draw company information (matching HTML preview)
 	 */
 	private static async drawCompanyInfo(
 		page: any,
@@ -511,60 +506,112 @@ export class EnhancedPDFGenerator {
 	): Promise<void> {
 		const y = 650;
 		let currentY = y;
+		const margin = 50;
 
 		page.drawText(`${this.handleUnicodeText(translations.company || 'From')}:`, {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 12,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 
 		currentY -= 20;
 		page.drawText(this.handleUnicodeText(tenantBranding.name || 'Company Name'), {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 12,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 
 		if (tenantBranding.address) {
 			currentY -= 15;
 			page.drawText(this.handleUnicodeText(tenantBranding.address), {
-				x: 50,
+				x: margin,
 				y: currentY,
 				size: 10,
 				font: font,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
+			});
+		}
+
+		// Company city, postal code, country
+		const addressParts = [
+			tenantBranding.companyPostalCode,
+			tenantBranding.companyCity,
+			tenantBranding.companyCountry
+		].filter(Boolean);
+		
+		if (addressParts.length > 0) {
+			currentY -= 15;
+			page.drawText(this.handleUnicodeText(addressParts.join(', ')), {
+				x: margin,
+				y: currentY,
+				size: 10,
+				font: font,
+				color: rgb(0.4, 0.4, 0.4),
 			});
 		}
 
 		if (tenantBranding.companyEmail) {
 			currentY -= 15;
 			page.drawText(this.handleUnicodeText(tenantBranding.companyEmail), {
-				x: 50,
+				x: margin,
 				y: currentY,
 				size: 10,
 				font: font,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
 			});
 		}
 
 		if (tenantBranding.phone) {
 			currentY -= 15;
 			page.drawText(this.handleUnicodeText(tenantBranding.phone), {
-				x: 50,
+				x: margin,
 				y: currentY,
 				size: 10,
 				font: font,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
+			});
+		}
+
+		if (tenantBranding.website) {
+			currentY -= 15;
+			page.drawText(this.handleUnicodeText(tenantBranding.website), {
+				x: margin,
+				y: currentY,
+				size: 10,
+				font: font,
+				color: rgb(0.4, 0.4, 0.4),
+			});
+		}
+
+		if (tenantBranding.companyTaxId) {
+			currentY -= 15;
+			page.drawText(`Tax ID: ${this.handleUnicodeText(tenantBranding.companyTaxId)}`, {
+				x: margin,
+				y: currentY,
+				size: 10,
+				font: font,
+				color: rgb(0.4, 0.4, 0.4),
+			});
+		}
+
+		if (tenantBranding.registrationNumber) {
+			currentY -= 15;
+			page.drawText(`Reg. No: ${this.handleUnicodeText(tenantBranding.registrationNumber)}`, {
+				x: margin,
+				y: currentY,
+				size: 10,
+				font: font,
+				color: rgb(0.4, 0.4, 0.4),
 			});
 		}
 	}
 
 	/**
-	 * Draw customer information
+	 * Draw customer information (matching HTML preview)
 	 */
 	private static async drawCustomerInfo(
 		page: any,
@@ -577,51 +624,63 @@ export class EnhancedPDFGenerator {
 		const { width } = page.getSize();
 		const y = 650;
 		let currentY = y;
+		const rightX = width - 200;
 
 		page.drawText(`${this.handleUnicodeText(translations.customer || 'Bill To')}:`, {
-			x: width - 200,
+			x: rightX,
 			y: currentY,
 			size: 12,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 
 		if (invoiceData.customer) {
 			currentY -= 20;
 			page.drawText(this.handleUnicodeText(invoiceData.customer.customer_name || 'Customer Name'), {
-				x: width - 200,
+				x: rightX,
 				y: currentY,
 				size: 12,
 				font: boldFont,
-				color: textColor,
+				color: rgb(0.1, 0.1, 0.1),
 			});
 
 			if (invoiceData.customer.customer_address) {
 				currentY -= 15;
 				page.drawText(this.handleUnicodeText(invoiceData.customer.customer_address), {
-					x: width - 200,
+					x: rightX,
 					y: currentY,
 					size: 10,
 					font: font,
-					color: textColor,
+					color: rgb(0.4, 0.4, 0.4),
 				});
 			}
 
 			if (invoiceData.customer.customer_email) {
 				currentY -= 15;
 				page.drawText(this.handleUnicodeText(invoiceData.customer.customer_email), {
-					x: width - 200,
+					x: rightX,
 					y: currentY,
 					size: 10,
 					font: font,
-					color: textColor,
+					color: rgb(0.4, 0.4, 0.4),
+				});
+			}
+
+			if (invoiceData.customer.customer_phone) {
+				currentY -= 15;
+				page.drawText(this.handleUnicodeText(invoiceData.customer.customer_phone), {
+					x: rightX,
+					y: currentY,
+					size: 10,
+					font: font,
+					color: rgb(0.4, 0.4, 0.4),
 				});
 			}
 		}
 	}
 
 	/**
-	 * Draw invoice details
+	 * Draw invoice details (matching HTML preview)
 	 */
 	private static async drawInvoiceDetails(
 		page: any,
@@ -631,66 +690,78 @@ export class EnhancedPDFGenerator {
 		textColor: any,
 		translations: Record<string, string>
 	): Promise<void> {
+		const { width } = page.getSize();
+		const margin = 50;
 		const y = 580;
 		let currentY = y;
+		const leftX = margin;
+		const rightX = margin + 200;
+		const farRightX = margin + 400;
 
-		// Invoice date
+		// Invoice Details section (matching HTML preview layout)
+		// Invoice Date (Left)
 		page.drawText(`${this.handleUnicodeText(translations.date || 'Invoice Date')}:`, {
-			x: 50,
+			x: leftX,
 			y: currentY,
 			size: 12,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		page.drawText(this.handleUnicodeText(invoiceData.invoice?.date || 'N/A'), {
-			x: 150,
+			x: leftX + 120,
 			y: currentY,
 			size: 12,
 			font: font,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 
-		// Due date
+		// Due Date (Middle)
 		if (invoiceData.invoice?.due_date) {
-			currentY -= 20;
 			page.drawText(`${this.handleUnicodeText(translations.dueDate || 'Due Date')}:`, {
-				x: 50,
+				x: rightX,
 				y: currentY,
 				size: 12,
 				font: boldFont,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
 			});
 			page.drawText(this.handleUnicodeText(invoiceData.invoice.due_date), {
-				x: 150,
+				x: rightX + 120,
 				y: currentY,
 				size: 12,
 				font: font,
-				color: textColor,
+				color: rgb(0.1, 0.1, 0.1),
 			});
 		}
 
-		// Payment terms
+		// Payment Terms (Right)
 		if (invoiceData.invoice?.payment_terms) {
-			currentY -= 20;
 			page.drawText(`${this.handleUnicodeText(translations.paymentTerms || 'Payment Terms')}:`, {
-				x: 50,
+				x: farRightX,
 				y: currentY,
 				size: 12,
 				font: boldFont,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
 			});
 			page.drawText(this.handleUnicodeText(invoiceData.invoice.payment_terms), {
-				x: 150,
+				x: farRightX + 120,
 				y: currentY,
 				size: 12,
 				font: font,
-				color: textColor,
+				color: rgb(0.1, 0.1, 0.1),
 			});
 		}
+
+		// Draw bottom border line (matching HTML preview)
+		page.drawLine({
+			start: { x: margin, y: currentY - 30 },
+			end: { x: width - margin, y: currentY - 30 },
+			thickness: 1,
+			color: rgb(0.8, 0.8, 0.8),
+		});
 	}
 
 	/**
-	 * Draw items table
+	 * Draw items table (matching HTML preview)
 	 */
 	private static async drawItemsTable(
 		page: any,
@@ -701,26 +772,28 @@ export class EnhancedPDFGenerator {
 		secondaryColor: any,
 		translations: Record<string, string>
 	): Promise<void> {
+		const { width } = page.getSize();
+		const margin = 50;
 		const y = 500;
-		const tableWidth = 500;
-		const colWidths = [200, 80, 80, 60];
+		const tableWidth = width - 2 * margin;
+		const colWidths = [300, 80, 60, 80];
 
-		// Table header background
+		// Table header background (matching HTML preview)
 		page.drawRectangle({
-			x: 50,
+			x: margin,
 			y: y - 30,
 			width: tableWidth,
 			height: 30,
 			color: rgb(0.95, 0.95, 0.95),
 		});
 
-		// Table header border
+		// Table header border (matching HTML preview)
 		page.drawRectangle({
-			x: 50,
+			x: margin,
 			y: y - 30,
 			width: tableWidth,
 			height: 30,
-			borderColor: textColor,
+			borderColor: rgb(0.8, 0.8, 0.8),
 			borderWidth: 1,
 		});
 
@@ -730,40 +803,41 @@ export class EnhancedPDFGenerator {
 			translations.quantity || 'QTY',
 			translations.total || 'TOTAL'
 		];
-		let x = 50;
+		let x = margin;
 		headers.forEach((header, index) => {
 			page.drawText(this.handleUnicodeText(header), {
 				x: x + 5,
 				y: y - 20,
 				size: 10,
 				font: boldFont,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
 			});
 			x += colWidths[index];
 		});
 
-		// Table rows
+		// Table rows (matching HTML preview)
 		let currentY = y - 50;
 		invoiceData.items.forEach((item: any, index: number) => {
 			// Draw row border
 			page.drawRectangle({
-				x: 50,
+				x: margin,
 				y: currentY - 20,
 				width: tableWidth,
 				height: 20,
-				borderColor: textColor,
+				borderColor: rgb(0.8, 0.8, 0.8),
 				borderWidth: 1,
 			});
 
 			// Item data
-			x = 50;
+			x = margin;
 			const unitPrice = parseFloat(item.unit_price || '0') || 0;
 			const quantity = parseFloat(item.quantity || '0') || 0;
+			const currency = item.currency || invoiceData.invoice?.base_currency || 'USD';
 			const itemData = [
 				item.product_name || item.description || 'Item',
-				`${unitPrice.toFixed(2)}`,
+				`${currency} ${unitPrice.toFixed(2)}`,
 				item.quantity || '0',
-				`${(quantity * unitPrice).toFixed(2)}`,
+				`${currency} ${(quantity * unitPrice).toFixed(2)}`,
 			];
 
 			itemData.forEach((data, dataIndex) => {
@@ -771,8 +845,8 @@ export class EnhancedPDFGenerator {
 					x: x + 5,
 					y: currentY - 10,
 					size: 9,
-					font: font,
-					color: textColor,
+					font: dataIndex === 0 || dataIndex === 3 ? boldFont : font,
+					color: rgb(0.1, 0.1, 0.1),
 				});
 				x += colWidths[dataIndex];
 			});
@@ -782,7 +856,7 @@ export class EnhancedPDFGenerator {
 	}
 
 	/**
-	 * Draw totals section
+	 * Draw totals section (matching HTML preview)
 	 */
 	private static async drawTotalsSection(
 		page: any,
@@ -794,99 +868,103 @@ export class EnhancedPDFGenerator {
 		translations: Record<string, string>
 	): Promise<void> {
 		const { width } = page.getSize();
+		const margin = 50;
 		const y = 200;
 		let currentY = y;
+		const totalsWidth = 200;
+		const totalsX = width - totalsWidth - margin;
+		const currency = invoiceData.invoice?.base_currency || 'USD';
 
-		// Subtotal
+		// Subtotal (matching HTML preview)
 		const safeSubtotal = typeof invoiceData.totals.subtotal === 'number' ? invoiceData.totals.subtotal : parseFloat(invoiceData.totals.subtotal) || 0;
 		page.drawText(`${this.handleUnicodeText(translations.subtotal || 'SUB TOTAL')}:`, {
-			x: width - 200,
+			x: totalsX,
 			y: currentY,
 			size: 10,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
-		page.drawText(this.handleUnicodeText(safeSubtotal.toFixed(2)), {
-			x: width - 100,
+		page.drawText(`${this.handleUnicodeText(currency)} ${this.handleUnicodeText(safeSubtotal.toFixed(2))}`, {
+			x: totalsX + 120,
 			y: currentY,
 			size: 10,
 			font: font,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 
-		// VAT
+		// VAT (matching HTML preview)
 		const safeVatTotal = typeof invoiceData.totals.vatTotal === 'number' ? invoiceData.totals.vatTotal : parseFloat(invoiceData.totals.vatTotal) || 0;
 		if (safeVatTotal > 0) {
-			currentY -= 15;
+			currentY -= 20;
 			const vatRate = invoiceData.totals.vatRate || 0;
-			const vatLabel = vatRate > 0 ? `Tax VAT ${vatRate}%` : (translations.tax || 'Tax VAT');
+			const vatLabel = vatRate > 0 ? `${translations.tax || 'Tax VAT'} ${vatRate}%` : (translations.tax || 'Tax VAT');
 			page.drawText(`${this.handleUnicodeText(vatLabel)}:`, {
-				x: width - 200,
+				x: totalsX,
 				y: currentY,
 				size: 10,
 				font: boldFont,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
 			});
-			page.drawText(this.handleUnicodeText(safeVatTotal.toFixed(2)), {
-				x: width - 100,
+			page.drawText(`${this.handleUnicodeText(currency)} ${this.handleUnicodeText(safeVatTotal.toFixed(2))}`, {
+				x: totalsX + 120,
 				y: currentY,
 				size: 10,
 				font: font,
-				color: textColor,
+				color: rgb(0.1, 0.1, 0.1),
 			});
 		}
 
-		// Discount (only show if discount amount > 0)
+		// Discount (only show if discount amount > 0) - matching HTML preview
 		const discountAmount = invoiceData.totals.discountAmount || 0;
 		if (discountAmount > 0) {
-			currentY -= 15;
+			currentY -= 20;
 			const discountRate = invoiceData.totals.discountRate || 0;
 			const discountLabel = discountRate > 0 ? `Discount ${discountRate}%` : 'Discount';
-			page.drawText(discountLabel, {
-				x: width - 200,
+			page.drawText(`${this.handleUnicodeText(discountLabel)}:`, {
+				x: totalsX,
 				y: currentY,
 				size: 10,
 				font: boldFont,
-				color: textColor,
+				color: rgb(0.4, 0.4, 0.4),
 			});
-			page.drawText(`-${this.handleUnicodeText(discountAmount.toFixed(2))}`, {
-				x: width - 100,
+			page.drawText(`-${this.handleUnicodeText(currency)} ${this.handleUnicodeText(discountAmount.toFixed(2))}`, {
+				x: totalsX + 120,
 				y: currentY,
 				size: 10,
 				font: font,
-				color: textColor,
+				color: rgb(0.8, 0.2, 0.2),
 			});
 		}
 
-		// Grand total with border
+		// Grand total with border (matching HTML preview)
 		currentY -= 20;
 		page.drawLine({
-			start: { x: width - 200, y: currentY + 10 },
-			end: { x: width - 50, y: currentY + 10 },
+			start: { x: totalsX, y: currentY + 10 },
+			end: { x: totalsX + totalsWidth, y: currentY + 10 },
 			thickness: 2,
-			color: textColor,
+			color: rgb(0.8, 0.8, 0.8),
 		});
 		currentY -= 20;
 		
 		const safeGrandTotal = typeof invoiceData.totals.grandTotal === 'number' ? invoiceData.totals.grandTotal : parseFloat(invoiceData.totals.grandTotal) || 0;
 		page.drawText(`${this.handleUnicodeText(translations.grandTotal || 'GRAND TOTAL')}:`, {
-			x: width - 200,
+			x: totalsX,
 			y: currentY,
 			size: 14,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
-		page.drawText(this.handleUnicodeText(safeGrandTotal.toFixed(2)), {
-			x: width - 100,
+		page.drawText(`${this.handleUnicodeText(currency)} ${this.handleUnicodeText(safeGrandTotal.toFixed(2))}`, {
+			x: totalsX + 120,
 			y: currentY,
 			size: 14,
 			font: boldFont,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 	}
 
 	/**
-	 * Draw footer
+	 * Draw footer (matching HTML preview)
 	 */
 	private static async drawFooter(
 		page: any,
@@ -899,131 +977,152 @@ export class EnhancedPDFGenerator {
 	): Promise<void> {
 		const y = 100;
 		const { width } = page.getSize();
+		const margin = 50;
 
-		// Footer line
+		// Footer line (matching HTML preview)
 		page.drawLine({
-			start: { x: 50, y: y + 20 },
-			end: { x: width - 50, y: y + 20 },
+			start: { x: margin, y: y + 20 },
+			end: { x: width - margin, y: y + 20 },
 			thickness: 1,
-			color: textColor,
+			color: rgb(0.8, 0.8, 0.8),
 		});
 
-		// Left side - Payment and Contact
+		// Left side - Payment and Contact (matching HTML preview)
 		let currentY = y;
 		
 		// Payment Method
 		page.drawText(this.handleUnicodeText(translations.paymentMethod || 'Payment Method:'), {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 10,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		currentY -= 15;
 		page.drawText(this.handleUnicodeText(translations.paymentMethods || 'Payment: Visa, Master Card'), {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		currentY -= 12;
 		page.drawText(this.handleUnicodeText(translations.acceptCheque || 'We accept Cheque'), {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
+		if (tenantBranding.companyIban) {
+			currentY -= 12;
+			page.drawText(`IBAN: ${this.handleUnicodeText(tenantBranding.companyIban)}`, {
+				x: margin,
+				y: currentY,
+				size: 9,
+				font: font,
+				color: rgb(0.4, 0.4, 0.4),
+			});
+		}
+		if (tenantBranding.companyBank) {
+			currentY -= 12;
+			page.drawText(`Bank: ${this.handleUnicodeText(tenantBranding.companyBank)}`, {
+				x: margin,
+				y: currentY,
+				size: 9,
+				font: font,
+				color: rgb(0.4, 0.4, 0.4),
+			});
+		}
 		currentY -= 12;
 		page.drawText(`Paypal: ${tenantBranding.companyEmail || 'paypal@company.com'}`, {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 
 		currentY -= 20;
-		// Contact
+		// Contact (matching HTML preview)
 		page.drawText(this.handleUnicodeText(translations.contact || 'Contact:'), {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 10,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		currentY -= 15;
 		page.drawText(tenantBranding.address || '123 Street, Town Postal, County', {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		currentY -= 12;
 		page.drawText(tenantBranding.phone || '+999 123 456 789', {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		currentY -= 12;
 		page.drawText(tenantBranding.companyEmail || 'info@yourname', {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		currentY -= 12;
 		page.drawText(tenantBranding.website || 'www.domainname.com', {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 
 		currentY -= 20;
-		// Terms & Condition
+		// Terms & Condition (matching HTML preview)
 		page.drawText(this.handleUnicodeText(translations.termsAndConditions || 'Terms & Condition:'), {
-			x: 50,
+			x: margin,
 			y: currentY,
 			size: 10,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		currentY -= 15;
-		page.drawText(this.handleUnicodeText(translations.termsText || 'Please refer to our terms and conditions for detailed information.'), {
-			x: 50,
+		page.drawText(this.handleUnicodeText(translations.termsText || 'Contrary to popular belief Lorem Ipsum not ipsum simply lorem ispum dolor ipsum.'), {
+			x: margin,
 			y: currentY,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 
-		// Right side - Signature
+		// Right side - Signature (matching HTML preview)
 		page.drawText(this.handleUnicodeText(translations.signature || 'Signature:'), {
 			x: width - 200,
 			y: y,
 			size: 10,
 			font: font,
-			color: textColor,
+			color: rgb(0.4, 0.4, 0.4),
 		});
 		page.drawLine({
 			start: { x: width - 200, y: y - 20 },
 			end: { x: width - 100, y: y - 20 },
-			thickness: 1,
-			color: textColor,
+			thickness: 2,
+			color: rgb(0.6, 0.6, 0.6),
 		});
 		page.drawText(this.handleUnicodeText(translations.manager || 'Manager'), {
 			x: width - 200,
 			y: y - 35,
 			size: 9,
 			font: font,
-			color: textColor,
+			color: rgb(0.1, 0.1, 0.1),
 		});
 	}
 

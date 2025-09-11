@@ -16,7 +16,7 @@ import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
+import {
 	Plus, 
 	Settings, 
 	Database, 
@@ -35,7 +35,9 @@ import {
 	SortDesc,
 	GripVertical,
 	ChevronLeft,
-	ChevronRight
+	ChevronRight,
+	FileDown,
+	FileUp
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { fadeInUp, spinAnimation } from "@/lib/animations";
@@ -94,6 +96,9 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
 	const [activeCell, setActiveCell] = useState<{ rowId: string; columnId: string } | null>(null);
+	const [isExporting, setIsExporting] = useState(false);
+	const [isImporting, setIsImporting] = useState(false);
+	const [importFile, setImportFile] = useState<File | null>(null);
 
 	// Permissions
 	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
@@ -431,6 +436,171 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const handleCellBlur = useCallback(() => {
 		setActiveCell(null);
 	}, []);
+
+	// Import/Export handlers
+	const handleExportData = useCallback(async () => {
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canReadTable()) {
+			showAlert("You don't have permission to export data from this table", "error");
+			return;
+		}
+
+		setIsExporting(true);
+		try {
+			const exportUrl = `/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/export?format=csv&limit=10000`;
+			
+			// Add current filters and search to export URL
+			const params = new URLSearchParams();
+			if (globalSearch) {
+				params.append('globalSearch', globalSearch);
+			}
+			if (filters && filters.length > 0) {
+				params.append('filters', JSON.stringify(filters));
+			}
+			
+			const finalUrl = `${exportUrl}&${params.toString()}`;
+			
+			const response = await fetch(finalUrl, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (response.ok) {
+				const blob = await response.blob();
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `${table.name}_export_${new Date().toISOString().split('T')[0]}.csv`;
+				document.body.appendChild(a);
+				a.click();
+				window.URL.revokeObjectURL(url);
+				document.body.removeChild(a);
+				showAlert("Data exported successfully!", "success");
+			} else {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to export data");
+			}
+		} catch (error: any) {
+			console.error("Error exporting data:", error);
+			showAlert(error.message || "Failed to export data. Please try again.", "error");
+		} finally {
+			setIsExporting(false);
+		}
+	}, [token, tenantId, table.databaseId, table.id, table.name, tablePermissions, showAlert, globalSearch, filters]);
+
+	const handleImportData = useCallback(async () => {
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to import data to this table", "error");
+			return;
+		}
+
+		if (!importFile) {
+			showAlert("Please select a file to import", "error");
+			return;
+		}
+
+		setIsImporting(true);
+		try {
+			// Parse CSV file
+			const text = await importFile.text();
+			const lines = text.split('\n').filter(line => line.trim());
+			
+			if (lines.length < 2) {
+				throw new Error("CSV file must have at least a header row and one data row");
+			}
+
+			// Parse header
+			const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
+			
+			// Map headers to column IDs
+			const columnMapping: Record<string, number> = {};
+			columns?.forEach(col => {
+				const matchingHeader = headers.find(h => h.toLowerCase() === col.name.toLowerCase());
+				if (matchingHeader) {
+					columnMapping[matchingHeader] = col.id;
+				}
+			});
+
+			// Parse data rows
+			const rows: Array<{ cells: Array<{ columnId: number; value: any }> }> = [];
+			for (let i = 1; i < lines.length; i++) {
+				const values = lines[i].split(';').map(v => v.trim().replace(/"/g, ''));
+				const cells: Array<{ columnId: number; value: any }> = [];
+				
+				headers.forEach((header, index) => {
+					const columnId = columnMapping[header];
+					if (columnId && values[index] !== undefined) {
+						cells.push({
+							columnId,
+							value: values[index] || null
+						});
+					}
+				});
+
+				if (cells.length > 0) {
+					rows.push({ cells });
+				}
+			}
+
+			if (rows.length === 0) {
+				throw new Error("No valid data rows found in CSV file");
+			}
+
+			// Send to import API
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/import`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ rows }),
+				}
+			);
+
+			const result = await response.json();
+
+			if (response.ok) {
+				showAlert(`Successfully imported ${result.importedRows} rows!`, "success");
+				setImportFile(null);
+				// Reset file input
+				const fileInput = document.getElementById('import-file-input') as HTMLInputElement;
+				if (fileInput) fileInput.value = '';
+				
+				// Refresh table data
+				await refetchRows();
+			} else {
+				throw new Error(result.error || "Failed to import data");
+			}
+		} catch (error: any) {
+			console.error("Error importing data:", error);
+			showAlert(error.message || "Failed to import data. Please check your file format.", "error");
+		} finally {
+			setIsImporting(false);
+		}
+	}, [token, tenantId, table.databaseId, table.id, tablePermissions, showAlert, importFile, columns, refetchRows]);
+
+	const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+				showAlert("Please select a CSV file", "error");
+				return;
+			}
+			setImportFile(file);
+		}
+	}, [showAlert]);
 
 	const handleInlineRowSave = useCallback(async (rowData: Record<string, any>) => {
 		if (!token || !tenantId) {
@@ -943,6 +1113,61 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 						{/* Right Section - Tools & Filters */}
 						<div className='flex items-center gap-3'>
+							{/* Import/Export Buttons */}
+							<div className='flex items-center gap-2'>
+								<Button
+									variant='outline'
+									size='lg'
+									onClick={handleExportData}
+									disabled={isExporting || !tablePermissions.canReadTable()}
+									className='border-2 hover:border-green-500/50 hover:bg-green-50 transition-all duration-200'>
+									{isExporting ? (
+										<RefreshCw className='w-4 h-4 mr-2 animate-spin' />
+									) : (
+										<FileDown className='w-4 h-4 mr-2' />
+									)}
+									{isExporting ? 'Exporting...' : 'Export CSV'}
+								</Button>
+
+								<div className='relative'>
+									<input
+										id='import-file-input'
+										type='file'
+										accept='.csv'
+										onChange={handleFileSelect}
+										className='hidden'
+									/>
+									<Button
+										variant='outline'
+										size='lg'
+										onClick={() => document.getElementById('import-file-input')?.click()}
+										disabled={isImporting || !tablePermissions.canEditTable()}
+										className='border-2 hover:border-blue-500/50 hover:bg-blue-50 transition-all duration-200'>
+										<FileUp className='w-4 h-4 mr-2' />
+										Import CSV
+									</Button>
+								</div>
+
+								{importFile && (
+									<div className='flex items-center gap-2'>
+										<span className='text-sm text-muted-foreground'>
+											{importFile.name}
+										</span>
+										<Button
+											variant='default'
+											size='sm'
+											onClick={handleImportData}
+											disabled={isImporting}
+											className='bg-green-600 hover:bg-green-700'>
+											{isImporting ? (
+												<RefreshCw className='w-4 h-4 mr-1 animate-spin' />
+											) : null}
+											{isImporting ? 'Importing...' : 'Import'}
+										</Button>
+									</div>
+								)}
+							</div>
+
 							<Button
 								variant='outline'
 								size='lg'
@@ -983,6 +1208,28 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							<Button
 								variant="outline"
 								size="sm"
+								onClick={handleExportData}
+								disabled={isExporting || !tablePermissions.canReadTable()}
+								className="flex-1 h-8 text-sm border-neutral-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200"
+							>
+								{isExporting ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <FileDown className="w-4 h-4 mr-1" />}
+								{isExporting ? 'Exporting...' : 'Export'}
+							</Button>
+
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => document.getElementById('import-file-input-mobile')?.click()}
+								disabled={isImporting || !tablePermissions.canEditTable()}
+								className="flex-1 h-8 text-sm border-neutral-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
+							>
+								<FileUp className="w-4 h-4 mr-1" />
+								Import
+							</Button>
+
+							<Button
+								variant="outline"
+								size="sm"
 								onClick={() => handleSort(columns?.[0]?.id?.toString() || "")}
 								className="flex-1 h-8 text-sm border-neutral-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
 							>
@@ -1005,6 +1252,35 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								)}
 							</Button>
 						</div>
+
+						{/* Mobile file input */}
+						<input
+							id='import-file-input-mobile'
+							type='file'
+							accept='.csv'
+							onChange={handleFileSelect}
+							className='hidden'
+						/>
+
+						{/* Mobile import confirmation */}
+						{importFile && (
+							<div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+								<span className="text-sm text-blue-700 flex-1 truncate">
+									{importFile.name}
+								</span>
+								<Button
+									variant="default"
+									size="sm"
+									onClick={handleImportData}
+									disabled={isImporting}
+									className="bg-green-600 hover:bg-green-700 h-6 px-2 text-xs">
+									{isImporting ? (
+										<RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+									) : null}
+									{isImporting ? 'Importing...' : 'Import'}
+								</Button>
+							</div>
+						)}
 					</div>
 
 					{/* Desktop Layout */}
@@ -1031,6 +1307,31 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							>
 								{sortDirection === "asc" ? <SortAsc className="w-4 h-4 mr-1" /> : <SortDesc className="w-4 h-4 mr-1" />}
 								Sort
+							</Button>
+						</div>
+
+						{/* Import/Export Controls */}
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleExportData}
+								disabled={isExporting || !tablePermissions.canReadTable()}
+								className="h-8 px-3 text-sm border-neutral-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200"
+							>
+								{isExporting ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <FileDown className="w-4 h-4 mr-1" />}
+								{isExporting ? 'Exporting...' : 'Export CSV'}
+							</Button>
+
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => document.getElementById('import-file-input')?.click()}
+								disabled={isImporting || !tablePermissions.canEditTable()}
+								className="h-8 px-3 text-sm border-neutral-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
+							>
+								<FileUp className="w-4 h-4 mr-1" />
+								Import CSV
 							</Button>
 						</div>
 
@@ -1128,7 +1429,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				)}
 
 				{/* Modern Table Grid - Mobile Optimized */}
-				<div className='bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden'>
+				<div className='bg-white rounded-xl border border-neutral-200 shadow-sm overflow-x-auto'>
 					{rowsLoading ? (
 						<motion.div
 							className='flex flex-col items-center justify-center py-12 sm:py-16 px-4 sm:px-8'
@@ -1153,7 +1454,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							</motion.div>
 						</motion.div>
 					) : (
-						<div className='overflow-x-auto'>
+						<div>
 							{/* Modern Column Headers - Mobile Optimized */}
 							<div className='flex border-b border-neutral-200 bg-neutral-50 min-w-max'>
 								{/* Selection column */}

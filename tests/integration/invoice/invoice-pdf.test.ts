@@ -38,13 +38,7 @@ jest.mock('@/lib/invoice-system', () => ({
 	},
 }));
 
-// Mock PDF generators
-jest.mock('@/lib/pdf-invoice-generator', () => ({
-	PDFInvoiceGenerator: {
-		generateInvoicePDF: jest.fn(),
-	},
-}));
-
+// Mock PDF generator
 jest.mock('@/lib/pdf-enhanced-generator', () => ({
 	EnhancedPDFGenerator: {
 		generateInvoicePDF: jest.fn(),
@@ -158,9 +152,9 @@ describe('Invoice PDF Download API', () => {
 
 	describe('GET /api/tenants/[tenantId]/invoices/[invoiceId]/download', () => {
 		it('should generate and download PDF successfully', async () => {
-			const { PDFInvoiceGenerator } = require('@/lib/pdf-invoice-generator');
+			const { EnhancedPDFGenerator } = require('@/lib/pdf-enhanced-generator');
 			const mockPdfBuffer = Buffer.from('mock-pdf-content');
-			PDFInvoiceGenerator.generateInvoicePDF.mockResolvedValue(mockPdfBuffer);
+			EnhancedPDFGenerator.generateInvoicePDF.mockResolvedValue(mockPdfBuffer);
 
 			const request = new NextRequest('http://localhost:3000/api/tenants/1/invoices/1/download');
 			const response = await downloadInvoice(request, {
@@ -181,7 +175,7 @@ describe('Invoice PDF Download API', () => {
 			EnhancedPDFGenerator.generateInvoicePDF.mockResolvedValue(mockPdfBuffer);
 
 			const request = new NextRequest(
-				'http://localhost:3000/api/tenants/1/invoices/1/download?enhanced=true&watermark=true&qrcode=true'
+				'http://localhost:3000/api/tenants/1/invoices/1/download?watermark=true&qrcode=true'
 			);
 			const response = await downloadInvoice(request, {
 				params: Promise.resolve({ tenantId: mockTenantId, invoiceId: mockInvoiceId }),
@@ -195,6 +189,7 @@ describe('Invoice PDF Download API', () => {
 				includeWatermark: true,
 				includeQRCode: true,
 				includeBarcode: false,
+				language: 'en',
 			});
 		});
 
@@ -227,8 +222,8 @@ describe('Invoice PDF Download API', () => {
 		});
 
 		it('should handle PDF generation failure', async () => {
-			const { PDFInvoiceGenerator } = require('@/lib/pdf-invoice-generator');
-			PDFInvoiceGenerator.generateInvoicePDF.mockRejectedValue(new Error('PDF generation failed'));
+			const { EnhancedPDFGenerator } = require('@/lib/pdf-enhanced-generator');
+			EnhancedPDFGenerator.generateInvoicePDF.mockRejectedValue(new Error('PDF generation failed'));
 
 			const request = new NextRequest('http://localhost:3000/api/tenants/1/invoices/1/download');
 			const response = await downloadInvoice(request, {
@@ -265,9 +260,9 @@ describe('Invoice PDF Download API', () => {
 		});
 
 		it('should create audit log for PDF generation', async () => {
-			const { PDFInvoiceGenerator } = require('@/lib/pdf-invoice-generator');
+			const { EnhancedPDFGenerator } = require('@/lib/pdf-enhanced-generator');
 			const mockPdfBuffer = Buffer.from('mock-pdf-content');
-			PDFInvoiceGenerator.generateInvoicePDF.mockResolvedValue(mockPdfBuffer);
+			EnhancedPDFGenerator.generateInvoicePDF.mockResolvedValue(mockPdfBuffer);
 
 			const prisma = require('@/lib/prisma').default;
 			prisma.auditLog.create.mockResolvedValue({ id: 1 });

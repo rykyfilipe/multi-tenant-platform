@@ -92,7 +92,7 @@ export function RowGrid({
 	}
 
 	return (
-		<div className="overflow-x-auto">
+		<div>
 			{/* Modern Select All Header - Mobile Optimized */}
 			<div className="flex border-b border-neutral-200 bg-neutral-50 min-w-max">
 				<div 

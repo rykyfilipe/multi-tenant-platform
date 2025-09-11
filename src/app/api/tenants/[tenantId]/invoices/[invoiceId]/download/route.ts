@@ -4,10 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { InvoiceSystemService } from "@/lib/invoice-system";
-import {
-	PDFInvoiceGenerator,
-	InvoicePDFData,
-} from "@/lib/pdf-invoice-generator";
 import { EnhancedPDFGenerator } from "@/lib/pdf-enhanced-generator";
 import { InvoiceCalculationService } from "@/lib/invoice-calculations";
 
@@ -277,169 +273,33 @@ export async function GET(
 			},
 		);
 
-		// Get company information from customers table (assuming first row contains company info)
-		const companyInfo = await prisma.row.findFirst({
-			where: {
-				tableId: invoiceTables.customers.id,
-				cells: {
-					some: {
-						column: {
-							name: "company_name",
-						},
-					},
-				},
-			},
-			include: {
-				cells: {
-					include: {
-						column: true,
-					},
-				},
-			},
-		});
-
-		// Transform company data
-		const companyData: any = {};
-		if (companyInfo) {
-			companyInfo.cells.forEach((cell: any) => {
-				companyData[cell.column.name] = cell.value;
-			});
-		}
-
-		// Prepare data for PDF generation
-		const pdfData: InvoicePDFData = {
-			company: {
-				name:
-					companyData.company_name || tenantInfo?.name || "Your Company Name",
-				taxId: companyData.company_tax_id || tenantInfo?.companyTaxId || "-",
-				registrationNumber:
-					companyData.company_registration_number ||
-					tenantInfo?.registrationNumber ||
-					"-",
-				address:
-					companyData.company_street && companyData.company_street_number
-						? `${companyData.company_street} ${companyData.company_street_number}`
-						: companyData.company_street || tenantInfo?.address || "-",
-				city: companyData.company_city || tenantInfo?.companyCity || "-",
-				country:
-					companyData.company_country || tenantInfo?.companyCountry || "-",
-				postalCode:
-					companyData.company_postal_code ||
-					tenantInfo?.companyPostalCode ||
-					"-",
-				iban: companyData.company_iban || tenantInfo?.companyIban || "-",
-				bank: companyData.company_bank || tenantInfo?.companyBank || "-",
-				phone: companyData.company_phone || tenantInfo?.phone || "-",
-				email: companyData.company_email || tenantInfo?.companyEmail || "-",
-				website: companyData.company_website || tenantInfo?.website || "-",
-			},
-			customer: {
-				name: customerData.customer_name,
-				taxId: customerData.customer_tax_id,
-				registrationNumber: customerData.customer_registration_number,
-				address:
-					customerData.customer_street && customerData.customer_street_number
-						? `${customerData.customer_street} ${customerData.customer_street_number}`
-						: customerData.customer_address,
-				city: customerData.customer_city,
-				country: customerData.customer_country,
-				postalCode: customerData.customer_postal_code,
-				email: customerData.customer_email,
-				phone: customerData.customer_phone,
-			},
-			invoice: {
-				number: invoiceData.invoice_number,
-				series: invoiceData.invoice_series || "A",
-				date: invoiceData.date,
-				dueDate:
-					invoiceData.due_date ||
-					(() => {
-						const invoiceDate = new Date(invoiceData.date);
-						if (isNaN(invoiceDate.getTime())) {
-							// Fallback to current date if invoice date is invalid
-							return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-						}
-						return new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-					})(),
-				currency: invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD",
-				paymentTerms: invoiceData.payment_terms || "Net 30",
-				paymentMethod:
-					invoiceData.payment_method || "Bank Transfer / Credit Card",
-			},
-			items: items.map((item, index) => {
-				const quantity = Number(item.quantity) || 0;
-				const unitPrice = Number(item.price) || 0;
-				const vatRate = Number(item.product_vat) || 0;
-				const vatAmount = (quantity * unitPrice * vatRate) / 100;
-				const total = quantity * unitPrice * (1 + vatRate / 100);
-
-				const pdfItem = {
-					description: item.product_name || "Product",
-					sku: item.product_sku,
-					category: item.product_category,
-					quantity: quantity,
-					unitPrice: unitPrice,
-					currency: item.currency || invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD",
-					vatRate: vatRate,
-					vatAmount: vatAmount,
-					total: total,
-				};
-
-				return pdfItem;
-			}),
-			totals: {
-				subtotal: totals.subtotal,
-				vatTotal: totals.vatTotal,
-				grandTotal: totals.grandTotal,
-				currency: invoiceData.base_currency || tenantInfo?.defaultCurrency || "USD",
-			},
+		// Prepare data for enhanced PDF generation
+		const pdfOptions = {
+			tenantId: tenantId,
+			databaseId: database.id,
+			invoiceId: Number(invoiceId),
+			includeWatermark: url.searchParams.get('watermark') === 'true',
+			includeQRCode: url.searchParams.get('qrcode') === 'true',
+			includeBarcode: url.searchParams.get('barcode') === 'true',
+			language: url.searchParams.get('language') || tenantInfo?.language || 'en',
 		};
 
-		// Get query parameters for enhanced PDF options
-		const url = new URL(request.url);
-		const includeWatermark = url.searchParams.get('watermark') === 'true';
-		const includeQRCode = url.searchParams.get('qrcode') === 'true';
-		const includeBarcode = url.searchParams.get('barcode') === 'true';
-		const useEnhanced = url.searchParams.get('enhanced') === 'true';
-		const language = url.searchParams.get('language') || tenantInfo?.language || 'en';
+		// Get additional query parameters
 		const isPreview = url.searchParams.get('preview') === 'true';
 
 		console.log('PDF Generation Parameters:', {
 			tenantId,
 			invoiceId,
-			useEnhanced,
-			language,
+			language: pdfOptions.language,
 			isPreview,
-			includeWatermark,
-			includeQRCode,
-			includeBarcode
+			includeWatermark: pdfOptions.includeWatermark,
+			includeQRCode: pdfOptions.includeQRCode,
+			includeBarcode: pdfOptions.includeBarcode
 		});
 
-		// Generate PDF
+		// Generate PDF using enhanced generator
 		try {
-			let pdfBuffer: Buffer;
-
-			if (useEnhanced) {
-				try {
-					// Use enhanced PDF generator
-					pdfBuffer = await EnhancedPDFGenerator.generateInvoicePDF({
-						tenantId: tenantId,
-						databaseId: database.id,
-						invoiceId: Number(invoiceId),
-						includeWatermark,
-						includeQRCode,
-						includeBarcode,
-						language: language,
-					});
-				} catch (enhancedError) {
-					console.warn('Enhanced PDF generation failed, falling back to basic generator:', enhancedError);
-					// Fallback to original PDF generator if enhanced fails
-					pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData, language);
-				}
-			} else {
-				// Use original PDF generator
-				pdfBuffer = await PDFInvoiceGenerator.generateInvoicePDF(pdfData, language);
-			}
+			const pdfBuffer = await EnhancedPDFGenerator.generateInvoicePDF(pdfOptions);
 
 			// Log PDF generation
 			await prisma.invoiceAuditLog.create({
@@ -449,10 +309,10 @@ export async function GET(
 					invoiceId: Number(invoiceId),
 					action: 'pdf_generated',
 					metadata: {
-						useEnhanced,
-						includeWatermark,
-						includeQRCode,
-						includeBarcode,
+						useEnhanced: true,
+						includeWatermark: pdfOptions.includeWatermark,
+						includeQRCode: pdfOptions.includeQRCode,
+						includeBarcode: pdfOptions.includeBarcode,
 					},
 				},
 			});
@@ -470,7 +330,7 @@ export async function GET(
 				return filenameMap[lang] || 'invoice';
 			};
 
-			const filename = getInvoiceFilename(language);
+			const filename = getInvoiceFilename(pdfOptions.language);
 			const contentDisposition = isPreview 
 				? `inline; filename="${filename}-${invoiceData.invoice_number}.pdf"`
 				: `attachment; filename="${filename}-${invoiceData.invoice_number}.pdf"`;
