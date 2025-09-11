@@ -278,48 +278,40 @@ const EditableCell = memo(({
 	// Găsim coloana pentru această celulă
 	const column = columns?.find((col) => col.id === cell?.columnId);
 
-	// Fetch la tabelul de referință când este necesar
+	// Hook pentru datele de referință
+	const { referenceData, isLoading: referenceDataLoading } = useOptimizedReferenceData(
+		tables || [],
+		column?.referenceTableId,
+	);
+
+	// Găsim tabelul de referință
 	useEffect(() => {
-		const fetchReferenceTable = async () => {
-			if (!column?.referenceTableId || !tables || tables.length === 0) return;
+		if (!column?.referenceTableId || !tables || tables.length === 0) return;
 
-			// Găsim tabelul curent pentru a obține tenant și database info
-			const currentTable = tables.find((t) => t.id === column?.tableId);
-			if (!currentTable?.databaseId) return;
-
-			setLoading(true);
-			try {
-				const { referenceTable } = await useOptimizedReferenceData({
-					tenantId: currentTable.tenantId,
-					databaseId: currentTable.databaseId,
-					tableId: column.referenceTableId,
-				});
-
-				if (referenceTable) {
-					setReferenceTable(referenceTable);
-				}
-			} catch (error) {
-				console.error("Error fetching reference table:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-			fetchReferenceTable();
+		const refTable = tables.find((t) => t.id === column.referenceTableId);
+		if (refTable) {
+			setReferenceTable(refTable);
 		}
-	}, [column?.referenceTableId, column?.tableId, column?.type, tables]);
+	}, [column?.referenceTableId, tables]);
+
+	setLoading(referenceDataLoading);
 
 	// Permissions
-	const { user } = useCurrentUserPermissions();
-	const tablePermissions = useTablePermissions(column?.tableId);
+	const { permissions: userPermissions } = useCurrentUserPermissions();
+	const tablePermissions = useTablePermissions(
+		column?.tableId || 0,
+		userPermissions?.tablePermissions || [],
+		userPermissions?.columnsPermissions || []
+	);
 
 	// TableEditor gestionează skeleton și "Access Denied" - aici doar verificăm editarea
 
 	// Verificăm dacă utilizatorul poate edita această coloană
-	const canEdit = tablePermissions.canEditColumn(column.id);
+	const canEdit = column ? tablePermissions.canEditColumn(column.id) : false;
 
 	const handleKey = (e: KeyboardEvent) => {
+		if (!column) return;
+		
 		if (e.key === "Enter") {
 			// For reference columns, values are already saved on change
 			// Just cancel editing for Enter key
@@ -342,7 +334,7 @@ const EditableCell = memo(({
 
 	// Click outside to cancel editing - only on actual click, not focus events
 	useEffect(() => {
-		if (!isEditing) return;
+		if (!isEditing || !column) return;
 
 		const handleClickOutside = (event: MouseEvent) => {
 			// Only handle actual mouse clicks, not programmatic events
@@ -386,7 +378,7 @@ const EditableCell = memo(({
 			clearTimeout(timeoutId);
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, [isEditing, column?.type, hasInvalidReferences, onCancel, onSave, value]);
+	}, [isEditing, column, hasInvalidReferences, onCancel, onSave, value]);
 
 	// Early returns pentru cazurile speciale
 	if (!column) {
@@ -408,7 +400,7 @@ const EditableCell = memo(({
 						className="w-full"
 						autoFocus
 					/>
-				) : column.type === USER_FRIENDLY_COLUMN_TYPES.boolean ? (
+				) : column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo ? (
 					<Switch
 						checked={value || false}
 						onCheckedChange={(checked) => {
@@ -423,10 +415,10 @@ const EditableCell = memo(({
 							handleValueChange(val);
 							onSave(val); // Save immediately for reference
 						}}
-						referenceTable={referenceTable}
-						column={column}
-						loading={loading}
-						onInvalidReferencesChange={setHasInvalidReferences}
+						options={referenceData[column.id] || []}
+						isMultiple={true}
+						isLoading={loading}
+						referencedTableName={referenceTable?.name}
 					/>
 				) : column.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
 					<AbsoluteSelect
@@ -435,11 +427,11 @@ const EditableCell = memo(({
 							handleValueChange(val);
 							onSave(val); // Save immediately for customArray
 						}}
-						options={column.options || []}
+						options={column.customOptions || []}
 						placeholder="Select option"
 						className="w-full"
 					/>
-				) : column.type === USER_FRIENDLY_COLUMN_TYPES.yesno ? (
+				) : column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo ? (
 					<Select
 						value={value || ""}
 						onValueChange={(val) => {
@@ -472,7 +464,7 @@ const EditableCell = memo(({
 		display = column.type === "reference" 
 			? "No references" 
 			: "No value";
-	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.boolean) {
+	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo) {
 		display = value ? "Yes" : "No";
 	} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 		if (Array.isArray(value)) {
