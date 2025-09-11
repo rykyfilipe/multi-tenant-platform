@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { InvoiceSystemService } from "@/lib/invoice-system";
-import { EnhancedPDFGenerator } from "@/lib/pdf-enhanced-generator";
+import { PuppeteerPDFGenerator } from "@/lib/pdf-puppeteer-generator";
 import { InvoiceCalculationService } from "@/lib/invoice-calculations";
 
 const formatPrice = (price: any): string => {
@@ -285,6 +285,7 @@ export async function GET(
 		};
 
 		// Get additional query parameters
+		const url = new URL(request.url);
 		const isPreview = url.searchParams.get('preview') === 'true';
 
 		console.log('PDF Generation Parameters:', {
@@ -297,9 +298,9 @@ export async function GET(
 			includeBarcode: pdfOptions.includeBarcode
 		});
 
-		// Generate PDF using enhanced generator
+		// Generate PDF using Puppeteer generator
 		try {
-			const pdfBuffer = await EnhancedPDFGenerator.generateInvoicePDF(pdfOptions);
+			const pdfBuffer = await PuppeteerPDFGenerator.generateInvoicePDF(pdfOptions);
 
 			// Log PDF generation
 			await prisma.invoiceAuditLog.create({
