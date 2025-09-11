@@ -512,6 +512,14 @@ export function EditableCell({
 			const currentValue = hasPendingChange ? pendingValue : cell?.value;
 			const column = columns?.find((col) => col.id === cell?.columnId);
 			
+			console.log("🔍 DEBUG: Starting edit mode", {
+				hasPendingChange,
+				pendingValue,
+				cellValue: cell?.value,
+				currentValue,
+				columnType: column?.type
+			});
+			
 			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 				if (Array.isArray(currentValue)) {
 					setValue(currentValue);
@@ -526,8 +534,9 @@ export function EditableCell({
 
 	// Optimistic update: immediately update local state when user types
 	const handleValueChange = useCallback((newValue: any) => {
+		console.log("🔍 DEBUG: handleValueChange", { newValue, currentValue: value });
 		setValue(newValue);
-	}, []);
+	}, [value]);
 
 	// Ref pentru container-ul de editare
 	const editContainerRef = useRef<HTMLDivElement>(null);
@@ -631,6 +640,7 @@ export function EditableCell({
 
 	const handleKey = useCallback((e: KeyboardEvent) => {
 		if (e.key === "Enter") {
+			console.log("🔍 DEBUG: Enter key pressed", { value, columnType: column?.type });
 			// For all column types, just add to pending changes and exit edit mode
 			// Do NOT auto-save - changes should only be committed on batch save
 			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {

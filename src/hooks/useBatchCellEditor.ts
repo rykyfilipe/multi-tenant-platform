@@ -156,21 +156,22 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 						saveFunctionRef.current();
 					}
 				}, autoSaveDelay);
-			} else {
+			} else if (autoSaveDelay === 0) {
 				// Pentru autoSaveDelay = 0, face save imediat
 				console.log("🔍 DEBUG: autoSaveDelay is 0, saving immediately");
 				if (saveFunctionRef.current) {
-				// Folosește setTimeout pentru a evita probleme de sincronizare
-				setTimeout(() => {
-					console.log("🔍 DEBUG: Calling saveFunctionRef.current");
-					if (saveFunctionRef.current) {
-						saveFunctionRef.current();
-					} else {
-						console.error("❌ saveFunctionRef.current is null!");
-					}
-				}, 100);
+					// Folosește setTimeout pentru a evita probleme de sincronizare
+					setTimeout(() => {
+						console.log("🔍 DEBUG: Calling saveFunctionRef.current");
+						if (saveFunctionRef.current) {
+							saveFunctionRef.current();
+						} else {
+							console.error("❌ saveFunctionRef.current is null!");
+						}
+					}, 100);
 				}
 			}
+			// Pentru autoSaveDelay < 0, nu face nimic (dezactivează auto-save)
 		},
 		[getCellKey, autoSaveDelay],
 	);
