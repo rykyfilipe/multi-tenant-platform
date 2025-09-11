@@ -84,6 +84,9 @@ export class PuppeteerPDFGenerator {
 		try {
 			// Try to find Chrome in common locations
 			const possiblePaths = [
+				// Puppeteer cache locations
+				process.env.HOME + '/.cache/puppeteer/chrome/linux-140.0.7339.82/chrome-linux64/chrome',
+				// System Chrome locations
 				'/usr/bin/google-chrome',
 				'/usr/bin/google-chrome-stable',
 				'/usr/bin/chromium-browser',
@@ -101,6 +104,26 @@ export class PuppeteerPDFGenerator {
 				}
 			}
 
+			// If not found in common paths, try to find any Chrome in Puppeteer cache
+			if (!chromePath && process.env.HOME) {
+				const puppeteerCacheDir = process.env.HOME + '/.cache/puppeteer/chrome';
+				if (fs.existsSync(puppeteerCacheDir)) {
+					try {
+						const versions = fs.readdirSync(puppeteerCacheDir);
+						for (const version of versions) {
+							const chromePath = `${puppeteerCacheDir}/${version}/chrome-linux64/chrome`;
+							if (fs.existsSync(chromePath)) {
+								console.log(`Found Chrome in Puppeteer cache: ${chromePath}`);
+								process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
+								return;
+							}
+						}
+					} catch (error) {
+						console.log('Could not read Puppeteer cache directory:', (error as Error).message);
+					}
+				}
+			}
+
 			if (chromePath) {
 				console.log('Found Chrome at:', chromePath);
 				process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
@@ -110,13 +133,51 @@ export class PuppeteerPDFGenerator {
 			// Try to install Chrome via Puppeteer
 			console.log('Chrome not found, attempting to install via Puppeteer...');
 			try {
-				execSync('npx puppeteer browsers install chrome', { 
-					stdio: 'inherit',
-					timeout: 60000 // 60 seconds timeout
-				});
-				console.log('Chrome installed successfully via Puppeteer');
+				// Try different installation methods
+				const installCommands = [
+					'npx puppeteer browsers install chrome',
+					'node_modules/.bin/puppeteer browsers install chrome',
+					'./node_modules/.bin/puppeteer browsers install chrome'
+				];
+
+				let installed = false;
+				for (const cmd of installCommands) {
+					try {
+						console.log(`Trying command: ${cmd}`);
+						execSync(cmd, { 
+							stdio: 'pipe',
+							timeout: 60000 // 60 seconds timeout
+						});
+						console.log('Chrome installed successfully via Puppeteer');
+						installed = true;
+						break;
+					} catch (cmdError) {
+						console.log(`Command failed: ${cmd}`, (cmdError as Error).message);
+						continue;
+					}
+				}
+
+				if (!installed) {
+					throw new Error('All installation commands failed');
+				}
 			} catch (installError) {
 				console.error('Failed to install Chrome via Puppeteer:', installError);
+				// Fallback: try to use system Chrome if available
+				const systemChromePaths = [
+					'/usr/bin/google-chrome',
+					'/usr/bin/google-chrome-stable',
+					'/usr/bin/chromium-browser',
+					'/usr/bin/chromium'
+				];
+				
+				for (const path of systemChromePaths) {
+					if (fs.existsSync(path)) {
+						console.log(`Using system Chrome at: ${path}`);
+						process.env.PUPPETEER_EXECUTABLE_PATH = path;
+						return;
+					}
+				}
+				
 				throw new Error('Chrome browser not available and could not be installed automatically');
 			}
 		} catch (error) {

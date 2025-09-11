@@ -51,6 +51,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	// Începe editarea unei celule
 	const startEditing = useCallback(
 		(rowId: string, columnId: string, cellId: string) => {
+			console.log("🔍 DEBUG: startEditing called", { rowId, columnId, cellId });
 			setIsEditingCell({ rowId, columnId, cellId });
 		},
 		[],
@@ -155,6 +156,20 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 						saveFunctionRef.current();
 					}
 				}, autoSaveDelay);
+			} else {
+				// Pentru autoSaveDelay = 0, face save imediat
+				console.log("🔍 DEBUG: autoSaveDelay is 0, saving immediately");
+				if (saveFunctionRef.current) {
+				// Folosește setTimeout pentru a evita probleme de sincronizare
+				setTimeout(() => {
+					console.log("🔍 DEBUG: Calling saveFunctionRef.current");
+					if (saveFunctionRef.current) {
+						saveFunctionRef.current();
+					} else {
+						console.error("❌ saveFunctionRef.current is null!");
+					}
+				}, 100);
+				}
 			}
 		},
 		[getCellKey, autoSaveDelay],
@@ -307,6 +322,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 	// Actualizează ref-ul cu funcția de save
 	saveFunctionRef.current = savePendingChanges;
+	console.log("🔍 DEBUG: saveFunctionRef set to savePendingChanges");
 
 	// Anulează toate modificările pending
 	const discardPendingChanges = useCallback(() => {
@@ -324,7 +340,9 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	const hasPendingChange = useCallback(
 		(rowId: string, columnId: string) => {
 			const cellKey = getCellKey(rowId, columnId);
-			return pendingChanges.has(cellKey);
+			const hasPending = pendingChanges.has(cellKey);
+			console.log("🔍 DEBUG: hasPendingChange", { rowId, columnId, cellKey, hasPending, totalPending: pendingChanges.size });
+			return hasPending;
 		},
 		[pendingChanges, getCellKey],
 	);
@@ -333,7 +351,9 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	const getPendingValue = useCallback(
 		(rowId: string, columnId: string) => {
 			const cellKey = getCellKey(rowId, columnId);
-			return pendingChanges.get(cellKey)?.value;
+			const pendingValue = pendingChanges.get(cellKey)?.value;
+			console.log("🔍 DEBUG: getPendingValue", { rowId, columnId, cellKey, pendingValue, hasPending: pendingChanges.has(cellKey) });
+			return pendingValue;
 		},
 		[pendingChanges, getCellKey],
 	);

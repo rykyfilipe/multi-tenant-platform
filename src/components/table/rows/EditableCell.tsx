@@ -477,6 +477,13 @@ export function EditableCell({
 		// Folosește valoarea pending dacă există, altfel valoarea din celulă
 		const initialValue = hasPendingChange ? pendingValue : cell?.value;
 
+		console.log("🔍 DEBUG: EditableCell useState initialization", { 
+			hasPendingChange, 
+			pendingValue, 
+			cellValue: cell?.value, 
+			initialValue 
+		});
+
 		// Ensure reference columns always have array values
 		const column = columns?.find((col) => col.id === cell?.columnId);
 		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
@@ -490,9 +497,19 @@ export function EditableCell({
 
 	// Update local value when cell value changes (but not when editing)
 	useEffect(() => {
+		console.log("🔍 DEBUG: EditableCell useEffect triggered", { 
+			isEditing, 
+			cellValue: cell?.value, 
+			hasPendingChange, 
+			pendingValue,
+			currentValue: value 
+		});
+		
 		if (!isEditing) {
 			const newValue = hasPendingChange ? pendingValue : cell?.value;
 			const column = columns?.find((col) => col.id === cell?.columnId);
+			
+			console.log("🔍 DEBUG: Setting new value", { newValue, columnType: column?.type });
 			
 			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 				if (Array.isArray(newValue)) {

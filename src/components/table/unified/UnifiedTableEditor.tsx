@@ -149,16 +149,28 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				currentRows.map((row) => {
 					const updatedRow = { ...row };
 					updatedCells.forEach((updatedCell) => {
+						console.log("🔍 DEBUG: Processing updatedCell", { 
+							updatedCell, 
+							rowId: updatedRow.id.toString(), 
+							updatedCellRowId: updatedCell.rowId.toString(),
+							rowCells: updatedRow.cells.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+						});
+						
 						if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
 							const cellIndex = updatedRow.cells.findIndex(
 								(cell: any) => cell.id === updatedCell.id || 
-								(cell.columnId === updatedCell.columnId && cell.id === "virtual"),
+								(cell.columnId.toString() === updatedCell.columnId.toString() && cell.id === "virtual"),
 							);
+							
+							console.log("🔍 DEBUG: Cell index found", { cellIndex, cellId: updatedCell.id, columnId: updatedCell.columnId });
+							
 							if (cellIndex >= 0) {
 								updatedRow.cells[cellIndex] = updatedCell;
+								console.log("🔍 DEBUG: Updated existing cell", { cellIndex, newValue: updatedCell.value });
 							} else {
 								// Add new cell if it doesn't exist
 								updatedRow.cells.push(updatedCell);
+								console.log("🔍 DEBUG: Added new cell", { newValue: updatedCell.value });
 							}
 						}
 					});
