@@ -297,21 +297,39 @@ export async function POST(
 		});
 
 		// Generate invoice number with series using tenant settings
+		const tenantConfig = {
+			series: (tenant as any)?.invoiceSeriesPrefix || "INV",
+			includeYear: (tenant as any)?.invoiceIncludeYear !== false, // default true
+			startNumber: (tenant as any)?.invoiceStartNumber || 1,
+			separator: "-",
+		};
+
+		console.log("🔍 DEBUG: Tenant invoice config", {
+			tenantId: Number(tenantId),
+			tenantConfig,
+			rawTenant: {
+				invoiceSeriesPrefix: (tenant as any)?.invoiceSeriesPrefix,
+				invoiceIncludeYear: (tenant as any)?.invoiceIncludeYear,
+				invoiceStartNumber: (tenant as any)?.invoiceStartNumber,
+			}
+		});
+
 		const invoiceData =
 			await InvoiceSystemService.generateInvoiceNumberWithConfig(
 				Number(tenantId),
 				database.id,
-				{
-					series: (tenant as any)?.invoiceSeriesPrefix || "INV",
-					includeYear: (tenant as any)?.invoiceIncludeYear !== false, // default true
-					startNumber: (tenant as any)?.invoiceStartNumber || 1,
-					separator: "-",
-				},
+				tenantConfig,
 			);
 
 		// Extract invoice number and series from generated data
 		const invoiceNumber = invoiceData.number;
 		const invoiceSeries = invoiceData.series;
+
+		console.log("🔍 DEBUG: Generated invoice data", {
+			invoiceNumber,
+			invoiceSeries,
+			fullData: invoiceData
+		});
 
 		// Create invoice row
 		const invoiceRow = await prisma.row.create({

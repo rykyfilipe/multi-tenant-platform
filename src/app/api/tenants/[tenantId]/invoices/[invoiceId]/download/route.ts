@@ -273,6 +273,10 @@ export async function GET(
 			},
 		);
 
+		// Get additional query parameters
+		const url = new URL(request.url);
+		const isPreview = url.searchParams.get('preview') === 'true';
+
 		// Prepare data for enhanced PDF generation
 		const pdfOptions = {
 			tenantId: tenantId,
@@ -283,10 +287,6 @@ export async function GET(
 			includeBarcode: url.searchParams.get('barcode') === 'true',
 			language: url.searchParams.get('language') || tenantInfo?.language || 'en',
 		};
-
-		// Get additional query parameters
-		const url = new URL(request.url);
-		const isPreview = url.searchParams.get('preview') === 'true';
 
 		console.log('PDF Generation Parameters:', {
 			tenantId,

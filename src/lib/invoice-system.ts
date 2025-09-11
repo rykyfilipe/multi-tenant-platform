@@ -786,7 +786,7 @@ export class InvoiceSystemService {
 						},
 					},
 				},
-				orderBy: { id: "desc" },
+				orderBy: { createdAt: "desc" },
 			});
 		});
 
@@ -917,11 +917,17 @@ export class InvoiceSystemService {
 						},
 					},
 				},
-				orderBy: { id: "desc" },
+				orderBy: { createdAt: "desc" },
 			});
 		});
 
 		let lastNumber = defaultConfig.startNumber - 1;
+		console.log("🔍 DEBUG: Starting invoice number generation", {
+			seriesIdentifier,
+			startNumber: defaultConfig.startNumber,
+			hasLastInvoice: !!lastInvoice
+		});
+
 		if (lastInvoice && lastInvoice.cells) {
 			const invoiceNumberCell = lastInvoice.cells.find(
 				(cell: any) => cell.column.name === "invoice_number",
@@ -930,23 +936,65 @@ export class InvoiceSystemService {
 				(cell: any) => cell.column.name === "invoice_series",
 			);
 
-			if (invoiceNumberCell?.value && seriesCell?.value === seriesIdentifier) {
-				// Extract number from invoice number
-				const regexPattern =
-					seriesIdentifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-					defaultConfig.separator.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-					"(\\d+)";
-				const match = invoiceNumberCell.value
-					.toString()
-					.match(new RegExp(regexPattern));
-				if (match) {
-					lastNumber = parseInt(match[1]);
+			console.log("🔍 DEBUG: Found cells", {
+				invoiceNumber: invoiceNumberCell?.value,
+				invoiceSeries: seriesCell?.value,
+				expectedSeries: seriesIdentifier,
+				seriesMatch: seriesCell?.value === seriesIdentifier
+			});
+
+			if (invoiceNumberCell?.value) {
+				// First try to match with exact series
+				if (seriesCell?.value === seriesIdentifier) {
+					const regexPattern =
+						seriesIdentifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+						defaultConfig.separator.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+						"(\\d+)";
+					
+					console.log("🔍 DEBUG: Exact series regex pattern", regexPattern);
+					
+					const match = invoiceNumberCell.value
+						.toString()
+						.match(new RegExp(regexPattern));
+					
+					console.log("🔍 DEBUG: Exact series regex match", match);
+					
+					if (match) {
+						lastNumber = parseInt(match[1]);
+						console.log("🔍 DEBUG: Extracted last number from exact series", lastNumber);
+					}
+				} else {
+					// Fallback: try to extract any number from the invoice number
+					// This handles cases where series might not match exactly
+					const generalRegex = new RegExp(`(\\d{6,})`, 'g');
+					const matches = invoiceNumberCell.value.toString().match(generalRegex);
+					
+					console.log("🔍 DEBUG: General number extraction", {
+						invoiceNumber: invoiceNumberCell.value,
+						matches
+					});
+					
+					if (matches && matches.length > 0) {
+						// Get the largest number found (should be the main invoice number)
+						const numbers = matches.map(m => parseInt(m));
+						const maxNumber = Math.max(...numbers);
+						lastNumber = Math.max(lastNumber, maxNumber);
+						console.log("🔍 DEBUG: Using max number from general extraction", maxNumber);
+					}
 				}
+			} else {
+				console.log("🔍 DEBUG: No invoice number cell found");
 			}
 		}
 
 		const nextNumber = lastNumber + 1;
 		const paddedNumber = nextNumber.toString().padStart(6, "0");
+
+		console.log("🔍 DEBUG: Number calculation", {
+			lastNumber,
+			nextNumber,
+			paddedNumber
+		});
 
 		// Build the full invoice number
 		const numberParts = [];
@@ -956,6 +1004,12 @@ export class InvoiceSystemService {
 		if (defaultConfig.suffix) numberParts.push(defaultConfig.suffix);
 
 		const fullNumber = numberParts.join(defaultConfig.separator);
+
+		console.log("🔍 DEBUG: Final invoice number", {
+			fullNumber,
+			numberParts,
+			separator: defaultConfig.separator
+		});
 
 		return {
 			number: fullNumber,
@@ -1630,7 +1684,7 @@ export class InvoiceSystemService {
 						},
 					},
 				},
-				orderBy: { id: "desc" },
+				orderBy: { createdAt: "desc" },
 			},
 			DEFAULT_CACHE_STRATEGIES.rowList,
 		);

@@ -510,13 +510,9 @@ export function EditableCell({
 	const handleValueChange = useCallback((newValue: any) => {
 		setValue(newValue);
 		
-		// For immediate optimistic updates, call onSave right away for all column types
-		const column = columns?.find((col) => col.id === cell?.columnId);
-		if (column?.type !== USER_FRIENDLY_COLUMN_TYPES.customArray) {
-			// Save immediately for better UX (customArray is handled separately)
-			onSave(newValue);
-		}
-	}, [columns, cell?.columnId, onSave]);
+		// Don't call onSave immediately for text/number - let user finish typing
+		// onSave will be called on Enter key or click outside
+	}, []);
 
 	// Ref pentru container-ul de editare
 	const editContainerRef = useRef<HTMLDivElement>(null);
@@ -618,7 +614,7 @@ export function EditableCell({
 				// For customArray, values are already saved on change
 				onCancel();
 			} else {
-				// For other types, save and cancel
+				// For text/number/date, save the current value and cancel
 				onSave(value);
 			}
 		}
@@ -658,8 +654,8 @@ export function EditableCell({
 					// For customArray, value is already saved on change, just cancel
 					onCancel();
 				} else {
-					// For other types, values are already saved on change via handleValueChange
-					onCancel();
+					// For text/number/date, save current value and cancel
+					onSave(value);
 				}
 			}
 		};

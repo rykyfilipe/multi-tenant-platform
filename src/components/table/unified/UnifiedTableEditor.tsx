@@ -974,9 +974,10 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			// Find the column to check its type
 			const column = columns?.find((col) => col.id.toString() === columnId);
 			const isCustomArray = column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray;
+			const isReference = column?.type === USER_FRIENDLY_COLUMN_TYPES.link;
 
 			// Optimistic update: immediately update UI
-			console.log("🚀 Optimistic update for cell:", { rowId, columnId, cellId, value, isCustomArray });
+			console.log("🚀 Optimistic update for cell:", { rowId, columnId, cellId, value, isCustomArray, isReference });
 			
 			// Create optimistic cell update
 			const optimisticCell = {
@@ -1055,7 +1056,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				token,
 				user,
 				showAlert,
-				{ keepEditing: isCustomArray }, // Keep editing open for customArray
+				{ keepEditing: isCustomArray || isReference }, // Keep editing open for customArray and reference
 			);
 		},
 		[handleSaveCell, paginatedRows, table, token, user, showAlert, setRows, columns],

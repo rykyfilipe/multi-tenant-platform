@@ -40,6 +40,11 @@ export interface InvoiceData {
 		total: number;
 		vat_rate?: number;
 		currency?: string;
+		unit?: string;
+		product_unit?: string;
+		product_sku?: string;
+		product_dimensions?: string;
+		product_vat?: number;
 	}>;
 	totals: {
 		subtotal: number;
@@ -176,35 +181,35 @@ export class PuppeteerPDFGenerator {
     </style>
 </head>
 <body>
-    <div class="bg-white shadow-2xl border border-gray-200 mx-auto" style="width: 100%; max-width: 100%; aspect-ratio: 210/297; min-height: 600px; font-family: Arial, sans-serif;">
-      <!-- Invoice Header -->
-      <div class="border-b-2 border-gray-300 p-8">
-        <div class="flex justify-between items-start">
-          <div class="flex-1">
-            <div class="mb-4">
-              <h1 class="text-2xl font-bold text-gray-900">
-                ${tenantBranding.name || 'Company Name'}
-              </h1>
-            </div>
-          </div>
-          <div class="text-right">
-            <h2 class="text-4xl font-bold text-gray-900 mb-2">${translations.invoice || 'INVOICE'}</h2>
-            <div class="space-y-1 text-sm">
-              <div class="font-semibold">
-                ${translations.invoiceNumber || 'Invoice#'} ${invoiceData.invoice.invoice_series ? `${invoiceData.invoice.invoice_series}-` : ''}${invoiceData.invoice.invoice_number}
+      <div class="bg-white shadow-2xl border border-gray-200 mx-auto" style="width: 100%; max-width: 100%; aspect-ratio: 210/297; min-height: 600px; font-family: Arial, sans-serif;">
+        <!-- Invoice Header -->
+        <div class="border-b-2 border-gray-300 p-6">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="mb-3">
+                <h1 class="text-xl font-bold text-gray-900">
+                  ${tenantBranding.name || 'Company Name'}
+                </h1>
               </div>
-              <div>${translations.date || 'Date'}: ${formatDate(invoiceData.invoice.date)}</div>
-              <div class="text-lg font-bold text-gray-900 mt-2">
-                Total Due: ${formatCurrency(invoiceData.invoice.total_amount, currency)}
+            </div>
+            <div class="text-right">
+              <h2 class="text-3xl font-bold text-gray-900 mb-2">${translations.invoice || 'INVOICE'}</h2>
+              <div class="space-y-1 text-xs">
+                <div class="font-semibold">
+                  ${translations.invoiceNumber || 'Invoice#'} ${invoiceData.invoice.invoice_series ? `${invoiceData.invoice.invoice_series}-` : ''}${invoiceData.invoice.invoice_number}
+                </div>
+                <div>${translations.date || 'Date'}: ${formatDate(invoiceData.invoice.date)}</div>
+                <div class="text-base font-bold text-gray-900 mt-1">
+                  Total Due: ${formatCurrency(invoiceData.invoice.total_amount, currency)}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
       <!-- Bill To Section -->
-      <div class="p-8 border-b border-gray-200">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="p-6 border-b border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Company Info - Left side -->
           <div>
             <h3 class="text-sm font-semibold text-gray-700 mb-3">${translations.company || 'From'}:</h3>
@@ -248,8 +253,8 @@ export class PuppeteerPDFGenerator {
       </div>
 
       <!-- Invoice Details -->
-      <div class="p-8 border-b border-gray-200">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="p-6 border-b border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <div class="flex items-center gap-2 mb-2">
               <span class="text-sm font-medium text-gray-700">
@@ -284,21 +289,27 @@ export class PuppeteerPDFGenerator {
       </div>
 
       <!-- Items Table -->
-      <div class="p-8">
+      <div class="p-6">
         <div class="overflow-x-auto">
-          <table class="w-full border-collapse">
+          <table class="w-full border-collapse text-xs">
             <thead>
               <tr class="bg-gray-50">
-                <th class="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
-                  ${translations.item || 'ITEM'} ${translations.description || 'DESCRIPTION'}
+                <th class="text-left py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 25%;">
+                  ${translations.item || 'PRODUCT'}
                 </th>
-                <th class="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                <th class="text-left py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 15%;">
+                  ${translations.unit || 'UNIT'}
+                </th>
+                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 12%;">
                   ${translations.unitPrice || 'PRICE'}
                 </th>
-                <th class="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 8%;">
                   ${translations.quantity || 'QTY'}
                 </th>
-                <th class="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 10%;">
+                  ${translations.vat || 'VAT %'}
+                </th>
+                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 15%;">
                   ${translations.total || 'TOTAL'}
                 </th>
               </tr>
@@ -306,23 +317,39 @@ export class PuppeteerPDFGenerator {
             <tbody>
               ${invoiceData.items.map(item => `
                 <tr class="border-b border-gray-200">
-                  <td class="py-4 px-4">
-                    <div class="font-medium text-gray-900 text-sm">
-                      ${item.product_name}
+                  <td class="py-3 px-3">
+                    <div class="font-medium text-gray-900">
+                      ${item.product_name || 'Product'}
                     </div>
                     ${item.description ? `
-                      <div class="text-gray-600 text-xs mt-1">
+                      <div class="text-gray-600 mt-1 text-xs">
                         ${item.description}
                       </div>
                     ` : ''}
+                    ${item.product_sku ? `
+                      <div class="text-gray-500 mt-1 text-xs">
+                        SKU: ${item.product_sku}
+                      </div>
+                    ` : ''}
+                    ${item.product_dimensions ? `
+                      <div class="text-gray-500 mt-1 text-xs">
+                        ${item.product_dimensions}
+                      </div>
+                    ` : ''}
                   </td>
-                  <td class="py-4 px-4 text-right text-gray-900 text-sm">
+                  <td class="py-3 px-3 text-gray-700">
+                    ${item.unit || item.product_unit || 'pcs'}
+                  </td>
+                  <td class="py-3 px-3 text-right text-gray-900">
                     ${formatCurrency(item.unit_price, item.currency || currency)}
                   </td>
-                  <td class="py-4 px-4 text-right text-gray-900 text-sm">
+                  <td class="py-3 px-3 text-right text-gray-900">
                     ${item.quantity}
                   </td>
-                  <td class="py-4 px-4 text-right font-medium text-gray-900 text-sm">
+                  <td class="py-3 px-3 text-right text-gray-700">
+                    ${item.vat_rate || item.product_vat || 0}%
+                  </td>
+                  <td class="py-3 px-3 text-right font-medium text-gray-900">
                     ${formatCurrency(item.total, item.currency || currency)}
                   </td>
                 </tr>
@@ -332,9 +359,9 @@ export class PuppeteerPDFGenerator {
         </div>
 
         <!-- Totals -->
-        <div class="mt-8 flex justify-end">
-          <div class="w-80 space-y-1">
-            <div class="flex justify-between py-1 text-sm">
+        <div class="mt-6 flex justify-end">
+          <div class="w-72 space-y-1">
+            <div class="flex justify-between py-1 text-xs">
               <span class="text-gray-700 font-semibold">
                 ${translations.subtotal || 'SUB TOTAL'}:
               </span>
@@ -344,7 +371,7 @@ export class PuppeteerPDFGenerator {
             </div>
             
             ${invoiceData.totals.vatTotal > 0 ? `
-            <div class="flex justify-between py-1 text-sm">
+            <div class="flex justify-between py-1 text-xs">
               <span class="text-gray-700 font-semibold">
                 ${translations.tax || 'Tax VAT'}:
               </span>
@@ -355,7 +382,7 @@ export class PuppeteerPDFGenerator {
             ` : ''}
             
             ${(invoiceData.totals.discountAmount || 0) > 0 ? `
-            <div class="flex justify-between py-1 text-sm">
+            <div class="flex justify-between py-1 text-xs">
               <span class="text-gray-700 font-semibold">
                 ${translations.discount || 'Discount'}:
               </span>
@@ -365,11 +392,11 @@ export class PuppeteerPDFGenerator {
             </div>
             ` : ''}
             
-            <div class="flex justify-between py-3 border-t-2 border-gray-300 mt-4">
-              <span class="text-lg font-bold text-gray-900">
+            <div class="flex justify-between py-2 border-t-2 border-gray-300 mt-3">
+              <span class="text-base font-bold text-gray-900">
                 ${translations.grandTotal || 'GRAND TOTAL'}:
               </span>
-              <span class="text-lg font-bold text-gray-900">
+              <span class="text-base font-bold text-gray-900">
                 ${formatCurrency(invoiceData.totals.grandTotal, currency)}
               </span>
             </div>
@@ -535,6 +562,18 @@ export class PuppeteerPDFGenerator {
 		row.cells.forEach((cell: any) => {
 			obj[cell.column.name] = cell.value;
 		});
+		
+		// For invoice items, ensure we have all necessary product fields
+		if (obj.product_name || obj.name) {
+			obj.product_name = obj.product_name || obj.name || 'Product';
+			obj.description = obj.description || obj.product_description || '';
+			obj.unit = obj.unit || obj.product_unit || 'pcs';
+			obj.product_sku = obj.product_sku || obj.sku || '';
+			obj.product_dimensions = obj.product_dimensions || obj.dimensions || '';
+			obj.product_vat = obj.product_vat || obj.vat_rate || obj.vat || 0;
+			obj.currency = obj.currency || 'USD';
+		}
+		
 		return obj;
 	}
 
