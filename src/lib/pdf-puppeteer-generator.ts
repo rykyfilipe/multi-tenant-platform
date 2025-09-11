@@ -82,6 +82,10 @@ export class PuppeteerPDFGenerator {
 	 */
 	private static async ensureChromeAvailable(): Promise<void> {
 		try {
+			console.log('🔍 DEBUG: ensureChromeAvailable called');
+			console.log('🔍 DEBUG: process.env.HOME:', process.env.HOME);
+			console.log('🔍 DEBUG: process.env.PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
+			
 			// Try to find Chrome in common locations
 			const possiblePaths = [
 				// Puppeteer cache locations
@@ -97,9 +101,13 @@ export class PuppeteerPDFGenerator {
 			];
 
 			let chromePath = null;
+			console.log('🔍 DEBUG: Checking possible paths:', possiblePaths);
+			
 			for (const path of possiblePaths) {
+				console.log(`🔍 DEBUG: Checking path: ${path}, exists: ${fs.existsSync(path)}`);
 				if (fs.existsSync(path)) {
 					chromePath = path;
+					console.log(`🔍 DEBUG: Found Chrome at: ${path}`);
 					break;
 				}
 			}
@@ -107,11 +115,17 @@ export class PuppeteerPDFGenerator {
 			// If not found in common paths, try to find any Chrome in Puppeteer cache
 			if (!chromePath && process.env.HOME) {
 				const puppeteerCacheDir = process.env.HOME + '/.cache/puppeteer/chrome';
+				console.log(`Checking Puppeteer cache directory: ${puppeteerCacheDir}`);
+				
 				if (fs.existsSync(puppeteerCacheDir)) {
 					try {
 						const versions = fs.readdirSync(puppeteerCacheDir);
+						console.log(`Found versions in cache: ${versions.join(', ')}`);
+						
 						for (const version of versions) {
 							const chromePath = `${puppeteerCacheDir}/${version}/chrome-linux64/chrome`;
+							console.log(`Checking Chrome path: ${chromePath}`);
+							
 							if (fs.existsSync(chromePath)) {
 								console.log(`Found Chrome in Puppeteer cache: ${chromePath}`);
 								process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
@@ -121,6 +135,8 @@ export class PuppeteerPDFGenerator {
 					} catch (error) {
 						console.log('Could not read Puppeteer cache directory:', (error as Error).message);
 					}
+				} else {
+					console.log('Puppeteer cache directory does not exist');
 				}
 			}
 
