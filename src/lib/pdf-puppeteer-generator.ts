@@ -188,246 +188,119 @@ export class PuppeteerPDFGenerator {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice ${invoiceData.invoice.invoice_number}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @media print {
-            body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invoice ${invoiceData.invoice.invoice_number}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
 </head>
-<body>
-      <div class="bg-white shadow-2xl border border-gray-200 mx-auto" style="width: 100%; max-width: 100%; aspect-ratio: 210/297; min-height: 600px; font-family: Arial, sans-serif;">
-        <!-- Invoice Header -->
-        <div class="border-b-2 border-gray-300 p-6">
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <div class="mb-3">
-                <h1 class="text-xl font-bold text-gray-900">
-                  ${tenantBranding.name || 'Company Name'}
-                </h1>
-              </div>
-            </div>
-            <div class="text-right">
-              <h2 class="text-3xl font-bold text-gray-900 mb-2">${translations.invoice || 'INVOICE'}</h2>
-              <div class="space-y-1 text-xs">
-                <div class="font-semibold">
-                  ${translations.invoiceNumber || 'Invoice#'} ${invoiceData.invoice.invoice_series ? `${invoiceData.invoice.invoice_series}-` : ''}${invoiceData.invoice.invoice_number}
-                </div>
-                <div>${translations.date || 'Date'}: ${formatDate(invoiceData.invoice.date)}</div>
-                <div class="text-base font-bold text-gray-900 mt-1">
-                  Total Due: ${formatCurrency(invoiceData.invoice.total_amount, currency)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      <!-- Bill To Section -->
-      <div class="p-6 border-b border-gray-200">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Company Info - Left side -->
-          <div>
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">${translations.company || 'From'}:</h3>
-            <div class="space-y-1 text-sm">
-              <div class="font-semibold text-gray-900">${tenantBranding.name}</div>
-              ${(tenantBranding.companyStreet || tenantBranding.address) ? `
-                <div class="text-gray-600">
-                  ${tenantBranding.companyStreet && tenantBranding.companyStreetNumber
-                    ? `${tenantBranding.companyStreet} ${tenantBranding.companyStreetNumber}`
-                    : tenantBranding.address || tenantBranding.companyStreet}
-                </div>
-              ` : ''}
-              ${(tenantBranding.companyCity || tenantBranding.companyPostalCode) ? `
-                <div class="text-gray-600">
-                  ${[tenantBranding.companyPostalCode, tenantBranding.companyCity, tenantBranding.companyCountry]
-                    .filter(Boolean)
-                    .join(', ')}
-                </div>
-              ` : ''}
-              ${tenantBranding.companyEmail ? `<div class="text-gray-600">${tenantBranding.companyEmail}</div>` : ''}
-              ${tenantBranding.phone ? `<div class="text-gray-600">${tenantBranding.phone}</div>` : ''}
-              ${tenantBranding.website ? `<div class="text-gray-600">${tenantBranding.website}</div>` : ''}
-              ${tenantBranding.companyTaxId ? `<div class="text-gray-600">Tax ID: ${tenantBranding.companyTaxId}</div>` : ''}
-              ${tenantBranding.registrationNumber ? `<div class="text-gray-600">Reg. No: ${tenantBranding.registrationNumber}</div>` : ''}
-            </div>
-          </div>
-
-          <!-- Customer Info - Right side -->
-          <div>
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">${translations.customer || 'Bill To'}:</h3>
-            <div class="space-y-1 text-sm">
-              <div class="font-semibold text-gray-900">
-                ${invoiceData.customer.customer_name}
-              </div>
-              ${invoiceData.customer.customer_address ? `<div class="text-gray-600">${invoiceData.customer.customer_address}</div>` : ''}
-              ${invoiceData.customer.customer_email ? `<div class="text-gray-600">${invoiceData.customer.customer_email}</div>` : ''}
-              ${invoiceData.customer.customer_phone ? `<div class="text-gray-600">${invoiceData.customer.customer_phone}</div>` : ''}
-            </div>
-          </div>
-        </div>
+<body class="bg-gray-100 p-6">
+  <div class="bg-white shadow-lg border border-gray-300 mx-auto p-8" style="max-width: 800px; min-height: 1123px; aspect-ratio: 210/297;">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-start border-b pb-6 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+          ${tenantBranding.name || 'Company Name'}
+        </h1>
+        <p class="text-sm text-gray-600">${tenantBranding.companyStreet || ''} ${tenantBranding.companyStreetNumber || ''}</p>
+        <p class="text-sm text-gray-600">${tenantBranding.companyCity || ''}, ${tenantBranding.companyCountry || ''}</p>
+        ${tenantBranding.companyTaxId ? `<p class="text-sm text-gray-600">Tax ID: ${tenantBranding.companyTaxId}</p>` : ''}
       </div>
-
-      <!-- Invoice Details -->
-      <div class="p-6 border-b border-gray-200">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-sm font-medium text-gray-700">
-                ${translations.date || 'Invoice Date'}
-              </span>
-            </div>
-            <div class="text-gray-900">${formatDate(invoiceData.invoice.date)}</div>
-          </div>
-          
-          ${invoiceData.invoice.due_date ? `
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-sm font-medium text-gray-700">
-                ${translations.dueDate || 'Due Date'}
-              </span>
-            </div>
-            <div class="text-gray-900">${formatDate(invoiceData.invoice.due_date)}</div>
-          </div>
-          ` : ''}
-
-          ${invoiceData.invoice.payment_terms ? `
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-sm font-medium text-gray-700">
-                ${translations.paymentTerms || 'Payment Terms'}
-              </span>
-            </div>
-            <div class="text-gray-900">${invoiceData.invoice.payment_terms}</div>
-          </div>
-          ` : ''}
-        </div>
+      <div class="text-right">
+        <h2 class="text-3xl font-bold text-gray-900">${translations.invoice || 'INVOICE'}</h2>
+        <p class="text-sm text-gray-600">
+          ${translations.invoiceNumber || 'Invoice #'}: 
+          ${invoiceData.invoice.invoice_series ? `${invoiceData.invoice.invoice_series}-` : ''}${invoiceData.invoice.invoice_number}
+        </p>
+        <p class="text-sm text-gray-600">${translations.date || 'Date'}: ${formatDate(invoiceData.invoice.date)}</p>
+        ${invoiceData.invoice.due_date ? `<p class="text-sm text-gray-600">${translations.dueDate || 'Due Date'}: ${formatDate(invoiceData.invoice.due_date)}</p>` : ''}
       </div>
+    </div>
 
-      <!-- Items Table -->
-      <div class="p-6">
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse text-xs">
-            <thead>
-              <tr class="bg-gray-50">
-                <th class="text-left py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 25%;">
-                  ${translations.item || 'PRODUCT'}
-                </th>
-                <th class="text-left py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 15%;">
-                  ${translations.unit || 'UNIT'}
-                </th>
-                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 12%;">
-                  ${translations.unitPrice || 'PRICE'}
-                </th>
-                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 8%;">
-                  ${translations.quantity || 'QTY'}
-                </th>
-                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 10%;">
-                  ${translations.vat || 'VAT %'}
-                </th>
-                <th class="text-right py-3 px-3 font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300" style="width: 15%;">
-                  ${translations.total || 'TOTAL'}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoiceData.items.map(item => `
-                <tr class="border-b border-gray-200">
-                  <td class="py-3 px-3">
-                    <div class="font-medium text-gray-900">
-                      ${item.product_name || 'Product'}
-                    </div>
-                    ${item.description ? `
-                      <div class="text-gray-600 mt-1 text-xs">
-                        ${item.description}
-                      </div>
-                    ` : ''}
-                    ${item.product_sku ? `
-                      <div class="text-gray-500 mt-1 text-xs">
-                        SKU: ${item.product_sku}
-                      </div>
-                    ` : ''}
-                    ${item.product_dimensions ? `
-                      <div class="text-gray-500 mt-1 text-xs">
-                        ${item.product_dimensions}
-                      </div>
-                    ` : ''}
-                  </td>
-                  <td class="py-3 px-3 text-gray-700">
-                    ${item.unit || item.product_unit || 'pcs'}
-                  </td>
-                  <td class="py-3 px-3 text-right text-gray-900">
-                    ${formatCurrency(item.unit_price, item.currency || currency)}
-                  </td>
-                  <td class="py-3 px-3 text-right text-gray-900">
-                    ${item.quantity}
-                  </td>
-                  <td class="py-3 px-3 text-right text-gray-700">
-                    ${item.vat_rate || item.product_vat || 0}%
-                  </td>
-                  <td class="py-3 px-3 text-right font-medium text-gray-900">
-                    ${formatCurrency(item.total, item.currency || currency)}
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+    <!-- Billing Info -->
+    <div class="grid grid-cols-2 gap-8 mb-6">
+      <div>
+        <h3 class="text-sm font-semibold text-gray-700 mb-2">${translations.company || 'From'}:</h3>
+        <p class="font-semibold text-gray-900">${tenantBranding.name}</p>
+        ${tenantBranding.companyEmail ? `<p class="text-gray-600 text-sm">${tenantBranding.companyEmail}</p>` : ''}
+        ${tenantBranding.phone ? `<p class="text-gray-600 text-sm">${tenantBranding.phone}</p>` : ''}
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-700 mb-2">${translations.customer || 'Bill To'}:</h3>
+        <p class="font-semibold text-gray-900">${invoiceData.customer.customer_name}</p>
+        ${invoiceData.customer.customer_address ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_address}</p>` : ''}
+        ${invoiceData.customer.customer_email ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_email}</p>` : ''}
+        ${invoiceData.customer.customer_phone ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_phone}</p>` : ''}
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="overflow-x-auto mb-6">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="bg-gray-100 text-gray-700 border-b">
+            <th class="py-3 px-2 text-left font-semibold">${translations.item || 'Item'}</th>
+            <th class="py-3 px-2 text-left font-semibold">${translations.unit || 'Unit'}</th>
+            <th class="py-3 px-2 text-right font-semibold">${translations.unitPrice || 'Unit Price'}</th>
+            <th class="py-3 px-2 text-right font-semibold">${translations.quantity || 'Quantity'}</th>
+            <th class="py-3 px-2 text-right font-semibold">${translations.vat || 'VAT %'}</th>
+            <th class="py-3 px-2 text-right font-semibold">${translations.total || 'Total'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${invoiceData.items.map(item => `
+            <tr class="border-b">
+              <td class="py-2 px-2">${item.product_name || ''}</td>
+              <td class="py-2 px-2">${item.unit || item.product_unit || 'pcs'}</td>
+              <td class="py-2 px-2 text-right">${formatCurrency(item.unit_price, item.currency || currency)}</td>
+              <td class="py-2 px-2 text-right">${item.quantity}</td>
+              <td class="py-2 px-2 text-right">${item.vat_rate || 0}%</td>
+              <td class="py-2 px-2 text-right font-semibold">${formatCurrency(item.total, item.currency || currency)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="flex justify-end mb-12">
+      <div class="w-64">
+        <div class="flex justify-between py-1">
+          <span class="text-gray-700">${translations.subtotal || 'Subtotal'}:</span>
+          <span class="font-medium">${formatCurrency(invoiceData.totals.subtotal, currency)}</span>
         </div>
-
-        <!-- Totals -->
-        <div class="mt-6 flex justify-end">
-          <div class="w-72 space-y-1">
-            <div class="flex justify-between py-1 text-xs">
-              <span class="text-gray-700 font-semibold">
-                ${translations.subtotal || 'SUB TOTAL'}:
-              </span>
-              <span class="font-medium text-gray-900">
-                ${formatCurrency(invoiceData.totals.subtotal, currency)}
-              </span>
-            </div>
-            
-            ${invoiceData.totals.vatTotal > 0 ? `
-            <div class="flex justify-between py-1 text-xs">
-              <span class="text-gray-700 font-semibold">
-                ${translations.tax || 'Tax VAT'}:
-              </span>
-              <span class="font-medium text-gray-900">
-                ${formatCurrency(invoiceData.totals.vatTotal, currency)}
-              </span>
-            </div>
-            ` : ''}
-            
-            ${(invoiceData.totals.discountAmount || 0) > 0 ? `
-            <div class="flex justify-between py-1 text-xs">
-              <span class="text-gray-700 font-semibold">
-                ${translations.discount || 'Discount'}:
-              </span>
-              <span class="font-medium text-red-600">
-                -${formatCurrency(invoiceData.totals.discountAmount || 0, currency)}
-              </span>
-            </div>
-            ` : ''}
-            
-            <div class="flex justify-between py-2 border-t-2 border-gray-300 mt-3">
-              <span class="text-base font-bold text-gray-900">
-                ${translations.grandTotal || 'GRAND TOTAL'}:
-              </span>
-              <span class="text-base font-bold text-gray-900">
-                ${formatCurrency(invoiceData.totals.grandTotal, currency)}
-              </span>
-            </div>
-          </div>
+        ${invoiceData.totals.vatTotal > 0 ? `
+        <div class="flex justify-between py-1">
+          <span class="text-gray-700">${translations.tax || 'VAT'}:</span>
+          <span class="font-medium">${formatCurrency(invoiceData.totals.vatTotal, currency)}</span>
+        </div>` : ''}
+        ${(invoiceData.totals.discountAmount || 0) > 0 ? `
+        <div class="flex justify-between py-1">
+          <span class="text-gray-700">${translations.discount || 'Discount'}:</span>
+          <span class="font-medium text-red-600">-${formatCurrency(invoiceData.totals.discountAmount || 0, currency)}</span>
+        </div>` : ''}
+        <div class="flex justify-between py-2 border-t mt-2">
+          <span class="font-bold text-gray-900">${translations.grandTotal || 'Grand Total'}:</span>
+          <span class="font-bold text-gray-900">${formatCurrency(invoiceData.totals.grandTotal, currency)}</span>
         </div>
       </div>
     </div>
+
+    <!-- Footer -->
+    <div class="text-center text-xs text-gray-500 border-t pt-4">
+      Thank you for your business.<br/>
+      ${tenantBranding.website || ''} | ${tenantBranding.companyEmail || ''}
+    </div>
+  </div>
 </body>
 </html>
-		`;
+`
 	}
 
 	/**

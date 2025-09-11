@@ -1610,6 +1610,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								getPendingValue={getPendingValue}
 								canEdit={tablePermissions.canEditTable()}
 								canDelete={tablePermissions.canDeleteTable()}
+								tables={tables || []}
 							/>
 							</div>
 						</div>

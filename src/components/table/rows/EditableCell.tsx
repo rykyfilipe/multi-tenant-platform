@@ -506,6 +506,24 @@ export function EditableCell({
 		}
 	}, [cell?.value, hasPendingChange, pendingValue, isEditing, columns]);
 
+	// When editing starts, ensure the input is prefilled with the correct value
+	useEffect(() => {
+		if (isEditing) {
+			const currentValue = hasPendingChange ? pendingValue : cell?.value;
+			const column = columns?.find((col) => col.id === cell?.columnId);
+			
+			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+				if (Array.isArray(currentValue)) {
+					setValue(currentValue);
+				} else {
+					setValue(currentValue ? [currentValue] : []);
+				}
+			} else {
+				setValue(currentValue);
+			}
+		}
+	}, [isEditing, hasPendingChange, pendingValue, cell?.value, columns]);
+
 	// Optimistic update: immediately update local state when user types
 	const handleValueChange = useCallback((newValue: any) => {
 		setValue(newValue);
@@ -613,19 +631,23 @@ export function EditableCell({
 
 	const handleKey = useCallback((e: KeyboardEvent) => {
 		if (e.key === "Enter") {
-			// For reference columns, values are already saved on change
-			// Just cancel editing for Enter key
+			// For all column types, just add to pending changes and exit edit mode
+			// Do NOT auto-save - changes should only be committed on batch save
 			if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 				if (hasInvalidReferences) {
 					return; // Don't cancel if there are invalid references
 				}
+				// Add to pending changes before canceling
+				onSave(value);
 				onCancel();
 			} else if (column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
-				// For customArray, values are already saved on change
+				// Add to pending changes before canceling
+				onSave(value);
 				onCancel();
 			} else {
-				// For text/number/date, save the current value and cancel
+				// For text/number/date, add to pending changes and cancel
 				onSave(value);
+				onCancel();
 			}
 		}
 		if (e.key === "Escape") onCancel();
@@ -653,19 +675,23 @@ export function EditableCell({
 					return;
 				}
 
-				// For reference columns, values are already saved on change
+				// For all column types, add to pending changes before canceling
 				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 					if (hasInvalidReferences) {
 						// Don't cancel if there are invalid references
 						return;
 					}
+					// Add to pending changes before canceling
+					onSave(value);
 					onCancel();
 				} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
-					// For customArray, value is already saved on change, just cancel
+					// Add to pending changes before canceling
+					onSave(value);
 					onCancel();
 				} else {
-					// For text/number/date, save current value and cancel
+					// For text/number/date, add to pending changes and cancel
 					onSave(value);
+					onCancel();
 				}
 			}
 		};
@@ -742,7 +768,7 @@ export function EditableCell({
 						checked={value === true}
 						onCheckedChange={(checked) => {
 							setValue(checked);
-							// Save immediately for boolean changes
+							// Add to pending changes for boolean changes
 							onSave(checked);
 						}}>
 						<span className='sr-only'>{t("table.toggleBoolean")}</span>
@@ -754,8 +780,7 @@ export function EditableCell({
 						value={String(value || "")}
 						onValueChange={(v) => {
 							setValue(v);
-							// For customArray, we need to add to pending changes without canceling editing
-							// Call onSave which will handle the pending changes logic
+							// Add to pending changes for customArray changes
 							onSave(v);
 						}}
 						options={column.customOptions || []}

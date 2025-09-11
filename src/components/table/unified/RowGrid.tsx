@@ -23,6 +23,7 @@ interface Props {
 	getPendingValue: (rowId: string, columnId: string) => any;
 	canEdit: boolean;
 	canDelete: boolean;
+	tables?: any[];
 }
 
 export function RowGrid({
@@ -39,6 +40,7 @@ export function RowGrid({
 	getPendingValue,
 	canEdit,
 	canDelete,
+	tables = [],
 }: Props) {
 	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
@@ -194,7 +196,7 @@ export function RowGrid({
 											onStartEdit={() => {}}
 											onSave={(value) => onSaveCell(column.id.toString(), row.id.toString(), "virtual", value)}
 											onCancel={onCancelEdit}
-											tables={[]} // Will be passed from parent if needed
+											tables={tables}
 											hasPendingChange={hasPending}
 											pendingValue={pendingValue}
 										/>
