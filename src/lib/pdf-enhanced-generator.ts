@@ -113,8 +113,7 @@ export class EnhancedPDFGenerator {
 			// Totals section
 			await this.drawTotalsSection(page, invoiceData, font, boldFont, textColor, primaryColor, translations);
 
-			// Footer
-			await this.drawFooter(page, invoiceData, tenantBranding, font, textColor, secondaryColor, translations);
+			// Footer removed - no signature, payment method, contact, or terms
 
 			// Add watermarks if requested
 			if (options.includeWatermark) {
@@ -399,44 +398,13 @@ export class EnhancedPDFGenerator {
 			color: rgb(0.8, 0.8, 0.8),
 		});
 
-		// Company logo placeholder (matching HTML preview style)
-		const companyInitial = (tenantBranding.name || 'C').charAt(0).toUpperCase();
-		// Draw a 3x3 grid pattern like in HTML preview
-		const gridSize = 6;
-		const spacing = 2;
-		const positions = [
-			{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 },
-			{ row: 1, col: 0 }, { row: 1, col: 2 },
-			{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }
-		];
-		
-		positions.forEach(pos => {
-			const squareX = margin + pos.col * (gridSize + spacing);
-			const squareY = 760 - pos.row * (gridSize + spacing);
-			
-			page.drawRectangle({
-				x: squareX,
-				y: squareY,
-				width: gridSize,
-				height: gridSize,
-				color: rgb(0, 0, 0),
-			});
-		});
-
-		// Company name and details (matching HTML preview layout)
+		// Company name only (no logo, no Private Limited)
 		page.drawText(this.handleUnicodeText(tenantBranding.name || 'Company Name'), {
-			x: margin + 60,
+			x: margin,
 			y: 760,
 			size: 20,
 			font: boldFont,
 			color: rgb(0.1, 0.1, 0.1),
-		});
-		page.drawText('Private Limited', {
-			x: margin + 60,
-			y: 740,
-			size: 12,
-			font: font,
-			color: rgb(0.4, 0.4, 0.4),
 		});
 
 		// Invoice title - right side (matching HTML preview)

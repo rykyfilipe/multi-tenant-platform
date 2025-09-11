@@ -139,11 +139,7 @@ export function TableFilters({
 	}, [currentFilters, currentGlobalSearch]);
 
 	const applyFilters = async () => {
-		console.log("🔍 TableFilters - applyFilters called:", {
-			filters,
-			globalSearch,
-			hasOnApplyFilters: !!onApplyFilters
-		});
+	
 		
 		if (onApplyFilters) {
 			try {
@@ -160,7 +156,6 @@ export function TableFilters({
 				});
 				
 				await onApplyFilters(validFilters, globalSearch);
-				console.log("✅ TableFilters - applyFilters completed successfully");
 			} catch (error) {
 				console.error("❌ TableFilters - applyFilters failed:", error);
 			}

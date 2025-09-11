@@ -29,7 +29,7 @@ interface Props {
 	columns: Column[];
 	onAdd: (e: FormEvent) => void;
 	cells: CellSchema[];
-	setCells: (cells: CellSchema[]) => void;
+	setCells: React.Dispatch<React.SetStateAction<CellSchema[]>>;
 	tables: Table[] | null;
 	serverError?: string | null; // Add server error prop
 	isSubmitting?: boolean; // Add submitting state prop
@@ -129,7 +129,7 @@ export default memo(function AddRowForm({
 	// Get cell value for a specific column
 	const getCellValue = useCallback(
 		(columnId: string) => {
-			const cell = cells.find((c) => c.columnId === columnId);
+			const cell = cells.find((c) => c.columnId === parseInt(columnId));
 			return cell?.value || "";
 		},
 		[cells],
@@ -138,8 +138,8 @@ export default memo(function AddRowForm({
 	// Update cell value
 	const updateCell = useCallback(
 		(columnId: string, value: any) => {
-			setCells((prev) => {
-				const existingIndex = prev.findIndex((c) => c.columnId === columnId);
+			setCells((prev: CellSchema[]) =>	 {
+				const existingIndex = prev.findIndex((c) => c.columnId === parseInt(columnId));
 				if (existingIndex >= 0) {
 					// Update existing cell
 					const updated = [...prev];
@@ -147,7 +147,7 @@ export default memo(function AddRowForm({
 					return updated;
 				} else {
 					// Add new cell
-					return [...prev, { columnId, value }];
+					return [...prev, { columnId: parseInt(columnId), value }];
 				}
 			});
 		},
@@ -165,7 +165,7 @@ export default memo(function AddRowForm({
 
 		// Validate each column
 		columns?.forEach((col) => {
-			const cellValue = getCellValue(col.id);
+			const cellValue = getCellValue(col.id.toString());
 			if (
 				col.required &&
 				(!cellValue || (Array.isArray(cellValue) && cellValue.length === 0))
@@ -186,7 +186,7 @@ export default memo(function AddRowForm({
 	const renderField = useCallback(
 		(column: Column) => {
 			const cellValue =
-				cells.find((c) => c.columnId === column.id)?.value || "";
+				cells.find((c) => c.columnId === column.id)?.value || null;
 			const hasError = formValidation.errors.some((error) =>
 				error.toLowerCase().includes(column.name.toLowerCase()),
 			);
@@ -196,7 +196,7 @@ export default memo(function AddRowForm({
 				<div className='space-y-2'>
 					<label className='text-sm font-medium text-foreground flex items-center gap-2'>
 						{column.name}
-						{column.isRequired && (
+						{column.required && (
 							<span className='text-destructive text-xs font-medium px-1.5 py-0.5 bg-destructive/10 rounded'>
 								Required
 							</span>
@@ -226,7 +226,7 @@ export default memo(function AddRowForm({
 							{commonLabelJSX}
 							<Input
 								value={typeof cellValue === "string" ? cellValue : ""}
-								onChange={(e) => updateCell(column.id, e.target.value)}
+										onChange={(e) => updateCell(column.id.toString()	, e.target.value)}
 								placeholder={`Enter ${column.name.toLowerCase()}...`}
 								className={`w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 ${
 									hasError
@@ -249,7 +249,7 @@ export default memo(function AddRowForm({
 							{commonLabelJSX}
 							<Select
 								value={typeof cellValue === "string" ? cellValue : ""}
-								onValueChange={(val) => updateCell(column.id, val)}>
+								onValueChange={(val) => updateCell(column.id.toString(), val)}>
 								<SelectTrigger
 									className={`w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 ${
 										hasError
@@ -283,7 +283,7 @@ export default memo(function AddRowForm({
 							<Input
 								type='number'
 								value={typeof cellValue === "string" ? cellValue : ""}
-								onChange={(e) => updateCell(column.id, e.target.value)}
+								onChange={(e) => updateCell(column.id.toString(), e.target.value)}
 								placeholder={`Enter ${column.name.toLowerCase()}...`}
 								className={`w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 ${
 									hasError
@@ -302,7 +302,7 @@ export default memo(function AddRowForm({
 							<Input
 								type='datetime-local'
 								value={formatDateForInput(cellValue)}
-								onChange={(e) => updateCell(column.id, e.target.value)}
+								onChange={(e) => updateCell(column.id.toString(), e.target.value)}
 								placeholder={`Select ${column.name.toLowerCase()}...`}
 								className={`w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 ${
 									hasError
@@ -346,7 +346,7 @@ export default memo(function AddRowForm({
 							{commonLabelJSX}
 							<MultipleReferenceSelect
 								value={Array.isArray(cellValue) ? cellValue : []}
-								onValueChange={(val) => updateCell(column.id, val as string[])}
+								onValueChange={(val) => updateCell(column.id.toString(), val as string[])}
 								options={options}
 								placeholder={`Select ${
 									referencedTable?.name || "references"
@@ -400,7 +400,7 @@ export default memo(function AddRowForm({
 							{commonLabelJSX}
 							<Select
 								value={typeof cellValue === "string" ? cellValue : ""}
-								onValueChange={(val) => updateCell(column.id, val)}>
+								onValueChange={(val) => updateCell(column.id.toString(), val)}>
 								<SelectTrigger
 									className={`w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 ${
 										hasError
@@ -428,7 +428,7 @@ export default memo(function AddRowForm({
 							{commonLabelJSX}
 							<Input
 								value={typeof cellValue === "string" ? cellValue : ""}
-								onChange={(e) => updateCell(column.id, e.target.value)}
+								onChange={(e) => updateCell(column.id.toString(), e.target.value)}
 								placeholder={`Enter ${column.name.toLowerCase()}...`}
 								className={`w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 ${
 									hasError

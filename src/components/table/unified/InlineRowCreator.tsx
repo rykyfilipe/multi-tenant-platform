@@ -117,14 +117,14 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 			case "reference":
 				return (
 					<Select
-						value={value?.toString() || ""}
-						onValueChange={(val) => handleInputChange(column.id.toString(), val)}
+						value={value?.toString() || "none"}
+						onValueChange={(val) => handleInputChange(column.id.toString(), val === "none" ? null : val)}
 					>
 						<SelectTrigger className={cn("h-8", error && "border-destructive")}>
 							<SelectValue placeholder="Select..." />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="">None</SelectItem>
+							<SelectItem value="none">None</SelectItem>
 							{/* TODO: Add reference options */}
 						</SelectContent>
 					</Select>

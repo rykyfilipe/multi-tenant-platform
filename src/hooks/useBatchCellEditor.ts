@@ -26,12 +26,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	const tenantId = tenant?.id;
 	const { table } = options;
 
-	console.log("🔧 useBatchCellEditor initialized:", {
-		hasTable: !!table,
-		tableName: table?.name,
-		tenantId,
-		hasToken: !!token,
-	});
+	
 
 	// State pentru modificările pending
 	const [pendingChanges, setPendingChanges] = useState<
@@ -83,23 +78,11 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			
 			// Nu adăuga modificări pentru rândurile locale în pendingChanges
 			if (isLocalRow) {
-				console.log("🚫 Skipping pending change for local row:", {
-					rowId,
-					columnId,
-					cellId,
-					newValue,
-					originalValue,
-				});
+				
 				return;
 			}
 
-			console.log("🔄 Adding pending change:", {
-				rowId,
-				columnId,
-				cellId,
-				newValue,
-				originalValue,
-			});
+			
 
 			const cellKey = getCellKey(rowId, columnId);
 
@@ -108,23 +91,12 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 				// Dacă valoarea este aceeași cu originalul, eliminăm din pending
 				if (newValue === originalValue) {
-					console.log(
-						"❌ Removing pending change (same as original):",
-						cellKey,
-					);
+					
 					newMap.delete(cellKey);
 				} else {
-					console.log("✅ Adding pending change:", cellKey);
-					newMap.set(cellKey, {
-						rowId,
-						columnId,
-						cellId,
-						value: newValue,
-						originalValue,
-					});
+					
 				}
 
-				console.log("📊 Total pending changes:", newMap.size);
 				return newMap;
 			});
 
@@ -135,7 +107,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 			if (autoSaveDelay > 0) {
 				autoSaveTimeoutRef.current = setTimeout(() => {
-					console.log("⏰ Auto-save triggered");
 					if (saveFunctionRef.current) {
 						saveFunctionRef.current();
 					}
@@ -372,11 +343,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 		getPendingValue,
 	};
 
-	console.log("📤 useBatchCellEditor returning:", {
-		pendingChangesCount: result.pendingChangesCount,
-		isSaving: result.isSaving,
-		isEditingCell: !!result.isEditingCell,
-	});
+
 
 	return result;
 }

@@ -12,14 +12,10 @@ function AlertMessage() {
 	const [progress, setProgress] = useState(100);
 
 	// Debug logging
-	console.log("=== ALERT COMPONENT DEBUG ===");
-	console.log("Alert state:", { alertMessage, alertType, isAlertVisible });
 
 	useEffect(() => {
-		console.log("Alert useEffect triggered, isAlertVisible:", isAlertVisible);
 		if (isAlertVisible) {
-			console.log("Setting alert to visible and animating");
-			setIsAnimating(true);
+				setIsAnimating(true);
 			setProgress(100);
 
 			// Animate progress bar
@@ -35,7 +31,6 @@ function AlertMessage() {
 
 			return () => clearInterval(progressInterval);
 		} else {
-			console.log("Setting alert to not visible");
 			setIsAnimating(false);
 		}
 	}, [isAlertVisible]);
@@ -87,11 +82,9 @@ function AlertMessage() {
 
 	const config = getAlertConfig(alertType);
 	const IconComponent = config.icon;
-
-	console.log("Rendering alert component, isAlertVisible:", isAlertVisible, "alertMessage:", alertMessage);
+	
 	
 	if (!isAlertVisible) {
-		console.log("Alert not visible, returning null");
 		return null;
 	}
 

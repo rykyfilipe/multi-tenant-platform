@@ -157,6 +157,7 @@ export function AbsoluteDropdown({
 	return createPortal(
 		<div
 			ref={dropdownRef}
+			data-dropdown="true"
 			className={cn(
 				"fixed z-[9999] bg-popover border border-border rounded-md shadow-2xl",
 				className

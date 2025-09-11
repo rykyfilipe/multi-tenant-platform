@@ -671,30 +671,30 @@ export function ColumnToolbar({
 						<Label htmlFor="defaultValue" className="text-xs font-medium text-neutral-700 whitespace-nowrap">Default</Label>
 						{currentData?.type === USER_FRIENDLY_COLUMN_TYPES.yesNo ? (
 							<Select
-								value={currentData?.defaultValue || ""}
-								onValueChange={(value) => handleInputChange("defaultValue", value)}
+								value={currentData?.defaultValue || "none"}
+								onValueChange={(value) => handleInputChange("defaultValue", value === "none" ? null : value)}
 								disabled={isDisabled || isProtectedColumn}
 							>
 								<SelectTrigger className="h-8 w-20 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 									<SelectValue placeholder="-" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="">-</SelectItem>
+									<SelectItem value="none">-</SelectItem>
 									<SelectItem value="true">Yes</SelectItem>
 									<SelectItem value="false">No</SelectItem>
 								</SelectContent>
 							</Select>
 						) : currentData?.type === USER_FRIENDLY_COLUMN_TYPES.customArray ? (
 							<Select
-								value={currentData?.defaultValue || ""}
-								onValueChange={(value) => handleInputChange("defaultValue", value)}
+								value={currentData?.defaultValue || "none"}
+								onValueChange={(value) => handleInputChange("defaultValue", value === "none" ? null : value)}
 								disabled={isDisabled || isProtectedColumn}
 							>
 								<SelectTrigger className="h-8 w-24 text-sm border-neutral-300 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500">
 									<SelectValue placeholder="-" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="">-</SelectItem>
+									<SelectItem value="none">-</SelectItem>
 									{customOptions.map((option) => (
 										<SelectItem key={option} value={option}>
 											{option}

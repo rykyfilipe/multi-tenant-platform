@@ -144,16 +144,21 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	} = useRowsTableEditor({
 		table,
 		onCellsUpdated: (updatedCells) => {
+			console.log("🔄 Optimistically updating cells in UI:", updatedCells);
 			setRows((currentRows: any[]) =>
 				currentRows.map((row) => {
 					const updatedRow = { ...row };
 					updatedCells.forEach((updatedCell) => {
 						if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
 							const cellIndex = updatedRow.cells.findIndex(
-								(cell: any) => cell.id === updatedCell.id,
+								(cell: any) => cell.id === updatedCell.id || 
+								(cell.columnId === updatedCell.columnId && cell.id === "virtual"),
 							);
 							if (cellIndex >= 0) {
 								updatedRow.cells[cellIndex] = updatedCell;
+							} else {
+								// Add new cell if it doesn't exist
+								updatedRow.cells.push(updatedCell);
 							}
 						}
 					});
@@ -966,6 +971,46 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		async (columnId: string, rowId: string, cellId: string, value: any) => {
 			if (!token) return;
 
+			// Optimistic update: immediately update UI
+			console.log("🚀 Optimistic update for cell:", { rowId, columnId, cellId, value });
+			
+			// Create optimistic cell update
+			const optimisticCell = {
+				id: cellId === "virtual" ? `temp-${Date.now()}` : cellId,
+				rowId: parseInt(rowId),
+				columnId: parseInt(columnId),
+				value: value,
+				isOptimistic: true,
+			};
+
+			// Immediately update UI
+			setRows((currentRows: any[]) =>
+				currentRows.map((row) => {
+					if (row.id.toString() === rowId) {
+						const existingCellIndex = row.cells.findIndex(
+							(cell: any) =>
+								cell.id === optimisticCell.id ||
+								(cell.columnId.toString() === columnId && cell.id === "virtual"),
+						);
+
+						let updatedCells = [...row.cells];
+
+						if (existingCellIndex >= 0) {
+							updatedCells[existingCellIndex] = optimisticCell;
+						} else {
+							updatedCells.push(optimisticCell);
+						}
+
+						return {
+							...row,
+							cells: updatedCells,
+						};
+					}
+					return row;
+				}),
+			);
+
+			// Then call the actual save function
 			await handleSaveCell(
 				columnId,
 				rowId,
@@ -973,6 +1018,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				paginatedRows,
 				async (updatedCell?: any) => {
 					if (updatedCell) {
+						// Replace optimistic cell with real one from server
 						setRows((currentRows: any[]) =>
 							currentRows.map((row) => {
 								if (row.id.toString() === rowId) {
@@ -985,9 +1031,9 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 									let updatedCells = [...row.cells];
 
 									if (existingCellIndex >= 0) {
-										updatedCells[existingCellIndex] = updatedCell;
+										updatedCells[existingCellIndex] = { ...updatedCell, isOptimistic: false };
 									} else {
-										updatedCells.push(updatedCell);
+										updatedCells.push({ ...updatedCell, isOptimistic: false });
 									}
 
 									return {

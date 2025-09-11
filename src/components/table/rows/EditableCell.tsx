@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, KeyboardEvent, useMemo, JSX, memo, useEffect, useRef } from "react";
+import { useState, KeyboardEvent, useMemo, JSX, memo, useEffect, useRef, useCallback } from "react";
 import { Cell, Column, Row, Table } from "@/types/database";
 import { Input } from "../../ui/input";
 import {
@@ -151,7 +151,8 @@ const AbsoluteSelect = ({
 				<div
 					ref={dropdownRef}
 					className="overflow-auto p-1 max-h-60"
-					role='listbox'>
+					role='listbox'
+					data-dropdown="true">
 					{options.length > 0 ? (
 						options.map((option, index) => (
 							<div
@@ -166,7 +167,8 @@ const AbsoluteSelect = ({
 								)}
 								onClick={() => selectOption(option)}
 								role='option'
-								aria-selected={option === value}>
+								aria-selected={option === value}
+								data-dropdown="true">
 								<span className='truncate' title={option}>
 									{option}
 								</span>
@@ -504,6 +506,19 @@ export function EditableCell({
 		}
 	}, [cell?.value, hasPendingChange, pendingValue, isEditing, columns]);
 
+	// Optimistic update: immediately update local state when user types
+	const handleValueChange = useCallback((newValue: any) => {
+		setValue(newValue);
+		
+		// For immediate optimistic updates, call onSave right away for non-reference columns
+		const column = columns?.find((col) => col.id === cell?.columnId);
+		if (column?.type !== USER_FRIENDLY_COLUMN_TYPES.link && 
+			column?.type !== USER_FRIENDLY_COLUMN_TYPES.customArray) {
+			// Save immediately for better UX
+			onSave(newValue);
+		}
+	}, [columns, cell?.columnId, onSave]);
+
 	// Ref pentru container-ul de editare
 	const editContainerRef = useRef<HTMLDivElement>(null);
 
@@ -616,23 +631,8 @@ export function EditableCell({
 		if (e.key === "Escape") onCancel();
 	};
 
-	// Auto-save on value change with debounce (only for non-reference and non-customArray columns)
-	useEffect(() => {
-		if (!isEditing) return;
-
-		// Don't auto-save reference columns or customArray - they should be saved manually/immediately
-		if (column.type === USER_FRIENDLY_COLUMN_TYPES.link || column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) return;
-
-		const timeoutId = setTimeout(() => {
-			// Only save if value has actually changed from the original
-			const originalValue = hasPendingChange ? pendingValue : cell?.value;
-			if (value !== originalValue) {
-				onSave(value);
-			}
-		}, 1000); // 1 second debounce for better UX
-
-		return () => clearTimeout(timeoutId);
-	}, [value, isEditing, column?.type, hasPendingChange, pendingValue, cell?.value, onSave]);
+	// Auto-save is now handled immediately in handleValueChange for better optimistic UX
+	// No need for debounced auto-save since we update UI immediately
 
 	// Click outside to cancel editing - only on actual click, not focus events
 	useEffect(() => {
@@ -641,6 +641,18 @@ export function EditableCell({
 		const handleClickOutside = (event: MouseEvent) => {
 			// Only handle actual mouse clicks, not programmatic events
 			if (event.isTrusted && editContainerRef.current && !editContainerRef.current.contains(event.target as Node)) {
+				// Check if click is on a dropdown element (AbsoluteDropdown creates a portal)
+				const target = event.target as Element;
+				const isDropdownClick = target.closest('[data-dropdown]') || 
+									   target.closest('.fixed.z-\\[9999\\]') ||
+									   target.closest('[role="listbox"]') ||
+									   target.closest('[role="option"]');
+				
+				// Don't cancel editing if clicking on dropdown elements
+				if (isDropdownClick) {
+					return;
+				}
+
 				// For reference columns, save before canceling
 				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
 					if (!hasInvalidReferences) {
@@ -736,7 +748,11 @@ export function EditableCell({
 				{column.type === "boolean" ? (
 					<Switch
 						checked={value === true}
-						onCheckedChange={(checked) => setValue(checked)}>
+						onCheckedChange={(checked) => {
+							setValue(checked);
+							// Save immediately for boolean changes
+							onSave(checked);
+						}}>
 						<span className='sr-only'>{t("table.toggleBoolean")}</span>
 					</Switch>
 				) : column.type === USER_FRIENDLY_COLUMN_TYPES.link ? (
@@ -768,7 +784,7 @@ export function EditableCell({
 								? new Date(value).toISOString().split('T')[0]
 								: value ?? ""
 						}
-						onChange={(e) => setValue(e.target.value)}
+						onChange={(e) => handleValueChange(e.target.value)}
 						onKeyDown={handleKey}
 						autoFocus
 						placeholder={column.type === "date" ? "YYYY-MM-DD" : "Enter value..."}

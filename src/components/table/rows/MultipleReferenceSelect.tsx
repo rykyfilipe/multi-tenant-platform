@@ -480,7 +480,8 @@ export function MultipleReferenceSelect({
 						// Standard height for dropdown - always show max 8 items
 						"max-h-64 min-h-32",
 					)}
-					role='listbox'>
+					role='listbox'
+					data-dropdown="true">
 					{isLoading ? (
 						<div className='px-3 py-8 text-center text-sm text-muted-foreground'>
 							<div className='mb-3'>
@@ -521,7 +522,8 @@ export function MultipleReferenceSelect({
 									)}
 									onClick={() => toggleOption(option)}
 									role='option'
-									aria-selected={isSelected}>
+									aria-selected={isSelected}
+									data-dropdown="true">
 									{isMultiple && (
 										<div className='mr-2.5 flex items-center justify-center w-4 h-4 rounded border-2 border-muted-foreground/30'>
 											{isSelected && (

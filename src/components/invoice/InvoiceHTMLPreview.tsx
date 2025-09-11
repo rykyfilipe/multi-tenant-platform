@@ -112,18 +112,10 @@ export function InvoiceHTMLPreview({
       <div className="border-b-2 border-gray-300 p-8">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-gray-800 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {tenantBranding.name?.charAt(0) || 'C'}
-                </span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {tenantBranding.name || 'Company Name'}
-                </h1>
-                <p className="text-sm text-gray-600">Private Limited</p>
-              </div>
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {tenantBranding.name || 'Company Name'}
+              </h1>
             </div>
           </div>
           <div className="text-right">
@@ -340,85 +332,7 @@ export function InvoiceHTMLPreview({
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-8 border-t border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left side - Payment and Contact */}
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Payment Method:</h4>
-              <div className="text-sm text-gray-600 space-y-1">
-                <div>Payment: Visa, Master Card</div>
-                <div>We accept Cheque</div>
-                {tenantBranding.companyIban && (
-                  <div>IBAN: {tenantBranding.companyIban}</div>
-                )}
-                {tenantBranding.companyBank && (
-                  <div>Bank: {tenantBranding.companyBank}</div>
-                )}
-                {tenantBranding.companyEmail && (
-                  <div>Paypal: {tenantBranding.companyEmail}</div>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Contact:</h4>
-              <div className="text-sm text-gray-600 space-y-1">
-                {(tenantBranding.companyStreet || tenantBranding.address) && (
-                  <div>
-                    {tenantBranding.companyStreet && tenantBranding.companyStreetNumber
-                      ? `${tenantBranding.companyStreet} ${tenantBranding.companyStreetNumber}`
-                      : tenantBranding.address || tenantBranding.companyStreet}
-                  </div>
-                )}
-                {(tenantBranding.companyCity || tenantBranding.companyPostalCode) && (
-                  <div>
-                    {[tenantBranding.companyPostalCode, tenantBranding.companyCity, tenantBranding.companyCountry]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </div>
-                )}
-                {tenantBranding.phone && (
-                  <div>{tenantBranding.phone}</div>
-                )}
-                {tenantBranding.companyEmail && (
-                  <div>{tenantBranding.companyEmail}</div>
-                )}
-                {tenantBranding.website && (
-                  <div>{tenantBranding.website}</div>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Terms & Condition:</h4>
-              <div className="text-sm text-gray-600">
-                Contrary to popular belief Lorem Ipsum not ipsum simply lorem ispum dolor ipsum.
-              </div>
-            </div>
-          </div>
-
-          {/* Right side - Signature and Download */}
-          <div className="flex flex-col items-end justify-end">
-            <div className="mb-6">
-              <div className="text-sm text-gray-600 mb-2">Signature:</div>
-              <div className="w-32 h-16 border-b-2 border-gray-400 mb-2"></div>
-              <div className="text-sm font-semibold text-gray-900">Manager</div>
-            </div>
-            
-            {onDownload && (
-              <Button 
-                onClick={onDownload}
-                className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {translations.download || 'Download PDF'}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Footer removed - no signature, payment method, contact, or terms */}
     </div>
   );
 }
