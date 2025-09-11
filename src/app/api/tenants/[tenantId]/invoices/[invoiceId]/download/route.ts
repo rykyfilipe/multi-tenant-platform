@@ -300,7 +300,9 @@ export async function GET(
 
 		// Generate PDF using Puppeteer generator
 		try {
+			console.log('Using PuppeteerPDFGenerator for PDF generation...');
 			const pdfBuffer = await PuppeteerPDFGenerator.generateInvoicePDF(pdfOptions);
+			console.log('Puppeteer PDF generated successfully, size:', pdfBuffer.length, 'bytes');
 
 			// Log PDF generation
 			await prisma.invoiceAuditLog.create({

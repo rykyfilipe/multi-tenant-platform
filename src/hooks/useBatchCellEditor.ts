@@ -118,6 +118,15 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 	// Salvează toate modificările pending
 	const savePendingChanges = useCallback(async () => {
+		console.log("💾 savePendingChanges called with:", {
+			pendingChangesCount: pendingChanges.size,
+			pendingChanges: Array.from(pendingChanges.entries()),
+			hasTenantId: !!tenantId,
+			hasToken: !!token,
+			hasTable: !!table,
+			hasSelectedDatabase: !!selectedDatabase,
+		});
+
 		if (
 			pendingChanges.size === 0 ||
 			!tenantId ||
@@ -125,6 +134,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			!table ||
 			!selectedDatabase
 		) {
+			console.log("❌ savePendingChanges: Missing requirements, skipping save");
 			return;
 		}
 

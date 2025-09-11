@@ -510,11 +510,10 @@ export function EditableCell({
 	const handleValueChange = useCallback((newValue: any) => {
 		setValue(newValue);
 		
-		// For immediate optimistic updates, call onSave right away for non-reference columns
+		// For immediate optimistic updates, call onSave right away for all column types
 		const column = columns?.find((col) => col.id === cell?.columnId);
-		if (column?.type !== USER_FRIENDLY_COLUMN_TYPES.link && 
-			column?.type !== USER_FRIENDLY_COLUMN_TYPES.customArray) {
-			// Save immediately for better UX
+		if (column?.type !== USER_FRIENDLY_COLUMN_TYPES.customArray) {
+			// Save immediately for better UX (customArray is handled separately)
 			onSave(newValue);
 		}
 	}, [columns, cell?.columnId, onSave]);
@@ -608,23 +607,18 @@ export function EditableCell({
 
 	const handleKey = (e: KeyboardEvent) => {
 		if (e.key === "Enter") {
-			// Prevent saving if there are invalid references
-			if (
-				column.type === USER_FRIENDLY_COLUMN_TYPES.link &&
-				hasInvalidReferences
-			) {
-				return; // Don't save invalid references
-			}
-
-			// Process value before saving for reference columns
+			// For reference columns, values are already saved on change
+			// Just cancel editing for Enter key
 			if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-				const processedValue = Array.isArray(value)
-					? value
-					: value
-					? [value]
-					: [];
-				onSave(processedValue);
+				if (hasInvalidReferences) {
+					return; // Don't cancel if there are invalid references
+				}
+				onCancel();
+			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+				// For customArray, values are already saved on change
+				onCancel();
 			} else {
+				// For other types, save and cancel
 				onSave(value);
 			}
 		}
@@ -653,22 +647,18 @@ export function EditableCell({
 					return;
 				}
 
-				// For reference columns, save before canceling
+				// For reference columns, values are already saved on change
 				if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
-					if (!hasInvalidReferences) {
-						const processedValue = Array.isArray(value)
-							? value
-							: value
-							? [value]
-							: [];
-						onSave(processedValue);
-					} else {
-						onCancel();
+					if (hasInvalidReferences) {
+						// Don't cancel if there are invalid references
+						return;
 					}
+					onCancel();
 				} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
 					// For customArray, value is already saved on change, just cancel
 					onCancel();
 				} else {
+					// For other types, values are already saved on change via handleValueChange
 					onCancel();
 				}
 			}
@@ -700,7 +690,11 @@ export function EditableCell({
 				<div className='flex flex-col gap-1'>
 					<MultipleReferenceSelect
 						value={value}
-						onValueChange={(val) => setValue(val)}
+						onValueChange={(val) => {
+							setValue(val);
+							// For reference columns, save immediately to pending changes
+							onSave(val);
+						}}
 						options={options}
 						placeholder={`${t("table.select")} ${
 							referencedTable?.name || t("table.references")
@@ -762,7 +756,8 @@ export function EditableCell({
 						value={String(value || "")}
 						onValueChange={(v) => {
 							setValue(v);
-							// Auto-save for customArray when value changes
+							// For customArray, we need to add to pending changes without canceling editing
+							// Call onSave which will handle the pending changes logic
 							onSave(v);
 						}}
 						options={column.customOptions || []}

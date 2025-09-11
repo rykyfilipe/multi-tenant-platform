@@ -6,6 +6,7 @@ import { ApiSuccess, ApiErrors, handleApiError } from "@/lib/api-error-handler";
 import { activityTracker } from "@/lib/activity-tracker";
 import { systemMonitor } from "@/lib/system-monitor";
 import { createTrackedApiRoute } from "@/lib/api-wrapper";
+import { InvoiceSystemService } from "@/lib/invoice-system";
 import prisma from "@/lib/prisma";
 
 async function getRealDataHandler(
@@ -92,7 +93,7 @@ async function getRealTimeData(tenantId: number) {
 			},
 			select: { userId: true },
 		});
-		const newUsers = new Set(newUserActivities.map(activity => activity.userId)).size;
+		const newUsers = new Set(newUserActivities.map((activity:any) => activity.userId)).size;
 
 		// Calculate user growth (compare with previous 7 days)
 		const previousWeekUserActivities = await prisma.userActivity.findMany({
@@ -106,7 +107,7 @@ async function getRealTimeData(tenantId: number) {
 			},
 			select: { userId: true },
 		});
-		const previousWeekUsers = new Set(previousWeekUserActivities.map(activity => activity.userId)).size;
+		const previousWeekUsers = new Set(previousWeekUserActivities.map((activity:any)		 => activity.userId)).size;
 
 		const userGrowth = previousWeekUsers > 0 ? ((newUsers / previousWeekUsers) * 100) : 0;
 
@@ -742,16 +743,268 @@ async function getBusinessData(tenantId: number) {
 			last30Days: last30DaysConversion,
 		};
 
+		// Get real invoice data
+		const invoiceData = await getInvoiceAnalytics(tenantId);
+
 		return {
 			revenue,
 			growth,
 			usage,
 			performance,
 			conversion,
+			invoices: invoiceData,
 		};
 	} catch (error) {
 		console.error("Failed to get business data:", error);
 		return null;
+	}
+}
+
+async function getInvoiceAnalytics(tenantId: number) {
+	try {
+		// Get the database for this tenant
+		const database = await prisma.database.findFirst({
+			where: { tenantId: tenantId },
+		});
+
+		if (!database) {
+			return {
+				totalInvoices: 0,
+				totalRevenue: 0,
+				paidInvoices: 0,
+				pendingInvoices: 0,
+				overdueInvoices: 0,
+				averageInvoiceValue: 0,
+				monthlyRevenue: 0,
+				revenueGrowth: 0,
+				topCustomers: [],
+				recentInvoices: [],
+				monthlyData: [],
+			};
+		}
+
+		// Get invoice tables
+		const invoiceTables = await InvoiceSystemService.getInvoiceTables(
+			tenantId,
+			database.id
+		);
+
+		if (!invoiceTables.invoices || !invoiceTables.invoice_items) {
+			return {
+				totalInvoices: 0,
+				totalRevenue: 0,
+				paidInvoices: 0,
+				pendingInvoices: 0,
+				overdueInvoices: 0,
+				averageInvoiceValue: 0,
+				monthlyRevenue: 0,
+				revenueGrowth: 0,
+				topCustomers: [],
+				recentInvoices: [],
+				monthlyData: [],
+			};
+		}
+
+		// Get all invoices
+		const invoices = await prisma.row.findMany({
+			where: {
+				tableId: invoiceTables.invoices.id,
+			},
+			include: {
+				cells: {
+					include: {
+						column: true,
+					},
+				},
+			},
+		});
+
+		// Transform invoice data
+		const invoiceData = invoices.map((invoice : any) => {
+			const obj: any = { id: invoice.id };
+			invoice.cells.forEach((cell: any) => {
+				obj[cell.column.name] = cell.value;
+			});
+			return obj;
+		});
+
+		// Calculate metrics
+		const totalInvoices = invoiceData.length;
+		const totalRevenue = invoiceData.reduce((sum: number, invoice : any) => {
+			return sum + (parseFloat(invoice.total_amount) || 0);
+		}, 0);
+
+		const paidInvoices = invoiceData.filter(
+			(invoice : any) => invoice.status === "paid"
+		).length;
+
+		const pendingInvoices = invoiceData.filter(
+			(invoice : any) => invoice.status === "pending"
+		).length;
+
+		const overdueInvoices = invoiceData.filter(
+			(invoice : any) => invoice.status === "overdue"
+		).length;
+
+		const averageInvoiceValue = totalInvoices > 0 ? totalRevenue / totalInvoices : 0;
+
+		// Calculate monthly revenue (current month)
+		const currentMonth = new Date();
+		currentMonth.setDate(1);
+		currentMonth.setHours(0, 0, 0, 0);
+
+		const monthlyRevenue = invoiceData
+			.filter((invoice : any) => {
+				const invoiceDate = new Date(invoice.date);
+				return invoiceDate >= currentMonth;
+			})
+			.reduce((sum: number, invoice : any) => {
+				return sum + (parseFloat(invoice.total_amount) || 0);
+			}, 0);
+
+		// Calculate revenue growth (compare with previous month)
+		const previousMonth = new Date(currentMonth);
+		previousMonth.setMonth(previousMonth.getMonth() - 1);
+
+		const previousMonthRevenue = invoiceData
+			.filter((invoice : any) => {
+				const invoiceDate = new Date(invoice.date);
+				return invoiceDate >= previousMonth && invoiceDate < currentMonth;
+			})
+			.reduce((sum: number, invoice : any) => {
+				return sum + (parseFloat(invoice.total_amount) || 0);
+			}, 0);
+
+		const revenueGrowth = previousMonthRevenue > 0 
+			? ((monthlyRevenue - previousMonthRevenue) / previousMonthRevenue) * 100 
+			: 0;
+
+		// Get top customers
+		const customerTotals: Record<string, { totalSpent: number; invoiceCount: number }> = {};
+		
+		for (const invoice of invoiceData) {
+			if (invoice.customer_id) {
+				// Get customer name
+				const customer = await prisma.row.findFirst({
+					where: {
+						id: invoice.customer_id,
+						tableId: invoiceTables.customers?.id,
+					},
+					include: {
+						cells: {
+							include: {
+								column: true,
+							},
+						},
+					},
+				});
+
+				if (customer) {
+					const customerObj: any = {};
+					customer.cells.forEach((cell: any) => {
+						customerObj[cell.column.name] = cell.value;
+					});
+
+					const customerName = customerObj.customer_name || `Customer ${invoice.customer_id}`;
+					
+					if (!customerTotals[customerName]) {
+						customerTotals[customerName] = { totalSpent: 0, invoiceCount: 0 };
+					}
+					
+					customerTotals[customerName].totalSpent += parseFloat(invoice.total_amount) || 0;
+					customerTotals[customerName].invoiceCount += 1;
+				}
+			}
+		}
+
+		const topCustomers = Object.entries(customerTotals)
+			.map(([name, data]) => ({
+				name,
+				totalSpent: data.totalSpent,
+				invoiceCount: data.invoiceCount,
+			}))
+			.sort((a, b) => b.totalSpent - a.totalSpent)
+			.slice(0, 5);
+
+		// Get recent invoices
+		const recentInvoices = invoiceData
+			.sort((a : any, b : any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+			.slice(0, 5)
+			.map((invoice : any) => {
+				// Get customer name
+				let customerName = `Customer ${invoice.customer_id}`;
+				if (invoice.customer_id) {
+					// This is a simplified version - in production you'd want to cache customer names
+					customerName = `Customer ${invoice.customer_id}`;
+				}
+
+				return {
+					id: invoice.id,
+					number: invoice.invoice_number,
+					customer: customerName,
+					amount: parseFloat(invoice.total_amount) || 0,
+					status: invoice.status || "pending",
+					date: invoice.date,
+				};
+			});
+
+		// Generate monthly data for charts
+		const monthlyData = [];
+		const months = [];
+		for (let i = 11; i >= 0; i--) {
+			const date = new Date();
+			date.setMonth(date.getMonth() - i);
+			months.push(date);
+		}
+
+		for (const month of months) {
+			const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+			const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+
+			const monthInvoices = invoiceData.filter((invoice : any) => {
+				const invoiceDate = new Date(invoice.date);
+				return invoiceDate >= monthStart && invoiceDate <= monthEnd;
+			});
+
+			const monthRevenue = monthInvoices.reduce((sum: number, invoice : any) => {
+				return sum + (parseFloat(invoice.total_amount) || 0);
+			}, 0);
+
+			monthlyData.push({
+				month: month.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+				revenue: monthRevenue,
+				invoices: monthInvoices.length,
+			});
+		}
+
+		return {
+			totalInvoices,
+			totalRevenue,
+			paidInvoices,
+			pendingInvoices,
+			overdueInvoices,
+			averageInvoiceValue,
+			monthlyRevenue,
+			revenueGrowth,
+			topCustomers,
+			recentInvoices,
+			monthlyData,
+		};
+	} catch (error) {
+		console.error("Error fetching invoice analytics:", error);
+		return {
+			totalInvoices: 0,
+			totalRevenue: 0,
+			paidInvoices: 0,
+			pendingInvoices: 0,
+			overdueInvoices: 0,
+			averageInvoiceValue: 0,
+			monthlyRevenue: 0,
+			revenueGrowth: 0,
+			topCustomers: [],
+			recentInvoices: [],
+			monthlyData: [],
+		};
 	}
 }
 

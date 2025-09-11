@@ -68,6 +68,7 @@ function useRowsTableEditor(
 			message: string,
 			type: "error" | "success" | "warning" | "info",
 		) => void, // Nu mai folosim showAlert din parametri, îl avem în context
+		options?: { keepEditing?: boolean }, // New optional parameter to control editing behavior
 	) => {
 		console.log("💾 handleSaveCell called:", {
 			rowId,
@@ -88,8 +89,10 @@ function useRowsTableEditor(
 		// Adăugăm modificarea la batch-ul pending
 		addPendingChange(rowId, columnId, cellId, value, originalValue);
 
-		// Anulăm editarea
-		cancelEditing();
+		// Anulăm editarea doar dacă nu este specificat să o păstrăm
+		if (!options?.keepEditing) {
+			cancelEditing();
+		}
 
 		// Apelăm callback-ul pentru actualizare optimistă a UI-ului
 		onSuccess({

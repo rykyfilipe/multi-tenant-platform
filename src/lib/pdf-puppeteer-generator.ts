@@ -76,11 +76,13 @@ export class PuppeteerPDFGenerator {
 	static async generateInvoicePDF(options: PDFGenerationOptions): Promise<Buffer> {
 		let browser;
 		try {
+			console.log('PuppeteerPDFGenerator: Starting PDF generation...');
 			// Get invoice data
 			const invoiceData = await this.getInvoiceData(options);
 			if (!invoiceData) {
 				throw new Error('Invoice not found');
 			}
+			console.log('PuppeteerPDFGenerator: Invoice data retrieved successfully');
 
 			// Get tenant branding
 			const tenantBranding = await this.getTenantBranding(options.tenantId);
@@ -90,17 +92,21 @@ export class PuppeteerPDFGenerator {
 
 			// Generate HTML content
 			const htmlContent = this.generateHTMLContent(invoiceData, tenantBranding, translations);
+			console.log('PuppeteerPDFGenerator: HTML content generated, length:', htmlContent.length);
 
 			// Launch Puppeteer
+			console.log('PuppeteerPDFGenerator: Launching browser...');
 			browser = await puppeteer.launch({
 				headless: true,
 				args: ['--no-sandbox', '--disable-setuid-sandbox']
 			});
 
 			const page = await browser.newPage();
+			console.log('PuppeteerPDFGenerator: Browser launched, setting content...');
 
 			// Set content and wait for it to load
 			await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+			console.log('PuppeteerPDFGenerator: Content loaded, generating PDF...');
 
 			// Generate PDF with proper settings
 			const pdfBuffer = await page.pdf({
@@ -115,6 +121,7 @@ export class PuppeteerPDFGenerator {
 				preferCSSPageSize: true
 			});
 
+			console.log('PuppeteerPDFGenerator: PDF generated successfully, size:', pdfBuffer.length, 'bytes');
 			return Buffer.from(pdfBuffer);
 		} catch (error) {
 			console.error('Error generating PDF with Puppeteer:', error);
@@ -127,7 +134,7 @@ export class PuppeteerPDFGenerator {
 	}
 
 	/**
-	 * Generate HTML content for the invoice
+	 * Generate HTML content for the invoice - EXACT COPY from InvoiceHTMLPreview.tsx
 	 */
 	private static generateHTMLContent(
 		invoiceData: InvoiceData,
@@ -158,227 +165,8 @@ export class PuppeteerPDFGenerator {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice ${invoiceData.invoice.invoice_number}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.4;
-            color: #333;
-            background: white;
-        }
-        
-        .invoice-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            min-height: 100vh;
-        }
-        
-        .header {
-            border-bottom: 2px solid #ccc;
-            padding: 32px;
-        }
-        
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-        
-        .company-info {
-            flex: 1;
-        }
-        
-        .company-name {
-            font-size: 20px;
-            font-weight: bold;
-            color: #111;
-            margin-bottom: 16px;
-        }
-        
-        .invoice-title {
-            text-align: right;
-        }
-        
-        .invoice-title h1 {
-            font-size: 32px;
-            font-weight: bold;
-            color: #111;
-            margin-bottom: 8px;
-        }
-        
-        .invoice-details {
-            font-size: 12px;
-        }
-        
-        .invoice-details div {
-            margin-bottom: 4px;
-        }
-        
-        .invoice-number {
-            font-weight: bold;
-        }
-        
-        .total-due {
-            font-size: 14px;
-            font-weight: bold;
-            color: #111;
-            margin-top: 8px;
-        }
-        
-        .bill-to-section {
-            padding: 32px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .bill-to-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-        }
-        
-        .section-title {
-            font-size: 12px;
-            font-weight: bold;
-            color: #666;
-            margin-bottom: 12px;
-        }
-        
-        .company-details, .customer-details {
-            font-size: 12px;
-        }
-        
-        .company-details div, .customer-details div {
-            margin-bottom: 4px;
-        }
-        
-        .company-name-bold, .customer-name-bold {
-            font-weight: bold;
-            color: #111;
-        }
-        
-        .invoice-details-section {
-            padding: 32px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-        }
-        
-        .detail-item {
-            font-size: 12px;
-        }
-        
-        .detail-label {
-            font-weight: bold;
-            color: #666;
-            margin-bottom: 8px;
-        }
-        
-        .detail-value {
-            color: #111;
-        }
-        
-        .items-section {
-            padding: 32px;
-        }
-        
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .items-table thead {
-            background-color: #f5f5f5;
-        }
-        
-        .items-table th {
-            text-align: left;
-            padding: 16px;
-            font-weight: bold;
-            color: #666;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .items-table th:last-child {
-            text-align: right;
-        }
-        
-        .items-table td {
-            padding: 16px;
-            border-bottom: 1px solid #ddd;
-            font-size: 9px;
-        }
-        
-        .items-table td:last-child {
-            text-align: right;
-        }
-        
-        .item-name {
-            font-weight: bold;
-            color: #111;
-        }
-        
-        .item-description {
-            color: #666;
-            margin-top: 4px;
-        }
-        
-        .totals-section {
-            margin-top: 32px;
-            display: flex;
-            justify-content: flex-end;
-        }
-        
-        .totals-container {
-            width: 320px;
-        }
-        
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            font-size: 10px;
-        }
-        
-        .total-label {
-            color: #666;
-            font-weight: bold;
-        }
-        
-        .total-value {
-            color: #111;
-            font-weight: bold;
-        }
-        
-        .grand-total {
-            border-top: 2px solid #ccc;
-            margin-top: 16px;
-            padding-top: 16px;
-            font-size: 14px;
-        }
-        
-        .grand-total .total-label,
-        .grand-total .total-value {
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .discount-value {
-            color: #dc2626;
-        }
-        
         @media print {
             body {
                 -webkit-print-color-adjust: exact;
@@ -388,134 +176,206 @@ export class PuppeteerPDFGenerator {
     </style>
 </head>
 <body>
-    <div class="invoice-container">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-content">
-                <div class="company-info">
-                    <div class="company-name">${tenantBranding.name || 'Company Name'}</div>
-                </div>
-                <div class="invoice-title">
-                    <h1>${translations.invoice || 'INVOICE'}</h1>
-                    <div class="invoice-details">
-                        <div class="invoice-number">
-                            ${translations.invoiceNumber || 'Invoice#'} ${invoiceData.invoice.invoice_series ? `${invoiceData.invoice.invoice_series}-` : ''}${invoiceData.invoice.invoice_number}
-                        </div>
-                        <div>${translations.date || 'Date'}: ${formatDate(invoiceData.invoice.date)}</div>
-                        <div class="total-due">
-                            Total Due: ${formatCurrency(invoiceData.invoice.total_amount, currency)}
-                        </div>
-                    </div>
-                </div>
+    <div class="bg-white shadow-2xl border border-gray-200 mx-auto" style="width: 100%; max-width: 100%; aspect-ratio: 210/297; min-height: 600px; font-family: Arial, sans-serif;">
+      <!-- Invoice Header -->
+      <div class="border-b-2 border-gray-300 p-8">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="mb-4">
+              <h1 class="text-2xl font-bold text-gray-900">
+                ${tenantBranding.name || 'Company Name'}
+              </h1>
             </div>
-        </div>
-
-        <!-- Bill To Section -->
-        <div class="bill-to-section">
-            <div class="bill-to-grid">
-                <div>
-                    <div class="section-title">${translations.company || 'From'}:</div>
-                    <div class="company-details">
-                        <div class="company-name-bold">${tenantBranding.name}</div>
-                        ${tenantBranding.address ? `<div>${tenantBranding.address}</div>` : ''}
-                        ${tenantBranding.companyCity || tenantBranding.companyPostalCode ? 
-                            `<div>${[tenantBranding.companyPostalCode, tenantBranding.companyCity, tenantBranding.companyCountry].filter(Boolean).join(', ')}</div>` : ''}
-                        ${tenantBranding.companyEmail ? `<div>${tenantBranding.companyEmail}</div>` : ''}
-                        ${tenantBranding.phone ? `<div>${tenantBranding.phone}</div>` : ''}
-                        ${tenantBranding.website ? `<div>${tenantBranding.website}</div>` : ''}
-                        ${tenantBranding.companyTaxId ? `<div>Tax ID: ${tenantBranding.companyTaxId}</div>` : ''}
-                        ${tenantBranding.registrationNumber ? `<div>Reg. No: ${tenantBranding.registrationNumber}</div>` : ''}
-                    </div>
-                </div>
-                <div>
-                    <div class="section-title">${translations.customer || 'Bill To'}:</div>
-                    <div class="customer-details">
-                        <div class="customer-name-bold">${invoiceData.customer.customer_name}</div>
-                        ${invoiceData.customer.customer_address ? `<div>${invoiceData.customer.customer_address}</div>` : ''}
-                        ${invoiceData.customer.customer_email ? `<div>${invoiceData.customer.customer_email}</div>` : ''}
-                        ${invoiceData.customer.customer_phone ? `<div>${invoiceData.customer.customer_phone}</div>` : ''}
-                    </div>
-                </div>
+          </div>
+          <div class="text-right">
+            <h2 class="text-4xl font-bold text-gray-900 mb-2">${translations.invoice || 'INVOICE'}</h2>
+            <div class="space-y-1 text-sm">
+              <div class="font-semibold">
+                ${translations.invoiceNumber || 'Invoice#'} ${invoiceData.invoice.invoice_series ? `${invoiceData.invoice.invoice_series}-` : ''}${invoiceData.invoice.invoice_number}
+              </div>
+              <div>${translations.date || 'Date'}: ${formatDate(invoiceData.invoice.date)}</div>
+              <div class="text-lg font-bold text-gray-900 mt-2">
+                Total Due: ${formatCurrency(invoiceData.invoice.total_amount, currency)}
+              </div>
             </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Invoice Details -->
-        <div class="invoice-details-section">
-            <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">${translations.date || 'Invoice Date'}</div>
-                    <div class="detail-value">${formatDate(invoiceData.invoice.date)}</div>
+      <!-- Bill To Section -->
+      <div class="p-8 border-b border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Company Info - Left side -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">${translations.company || 'From'}:</h3>
+            <div class="space-y-1 text-sm">
+              <div class="font-semibold text-gray-900">${tenantBranding.name}</div>
+              ${(tenantBranding.companyStreet || tenantBranding.address) ? `
+                <div class="text-gray-600">
+                  ${tenantBranding.companyStreet && tenantBranding.companyStreetNumber
+                    ? `${tenantBranding.companyStreet} ${tenantBranding.companyStreetNumber}`
+                    : tenantBranding.address || tenantBranding.companyStreet}
                 </div>
-                ${invoiceData.invoice.due_date ? `
-                <div class="detail-item">
-                    <div class="detail-label">${translations.dueDate || 'Due Date'}</div>
-                    <div class="detail-value">${formatDate(invoiceData.invoice.due_date)}</div>
+              ` : ''}
+              ${(tenantBranding.companyCity || tenantBranding.companyPostalCode) ? `
+                <div class="text-gray-600">
+                  ${[tenantBranding.companyPostalCode, tenantBranding.companyCity, tenantBranding.companyCountry]
+                    .filter(Boolean)
+                    .join(', ')}
                 </div>
-                ` : ''}
-                ${invoiceData.invoice.payment_terms ? `
-                <div class="detail-item">
-                    <div class="detail-label">${translations.paymentTerms || 'Payment Terms'}</div>
-                    <div class="detail-value">${invoiceData.invoice.payment_terms}</div>
-                </div>
-                ` : ''}
+              ` : ''}
+              ${tenantBranding.companyEmail ? `<div class="text-gray-600">${tenantBranding.companyEmail}</div>` : ''}
+              ${tenantBranding.phone ? `<div class="text-gray-600">${tenantBranding.phone}</div>` : ''}
+              ${tenantBranding.website ? `<div class="text-gray-600">${tenantBranding.website}</div>` : ''}
+              ${tenantBranding.companyTaxId ? `<div class="text-gray-600">Tax ID: ${tenantBranding.companyTaxId}</div>` : ''}
+              ${tenantBranding.registrationNumber ? `<div class="text-gray-600">Reg. No: ${tenantBranding.registrationNumber}</div>` : ''}
             </div>
+          </div>
+
+          <!-- Customer Info - Right side -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">${translations.customer || 'Bill To'}:</h3>
+            <div class="space-y-1 text-sm">
+              <div class="font-semibold text-gray-900">
+                ${invoiceData.customer.customer_name}
+              </div>
+              ${invoiceData.customer.customer_address ? `<div class="text-gray-600">${invoiceData.customer.customer_address}</div>` : ''}
+              ${invoiceData.customer.customer_email ? `<div class="text-gray-600">${invoiceData.customer.customer_email}</div>` : ''}
+              ${invoiceData.customer.customer_phone ? `<div class="text-gray-600">${invoiceData.customer.customer_phone}</div>` : ''}
+            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Items Table -->
-        <div class="items-section">
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th>${translations.item || 'ITEM'} ${translations.description || 'DESCRIPTION'}</th>
-                        <th style="text-align: right;">${translations.unitPrice || 'PRICE'}</th>
-                        <th style="text-align: right;">${translations.quantity || 'QTY'}</th>
-                        <th style="text-align: right;">${translations.total || 'TOTAL'}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${invoiceData.items.map(item => `
-                        <tr>
-                            <td>
-                                <div class="item-name">${item.product_name}</div>
-                                ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
-                            </td>
-                            <td>${formatCurrency(item.unit_price, item.currency || currency)}</td>
-                            <td>${item.quantity}</td>
-                            <td>${formatCurrency(item.total, item.currency || currency)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+      <!-- Invoice Details -->
+      <div class="p-8 border-b border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-sm font-medium text-gray-700">
+                ${translations.date || 'Invoice Date'}
+              </span>
+            </div>
+            <div class="text-gray-900">${formatDate(invoiceData.invoice.date)}</div>
+          </div>
+          
+          ${invoiceData.invoice.due_date ? `
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-sm font-medium text-gray-700">
+                ${translations.dueDate || 'Due Date'}
+              </span>
+            </div>
+            <div class="text-gray-900">${formatDate(invoiceData.invoice.due_date)}</div>
+          </div>
+          ` : ''}
 
-            <!-- Totals -->
-            <div class="totals-section">
-                <div class="totals-container">
-                    <div class="total-row">
-                        <span class="total-label">${translations.subtotal || 'SUB TOTAL'}:</span>
-                        <span class="total-value">${formatCurrency(invoiceData.totals.subtotal, currency)}</span>
+          ${invoiceData.invoice.payment_terms ? `
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-sm font-medium text-gray-700">
+                ${translations.paymentTerms || 'Payment Terms'}
+              </span>
+            </div>
+            <div class="text-gray-900">${invoiceData.invoice.payment_terms}</div>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <div class="p-8">
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  ${translations.item || 'ITEM'} ${translations.description || 'DESCRIPTION'}
+                </th>
+                <th class="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  ${translations.unitPrice || 'PRICE'}
+                </th>
+                <th class="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  ${translations.quantity || 'QTY'}
+                </th>
+                <th class="text-right py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider border-b border-gray-300">
+                  ${translations.total || 'TOTAL'}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              ${invoiceData.items.map(item => `
+                <tr class="border-b border-gray-200">
+                  <td class="py-4 px-4">
+                    <div class="font-medium text-gray-900 text-sm">
+                      ${item.product_name}
                     </div>
-                    
-                    ${invoiceData.totals.vatTotal > 0 ? `
-                    <div class="total-row">
-                        <span class="total-label">${translations.tax || 'Tax VAT'}:</span>
-                        <span class="total-value">${formatCurrency(invoiceData.totals.vatTotal, currency)}</span>
-                    </div>
+                    ${item.description ? `
+                      <div class="text-gray-600 text-xs mt-1">
+                        ${item.description}
+                      </div>
                     ` : ''}
-                    
-                    ${(invoiceData.totals.discountAmount || 0) > 0 ? `
-                    <div class="total-row">
-                        <span class="total-label">${translations.discount || 'Discount'}:</span>
-                        <span class="total-value discount-value">-${formatCurrency(invoiceData.totals.discountAmount || 0, currency)}</span>
-                    </div>
-                    ` : ''}
-                    
-                    <div class="total-row grand-total">
-                        <span class="total-label">${translations.grandTotal || 'GRAND TOTAL'}:</span>
-                        <span class="total-value">${formatCurrency(invoiceData.totals.grandTotal, currency)}</span>
-                    </div>
-                </div>
-            </div>
+                  </td>
+                  <td class="py-4 px-4 text-right text-gray-900 text-sm">
+                    ${formatCurrency(item.unit_price, item.currency || currency)}
+                  </td>
+                  <td class="py-4 px-4 text-right text-gray-900 text-sm">
+                    ${item.quantity}
+                  </td>
+                  <td class="py-4 px-4 text-right font-medium text-gray-900 text-sm">
+                    ${formatCurrency(item.total, item.currency || currency)}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
         </div>
+
+        <!-- Totals -->
+        <div class="mt-8 flex justify-end">
+          <div class="w-80 space-y-1">
+            <div class="flex justify-between py-1 text-sm">
+              <span class="text-gray-700 font-semibold">
+                ${translations.subtotal || 'SUB TOTAL'}:
+              </span>
+              <span class="font-medium text-gray-900">
+                ${formatCurrency(invoiceData.totals.subtotal, currency)}
+              </span>
+            </div>
+            
+            ${invoiceData.totals.vatTotal > 0 ? `
+            <div class="flex justify-between py-1 text-sm">
+              <span class="text-gray-700 font-semibold">
+                ${translations.tax || 'Tax VAT'}:
+              </span>
+              <span class="font-medium text-gray-900">
+                ${formatCurrency(invoiceData.totals.vatTotal, currency)}
+              </span>
+            </div>
+            ` : ''}
+            
+            ${(invoiceData.totals.discountAmount || 0) > 0 ? `
+            <div class="flex justify-between py-1 text-sm">
+              <span class="text-gray-700 font-semibold">
+                ${translations.discount || 'Discount'}:
+              </span>
+              <span class="font-medium text-red-600">
+                -${formatCurrency(invoiceData.totals.discountAmount || 0, currency)}
+              </span>
+            </div>
+            ` : ''}
+            
+            <div class="flex justify-between py-3 border-t-2 border-gray-300 mt-4">
+              <span class="text-lg font-bold text-gray-900">
+                ${translations.grandTotal || 'GRAND TOTAL'}:
+              </span>
+              <span class="text-lg font-bold text-gray-900">
+                ${formatCurrency(invoiceData.totals.grandTotal, currency)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 </body>
 </html>

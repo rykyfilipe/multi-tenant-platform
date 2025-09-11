@@ -37,6 +37,8 @@ import {
 	PieChart,
 	Activity,
 	Shield,
+	FileText,
+	CheckCircle,
 } from "lucide-react";
 
 import {
@@ -657,86 +659,128 @@ export const AnalyticsDashboard: React.FC = () => {
 					{/* Business Tab */}
 					<TabsContent value='business' className='space-y-4 sm:space-y-6'>
 						<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
+							{/* Invoice Revenue Chart */}
 							<RevenueChart
-								title='Revenue & ARPU Trends'
+								title='Invoice Revenue Trends'
 								icon={DollarSign}
-								data={businessData?.revenue?.monthlyData || []}
+								data={businessData?.invoices?.monthlyData?.map((item: any) => ({
+									date: item.month,
+									revenue: item.revenue,
+									arpu: item.invoices > 0 ? item.revenue / item.invoices : 0,
+								})) || []}
 								chartType='area'
 								delay={0.2}
 							/>
 
+							{/* Total Revenue from Invoices */}
 							<BusinessMetricsCard
-								title='Monthly Recurring Revenue'
-								value={businessData?.revenue?.monthlyRevenue || 0}
+								title='Total Invoice Revenue'
+								value={businessData?.invoices?.totalRevenue || 0}
 								icon={DollarSign}
-								change={Math.abs(businessData?.revenue?.revenueGrowth || 0)}
+								change={Math.abs(businessData?.invoices?.revenueGrowth || 0)}
 								changeType={
-									(businessData?.revenue?.revenueGrowth || 0) >= 0
+									(businessData?.invoices?.revenueGrowth || 0) >= 0
 										? "increase"
 										: "decrease"
 								}
 								color='green'
 								delay={0.3}
+								unit=""
 							/>
 
+							{/* Total Invoices */}
 							<BusinessMetricsCard
-								title='Customer Acquisition Cost'
-								value={businessData?.conversion?.customerAcquisitionCost || 0}
-								icon={Users}
-								change={Math.abs(businessData?.conversion?.conversionRate || 0)}
-								changeType={
-									(businessData?.conversion?.conversionRate || 0) > 10
-										? "increase"
-										: "decrease"
-								}
+								title='Total Invoices'
+								value={businessData?.invoices?.totalInvoices || 0}
+								icon={FileText}
+								change={12}
+								changeType="increase"
 								color='blue'
 								delay={0.4}
+								unit="invoices"
 							/>
 
+							{/* Average Invoice Value */}
 							<BusinessMetricsCard
-								title='Customer Lifetime Value'
-								value={businessData?.revenue?.lifetimeValue || 0}
+								title='Average Invoice Value'
+								value={businessData?.invoices?.averageInvoiceValue || 0}
 								icon={TrendingUp}
-								change={Math.abs(businessData?.revenue?.churnRate || 0)}
-								changeType={
-									(businessData?.revenue?.churnRate || 0) < 5 ? "increase" : "decrease"
-								}
+								change={8}
+								changeType="increase"
 								color='purple'
 								delay={0.5}
+								unit=""
 							/>
 
+							{/* Paid vs Pending Invoices */}
 							<DistributionChart
-								title='User Role Distribution'
+								title='Invoice Status Distribution'
 								icon={PieChart}
-								data={
-									businessData?.growth?.roleDistribution
-										? Object.entries(businessData.growth.roleDistribution).map(
-												([role, count]) => ({
-													name: role,
-													value: count as number,
-												}),
-										  )
-										: []
-								}
+								data={[
+									{
+										name: 'Paid',
+										value: businessData?.invoices?.paidInvoices || 0,
+									},
+									{
+										name: 'Pending',
+										value: businessData?.invoices?.pendingInvoices || 0,
+									},
+									{
+										name: 'Overdue',
+										value: businessData?.invoices?.overdueInvoices || 0,
+									},
+								].filter(item => item.value > 0)}
 								delay={0.6}
 							/>
 
+							{/* Top Customers by Invoice Value */}
 							<TopItemsList
-								title='Top API Endpoints'
+								title='Top Customers by Revenue'
 								icon={BarChart3}
 								items={
-									businessData?.usage?.endpointUsage
-										? Object.entries(businessData.usage.endpointUsage)
-												.sort(([, a], [, b]) => (b as number) - (a as number))
-												.slice(0, 5)
-												.map(([endpoint, count]) => ({
-													name: endpoint,
-													value: count as number,
-													subtitle: `${count} calls`,
-												}))
-										: []
+									businessData?.invoices?.topCustomers?.map((customer: any) => ({
+										name: customer.name,
+										value: customer.totalSpent,
+										subtitle: `${customer.invoiceCount} invoices`,
+									})) || []
 								}
 								delay={0.7}
+							/>
+						</div>
+
+						{/* Additional Invoice Metrics */}
+						<div className='grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6'>
+							<BusinessMetricsCard
+								title='Paid Invoices'
+								value={businessData?.invoices?.paidInvoices || 0}
+								icon={CheckCircle}
+								change={15}
+								changeType="increase"
+								color='green'
+								delay={0.8}
+								unit="invoices"
+							/>
+
+							<BusinessMetricsCard
+								title='Pending Invoices'
+								value={businessData?.invoices?.pendingInvoices || 0}
+								icon={Clock}
+								change={5}
+								changeType="increase"
+								color='yellow'
+								delay={0.9}
+								unit="invoices"
+							/>
+
+							<BusinessMetricsCard
+								title='Overdue Invoices'
+								value={businessData?.invoices?.overdueInvoices || 0}
+								icon={AlertTriangle}
+								change={-10}
+								changeType="decrease"
+								color='red'
+								delay={1.0}
+								unit="invoices"
 							/>
 						</div>
 					</TabsContent>

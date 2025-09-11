@@ -971,8 +971,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		async (columnId: string, rowId: string, cellId: string, value: any) => {
 			if (!token) return;
 
+			// Find the column to check its type
+			const column = columns?.find((col) => col.id.toString() === columnId);
+			const isCustomArray = column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray;
+
 			// Optimistic update: immediately update UI
-			console.log("🚀 Optimistic update for cell:", { rowId, columnId, cellId, value });
+			console.log("🚀 Optimistic update for cell:", { rowId, columnId, cellId, value, isCustomArray });
 			
 			// Create optimistic cell update
 			const optimisticCell = {
@@ -1051,9 +1055,10 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				token,
 				user,
 				showAlert,
+				{ keepEditing: isCustomArray }, // Keep editing open for customArray
 			);
 		},
-		[handleSaveCell, paginatedRows, table, token, user, showAlert, setRows],
+		[handleSaveCell, paginatedRows, table, token, user, showAlert, setRows, columns],
 	);
 
 	// Loading state
@@ -1476,6 +1481,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 				{/* Modern Table Grid - Mobile Optimized */}
 				<div className='bg-white rounded-xl border border-neutral-200 shadow-sm overflow-x-auto'>
+					{/* Background extension for scrollable area */}
+					<div className='bg-white min-w-full min-h-full'>
 					{rowsLoading ? (
 						<motion.div
 							className='flex flex-col items-center justify-center py-12 sm:py-16 px-4 sm:px-8'
@@ -1594,6 +1601,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							</div>
 						</div>
 					)}
+					</div>
 				</div>
 			</div>
 
