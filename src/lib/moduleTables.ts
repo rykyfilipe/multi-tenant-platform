@@ -1,6 +1,6 @@
 /** @format */
 
-import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { getModuleDefinition } from "./modules";
 
 /**
@@ -98,21 +98,17 @@ async function createModuleTableColumns(
 export async function removeModuleTables(databaseId: number, moduleId: string) {
 	try {
 		// Find all tables for this module in the database
-		const moduleTables = await prisma.findManyWithCache(
-			prisma.table,
-			{
-				where: {
-					databaseId,
-					moduleType: moduleId,
-					isModuleTable: true,
-				},
-				include: {
-					columns: true,
-					rows: true,
-				},
+		const moduleTables = await prisma.table.findMany({
+			where: {
+				databaseId,
+				moduleType: moduleId,
+				isModuleTable: true,
 			},
-			DEFAULT_CACHE_STRATEGIES.tableList,
-		);
+			include: {
+				columns: true,
+				rows: true,
+			},
+		});
 
 		// Delete tables (this will cascade delete columns and rows)
 		for (const table of moduleTables) {
@@ -141,17 +137,13 @@ export async function hasModuleTables(
 	moduleId: string,
 ): Promise<boolean> {
 	try {
-		const tableCount = await prisma.countWithCache(
-			prisma.table,
-			{
-				where: {
-					databaseId,
-					moduleType: moduleId,
-					isModuleTable: true,
-				},
+		const tableCount = await prisma.table.count({
+			where: {
+				databaseId,
+				moduleType: moduleId,
+				isModuleTable: true,
 			},
-			DEFAULT_CACHE_STRATEGIES.count,
-		);
+		});
 
 		return tableCount > 0;
 	} catch (error) {
@@ -168,20 +160,16 @@ export async function hasModuleTables(
  */
 export async function getModuleTables(databaseId: number, moduleId: string) {
 	try {
-		return await prisma.findManyWithCache(
-			prisma.table,
-			{
-				where: {
-					databaseId,
-					moduleType: moduleId,
-					isModuleTable: true,
-				},
-				include: {
-					columns: true,
-				},
+		return await prisma.table.findMany({
+			where: {
+				databaseId,
+				moduleType: moduleId,
+				isModuleTable: true,
 			},
-			DEFAULT_CACHE_STRATEGIES.tableList,
-		);
+			include: {
+				columns: true,
+			},
+		});
 	} catch (error) {
 		console.error(`❌ Error getting module tables for '${moduleId}':`, error);
 		return [];

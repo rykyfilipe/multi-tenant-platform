@@ -25,7 +25,6 @@ import {
 import { FilterConfig } from "@/types/filtering-enhanced";
 import { FilterValidator } from "@/lib/filter-validator";
 import { PrismaFilterBuilder } from "@/lib/prisma-filter-builder";
-import { filterCache } from "@/lib/filter-cache";
 import { logger } from "@/lib/error-logger";
 
 const RowSchema = z.object({
@@ -717,40 +716,8 @@ export async function GET(
 			pageSize
 		});
 
-		// Generate cache key
-		const cacheKey = filterCache.generateCacheKey(
-			Number(tableId),
-			convertedFilters,
-			search,
-			sortBy,
-			sortOrder,
-			page,
-			pageSize
-		);
+		// Cache removed - using direct Prisma queries
 
-		// Check cache first
-		const cachedData = filterCache.get(cacheKey);
-		if (cachedData) {
-			logger.info("Cache hit for filtered rows", { 
-				cacheKey, 
-				tenantId: String(tenantId), 
-				tableId: String(tableId), 
-				userId: String(userId),
-				executionTime: Date.now() - startTime
-			});
-			
-			return NextResponse.json({
-				data: cachedData.data,
-				pagination: cachedData.pagination,
-				filters: convertedFilters,
-				appliedFilters: convertedFilters,
-				globalSearch: search,
-				sortBy,
-				sortOrder,
-				executionTime: Date.now() - startTime,
-				cacheHit: true
-			});
-		}
 
 		// Build optimized where clause using PrismaFilterBuilder
 		const filterBuilder = new PrismaFilterBuilder(Number(tableId), tableColumns);
@@ -851,14 +818,7 @@ export async function GET(
 			hasPrev: page > 1
 		};
 
-		// Cache the results
-		filterCache.set(
-			cacheKey,
-				rows,
-			pagination,
-			Number(tableId),
-			convertedFilters
-		);
+		// Cache removed - using direct Prisma queries
 
 		const executionTime = Date.now() - startTime;
 

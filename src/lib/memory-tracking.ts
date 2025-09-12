@@ -1,7 +1,7 @@
 /** @format */
 // Storage tracking service for tenant data usage
 
-import prisma, { DEFAULT_CACHE_STRATEGIES } from "./prisma";
+import prisma from "./prisma";
 import { getMemoryLimitForPlan } from "./planConstants";
 import { convertBytesToMB, convertMBToBytes } from "./storage-utils";
 
@@ -28,25 +28,21 @@ export const calculateMemoryUsage = async (
 ): Promise<MemoryCalculation> => {
 	try {
 		// Get all databases for the tenant
-		const databases = await prisma.findManyWithCache(
-			prisma.database,
-			{
-				where: { tenantId },
-				include: {
-					tables: {
-						include: {
-							columns: true,
-							rows: {
-								include: {
-									cells: true,
-								},
+		const databases = await prisma.database.findMany({
+			where: { tenantId },
+			include: {
+				tables: {
+					include: {
+						columns: true,
+						rows: {
+							include: {
+								cells: true,
 							},
 						},
 					},
 				},
 			},
-			DEFAULT_CACHE_STRATEGIES.databaseList,
-		);
+		});
 
 		let totalRows = 0;
 		let totalColumns = 0;
@@ -127,25 +123,21 @@ export const calculateActualDatabaseSize = async (
 ): Promise<MemoryCalculation> => {
 	try {
 		// Get all databases for the tenant
-		const databases = await prisma.findManyWithCache(
-			prisma.database,
-			{
-				where: { tenantId },
-				include: {
-					tables: {
-						include: {
-							columns: true,
-							rows: {
-								include: {
-									cells: true,
-								},
+		const databases = await prisma.database.findMany({
+			where: { tenantId },
+			include: {
+				tables: {
+					include: {
+						columns: true,
+						rows: {
+							include: {
+								cells: true,
 							},
 						},
 					},
 				},
 			},
-			DEFAULT_CACHE_STRATEGIES.databaseList,
-		);
+		});
 
 		let totalRows = 0;
 		let totalColumns = 0;
@@ -237,20 +229,16 @@ export const updateTenantMemoryUsage = async (
 ): Promise<MemoryUsage> => {
 	try {
 		// Get tenant with subscription info
-		const tenant = await prisma.findUniqueWithCache(
-			prisma.tenant,
-			{
-				where: { id: tenantId },
-				include: {
-					admin: {
-						select: {
-							subscriptionPlan: true,
-						},
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: tenantId },
+			include: {
+				admin: {
+					select: {
+						subscriptionPlan: true,
 					},
 				},
 			},
-			DEFAULT_CACHE_STRATEGIES.tenant,
-		);
+		});
 
 		if (!tenant) {
 			throw new Error("Tenant not found");
@@ -294,11 +282,9 @@ export const getTenantMemoryUsage = async (
 	tenantId: number,
 ): Promise<MemoryUsage> => {
 	try {
-		const tenant = await prisma.findUniqueWithCache(
-			prisma.tenant,
-			{ where: { id: tenantId } },
-			DEFAULT_CACHE_STRATEGIES.tenant,
-		);
+		const tenant = await prisma.tenant.findUnique({
+			where: { id: tenantId }
+		});
 
 		if (!tenant) {
 			throw new Error("Tenant not found");

@@ -12,7 +12,6 @@ import {
 import { Table, CreateColumnRequest, Column, Row } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
-import { useDatabaseRefresh } from "@/hooks/useDatabaseRefresh";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -108,7 +107,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		userPermissions?.columnsPermissions || [],
 	);
 
-	const { refreshAfterChange } = useDatabaseRefresh();
 	const tenantId = tenant?.id;
 
 	// Use server-side pagination hook
@@ -183,8 +181,17 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			
 			if (normalCells.length > 0) {
 				console.log("🔄 Optimistically updating cells in UI:", normalCells);
-				setRows((currentRows: any[]) =>
-					currentRows.map((row) => {
+				console.log("🔄 Current paginatedRows before update:", paginatedRows?.map((row: any) => ({
+					id: row.id,
+					cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+				})));
+				
+				setRows((currentRows: any[]) => {
+					console.log("🔄 setRows called with currentRows:", currentRows?.map((row: any) => ({
+						id: row.id,
+						cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+					})));
+					const result = currentRows.map((row) => {
 						const updatedRow = { ...row };
 						normalCells.forEach((updatedCell) => {
 							console.log("🔍 DEBUG: Processing updatedCell", { 
@@ -249,8 +256,14 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							}
 						});
 						return updatedRow;
-					}),
-				);
+					});
+					
+					console.log("🔄 setRows returning updated rows:", result?.map((row: any) => ({
+						id: row.id,
+						cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+					})));
+					return result;
+				});
 			}
 		},
 		onError: (error: string) => {
@@ -333,7 +346,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					);
 				}
 
-				await refreshAfterChange();
+				// Cache refresh removed - using direct Prisma queries
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to add column");
@@ -419,7 +432,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					);
 				}
 
-				await refreshAfterChange();
+				// Cache refresh removed - using direct Prisma queries
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to update column");
@@ -477,7 +490,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			);
 
 			if (response.ok) {
-				await refreshAfterChange();
+				// Cache refresh removed - using direct Prisma queries
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to delete column");

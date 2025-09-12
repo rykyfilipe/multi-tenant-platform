@@ -1,7 +1,6 @@
 /** @format */
 
 import prisma from "./prisma";
-import { cachedOperations } from "./cached-operations";
 import { PLAN_LIMITS, getRowsLimitForPlan, type PlanLimits } from "./planConstants";
 
 // Re-export for backward compatibility
@@ -14,7 +13,21 @@ export async function checkPlanLimit(
 	currentCount: number = 0,
 ): Promise<{ allowed: boolean; limit: number; current: number }> {
 	try {
-		const user = await cachedOperations.getUser(userId);
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+				email: true,
+				firstName: true,
+				lastName: true,
+				role: true,
+				tenantId: true,
+				subscriptionPlan: true,
+				subscriptionStatus: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
 
 		if (!user || user.subscriptionStatus !== "active") {
 			// Default to Free plan if no subscription
@@ -49,7 +62,21 @@ export async function getCurrentCounts(
 	userId: number,
 ): Promise<Record<keyof PlanLimits, number>> {
 	try {
-		const user = await cachedOperations.getUser(userId);
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+				email: true,
+				firstName: true,
+				lastName: true,
+				role: true,
+				tenantId: true,
+				subscriptionPlan: true,
+				subscriptionStatus: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
 
 		if (!user?.tenantId) {
 			return {
@@ -61,10 +88,25 @@ export async function getCurrentCounts(
 		}
 
 		try {
-			const counts = await cachedOperations.getCounts(user.tenantId, userId);
-
-			// getCounts returns an array: [databases, tables, users, rows]
-			const [databases, tables, users, rows] = counts;
+			// Get counts directly from Prisma
+			const [databases, tables, users, rows] = await Promise.all([
+				prisma.database.count({ where: { tenantId: user.tenantId } }),
+				prisma.table.count({ 
+					where: { 
+						database: { tenantId: user.tenantId },
+						isModuleTable: false,
+						isProtected: false,
+					} 
+				}),
+				prisma.user.count({ where: { tenantId: user.tenantId } }),
+				prisma.row.count({ 
+					where: { 
+						table: { 
+							database: { tenantId: user.tenantId }
+						} 
+					} 
+				}),
+			]);
 
 			return {
 				databases,

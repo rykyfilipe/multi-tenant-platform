@@ -163,7 +163,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				}, autoSaveDelay);
 			} else if (autoSaveDelay === 0) {
 				// Pentru autoSaveDelay = 0, face save imediat
-				console.log("🔍 DEBUG: autoSaveDelay is 0, saving immediately");
 				if (saveFunctionRef.current) {
 					// Folosește setTimeout pentru a evita probleme de sincronizare
 					setTimeout(() => {
@@ -180,6 +179,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 		},
 		[getCellKey, autoSaveDelay],
 	);
+
 
 	// Salvează toate modificările pending
 	const savePendingChanges = useCallback(async () => {
@@ -306,6 +306,9 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				`Successfully updated ${allUpdatedCells.length} cell(s)`,
 				"success",
 			);
+			
+			// 🔧 FIX: Update local state with server response data
+			console.log("🔄 Updating local state with server response:", allUpdatedCells);
 			onSuccess?.(allUpdatedCells);
 		} catch (error) {
 			const errorMessage =
@@ -334,6 +337,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	// Actualizează ref-ul cu funcția de save
 	saveFunctionRef.current = savePendingChanges;
 	console.log("🔍 DEBUG: saveFunctionRef set to savePendingChanges");
+
 
 	// Anulează toate modificările pending
 	const discardPendingChanges = useCallback(() => {

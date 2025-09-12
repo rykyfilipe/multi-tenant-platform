@@ -477,10 +477,8 @@ class PrismaAccelerateClient extends PrismaClient {
 		}
 	}
 
-	// Override common Prisma methods to include retry logic
-	async $transaction<T>(fn: (prisma: any) => Promise<T>): Promise<T> {
-		return await this.executeWithRetry(() => super.$transaction(fn));
-	}
+	// Note: $transaction method is not overridden to avoid TypeScript conflicts
+	// Use executeWithRetryWrapper for transaction-like operations if needed
 
 	// Override all model methods to include retry logic
 	private wrapModelMethods() {

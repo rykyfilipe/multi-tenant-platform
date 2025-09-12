@@ -676,7 +676,7 @@ export class InvoiceSystemService {
 			},
 			DEFAULT_CACHE_STRATEGIES.table,
 		);
-		return table?.isProtected || false;
+		return table?.isProtected || false;``
 	}
 
 	/**
@@ -976,7 +976,7 @@ export class InvoiceSystemService {
 					
 					if (matches && matches.length > 0) {
 						// Get the largest number found (should be the main invoice number)
-						const numbers = matches.map(m => parseInt(m));
+						const numbers = matches.map((m: any) => parseInt(m));
 						const maxNumber = Math.max(...numbers);
 						lastNumber = Math.max(lastNumber, maxNumber);
 						console.log("🔍 DEBUG: Using max number from general extraction", maxNumber);

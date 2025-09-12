@@ -15,6 +15,11 @@ import {
 	LogOut,
 	Building2,
 	Filter,
+	BarChart3,
+	Receipt,
+	Webhook,
+	Puzzle,
+	HardDrive,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import AuthModal from "@/components/auth/AuthModal";
@@ -104,6 +109,16 @@ const DataHubLandingPage = () => {
 			description: t("landing.features.userManagement.description"),
 		},
 		{
+			icon: <BarChart3 className='w-6 h-6' />,
+			title: t("landing.features.analytics.title"),
+			description: t("landing.features.analytics.description"),
+		},
+		{
+			icon: <Receipt className='w-6 h-6' />,
+			title: t("landing.features.invoicing.title"),
+			description: t("landing.features.invoicing.description"),
+		},
+		{
 			icon: <Settings className='w-6 h-6' />,
 			title: t("landing.features.schemaBuilder.title"),
 			description: t("landing.features.schemaBuilder.description"),
@@ -114,9 +129,24 @@ const DataHubLandingPage = () => {
 			description: t("landing.features.dataFiltering.description"),
 		},
 		{
+			icon: <Webhook className='w-6 h-6' />,
+			title: t("landing.features.webhooks.title"),
+			description: t("landing.features.webhooks.description"),
+		},
+		{
+			icon: <Puzzle className='w-6 h-6' />,
+			title: t("landing.features.integrations.title"),
+			description: t("landing.features.integrations.description"),
+		},
+		{
 			icon: <Zap className='w-6 h-6' />,
 			title: t("landing.features.realTimeData.title"),
 			description: t("landing.features.realTimeData.description"),
+		},
+		{
+			icon: <HardDrive className='w-6 h-6' />,
+			title: t("landing.features.backup.title"),
+			description: t("landing.features.backup.description"),
 		},
 		{
 			icon: <Shield className='w-6 h-6' />,
@@ -135,6 +165,26 @@ const DataHubLandingPage = () => {
 			icon: <Database className='w-8 h-8' />,
 			title: t("landing.benefits.customTables.title"),
 			description: t("landing.benefits.customTables.description"),
+		},
+		{
+			icon: <BarChart3 className='w-8 h-8' />,
+			title: t("landing.benefits.analyticsInsights.title"),
+			description: t("landing.benefits.analyticsInsights.description"),
+		},
+		{
+			icon: <Receipt className='w-8 h-8' />,
+			title: t("landing.benefits.invoicingSystem.title"),
+			description: t("landing.benefits.invoicingSystem.description"),
+		},
+		{
+			icon: <Puzzle className='w-8 h-8' />,
+			title: t("landing.benefits.integrations.title"),
+			description: t("landing.benefits.integrations.description"),
+		},
+		{
+			icon: <Shield className='w-8 h-8' />,
+			title: t("landing.benefits.securityCompliance.title"),
+			description: t("landing.benefits.securityCompliance.description"),
 		},
 	];
 
@@ -159,10 +209,10 @@ const DataHubLandingPage = () => {
 	const plans = [
 		{
 			name: t("landing.plans.free.name"),
-			price: t("landing.plans.free.name"),
+			price: "$0",
 			period: "/month",
 			description: t("landing.plans.free.description"),
-			storage: "10MB",
+			storage: "100MB",
 			features: [
 				t("landing.plans.free.databases"),
 				t("landing.plans.free.tables"),
@@ -173,8 +223,24 @@ const DataHubLandingPage = () => {
 			popular: false,
 		},
 		{
+			name: "Starter",
+			price: "$9",
+			period: "/month",
+			description: "Perfect for growing businesses",
+			storage: "500MB",
+			features: [
+				"3 databases",
+				"Up to 15 tables",
+				"Up to 5 users",
+				"Priority support",
+				"Basic analytics",
+			],
+			priceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID,
+			popular: true,
+		},
+		{
 			name: t("landing.plans.pro.name"),
-			price: "€29",
+			price: "$29",
 			period: "/month",
 			description: t("landing.plans.pro.description"),
 			storage: "1GB",
@@ -186,11 +252,11 @@ const DataHubLandingPage = () => {
 				t("landing.plans.pro.analytics"),
 			],
 			priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
-			popular: true,
+			popular: false,
 		},
 		{
 			name: t("landing.plans.enterprise.name"),
-			price: "€99",
+			price: "$99",
 			period: "/month",
 			description: t("landing.plans.enterprise.description"),
 			storage: "10GB",
@@ -519,7 +585,7 @@ const DataHubLandingPage = () => {
 						</p>
 					</div>
 
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8'>
 						{features.map((feature, index) => (
 							<motion.div
 								key={index}
@@ -563,7 +629,7 @@ const DataHubLandingPage = () => {
 						</p>
 					</div>
 
-					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8'>
 						{plans.map((plan, index) => {
 							const isCurrentPlan =
 								currentPlan &&

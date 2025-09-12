@@ -20,6 +20,7 @@ import {
 	Home,
 	FileText,
 	Code,
+	HardDrive,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -92,6 +93,17 @@ const getNavigationItems = (
 		icon: Settings,
 		description: t("nav.settings.description"),
 	},
+	// Backup for admins
+	...(user?.role === "ADMIN"
+		? [
+				{
+					title: t("nav.backup"),
+					url: "/home/backup",
+					icon: HardDrive,
+					description: "Manage database backups and restore data",
+				},
+		  ]
+		: []),
 	// Development tools for admins
 	...(user?.role === "ADMIN" && process.env.NODE_ENV === "development"
 		? [

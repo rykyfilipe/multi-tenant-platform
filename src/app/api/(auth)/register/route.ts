@@ -1,6 +1,6 @@
 /** @format */
 
-import prisma, { DEFAULT_CACHE_STRATEGIES } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateToken, hashPassword } from "@/lib/auth";
@@ -40,15 +40,11 @@ export async function POST(request: Request) {
 		const body = await request.json();
 		const parsedData = RegisterSchema.parse(body);
 
-		const existingUser = await prisma.findUniqueWithCache(
-			prisma.user,
-			{
-				where: {
-					email: parsedData.email,
-				},
+		const existingUser = await prisma.user.findUnique({
+			where: {
+				email: parsedData.email,
 			},
-			DEFAULT_CACHE_STRATEGIES.user,
-		);
+		});
 		if (existingUser) {
 			return NextResponse.json(
 				{ error: "User with this email already exists" },
@@ -75,15 +71,11 @@ export async function POST(request: Request) {
 			},
 		});
 
-		const hasTenant = await prisma.findUniqueWithCache(
-			prisma.tenant,
-			{
-				where: {
-					adminId: user.id,
-				},
+		const hasTenant = await prisma.tenant.findUnique({
+			where: {
+				adminId: user.id,
 			},
-			DEFAULT_CACHE_STRATEGIES.tenant,
-		);
+		});
 
 		if (hasTenant)
 			return NextResponse.json(
