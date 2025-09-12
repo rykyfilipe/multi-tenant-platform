@@ -168,10 +168,19 @@ export class PuppeteerPDFGenerator {
 		translations: Record<string, string>
 	): string {
 		const formatCurrency = (amount: number, currency = 'USD') => {
-			return new Intl.NumberFormat('en-US', {
+			// Handle NaN and invalid amounts
+			if (isNaN(amount) || amount === null || amount === undefined) {
+				console.log('🔍 PDF DEBUG: Invalid amount for currency formatting:', { amount, currency });
+				return '$0.00';
+			}
+			
+			const formatted = new Intl.NumberFormat('en-US', {
 				style: 'currency',
 				currency: currency,
 			}).format(amount);
+			
+			console.log('🔍 PDF DEBUG: Currency formatting:', { amount, currency, formatted });
+			return formatted;
 		};
 
 		const formatDate = (dateString: string) => {
@@ -183,6 +192,19 @@ export class PuppeteerPDFGenerator {
 		};
 
 		const currency = invoiceData.invoice?.base_currency || 'USD';
+
+		console.log('🔍 PDF DEBUG: Generating HTML with data:', {
+			invoice: invoiceData.invoice,
+			items: invoiceData.items.map(item => ({
+				product_name: item.product_name,
+				unit_price: item.unit_price,
+				quantity: item.quantity,
+				total: item.total,
+				vat_rate: item.vat_rate
+			})),
+			totals: invoiceData.totals,
+			currency
+		});
 
 		return `
 <!DOCTYPE html>
@@ -371,11 +393,22 @@ export class PuppeteerPDFGenerator {
 			const invoice = this.transformRowToObject(invoiceRow);
 			const items = invoiceItems.map((item: any) => this.transformRowToObject(item));
 
+			console.log('🔍 PDF DEBUG: Final invoice data before PDF generation:', {
+				invoice,
+				items,
+				customer,
+				itemsCount: items.length
+			});
+
+			const totals = this.calculateTotals(items);
+			
+			console.log('🔍 PDF DEBUG: Calculated totals:', totals);
+
 			return {
 				invoice,
 				items,
 				customer,
-				totals: this.calculateTotals(items),
+				totals,
 			};
 		} catch (error) {
 			console.error('Error getting invoice data:', error);
@@ -457,6 +490,13 @@ export class PuppeteerPDFGenerator {
 			obj[cell.column.name] = cell.value;
 		});
 		
+		console.log('🔍 PDF DEBUG: Transforming row to object:', {
+			rowId: row.id,
+			tableId: row.tableId,
+			originalCells: row.cells.map((c: any) => ({ name: c.column.name, value: c.value })),
+			transformedObj: obj
+		});
+		
 		// For invoice items, ensure we have all necessary product fields
 		if (obj.product_name || obj.name) {
 			obj.product_name = obj.product_name || obj.name || 'Product';
@@ -466,6 +506,13 @@ export class PuppeteerPDFGenerator {
 			obj.product_dimensions = obj.product_dimensions || obj.dimensions || '';
 			obj.product_vat = obj.product_vat || obj.vat_rate || obj.vat || 0;
 			obj.currency = obj.currency || 'USD';
+			
+			console.log('🔍 PDF DEBUG: Product fields normalized:', {
+				product_name: obj.product_name,
+				unit: obj.unit,
+				product_vat: obj.product_vat,
+				currency: obj.currency
+			});
 		}
 		
 		return obj;
@@ -482,15 +529,37 @@ export class PuppeteerPDFGenerator {
 		let vatRate = 0;
 
 		items.forEach(item => {
+			console.log('🔍 PDF DEBUG: Processing item for totals calculation:', {
+				item,
+				quantity: item.quantity,
+				price: item.price,
+				unit_price: item.unit_price,
+				product_vat: item.product_vat,
+				total: item.total
+			});
+
 			const quantity = parseFloat(item.quantity || '0');
-			const price = parseFloat(item.price || '0');
-			const itemVatRate = parseFloat(item.product_vat || '0');
+			// Fix: Use unit_price instead of price for consistency with preview
+			const price = parseFloat(item.unit_price || item.price || '0');
+			const itemVatRate = parseFloat(item.product_vat || item.vat_rate || '0');
 			const itemDiscountRate = parseFloat(item.discount_rate || '0');
 			const itemDiscountAmount = parseFloat(item.discount_amount || '0');
 			
-			const itemTotal = quantity * price;
+			// If item.total is already calculated and valid, use it instead of calculating
+			const calculatedTotal = quantity * price;
+			const itemTotal = (item.total && !isNaN(parseFloat(item.total))) ? parseFloat(item.total) : calculatedTotal;
 			const itemVat = (itemTotal * itemVatRate) / 100;
 			const itemDiscount = itemDiscountAmount > 0 ? itemDiscountAmount : (itemTotal * itemDiscountRate) / 100;
+			
+			console.log('🔍 PDF DEBUG: Item totals calculated:', {
+				quantity,
+				price,
+				calculatedTotal,
+				itemTotal,
+				itemVat,
+				itemDiscount,
+				itemVatRate
+			});
 			
 			subtotal += itemTotal;
 			vatTotal += itemVat;

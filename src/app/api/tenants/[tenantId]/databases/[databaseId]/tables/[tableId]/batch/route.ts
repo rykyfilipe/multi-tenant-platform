@@ -37,7 +37,17 @@ export async function POST(
 		const body = await request.json();
 		const { operations }: { operations: BatchOperation[] } = body;
 
+		console.log("🔍 SERVER DEBUG: Batch API called", {
+			tenantId,
+			databaseId,
+			tableId,
+			userId,
+			operationsCount: operations?.length || 0,
+			operations: operations
+		});
+
 		if (!Array.isArray(operations)) {
+			console.error("❌ SERVER ERROR: Invalid operations format", { operations });
 			return NextResponse.json(
 				{ error: "Invalid operations format" },
 				{ status: 400 }
@@ -51,26 +61,52 @@ export async function POST(
 		const rowCreates: { cells: any[] }[] = [];
 
 		for (const operation of operations) {
+			console.log("🔍 SERVER DEBUG: Processing operation", {
+				operation: operation.operation,
+				data: operation.data
+			});
+
 			switch (operation.operation) {
 				case "update":
 					if ("rowId" in operation.data && "columnId" in operation.data && "cellId" in operation.data) {
-						cellUpdates.push(operation.data as BatchCellUpdate);
+						const updateData = operation.data as BatchCellUpdate;
+						console.log("🔍 SERVER DEBUG: Adding cell update", {
+							rowId: updateData.rowId,
+							columnId: updateData.columnId,
+							cellId: updateData.cellId,
+							value: updateData.value,
+							valueType: typeof updateData.value
+						});
+						cellUpdates.push(updateData);
 					}
 					break;
 				case "create":
 					if ("rowId" in operation.data && "columnId" in operation.data && "cellId" in operation.data) {
-						cellCreates.push(operation.data as BatchCellUpdate);
+						const createData = operation.data as BatchCellUpdate;
+						console.log("🔍 SERVER DEBUG: Adding cell create", createData);
+						cellCreates.push(createData);
 					} else if ("cells" in operation.data) {
+						console.log("🔍 SERVER DEBUG: Adding row create", operation.data);
 						rowCreates.push(operation.data as { cells: any[] });
 					}
 					break;
 				case "delete":
 					if ("rowId" in operation.data) {
+						console.log("🔍 SERVER DEBUG: Adding row delete", operation.data);
 						rowDeletes.push((operation.data as { rowId: string }).rowId);
 					}
 					break;
 			}
 		}
+
+		console.log("🔍 SERVER DEBUG: Grouped operations", {
+			cellUpdatesCount: cellUpdates.length,
+			cellCreatesCount: cellCreates.length,
+			rowDeletesCount: rowDeletes.length,
+			rowCreatesCount: rowCreates.length,
+			cellUpdates: cellUpdates,
+			cellCreates: cellCreates
+		});
 
 		// Execută operațiile într-o tranzacție
 		const result = await prisma.$transaction(async (tx:any) => {
@@ -83,7 +119,36 @@ export async function POST(
 
 			// Actualizează celulele existente
 			for (const update of cellUpdates) {
+				console.log("🔍 SERVER DEBUG: Processing cell update", {
+					update,
+					cellId: update.cellId,
+					isVirtual: update.cellId === "virtual"
+				});
+
 				if (update.cellId !== "virtual") {
+					console.log("🔍 SERVER DEBUG: Updating existing cell", {
+						cellId: update.cellId,
+						oldValue: "fetching...",
+						newValue: update.value,
+						newValueType: typeof update.value
+					});
+
+					// First, get the current value to compare
+					const currentCell = await tx.cell.findUnique({
+						where: { id: parseInt(update.cellId) },
+						select: { value: true, columnId: true, rowId: true }
+					});
+
+					console.log("🔍 SERVER DEBUG: Current cell before update", {
+						cellId: update.cellId,
+						currentValue: currentCell?.value,
+						currentValueType: typeof currentCell?.value,
+						newValue: update.value,
+						newValueType: typeof update.value,
+						columnId: currentCell?.columnId,
+						rowId: currentCell?.rowId
+					});
+
 					const updatedCell = await tx.cell.update({
 						where: { id: parseInt(update.cellId) },
 						data: { value: update.value },
@@ -91,13 +156,37 @@ export async function POST(
 							column: true,
 						},
 					});
+
+					console.log("🔍 SERVER DEBUG: Cell updated successfully", {
+						cellId: update.cellId,
+						updatedValue: updatedCell.value,
+						updatedValueType: typeof updatedCell.value
+					});
+
 					results.updatedCells.push(updatedCell);
+				} else {
+					console.log("🔍 SERVER DEBUG: Skipping virtual cell update", {
+						update
+					});
 				}
 			}
 
 			// Creează celule noi
 			for (const create of cellCreates) {
+				console.log("🔍 SERVER DEBUG: Processing cell create", {
+					create,
+					cellId: create.cellId,
+					isVirtual: create.cellId === "virtual"
+				});
+
 				if (create.cellId === "virtual") {
+					console.log("🔍 SERVER DEBUG: Creating new cell", {
+						rowId: create.rowId,
+						columnId: create.columnId,
+						value: create.value,
+						valueType: typeof create.value
+					});
+
 					const newCell = await tx.cell.create({
 						data: {
 							rowId: parseInt(create.rowId),
@@ -108,7 +197,20 @@ export async function POST(
 							column: true,
 						},
 					});
+
+					console.log("🔍 SERVER DEBUG: New cell created successfully", {
+						cellId: newCell.id,
+						value: newCell.value,
+						valueType: typeof newCell.value,
+						columnId: newCell.columnId,
+						rowId: newCell.rowId
+					});
+
 					results.createdCells.push(newCell);
+				} else {
+					console.log("🔍 SERVER DEBUG: Skipping non-virtual cell create", {
+						create
+					});
 				}
 			}
 
@@ -157,7 +259,15 @@ export async function POST(
 				});
 			}
 
+			console.log("🔍 SERVER DEBUG: Transaction completed", {
+				results
+			});
+
 			return results;
+		});
+
+		console.log("🔍 SERVER DEBUG: Batch operations completed successfully", {
+			result
 		});
 
 		return NextResponse.json({

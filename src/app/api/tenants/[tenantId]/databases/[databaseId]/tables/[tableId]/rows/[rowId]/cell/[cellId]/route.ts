@@ -55,6 +55,18 @@ export async function PATCH(
 		const body = await request.json();
 		const parsedData = CellUpdateSchema.parse(body);
 
+		console.log("🔍 SERVER DEBUG: Individual cell update API called", {
+			tenantId,
+			databaseId,
+			tableId,
+			rowId,
+			cellId,
+			userId,
+			requestBody: body,
+			parsedValue: parsedData.value,
+			valueType: typeof parsedData.value
+		});
+
 		// Verificăm că celula există și aparține tabelului corect
 		const cellWithContext = await prisma.cell.findFirst({
 			where: {
@@ -90,11 +102,27 @@ export async function PATCH(
 		});
 
 		if (!cellWithContext) {
+			console.log("❌ SERVER ERROR: Cell not found", {
+				cellId,
+				rowId,
+				tableId,
+				databaseId,
+				tenantId
+			});
 			return NextResponse.json(
 				{ error: "Cell not found or access denied" },
 				{ status: 404 },
 			);
 		}
+
+		console.log("🔍 SERVER DEBUG: Found existing cell", {
+			cellId,
+			currentValue: cellWithContext.value,
+			currentValueType: typeof cellWithContext.value,
+			columnId: cellWithContext.columnId,
+			columnType: cellWithContext.column.type,
+			rowId: cellWithContext.rowId
+		});
 
 		// Validate reference column values
 		if (cellWithContext.column.type === "reference") {
@@ -191,6 +219,14 @@ export async function PATCH(
 		}
 
 		// Actualizăm celula (optimized: returnăm doar datele necesare)
+		console.log("🔍 SERVER DEBUG: Updating cell in database", {
+			cellId,
+			oldValue: cellWithContext.value,
+			newValue: parsedData.value,
+			oldValueType: typeof cellWithContext.value,
+			newValueType: typeof parsedData.value
+		});
+
 		const updatedCell = await prisma.cell.update({
 			where: {
 				id: Number(cellId),
@@ -211,6 +247,14 @@ export async function PATCH(
 					},
 				},
 			},
+		});
+
+		console.log("🔍 SERVER DEBUG: Cell updated successfully", {
+			cellId,
+			updatedValue: updatedCell.value,
+			updatedValueType: typeof updatedCell.value,
+			columnId: updatedCell.columnId,
+			rowId: updatedCell.rowId
 		});
 
 		// Optimized: Actualizăm memoria după actualizarea celulei doar dacă e necesar

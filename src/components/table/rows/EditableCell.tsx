@@ -640,7 +640,11 @@ export function EditableCell({
 
 	const handleKey = useCallback((e: KeyboardEvent) => {
 		if (e.key === "Enter") {
-			console.log("🔍 DEBUG: Enter key pressed", { value, columnType: column?.type });
+			console.log("🔍 DEBUG: Enter key pressed", { 
+				value, 
+				currentValueRef: currentValueRef.current,
+				columnType: column?.type 
+			});
 			
 			// Standardized behavior for ALL column types:
 			// 1. Check for invalid references (only applies to link columns)
@@ -648,15 +652,18 @@ export function EditableCell({
 				return; // Don't save if there are invalid references
 			}
 			
-			// 2. Normalize value for reference columns before saving
-			const normalizedValue = normalizeReferenceValue(currentValueRef.current, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
+			// 2. Use the current local state value instead of ref for more reliability
+			const valueToSave = value;
+			const normalizedValue = normalizeReferenceValue(valueToSave, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
+			
+			console.log("🔍 DEBUG: Saving value", { valueToSave, normalizedValue });
 			
 			// 3. Add to pending changes and exit edit mode
 			onSave(normalizedValue);
 			onCancel();
 		}
 		if (e.key === "Escape") onCancel();
-	}, [column?.type, hasInvalidReferences, onCancel, onSave]);
+	}, [column?.type, hasInvalidReferences, onCancel, onSave, value]);
 
 	// All onChange handlers now only update local state for optimistic UI
 	// Changes are only committed to pending changes on Enter/blur events
@@ -697,8 +704,11 @@ export function EditableCell({
 						return; // Don't save if there are invalid references
 					}
 					
-					// 2. Normalize value for reference columns before saving
-					const normalizedValue = normalizeReferenceValue(currentValueRef.current, column.type === USER_FRIENDLY_COLUMN_TYPES.link);
+					// 2. Use the current local state value instead of ref for more reliability
+					const valueToSave = value;
+					const normalizedValue = normalizeReferenceValue(valueToSave, column.type === USER_FRIENDLY_COLUMN_TYPES.link);
+					
+					console.log("🔍 DEBUG: Click outside - saving value", { valueToSave, normalizedValue });
 					
 					// 3. Add to pending changes and exit edit mode
 					onSave(normalizedValue);
@@ -716,7 +726,7 @@ export function EditableCell({
 			clearTimeout(timeoutId);
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, [isEditing, onCancel, column?.type, hasInvalidReferences, onSave]);
+	}, [isEditing, onCancel, column?.type, hasInvalidReferences, onSave, value]);
 
 
 	let referenceSelect: JSX.Element | null = null;

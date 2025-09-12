@@ -91,11 +91,13 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			setPendingChanges((prev) => {
 				const newMap = new Map(prev);
 
-				console.log("🔍 DEBUG: addPendingChange - comparing values", { 
-					newValue, 
-					originalValue, 
-					cellKey 
-				});
+		console.log("🔍 DEBUG: addPendingChange - comparing values", { 
+			newValue, 
+			originalValue, 
+			cellKey,
+			newValueType: typeof newValue,
+			originalValueType: typeof originalValue
+		});
 
 				// Comparare mai robustă a valorilor
 				const areEqual = (() => {
@@ -132,14 +134,16 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				} else {
 					// Adăugăm modificarea în pending changes
 					console.log("🔍 DEBUG: Values are different, adding to pending changes");
-					newMap.set(cellKey, {
+					const pendingChange = {
 						rowId,
 						columnId,
 						cellId,
 						newValue,
 						originalValue,
 						timestamp: Date.now(),
-					});
+					};
+					console.log("🔍 DEBUG: Setting pending change", pendingChange);
+					newMap.set(cellKey, pendingChange);
 				}
 
 				console.log("🔍 DEBUG: Final pending changes map size:", newMap.size);
@@ -377,7 +381,15 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			const cellKey = getCellKey(rowId, columnId);
 			const pendingChange = pendingChanges.get(cellKey);
 			const pendingValue = pendingChange?.newValue; // Use newValue instead of value
-			console.log("🔍 DEBUG: getPendingValue", { rowId, columnId, cellKey, pendingValue, hasPending: pendingChanges.has(cellKey), pendingChange });
+			console.log("🔍 DEBUG: getPendingValue", { 
+				rowId, 
+				columnId, 
+				cellKey, 
+				pendingValue, 
+				hasPending: pendingChanges.has(cellKey), 
+				pendingChange,
+				allPendingKeys: Array.from(pendingChanges.keys())
+			});
 			return pendingValue;
 		},
 		[pendingChanges, getCellKey],
