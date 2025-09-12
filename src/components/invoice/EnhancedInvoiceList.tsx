@@ -101,6 +101,9 @@ export function EnhancedInvoiceList({
 	
 	// PDF Preview state
 	const [previewInvoice, setPreviewInvoice] = useState<{ id: number; number: string } | null>(null);
+	
+	// Status update state
+	const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
 	// Sync optimistic state with props
 	useEffect(() => {
@@ -343,6 +346,49 @@ export function EnhancedInvoiceList({
 
 	const handlePreviewPDF = (invoiceId: number, invoiceNumber: string) => {
 		setPreviewInvoice({ id: invoiceId, number: invoiceNumber });
+	};
+
+	const handleStatusChange = async (invoiceId: number, newStatus: string) => {
+		try {
+			setUpdatingStatus(invoiceId);
+			
+			const response = await fetch(`/api/tenants/${tenant?.id}/invoices/${invoiceId}`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					status: newStatus,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to update status');
+			}
+
+			// Update optimistic state
+			setOptimisticInvoices(prev => 
+				prev.map(invoice => 
+					invoice.id === invoiceId 
+						? { ...invoice, status: newStatus }
+						: invoice
+				)
+			);
+
+			showAlert('Invoice status updated successfully', 'success');
+			
+			// Refresh invoices if callback is provided
+			if (refreshInvoices) {
+				refreshInvoices();
+			}
+		} catch (error) {
+			console.error('Error updating invoice status:', error);
+			showAlert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+		} finally {
+			setUpdatingStatus(null);
+		}
 	};
 
 	const clearFilters = () => {
@@ -627,9 +673,28 @@ export function EnhancedInvoiceList({
 									<div className="flex-1">
 										<div className="flex items-center gap-3 mb-2">
 											<h3 className="font-semibold text-lg">#{invoice.invoice_number}</h3>
-											<Badge variant={getStatusVariant(getInvoiceStatus(invoice))}>
-												{getInvoiceStatus(invoice)}
-											</Badge>
+											<Select
+												value={getInvoiceStatus(invoice)}
+												onValueChange={(newStatus) => handleStatusChange(invoice.id, newStatus)}
+												disabled={updatingStatus === invoice.id}
+											>
+												<SelectTrigger className={`w-32 h-8 ${getStatusVariant(getInvoiceStatus(invoice)) === 'destructive' ? 'bg-red-100 text-red-800 border-red-200' : 
+													getStatusVariant(getInvoiceStatus(invoice)) === 'default' ? 'bg-green-100 text-green-800 border-green-200' :
+													getStatusVariant(getInvoiceStatus(invoice)) === 'secondary' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+													'bg-gray-100 text-gray-800 border-gray-200'} hover:opacity-80 transition-opacity`}>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="draft">Draft</SelectItem>
+													<SelectItem value="issued">Issued</SelectItem>
+													<SelectItem value="paid">Paid</SelectItem>
+													<SelectItem value="overdue">Overdue</SelectItem>
+													<SelectItem value="cancelled">Cancelled</SelectItem>
+												</SelectContent>
+											</Select>
+											{updatingStatus === invoice.id && (
+												<div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+											)}
 										</div>
 										<div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
 											<div>

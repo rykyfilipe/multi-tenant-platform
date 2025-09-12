@@ -79,17 +79,18 @@ export async function getCurrentCounts(
 		});
 
 		if (!user?.tenantId) {
-			return {
+			return {	
 				databases: 0,
 				tables: 0,
 				users: 0,
 				rows: 0,
+				storage: 0,
 			};
 		}
 
 		try {
 			// Get counts directly from Prisma
-			const [databases, tables, users, rows] = await Promise.all([
+			const [databases, tables, users, rows, storage] = await Promise.all([
 				prisma.database.count({ where: { tenantId: user.tenantId } }),
 				prisma.table.count({ 
 					where: { 
@@ -106,6 +107,7 @@ export async function getCurrentCounts(
 						} 
 					} 
 				}),
+				prisma.storage.count({ where: { tenantId: user.tenantId } }),
 			]);
 
 			return {
@@ -113,6 +115,7 @@ export async function getCurrentCounts(
 				tables,
 				users,
 				rows,
+				storage,
 			};
 		} catch (error) {
 			// Return default counts on error
@@ -121,6 +124,7 @@ export async function getCurrentCounts(
 				tables: 0,
 				users: 0,
 				rows: 0,
+				storage: 0,
 			};
 		}
 	} catch (error) {
@@ -129,6 +133,7 @@ export async function getCurrentCounts(
 			tables: 0,
 			users: 0,
 			rows: 0,
+			storage: 0,
 		};
 	}
 }
@@ -151,6 +156,7 @@ export function getPlanFeatures(plan: string): string[] {
 		`${limits.users} user${limits.users > 1 ? "s" : ""}`,
 		`${limits.storage} MB storage`,
 		`${limits.rows.toLocaleString()} rows`,
+		`${limits.storage} MB storage`,
 	];
 
 	if (plan === "Pro") {

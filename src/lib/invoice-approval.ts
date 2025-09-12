@@ -596,7 +596,7 @@ export class InvoiceApprovalService {
 				requiredApprovals: request.requiredApprovals,
 				currentApprovals: request.currentApprovals,
 				approvers: JSON.parse(request.approvers),
-				approvals: approvals.map(approval => ({
+				approvals: approvals.map((approval : any) => ({
 					id: approval.id,
 					requestId: approval.requestId,
 					approverId: approval.approverId,
@@ -606,7 +606,7 @@ export class InvoiceApprovalService {
 					comments: approval.comments || undefined,
 					digitalSignature: approval.digitalSignature || undefined,
 				})),
-				rejections: rejections.map(rejection => ({
+				rejections: rejections.map((rejection : any) => ({
 					id: rejection.id,
 					requestId: rejection.requestId,
 					rejectorId: rejection.rejectorId,

@@ -318,9 +318,20 @@ export async function PATCH(
 			payment_method,
 			notes,
 			due_date,
+			status,
 		} = body;
 
-		if (!customer_id || !products || !Array.isArray(products)) {
+		// If only status is being updated, allow partial updates
+		if (status && !customer_id && !products) {
+			// Status-only update - validate status value
+			const validStatuses = ['draft', 'issued', 'paid', 'overdue', 'cancelled'];
+			if (!validStatuses.includes(status)) {
+				return NextResponse.json(
+					{ error: "Invalid status. Must be one of: " + validStatuses.join(', ') },
+					{ status: 400 },
+				);
+			}
+		} else if (!customer_id || !products || !Array.isArray(products)) {
 			return NextResponse.json(
 				{ error: "Missing required fields: customer_id, products" },
 				{ status: 400 },
@@ -380,19 +391,26 @@ export async function PATCH(
 		}
 
 		// Update invoice data using the InvoiceSystemService
+		const updateData: any = {
+			customer_id,
+			base_currency: base_currency || "USD",
+			products,
+			payment_terms,
+			payment_method,
+			notes,
+			due_date,
+		};
+
+		// Add status if provided
+		if (status) {
+			updateData.status = status;
+		}
+
 		const updatedInvoice = await InvoiceSystemService.updateInvoice(
 			Number(tenantId),
 			database.id,
 			Number(invoiceId),
-			{
-				customer_id,
-				base_currency: base_currency || "USD",
-				products,
-				payment_terms,
-				payment_method,
-				notes,
-				due_date,
-			},
+			updateData,
 		);
 
 		return NextResponse.json({

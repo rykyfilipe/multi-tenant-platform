@@ -224,6 +224,7 @@ export class InvoiceSystemService {
 	 */
 	private static async createCustomerColumns(tableId: number) {
 		const columns = [
+			// Basic customer information
 			{
 				name: "customer_name",
 				type: "string",
@@ -243,12 +244,23 @@ export class InvoiceSystemService {
 				isLocked: true,
 			},
 			{
+				name: "customer_phone",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_PHONE,
+				required: false,
+				primary: false,
+				order: 3,
+				isLocked: true,
+			},
+			
+			// Tax and registration information
+			{
 				name: "customer_tax_id",
 				type: "string",
 				semanticType: SemanticColumnType.CUSTOMER_TAX_ID,
 				required: true,
 				primary: false,
-				order: 3,
+				order: 4,
 				isLocked: true,
 			},
 			{
@@ -257,16 +269,27 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_REGISTRATION_NUMBER,
 				required: false,
 				primary: false,
-				order: 4,
+				order: 5,
 				isLocked: true,
 			},
+			{
+				name: "customer_vat_number",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_VAT_NUMBER,
+				required: false,
+				primary: false,
+				order: 6,
+				isLocked: true,
+			},
+			
+			// Address information
 			{
 				name: "customer_street",
 				type: "string",
 				semanticType: SemanticColumnType.CUSTOMER_STREET,
 				required: true,
 				primary: false,
-				order: 5,
+				order: 7,
 				isLocked: true,
 			},
 			{
@@ -275,16 +298,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_STREET_NUMBER,
 				required: true,
 				primary: false,
-				order: 6,
-				isLocked: true,
-			},
-			{
-				name: "customer_address",
-				type: "string",
-				semanticType: SemanticColumnType.CUSTOMER_ADDRESS,
-				required: false,
-				primary: false,
-				order: 7,
+				order: 8,
 				isLocked: true,
 			},
 			{
@@ -293,7 +307,16 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_CITY,
 				required: true,
 				primary: false,
-				order: 8,
+				order: 9,
+				isLocked: true,
+			},
+			{
+				name: "customer_state",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_STATE,
+				required: false,
+				primary: false,
+				order: 10,
 				isLocked: true,
 			},
 			{
@@ -302,7 +325,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_COUNTRY,
 				required: true,
 				primary: false,
-				order: 9,
+				order: 11,
 				isLocked: true,
 			},
 			{
@@ -311,16 +334,54 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_POSTAL_CODE,
 				required: true,
 				primary: false,
-				order: 10,
+				order: 12,
 				isLocked: true,
 			},
 			{
-				name: "customer_phone",
+				name: "customer_address",
 				type: "string",
-				semanticType: SemanticColumnType.CUSTOMER_PHONE,
+				semanticType: SemanticColumnType.CUSTOMER_ADDRESS,
 				required: false,
 				primary: false,
-				order: 11,
+				order: 13,
+				isLocked: true,
+			},
+			
+			// Additional fields
+			{
+				name: "customer_website",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_WEBSITE,
+				required: false,
+				primary: false,
+				order: 14,
+				isLocked: true,
+			},
+			{
+				name: "customer_notes",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_NOTES,
+				required: false,
+				primary: false,
+				order: 15,
+				isLocked: true,
+			},
+			{
+				name: "customer_vat_number",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_VAT_NUMBER,
+				required: false,
+				primary: false,
+				order: 16,
+				isLocked: true,
+			},
+			{
+				name: "customer_state",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_STATE,
+				required: false,
+				primary: false,
+				order: 17,
 				isLocked: true,
 			},
 		];
@@ -443,9 +504,117 @@ export class InvoiceSystemService {
 				name: "total_amount",
 				type: "number",
 				semanticType: SemanticColumnType.INVOICE_TOTAL_AMOUNT,
-				required: false,
+				required: true,
 				primary: false,
 				order: 12,
+				isLocked: true,
+			},
+			{
+				name: "base_currency",
+				type: "string",
+				semanticType: SemanticColumnType.INVOICE_BASE_CURRENCY,
+				required: true,
+				primary: false,
+				order: 13,
+				isLocked: true,
+			},
+			{
+				name: "subtotal",
+				type: "number",
+				semanticType: SemanticColumnType.INVOICE_SUBTOTAL,
+				required: true,
+				primary: false,
+				order: 14,
+				isLocked: true,
+			},
+			{
+				name: "tax_total",
+				type: "number",
+				semanticType: SemanticColumnType.INVOICE_TAX_TOTAL,
+				required: true,
+				primary: false,
+				order: 15,
+				isLocked: true,
+			},
+			{
+				name: "discount_amount",
+				type: "number",
+				semanticType: SemanticColumnType.INVOICE_DISCOUNT_AMOUNT,
+				required: false,
+				primary: false,
+				order: 16,
+				isLocked: false,
+			},
+			{
+				name: "discount_rate",
+				type: "number",
+				semanticType: SemanticColumnType.INVOICE_DISCOUNT_RATE,
+				required: false,
+				primary: false,
+				order: 17,
+				isLocked: false,
+			},
+			{
+				name: "shipping_cost",
+				type: "number",
+				semanticType: SemanticColumnType.INVOICE_SHIPPING_COST,
+				required: false,
+				primary: false,
+				order: 18,
+				isLocked: false,
+			},
+			{
+				name: "exchange_rate",
+				type: "number",
+				semanticType: SemanticColumnType.INVOICE_EXCHANGE_RATE,
+				required: false,
+				primary: false,
+				order: 19,
+				isLocked: false,
+			},
+			{
+				name: "reference_currency",
+				type: "string",
+				semanticType: SemanticColumnType.INVOICE_REFERENCE_CURRENCY,
+				required: false,
+				primary: false,
+				order: 20,
+				isLocked: false,
+			},
+			{
+				name: "language",
+				type: "string",
+				semanticType: SemanticColumnType.INVOICE_LANGUAGE,
+				required: false,
+				primary: false,
+				order: 21,
+				isLocked: false,
+			},
+			{
+				name: "bank_details",
+				type: "string",
+				semanticType: SemanticColumnType.INVOICE_BANK_DETAILS,
+				required: false,
+				primary: false,
+				order: 22,
+				isLocked: false,
+			},
+			{
+				name: "swift_code",
+				type: "string",
+				semanticType: SemanticColumnType.INVOICE_SWIFT_CODE,
+				required: false,
+				primary: false,
+				order: 23,
+				isLocked: false,
+			},
+			{
+				name: "iban",
+				type: "string",
+				semanticType: SemanticColumnType.INVOICE_IBAN,
+				required: false,
+				primary: false,
+				order: 24,
 				isLocked: false,
 			},
 		];
@@ -650,6 +819,33 @@ export class InvoiceSystemService {
 				required: false,
 				primary: false,
 				order: 20,
+				isLocked: false,
+			},
+			{
+				name: "tax_rate",
+				type: "number",
+				semanticType: SemanticColumnType.TAX_RATE,
+				required: true,
+				primary: false,
+				order: 21,
+				isLocked: true,
+			},
+			{
+				name: "tax_amount",
+				type: "number",
+				semanticType: SemanticColumnType.TAX_AMOUNT,
+				required: true,
+				primary: false,
+				order: 22,
+				isLocked: true,
+			},
+			{
+				name: "discount_rate",
+				type: "number",
+				semanticType: SemanticColumnType.DISCOUNT_RATE,
+				required: false,
+				primary: false,
+				order: 23,
 				isLocked: false,
 			},
 		];
@@ -1043,6 +1239,7 @@ export class InvoiceSystemService {
 			payment_method?: string;
 			notes?: string;
 			due_date?: string;
+			status?: string;
 		},
 	) {
 		// Get invoice tables
@@ -1163,6 +1360,19 @@ export class InvoiceSystemService {
 				await prisma.cell.update({
 					where: { id: dueDateCell.id },
 					data: { value: updateData.due_date },
+				});
+			}
+		}
+
+		// Update status if changed
+		if (updateData.status && existingInvoice.cells) {
+			const statusCell = existingInvoice.cells.find(
+				(cell: any) => cell.column.name === "status",
+			);
+			if (statusCell && invoiceColumnMap.status) {
+				await prisma.cell.update({
+					where: { id: statusCell.id },
+					data: { value: updateData.status },
 				});
 			}
 		}
@@ -1458,15 +1668,38 @@ export class InvoiceSystemService {
 			type: c.type
 		})));
 		
-		// Required columns for invoices table
+		// Required columns for invoices table - Enhanced for international compliance
 		const requiredColumns = [
-			{ name: "invoice_number", type: "string", semanticType: SemanticColumnType.INVOICE_NUMBER, order: 1 },
-			{ name: "invoice_series", type: "string", semanticType: SemanticColumnType.INVOICE_SERIES, order: 2 },
-			{ name: "date", type: "date", semanticType: SemanticColumnType.INVOICE_DATE, order: 3 },
-			{ name: "due_date", type: "date", semanticType: SemanticColumnType.INVOICE_DUE_DATE, order: 4 },
-			{ name: "customer_id", type: "reference", semanticType: SemanticColumnType.INVOICE_CUSTOMER_ID, order: 5 },
-			{ name: "status", type: "string", semanticType: SemanticColumnType.INVOICE_STATUS, order: 6 },
-			{ name: "total_amount", type: "number", semanticType: SemanticColumnType.INVOICE_TOTAL_AMOUNT, order: 7 },
+			// Core invoice fields (obligatorii)
+			{ name: "invoice_number", type: "string", semanticType: SemanticColumnType.INVOICE_NUMBER, order: 1, required: true },
+			{ name: "invoice_series", type: "string", semanticType: SemanticColumnType.INVOICE_SERIES, order: 2, required: true },
+			{ name: "date", type: "date", semanticType: SemanticColumnType.INVOICE_DATE, order: 3, required: true },
+			{ name: "due_date", type: "date", semanticType: SemanticColumnType.INVOICE_DUE_DATE, order: 4, required: true },
+			{ name: "customer_id", type: "reference", semanticType: SemanticColumnType.INVOICE_CUSTOMER_ID, order: 5, required: true },
+			{ name: "status", type: "string", semanticType: SemanticColumnType.INVOICE_STATUS, order: 6, required: true },
+			{ name: "total_amount", type: "number", semanticType: SemanticColumnType.INVOICE_TOTAL_AMOUNT, order: 7, required: true },
+			{ name: "base_currency", type: "string", semanticType: SemanticColumnType.INVOICE_BASE_CURRENCY, order: 8, required: true },
+			{ name: "subtotal", type: "number", semanticType: SemanticColumnType.INVOICE_SUBTOTAL, order: 9, required: true },
+			{ name: "tax_total", type: "number", semanticType: SemanticColumnType.INVOICE_TAX_TOTAL, order: 10, required: true },
+			
+			// Payment and currency fields (opționale)
+			{ name: "payment_terms", type: "string", semanticType: SemanticColumnType.INVOICE_PAYMENT_TERMS, order: 11, required: false },
+			{ name: "payment_method", type: "string", semanticType: SemanticColumnType.INVOICE_PAYMENT_METHOD, order: 12, required: false },
+			{ name: "exchange_rate", type: "number", semanticType: SemanticColumnType.INVOICE_EXCHANGE_RATE, order: 13, required: false },
+			{ name: "reference_currency", type: "string", semanticType: SemanticColumnType.INVOICE_REFERENCE_CURRENCY, order: 14, required: false },
+			
+			// Financial fields (opționale)
+			{ name: "discount_amount", type: "number", semanticType: SemanticColumnType.INVOICE_DISCOUNT_AMOUNT, order: 15, required: false },
+			{ name: "discount_rate", type: "number", semanticType: SemanticColumnType.INVOICE_DISCOUNT_RATE, order: 16, required: false },
+			{ name: "shipping_cost", type: "number", semanticType: SemanticColumnType.INVOICE_SHIPPING_COST, order: 17, required: false },
+			{ name: "late_fee", type: "number", semanticType: SemanticColumnType.INVOICE_LATE_FEE, order: 18, required: false },
+			
+			// Additional fields (opționale)
+			{ name: "notes", type: "string", semanticType: SemanticColumnType.INVOICE_NOTES, order: 19, required: false },
+			{ name: "language", type: "string", semanticType: SemanticColumnType.INVOICE_LANGUAGE, order: 20, required: false },
+			{ name: "bank_details", type: "string", semanticType: SemanticColumnType.INVOICE_BANK_DETAILS, order: 21, required: false },
+			{ name: "swift_code", type: "string", semanticType: SemanticColumnType.INVOICE_SWIFT_CODE, order: 22, required: false },
+			{ name: "iban", type: "string", semanticType: SemanticColumnType.INVOICE_IBAN, order: 23, required: false },
 		];
 		
 		console.log("Required columns:", requiredColumns.map(c => ({
@@ -1508,10 +1741,10 @@ export class InvoiceSystemService {
 					name: col.name,
 					type: col.type,
 					semanticType: col.semanticType,
-					required: true,
+					required: col.required || false,
 					primary: false,
 					order: col.order,
-					isLocked: true,
+					isLocked: col.required || false,
 					tableId: invoicesTable.id,
 					// Set reference table ID for customer_id column
 					referenceTableId: col.name === "customer_id" ? 
@@ -1552,8 +1785,31 @@ export class InvoiceSystemService {
 	private static async updateInvoiceItemsTableSchema(invoiceItemsTable: any): Promise<void> {
 		const existingColumns = invoiceItemsTable.columns || [];
 		const requiredColumns = [
-			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 15 },
-			{ name: "price", type: "number", semanticType: SemanticColumnType.UNIT_PRICE, order: 6 },
+			// Core fields (obligatorii)
+			{ name: "invoice_id", type: "reference", semanticType: SemanticColumnType.INVOICE_NUMBER, order: 1, required: true },
+			{ name: "product_ref_table", type: "string", semanticType: SemanticColumnType.REFERENCE, order: 2, required: true },
+			{ name: "product_ref_id", type: "number", semanticType: SemanticColumnType.ID, order: 3, required: true },
+			{ name: "quantity", type: "number", semanticType: SemanticColumnType.QUANTITY, order: 4, required: true },
+			{ name: "unit_of_measure", type: "string", semanticType: SemanticColumnType.UNIT_OF_MEASURE, order: 5, required: true },
+			{ name: "price", type: "number", semanticType: SemanticColumnType.UNIT_PRICE, order: 6, required: true },
+			{ name: "currency", type: "string", semanticType: SemanticColumnType.CURRENCY, order: 7, required: true },
+			{ name: "tax_rate", type: "number", semanticType: SemanticColumnType.TAX_RATE, order: 8, required: true },
+			{ name: "tax_amount", type: "number", semanticType: SemanticColumnType.TAX_AMOUNT, order: 9, required: true },
+			
+			// Product details (opționale)
+			{ name: "product_name", type: "string", semanticType: SemanticColumnType.PRODUCT_NAME, order: 10, required: false },
+			{ name: "product_description", type: "string", semanticType: SemanticColumnType.PRODUCT_DESCRIPTION, order: 11, required: false },
+			{ name: "product_category", type: "string", semanticType: SemanticColumnType.PRODUCT_CATEGORY, order: 12, required: false },
+			{ name: "product_sku", type: "string", semanticType: SemanticColumnType.PRODUCT_SKU, order: 13, required: false },
+			{ name: "product_brand", type: "string", semanticType: SemanticColumnType.PRODUCT_BRAND, order: 14, required: false },
+			{ name: "product_weight", type: "number", semanticType: SemanticColumnType.PRODUCT_WEIGHT, order: 15, required: false },
+			{ name: "product_dimensions", type: "string", semanticType: SemanticColumnType.PRODUCT_DIMENSIONS, order: 16, required: false },
+			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 17, required: false },
+			{ name: "description", type: "string", semanticType: SemanticColumnType.DESCRIPTION, order: 18, required: false },
+			
+			// Tax and discount (opționale)
+			{ name: "discount_rate", type: "number", semanticType: SemanticColumnType.DISCOUNT_RATE, order: 19, required: false },
+			{ name: "discount_amount", type: "number", semanticType: SemanticColumnType.DISCOUNT_AMOUNT, order: 20, required: false },
 		];
 
 		const missingColumns = requiredColumns.filter(col => 
@@ -1574,11 +1830,16 @@ export class InvoiceSystemService {
 					name: col.name,
 					type: col.type,
 					semanticType: col.semanticType,
-					required: true,
+					required: col.required || false,
 					primary: false,
 					order: col.order,
-					isLocked: false,
+					isLocked: col.required || false,
 					tableId: invoiceItemsTable.id,
+					// Set reference table ID for invoice_id column
+					referenceTableId: col.name === "invoice_id" ? 
+						(await prisma.table.findFirst({ 
+							where: { name: "invoices", databaseId: invoiceItemsTable.databaseId } 
+						}))?.id : undefined
 				},
 			});
 		}

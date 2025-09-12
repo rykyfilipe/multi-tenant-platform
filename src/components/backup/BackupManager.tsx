@@ -243,6 +243,28 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 		}
 	};
 
+	const getStatusColor = (status: BackupStatus) => {
+		switch (status) {
+			case BackupStatus.COMPLETED:
+				return "bg-green-100 text-green-800";
+			case BackupStatus.IN_PROGRESS:
+				return "bg-blue-100 text-blue-800";
+			case BackupStatus.FAILED:
+				return "bg-red-100 text-red-800";
+			case BackupStatus.PENDING:
+				return "bg-yellow-100 text-yellow-800";
+			default:
+				return "bg-gray-100 text-gray-800";
+		}
+	};
+
+	const formatFileSize = (bytes?: number) => {
+		if (!bytes) return "0 B";
+		const sizes = ["B", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(1024));
+		return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+	};
+
 	const downloadBackup = async (backup: BackupJob) => {
 		if (!backup.filePath) {
 			logger.error("Backup file path not available", new Error("No file path"), {
@@ -283,17 +305,6 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 		});
 	};
 
-	const getStatusColor = (status: string) => {
-		switch (status) {
-			case "completed": return "bg-green-100 text-green-800";
-			case "in_progress": return "bg-blue-100 text-blue-800";
-			case "pending": return "bg-yellow-100 text-yellow-800";
-			case "failed": return "bg-red-100 text-red-800";
-			case "cancelled": return "bg-gray-100 text-gray-800";
-			default: return "bg-gray-100 text-gray-800";
-		}
-	};
-
 	const getStatusIcon = (status: string) => {
 		switch (status) {
 			case "completed": return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -312,13 +323,6 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 			case "data_only": return <HardDrive className="h-4 w-4" />;
 			default: return <Database className="h-4 w-4" />;
 		}
-	};
-
-	const formatFileSize = (bytes?: number) => {
-		if (!bytes) return "Unknown";
-		const sizes = ["Bytes", "KB", "MB", "GB"];
-		const i = Math.floor(Math.log(bytes) / Math.log(1024));
-		return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
 	};
 
 	if (loading) {
@@ -348,6 +352,12 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 					<p className="text-muted-foreground">
 						Manage database backups and restore from previous states
 					</p>
+					<div className="mt-2 flex items-center gap-4 text-sm">
+						<span className="text-green-600 font-medium">✅ Prisma DIRECT_URL</span>
+						<span className="text-blue-600 font-medium">✅ Tenant-Isolated</span>
+						<span className="text-purple-600 font-medium">✅ Auto Verification</span>
+						<span className="text-orange-600 font-medium">✅ Multi-Tenant Safe</span>
+					</div>
 				</div>
 				<Button onClick={() => setShowCreateForm(true)}>
 					<Plus className="h-4 w-4 mr-2" />
@@ -427,6 +437,81 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 				</Card>
 			)}
 
+			{/* Tenant Isolation Info */}
+			<Card className="border-blue-200 bg-blue-50">
+				<CardContent className="p-4">
+					<div className="flex items-start gap-3">
+						<Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+						<div>
+							<h4 className="font-semibold text-blue-900">Tenant-Isolated Backups</h4>
+							<p className="text-sm text-blue-700 mt-1">
+								Each backup contains only data belonging to your tenant. No other tenant data is included, 
+								ensuring complete data isolation and security.
+							</p>
+							<div className="mt-2 text-xs text-blue-600">
+								✅ Includes: Tenant info, users, databases, activities, metrics, and all tenant-specific data
+							</div>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* Statistics */}
+			{backups.length > 0 && (
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+					<Card>
+						<CardContent className="p-4">
+							<div className="flex items-center gap-2">
+								<Database className="h-5 w-5 text-blue-600" />
+								<div>
+									<p className="text-sm text-muted-foreground">Total Backups</p>
+									<p className="text-2xl font-bold">{backups.length}</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardContent className="p-4">
+							<div className="flex items-center gap-2">
+								<HardDrive className="h-5 w-5 text-green-600" />
+								<div>
+									<p className="text-sm text-muted-foreground">Total Size</p>
+									<p className="text-2xl font-bold">
+										{formatFileSize(backups.reduce((sum, b) => sum + (b.fileSize || 0), 0))}
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardContent className="p-4">
+							<div className="flex items-center gap-2">
+								<CheckCircle className="h-5 w-5 text-purple-600" />
+								<div>
+									<p className="text-sm text-muted-foreground">Success Rate</p>
+									<p className="text-2xl font-bold">
+										{Math.round((backups.filter(b => b.status === BackupStatus.COMPLETED).length / backups.length) * 100)}%
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardContent className="p-4">
+							<div className="flex items-center gap-2">
+								<Shield className="h-5 w-5 text-orange-600" />
+								<div>
+									<p className="text-sm text-muted-foreground">Verified</p>
+									<p className="text-2xl font-bold">
+										{backups.filter(b => b.checksum).length}
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			)}
+
 			{/* Backups List */}
 			<div className="space-y-4">
 				<h3 className="text-lg font-semibold">Recent Backups</h3>
@@ -456,11 +541,21 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 												{getTypeIcon(backup.type)}
 												{backup.description || `${backup.type} Backup`}
 											</CardTitle>
-											<CardDescription className="flex items-center gap-2">
+											<CardDescription className="flex items-center gap-2 flex-wrap">
 												<Badge className={getStatusColor(backup.status)}>
 													{backup.status}
 												</Badge>
 												<span>Created {backup.startedAt ? new Date(backup.startedAt).toLocaleString() : 'Unknown date'}</span>
+												{backup.fileSize && (
+													<span className="text-blue-600 font-medium">
+														{formatFileSize(backup.fileSize)}
+													</span>
+												)}
+												{backup.checksum && (
+													<span className="text-green-600 text-xs">
+														✓ Verified
+													</span>
+												)}
 											</CardDescription>
 										</div>
 									</div>

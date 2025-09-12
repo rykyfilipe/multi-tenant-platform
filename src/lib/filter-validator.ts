@@ -11,6 +11,8 @@ import {
   OPERATOR_COMPATIBILITY,
   VALUE_TYPE_MAPPING 
 } from '@/types/filtering-enhanced';
+import { ValueCoercion } from './value-coercion';
+import { any } from 'zod';
 
 export class FilterValidator {
   /**
@@ -34,7 +36,7 @@ export class FilterValidator {
     }
 
     // Validate operator compatibility
-    const validOperators = OPERATOR_COMPATIBILITY[filter.columnType as ColumnType];
+    const validOperators = OPERATOR_COMPATIBILITY[filter.columnType as ColumnType] as any;
     if (!validOperators || !validOperators.includes(filter.operator as any)) {
       errors.push(`Operator '${filter.operator}' is not compatible with column type '${filter.columnType}'`);
       return { isValid: false, errors, warnings };
@@ -42,7 +44,7 @@ export class FilterValidator {
 
     // Validate value type
     if (filter.value !== null && filter.value !== undefined) {
-      const expectedType = VALUE_TYPE_MAPPING[filter.columnType as ColumnType];
+      const expectedType = VALUE_TYPE_MAPPING[filter.columnType as ColumnType] as any;
       const actualType = typeof filter.value;
       
       if (expectedType === 'number' && actualType !== 'number') {
@@ -113,55 +115,17 @@ export class FilterValidator {
   }
 
   /**
-   * Convert filter value to correct type
+   * Convert filter value to correct type using ValueCoercion
    */
   static convertFilterValue(value: any, columnType: ColumnType): any {
-    if (value === null || value === undefined) {
-      return value;
+    const result = ValueCoercion.coerceValue(value, columnType);
+    
+    if (!result.success) {
+      console.warn(`Value coercion failed for ${columnType}:`, result.error);
+      return value; // Return original value if coercion fails
     }
-
-    switch (columnType) {
-      case 'number':
-      case 'integer':
-      case 'decimal':
-        return Number(value);
-      
-      case 'boolean':
-        if (typeof value === 'string') {
-          return value.toLowerCase() === 'true';
-        }
-        return Boolean(value);
-      
-      case 'date':
-      case 'datetime':
-      case 'time':
-        if (value instanceof Date) {
-          return value.toISOString();
-        }
-        return String(value);
-      
-      case 'text':
-      case 'string':
-      case 'email':
-      case 'url':
-        return String(value);
-      
-      case 'json':
-        if (typeof value === 'string') {
-          try {
-            return JSON.parse(value);
-          } catch {
-            return value;
-          }
-        }
-        return value;
-      
-      case 'reference':
-        return Number(value);
-      
-      default:
-        return value;
-    }
+    
+    return result.value;
   }
 
   /**

@@ -1,0 +1,240 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-01-15T10:00:00Z",
+    "version": "1.0",
+    "scope": "Complete filtering system analysis - Frontend to Database",
+    "files_analyzed": [
+      "src/components/table/rows/TableFilters.tsx",
+      "src/lib/filter-validator.ts", 
+      "src/lib/prisma-filter-builder.ts",
+      "src/hooks/useTableRows.ts",
+      "src/app/api/tenants/[tenantId]/databases/[databaseId]/tables/[tableId]/rows/route.ts",
+      "src/types/filtering-enhanced.ts",
+      "prisma/schema.prisma"
+    ]
+  },
+  "critical_issues_found": [
+    {
+      "id": "issue-001",
+      "severity": "CRITICAL",
+      "category": "Data Type Mismatch",
+      "title": "Cell values stored as JSON but filtered as strings",
+      "description": "Database stores cell values as JSON type, but filtering logic treats them as strings, causing type coercion issues",
+      "location": "src/lib/prisma-filter-builder.ts:277-357",
+      "root_cause": "Prisma schema defines Cell.value as Json, but filter builder assumes string comparison",
+      "impact": "Numeric and boolean filters fail completely",
+      "reproduction": "Try filtering a number column with 'greater_than' operator"
+    },
+    {
+      "id": "issue-002", 
+      "severity": "CRITICAL",
+      "category": "Prisma Query Syntax",
+      "title": "Invalid Prisma operators used for JSON fields",
+      "description": "Using string_contains, gt, lt on JSON fields which don't support these operators",
+      "location": "src/lib/prisma-filter-builder.ts:368-452",
+      "root_cause": "JSON fields in Prisma require different query syntax than string fields",
+      "impact": "All text-based filters fail with Prisma errors",
+      "reproduction": "Try 'contains' filter on any text column"
+    },
+    {
+      "id": "issue-003",
+      "severity": "HIGH", 
+      "category": "Post-processing Logic",
+      "title": "Post-process filters break pagination",
+      "description": "When post-process filters are applied, pagination is calculated incorrectly",
+      "location": "src/app/api/tenants/[tenantId]/databases/[databaseId]/tables/[tableId]/rows/route.ts:745-765",
+      "root_cause": "Total count calculated before post-processing, but pagination applied after",
+      "impact": "Incorrect pagination info and potential data loss",
+      "reproduction": "Use 'starts_with' or 'ends_with' filters with pagination"
+    },
+    {
+      "id": "issue-004",
+      "severity": "HIGH",
+      "category": "Reference Field Handling", 
+      "title": "Reference fields incorrectly handled as arrays",
+      "description": "Reference fields are treated as arrays but may store single values",
+      "location": "src/lib/prisma-filter-builder.ts:496-530",
+      "root_cause": "Assumption that reference values are always arrays",
+      "impact": "Reference filters return no results",
+      "reproduction": "Try filtering a reference column"
+    },
+    {
+      "id": "issue-005",
+      "severity": "MEDIUM",
+      "category": "Date Handling",
+      "title": "Date filtering uses string comparison instead of proper date parsing",
+      "description": "Date values stored as strings but compared as ISO strings without proper parsing",
+      "location": "src/lib/prisma-filter-builder.ts:188-271",
+      "root_cause": "Inconsistent date format handling between storage and filtering",
+      "impact": "Date range filters may return incorrect results",
+      "reproduction": "Try date 'between' filter with different date formats"
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "test-001",
+      "name": "String Contains Filter",
+      "description": "Test basic string contains functionality",
+      "request": {
+        "filters": [{"columnId": 1, "operator": "contains", "value": "test", "columnType": "text"}]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 1 AND value::text ILIKE '%test%')",
+      "actual_behavior": "FAILS - Uses invalid string_contains operator on JSON field",
+      "status": "FAILING"
+    },
+    {
+      "id": "test-002", 
+      "name": "Numeric Greater Than Filter",
+      "description": "Test numeric comparison",
+      "request": {
+        "filters": [{"columnId": 2, "operator": "greater_than", "value": 25, "columnType": "number"}]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 2 AND (value::text)::numeric > 25)",
+      "actual_behavior": "FAILS - Uses gt operator on JSON field without proper casting",
+      "status": "FAILING"
+    },
+    {
+      "id": "test-003",
+      "name": "Boolean Equals Filter", 
+      "description": "Test boolean filtering",
+      "request": {
+        "filters": [{"columnId": 3, "operator": "equals", "value": true, "columnType": "boolean"}]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 3 AND value = true)",
+      "actual_behavior": "FAILS - Boolean comparison on JSON field fails",
+      "status": "FAILING"
+    },
+    {
+      "id": "test-004",
+      "name": "Date Range Filter",
+      "description": "Test date between filtering", 
+      "request": {
+        "filters": [{"columnId": 4, "operator": "between", "value": "2024-01-01", "secondValue": "2024-01-31", "columnType": "date"}]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 4 AND value::text >= '2024-01-01' AND value::text <= '2024-01-31')",
+      "actual_behavior": "PARTIAL - May work but inconsistent date format handling",
+      "status": "PARTIAL"
+    },
+    {
+      "id": "test-005",
+      "name": "Multiple Filters AND Logic",
+      "description": "Test combining multiple filters",
+      "request": {
+        "filters": [
+          {"columnId": 1, "operator": "contains", "value": "test", "columnType": "text"},
+          {"columnId": 2, "operator": "greater_than", "value": 25, "columnType": "number"}
+        ]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 1 AND value::text ILIKE '%test%') AND EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 2 AND (value::text)::numeric > 25)",
+      "actual_behavior": "FAILS - Both individual filters fail",
+      "status": "FAILING"
+    },
+    {
+      "id": "test-006",
+      "name": "Empty Value Filter",
+      "description": "Test is_empty operator",
+      "request": {
+        "filters": [{"columnId": 1, "operator": "is_empty", "columnType": "text"}]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 1 AND (value IS NULL OR value = '' OR value = 'null'))",
+      "actual_behavior": "PARTIAL - Complex OR logic may not work correctly",
+      "status": "PARTIAL"
+    },
+    {
+      "id": "test-007",
+      "name": "Reference Field Filter",
+      "description": "Test reference field filtering",
+      "request": {
+        "filters": [{"columnId": 5, "operator": "equals", "value": "123", "columnType": "reference"}]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 5 AND value @> '123')",
+      "actual_behavior": "FAILS - Incorrect array handling for single reference values",
+      "status": "FAILING"
+    },
+    {
+      "id": "test-008",
+      "name": "Global Search",
+      "description": "Test global search across all columns",
+      "request": {
+        "globalSearch": "test"
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND value::text ILIKE '%test%')",
+      "actual_behavior": "FAILS - Uses invalid string_contains operator",
+      "status": "FAILING"
+    },
+    {
+      "id": "test-009",
+      "name": "Post-process Filter with Pagination",
+      "description": "Test starts_with filter with pagination",
+      "request": {
+        "filters": [{"columnId": 1, "operator": "starts_with", "value": "test", "columnType": "text"}],
+        "page": 1,
+        "pageSize": 10
+      },
+      "expected_behavior": "Should return first 10 rows that start with 'test'",
+      "actual_behavior": "FAILS - Incorrect pagination calculation due to post-processing",
+      "status": "FAILING"
+    },
+    {
+      "id": "test-010",
+      "name": "Regex Filter",
+      "description": "Test regex pattern matching",
+      "request": {
+        "filters": [{"columnId": 1, "operator": "regex", "value": "^[A-Z]", "columnType": "text"}]
+      },
+      "expected_sql": "SELECT * FROM Row WHERE EXISTS (SELECT 1 FROM Cell WHERE rowId = Row.id AND columnId = 1 AND value::text ~ '^[A-Z]')",
+      "actual_behavior": "FAILS - Uses invalid string_matches operator",
+      "status": "FAILING"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "CRITICAL",
+      "title": "Fix JSON Field Querying",
+      "description": "Update PrismaFilterBuilder to use proper JSON operators for cell values",
+      "implementation": "Replace string operators with JSON path operators and proper casting",
+      "files_to_modify": ["src/lib/prisma-filter-builder.ts"]
+    },
+    {
+      "priority": "CRITICAL", 
+      "title": "Implement Proper Type Coercion",
+      "description": "Add proper type conversion for JSON values before filtering",
+      "implementation": "Create value conversion utility that handles JSON to proper types",
+      "files_to_modify": ["src/lib/filter-validator.ts", "src/lib/prisma-filter-builder.ts"]
+    },
+    {
+      "priority": "HIGH",
+      "title": "Fix Post-processing Pagination",
+      "description": "Correct pagination calculation when post-process filters are applied",
+      "implementation": "Calculate total count after post-processing or use different pagination strategy",
+      "files_to_modify": ["src/app/api/tenants/[tenantId]/databases/[databaseId]/tables/[tableId]/rows/route.ts"]
+    },
+    {
+      "priority": "HIGH",
+      "title": "Add Database Indexes",
+      "description": "Add proper indexes for filtering performance",
+      "implementation": "Create GIN indexes on cell values and composite indexes on (tableId, columnId)",
+      "files_to_modify": ["prisma/schema.prisma", "prisma/migrations/"]
+    },
+    {
+      "priority": "MEDIUM",
+      "title": "Improve Error Handling",
+      "description": "Add better error messages and validation for filter failures",
+      "implementation": "Enhance FilterValidator with more specific error messages",
+      "files_to_modify": ["src/lib/filter-validator.ts"]
+    }
+  ],
+  "performance_analysis": {
+    "current_issues": [
+      "No indexes on cell values for filtering",
+      "Post-processing requires loading all rows into memory",
+      "Complex OR conditions in empty value checks",
+      "No query optimization for common filter patterns"
+    ],
+    "recommended_indexes": [
+      "CREATE INDEX idx_cell_value_gin ON Cell USING GIN (value);",
+      "CREATE INDEX idx_cell_table_column ON Cell (tableId, columnId);",
+      "CREATE INDEX idx_cell_value_text ON Cell ((value::text));"
+    ]
+  }
+}

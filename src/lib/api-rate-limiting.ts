@@ -272,8 +272,8 @@ export function getApiRateLimitStats(): {
   let blockedEntries = 0;
   let activeEntries = 0;
   
-  for (const entry of apiRateLimitStore.store.values()) {
-    totalEntries++;
+  for (const entry of apiRateLimitStore['store'].values()) {
+    totalEntries++; 
     if (entry.blockedUntil && entry.blockedUntil > Date.now()) {
       blockedEntries++;
     } else {
@@ -295,5 +295,5 @@ export function clearApiRateLimit(identifier: string): boolean {
 
 // Clear all rate limits (admin function)
 export function clearAllApiRateLimits(): void {
-  apiRateLimitStore.store.clear();
+  apiRateLimitStore['store'].clear();
 }

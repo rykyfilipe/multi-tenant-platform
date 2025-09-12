@@ -191,7 +191,47 @@ export function validateTableForInvoices(
 	const extractor = createSemanticExtractor(tableColumns, []);
 	const warnings: string[] = [];
 
-	// Required semantic types for products
+	// Required semantic types for invoices (core fields)
+	const requiredInvoiceTypes = [
+		SemanticColumnType.INVOICE_NUMBER,
+		SemanticColumnType.INVOICE_SERIES,
+		SemanticColumnType.INVOICE_DATE,
+		SemanticColumnType.INVOICE_DUE_DATE,
+		SemanticColumnType.INVOICE_CUSTOMER_ID,
+		SemanticColumnType.INVOICE_STATUS,
+		SemanticColumnType.INVOICE_TOTAL_AMOUNT,
+		SemanticColumnType.INVOICE_BASE_CURRENCY,
+		SemanticColumnType.INVOICE_SUBTOTAL,
+		SemanticColumnType.INVOICE_TAX_TOTAL,
+	];
+
+	// Required semantic types for invoice items (core fields)
+	const requiredItemTypes = [
+		SemanticColumnType.INVOICE_NUMBER, // invoice_id reference
+		SemanticColumnType.REFERENCE, // product_ref_table
+		SemanticColumnType.ID, // product_ref_id
+		SemanticColumnType.QUANTITY,
+		SemanticColumnType.UNIT_OF_MEASURE,
+		SemanticColumnType.UNIT_PRICE,
+		SemanticColumnType.CURRENCY,
+		SemanticColumnType.TAX_RATE,
+		SemanticColumnType.TAX_AMOUNT,
+	];
+
+	// Required semantic types for customers (core fields)
+	const requiredCustomerTypes = [
+		SemanticColumnType.CUSTOMER_NAME,
+		SemanticColumnType.CUSTOMER_EMAIL,
+		SemanticColumnType.CUSTOMER_PHONE,
+		SemanticColumnType.CUSTOMER_TAX_ID,
+		SemanticColumnType.CUSTOMER_STREET,
+		SemanticColumnType.CUSTOMER_STREET_NUMBER,
+		SemanticColumnType.CUSTOMER_CITY,
+		SemanticColumnType.CUSTOMER_COUNTRY,
+		SemanticColumnType.CUSTOMER_POSTAL_CODE,
+	];
+
+	// Required semantic types for products (if using product tables)
 	const requiredProductTypes = [
 		SemanticColumnType.PRODUCT_NAME,
 		SemanticColumnType.PRODUCT_PRICE,
@@ -200,17 +240,69 @@ export function validateTableForInvoices(
 		SemanticColumnType.UNIT_OF_MEASURE,
 	];
 
+	// Determine which required types to check based on table name
+	let requiredTypes: SemanticColumnType[] = [];
+	let tableType = '';
+
+	if (tableName.toLowerCase().includes('invoice') && !tableName.toLowerCase().includes('item')) {
+		// This is the main invoices table
+		requiredTypes = requiredInvoiceTypes;
+		tableType = 'invoices';
+	} else if (tableName.toLowerCase().includes('invoice') && tableName.toLowerCase().includes('item')) {
+		// This is the invoice_items table
+		requiredTypes = requiredItemTypes;
+		tableType = 'invoice_items';
+	} else if (tableName.toLowerCase().includes('customer')) {
+		// This is the customers table
+		requiredTypes = requiredCustomerTypes;
+		tableType = 'customers';
+	} else {
+		// This is a product table
+		requiredTypes = requiredProductTypes;
+		tableType = 'products';
+	}
+
 	// Check for required types
-	const missingTypes = requiredProductTypes.filter(
+	const missingTypes = requiredTypes.filter(
 		(type) => !extractor.hasSemanticType(type),
 	);
 
-	// Check for recommended types
-	const recommendedTypes = [
-		SemanticColumnType.PRODUCT_DESCRIPTION,
-		SemanticColumnType.PRODUCT_SKU,
-		SemanticColumnType.PRODUCT_CATEGORY,
-	];
+	// Check for recommended types based on table type
+	let recommendedTypes: SemanticColumnType[] = [];
+	
+	if (tableType === 'invoices') {
+		recommendedTypes = [
+			SemanticColumnType.INVOICE_PAYMENT_TERMS,
+			SemanticColumnType.INVOICE_PAYMENT_METHOD,
+			SemanticColumnType.INVOICE_NOTES,
+			SemanticColumnType.INVOICE_LANGUAGE,
+			SemanticColumnType.INVOICE_BANK_DETAILS,
+			SemanticColumnType.INVOICE_SWIFT_CODE,
+			SemanticColumnType.INVOICE_IBAN,
+		];
+	} else if (tableType === 'invoice_items') {
+		recommendedTypes = [
+			SemanticColumnType.PRODUCT_NAME,
+			SemanticColumnType.PRODUCT_DESCRIPTION,
+			SemanticColumnType.PRODUCT_SKU,
+			SemanticColumnType.PRODUCT_CATEGORY,
+			SemanticColumnType.PRODUCT_BRAND,
+		];
+	} else if (tableType === 'customers') {
+		recommendedTypes = [
+			SemanticColumnType.CUSTOMER_WEBSITE,
+			SemanticColumnType.CUSTOMER_NOTES,
+			SemanticColumnType.CUSTOMER_VAT_NUMBER,
+			SemanticColumnType.CUSTOMER_STATE,
+		];
+	} else {
+		// Product tables
+		recommendedTypes = [
+			SemanticColumnType.PRODUCT_DESCRIPTION,
+			SemanticColumnType.PRODUCT_SKU,
+			SemanticColumnType.PRODUCT_CATEGORY,
+		];
+	}
 
 	const missingRecommended = recommendedTypes.filter(
 		(type) => !extractor.hasSemanticType(type),
@@ -218,21 +310,37 @@ export function validateTableForInvoices(
 
 	if (missingRecommended.length > 0) {
 		warnings.push(
-			`Table "${tableName}" doesn't have columns for: ${missingRecommended
-				.map((type) => type.replace("product_", "").replace("_", " "))
-				.join(", ")}. These are recommended for complete invoices.`,
+			`Table "${tableName}" (${tableType}) doesn't have columns for: ${missingRecommended
+				.map((type) => type.replace(/^(invoice_|customer_|product_)/, "").replace(/_/g, " "))
+				.join(", ")}. These are recommended for complete ${tableType}.`,
 		);
 	}
 
-	// Check if table has any product-related semantic types
-	const hasAnyProductType = extractor
-		.getAllSemanticTypes()
-		.some((type) => type.startsWith("product_"));
+	// Additional validation based on table type
+	if (tableType === 'products' || tableType === 'invoice_items') {
+		// Check if table has any product-related semantic types
+		const hasAnyProductType = extractor
+			.getAllSemanticTypes()
+			.some((type) => type.startsWith("product_"));
 
-	if (!hasAnyProductType) {
-		warnings.push(
-			`Table "${tableName}" doesn't seem to contain products. Make sure you have set the correct semantic types.`,
-		);
+		if (!hasAnyProductType) {
+			warnings.push(
+				`Table "${tableName}" doesn't seem to contain product information. Make sure this table has columns for product name, price, and other product details.`,
+			);
+		}
+	}
+
+	// Check for invoice-specific validations
+	if (tableType === 'invoices') {
+		const hasInvoiceNumber = extractor.hasSemanticType(SemanticColumnType.INVOICE_NUMBER);
+		const hasInvoiceDate = extractor.hasSemanticType(SemanticColumnType.INVOICE_DATE);
+		const hasCustomerId = extractor.hasSemanticType(SemanticColumnType.INVOICE_CUSTOMER_ID);
+		
+		if (!hasInvoiceNumber || !hasInvoiceDate || !hasCustomerId) {
+			warnings.push(
+				`Table "${tableName}" is missing critical invoice fields. Ensure it has invoice number, date, and customer reference.`,
+			);
+		}
 	}
 
 	return {

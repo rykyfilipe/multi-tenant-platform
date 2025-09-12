@@ -314,7 +314,7 @@ class ActivityTracker {
 		userAgent?: string;
 	} {
 		const ipAddress =
-			request.ip ||
+			request.nextUrl.searchParams.get("ip") ||
 			request.headers.get("x-forwarded-for") ||
 			request.headers.get("x-real-ip") ||
 			"unknown";

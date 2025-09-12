@@ -514,7 +514,7 @@ export class InvoiceCancellationService {
 				orderBy: { requestedAt: 'desc' },
 			});
 
-			return requests.map(request => ({
+			return requests.map((request : any) => ({
 				id: request.id,
 				invoiceId: request.invoiceId,
 				tenantId: request.tenantId,

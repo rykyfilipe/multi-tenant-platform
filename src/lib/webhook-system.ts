@@ -471,6 +471,7 @@ class WebhookSystem {
 					webhookId: delivery.webhookId,
 					attempt: delivery.attempt,
 					nextRetryAt: delivery.nextRetryAt,
+				}, {
 					error: delivery.error,
 				});
 			} else {

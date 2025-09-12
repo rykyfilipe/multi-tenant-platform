@@ -82,7 +82,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [cells, setCells] = useState<any[]>([]);
 	const [isAddingRow, setIsAddingRow] = useState(false);
 	const [deletingRows, setDeletingRows] = useState<Set<string>>(new Set());
-	const [pendingNewRows, setPendingNewRows] = useState<any[]>([]);
+	// const [pendingNewRows, setPendingNewRows] = useState<any[]>([]); // Moved to useRowsTableEditor
 	const [isSavingNewRows, setIsSavingNewRows] = useState(false);
 	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
 	const [isAddingColumn, setIsAddingColumn] = useState(false);
@@ -133,137 +133,165 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		handleEditCell,
 		handleSaveCell,
 		pendingChanges,
+		pendingNewRows,
 		pendingChangesCount,
+		pendingNewRowsCount,
 		isSaving,
 		hasPendingChange,
 		getPendingValue,
 		savePendingChanges,
 		discardPendingChanges,
-		rollbackOptimisticUpdates, 
+		rollbackOptimisticUpdates,
+		addNewRow,
+		updateLocalRowCell,
+		removeLocalRow,
 	} = useRowsTableEditor({
 		table,
-		onCellsUpdated: (updatedCells) => {
-			console.log("🔄 Processing cells update:", updatedCells);
+		onCellsUpdated: (updatedData) => {
+			console.log("🔄 Processing update data:", updatedData);
 			
-			// 🔧 FIX: Handle rollback operations
-			const rollbackCells = updatedCells.filter((cell: any) => cell.isRollback);
-			const normalCells = updatedCells.filter((cell: any) => !cell.isRollback);
+			// Verifică dacă sunt rânduri noi complete sau doar modificări de celule
+			const isNewRow = (item: any) => item.cells && Array.isArray(item.cells) && item.id && item.tableId;
+			const isCellUpdate = (item: any) => item.columnId && item.rowId && !isNewRow(item);
 			
-			if (rollbackCells.length > 0) {
-				console.log("🔄 Rolling back optimistic updates:", rollbackCells);
-				setRows((currentRows: any[]) =>
-					currentRows.map((row) => {
-						const updatedRow = { ...row };
-						rollbackCells.forEach((rollbackCell: any) => {
-							if (updatedRow.id.toString() === rollbackCell.rowId.toString()) {
-								const cellIndex = updatedRow.cells.findIndex(
-									(cell: any) => cell.columnId.toString() === rollbackCell.columnId.toString()
-								);
-								
-								if (cellIndex >= 0 && updatedRow.cells[cellIndex].originalValue !== undefined) {
-									// Rollback to original value
-									updatedRow.cells[cellIndex] = {
-										...updatedRow.cells[cellIndex],
-										value: updatedRow.cells[cellIndex].originalValue,
-										originalValue: undefined // Clear original value after rollback
-									};
-									console.log("🔄 Rolled back cell to original value:", {
-										cellIndex,
-										originalValue: updatedRow.cells[cellIndex].value
-									});
-								}
-							}
-						});
-						return updatedRow;
-					}),
-				);
+			const newRows = updatedData.filter(isNewRow);
+			const cellUpdates = updatedData.filter(isCellUpdate);
+			
+			console.log("🔄 Detected new rows:", newRows.length);
+			console.log("🔄 Detected cell updates:", cellUpdates.length);
+			
+			// Gestionează rândurile noi salvate
+			if (newRows.length > 0) {
+				console.log("🆕 Adding new saved rows to paginatedRows:", newRows);
+				setRows((currentRows: any[]) => {
+					// Elimină rândurile locale temporare și adaugă rândurile salvate
+					const filteredRows = currentRows.filter(row => !row.id.toString().startsWith('temp_'));
+					return [...newRows, ...filteredRows];
+				});
 			}
 			
-			if (normalCells.length > 0) {
-				console.log("🔄 Optimistically updating cells in UI:", normalCells);
-				console.log("🔄 Current paginatedRows before update:", paginatedRows?.map((row: any) => ({
-					id: row.id,
-					cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-				})));
+			// Gestionează modificările de celule
+			if (cellUpdates.length > 0) {
+				// 🔧 FIX: Handle rollback operations
+				const rollbackCells = cellUpdates.filter((cell: any) => cell.isRollback);
+				const normalCells = cellUpdates.filter((cell: any) => !cell.isRollback);
 				
-				setRows((currentRows: any[]) => {
-					console.log("🔄 setRows called with currentRows:", currentRows?.map((row: any) => ({
+				if (rollbackCells.length > 0) {
+					console.log("🔄 Rolling back optimistic updates:", rollbackCells);
+					setRows((currentRows: any[]) =>
+						currentRows.map((row) => {
+							const updatedRow = { ...row };
+							rollbackCells.forEach((rollbackCell: any) => {
+								if (updatedRow.id.toString() === rollbackCell.rowId.toString()) {
+									const cellIndex = updatedRow.cells.findIndex(
+										(cell: any) => cell.columnId.toString() === rollbackCell.columnId.toString()
+									);
+									
+									if (cellIndex >= 0 && updatedRow.cells[cellIndex].originalValue !== undefined) {
+										// Rollback to original value
+										updatedRow.cells[cellIndex] = {
+											...updatedRow.cells[cellIndex],
+											value: updatedRow.cells[cellIndex].originalValue,
+											originalValue: undefined // Clear original value after rollback
+										};
+										console.log("🔄 Rolled back cell to original value:", {
+											cellIndex,
+											originalValue: updatedRow.cells[cellIndex].value
+										});
+									}
+								}
+							});
+							return updatedRow;
+						}),
+					);
+				}
+				
+				if (normalCells.length > 0) {
+					console.log("🔄 Optimistically updating cells in UI:", normalCells);
+					console.log("🔄 Current paginatedRows before update:", paginatedRows?.map((row: any) => ({
 						id: row.id,
 						cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
 					})));
-					const result = currentRows.map((row) => {
-						const updatedRow = { ...row };
-						normalCells.forEach((updatedCell) => {
-							console.log("🔍 DEBUG: Processing updatedCell", { 
-								updatedCell, 
-								rowId: updatedRow.id.toString(), 
-								updatedCellRowId: updatedCell.rowId.toString(),
-								rowCells: updatedRow.cells.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-							});
-							
-							if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
-								// First try to find by exact cell ID match
-								let cellIndex = updatedRow.cells.findIndex(
-									(cell: any) => cell.id === updatedCell.id
-								);
-								
-								// If not found by ID, try to find by columnId (for cases where cell ID might be different)
-								if (cellIndex === -1) {
-									cellIndex = updatedRow.cells.findIndex(
-										(cell: any) => cell.columnId.toString() === updatedCell.columnId.toString()
-									);
-								}
-								
-								console.log("🔍 DEBUG: Cell index found", { 
-									cellIndex, 
-									cellId: updatedCell.id, 
-									columnId: updatedCell.columnId,
-									searchStrategy: cellIndex >= 0 ? "found" : "not found"
+					
+					setRows((currentRows: any[]) => {
+						console.log("🔄 setRows called with currentRows:", currentRows?.map((row: any) => ({
+							id: row.id,
+							cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+						})));
+						const result = currentRows.map((row) => {
+							const updatedRow = { ...row };
+							normalCells.forEach((updatedCell) => {
+								console.log("🔍 DEBUG: Processing updatedCell", { 
+									updatedCell, 
+									rowId: updatedRow.id.toString(), 
+									updatedCellRowId: updatedCell.rowId.toString(),
+									rowCells: updatedRow.cells.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
 								});
 								
-								if (cellIndex >= 0) {
-									// Store original value for potential rollback
-									const originalCell = { ...updatedRow.cells[cellIndex] };
-									updatedRow.cells[cellIndex] = { 
-										...updatedCell, 
-										originalValue: originalCell.value,
-										// Ensure we keep the original cell structure
-										id: updatedCell.id || originalCell.id,
-										columnId: updatedCell.columnId || originalCell.columnId,
-										rowId: updatedCell.rowId || originalCell.rowId
-									};
-									console.log("🔍 DEBUG: Updated existing cell", { 
+								if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
+									// First try to find by exact cell ID match
+									let cellIndex = updatedRow.cells.findIndex(
+										(cell: any) => cell.id === updatedCell.id
+									);
+									
+									// If not found by ID, try to find by columnId (for cases where cell ID might be different)
+									if (cellIndex === -1) {
+										cellIndex = updatedRow.cells.findIndex(
+											(cell: any) => cell.columnId.toString() === updatedCell.columnId.toString()
+										);
+									}
+									
+									console.log("🔍 DEBUG: Cell index found", { 
 										cellIndex, 
-										newValue: updatedCell.value, 
-										originalValue: originalCell.value,
-										finalCell: updatedRow.cells[cellIndex]
-									});
-								} else {
-									// Add new cell if it doesn't exist
-									const newCell = { 
-										...updatedCell, 
-										originalValue: null,
-										id: updatedCell.id,
+										cellId: updatedCell.id, 
 										columnId: updatedCell.columnId,
-										rowId: updatedCell.rowId
-									};
-									updatedRow.cells.push(newCell);
-									console.log("🔍 DEBUG: Added new cell", { 
-										newValue: updatedCell.value,
-										newCell
+										searchStrategy: cellIndex >= 0 ? "found" : "not found"
 									});
+									
+									if (cellIndex >= 0) {
+										// Store original value for potential rollback
+										const originalCell = { ...updatedRow.cells[cellIndex] };
+										updatedRow.cells[cellIndex] = { 
+											...updatedCell, 
+											originalValue: originalCell.value,
+											// Ensure we keep the original cell structure
+											id: updatedCell.id || originalCell.id,
+											columnId: updatedCell.columnId || originalCell.columnId,
+											rowId: updatedCell.rowId || originalCell.rowId
+										};
+										console.log("🔍 DEBUG: Updated existing cell", { 
+											cellIndex, 
+											newValue: updatedCell.value, 
+											originalValue: originalCell.value,
+											finalCell: updatedRow.cells[cellIndex]
+										});
+									} else {
+										// Add new cell if it doesn't exist
+										const newCell = { 
+											...updatedCell, 
+											originalValue: null,
+											id: updatedCell.id,
+											columnId: updatedCell.columnId,
+											rowId: updatedCell.rowId
+										};
+										updatedRow.cells.push(newCell);
+										console.log("🔍 DEBUG: Added new cell", { 
+											newValue: updatedCell.value,
+											newCell
+										});
+									}
 								}
-							}
+							});
+							return updatedRow;
 						});
-						return updatedRow;
+						
+						console.log("🔄 setRows returning updated rows:", result?.map((row: any) => ({
+							id: row.id,
+							cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+						})));
+						return result;
 					});
-					
-					console.log("🔄 setRows returning updated rows:", result?.map((row: any) => ({
-						id: row.id,
-						cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-					})));
-					return result;
-				});
+				}
 			}
 		},
 		onError: (error: string) => {
@@ -719,90 +747,18 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	}, [showAlert]);
 
 	const handleInlineRowSave = useCallback(async (rowData: Record<string, any>) => {
-		if (!token || !tenantId) {
-			showAlert("Missing required information", "error");
-			return;
-		}
-
 		if (!tablePermissions.canEditTable()) {
 			showAlert("You don't have permission to add rows to this table", "error");
 			return;
 		}
 
-		// 🔧 FIX: Optimistic update imediat
-		const tempRowId = `temp_${Date.now()}`;
-		const optimisticRow = {
-			id: tempRowId,
-			tableId: table?.id || 0,
-			createdAt: new Date().toISOString(),
-			cells: Object.entries(rowData).map(([columnId, value]) => ({
-				id: `temp_cell_${Date.now()}_${columnId}`,
-				rowId: tempRowId,
-				columnId: parseInt(columnId),
-				value: value,
-				isOptimistic: true
-			})),
-			isOptimistic: true
-		};
-		
-		console.log("🚀 Adding optimistic row:", optimisticRow);
-		setRows((currentRows) => [optimisticRow, ...currentRows]);
+		// Adaugă rândul în batch-ul de rânduri noi locale
+		addNewRow(rowData);
 		setShowInlineRowCreator(false);
-		setIsAddingRow(true);
-
-		try {
-			const response = await fetch(
-				`/api/tenants/${tenantId}/databases/${table?.databaseId || 0}/tables/${
-					table?.id || 0
-				}/rows/batch`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ 
-						rows: [{
-							cells: Object.entries(rowData).map(([columnId, value]) => ({
-								columnId: parseInt(columnId),
-								value: value,
-							}))
-						}]
-					}),
-				},
-			);
-
-			if (response.ok) {
-				const result = await response.json();
-				const savedRows = result.rows || [];
-
-				// 🔧 FIX: Replace optimistic row with real one
-				setRows((currentRows) => currentRows.map(row => 
-					row.id === tempRowId ? { ...savedRows[0], isOptimistic: false } : row
-				));
-				
-				showAlert("Row added successfully!", "success");
-
-				// Update pagination without full refresh
-				if (pagination) {
-					const newTotalRows = pagination.totalRows + savedRows.length;
-					// Don't fetch rows again, just update pagination info
-					console.log("📊 Updated pagination total:", newTotalRows);
-				}
-			} else {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "Failed to add row");
-			}
-		} catch (error: any) {
-			console.error("Error adding row:", error);
-			
-			// 🔧 FIX: Rollback optimistic update
-			setRows((currentRows) => currentRows.filter(row => row.id !== tempRowId));
-			showAlert(error.message || "Failed to add row. Please try again.", "error");
-		} finally {
-			setIsAddingRow(false);
-		}
-	}, [token, tenantId, table?.databaseId, table?.id, tablePermissions, showAlert, setRows, pagination]);
+		
+		console.log("🆕 Row added to batch for later saving:", rowData);
+		showAlert("Row added to batch - will be saved when you click Save Changes", "info");
+	}, [tablePermissions, showAlert, addNewRow]);
 
 	const handleInlineRowCancel = useCallback(() => {
 		setShowInlineRowCreator(false);
@@ -889,121 +845,24 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		[cells, setRows, isAddingRow, showAlert, tablePermissions, columns, table?.id, token, tenantId],
 	);
 
-	const handleSaveNewRows = useCallback(async () => {
-		if (!token || !tenantId || pendingNewRows.length === 0) return;
-
-		setIsSavingNewRows(true);
-
-		try {
-			const validationErrors: string[] = [];
-			
-			pendingNewRows.forEach((row, rowIndex) => {
-				if (!row.cells || !Array.isArray(row.cells)) {
-					validationErrors.push(`Row ${rowIndex + 1}: Invalid cell data`);
-					return;
-				}
-
-				columns?.forEach((column) => {
-					if (column.required) {
-						const cell = row.cells.find((c: any) => c.columnId === column.id);
-						if (!cell || cell.value === null || cell.value === undefined || cell.value === '') {
-							validationErrors.push(`Row ${rowIndex + 1}: ${column.name} is required`);
-						}
-					}
-				});
-			});
-
-			if (validationErrors.length > 0) {
-				showAlert(`Validation errors found:\n${validationErrors.join('\n')}`, "error");
-				return;
-			}
-
-			const batchData = pendingNewRows.map((row) => ({
-				cells: row.cells.map((cell: any) => ({
-					columnId: cell.columnId,
-					value: cell.value,
-				})),
-			}));
-
-			const response = await fetch(
-				`/api/tenants/${tenantId}/databases/${table?.databaseId || 0}/tables/${
-					table?.id || 0
-				}/rows/batch`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ rows: batchData }),
-				},
-			);
-
-			if (response.ok) {
-				const result = await response.json();
-				const savedRows = result.rows || [];
-
-				setRows((currentRows) => {
-					const updatedRows = [...currentRows];
-					const filteredRows = updatedRows.filter((row) => !row.isLocalOnly);
-					return [...savedRows, ...filteredRows];
-				});
-
-				setPendingNewRows([]);
-				showAlert(`Successfully saved ${savedRows.length} row(s) to server!`, "success");
-
-				if (pagination) {
-					const newTotalRows = pagination.totalRows + savedRows.length;
-					await fetchRows(1, pagination.pageSize);
-				}
-			} else {
-				let errorMessage = "Failed to save rows";
-				try {
-					const errorData = await response.json();
-					errorMessage = errorData.error || errorData.message || errorMessage;
-				} catch (parseError) {
-					errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-				}
-				
-				console.error("Server error:", errorMessage);
-				showAlert(errorMessage, "error");
-			}
-		} catch (error: any) {
-			console.error("Error saving new rows:", error);
-			const errorMessage = error.message || "Network error. Please check your connection and try again.";
-			showAlert(errorMessage, "error");
-		} finally {
-			setIsSavingNewRows(false);
-		}
-	}, [
-		token,
-		tenantId,
-		table?.databaseId,
-		table?.id,
-		pendingNewRows,
-		setRows,
-		showAlert,
-		pagination,
-		fetchRows,
-		columns,
-	]);
-
-	const handleDiscardNewRows = useCallback(() => {
-		if (pendingNewRows.length === 0) return;
-
-		setRows((currentRows) => currentRows.filter((row) => !row.isLocalOnly));
-		setPendingNewRows([]);
-		showAlert(`Discarded ${pendingNewRows.length} unsaved row(s).`, "info");
-	}, [pendingNewRows, setRows, showAlert]);
+	// handleSaveNewRows and handleDiscardNewRows are now handled by useRowsTableEditor
 
 	const handleDeleteRow = async (rowId: string) => {
-		if (!token || !tenantId) {
-			showAlert("Missing required information", "error");
+		if (!tablePermissions.canDeleteTable()) {
+			showAlert("You don't have permission to delete rows in this table", "error");
 			return;
 		}
 
-		if (!tablePermissions.canDeleteTable()) {
-			showAlert("You don't have permission to delete rows in this table", "error");
+		// Verifică dacă este un rând local
+		if (rowId.startsWith('temp_')) {
+			removeLocalRow(rowId);
+			showAlert("Local row removed from batch", "info");
+			return;
+		}
+
+		// Pentru rândurile existente, face request la server
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
 			return;
 		}
 
@@ -1045,11 +904,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	};
 
 	const handleDeleteMultipleRows = async (rowIds: string[]) => {
-		if (!token || !tenantId) {
-			showAlert("Missing required information", "error");
-			return;
-		}
-
 		if (!tablePermissions.canDeleteTable()) {
 			showAlert("You don't have permission to delete rows in this table", "error");
 			return;
@@ -1057,16 +911,34 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 		if (rowIds.length === 0) return;
 
+		// Separa rândurile locale de cele existente
+		const localRowIds = rowIds.filter(id => id.startsWith('temp_'));
+		const existingRowIds = rowIds.filter(id => !id.startsWith('temp_'));
+
+		// Șterge rândurile locale
+		if (localRowIds.length > 0) {
+			localRowIds.forEach(id => removeLocalRow(id));
+			showAlert(`${localRowIds.length} local rows removed from batch`, "info");
+		}
+
+		// Pentru rândurile existente, face request la server
+		if (existingRowIds.length === 0) return;
+
+		if (!token || !tenantId) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
 		// OPTIMISTIC UPDATE: Remove rows immediately from UI
-		const rowsToDelete = paginatedRows?.filter(row => rowIds.includes(row.id.toString())) || [];
+		const rowsToDelete = paginatedRows?.filter(row => existingRowIds.includes(row.id.toString())) || [];
 		
-		setRows((currentRows) => currentRows.filter(row => !rowIds.includes(row.id.toString())));
-		showAlert(`${rowIds.length} rows deleted!`, "success");
+		setRows((currentRows) => currentRows.filter(row => !existingRowIds.includes(row.id.toString())));
+		showAlert(`${existingRowIds.length} rows deleted!`, "success");
 
 		// Background API call
 		try {
 			// Delete rows in parallel
-			const deletePromises = rowIds.map(rowId =>
+			const deletePromises = existingRowIds.map(rowId =>
 				fetch(
 					`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/${rowId}`,
 					{
@@ -1086,14 +958,14 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				console.log("✅ All rows deleted successfully, keeping optimistic updates");
 			} else {
 				// Revert optimistic update for failed deletes
-				const failedRowIds = rowIds.filter((_, index) => !responses[index].ok);
+				const failedRowIds = existingRowIds.filter((_, index) => !responses[index].ok);
 				const failedRows = rowsToDelete.filter(row => failedRowIds.includes(row.id.toString()));
 				
 				if (failedRows.length > 0) {
 					setRows((currentRows) => [...failedRows, ...currentRows]);
 				}
 				
-				showAlert(`Failed to delete ${failedDeletes.length} out of ${rowIds.length} rows`, "error");
+				showAlert(`Failed to delete ${failedDeletes.length} out of ${existingRowIds.length} rows`, "error");
 			}
 		} catch (error: any) {
 			console.error("Error deleting multiple rows:", error);
@@ -1225,9 +1097,9 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 								<SaveChangesButton
 									pendingNewRows={pendingNewRows}
-									isSavingNewRows={isSavingNewRows}
-									onSaveNewRows={handleSaveNewRows}
-									onDiscardNewRows={handleDiscardNewRows}
+									isSavingNewRows={isSaving}
+									onSaveNewRows={savePendingChanges}
+									onDiscardNewRows={discardPendingChanges}
 									pendingChanges={pendingChanges}
 									isSavingChanges={isSaving}
 									onSaveChanges={savePendingChanges}
@@ -1583,7 +1455,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					) : (
 						<div>
 							{/* Modern Column Headers - Mobile Optimized */}
-							<div className='flex border-b border-neutral-200 bg-neutral-50 min-w-max'>
+							<div className='flex border-b border-neutral-200 min-w-max'>
 								{/* Selection column */}
 								<div className='w-12 sm:w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-2 sm:px-4 py-2'>
 									<span className='text-xs font-semibold text-neutral-700 hidden sm:inline'>Select</span>
@@ -1659,7 +1531,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							<div className="data-grid">
 								<RowGrid
 								columns={columns || []}
-								rows={paginatedRows || []}
+								rows={[...(pendingNewRows || []), ...(paginatedRows || [])]}
 								editingCell={editingCell}
 								onEditCell={handleEditCell}
 								onSaveCell={handleSaveCellWrapper}

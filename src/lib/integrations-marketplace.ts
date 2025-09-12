@@ -597,7 +597,7 @@ class IntegrationsMarketplace {
 				orderBy: { updatedAt: "desc" },
 			});
 
-			return dbIntegrations.map(integration => ({
+			return dbIntegrations.map((integration : any) => ({
 				id: integration.id,
 				tenantId: integration.tenantId.toString(),
 				providerId: integration.providerId,

@@ -21,9 +21,9 @@ export function containsSqlInjection(input: string): boolean {
 		/\b(USER|VERSION|DATABASE|SCHEMA)\b/i, // System functions
 		/\b(CHAR|ASCII|HEX|UNHEX|CONCAT|SUBSTRING)\b/i, // String manipulation functions
 		/\b(CAST|CONVERT|EXTRACT)\b/i, // Type conversion functions
-		/\\\x[0-9A-Fa-f]{2}/, // Hex encoding
+		/\\\[0-9a-fA-F]{2}/, // Hex encoding
 		/\\\d{1,3}/, // Octal encoding
-		/%[0-9A-Fa-f]{2}/, // URL encoding
+		/%[0-9a-fA-F]{2}/, // URL encoding
 	];
 
 	return sqlPatterns.some((pattern) => pattern.test(input));
@@ -97,7 +97,7 @@ export function containsCommandInjection(input: string): boolean {
 		/\b(cat|ls|dir|type|echo|pwd|whoami|id|uname|ps|netstat|ifconfig|ipconfig)\b/gi,
 		/\b(rm|del|mkdir|rmdir|mv|cp|copy|wget|curl|nc|netcat)\b/gi,
 		/\b(sh|bash|cmd|powershell|python|perl|php|ruby|node)\b/gi,
-		/\\\x[0-9A-Fa-f]{2}/, // Hex encoding
+		/\\\[0-9a-fA-F]{2}/, // Hex encoding
 		/%[0-9A-Fa-f]{2}/, // URL encoding
 	];
 

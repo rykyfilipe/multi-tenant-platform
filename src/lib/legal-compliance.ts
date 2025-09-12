@@ -5,8 +5,6 @@
  * @format
  */
 
-import { SemanticColumnType } from "./semantic-types";
-
 export interface ComplianceValidationResult {
 	isCompliant: boolean;
 	errors: string[];
@@ -42,6 +40,7 @@ export interface InvoiceComplianceData {
 		date?: string;
 		dueDate?: string;
 		status?: string;
+		payment_terms?: string;
 		currency?: string;
 	};
 	items: Array<{
@@ -350,7 +349,7 @@ function generateRecommendations(
 	if (!data.invoice.status) {
 		recommendations.push("Set invoice status for better tracking");
 	}
-	if (!data.invoice.paymentTerms) {
+	if (!data.invoice.payment_terms) {
 		recommendations.push("Define payment terms to avoid payment delays");
 	}
 

@@ -25,10 +25,14 @@ function useRowsTableEditor(
 	// Folosim noul batch editor
 	const {
 		pendingChanges,
+		pendingNewRows,
 		isEditingCell,
 		startEditing,
 		cancelEditing,
 		addPendingChange,
+		addNewRow,
+		updateLocalRowCell,
+		removeLocalRow,
 		savePendingChanges,
 		discardPendingChanges,
 		rollbackOptimisticUpdates, // 🔧 FIX: Import rollback function
@@ -36,6 +40,7 @@ function useRowsTableEditor(
 		hasPendingChange,
 		getPendingValue,
 		pendingChangesCount,
+		pendingNewRowsCount,
 		isSaving,
 	} = useBatchCellEditor({
 		table,
@@ -44,6 +49,16 @@ function useRowsTableEditor(
 		onError: onError || ((error) => {
 			console.error("Batch save error:", error);
 		}),
+		onNewRowsAdded: (newRows) => {
+			console.log("🆕 New rows added to batch:", newRows);
+			// Notifică callback-ul pentru actualizare optimistă a UI-ului
+			onCellsUpdated?.(newRows);
+		},
+		onNewRowsUpdated: (updatedRows) => {
+			console.log("🔄 New rows updated in batch:", updatedRows);
+			// Notifică callback-ul pentru actualizare optimistă a UI-ului
+			onCellsUpdated?.(updatedRows);
+		},
 	});
 
 	const handleCancelEdit = () => cancelEditing();
@@ -122,13 +137,20 @@ function useRowsTableEditor(
 
 		// Noi funcționalități pentru batch editing
 		pendingChanges,
+		pendingNewRows,
 		pendingChangesCount,
+		pendingNewRowsCount,
 		isSaving,
 		hasPendingChange,
 		getPendingValue,
 		savePendingChanges: saveNow,
 		discardPendingChanges,
 		rollbackOptimisticUpdates, // 🔧 FIX: Export rollback function
+		
+		// Funcționalități pentru rânduri noi
+		addNewRow,
+		updateLocalRowCell,
+		removeLocalRow,
 	};
 }
 

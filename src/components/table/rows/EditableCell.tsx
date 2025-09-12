@@ -115,20 +115,21 @@ const AbsoluteSelect = ({
 			{/* Main trigger button */}
 			<div
 				className={cn(
-					"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer",
+					"flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer min-w-0",
 					isOpen && "ring-2 ring-ring ring-offset-2",
 				)}
-				onClick={toggleDropdown}>
-				<div className='flex-1 flex items-center'>
+				onClick={toggleDropdown}
+				style={{ minWidth: '120px', maxWidth: '100%' }}>
+				<div className='flex-1 flex items-center min-w-0'>
 					{value ? (
 						<span className='truncate' title={value}>
 							{value}
 						</span>
 					) : (
-						<span className='text-muted-foreground'>{placeholder}</span>
+						<span className='text-muted-foreground truncate'>{placeholder}</span>
 					)}
 				</div>
-				<div className='flex items-center'>
+				<div className='flex items-center flex-shrink-0 ml-2'>
 					{isOpen ? (
 						<ChevronUp className='h-4 w-4 text-muted-foreground' />
 					) : (
@@ -145,7 +146,7 @@ const AbsoluteSelect = ({
 					setHighlightedIndex(-1);
 				}}
 				triggerRef={containerRef}
-				className="w-full min-w-[250px] max-w-[90vw] sm:max-w-[400px]"
+				className="w-full min-w-[200px] max-w-[90vw] sm:max-w-[400px]"
 				placement="bottom-start">
 				{/* Options list */}
 				<div
@@ -746,7 +747,10 @@ export function EditableCell({
 						onValueChange={(val) => {
 							setValue(val);
 							currentValueRef.current = val; // Update ref immediately
-							// DO NOT auto-save - only update local state for optimistic UI
+							// Auto-save for reference values
+							const normalizedValue = normalizeReferenceValue(val, true);
+							onSave(normalizedValue);
+							onCancel();
 						}}
 						options={options}
 						placeholder={`${t("table.select")} ${
@@ -790,7 +794,10 @@ export function EditableCell({
 						onCheckedChange={(checked) => {
 							setValue(checked);
 							currentValueRef.current = checked; // Update ref immediately
-							// DO NOT auto-save - only update local state for optimistic UI
+							// Auto-save for boolean values
+							const normalizedValue = normalizeReferenceValue(checked, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
+							onSave(normalizedValue);
+							onCancel();
 						}}>
 						<span className='sr-only'>{t("table.toggleBoolean")}</span>
 					</Switch>
@@ -802,7 +809,10 @@ export function EditableCell({
 						onValueChange={(v) => {
 							setValue(v);
 							currentValueRef.current = v; // Update ref immediately
-							// DO NOT auto-save - only update local state for optimistic UI
+							// Auto-save for customArray values
+							const normalizedValue = normalizeReferenceValue(v, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
+							onSave(normalizedValue);
+							onCancel();
 						}}
 						options={column.customOptions || []}
 						placeholder='Select an option'
@@ -810,7 +820,7 @@ export function EditableCell({
 					/>
 				) : (
 					<Input
-						className='w-full h-8 border border-blue-500 shadow-sm focus:ring-1 focus:ring-blue-500 bg-white text-sm font-medium px-3 py-1 rounded'
+						className='w-full h-8 border border-blue-500 shadow-sm focus:ring-1 focus:ring-blue-500 bg-white text-sm font-medium px-3 py-1 rounded min-w-0'
 						type={
 							column.type === USER_FRIENDLY_COLUMN_TYPES.date
 								? "date"
@@ -827,6 +837,10 @@ export function EditableCell({
 						onKeyDown={handleKey}
 						autoFocus
 						placeholder={column.type === "date" ? "YYYY-MM-DD" : "Enter value..."}
+						style={{ 
+							minWidth: '120px',
+							maxWidth: '100%'
+						}}
 					/>
 				)}
 			</div>

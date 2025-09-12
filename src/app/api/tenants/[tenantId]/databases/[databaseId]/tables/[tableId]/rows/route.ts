@@ -25,6 +25,7 @@ import {
 import { FilterConfig } from "@/types/filtering-enhanced";
 import { FilterValidator } from "@/lib/filter-validator";
 import { PrismaFilterBuilder } from "@/lib/prisma-filter-builder";
+import { PrismaFilterBuilderV2 } from "@/lib/prisma-filter-builder-v2";
 import { logger } from "@/lib/error-logger";
 
 const RowSchema = z.object({
@@ -719,14 +720,16 @@ export async function GET(
 		// Cache removed - using direct Prisma queries
 
 
-		// Build optimized where clause using PrismaFilterBuilder
-		const filterBuilder = new PrismaFilterBuilder(Number(tableId), tableColumns);
+		// Build optimized where clause using PrismaFilterBuilderV2
+		const filterBuilder = new PrismaFilterBuilderV2(Number(tableId), tableColumns);
 		filterBuilder
 			.addGlobalSearch(search)
 			.addColumnFilters(convertedFilters);
 
 		const whereClause = filterBuilder.getWhereClause();
 		const hasPostProcessFilters = filterBuilder.hasPostProcessFilters();
+		const rawConditions = filterBuilder.getRawConditions();
+		const parameters = filterBuilder.getParameters();
 
 		// Execute optimized query with Prisma
 		logger.info("🔍 Executing filtered query", { 
@@ -742,53 +745,106 @@ export async function GET(
 		let totalRows: number;
 		let rows: any[];
 
-		if (hasPostProcessFilters) {
-			// If we have post-process filters, we need to get all rows first
-			// then apply post-process filtering
-			const allRows = await prisma.row.findMany({
-				where: whereClause,
-				include: {
-					cells: includeCells ? {
-								include: {
-							column: true
-						}
-					} : false
-				}
-			});
-
-			// Apply post-process filters
-			const filteredRows = filterBuilder.applyPostProcessFilters(allRows);
-			totalRows = filteredRows.length;
-
-			// Apply pagination to filtered results
-			const skip = (page - 1) * pageSize;
-			rows = filteredRows.slice(skip, skip + pageSize);
-		} else {
-			// Normal flow without post-process filters
-			totalRows = await prisma.row.count({
-				where: whereClause
-			});
+		// Check if we need to use raw SQL for complex filtering
+		if (rawConditions.length > 0) {
+			// Use raw SQL for complex filtering
+			const { sql, parameters: sqlParams } = filterBuilder.buildSqlQuery();
 			
-			// Calculate pagination
-			const totalPages = Math.ceil(totalRows / pageSize);
-			const skip = (page - 1) * pageSize;
-
-			// Execute the main query
-			rows = await prisma.row.findMany({
-				where: whereClause,
-				include: {
-					cells: includeCells ? {
-								include: {
-							column: true
-						}
-					} : false
-				},
-				skip,
-				take: pageSize,
-				orderBy: {
-					[sortBy]: sortOrder
-				}
+			logger.info("🔍 Using raw SQL for filtering", { 
+				sql, 
+				parameters: sqlParams,
+				tenantId: String(tenantId), 
+				tableId: String(tableId) 
 			});
+
+			// Get total count with raw SQL
+			const countSql = sql.replace('SELECT *', 'SELECT COUNT(*)');
+			const countResult = await prisma.$queryRawUnsafe(countSql, ...sqlParams) as any[];
+			totalRows = Number(countResult[0]?.count || 0);
+
+			// Calculate pagination
+			const skip = (page - 1) * pageSize;
+			const paginatedSql = `${sql} ORDER BY "${sortBy}" ${sortOrder.toUpperCase()} LIMIT ${pageSize} OFFSET ${skip}`;
+
+			// Execute paginated query
+			const rawRows = await prisma.$queryRawUnsafe(paginatedSql, ...sqlParams) as any[];
+			
+			// Get full row data with cells if needed
+			if (rawRows.length > 0) {
+				const rowIds = rawRows.map((row: any) => row.id);
+				rows = await prisma.row.findMany({
+					where: {
+						id: { in: rowIds }
+					},
+					include: {
+						cells: includeCells ? {
+							include: {
+								column: true
+							}
+						} : false
+					}
+				});
+
+				// Sort by the original order from raw query
+				const idOrder = rowIds.reduce((acc: any, id: number, index: number) => {
+					acc[id] = index;
+					return acc;
+				}, {});
+				
+				rows.sort((a, b) => idOrder[a.id] - idOrder[b.id]);
+			} else {
+				rows = [];
+			}
+		} else {
+			// Use standard Prisma queries for simple filtering
+			if (hasPostProcessFilters) {
+				// If we have post-process filters, we need to get all rows first
+				// then apply post-process filtering
+				const allRows = await prisma.row.findMany({
+					where: whereClause,
+					include: {
+						cells: includeCells ? {
+									include: {
+								column: true
+							}
+						} : false
+					}
+				});
+
+				// Apply post-process filters
+				const filteredRows = filterBuilder.applyPostProcessFilters(allRows);
+				totalRows = filteredRows.length;
+
+				// Apply pagination to filtered results
+				const skip = (page - 1) * pageSize;
+				rows = filteredRows.slice(skip, skip + pageSize);
+			} else {
+				// Normal flow without post-process filters
+				totalRows = await prisma.row.count({
+					where: whereClause
+				});
+				
+				// Calculate pagination
+				const totalPages = Math.ceil(totalRows / pageSize);
+				const skip = (page - 1) * pageSize;
+
+				// Execute the main query
+				rows = await prisma.row.findMany({
+					where: whereClause,
+					include: {
+						cells: includeCells ? {
+									include: {
+								column: true
+							}
+						} : false
+					},
+					skip,
+					take: pageSize,
+					orderBy: {
+						[sortBy]: sortOrder
+					}
+				});
+			}
 		}
 		
 		logger.info("📊 Query count result", { 

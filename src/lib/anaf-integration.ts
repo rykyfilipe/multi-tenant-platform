@@ -1,6 +1,6 @@
 /** @format */
 
-import { InvoiceData, InvoiceItem } from './invoice-calculations';
+import {  InvoiceItem } from './invoice-calculations';
 
 export interface ANAFValidationResult {
 	success: boolean;

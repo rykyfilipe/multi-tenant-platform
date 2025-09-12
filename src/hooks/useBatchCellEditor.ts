@@ -14,11 +14,26 @@ interface PendingCellChange {
 	timestamp: number;
 }
 
+interface PendingNewRow {
+	id: string; // ID temporar
+	tableId: number;
+	cells: Array<{
+		id: string; // ID temporar pentru celulă
+		rowId: string; // ID temporar pentru rând
+		columnId: number;
+		value: any;
+	}>;
+	createdAt: string;
+	isLocalOnly: boolean;
+}
+
 interface BatchCellEditorOptions {
 	table: Table | null;
 	autoSaveDelay?: number; // Auto-save după X ms de inactivitate
 	onSuccess?: (updatedCells: any[]) => void;
 	onError?: (error: string) => void;
+	onNewRowsAdded?: (newRows: PendingNewRow[]) => void;
+	onNewRowsUpdated?: (updatedRows: PendingNewRow[]) => void;
 }
 
 export function useBatchCellEditor(options: BatchCellEditorOptions) {
@@ -33,6 +48,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	const [pendingChanges, setPendingChanges] = useState<
 		Map<string, PendingCellChange>
 	>(new Map());
+	const [pendingNewRows, setPendingNewRows] = useState<PendingNewRow[]>([]);
 	const [isEditingCell, setIsEditingCell] = useState<{
 		rowId: string;
 		columnId: string;
@@ -42,12 +58,74 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 	// Refs pentru auto-save
 	const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-	const { autoSaveDelay = 2000, onSuccess, onError } = options;
+	const { autoSaveDelay = 2000, onSuccess, onError, onNewRowsAdded, onNewRowsUpdated } = options;
 
 	// Generează cheia unică pentru o celulă
 	const getCellKey = useCallback((rowId: string, columnId: string) => {
 		return `${rowId}-${columnId}`;
 	}, []);
+
+	// Generează ID temporar pentru rânduri noi
+	const generateTempId = useCallback(() => {
+		return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	}, []);
+
+	// Adaugă un rând nou local
+	const addNewRow = useCallback((rowData: Record<string, any>) => {
+		if (!table) return;
+
+		const tempRowId = generateTempId();
+		const newRow: PendingNewRow = {
+			id: tempRowId,
+			tableId: table.id,
+			cells: Object.entries(rowData).map(([columnId, value]) => ({
+				id: `temp_cell_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+				rowId: tempRowId,
+				columnId: parseInt(columnId),
+				value: value,
+			})),
+			createdAt: new Date().toISOString(),
+			isLocalOnly: true,
+		};
+
+		setPendingNewRows(prev => [...prev, newRow]);
+		onNewRowsAdded?.([newRow]);
+		
+		console.log("🆕 Added new local row:", newRow);
+	}, [table, generateTempId, onNewRowsAdded]);
+
+	// Actualizează o celulă dintr-un rând local
+	const updateLocalRowCell = useCallback((rowId: string, columnId: string, newValue: any) => {
+		setPendingNewRows(prev => {
+			const updatedRows = prev.map(row => {
+				if (row.id === rowId) {
+					const updatedCells = row.cells.map(cell => 
+						cell.columnId.toString() === columnId 
+							? { ...cell, value: newValue }
+							: cell
+					);
+					return { ...row, cells: updatedCells };
+				}
+				return row;
+			});
+			
+			onNewRowsUpdated?.(updatedRows);
+			return updatedRows;
+		});
+		
+		console.log("🔄 Updated local row cell:", { rowId, columnId, newValue });
+	}, [onNewRowsUpdated]);
+
+	// Elimină un rând local
+	const removeLocalRow = useCallback((rowId: string) => {
+		setPendingNewRows(prev => {
+			const filtered = prev.filter(row => row.id !== rowId);
+			onNewRowsUpdated?.(filtered);
+			return filtered;
+		});
+		
+		console.log("🗑️ Removed local row:", rowId);
+	}, [onNewRowsUpdated]);
 
 	// Începe editarea unei celule
 	const startEditing = useCallback(
@@ -78,9 +156,9 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			// Verifică dacă este un rând local (cu ID temporar)
 			const isLocalRow = rowId.startsWith('temp_') || cellId.startsWith('temp_cell_');
 			
-			// Nu adăuga modificări pentru rândurile locale în pendingChanges
+			// Pentru rândurile locale, actualizează direct în pendingNewRows
 			if (isLocalRow) {
-				
+				updateLocalRowCell(rowId, columnId, newValue);
 				return;
 			}
 
@@ -177,7 +255,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			}
 			// Pentru autoSaveDelay < 0, nu face nimic (dezactivează auto-save)
 		},
-		[getCellKey, autoSaveDelay],
+		[getCellKey, autoSaveDelay, updateLocalRowCell],
 	);
 
 
@@ -185,6 +263,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	const savePendingChanges = useCallback(async () => {
 		console.log("💾 savePendingChanges called with:", {
 			pendingChangesCount: pendingChanges.size,
+			pendingNewRowsCount: pendingNewRows.length,
 			pendingChanges: Array.from(pendingChanges.entries()),
 			hasTenantId: !!tenantId,
 			hasToken: !!token,
@@ -193,106 +272,152 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 		});
 
 		if (
-			pendingChanges.size === 0 ||
+			(pendingChanges.size === 0 && pendingNewRows.length === 0) ||
 			!tenantId ||
 			!token ||
 			!table ||
 			!selectedDatabase
 		) {
-			console.log("❌ savePendingChanges: Missing requirements, skipping save");
+			console.log("❌ savePendingChanges: Missing requirements or no changes, skipping save");
 			return;
 		}
 
 		setIsSaving(true);
 
 		try {
-			// Grupează modificările pe rând pentru a optimiza request-urile
-			const changesByRow = new Map<string, PendingCellChange[]>();
-
-			pendingChanges.forEach((change) => {
-				const existing = changesByRow.get(change.rowId) || [];
-				existing.push(change);
-				changesByRow.set(change.rowId, existing);
-			});
-
 			const allUpdatedCells: any[] = [];
+			const allNewRows: any[] = [];
 
-			// Procesează fiecare rând cu batch API
-			for (const [rowId, rowChanges] of changesByRow) {
-				try {
-					// Folosește noul endpoint batch pentru rând
-					const batchPayload = {
-						operations: rowChanges.map((change) => ({
-							operation: "update",
-							data: {
-								rowId: change.rowId,
-								columnId: change.columnId,
-								cellId: change.cellId,
-								value: change.newValue,
-							},
-						})),
-					};
+			// 1. Salvează mai întâi rândurile noi (pentru a obține ID-uri reale)
+			if (pendingNewRows.length > 0) {
+				console.log("🆕 Saving new rows first:", pendingNewRows);
+				
+				const batchData = pendingNewRows.map((row) => ({
+					cells: row.cells.map((cell) => ({
+						columnId: cell.columnId,
+						value: cell.value,
+					})),
+				}));
 
-					const response = await fetch(
-						`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/batch`,
-						{
-							method: "POST",
-							headers: {
-								"Content-Type": "application/json",
-								Authorization: `Bearer ${token}`,
-							},
-							body: JSON.stringify(batchPayload),
+				const response = await fetch(
+					`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/rows/batch`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
 						},
+						body: JSON.stringify({ rows: batchData }),
+					},
+				);
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}));
+					throw new Error(
+						errorData.error ||
+							errorData.message ||
+							`HTTP ${response.status}: ${response.statusText}`,
 					);
+				}
 
-					if (!response.ok) {
-						const errorData = await response.json().catch(() => ({}));
-						throw new Error(
-							errorData.error ||
-								errorData.message ||
-								`HTTP ${response.status}: ${response.statusText}`,
-						);
-					}
+				const result = await response.json();
+				allNewRows.push(...(result.rows || []));
+				
+				// Curăță rândurile noi din pending
+				setPendingNewRows([]);
+				console.log("✅ New rows saved successfully:", allNewRows);
+			}
 
-					const batchResult = await response.json();
-					allUpdatedCells.push(...(batchResult.updatedCells || []));
-				} catch (rowError) {
-					console.error(`Failed to update row ${rowId}:`, rowError);
+			// 2. Apoi salvează modificările existente
+			if (pendingChanges.size > 0) {
+				console.log("🔄 Saving existing row changes:", pendingChanges);
+				
+				// Grupează modificările pe rând pentru a optimiza request-urile
+				const changesByRow = new Map<string, PendingCellChange[]>();
 
-					// Fallback la request-uri individuale pentru acest rând
+				pendingChanges.forEach((change) => {
+					const existing = changesByRow.get(change.rowId) || [];
+					existing.push(change);
+					changesByRow.set(change.rowId, existing);
+				});
+
+				// Procesează fiecare rând cu batch API
+				for (const [rowId, rowChanges] of changesByRow) {
 					try {
-						const individualUpdates = await Promise.all(
-							rowChanges.map(async (change) => {
-								const response = await fetch(
-									`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/rows/${change.rowId}/cell/${change.cellId}`,
-									{
-										method: "PATCH",
-										headers: {
-											"Content-Type": "application/json",
-											Authorization: `Bearer ${token}`,
-										},
-										body: JSON.stringify({
-											value: change.newValue,
-										}),
-									},
-								);
+						// Folosește noul endpoint batch pentru rând
+						const batchPayload = {
+							operations: rowChanges.map((change) => ({
+								operation: "update",
+								data: {
+									rowId: change.rowId,
+									columnId: change.columnId,
+									cellId: change.cellId,
+									value: change.newValue,
+								},
+							})),
+						};
 
-								if (!response.ok) {
-									const errorData = await response.json().catch(() => ({}));
-									throw new Error(
-										errorData.error ||
-											errorData.message ||
-											`HTTP ${response.status}: ${response.statusText}`,
-									);
-								}
-
-								return await response.json();
-							}),
+						const response = await fetch(
+							`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/batch`,
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+									Authorization: `Bearer ${token}`,
+								},
+								body: JSON.stringify(batchPayload),
+							},
 						);
 
-						allUpdatedCells.push(...individualUpdates);
-					} catch (fallbackError) {
-						throw new Error(`Failed to update row ${rowId}: ${fallbackError}`);
+						if (!response.ok) {
+							const errorData = await response.json().catch(() => ({}));
+							throw new Error(
+								errorData.error ||
+									errorData.message ||
+									`HTTP ${response.status}: ${response.statusText}`,
+							);
+						}
+
+						const batchResult = await response.json();
+						allUpdatedCells.push(...(batchResult.updatedCells || []));
+					} catch (rowError) {
+						console.error(`Failed to update row ${rowId}:`, rowError);
+
+						// Fallback la request-uri individuale pentru acest rând
+						try {
+							const individualUpdates = await Promise.all(
+								rowChanges.map(async (change) => {
+									const response = await fetch(
+										`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/rows/${change.rowId}/cell/${change.cellId}`,
+										{
+											method: "PATCH",
+											headers: {
+												"Content-Type": "application/json",
+												Authorization: `Bearer ${token}`,
+											},
+											body: JSON.stringify({
+												value: change.newValue,
+											}),
+										},
+									);
+
+									if (!response.ok) {
+										const errorData = await response.json().catch(() => ({}));
+										throw new Error(
+											errorData.error ||
+												errorData.message ||
+												`HTTP ${response.status}: ${response.statusText}`,
+										);
+									}
+
+									return await response.json();
+								}),
+							);
+
+							allUpdatedCells.push(...individualUpdates);
+						} catch (fallbackError) {
+							throw new Error(`Failed to update row ${rowId}: ${fallbackError}`);
+						}
 					}
 				}
 			}
@@ -302,14 +427,15 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			setIsEditingCell(null);
 
 			// Notifică succesul
+			const totalChanges = allUpdatedCells.length + allNewRows.length;
 			showAlert(
-				`Successfully updated ${allUpdatedCells.length} cell(s)`,
+				`Successfully saved ${totalChanges} item(s) - ${allNewRows.length} new rows, ${allUpdatedCells.length} cell updates`,
 				"success",
 			);
 			
 			// 🔧 FIX: Update local state with server response data
-			console.log("🔄 Updating local state with server response:", allUpdatedCells);
-			onSuccess?.(allUpdatedCells);
+			console.log("🔄 Updating local state with server response:", { allUpdatedCells, allNewRows });
+			onSuccess?.([...allUpdatedCells, ...allNewRows]);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to save changes";
@@ -325,6 +451,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 		}
 	}, [
 		pendingChanges,
+		pendingNewRows,
 		tenantId,
 		token,
 		table,
@@ -342,6 +469,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	// Anulează toate modificările pending
 	const discardPendingChanges = useCallback(() => {
 		setPendingChanges(new Map());
+		setPendingNewRows([]);
 		setIsEditingCell(null);
 
 		if (autoSaveTimeoutRef.current) {
@@ -371,17 +499,31 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	// Verifică dacă o celulă are modificări pending
 	const hasPendingChange = useCallback(
 		(rowId: string, columnId: string) => {
+			// Pentru rândurile locale, verifică în pendingNewRows
+			if (rowId.startsWith('temp_')) {
+				const localRow = pendingNewRows.find(row => row.id === rowId);
+				return !!localRow;
+			}
+			
 			const cellKey = getCellKey(rowId, columnId);
 			const hasPending = pendingChanges.has(cellKey);
 			console.log("🔍 DEBUG: hasPendingChange", { rowId, columnId, cellKey, hasPending, totalPending: pendingChanges.size });
 			return hasPending;
 		},
-		[pendingChanges, getCellKey],
+		[pendingChanges, pendingNewRows, getCellKey],
 	);
 
 	// Obține valoarea pending pentru o celulă
 	const getPendingValue = useCallback(
 		(rowId: string, columnId: string) => {
+			// Pentru rândurile locale, caută în pendingNewRows
+			if (rowId.startsWith('temp_')) {
+				const localRow = pendingNewRows.find(row => row.id === rowId);
+				const cell = localRow?.cells.find(cell => cell.columnId.toString() === columnId);
+				console.log("🔍 DEBUG: getPendingValue for local row", { rowId, columnId, cellValue: cell?.value });
+				return cell?.value;
+			}
+			
 			const cellKey = getCellKey(rowId, columnId);
 			const pendingChange = pendingChanges.get(cellKey);
 			const pendingValue = pendingChange?.newValue; // Use newValue instead of value
@@ -396,7 +538,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			});
 			return pendingValue;
 		},
-		[pendingChanges, getCellKey],
+		[pendingChanges, pendingNewRows, getCellKey],
 	);
 
 	// Salvează manual (forțat)
@@ -441,14 +583,19 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 	const result = {
 		// State
 		pendingChanges,
+		pendingNewRows,
 		isEditingCell,
 		isSaving,
 		pendingChangesCount: pendingChanges.size,
+		pendingNewRowsCount: pendingNewRows.length,
 
 		// Actions
 		startEditing,
 		cancelEditing,
 		addPendingChange,
+		addNewRow,
+		updateLocalRowCell,
+		removeLocalRow,
 		savePendingChanges,
 		discardPendingChanges,
 		rollbackOptimisticUpdates, // 🔧 FIX: Export rollback function
