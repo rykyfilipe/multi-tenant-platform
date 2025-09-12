@@ -646,11 +646,24 @@ export class PrismaFilterBuilderV2 {
   }
 
   private isValidFilter(filter: FilterConfig): boolean {
-    return filter && 
-           filter.columnId && 
-           filter.operator && 
-           filter.columnType &&
-           (filter.value !== null && filter.value !== undefined);
+    if (!filter || !filter.columnId || !filter.operator || !filter.columnType) {
+      return false;
+    }
+
+    // Check if column exists in table columns
+    const columnExists = this.tableColumns.some(col => col.id === filter.columnId);
+    if (!columnExists) {
+      return false;
+    }
+
+    // For operators that don't require values, allow null/undefined
+    const operatorsWithoutValues = ['is_empty', 'is_not_empty', 'today', 'yesterday', 'this_week', 'this_month', 'this_year'];
+    if (operatorsWithoutValues.includes(filter.operator)) {
+      return true;
+    }
+
+    // For other operators, require a value
+    return filter.value !== null && filter.value !== undefined && filter.value !== '';
   }
 
   private isDateColumn(columnType: string): boolean {
