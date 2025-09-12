@@ -43,9 +43,17 @@ export type FilterValue =
 // Operator mapping by column type
 export interface OperatorMapping {
   text: TextOperator[];
+  string: TextOperator[];
+  email: TextOperator[];
+  url: TextOperator[];
   number: NumberOperator[];
+  integer: NumberOperator[];
+  decimal: NumberOperator[];
   boolean: BooleanOperator[];
   date: DateOperator[];
+  datetime: DateOperator[];
+  time: DateOperator[];
+  json: TextOperator[];
   reference: ReferenceOperator[];
   customArray: ReferenceOperator[];
 }
@@ -167,9 +175,17 @@ export interface CacheKey {
 // Operator compatibility matrix
 export const OPERATOR_COMPATIBILITY: OperatorMapping = {
   text: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  string: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  email: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  url: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
   number: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+  integer: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+  decimal: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
   boolean: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
   date: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+  datetime: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+  time: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+  json: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
   reference: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
   customArray: ['equals', 'not_equals', 'is_empty', 'is_not_empty']
 };

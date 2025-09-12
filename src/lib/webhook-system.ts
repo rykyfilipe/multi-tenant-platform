@@ -380,12 +380,19 @@ class WebhookSystem {
 		const startTime = Date.now();
 
 		try {
+			// Create AbortController for timeout
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
 			const response = await fetch(delivery.url, {
 				method: "POST",
 				headers: delivery.headers,
 				body: JSON.stringify(delivery.payload),
-				timeout: 30000, // 30 second timeout
+				signal: controller.signal,
 			});
+
+			// Clear timeout if request completes successfully
+			clearTimeout(timeoutId);
 
 			const duration = Date.now() - startTime;
 			const responseBody = await response.text();
@@ -430,9 +437,15 @@ class WebhookSystem {
 		} catch (error) {
 			const duration = Date.now() - startTime;
 			
+			// Handle timeout specifically
+			const isTimeout = error instanceof Error && error.name === 'AbortError';
+			const errorMessage = isTimeout 
+				? "Request timeout after 30 seconds"
+				: error instanceof Error ? error.message : "Unknown error";
+			
 			delivery.error = {
-				message: error instanceof Error ? error.message : "Unknown error",
-				code: error instanceof Error && "code" in error ? String(error.code) : undefined,
+				message: errorMessage,
+				code: isTimeout ? "TIMEOUT" : (error instanceof Error && "code" in error ? String(error.code) : undefined),
 				stack: error instanceof Error ? error.stack : undefined,
 			};
 
@@ -476,11 +489,12 @@ class WebhookSystem {
 					this.endpoints.set(endpoint.id, endpoint);
 				}
 
-				logger.error("Webhook delivery failed permanently", {
+				logger.error("Webhook delivery failed permanently", undefined, {
 					component: "WebhookSystem",
 					deliveryId: delivery.id,
 					webhookId: delivery.webhookId,
 					attempts: delivery.attempt,
+				}, {
 					error: delivery.error,
 				});
 			}
