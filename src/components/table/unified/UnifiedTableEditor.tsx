@@ -141,7 +141,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		getPendingValue,
 		savePendingChanges,
 		discardPendingChanges,
-		rollbackOptimisticUpdates, // 🔧 FIX: Import rollback function
+		rollbackOptimisticUpdates, 
 	} = useRowsTableEditor({
 		table,
 		onCellsUpdated: (updatedCells) => {
@@ -195,22 +195,56 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							});
 							
 							if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
-								const cellIndex = updatedRow.cells.findIndex(
-									(cell: any) => cell.id === updatedCell.id || 
-									(cell.columnId.toString() === updatedCell.columnId.toString() && cell.id === "virtual"),
+								// First try to find by exact cell ID match
+								let cellIndex = updatedRow.cells.findIndex(
+									(cell: any) => cell.id === updatedCell.id
 								);
 								
-								console.log("🔍 DEBUG: Cell index found", { cellIndex, cellId: updatedCell.id, columnId: updatedCell.columnId });
+								// If not found by ID, try to find by columnId (for cases where cell ID might be different)
+								if (cellIndex === -1) {
+									cellIndex = updatedRow.cells.findIndex(
+										(cell: any) => cell.columnId.toString() === updatedCell.columnId.toString()
+									);
+								}
+								
+								console.log("🔍 DEBUG: Cell index found", { 
+									cellIndex, 
+									cellId: updatedCell.id, 
+									columnId: updatedCell.columnId,
+									searchStrategy: cellIndex >= 0 ? "found" : "not found"
+								});
 								
 								if (cellIndex >= 0) {
 									// Store original value for potential rollback
 									const originalCell = { ...updatedRow.cells[cellIndex] };
-									updatedRow.cells[cellIndex] = { ...updatedCell, originalValue: originalCell.value };
-									console.log("🔍 DEBUG: Updated existing cell with original value", { cellIndex, newValue: updatedCell.value, originalValue: originalCell.value });
+									updatedRow.cells[cellIndex] = { 
+										...updatedCell, 
+										originalValue: originalCell.value,
+										// Ensure we keep the original cell structure
+										id: updatedCell.id || originalCell.id,
+										columnId: updatedCell.columnId || originalCell.columnId,
+										rowId: updatedCell.rowId || originalCell.rowId
+									};
+									console.log("🔍 DEBUG: Updated existing cell", { 
+										cellIndex, 
+										newValue: updatedCell.value, 
+										originalValue: originalCell.value,
+										finalCell: updatedRow.cells[cellIndex]
+									});
 								} else {
 									// Add new cell if it doesn't exist
-									updatedRow.cells.push({ ...updatedCell, originalValue: null });
-									console.log("🔍 DEBUG: Added new cell", { newValue: updatedCell.value });
+									const newCell = { 
+										...updatedCell, 
+										originalValue: null,
+										id: updatedCell.id,
+										columnId: updatedCell.columnId,
+										rowId: updatedCell.rowId
+									};
+									updatedRow.cells.push(newCell);
+									console.log("🔍 DEBUG: Added new cell", { 
+										newValue: updatedCell.value,
+										newCell
+									});
 								}
 							}
 						});
@@ -492,9 +526,15 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const handleCellClick = useCallback((rowId: string, columnId: string) => {
 		setActiveCell({ rowId, columnId });
 		if (tablePermissions.canEditTable()) {
-			handleEditCell(rowId, columnId, "virtual");
+			// Find the actual cell ID from the current rows
+			const currentRow = paginatedRows?.find(row => row.id.toString() === rowId);
+			const cell = currentRow?.cells?.find(cell => cell.columnId.toString() === columnId);
+			const cellId = cell?.id?.toString() ?? "virtual";
+			
+			console.log("🔍 DEBUG: handleCellClick", { rowId, columnId, cellId, cellExists: !!cell });
+			handleEditCell(rowId, columnId, cellId);
 		}
-	}, [handleEditCell, tablePermissions]);
+	}, [handleEditCell, tablePermissions, paginatedRows]);
 
 	const handleCellBlur = useCallback(() => {
 		setActiveCell(null);

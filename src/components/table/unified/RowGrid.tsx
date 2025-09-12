@@ -76,6 +76,11 @@ export function RowGrid({
 		return cell?.value ?? null;
 	};
 
+	const getCellId = (row: Row, column: Column) => {
+		const cell = row.cells?.find(c => c.columnId === column.id);
+		return cell?.id?.toString() ?? "virtual";
+	};
+
 	const isAllSelected = rows.length > 0 && selectedRows.size === rows.length;
 	const isIndeterminate = selectedRows.size > 0 && selectedRows.size < rows.length;
 
@@ -167,6 +172,7 @@ export function RowGrid({
 						{/* Data Cells */}
 						{columns.map((column) => {
 							const cellValue = getCellValue(row, column);
+							const cellId = getCellId(row, column);
 							const isEditing = editingCell?.rowId === row.id.toString() && editingCell?.columnId === column.id.toString();
 							const hasPending = hasPendingChange(row.id.toString(), column.id.toString());
 							const pendingValue = getPendingValue(row.id.toString(), column.id.toString());
@@ -179,14 +185,14 @@ export function RowGrid({
 										hasPending && "bg-yellow-50 border-yellow-200",
 										"group/cell"
 									)}
-									onClick={() => canEdit && onEditCell(row.id.toString(), column.id.toString(), "virtual")}
+									onClick={() => canEdit && onEditCell(row.id.toString(), column.id.toString(), cellId.toString())}
 									style={{ width: Math.max(200, 100) }}
 								>
 									{isEditing ? (
 										<EditableCell
 											columns={[column]}
 											cell={{
-												id: "virtual",
+												id: cellId.toString(),
 												rowId: row.id,
 												columnId: column.id,
 												value: cellValue,
@@ -194,7 +200,7 @@ export function RowGrid({
 											}}
 											isEditing={true}
 											onStartEdit={() => {}}
-											onSave={(value) => onSaveCell(column.id.toString(), row.id.toString(), "virtual", value)}
+											onSave={(value) => onSaveCell(column.id.toString(), row.id.toString(), cellId.toString(), value)}
 											onCancel={onCancelEdit}
 											tables={tables}
 											hasPendingChange={hasPending}
@@ -202,17 +208,20 @@ export function RowGrid({
 										/>
 									) : (
 										<div className="w-full h-6 sm:h-8 flex items-center">
-											<span className="text-xs sm:text-sm text-neutral-700 truncate">
-												{cellValue !== null && cellValue !== undefined 
-													? String(cellValue) 
-													: <span className="text-neutral-400 italic">empty</span>
-												}
-											</span>
-											{hasPending && (
-												<span className="ml-1 sm:ml-2 text-xs text-yellow-600 font-medium bg-yellow-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded">
+											{hasPending ? (
+												// Show pending value as primary value with yellow background
+												<span className="text-xs sm:text-sm text-yellow-800 font-medium bg-yellow-100 px-2 py-1 rounded truncate">
 													{pendingValue !== null && pendingValue !== undefined 
 														? String(pendingValue) 
-														: "empty"
+														: <span className="text-yellow-600 italic">empty</span>
+													}
+												</span>
+											) : (
+												// Show original value
+												<span className="text-xs sm:text-sm text-neutral-700 truncate">
+													{cellValue !== null && cellValue !== undefined 
+														? String(cellValue) 
+														: <span className="text-neutral-400 italic">empty</span>
 													}
 												</span>
 											)}
