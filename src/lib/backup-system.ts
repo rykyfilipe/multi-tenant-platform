@@ -2,7 +2,7 @@
 
 /**
  * Backup & Restore System using Prisma with PostgreSQL
- * Leverages Prisma's built-in database management capabilities
+ * Server-side implementation only - use API routes for client access
  */
 
 import { exec } from "child_process";
@@ -12,55 +12,16 @@ import prisma from "./prisma";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { 
+	BackupType, 
+	BackupStatus, 
+	BackupJob, 
+	RestoreJob, 
+	BackupStats, 
+	BackupVerification 
+} from "@/types/backup";
 
 const execAsync = promisify(exec);
-
-export enum BackupType {
-	FULL = "full",
-	SCHEMA_ONLY = "schema_only",
-	DATA_ONLY = "data_only",
-	INCREMENTAL = "incremental",
-}
-
-export enum BackupStatus {
-	PENDING = "pending",
-	IN_PROGRESS = "in_progress",
-	COMPLETED = "completed",
-	FAILED = "failed",
-	CANCELLED = "cancelled",
-}
-
-export interface BackupJob {
-	id: string;
-	tenantId: string;
-	type: BackupType;
-	status: BackupStatus;
-	description?: string;
-	filePath?: string;
-	fileSize?: number;
-	checksum?: string;
-	startedAt: string;
-	completedAt?: string;
-	error?: string;
-	metadata: {
-		databaseCount: number;
-		tableCount: number;
-		rowCount: number;
-		compressionRatio?: number;
-	};
-	createdBy: string;
-}
-
-export interface RestoreJob {
-	id: string;
-	tenantId: string;
-	backupId: string;
-	status: BackupStatus;
-	startedAt: string;
-	completedAt?: string;
-	error?: string;
-	restoredBy: string;
-}
 
 class BackupSystem {
 	private backups: Map<string, BackupJob> = new Map();

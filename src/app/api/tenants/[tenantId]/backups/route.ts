@@ -2,7 +2,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
-import { backupSystem, BackupType } from "@/lib/backup-system";
+import { backupSystem } from "@/lib/backup-system";
+import { BackupType } from "@/types/backup";
 import { logger } from "@/lib/error-logger";
 import { z } from "zod";
 

@@ -31,7 +31,7 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useApp } from "@/contexts/AppContext";
 import { logger } from "@/lib/error-logger";
-import { BackupType, BackupStatus } from "@/lib/backup-system";
+import { BackupType, BackupStatus } from "@/types/backup";
 
 interface BackupJob {
 	id: string;

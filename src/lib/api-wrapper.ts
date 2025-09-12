@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { activityTracker } from "@/lib/activity-tracker";
+import { trackApiCall } from "@/lib/activity-tracker";
 
 interface ApiWrapperOptions {
 	trackActivity?: boolean;
@@ -48,7 +48,7 @@ export function withApiTracking(
 								? parseInt(request.headers.get("content-length")!)
 								: undefined;
 
-							await activityTracker.trackApiCall(
+							trackApiCall(
 								tenantId,
 								request.nextUrl.pathname,
 								request.method,
@@ -85,7 +85,7 @@ export function withApiTracking(
 						if (tenantId && userId) {
 							const responseTime = Date.now() - startTime;
 
-							await activityTracker.trackApiCall(
+							trackApiCall(
 								tenantId,
 								request.nextUrl.pathname,
 								request.method,
