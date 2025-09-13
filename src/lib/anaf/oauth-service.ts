@@ -27,7 +27,7 @@ export class ANAFOAuthService {
   static async getAuthUrl(userId: number, tenantId: number): Promise<string> {
     try {
       const state = this.generateState(userId, tenantId);
-      const scopes = 'openid'; // Conform documentației ANAF
+      const scopes = 'e-factura'; // Conform documentației ANAF
       
       // Get redirect URI from environment or use default
       const redirectUri = process.env.ANAF_REDIRECT_URI || this.CONFIG.redirectUri;
@@ -37,8 +37,7 @@ export class ANAFOAuthService {
         redirect_uri: redirectUri,
         response_type: 'code',
         scope: scopes,
-        state: state,
-        token_content_type: 'jwt' // Pentru JWT tokens conform documentației
+        state: state
       });
 
       const authUrl = `${this.ANAF_ENDPOINTS.authorization}?${params.toString()}`;
@@ -79,8 +78,7 @@ export class ANAFOAuthService {
       const requestBody = new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: redirectUri,
-        token_content_type: 'jwt'
+        redirect_uri: redirectUri
       });
 
       console.log('ANAF OAuth Token Exchange Request:', {
@@ -181,8 +179,7 @@ export class ANAFOAuthService {
       
       const requestBody = new URLSearchParams({
         grant_type: 'refresh_token',
-        refresh_token: credentials.refreshToken,
-        token_content_type: 'jwt'
+        refresh_token: credentials.refreshToken
       });
 
       console.log('ANAF OAuth Token Refresh Request:', {
