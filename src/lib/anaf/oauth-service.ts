@@ -65,6 +65,7 @@ export class ANAFOAuthService {
           client_secret: this.CONFIG.clientSecret,
           code: code,
           redirect_uri: redirectUri,
+          token_content_type: 'jwt'
         }),
       });
 
@@ -118,6 +119,7 @@ export class ANAFOAuthService {
           client_id: this.CONFIG.clientId,
           client_secret: this.CONFIG.clientSecret,
           refresh_token: credentials.refreshToken,
+          token_content_type: 'jwt'
         }),
       });
 

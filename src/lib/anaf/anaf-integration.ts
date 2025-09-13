@@ -433,8 +433,10 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/xml',
+          'Content-Type': 'application/xml; charset=utf-8',
           'Accept': 'application/json',
+          'User-Agent': 'MultiTenantPlatform/1.0',
+          'X-Requested-With': 'XMLHttpRequest'
         },
         body: xmlContent,
       });

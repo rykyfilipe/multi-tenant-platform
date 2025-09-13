@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthResponse, getUserId } from '@/lib/session';
 import { ANAFOAuthService } from '@/lib/anaf/oauth-service';
+import prisma from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userResult = await require('@/lib/prisma').prisma.user.findFirst({
+    const userResult = await prisma.user.findFirst({
       where: { email: sessionResult.user.email },
     });
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's tenants
-    const userTenants = await require('@/lib/prisma').prisma.userTenant.findMany({
+    const userTenants = await prisma.userTenant.findMany({
       where: { userId: userResult.id },
       include: { tenant: true }
     });

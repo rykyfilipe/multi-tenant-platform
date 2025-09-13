@@ -169,41 +169,71 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			setPendingChanges((prev) => {
 				const newMap = new Map(prev);
 
-		console.log("🔍 DEBUG: addPendingChange - comparing values", { 
-			newValue, 
-			originalValue, 
-			cellKey,
-			newValueType: typeof newValue,
-			originalValueType: typeof originalValue
-		});
+				console.log("🔍 DEBUG: addPendingChange - comparing values", { 
+					newValue, 
+					originalValue, 
+					cellKey,
+					newValueType: typeof newValue,
+					originalValueType: typeof originalValue,
+					newValueStringified: JSON.stringify(newValue),
+					originalValueStringified: JSON.stringify(originalValue)
+				});
 
 				// Comparare mai robustă a valorilor
 				const areEqual = (() => {
 					// Cazuri speciale pentru null/undefined
-					if (newValue == null && originalValue == null) return true;
-					if (newValue == null || originalValue == null) return false;
+					if (newValue == null && originalValue == null) {
+						console.log("🔍 DEBUG: Both values are null/undefined");
+						return true;
+					}
+					if (newValue == null || originalValue == null) {
+						console.log("🔍 DEBUG: One value is null/undefined");
+						return false;
+					}
 					
 					// Pentru string-uri, comparăm valorile normalizate
 					if (typeof newValue === 'string' && typeof originalValue === 'string') {
-						return newValue.trim() === originalValue.trim();
+						const trimmedNew = newValue.trim();
+						const trimmedOriginal = originalValue.trim();
+						const result = trimmedNew === trimmedOriginal;
+						console.log("🔍 DEBUG: String comparison", { 
+							newValue, 
+							originalValue, 
+							trimmedNew, 
+							trimmedOriginal, 
+							result 
+						});
+						return result;
 					}
 					
 					// Pentru array-uri, comparăm conținutul
 					if (Array.isArray(newValue) && Array.isArray(originalValue)) {
-						if (newValue.length !== originalValue.length) return false;
-						return newValue.every((val, index) => val === originalValue[index]);
+						if (newValue.length !== originalValue.length) {
+							console.log("🔍 DEBUG: Array length mismatch", { 
+								newLength: newValue.length, 
+								originalLength: originalValue.length 
+							});
+							return false;
+						}
+						const result = newValue.every((val, index) => val === originalValue[index]);
+						console.log("🔍 DEBUG: Array comparison", { result, newValue, originalValue });
+						return result;
 					}
 					
 					// Pentru obiecte, comparăm JSON-ul
 					if (typeof newValue === 'object' && typeof originalValue === 'object') {
-						return JSON.stringify(newValue) === JSON.stringify(originalValue);
+						const result = JSON.stringify(newValue) === JSON.stringify(originalValue);
+						console.log("🔍 DEBUG: Object comparison", { result, newValue, originalValue });
+						return result;
 					}
 					
 					// Comparație strictă pentru restul
-					return newValue === originalValue;
+					const result = newValue === originalValue;
+					console.log("🔍 DEBUG: Strict comparison", { result, newValue, originalValue });
+					return result;
 				})();
 
-				console.log("🔍 DEBUG: Comparison result", { areEqual });
+				console.log("🔍 DEBUG: Final comparison result", { areEqual, newValue, originalValue });
 
 				// Dacă valoarea este aceeași cu originalul, eliminăm din pending
 				if (areEqual) {
@@ -270,6 +300,10 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			hasTable: !!table,
 			hasSelectedDatabase: !!selectedDatabase,
 		});
+		
+		console.log("🔍 DEBUG: Full pendingChanges map:", pendingChanges);
+		console.log("🔍 DEBUG: PendingChanges keys:", Array.from(pendingChanges.keys()));
+		console.log("🔍 DEBUG: PendingChanges values:", Array.from(pendingChanges.values()));
 
 		if (
 			(pendingChanges.size === 0 && pendingNewRows.length === 0) ||
@@ -335,6 +369,9 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			}
 
 			// 2. Actualizează celulele existente (dacă există modificări)
+			console.log("🔍 DEBUG: changesByRow size:", changesByRow.size);
+			console.log("🔍 DEBUG: changesByRow content:", Array.from(changesByRow.entries()));
+			
 			if (changesByRow.size > 0) {
 				console.log("🚀 Updating existing cells:", changesByRow.size, "rows");
 				
@@ -379,7 +416,8 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				}
 
 				const updateResult = await updateResponse.json();
-				allUpdatedCells.push(...(updateResult.updatedCells || []));
+				console.log("🔍 DEBUG: Server response for cell updates:", updateResult);
+				console.log("🔍 DEBUG: updateResult.updatedCells:", updateResult.updatedCells);
 				console.log("✅ Cell updates saved successfully:", allUpdatedCells);
 			}
 
@@ -387,7 +425,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			setPendingChanges(new Map());
 			setIsEditingCell(null);
 
-			// Notifică succesul
+			// Notifică succesulr
 			const totalChanges = allUpdatedCells.length + allNewRows.length;
 			showAlert(
 				`Successfully saved ${totalChanges} item(s) - ${allNewRows.length} new rows, ${allUpdatedCells.length} cell updates`,

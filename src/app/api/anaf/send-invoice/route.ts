@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthResponse, requireTenantAccess, getUserId } from '@/lib/session';
 import { ANAFIntegration } from '@/lib/anaf/anaf-integration';
 import { z } from 'zod';
-
+import prisma from '@/lib/prisma';
 const SendInvoiceSchema = z.object({
   invoiceId: z.number().min(1, 'Invoice ID is required'),
   submissionType: z.enum(['automatic', 'manual']).default('manual'),

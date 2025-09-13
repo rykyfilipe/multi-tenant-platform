@@ -1,0 +1,21 @@
+--- a/src/lib/anaf/oauth-service.ts
++++ b/src/lib/anaf/oauth-service.ts
+@@ -59,6 +59,7 @@ export class ANAFOAuthService {
+         body: new URLSearchParams({
+           grant_type: 'authorization_code',
+           client_id: this.CONFIG.clientId,
+           client_secret: this.CONFIG.clientSecret,
+           code: code,
+           redirect_uri: redirectUri,
++          token_content_type: 'jwt'
+         }),
+       });
+@@ -115,6 +116,7 @@ export class ANAFOAuthService {
+         body: new URLSearchParams({
+           grant_type: 'refresh_token',
+           client_id: this.CONFIG.clientId,
+           client_secret: this.CONFIG.clientSecret,
+           refresh_token: credentials.refreshToken,
++          token_content_type: 'jwt'
+         }),
+       });

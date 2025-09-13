@@ -1,0 +1,15 @@
+--- a/src/lib/anaf/anaf-integration.ts
++++ b/src/lib/anaf/anaf-integration.ts
+@@ -430,6 +430,9 @@ export class ANAFIntegration {
+       const response = await fetch(uploadUrl, {
+         method: 'POST',
+         headers: {
+           'Authorization': `Bearer ${accessToken}`,
+-          'Content-Type': 'application/xml',
++          'Content-Type': 'application/xml; charset=utf-8',
+           'Accept': 'application/json',
++          'User-Agent': 'MultiTenantPlatform/1.0',
++          'X-Requested-With': 'XMLHttpRequest'
+         },
+         body: xmlContent,
+       });

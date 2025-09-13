@@ -128,7 +128,7 @@ export class ANAFJWTTokenService {
   static createInternalToken(payload: any, expiresIn: string = '1h'): string {
     try {
       return jwt.sign(payload, this.JWT_SECRET, { 
-        expiresIn,
+        expiresIn: expiresIn,
         issuer: 'anaf-integration',
         audience: 'anaf-api'
       });

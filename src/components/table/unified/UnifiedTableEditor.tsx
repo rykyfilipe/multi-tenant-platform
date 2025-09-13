@@ -149,14 +149,38 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		table,
 		onCellsUpdated: (updatedData) => {
 			console.log("🔄 Processing update data:", updatedData);
-			console.log("🔄 Current paginatedRows before processing:", paginatedRows?.map((row: any) => ({
-				id: row.id,
-				cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-			})));
+			console.log("🔄 Current paginatedRows before processing:", paginatedRows);
 			
 			// Verifică dacă sunt rânduri noi complete sau doar modificări de celule
 			const isNewRow = (item: any) => item.cells && Array.isArray(item.cells) && item.id && item.tableId;
-			const isCellUpdate = (item: any) => (item.columnId && item.rowId && !isNewRow(item)) || (item.column && item.rowId && !isNewRow(item));
+			const isCellUpdate = (item: any) => {
+				// Check if it's a cell update by looking for columnId and rowId properties
+				const hasColumnId = item.columnId !== undefined && item.columnId !== null;
+				const hasRowId = item.rowId !== undefined && item.rowId !== null;
+				const hasColumn = item.column !== undefined && item.column !== null;
+				
+				// It's a cell update if it has columnId and rowId, or column and rowId, but is not a new row
+				return (hasColumnId && hasRowId && !isNewRow(item)) || (hasColumn && hasRowId && !isNewRow(item));
+			};
+			
+			console.log("🔍 DEBUG: Filtering data", {
+				updatedDataLength: updatedData.length,
+				updatedData: updatedData.map(item => ({
+					hasCells: !!item.cells,
+					hasId: !!item.id,
+					hasTableId: !!item.tableId,
+					hasColumnId: item.columnId !== undefined && item.columnId !== null,
+					hasRowId: item.rowId !== undefined && item.rowId !== null,
+					hasColumn: !!item.column,
+					columnIdValue: item.columnId,
+					rowIdValue: item.rowId,
+					columnIdType: typeof item.columnId,
+					rowIdType: typeof item.rowId,
+					isNewRow: isNewRow(item),
+					isCellUpdate: isCellUpdate(item),
+					item: item
+				}))
+			});
 			
 			const newRows = updatedData.filter(isNewRow);
 			const cellUpdates = updatedData.filter(isCellUpdate);
@@ -164,6 +188,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			console.log("🔄 Detected new rows:", newRows.length);
 			console.log("🔄 Detected cell updates:", cellUpdates.length);
 			
+		
 			// Gestionează rândurile noi salvate
 			if (newRows.length > 0) {
 				console.log("🆕 Adding new saved rows to paginatedRows:", newRows);
