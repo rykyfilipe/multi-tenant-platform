@@ -23,6 +23,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useInvoiceSystem } from "@/hooks/useInvoiceSystem";
 import { useANAF } from "@/hooks/useANAF";
+import { useSilentANAF } from "@/hooks/useSilentANAF";
 import { TourManager } from "@/components/tours/TourManager";
 import { allTours } from "@/tours";
 
@@ -43,6 +44,13 @@ export default function InvoicesPage() {
 		authenticate: anafAuthenticate,
 		disconnect: anafDisconnect 
 	} = useANAF();
+
+	// Silent ANAF authentication hook
+	const { 
+		authenticateSilently, 
+		loading: silentAuthLoading, 
+		error: silentAuthError 
+	} = useSilentANAF();
 
 	// Invoice system hook - moved here to avoid re-fetching on tab changes
 	const {
@@ -82,14 +90,22 @@ export default function InvoicesPage() {
 		checkModuleStatus();
 	}, [tenant, token]);
 
-	// Auto-connect to ANAF when entering invoices page
+	// Auto-connect to ANAF when entering invoices page using silent auth
 	useEffect(() => {
 		const autoConnectANAF = async () => {
 			// Only auto-connect if module is enabled, user is authenticated, and ANAF is not already connected
-			if (moduleEnabled && user?.id && tenant?.id && token && !isANAFAuthenticated && !anafLoading) {
+			if (moduleEnabled && user?.id && tenant?.id && token && !isANAFAuthenticated && !anafLoading && !silentAuthLoading) {
 				try {
-					console.log('Auto-connecting to ANAF...');
-					await anafAuthenticate();
+					console.log('Auto-connecting to ANAF using silent auth...');
+					const result = await authenticateSilently();
+					if (result.success && result.authenticated) {
+						console.log('ANAF authentication successful');
+						// Refresh the page to update the UI
+						window.location.reload();
+					} else if (result.requiresUserInteraction) {
+						console.log('ANAF requires user interaction - popup will open');
+						// The popup will handle the authentication
+					}
 				} catch (error) {
 					console.error('Failed to auto-connect to ANAF:', error);
 					// Don't show error to user, just log it
@@ -100,7 +116,7 @@ export default function InvoicesPage() {
 		// Small delay to ensure all hooks are initialized
 		const timer = setTimeout(autoConnectANAF, 1000);
 		return () => clearTimeout(timer);
-	}, [moduleEnabled, user?.id, tenant?.id, token, isANAFAuthenticated, anafLoading, anafAuthenticate]);
+	}, [moduleEnabled, user?.id, tenant?.id, token, isANAFAuthenticated, anafLoading, silentAuthLoading, authenticateSilently]);
 
 	const handleEditInvoice = (invoiceData: any) => {
 		setEditingInvoice(invoiceData);
