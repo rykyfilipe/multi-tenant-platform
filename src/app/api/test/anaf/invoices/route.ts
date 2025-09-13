@@ -18,15 +18,13 @@ export async function GET(request: NextRequest) {
 
     const parsedTenantId = parseInt(tenantId);
 
-    // Verify user has access to this tenant
-    const userTenant = await prisma.userTenant.findFirst({
-      where: {
-        userId,
-        tenantId: parsedTenantId,
-      },
+    // Verify user has access to this tenant (direct relationship in schema)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tenantId: true }
     });
 
-    if (!userTenant) {
+    if (!user || user.tenantId !== parsedTenantId) {
       return NextResponse.json({ error: 'Access denied to this tenant' }, { status: 403 });
     }
 

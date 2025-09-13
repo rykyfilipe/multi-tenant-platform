@@ -5,7 +5,6 @@ import { ANAFOAuthService } from '@/lib/anaf/oauth-service';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Testing ANAF sandbox connectivity...');
     
     // Test the TestOauth service as per ANAF documentation
     const connectivityResult = await ANAFOAuthService.testSandboxConnectivity();

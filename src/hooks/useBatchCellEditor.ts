@@ -90,8 +90,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 		setPendingNewRows(prev => [...prev, newRow]);
 		onNewRowsAdded?.([newRow]);
-		
-		console.log("🆕 Added new local row:", newRow);
 	}, [table, generateTempId, onNewRowsAdded]);
 
 	// Actualizează o celulă dintr-un rând local
@@ -112,8 +110,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			onNewRowsUpdated?.(updatedRows);
 			return updatedRows;
 		});
-		
-		console.log("🔄 Updated local row cell:", { rowId, columnId, newValue });
 	}, [onNewRowsUpdated]);
 
 	// Elimină un rând local
@@ -123,14 +119,11 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			onNewRowsUpdated?.(filtered);
 			return filtered;
 		});
-		
-		console.log("🗑️ Removed local row:", rowId);
 	}, [onNewRowsUpdated]);
 
 	// Începe editarea unei celule
 	const startEditing = useCallback(
 		(rowId: string, columnId: string, cellId: string) => {
-			console.log("🔍 DEBUG: startEditing called", { rowId, columnId, cellId });
 			setIsEditingCell({ rowId, columnId, cellId });
 		},
 		[],
@@ -169,25 +162,14 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			setPendingChanges((prev) => {
 				const newMap = new Map(prev);
 
-				console.log("🔍 DEBUG: addPendingChange - comparing values", { 
-					newValue, 
-					originalValue, 
-					cellKey,
-					newValueType: typeof newValue,
-					originalValueType: typeof originalValue,
-					newValueStringified: JSON.stringify(newValue),
-					originalValueStringified: JSON.stringify(originalValue)
-				});
 
 				// Comparare mai robustă a valorilor
 				const areEqual = (() => {
 					// Cazuri speciale pentru null/undefined
 					if (newValue == null && originalValue == null) {
-						console.log("🔍 DEBUG: Both values are null/undefined");
 						return true;
 					}
 					if (newValue == null || originalValue == null) {
-						console.log("🔍 DEBUG: One value is null/undefined");
 						return false;
 					}
 					
@@ -195,53 +177,31 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 					if (typeof newValue === 'string' && typeof originalValue === 'string') {
 						const trimmedNew = newValue.trim();
 						const trimmedOriginal = originalValue.trim();
-						const result = trimmedNew === trimmedOriginal;
-						console.log("🔍 DEBUG: String comparison", { 
-							newValue, 
-							originalValue, 
-							trimmedNew, 
-							trimmedOriginal, 
-							result 
-						});
-						return result;
+						return trimmedNew === trimmedOriginal;
 					}
 					
 					// Pentru array-uri, comparăm conținutul
 					if (Array.isArray(newValue) && Array.isArray(originalValue)) {
 						if (newValue.length !== originalValue.length) {
-							console.log("🔍 DEBUG: Array length mismatch", { 
-								newLength: newValue.length, 
-								originalLength: originalValue.length 
-							});
 							return false;
 						}
-						const result = newValue.every((val, index) => val === originalValue[index]);
-						console.log("🔍 DEBUG: Array comparison", { result, newValue, originalValue });
-						return result;
+						return newValue.every((val, index) => val === originalValue[index]);
 					}
 					
 					// Pentru obiecte, comparăm JSON-ul
 					if (typeof newValue === 'object' && typeof originalValue === 'object') {
-						const result = JSON.stringify(newValue) === JSON.stringify(originalValue);
-						console.log("🔍 DEBUG: Object comparison", { result, newValue, originalValue });
-						return result;
+						return JSON.stringify(newValue) === JSON.stringify(originalValue);
 					}
 					
 					// Comparație strictă pentru restul
-					const result = newValue === originalValue;
-					console.log("🔍 DEBUG: Strict comparison", { result, newValue, originalValue });
-					return result;
+					return newValue === originalValue;
 				})();
-
-				console.log("🔍 DEBUG: Final comparison result", { areEqual, newValue, originalValue });
 
 				// Dacă valoarea este aceeași cu originalul, eliminăm din pending
 				if (areEqual) {
-					console.log("🔍 DEBUG: Values are equal, removing from pending changes");
 					newMap.delete(cellKey);
 				} else {
 					// Adăugăm modificarea în pending changes
-					console.log("🔍 DEBUG: Values are different, adding to pending changes");
 					const pendingChange = {
 						rowId,
 						columnId,
@@ -250,11 +210,8 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 						originalValue,
 						timestamp: Date.now(),
 					};
-					console.log("🔍 DEBUG: Setting pending change", pendingChange);
 					newMap.set(cellKey, pendingChange);
 				}
-
-				console.log("🔍 DEBUG: Final pending changes map size:", newMap.size);
 				return newMap;
 			});
 
@@ -274,11 +231,8 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				if (saveFunctionRef.current) {
 					// Folosește setTimeout pentru a evita probleme de sincronizare
 					setTimeout(() => {
-						console.log("🔍 DEBUG: Calling saveFunctionRef.current");
 						if (saveFunctionRef.current) {
 							saveFunctionRef.current();
-						} else {
-							console.error("❌ saveFunctionRef.current is null!");
 						}
 					}, 100);
 				}
@@ -291,19 +245,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 	// Salvează toate modificările pending
 	const savePendingChanges = useCallback(async () => {
-		console.log("💾 savePendingChanges called with:", {
-			pendingChangesCount: pendingChanges.size,
-			pendingNewRowsCount: pendingNewRows.length,
-			pendingChanges: Array.from(pendingChanges.entries()),
-			hasTenantId: !!tenantId,
-			hasToken: !!token,
-			hasTable: !!table,
-			hasSelectedDatabase: !!selectedDatabase,
-		});
-		
-		console.log("🔍 DEBUG: Full pendingChanges map:", pendingChanges);
-		console.log("🔍 DEBUG: PendingChanges keys:", Array.from(pendingChanges.keys()));
-		console.log("🔍 DEBUG: PendingChanges values:", Array.from(pendingChanges.values()));
 
 		if (
 			(pendingChanges.size === 0 && pendingNewRows.length === 0) ||
@@ -312,7 +253,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			!table ||
 			!selectedDatabase
 		) {
-			console.log("❌ savePendingChanges: Missing requirements or no changes, skipping save");
 			return;
 		}
 
@@ -340,7 +280,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 			// 1. Salvează rândurile noi (dacă există)
 			if (newRowsData.length > 0) {
-				console.log("🚀 Saving new rows:", newRowsData);
 				const newRowsResponse = await fetch(
 					`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/rows/batch`,
 					{
@@ -363,18 +302,12 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				}
 
 				const newRowsResult = await newRowsResponse.json();
-				console.log("🔍 DEBUG: New rows server response:", newRowsResult);
 				allNewRows.push(...(newRowsResult.rows || []));
 				setPendingNewRows([]);
-				console.log("✅ New rows saved successfully:", allNewRows);
 			}
 
 			// 2. Actualizează celulele existente (dacă există modificări)
-			console.log("🔍 DEBUG: changesByRow size:", changesByRow.size);
-			console.log("🔍 DEBUG: changesByRow content:", Array.from(changesByRow.entries()));
-			
 			if (changesByRow.size > 0) {
-				console.log("🚀 Updating existing cells:", changesByRow.size, "rows");
 				
 				// Un singur request pentru toate modificările
 				const allOperations: any[] = [];
@@ -393,7 +326,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				});
 
 				const batchPayload = { operations: allOperations };
-				console.log("🚀 Batch update payload:", batchPayload);
 
 				const updateResponse = await fetch(
 					`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/batch`,
@@ -417,10 +349,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				}
 
 				const updateResult = await updateResponse.json();
-				console.log("🔍 DEBUG: Server response for cell updates:", updateResult);
-				console.log("🔍 DEBUG: updateResult.data.updatedCells:", updateResult.data?.updatedCells);
 				allUpdatedCells.push(...(updateResult.data?.updatedCells || []));
-				console.log("✅ Cell updates saved successfully:", allUpdatedCells);
 			}
 
 			// Curăță modificările pending după succes
@@ -435,7 +364,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			);
 			
 			// 🔧 FIX: Update local state with server response data
-			console.log("🔄 Updating local state with server response:", { allUpdatedCells, allNewRows });
 			onSuccess?.([...allUpdatedCells, ...allNewRows]);
 		} catch (error) {
 			const errorMessage =
@@ -444,7 +372,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			
 			// 🔧 FIX: Rollback precis pentru operațiunile eșuate
 			// Nu curăța pending changes imediat, lasă-le pentru retry
-			console.log("❌ Batch save failed, keeping pending changes for potential retry");
 			
 			onError?.(errorMessage);
 		} finally {
@@ -464,7 +391,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 	// Actualizează ref-ul cu funcția de save
 	saveFunctionRef.current = savePendingChanges;
-	console.log("🔍 DEBUG: saveFunctionRef set to savePendingChanges");
 
 
 	// Anulează toate modificările pending
@@ -482,7 +408,6 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 	// 🔧 FIX: Rollback precis pentru operațiunile eșuate
 	const rollbackOptimisticUpdates = useCallback((failedOperations: string[]) => {
-		console.log("🔄 Rolling back optimistic updates for failed operations:", failedOperations);
 		
 		// Notifică callback-ul pentru rollback în UI
 		onSuccess?.(failedOperations.map(op => {
@@ -507,9 +432,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			}
 			
 			const cellKey = getCellKey(rowId, columnId);
-			const hasPending = pendingChanges.has(cellKey);
-			console.log("🔍 DEBUG: hasPendingChange", { rowId, columnId, cellKey, hasPending, totalPending: pendingChanges.size });
-			return hasPending;
+			return pendingChanges.has(cellKey);
 		},
 		[pendingChanges, pendingNewRows, getCellKey],
 	);
@@ -521,23 +444,12 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			if (rowId.startsWith('temp_')) {
 				const localRow = pendingNewRows.find(row => row.id === rowId);
 				const cell = localRow?.cells.find(cell => cell.columnId.toString() === columnId);
-				console.log("🔍 DEBUG: getPendingValue for local row", { rowId, columnId, cellValue: cell?.value });
 				return cell?.value;
 			}
 			
 			const cellKey = getCellKey(rowId, columnId);
 			const pendingChange = pendingChanges.get(cellKey);
-			const pendingValue = pendingChange?.newValue; // Use newValue instead of value
-			console.log("🔍 DEBUG: getPendingValue", { 
-				rowId, 
-				columnId, 
-				cellKey, 
-				pendingValue, 
-				hasPending: pendingChanges.has(cellKey), 
-				pendingChange,
-				allPendingKeys: Array.from(pendingChanges.keys())
-			});
-			return pendingValue;
+			return pendingChange?.newValue; // Use newValue instead of value
 		},
 		[pendingChanges, pendingNewRows, getCellKey],
 	);

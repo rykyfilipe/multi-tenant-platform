@@ -22,21 +22,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get user's tenants
-    const userTenants = await require('@/lib/prisma').prisma.userTenant.findMany({
-      where: { userId: userResult.id },
-      include: { tenant: true }
-    });
-
-    if (userTenants.length === 0) {
+    // Get user's tenant (direct relationship in schema)
+    if (!userResult.tenantId) {
       return NextResponse.json({ 
         success: false,
-        error: "No tenants found"
+        error: "User not associated with any tenant"
       }, { status: 400 });
     }
 
-    // Disconnect from ANAF for the first tenant
-    const tenantId = userTenants[0].tenantId;
+    const tenantId = userResult.tenantId;
     await ANAFOAuthService.revokeAccess(userId, tenantId);
 
     return NextResponse.json({

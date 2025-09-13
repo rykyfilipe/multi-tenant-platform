@@ -23,22 +23,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get user's tenants
-    const userTenants = await prisma.userTenant.findMany({
-      where: { userId: userResult.id },
-      include: { tenant: true }
-    });
-
-    if (userTenants.length === 0) {
+    // Get user's tenant (direct relationship in schema)
+    if (!userResult.tenantId) {
       return NextResponse.json({ 
         success: true, 
         isAuthenticated: false,
-        message: "No tenants found"
+        message: "User not associated with any tenant"
       });
     }
 
-    // Check authentication for the first tenant (or you could check all)
-    const tenantId = userTenants[0].tenantId;
+    const tenantId = userResult.tenantId;
     const authenticated = await ANAFOAuthService.isAuthenticated(userId, tenantId);
 
     return NextResponse.json({

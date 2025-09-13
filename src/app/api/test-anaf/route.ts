@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { testType = 'full', tenantId } = body;
 
-    console.log(`Running ANAF test: ${testType} for user ${userId}, tenant ${tenantId}`);
 
     const results = {
       timestamp: new Date().toISOString(),
@@ -35,7 +34,6 @@ export async function POST(request: NextRequest) {
     // Test 1: XML Generation
     if (testType === 'xml' || testType === 'full') {
       try {
-        console.log('Testing XML generation...');
         
         const testInvoiceData: ANAFInvoiceData = {
           invoiceId: 999999,
@@ -119,7 +117,6 @@ export async function POST(request: NextRequest) {
           message: 'XML generated successfully'
         };
 
-        console.log('XML generation test passed');
       } catch (error) {
         results.tests.xmlGeneration = {
           success: false,
@@ -133,7 +130,6 @@ export async function POST(request: NextRequest) {
     // Test 2: OAuth URL Generation
     if (testType === 'oauth' || testType === 'full') {
       try {
-        console.log('Testing OAuth URL generation...');
         
         const anafIntegration = new ANAFIntegration();
         const authUrl = await anafIntegration.getAuthUrl(userId, tenantId || 1);
@@ -145,7 +141,6 @@ export async function POST(request: NextRequest) {
           message: 'OAuth URL generated successfully'
         };
 
-        console.log('OAuth URL generation test passed');
       } catch (error) {
         results.tests.oauthUrl = {
           success: false,
@@ -159,7 +154,6 @@ export async function POST(request: NextRequest) {
     // Test 3: Error Handling
     if (testType === 'error' || testType === 'full') {
       try {
-        console.log('Testing error handling...');
         
         const testError = new Error('Test error for ANAF integration');
         const context = {
@@ -180,7 +174,6 @@ export async function POST(request: NextRequest) {
           message: 'Error handling test completed'
         };
 
-        console.log('Error handling test passed');
       } catch (error) {
         results.tests.errorHandling = {
           success: false,
@@ -194,7 +187,6 @@ export async function POST(request: NextRequest) {
     // Test 4: Database Connection
     if (testType === 'database' || testType === 'full') {
       try {
-        console.log('Testing database connection...');
         
         const tenantCount = await prisma.tenant.count();
         const userCount = await prisma.user.count();
@@ -206,7 +198,6 @@ export async function POST(request: NextRequest) {
           message: 'Database connection successful'
         };
 
-        console.log('Database connection test passed');
       } catch (error) {
         results.tests.database = {
           success: false,
@@ -220,7 +211,6 @@ export async function POST(request: NextRequest) {
     // Test 5: ANAF Sandbox Connectivity (TestOauth)
     if (testType === 'sandbox' || testType === 'full') {
       try {
-        console.log('Testing ANAF sandbox connectivity...');
         
         // Use the OAuth service method for testing sandbox connectivity
         const { ANAFOAuthService } = await import('@/lib/anaf/oauth-service');
@@ -237,7 +227,6 @@ export async function POST(request: NextRequest) {
           note: connectivityResult.status === 401 ? '401 Unauthorized is expected for TestOauth without authentication - this indicates the service is working correctly' : undefined
         };
 
-        console.log('ANAF sandbox connectivity test completed');
       } catch (error) {
         results.tests.sandboxConnectivity = {
           success: false,
@@ -251,7 +240,6 @@ export async function POST(request: NextRequest) {
     // Test 6: Environment Variables
     if (testType === 'env' || testType === 'full') {
       try {
-        console.log('Testing environment variables...');
         
         const requiredEnvVars = [
           'ANAF_CLIENT_ID',
@@ -275,7 +263,6 @@ export async function POST(request: NextRequest) {
           message: allSet ? 'All required environment variables are set' : 'Some environment variables are missing'
         };
 
-        console.log('Environment variables test completed');
       } catch (error) {
         results.tests.environment = {
           success: false,
@@ -299,7 +286,6 @@ export async function POST(request: NextRequest) {
       overallSuccess: successCount === totalTests
     };
 
-    console.log('ANAF test completed:', results.tests.summary);
 
     return NextResponse.json({
       success: true,

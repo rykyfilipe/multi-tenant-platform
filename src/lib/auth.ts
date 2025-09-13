@@ -92,19 +92,16 @@ export const authOptions = {
 	callbacks: {
 		async redirect({ url, baseUrl}: { url: string, baseUrl: string }) {
 			try {
-				console.log(`Redirect callback - url: ${url}, baseUrl: ${baseUrl}`);
 				
 				// Handle relative URLs
 				if (url.startsWith("/")) {
 					const redirectUrl = `${baseUrl}${url}`;
-					console.log(`Redirecting to relative URL: ${redirectUrl}`);
 					return redirectUrl;
 				}
 				
 				// Handle absolute URLs
 				const urlObj = new URL(url);
 				if (urlObj.origin === baseUrl) {
-					console.log(`Redirecting to same origin URL: ${url}`);
 					return url;
 				}
 
@@ -112,19 +109,16 @@ export const authOptions = {
 				const callbackUrl = urlObj.searchParams.get("callbackUrl");
 				if (callbackUrl) {
 					if (callbackUrl.startsWith("http")) {
-						console.log(`Redirecting to external callback URL: ${callbackUrl}`);
 						return callbackUrl;
 					}
 					if (callbackUrl.startsWith("/")) {
 						const relativeCallbackUrl = `${baseUrl}${callbackUrl}`;
-						console.log(`Redirecting to relative callback URL: ${relativeCallbackUrl}`);
 						return relativeCallbackUrl;
 					}
 				}
 				
 				// Default redirect to auth-callback page
 				const defaultRedirect = `${baseUrl}/auth-callback`;
-				console.log(`Default redirect to: ${defaultRedirect}`);
 				return defaultRedirect;
 			} catch (error) {
 				console.error("Redirect callback error:", error);
@@ -132,7 +126,6 @@ export const authOptions = {
 			}
 		},
 		async signIn({ user, account }: { user: User, account: Account }) {
-			console.log(`SignIn callback: ${user.email}, provider: ${account?.provider}`);
 			if (account?.provider === "google" && user.email) {
 				try {
 					const existingUser = await prisma.user.findFirst({ where: { email: user.email } });
@@ -329,10 +322,10 @@ export const authOptions = {
 	trustHost: true,
 	adapter: undefined,
 	events: {
-		async signIn({ user, account }: { user: User, account: Account | null }) { console.log(`User ${user.email} signed in via ${account?.provider}`); },
-		async signOut() { console.log("User signed out"); },
-		async createUser({ user }: { user: User }) { console.log(`New user created: ${user.email}`); },
-		async session() { if (process.env.NODE_ENV === "development") console.log("Session event triggered"); },
+		async signIn({ user, account }: { user: User, account: Account | null }) { },
+		async signOut() { },
+		async createUser({ user }: { user: User }) { },
+		async session() { },
 	},
 	onError: async (error: Error, context: any) => { console.error("NextAuth error:", error, "Context:", context); },
 };
@@ -539,14 +532,12 @@ export async function getUserFromRequest(request: Request): Promise<{ userId: nu
 
 export async function checkUserTenantAccess(userId: number, tenantId: number): Promise<boolean> {
   try {
-    const userTenant = await prisma.findFirstWithCache({
-      where: {
-        userId,
-        tenantId,
-      },
-    }, 'userTenant');
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tenantId: true }
+    });
     
-    return !!userTenant;
+    return user?.tenantId === tenantId;
   } catch {
     return false;
   }
@@ -574,19 +565,20 @@ export async function validatePublicApiAccess(request: Request): Promise<{
     const userId = decoded.userId || decoded.id;
     const role = decoded.role;
     
-    // Check if user has tenant access
-    const userTenant = await prisma.userTenant.findUnique({
-      where: { userId },
+    // Check if user has tenant access (direct relationship in schema)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tenantId: true }
     });
     
-    if (!userTenant) {
+    if (!user || !user.tenantId) {
       return { isValid: false, error: 'User not found or no tenant access' };
     }
     
     return {
       isValid: true,
       userId,
-      tenantId: userTenant.tenantId,
+      tenantId: user.tenantId,
       role,
     };
   } catch {

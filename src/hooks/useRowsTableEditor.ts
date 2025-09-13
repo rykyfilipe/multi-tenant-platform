@@ -17,10 +17,6 @@ function useRowsTableEditor(
 	const { user } = useApp();
 	const { table, onCellsUpdated, onError } = options;
 
-	console.log(
-		"🎣 useRowsTableEditor initialized with table:",
-		table?.name || "No table",
-	);
 
 	// Folosim noul batch editor
 	const {
@@ -47,15 +43,13 @@ function useRowsTableEditor(
 		autoSaveDelay: -1, // Disable auto-save completely for batch editing
 		onSuccess: onCellsUpdated,
 		onError: onError || ((error) => {
-			console.error("Batch save error:", error);
+			// Handle error silently or with proper error handling
 		}),
 		onNewRowsAdded: (newRows) => {
-			console.log("🆕 New rows added to batch:", newRows);
 			// Notifică callback-ul pentru actualizare optimistă a UI-ului
 			onCellsUpdated?.(newRows);
 		},
 		onNewRowsUpdated: (updatedRows) => {
-			console.log("🔄 New rows updated in batch:", updatedRows);
 			// Notifică callback-ul pentru actualizare optimistă a UI-ului
 			onCellsUpdated?.(updatedRows);
 		},
@@ -87,13 +81,6 @@ function useRowsTableEditor(
 		) => void, // Nu mai folosim showAlert din parametri, îl avem în context
 		options?: { keepEditing?: boolean }, // New optional parameter to control editing behavior
 	) => {
-		console.log("💾 handleSaveCell called:", {
-			rowId,
-			columnId,
-			cellId,
-			value,
-		});
-
 		// Găsim celula existentă pentru a obține valoarea originală
 		const currentRow = rows.find((row) => row.id.toString() === rowId);
 		const existingCell = currentRow?.cells?.find(
@@ -101,10 +88,7 @@ function useRowsTableEditor(
 		);
 		const originalValue = existingCell?.value ?? null;
 
-		console.log("🔍 Found original value:", originalValue);
-
 		// Adăugăm modificarea la batch-ul pending
-		console.log("🔍 DEBUG: Adding to pending changes", { rowId, columnId, cellId, value, originalValue });
 		addPendingChange(rowId, columnId, cellId, value, originalValue);
 
 		// Anulăm editarea doar dacă nu este specificat să o păstrăm

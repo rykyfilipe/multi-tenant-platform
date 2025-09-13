@@ -40,7 +40,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
     };
 
     try {
-      console.log(`Submitting invoice ${invoiceId} to ANAF for tenant ${tenantId}`);
       
       // Check if user is authenticated
       const isAuthenticated = await ANAFOAuthService.isAuthenticated(options?.userId, tenantId);
@@ -106,7 +105,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
    */
   async getInvoiceStatus(submissionId: string, tenantId: number): Promise<InvoiceStatusResult> {
     try {
-      console.log(`Getting status for submission ${submissionId} from ANAF`);
       
       // Get access token
       const accessToken = await ANAFOAuthService.getValidAccessToken(0, tenantId); // Use system user
@@ -115,7 +113,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       const baseUrl = process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest';
       const statusUrl = `${baseUrl}/status/${submissionId}`;
       
-      console.log('Checking ANAF status:', {
         url: statusUrl,
         submissionId,
         tenantId
@@ -129,7 +126,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
         },
       });
 
-      console.log('ANAF status response:', {
         status: response.status,
         statusText: response.statusText
       });
@@ -141,7 +137,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       }
 
       const data = await response.json();
-      console.log('ANAF status data:', data);
       
       // Update local status
       await this.updateSubmissionStatus(submissionId, data.status, data.message);

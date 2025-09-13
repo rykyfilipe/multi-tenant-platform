@@ -201,7 +201,6 @@ export class ANAFJWTTokenService {
         },
       });
 
-      console.log('Token stored with expiry:', {
         userId,
         tenantId,
         expiresAt: expiresAt.toISOString()
@@ -254,7 +253,6 @@ export class ANAFJWTTokenService {
         }
       });
 
-      console.log(`Cleaned up ${result.count} expired tokens`);
       return result.count;
     } catch (error) {
       console.error('Error cleaning up expired tokens:', error);
@@ -309,7 +307,6 @@ export class ANAFJWTTokenService {
         }
       });
 
-      console.log(`Revoked all tokens for user ${userId}, tenant ${tenantId}`);
     } catch (error) {
       console.error('Error revoking all tokens:', error);
       throw new Error('Failed to revoke all tokens');

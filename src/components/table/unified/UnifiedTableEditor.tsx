@@ -148,8 +148,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	} = useRowsTableEditor({
 		table,
 		onCellsUpdated: (updatedData) => {
-			console.log("🔄 Processing update data:", updatedData);
-			console.log("🔄 Current paginatedRows before processing:", paginatedRows);
 			
 			// Verifică dacă sunt rânduri noi complete sau doar modificări de celule
 			const isNewRow = (item: any) => item.cells && Array.isArray(item.cells) && item.id && item.tableId;
@@ -163,35 +161,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				return (hasColumnId && hasRowId && !isNewRow(item)) || (hasColumn && hasRowId && !isNewRow(item));
 			};
 			
-			console.log("🔍 DEBUG: Filtering data", {
-				updatedDataLength: updatedData.length,
-				updatedData: updatedData.map(item => ({
-					hasCells: !!item.cells,
-					hasId: !!item.id,
-					hasTableId: !!item.tableId,
-					hasColumnId: item.columnId !== undefined && item.columnId !== null,
-					hasRowId: item.rowId !== undefined && item.rowId !== null,
-					hasColumn: !!item.column,
-					columnIdValue: item.columnId,
-					rowIdValue: item.rowId,
-					columnIdType: typeof item.columnId,
-					rowIdType: typeof item.rowId,
-					isNewRow: isNewRow(item),
-					isCellUpdate: isCellUpdate(item),
-					item: item
-				}))
-			});
-			
 			const newRows = updatedData.filter(isNewRow);
 			const cellUpdates = updatedData.filter(isCellUpdate);
-			
-			console.log("🔄 Detected new rows:", newRows.length);
-			console.log("🔄 Detected cell updates:", cellUpdates.length);
 			
 		
 			// Gestionează rândurile noi salvate
 			if (newRows.length > 0) {
-				console.log("🆕 Adding new saved rows to paginatedRows:", newRows);
 				setRows((currentRows: any[]) => {
 					// Elimină rândurile locale temporare și adaugă rândurile salvate
 					const filteredRows = currentRows.filter(row => !row.id.toString().startsWith('temp_'));
@@ -206,7 +181,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				const normalCells = cellUpdates.filter((cell: any) => !cell.isRollback);
 				
 				if (rollbackCells.length > 0) {
-					console.log("🔄 Rolling back optimistic updates:", rollbackCells);
 					setRows((currentRows: any[]) =>
 						currentRows.map((row) => {
 							const updatedRow = { ...row };
@@ -223,10 +197,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 											value: updatedRow.cells[cellIndex].originalValue,
 											originalValue: undefined // Clear original value after rollback
 										};
-										console.log("🔄 Rolled back cell to original value:", {
-											cellIndex,
-											originalValue: updatedRow.cells[cellIndex].value
-										});
 									}
 								}
 							});
@@ -236,8 +206,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				}
 				
 				if (normalCells.length > 0) {
-					console.log("🔄 Updating cells in UI with server response:", normalCells);
-					
 					setRows((currentRows: any[]) => {
 						const result = currentRows.map((row) => {
 							const updatedRow = { ...row, cells: [...row.cells] };
@@ -252,12 +220,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 									id: updatedCell.id
 								};
 
-								console.log("🔍 DEBUG: Processing updatedCell", { 
-									originalCell: updatedCell,
-									normalizedCell,
-									rowId: updatedRow.id.toString(), 
-									updatedCellRowId: normalizedCell.rowId.toString()
-								});
 								
 								// Check if this update applies to this row
 								if (updatedRow.id.toString() === normalizedCell.rowId.toString()) {
@@ -266,12 +228,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 										(cell: any) => cell.columnId.toString() === normalizedCell.columnId.toString()
 									);
 									
-									console.log("🔍 DEBUG: Cell index found", { 
-										cellIndex, 
-										columnId: normalizedCell.columnId,
-										rowId: updatedRow.id,
-										searchStrategy: cellIndex >= 0 ? "found by columnId" : "not found"
-									});
 									
 									if (cellIndex >= 0) {
 										// Update existing cell with new value from server
@@ -283,11 +239,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 											columnId: updatedRow.cells[cellIndex].columnId,
 											rowId: updatedRow.cells[cellIndex].rowId
 										};
-										console.log("🔍 DEBUG: Updated existing cell", { 
-											cellIndex, 
-											newValue: normalizedCell.value,
-											finalCell: updatedRow.cells[cellIndex]
-										});
 									} else {
 										// Add new cell if it doesn't exist (shouldn't happen normally)
 										const newCell = { 
@@ -297,31 +248,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 											rowId: normalizedCell.rowId
 										};
 										updatedRow.cells.push(newCell);
-										console.log("🔍 DEBUG: Added new cell", { 
-											newValue: normalizedCell.value,
-											newCell
-										});
 									}
 								}
 							});
 							return updatedRow;
 						});
 						
-						console.log("🔄 Final updated rows:", result?.map((row: any) => ({
-							id: row.id,
-							cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-						})));
-						
-						// Additional debugging to verify the update worked
-						setTimeout(() => {
-							console.log("🔄 paginatedRows after state update:", paginatedRows?.map((row: any) => ({
-								id: row.id,
-								cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-							})));
-						}, 100);
-						
-						// Force a re-render by updating a dummy state to ensure the UI reflects the changes
-						console.log("🔄 Cell update completed successfully");
 						
 						return result;
 					});
@@ -606,7 +538,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			const cell = currentRow?.cells?.find(cell => cell.columnId.toString() === columnId);
 			const cellId = cell?.id?.toString() ?? "virtual";
 			
-			console.log("🔍 DEBUG: handleCellClick", { rowId, columnId, cellId, cellExists: !!cell });
 			handleEditCell(rowId, columnId, cellId);
 		}
 	}, [handleEditCell, tablePermissions, paginatedRows]);
@@ -790,7 +721,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		addNewRow(rowData);
 		setShowInlineRowCreator(false);
 		
-		console.log("🆕 Row added to batch for later saving:", rowData);
 		showAlert("Row added to batch - will be saved when you click Save Changes", "info");
 	}, [tablePermissions, showAlert, addNewRow]);
 
@@ -920,7 +850,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 			if (response.ok) {
 				// 🔧 FIX: Nu mai face refreshAfterChange() - optimistic update rămâne corect
-				console.log("✅ Row deleted successfully, keeping optimistic update");
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to delete row");
@@ -989,7 +918,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 			if (failedDeletes.length === 0) {
 				// 🔧 FIX: Nu mai face refreshAfterChange() - optimistic updates rămân corecte
-				console.log("✅ All rows deleted successfully, keeping optimistic updates");
 			} else {
 				// Revert optimistic update for failed deletes
 				const failedRowIds = existingRowIds.filter((_, index) => !responses[index].ok);
@@ -1015,10 +943,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 	const handleSaveCellWrapper = useCallback(
 		async (columnId: string, rowId: string, cellId: string, value: any) => {
-			console.log("💾 handleSaveCellWrapper called - delegating to hook's handleSaveCell", { 
-				rowId, columnId, cellId, value 
-			});
-
 			// Simply delegate to the hook's handleSaveCell function
 			// This function should only add to pending changes, not do immediate server saves
 			await handleSaveCell(
@@ -1028,7 +952,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				paginatedRows,
 				() => {
 					// No-op callback since we're not doing immediate server save
-					console.log("💾 Pending change added via hook, no immediate server call");
 				},
 				value,
 				table,
