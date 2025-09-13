@@ -2,15 +2,13 @@
 
 import { ANAFTokenResponse, ANAFConfiguration, ANAFUserCredentials, ANAFError } from './types';
 import { ANAFJWTTokenService } from './jwt-token-service';
-import { PrismaClient } from '@/generated/prisma';
-
-const prisma = new PrismaClient();
+import prisma from '../prisma';
 
 export class ANAFOAuthService {
   private static readonly CONFIG: ANAFConfiguration = {
-    clientId: process.env.ANAF_CLIENT_ID || '',
-    clientSecret: process.env.ANAF_CLIENT_SECRET || '',
-    redirectUri: process.env.ANAF_REDIRECT_URI || '',
+    clientId: process.env.ANAF_CLIENT_ID || 'a1804dab99e7ed5fbb6188f09d182edd0c58d20fa532c568',
+    clientSecret: process.env.ANAF_CLIENT_SECRET || '26b94e4f9f543c74fc2e9cbe91ce9d8c4273c816a2b92edd0c58d20fa532c568',
+    redirectUri: process.env.ANAF_REDIRECT_URI || 'https://ydv.digital/api/anaf/callback',
     baseUrl: process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest',
     environment: (process.env.ANAF_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
   };

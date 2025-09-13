@@ -1126,7 +1126,7 @@ export function InvoiceForm({
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit} className='space-y-8'>
+					<form onSubmit={handleSubmit} className='space-y-6'>
 						{/* Invoice Base Currency Selection */}
 						<div className='space-y-4'>
 							<Label className='text-base font-medium flex items-center gap-2'>
@@ -1230,13 +1230,13 @@ export function InvoiceForm({
 						</div>
 
 						{/* Invoice Details */}
-						<div className='space-y-4'>
-							<Label className='text-base font-medium flex items-center gap-2'>
+						<div className='space-y-3'>
+							<Label className='text-sm font-medium flex items-center gap-2'>
 								<FileText className='w-4 h-4 text-primary' />
 								{t("invoice.form.invoiceDetails")}
 							</Label>
 
-							<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+							<div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
 								{/* Data Scadentă */}
 								<div>
 									<Label htmlFor='due_date'>
@@ -1398,7 +1398,7 @@ export function InvoiceForm({
 							</div>
 
 							{/* Seria Facturii */}
-							<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+							<div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
 								<div>
 									<Label htmlFor='invoice_series'>
 										{t("invoice.form.invoiceSeries")}
@@ -1450,15 +1450,15 @@ export function InvoiceForm({
 						</div>
 
 						{/* Product Selection Form */}
-						<div className='space-y-4'>
-							<Label className='text-base font-medium flex items-center gap-2'>
+						<div className='space-y-3'>
+							<Label className='text-sm font-medium flex items-center gap-2'>
 								<Package className='w-4 h-4 text-primary' />
 								{t("invoice.form.addProduct")}
 							</Label>
 
-							<Card className='border-0 shadow-sm bg-muted/20'>
-								<CardContent className='p-6'>
-									<div className='grid grid-cols-1 lg:grid-cols-6 gap-4'>
+							<Card className='border border-border/50 shadow-sm bg-muted/10'>
+								<CardContent className='p-4'>
+									<div className='grid grid-cols-1 lg:grid-cols-6 gap-3'>
 										{/* Table Selection */}
 										<div className='lg:col-span-2'>
 											<Label className='text-sm font-medium'>
@@ -1568,7 +1568,7 @@ export function InvoiceForm({
 															placeholder={t("invoice.form.selectProduct")}
 														/>
 													</SelectTrigger>
-													<SelectContent>
+													<SelectContent className='max-h-80'>
 														{tableRows.length > 0 ? (
 															tableRows.map((row: any) => {
 																const productDetails = extractProductDetails(
@@ -1578,40 +1578,33 @@ export function InvoiceForm({
 																return (
 																	<SelectItem
 																		key={row.id}
-																		value={row.id.toString()}>
-																		<div className='flex flex-col gap-1 py-1'>
-																			<div className='flex items-center justify-between'>
-																				<div className='font-medium'>
+																		value={row.id.toString()}
+																		className='py-2'>
+																		<div className='flex items-center justify-between w-full'>
+																			<div className='flex-1 min-w-0'>
+																				<div className='font-medium text-sm truncate'>
 																					{productDetails.name ||
 																						`Product #${row.id}`}
 																				</div>
-																			</div>
-																			<div className='text-xs text-muted-foreground space-y-1'>
-																				{productDetails.description && (
-																					<div className='truncate max-w-[200px]'>
-																						{productDetails.description}
-																					</div>
-																				)}
-																				<div className='flex items-center gap-2'>
-																					{productDetails.price &&
-																						productDetails.currency && (
-																							<span className='bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-0.5 rounded text-xs font-medium'>
-																								{productDetails.price}{" "}
-																								{productDetails.currency}
-																							</span>
-																						)}
-																					{productDetails.sku && (
-																						<span className='bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded text-xs'>
-																							SKU: {productDetails.sku}
-																						</span>
-																					)}
-																				</div>
-																				{productDetails.category && (
+																				{productDetails.sku && (
 																					<div className='text-xs text-muted-foreground'>
-																						Category: {productDetails.category}
+																						SKU: {productDetails.sku}
 																					</div>
 																				)}
 																			</div>
+																			{productDetails.price &&
+																				productDetails.currency && (
+																					<div className='ml-2 text-right'>
+																						<div className='text-sm font-semibold text-green-600 dark:text-green-400'>
+																							{productDetails.price} {productDetails.currency}
+																						</div>
+																						{productDetails.category && (
+																							<div className='text-xs text-muted-foreground'>
+																								{productDetails.category}
+																							</div>
+																						)}
+																					</div>
+																				)}
 																		</div>
 																	</SelectItem>
 																);
@@ -1649,7 +1642,7 @@ export function InvoiceForm({
 									</div>
 
 									{/* Description */}
-									<div className='mt-4'>
+									<div className='mt-3'>
 										<Label className='text-sm font-medium'>
 											{t("invoice.form.description")}
 										</Label>
@@ -1662,12 +1655,12 @@ export function InvoiceForm({
 												}))
 											}
 											placeholder={t("invoice.form.descriptionPlaceholder")}
-											className='w-full'
+											className='w-full h-16 resize-none'
 										/>
 									</div>
 
 									{/* Add Button */}
-									<div className='flex justify-end mt-4'>
+									<div className='flex justify-end mt-3'>
 										<Button
 											type='button'
 											variant='outline'
@@ -1683,313 +1676,261 @@ export function InvoiceForm({
 						</div>
 
 						{/* Products List */}
-						<div className='space-y-4'>
-							<Label className='text-base font-medium flex items-center gap-2'>
+						<div className='space-y-3'>
+							<Label className='text-sm font-medium flex items-center gap-2'>
 								<Package className='w-4 h-4 text-primary' />
-								{t("invoice.form.selectedProducts")}
+								{t("invoice.form.selectedProducts")} ({products.length})
 							</Label>
 
 							{products.length === 0 && (
-								<Card className='border-0 shadow-sm bg-muted/20'>
-									<CardContent className='text-center py-12'>
-										<div className='w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4'>
-											<Package className='w-8 h-8 text-muted-foreground' />
+								<Card className='border border-border/50 shadow-sm bg-muted/10'>
+									<CardContent className='text-center py-8'>
+										<div className='w-12 h-12 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-3'>
+											<Package className='w-6 h-6 text-muted-foreground' />
 										</div>
-										<p className='text-muted-foreground font-medium'>
+										<p className='text-muted-foreground font-medium text-sm'>
 											{t("invoice.form.noProductsAdded")}
 										</p>
-										<p className='text-sm text-muted-foreground mt-1'>
+										<p className='text-xs text-muted-foreground mt-1'>
 											{t("invoice.form.useFormToAddProducts")}
 										</p>
 									</CardContent>
 								</Card>
 							)}
 
-							<div className='space-y-4'>
+							<div className='space-y-3'>
 								{products.map((product, index) => (
 									<Card
 										key={product.id}
-										className='border-0 shadow-sm hover:shadow-md transition-all duration-200'>
-										<CardContent className='p-6'>
-											<div className='flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6'>
-												<div className='flex-1 space-y-4'>
-													{/* Product Header */}
-													<div className='mb-6'>
-														<div className='flex items-start gap-4 mb-4'>
-															<div className='w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg'>
-																<span className='text-sm font-medium text-white'>
-																	{index + 1}
-																</span>
-															</div>
-															<div className='flex-1 min-w-0'>
-																<h4 className='font-semibold text-lg text-foreground truncate'>
-																	{(() => {
-																		const row = tableRows.find(
-																			(r: any) =>
-																				r.id === product.product_ref_id,
-																		);
-																		const details = extractProductDetails(
-																			product.product_ref_table,
-																			row,
-																		);
-																		return (
-																			details.name ||
-																			getRowDisplayName(
-																				product.product_ref_table,
-																				product.product_ref_id,
-																			)
-																		);
-																	})()}
-																</h4>
-																<div className='text-sm text-muted-foreground space-y-1'>
-																	<div>
-																		{t("invoice.form.table")}:{" "}
-																		<span className='font-medium'>
-																			{product.product_ref_table}
-																		</span>{" "}
-																		• ID:{" "}
-																		<span className='font-medium'>
-																			{product.product_ref_id}
-																		</span>
-																	</div>
-																	{(() => {
-																		const row = tableRows.find(
-																			(r: any) =>
-																				r.id === product.product_ref_id,
-																		);
-																		const details = extractProductDetails(
-																			product.product_ref_table,
-																			row,
-																		);
-																		return (
-																			<div className='flex flex-wrap gap-2 mt-2'>
-																				{details.description && (
-																					<div className='bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs max-w-[200px] truncate'>
-																						{details.description}
-																					</div>
-																				)}
-																				{details.sku && (
-																					<div className='bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-xs'>
-																						SKU: {details.sku}
-																					</div>
-																				)}
-																				{details.category && (
-																					<div className='bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-1 rounded text-xs'>
-																						{details.category}
-																					</div>
-																				)}
-																				{details.brand && (
-																					<div className='bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 px-2 py-1 rounded text-xs'>
-																						{details.brand}
-																					</div>
-																				)}
-																			</div>
-																		);
-																	})()}
-																</div>
-															</div>
-														</div>
-
-														{/* View Details Button */}
-														<div className='flex-shrink-0'>
-															<ProductDetailsModal
-																productName={(() => {
-																	const row = tableRows.find(
-																		(r: any) => r.id === product.product_ref_id,
-																	);
-																	const details = extractProductDetails(
-																		product.product_ref_table,
-																		row,
-																	);
-																	return (
-																		details.name ||
-																		getRowDisplayName(
-																			product.product_ref_table,
-																			product.product_ref_id,
-																		)
-																	);
-																})()}
-																productDetails={(() => {
-																	const row = tableRows.find(
-																		(r: any) => r.id === product.product_ref_id,
-																	);
-																	return row;
-																})()}
-																tableName={product.product_ref_table}
-																productId={product.product_ref_id}>
-																<Button
-																	variant='outline'
-																	size='sm'
-																	className='flex items-center gap-2'>
-																	<Eye className='w-4 h-4' />
-																	{t("invoice.form.viewDetails")}
-																</Button>
-															</ProductDetailsModal>
-														</div>
+										className='border border-border/50 shadow-sm hover:shadow-md transition-all duration-200'>
+										<CardContent className='p-4'>
+											<div className='flex items-center justify-between gap-4'>
+												{/* Product Info */}
+												<div className='flex items-center gap-3 flex-1 min-w-0'>
+													<div className='w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm'>
+														{index + 1}
 													</div>
-
-													{/* Product Details Grid */}
-													<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.quantity")}
-															</p>
-															<Input
-																type='number'
-																min='1'
-																value={product.quantity}
-																onChange={(e) =>
-																	updateProduct(
-																		product.id,
-																		"quantity",
-																		Number(e.target.value),
-																	)
-																}
-																className='w-20 h-16 text-center text-lg font-semibold'
-															/>
-														</div>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.unitOfMeasure")}
-															</p>
-															<p className='font-bold text-lg text-purple-600 dark:text-purple-400'>
-																{extractProductUnitOfMeasure(
+													<div className='flex-1 min-w-0'>
+														<h4 className='font-semibold text-sm text-foreground truncate'>
+															{(() => {
+																const row = tableRows.find(
+																	(r: any) =>
+																		r.id === product.product_ref_id,
+																);
+																const details = extractProductDetails(
 																	product.product_ref_table,
-																	product.product_ref_id,
-																) || t("invoice.form.unit")}
-															</p>
-														</div>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.currency")}
-															</p>
-															<p className='font-bold text-lg text-blue-600 dark:text-blue-400'>
-																{product.currency}
-															</p>
-														</div>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.unitPrice")}
-															</p>
-															<p className='font-bold text-lg text-green-600 dark:text-green-400'>
-																{product.extractedPrice && !isNaN(product.extractedPrice) ? (
-																	`${product.extractedPrice.toFixed(2)} ${
-																		product.currency
-																	}`
-																) : (
-																	<span className='text-muted-foreground'>
-																		{t("invoice.form.noPriceFound")}
-																	</span>
-																)}
-															</p>
-														</div>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.totalOriginal")}
-															</p>
-															<p className='font-bold text-xl text-green-700 dark:text-green-300'>
-																{product.calculatedTotal && !isNaN(product.calculatedTotal) ? (
-																	`${product.calculatedTotal.toFixed(2)} ${
-																		product.currency
-																	}`
-																) : (
-																	<span className='text-muted-foreground'>
-																		0.00 {product.currency}
-																	</span>
-																)}
-															</p>
-														</div>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.totalConverted", {
-																	currency: baseCurrency,
-																})}
-															</p>
-															<p className='font-bold text-xl text-blue-700 dark:text-blue-300'>
-																{product.convertedTotal && !isNaN(product.convertedTotal) ? (
-																	`${formatCurrency(
-																		product.convertedTotal,
-																		baseCurrency,
-																	)}`
-																) : (
-																	<span className='text-muted-foreground'>
-																		{formatCurrency(0, baseCurrency)}
-																	</span>
-																)}
-															</p>
-														</div>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.vatRate")}
-															</p>
-															<p className='font-bold text-lg text-orange-600 dark:text-orange-400'>
-																{(() => {
-																	const row = tableRows.find(
-																		(r: any) => r.id === product.product_ref_id,
-																	);
-																	const details = extractProductDetails(
+																	row,
+																);
+																return (
+																	details.name ||
+																	getRowDisplayName(
 																		product.product_ref_table,
-																		row,
-																	);
-																	return details.vat ? `${details.vat}%` : "0%";
-																})()}
-															</p>
-														</div>
-														<div className='space-y-2 p-3 bg-muted/20 rounded-lg'>
-															<p className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>
-																{t("invoice.form.status")}
-															</p>
-															<Badge variant='secondary' className='text-xs'>
-																<CheckCircle className='w-3 h-3 mr-1' />
-																{t("invoice.form.added")}
-															</Badge>
+																		product.product_ref_id,
+																	)
+																);
+															})()}
+														</h4>
+														<div className='text-xs text-muted-foreground flex items-center gap-2 mt-1'>
+															<span>{product.product_ref_table}</span>
+															<span>•</span>
+															<span>ID: {product.product_ref_id}</span>
+															{(() => {
+																const row = tableRows.find(
+																	(r: any) => r.id === product.product_ref_id,
+																);
+																const details = extractProductDetails(
+																	product.product_ref_table,
+																	row,
+																);
+																return details.sku && (
+																	<>
+																		<span>•</span>
+																		<span className='bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded text-xs'>
+																			{details.sku}
+																		</span>
+																	</>
+																);
+															})()}
 														</div>
 													</div>
-
-													{/* Conversion Details */}
-													{product.conversion &&
-														product.currency !== baseCurrency && (
-															<div className='pt-3 border-t border-border'>
-																<div className='flex items-center gap-2 text-sm text-muted-foreground'>
-																	<Globe className='w-4 h-4' />
-																	<span>
-																		{t("invoice.form.exchangeRate", {
-																			fromCurrency: product.currency,
-																			toCurrency: baseCurrency,
-																			rate: product.conversion.exchangeRate.toFixed(
-																				4,
-																			),
-																		})}
-																	</span>
-																</div>
-															</div>
-														)}
-
-													{/* Description */}
-													{product.description && (
-														<div className='pt-3 border-t border-border'>
-															<p className='text-sm text-muted-foreground'>
-																<span className='font-medium'>
-																	{t("invoice.form.description")}:
-																</span>{" "}
-																{product.description}
-															</p>
-														</div>
-													)}
 												</div>
 
-												{/* Actions */}
-												<div className='flex flex-col gap-2 lg:items-end'>
+												{/* Product Actions & Details */}
+												<div className='flex items-center gap-3'>
+													{/* View Details Button */}
+													<ProductDetailsModal
+														productName={(() => {
+															const row = tableRows.find(
+																(r: any) => r.id === product.product_ref_id,
+															);
+															const details = extractProductDetails(
+																product.product_ref_table,
+																row,
+															);
+															return (
+																details.name ||
+																getRowDisplayName(
+																	product.product_ref_table,
+																	product.product_ref_id,
+																)
+															);
+														})()}
+														productDetails={(() => {
+															const row = tableRows.find(
+																(r: any) => r.id === product.product_ref_id,
+															);
+															return row;
+														})()}
+														tableName={product.product_ref_table}
+														productId={product.product_ref_id}>
+														<Button
+															variant='outline'
+															size='sm'
+															className='h-8 px-2'>
+															<Eye className='w-3 h-3' />
+														</Button>
+													</ProductDetailsModal>
+
+													{/* Remove Button */}
 													<Button
 														type='button'
 														variant='outline'
 														size='sm'
 														onClick={() => removeProduct(product.id)}
-														className='w-full lg:w-auto text-destructive hover:text-destructive hover:bg-destructive/10'>
-														<Trash2 className='w-4 h-4 mr-2' />
-														{t("invoice.form.remove")}
+														className='h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10'>
+														<Trash2 className='w-3 h-3' />
 													</Button>
 												</div>
+											</div>
+
+											{/* Product Details - Compact Inline */}
+											<div className='mt-3 pt-3 border-t border-border/50'>
+												<div className='grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3'>
+													{/* Quantity */}
+													<div className='space-y-1'>
+														<Label className='text-xs text-muted-foreground'>
+															{t("invoice.form.quantity")}
+														</Label>
+														<Input
+															type='number'
+															min='1'
+															value={product.quantity}
+															onChange={(e) =>
+																updateProduct(
+																	product.id,
+																	"quantity",
+																	Number(e.target.value),
+																)
+															}
+															className='h-8 text-center text-sm'
+														/>
+													</div>
+
+													{/* Unit Price */}
+													<div className='space-y-1'>
+														<Label className='text-xs text-muted-foreground'>
+															{t("invoice.form.unitPrice")}
+														</Label>
+														<div className='h-8 flex items-center justify-center text-sm font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 rounded border'>
+															{product.extractedPrice && !isNaN(product.extractedPrice) ? (
+																`${product.extractedPrice.toFixed(2)} ${product.currency}`
+															) : (
+																<span className='text-muted-foreground text-xs'>
+																	{t("invoice.form.noPriceFound")}
+																</span>
+															)}
+														</div>
+													</div>
+
+													{/* Total Original */}
+													<div className='space-y-1'>
+														<Label className='text-xs text-muted-foreground'>
+															{t("invoice.form.totalOriginal")}
+														</Label>
+														<div className='h-8 flex items-center justify-center text-sm font-bold text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/20 rounded border'>
+															{product.calculatedTotal && !isNaN(product.calculatedTotal) ? (
+																`${product.calculatedTotal.toFixed(2)} ${product.currency}`
+															) : (
+																`0.00 ${product.currency}`
+															)}
+														</div>
+													</div>
+
+													{/* Total Converted */}
+													<div className='space-y-1'>
+														<Label className='text-xs text-muted-foreground'>
+															{baseCurrency}
+														</Label>
+														<div className='h-8 flex items-center justify-center text-sm font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 rounded border'>
+															{product.convertedTotal && !isNaN(product.convertedTotal) ? (
+																formatCurrency(product.convertedTotal, baseCurrency)
+															) : (
+																formatCurrency(0, baseCurrency)
+															)}
+														</div>
+													</div>
+
+													{/* VAT Rate */}
+													<div className='space-y-1'>
+														<Label className='text-xs text-muted-foreground'>
+															{t("invoice.form.vatRate")}
+														</Label>
+														<div className='h-8 flex items-center justify-center text-sm font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20 rounded border'>
+															{(() => {
+																const row = tableRows.find(
+																	(r: any) => r.id === product.product_ref_id,
+																);
+																const details = extractProductDetails(
+																	product.product_ref_table,
+																	row,
+																);
+																return details.vat ? `${details.vat}%` : "0%";
+															})()}
+														</div>
+													</div>
+
+													{/* Unit */}
+													<div className='space-y-1'>
+														<Label className='text-xs text-muted-foreground'>
+															{t("invoice.form.unit")}
+														</Label>
+														<div className='h-8 flex items-center justify-center text-sm font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/20 rounded border'>
+															{extractProductUnitOfMeasure(
+																product.product_ref_table,
+																product.product_ref_id,
+															) || t("invoice.form.unit")}
+														</div>
+													</div>
+												</div>
+
+												{/* Conversion Details */}
+												{product.conversion &&
+													product.currency !== baseCurrency && (
+														<div className='mt-3 pt-3 border-t border-border/50'>
+															<div className='flex items-center gap-2 text-xs text-muted-foreground'>
+																<Globe className='w-3 h-3' />
+																<span>
+																	{t("invoice.form.exchangeRate", {
+																		fromCurrency: product.currency,
+																		toCurrency: baseCurrency,
+																		rate: product.conversion.exchangeRate.toFixed(4),
+																	})}
+																</span>
+															</div>
+														</div>
+													)}
+
+												{/* Description */}
+												{product.description && (
+													<div className='mt-3 pt-3 border-t border-border/50'>
+														<p className='text-xs text-muted-foreground'>
+															<span className='font-medium'>
+																{t("invoice.form.description")}:
+															</span>{" "}
+															{product.description}
+														</p>
+													</div>
+												)}
 											</div>
 										</CardContent>
 									</Card>
@@ -1999,37 +1940,37 @@ export function InvoiceForm({
 
 						{/* Invoice Summary */}
 						{products.length > 0 ? (
-							<Card className='border-0 shadow-lg bg-gradient-to-br from-muted/20 to-muted/40'>
-								<CardContent className='p-6'>
-									<div className='space-y-6'>
+							<Card className='border border-border/50 shadow-sm bg-gradient-to-br from-muted/10 to-muted/20'>
+								<CardContent className='p-4'>
+									<div className='space-y-4'>
 										<div className='flex items-center justify-between'>
 											<div className='space-y-1'>
 												<p className='text-sm text-muted-foreground font-medium'>
 													{t("invoice.form.totalItems")}
 												</p>
-												<p className='text-3xl font-bold text-foreground'>
+												<p className='text-2xl font-bold text-foreground'>
 													{products.length}
 												</p>
 											</div>
-											<div className='w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center'>
-												<Calculator className='w-8 h-8 text-primary' />
+											<div className='w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center'>
+												<Calculator className='w-6 h-6 text-primary' />
 											</div>
 										</div>
 
 										{/* Currency Breakdown */}
 										{invoiceTotals && invoiceTotals.totalsByCurrency ? (
-											<div className='space-y-3'>
+											<div className='space-y-2'>
 												<p className='text-sm text-muted-foreground font-medium'>
 													{t("invoice.form.amountByCurrency")}
 												</p>
-												<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
+												<div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2'>
 													{Object.entries(invoiceTotals.totalsByCurrency).map(
 														([currency, amount]) => (
 															<div
 																key={currency}
-																className='flex justify-between items-center p-3 bg-background rounded-lg border shadow-sm'>
+																className='flex justify-between items-center p-2 bg-background rounded border text-sm'>
 																<span className='font-medium'>{currency}</span>
-																<span className='text-lg font-bold text-green-600 dark:text-green-400'>
+																<span className='font-bold text-green-600 dark:text-green-400'>
 																	{(amount as number).toFixed(2)}
 																</span>
 															</div>
@@ -2038,26 +1979,26 @@ export function InvoiceForm({
 												</div>
 											</div>
 										) : (
-											<div className='space-y-3'>
+											<div className='space-y-2'>
 												<p className='text-sm text-muted-foreground font-medium'>
 													{t("invoice.form.amountByCurrency")}
 												</p>
-												<div className='text-center py-4 text-muted-foreground'>
+												<div className='text-center py-3 text-muted-foreground text-sm'>
 													{t("invoice.form.calculatingBreakdown")}
 												</div>
 											</div>
 										)}
 
 										{/* Base Currency Total */}
-										<div className='pt-4 border-t border-border'>
-											<div className='space-y-3'>
+										<div className='pt-3 border-t border-border/50'>
+											<div className='space-y-2'>
 												<div className='flex justify-between items-center'>
-													<span className='text-lg font-medium text-muted-foreground'>
+													<span className='text-sm font-medium text-muted-foreground'>
 														{t("invoice.form.subtotalExclVat", {
 															currency: baseCurrency,
 														})}
 													</span>
-													<span className='text-2xl font-bold text-green-600 dark:text-green-400'>
+													<span className='text-lg font-bold text-green-600 dark:text-green-400'>
 														{invoiceTotals
 															? formatCurrency(
 																	invoiceTotals.subtotalInBaseCurrency,
@@ -2067,12 +2008,12 @@ export function InvoiceForm({
 													</span>
 												</div>
 												<div className='flex justify-between items-center'>
-													<span className='text-lg font-medium text-muted-foreground'>
+													<span className='text-sm font-medium text-muted-foreground'>
 														{t("invoice.form.vatTotal", {
 															currency: baseCurrency,
 														})}
 													</span>
-													<span className='text-2xl font-bold text-orange-600 dark:text-orange-400'>
+													<span className='text-lg font-bold text-orange-600 dark:text-orange-400'>
 														{invoiceTotals
 															? formatCurrency(
 																	invoiceTotals.vatTotalInBaseCurrency,
@@ -2081,14 +2022,14 @@ export function InvoiceForm({
 															: t("invoice.form.calculating")}
 													</span>
 												</div>
-												<div className='pt-3 border-t border-border'>
+												<div className='pt-2 border-t border-border/50'>
 													<div className='flex justify-between items-center'>
-														<span className='text-xl font-medium text-muted-foreground'>
+														<span className='text-base font-medium text-muted-foreground'>
 															{t("invoice.form.grandTotalInclVat", {
 																currency: baseCurrency,
 															})}
 														</span>
-														<span className='text-4xl font-bold text-primary'>
+														<span className='text-2xl font-bold text-primary'>
 															{invoiceTotals
 																? formatCurrency(
 																		invoiceTotals.grandTotalInBaseCurrency,
@@ -2103,21 +2044,21 @@ export function InvoiceForm({
 
 										{/* Exchange Rate Information */}
 										{Object.keys(exchangeRates).length > 0 && (
-											<div className='pt-4 border-t border-border'>
-												<div className='space-y-3'>
+											<div className='pt-3 border-t border-border/50'>
+												<div className='space-y-2'>
 													<p className='text-sm text-muted-foreground font-medium'>
 														{t("invoice.form.exchangeRatesUsed")}
 													</p>
-													<div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
+													<div className='grid grid-cols-3 md:grid-cols-4 gap-2'>
 														{Object.entries(exchangeRates).map(
 															([currency, rate]) => (
 																<div
 																	key={currency}
-																	className='text-xs bg-background p-3 rounded-lg border shadow-sm'>
+																	className='text-xs bg-background p-2 rounded border'>
 																	<div className='font-medium'>
 																		{currency} → {baseCurrency}
 																	</div>
-																	<div className='text-muted-foreground text-lg font-bold'>
+																	<div className='text-muted-foreground text-sm font-bold'>
 																		{rate.rate.toFixed(4)}
 																	</div>
 																</div>
@@ -2140,7 +2081,7 @@ export function InvoiceForm({
 											];
 											if (currencies.length > 1) {
 												return (
-													<div className='p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg'>
+													<div className='p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg'>
 														<div className='flex items-center gap-2'>
 															<AlertTriangle className='w-4 h-4 text-yellow-600 dark:text-yellow-400' />
 															<p className='text-sm text-yellow-800 dark:text-yellow-200'>
@@ -2227,14 +2168,13 @@ export function InvoiceForm({
 						</div>
 
 						{/* Submit Button */}
-						<div className='flex justify-end pt-4'>
-							
+						<div className='flex justify-end pt-3'>
 							<Button
 								type='submit'
 								size='lg'
 								disabled={!validationResult}
-								className='w-full sm:w-auto px-8 py-6 text-lg'>
-								<FileText className='w-5 h-5 mr-2' />
+								className='w-full sm:w-auto px-6 py-3 text-base'>
+								<FileText className='w-4 h-4 mr-2' />
 								{isEditMode
 									? t("invoice.form.updateInvoice")
 									: t("invoice.form.generateInvoice")}
@@ -2247,15 +2187,15 @@ export function InvoiceForm({
 			{/* Customer Creation Modal */}
 			{showCustomerForm && (
 				<div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-					<Card className='w-full max-w-md border-0 shadow-2xl'>
-						<CardHeader className='pb-4'>
-							<CardTitle className='flex items-center gap-2'>
-								<User className='w-5 h-5 text-primary' />
+					<Card className='w-full max-w-md border border-border/50 shadow-2xl'>
+						<CardHeader className='pb-3'>
+							<CardTitle className='flex items-center gap-2 text-lg'>
+								<User className='w-4 h-4 text-primary' />
 								{t("invoice.form.addNewCustomer")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<form onSubmit={handleCreateCustomer} className='space-y-4'>
+							<form onSubmit={handleCreateCustomer} className='space-y-3'>
 								<div>
 									<Label
 										htmlFor='customer_name'
@@ -2316,7 +2256,7 @@ export function InvoiceForm({
 									/>
 								</div>
 
-								<div className='flex flex-col sm:flex-row gap-2 justify-end pt-4'>
+								<div className='flex flex-col sm:flex-row gap-2 justify-end pt-3'>
 									<Button
 										type='button'
 										variant='outline'
