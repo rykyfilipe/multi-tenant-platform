@@ -52,11 +52,14 @@ export default function ANAFTestPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [config, setConfig] = useState<ANAFTestConfig>({
     baseUrl: process.env.NEXT_PUBLIC_ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest',
-    clientId: process.env.NEXT_PUBLIC_ANAF_CLIENT_ID || '',
-    clientSecret: process.env.NEXT_PUBLIC_ANAF_CLIENT_SECRET || '',
-    redirectUri: process.env.NEXT_PUBLIC_ANAF_REDIRECT_URI || '',
+    clientId: process.env.NEXT_PUBLIC_ANAF_CLIENT_ID || 'a1804dab99e7ed5fbb6188f09d182edd0c58d20fa532c568',
+    clientSecret: process.env.NEXT_PUBLIC_ANAF_CLIENT_SECRET || '26b94e4f9f543c74fc2e9cbe91ce9d8c4273c816a2b92edd0c58d20fa532c568',
+    redirectUri: process.env.NEXT_PUBLIC_ANAF_REDIRECT_URI || 'https://ydv.digital/api/anaf/oauth/callback',
     environment: process.env.NEXT_PUBLIC_ANAF_ENVIRONMENT || 'sandbox'
   });
+
+  // Get tenant ID from URL or use default
+  const [tenantId, setTenantId] = useState<string>('1');
 
   const addResult = (test: string, success: boolean, message: string, data?: any, error?: string) => {
     const result: TestResult = {
@@ -79,7 +82,7 @@ export default function ANAFTestPage() {
     addResult('Fetch Invoices', false, 'Fetching invoices...');
 
     try {
-      const response = await fetch('/api/test/anaf/invoices');
+      const response = await fetch(`/api/test/anaf/invoices?tenantId=${tenantId}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -138,7 +141,7 @@ export default function ANAFTestPage() {
       const response = await fetch('/api/test/anaf/auth-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+        body: JSON.stringify({ tenantId })
       });
       const data = await response.json();
 
@@ -171,7 +174,7 @@ export default function ANAFTestPage() {
       const response = await fetch('/api/test/anaf/exchange-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...config, authCode })
+        body: JSON.stringify({ tenantId, authCode })
       });
       const data = await response.json();
 
@@ -207,7 +210,7 @@ export default function ANAFTestPage() {
       const response = await fetch('/api/test/anaf/generate-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoiceId: selectedInvoice.id })
+        body: JSON.stringify({ invoiceId: selectedInvoice.id, tenantId })
       });
       const data = await response.json();
 
@@ -257,7 +260,8 @@ export default function ANAFTestPage() {
           accessToken, 
           xmlContent,
           config,
-          invoiceId: selectedInvoice.id
+          invoiceId: selectedInvoice.id,
+          tenantId
         })
       });
       const data = await response.json();
@@ -288,6 +292,11 @@ export default function ANAFTestPage() {
       return;
     }
 
+    if (!selectedInvoice) {
+      toast.error('Please select an invoice first');
+      return;
+    }
+
     setIsLoading(true);
     addResult('Check Status', false, 'Checking...');
 
@@ -298,7 +307,9 @@ export default function ANAFTestPage() {
         body: JSON.stringify({ 
           accessToken, 
           submissionId,
-          config 
+          config,
+          invoiceId: selectedInvoice.id,
+          tenantId
         })
       });
       const data = await response.json();
@@ -360,6 +371,16 @@ export default function ANAFTestPage() {
             <CardDescription>Select an invoice to test with ANAF e-Factura</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tenantId">Tenant ID</Label>
+              <Input
+                id="tenantId"
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
+                placeholder="Enter tenant ID (e.g., 1)"
+                type="number"
+              />
+            </div>
             <Button 
               onClick={fetchInvoices} 
               disabled={isLoading}

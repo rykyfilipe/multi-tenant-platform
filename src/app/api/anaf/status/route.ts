@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     }
     
     const userId = getUserId(sessionResult);
-    if (!sessionResult.user.email) {
+    if (!sessionResult.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
