@@ -105,7 +105,8 @@ export function useSilentANAF() {
       setError(errorMessage);
       return {
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        message: errorMessage
       };
     } finally {
       setLoading(false);
