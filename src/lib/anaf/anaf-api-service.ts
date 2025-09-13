@@ -1,6 +1,7 @@
 /** @format */
 
 import { ANAFOAuthService } from './oauth-service';
+import { ANAFAuth } from './anafAuth';
 import { ANAFRateLimiter } from './rate-limiter';
 import { ANAFTokenResponse, ANAFError } from './types';
 
@@ -38,27 +39,13 @@ export class ANAFAPIService {
     timestamp: string;
   }> {
     try {
-      const testUrl = `${this.ANAF_ENDPOINTS.testOauth}?name=${encodeURIComponent(name)}`;
-      
-      const response = await fetch(testUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'MultiTenantPlatform/1.0'
-        }
-      });
-
-      const responseData = await response.text();
-      
-      // According to ANAF documentation, 401 Unauthorized is expected for TestOauth without authentication
-      // This indicates the service is accessible and working correctly
-      const isSuccess = response.ok || response.status === 401;
+      const authResult = await ANAFAuth.testConnectivity(name);
       
       return {
-        success: isSuccess,
-        status: response.status,
-        statusText: response.statusText,
-        response: responseData,
+        success: authResult.success,
+        status: authResult.success ? 200 : 0,
+        statusText: authResult.success ? 'OK' : 'Error',
+        response: authResult.error || 'Connectivity test successful',
         timestamp: new Date().toISOString()
       };
     } catch (error) {
@@ -95,27 +82,14 @@ export class ANAFAPIService {
         throw new Error(`Rate limit exceeded. Retry after ${rateLimitCheck.retryAfter} seconds.`);
       }
 
-      // Get valid access token
-      const accessToken = await ANAFOAuthService.getValidAccessToken(userId, tenantId);
-      
-      const testUrl = `${this.ANAF_ENDPOINTS.testOauth}?name=${encodeURIComponent(name)}`;
-      
-      const response = await fetch(testUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'User-Agent': 'MultiTenantPlatform/1.0'
-        }
-      });
-
-      const responseData = await response.text();
+      // Get valid access token using new authentication module
+      const authResult = await ANAFAuth.testAuthenticatedConnectivity(userId, tenantId, name);
       
       return {
-        success: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        response: responseData,
+        success: authResult.success,
+        status: authResult.success ? 200 : 0,
+        statusText: authResult.success ? 'OK' : 'Error',
+        response: authResult.error || 'Authenticated connectivity test successful',
         timestamp: new Date().toISOString()
       };
     } catch (error) {
