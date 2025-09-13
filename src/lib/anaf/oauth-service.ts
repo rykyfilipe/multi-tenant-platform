@@ -6,8 +6,8 @@ import prisma from '@/lib/prisma';
 
 export class ANAFOAuthService {
   private static readonly CONFIG: ANAFConfiguration = {
-    clientId: process.env.ANAF_CLIENT_ID || 'a1804dab99e7ed5fbb6188f09d182edd0c58d20fa532c568',
-    clientSecret: process.env.ANAF_CLIENT_SECRET || '26b94e4f9f543c74fc2e9cbe91ce9d8c4273c816a2b92edd0c58d20fa532c568',
+    clientId: process.env.ANAF_CLIENT_ID || '',
+    clientSecret: process.env.ANAF_CLIENT_SECRET || '',
     redirectUri: process.env.ANAF_REDIRECT_URI || 'https://ydv.digital/api/anaf/callback',
     baseUrl: process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest',
     environment: (process.env.ANAF_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
@@ -15,9 +15,20 @@ export class ANAFOAuthService {
 
   // ANAF OAuth endpoints as per official documentation
   private static readonly ANAF_ENDPOINTS = {
+    // Identity Provider endpoints
     authorization: 'https://logincert.anaf.ro/anaf-oauth2/v1/authorize',
     token: 'https://logincert.anaf.ro/anaf-oauth2/v1/token',
-    testOauth: 'https://api.anaf.ro/TestOauth/jaxrs/hello'
+    
+    // API endpoints
+    testOauth: 'https://api.anaf.ro/TestOauth/jaxrs/hello',
+    
+    // e-Factura API endpoints
+    eFacturaTest: 'https://api.anaf.ro/test/FCTEL/rest',
+    eFacturaProd: 'https://api.anaf.ro/prod/FCTEL/rest',
+    
+    // e-Transport API endpoints
+    eTransportTest: 'https://api.anaf.ro/test/ETRANSPORT/ws/v1',
+    eTransportProd: 'https://api.anaf.ro/prod/ETRANSPORT/ws/v1'
   };
 
   /**
@@ -123,13 +134,27 @@ export class ANAFOAuthService {
           error: errorData
         });
         
-        // Handle specific ANAF error codes
-        if (errorData.error === 'invalid_client') {
+        // Handle specific ANAF error codes as per official documentation
+        if (response.status === 403) {
+          throw new Error('403 Forbidden - Request neautorizat la URL-urile aferente serviciului web de factură');
+        } else if (response.status === 429) {
+          throw new Error('429 Too Many Requests - Limita maximă de apeluri depășită (1000 apeluri pe minut)');
+        } else if (errorData.error === 'invalid_client') {
           throw new Error('Invalid client credentials. Please check ANAF_CLIENT_ID and ANAF_CLIENT_SECRET.');
         } else if (errorData.error === 'invalid_grant') {
           throw new Error('Invalid authorization code. The code may have expired or been used already.');
         } else if (errorData.error === 'unauthorized_client') {
           throw new Error('Client not authorized for this grant type.');
+        } else if (errorData.error === 'invalid_scope') {
+          throw new Error('Invalid scope requested. Please check the scope parameter.');
+        } else if (errorData.error === 'access_denied') {
+          throw new Error('Access denied by user or ANAF authorization server.');
+        } else if (errorData.error === 'unsupported_response_type') {
+          throw new Error('Unsupported response type. Only "code" is supported.');
+        } else if (errorData.error === 'server_error') {
+          throw new Error('ANAF server error. Please try again later.');
+        } else if (errorData.error === 'temporarily_unavailable') {
+          throw new Error('ANAF service temporarily unavailable. Please try again later.');
         }
         
         throw new Error(`OAuth token exchange failed: ${errorData.error || response.statusText}`);
@@ -223,13 +248,27 @@ export class ANAFOAuthService {
           error: errorData
         });
         
-        // Handle specific ANAF error codes
-        if (errorData.error === 'invalid_client') {
+        // Handle specific ANAF error codes as per official documentation
+        if (response.status === 403) {
+          throw new Error('403 Forbidden - Request neautorizat la URL-urile aferente serviciului web de factură');
+        } else if (response.status === 429) {
+          throw new Error('429 Too Many Requests - Limita maximă de apeluri depășită (1000 apeluri pe minut)');
+        } else if (errorData.error === 'invalid_client') {
           throw new Error('Invalid client credentials. Please check ANAF_CLIENT_ID and ANAF_CLIENT_SECRET.');
         } else if (errorData.error === 'invalid_grant') {
           throw new Error('Invalid refresh token. The token may have expired or been revoked.');
         } else if (errorData.error === 'unauthorized_client') {
           throw new Error('Client not authorized for this grant type.');
+        } else if (errorData.error === 'invalid_scope') {
+          throw new Error('Invalid scope requested. Please check the scope parameter.');
+        } else if (errorData.error === 'access_denied') {
+          throw new Error('Access denied by user or ANAF authorization server.');
+        } else if (errorData.error === 'unsupported_response_type') {
+          throw new Error('Unsupported response type. Only "code" is supported.');
+        } else if (errorData.error === 'server_error') {
+          throw new Error('ANAF server error. Please try again later.');
+        } else if (errorData.error === 'temporarily_unavailable') {
+          throw new Error('ANAF service temporarily unavailable. Please try again later.');
         }
         
         throw new Error(`Token refresh failed: ${errorData.error || response.statusText}`);

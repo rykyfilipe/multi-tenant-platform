@@ -7,6 +7,13 @@ import prisma from '@/lib/prisma';
 export class ANAFJWTTokenService {
   private static readonly JWT_SECRET = process.env.ANAF_JWT_SECRET || 'anaf-jwt-secret-key';
   private static readonly TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
+  
+  // ANAF token validity periods as per official documentation
+  private static readonly ANAF_TOKEN_VALIDITY = {
+    ACCESS_TOKEN_MINUTES: 129600, // 90 days = 129600 minutes
+    REFRESH_TOKEN_MINUTES: 525600, // 365 days = 525600 minutes
+    TOKEN_ISSUANCE_INTERVAL_SECONDS: 60 // 60 seconds interval for token issuance
+  };
 
   /**
    * Decode and validate JWT token from ANAF
@@ -41,6 +48,39 @@ export class ANAFJWTTokenService {
     } catch (error) {
       console.error('Error checking token expiry:', error);
       return true;
+    }
+  }
+
+  /**
+   * Validate ANAF token expiry according to official documentation
+   * Access Token: 129600 minutes (90 days)
+   * Refresh Token: 525600 minutes (365 days)
+   */
+  static validateANAFTokenExpiry(token: string, tokenType: 'access' | 'refresh'): boolean {
+    try {
+      const decoded = this.decodeToken(token);
+      if (!decoded || !decoded.payload || !decoded.payload.exp) {
+        return false;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const issuedAt = decoded.payload.iat || decoded.payload.exp;
+      const expiry = decoded.payload.exp;
+      
+      // Calculate token age in minutes
+      const tokenAgeMinutes = (now - issuedAt) / 60;
+      
+      // Check against ANAF validity periods
+      if (tokenType === 'access') {
+        return tokenAgeMinutes <= this.ANAF_TOKEN_VALIDITY.ACCESS_TOKEN_MINUTES;
+      } else if (tokenType === 'refresh') {
+        return tokenAgeMinutes <= this.ANAF_TOKEN_VALIDITY.REFRESH_TOKEN_MINUTES;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error validating ANAF token expiry:', error);
+      return false;
     }
   }
 
@@ -167,7 +207,9 @@ export class ANAFJWTTokenService {
         throw new Error('Database connection not available');
       }
       
-      // Calculate expiry from token if available, otherwise use expires_in
+      // Calculate expiry according to ANAF documentation
+      // Access Token: 129600 minutes (90 days)
+      // Refresh Token: 525600 minutes (365 days)
       let expiresAt: Date;
       
       if (tokenData.access_token) {
@@ -175,11 +217,12 @@ export class ANAFJWTTokenService {
         if (tokenExpiry) {
           expiresAt = tokenExpiry;
         } else {
-          // Fallback to expires_in
-          expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+          // Use ANAF standard validity period for access tokens (90 days)
+          expiresAt = new Date(Date.now() + this.ANAF_TOKEN_VALIDITY.ACCESS_TOKEN_MINUTES * 60 * 1000);
         }
       } else {
-        expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+        // Fallback to ANAF standard validity period
+        expiresAt = new Date(Date.now() + this.ANAF_TOKEN_VALIDITY.ACCESS_TOKEN_MINUTES * 60 * 1000);
       }
 
       await prisma.anafCredentials.upsert({
