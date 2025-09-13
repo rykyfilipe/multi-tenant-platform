@@ -13,6 +13,9 @@ const customJestConfig = {
     '<rootDir>/tests/e2e/',
     '<rootDir>/tests/integration/',
   ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(jose|openid-client|next-auth)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
@@ -30,6 +33,10 @@ const customJestConfig = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/tests/(.*)$': '<rootDir>/tests/$1',
+    '^jose$': '<rootDir>/tests/mocks/jose.js',
+    '^openid-client$': '<rootDir>/tests/mocks/openid-client.js',
+    '^next-auth$': '<rootDir>/tests/mocks/next-auth.js',
   },
   testMatch: [
     '<rootDir>/tests/unit/**/*.{js,jsx,ts,tsx}',

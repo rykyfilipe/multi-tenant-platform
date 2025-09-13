@@ -47,6 +47,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { convertCurrency } from '@/lib/currency-exchange-client';
 import { SeriesManager } from './SeriesManager';
 import { PDFPreviewModal } from './PDFPreviewModal';
+import { ANAFInvoiceActions } from '@/components/anaf/ANAFInvoiceActions';
 
 interface EnhancedInvoiceListProps {
 	onEditInvoice?: (invoice: any) => void;
@@ -751,6 +752,18 @@ export function EnhancedInvoiceList({
 											<Trash2 className="h-4 w-4" />
 										</Button>
 									</div>
+								</div>
+								
+								{/* ANAF e-Factura Actions */}
+								<div className="mt-4 pt-4 border-t border-border/20">
+									<ANAFInvoiceActions 
+										invoiceId={invoice.id}
+										invoiceNumber={invoice.invoice_number}
+										onStatusChange={(status) => {
+											// Update local state if needed
+											console.log('ANAF status changed:', status);
+										}}
+									/>
 								</div>
 							</CardContent>
 						</Card>

@@ -1,0 +1,24 @@
+t=2025-09-13T11:53:30+0300 lvl=info msg="no configuration paths supplied"
+t=2025-09-13T11:53:30+0300 lvl=info msg="using configuration at default config path" path=/home/ricardo-filipebondor/snap/ngrok/310/.config/ngrok/ngrok.yml
+t=2025-09-13T11:53:30+0300 lvl=info msg="open config file" path=/home/ricardo-filipebondor/snap/ngrok/310/.config/ngrok/ngrok.yml err=nil
+t=2025-09-13T11:53:30+0300 lvl=warn msg="can't bind default web address, trying alternatives" obj=web addr=127.0.0.1:4040
+t=2025-09-13T11:53:30+0300 lvl=info msg="starting web service" obj=web addr=127.0.0.1:4041 allow_hosts=[]
+t=2025-09-13T11:53:30+0300 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="authentication failed: Your account is limited to 1 simultaneous ngrok agent sessions.\nYou can run multiple simultaneous tunnels from a single agent session by defining the tunnels in your agent configuration file and starting them with the command `ngrok start --all`.\nRead more about the agent ct=2025-09-13T11:53:33+0300 lvl=info msg=start pg=/api/tunnels id=4cb9649d31b6f78d
+t=2025-09-13T11:53:33+0300 lvl=info msg=end pg=/api/tunnels id=4cb9649d31b6f78d status=200 dur=148.35µs
+t=2025-09-13T11:54:05+0300 lvl=warn msg="failed to open private leg" id=121f7ebb180d privaddr=localhost:3000 err="dial tcp [::1]:3000: connect: connection refused"
+t=2025-09-13T11:54:05+0300 lvl=warn msg="failed to open private leg" id=1cf2fe57d3ab privaddr=localhost:3000 err="dial tcp [::1]:3000: connect: connection refused"
+t=2025-09-13T11:54:54+0300 lvl=warn msg="failed to open private leg" id=ab68e1dd41e0 privaddr=localhost:3000 err="dial tcp [::1]:3000: connect: connection refused"
+t=2025-09-13T11:54:55+0300 lvl=warn msg="failed to open private leg" id=33cbaac29b83 privaddr=localhost:3000 err="dial tcp [::1]:3000: connect: connection refused"
+ived stop request" obj=app stopReq="{err:{Remote:true Inner:{Inner:0xc0004527a0}} restart:false}"
+t=2025-09-13T11:53:30+0300 lvl=eror msg="terminating with error" obj=app err="authentication failed: Your account is limited to 1 simultaneous ngrok agent sessions.\nYou can run multiple simultaneous tunnels from a single agent session by defining the tunnels in your agent configuration file and starting them with the command `ngrok start --all`.\nRead more about the agent configuration file: https://ngrok.com/docs/secure-tunnels/ngrok-agent/reference/config\nYou can view your current agent sessions in the dashboard:\nhttps://dashboard.ngrok.com/agents\r\n\r\nERR_NGROK_108\r\n"
+t=2025-09-13T11:53:30+0300 lvl=warn msg="failed to check for update" obj=updater err="Post \"https://update.equinox.io/check\": context canceled"
+t=2025-09-13T11:53:30+0300 lvl=crit msg="command failed" err="authentication failed: Your account is limited to 1 simultaneous ngrok agent sessions.\nYou can run multiple simultaneous tunnels from a single agent session by defining the tunnels in your agent configuration file and starting them with the command `ngrok start --all`.\nRead more about the agent configuration file: https://ngrok.com/docs/secure-tunnels/ngrok-agent/reference/config\nYou can view your current agent sessions in the dashboard:\nhttps://dashboard.ngrok.com/agents\r\n\r\nERR_NGROK_108\r\n"
+ERROR:  authentication failed: Your account is limited to 1 simultaneous ngrok agent sessions.
+ERROR:  You can run multiple simultaneous tunnels from a single agent session by defining the tunnels in your agent configuration file and starting them with the command `ngrok start --all`.
+ERROR:  Read more about the agent configuration file: https://ngrok.com/docs/secure-tunnels/ngrok-agent/reference/config
+ERROR:  You can view your current agent sessions in the dashboard:
+ERROR:  https://dashboard.ngrok.com/agents
+ERROR:  
+ERROR:  ERR_NGROK_108
+ERROR:  https://ngrok.com/docs/errors/err_ngrok_108
+ERROR:  

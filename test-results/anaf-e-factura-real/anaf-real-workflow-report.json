@@ -1,0 +1,87 @@
+{
+  "startTime": "2025-09-13T10:50:26.567Z",
+  "endTime": "2025-09-13T10:50:33.659Z",
+  "duration": 7092,
+  "totalTests": 5,
+  "passedTests": 3,
+  "failedTests": 2,
+  "testResults": [
+    {
+      "testName": "Database Connection",
+      "success": true,
+      "timestamp": "2025-09-13T10:50:28.244Z",
+      "details": {
+        "message": "Conexiunea la baza de date funcționează"
+      }
+    },
+    {
+      "testName": "Get Test Invoice",
+      "success": true,
+      "timestamp": "2025-09-13T10:50:33.635Z",
+      "details": {
+        "invoiceId": 26,
+        "invoiceNumber": "INV-2025-000001",
+        "tenantName": "Bondor's tenant",
+        "totalAmount": "5.7",
+        "currency": "USD",
+        "status": "paid",
+        "itemsCount": 4
+      }
+    },
+    {
+      "testName": "XML Generation",
+      "success": true,
+      "timestamp": "2025-09-13T10:50:33.642Z",
+      "details": {
+        "xmlSize": 3409
+      }
+    },
+    {
+      "testName": "PDF Generation",
+      "success": false,
+      "timestamp": "2025-09-13T10:50:33.655Z",
+      "details": {
+        "error": "Cannot read properties of undefined (reading 'map')"
+      }
+    },
+    {
+      "testName": "ANAF Authentication",
+      "success": false,
+      "timestamp": "2025-09-13T10:50:33.659Z",
+      "details": {
+        "message": "Utilizatorul nu este autentificat cu ANAF"
+      }
+    }
+  ],
+  "summary": {
+    "databaseConnection": {
+      "success": false,
+      "message": ""
+    },
+    "invoiceRetrieval": {
+      "success": false,
+      "message": ""
+    },
+    "xmlGeneration": {
+      "success": false,
+      "message": ""
+    },
+    "pdfGeneration": {
+      "success": false,
+      "message": ""
+    },
+    "anafAuthentication": {
+      "success": false,
+      "message": ""
+    },
+    "invoiceSubmission": {
+      "success": false,
+      "message": ""
+    },
+    "statusChecking": {
+      "success": false,
+      "message": ""
+    },
+    "overallSuccess": false
+  }
+}

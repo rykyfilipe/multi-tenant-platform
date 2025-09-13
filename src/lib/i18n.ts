@@ -8341,6 +8341,48 @@ export const translations: Translations = {
 	},
 
 	// Performance & Optimization section
+	// ANAF e-Factura Integration
+	"settings.tabs.anaf": {
+		en: "ANAF e-Factura",
+		ro: "ANAF e-Factura",
+		es: "ANAF e-Factura",
+		fr: "ANAF e-Factura",
+		de: "ANAF e-Factura",
+		zh: "ANAF e-Factura",
+	},
+	"settings.anaf.title": {
+		en: "ANAF e-Factura Integration",
+		ro: "Integrare ANAF e-Factura",
+		es: "Integración ANAF e-Factura",
+		fr: "Intégration ANAF e-Factura",
+		de: "ANAF e-Factura Integration",
+		zh: "ANAF e-Factura 集成",
+	},
+	"settings.anaf.subtitle": {
+		en: "Configure electronic invoice submission to ANAF",
+		ro: "Configurează trimiterea facturilor electronice către ANAF",
+		es: "Configurar envío de facturas electrónicas a ANAF",
+		fr: "Configurer l'envoi de factures électroniques à ANAF",
+		de: "Elektronische Rechnungsübermittlung an ANAF konfigurieren",
+		zh: "配置向 ANAF 提交电子发票",
+	},
+	"settings.anaf.integration.title": {
+		en: "ANAF Integration Settings",
+		ro: "Setări Integrare ANAF",
+		es: "Configuración de Integración ANAF",
+		fr: "Paramètres d'Intégration ANAF",
+		de: "ANAF Integrationseinstellungen",
+		zh: "ANAF 集成设置",
+	},
+	"settings.anaf.integration.description": {
+		en: "Enable automatic submission of invoices to ANAF e-Factura system",
+		ro: "Activează trimiterea automată a facturilor către sistemul ANAF e-Factura",
+		es: "Habilitar envío automático de facturas al sistema ANAF e-Factura",
+		fr: "Activer l'envoi automatique des factures au système ANAF e-Factura",
+		de: "Automatische Übermittlung von Rechnungen an das ANAF e-Factura-System aktivieren",
+		zh: "启用向 ANAF e-Factura 系统自动提交发票",
+	},
+
 	"docs.index.performance.title": {
 		en: "Performance & Optimization",
 		ro: "Performanță & Optimizare",

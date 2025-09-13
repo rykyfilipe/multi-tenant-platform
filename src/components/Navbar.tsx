@@ -113,6 +113,12 @@ const getNavigationItems = (
 					icon: Code,
 					description: "Development and debugging tools",
 				},
+				{
+					title: "ANAF Test",
+					url: "/test/anaf",
+					icon: FileText,
+					description: "Test ANAF e-Factura integration",
+				},
 		  ]
 		: []),
 ];
@@ -145,6 +151,16 @@ const getMobileNavigationItems = (
 				{
 					title: t("nav.invoices"),
 					url: "/home/invoices",
+					icon: FileText,
+				},
+		  ]
+		: []),
+	// ANAF Test for admins in development
+	...(user?.role === "ADMIN" && process.env.NODE_ENV === "development"
+		? [
+				{
+					title: "ANAF Test",
+					url: "/test/anaf",
 					icon: FileText,
 				},
 		  ]

@@ -25,6 +25,7 @@ import {
 	BarChart3,
 	Settings,
 	Puzzle,
+	FileText,
 } from "lucide-react";
 import BasicSettings from "@/components/settings/user/BasicSettings";
 import PasswordSetter from "@/components/settings/user/PasswordSetter";
@@ -32,6 +33,7 @@ import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 import PlanLimitsDisplay from "@/components/PlanLimitsDisplay";
 import GDPRRights from "@/components/settings/user/GDPRRights";
 import { UserProfileImageUpload } from "@/components/users/UserProfileImageUpload";
+import { ANAFIntegrationToggle } from "@/components/anaf/ANAFIntegrationToggle";
 import TourProv from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
 import { settingsTourSteps, tourUtils } from "@/lib/tour-config";
@@ -43,12 +45,17 @@ import {
 
 function Page() {
 	const { data: session } = useSession();
-	const { user, setUser, showAlert, loading } = useApp();
+	const { user, setUser, showAlert, loading, token, tenant } = useApp();
 	const { subscription, loading: subscriptionLoading } = useSubscription();
 	const { data: dashboardData, loading: dashboardLoading } = useDashboardData();
 	const { t } = useLanguage();
 	const [activeTab, setActiveTab] = useState("profile");
 	const { setIsOpen, setCurrentStep } = useTour();
+
+	// ANAF Integration state
+	const [anafEnabled, setAnafEnabled] = useState(false);
+	const [anafAuthenticated, setAnafAuthenticated] = useState(false);
+	const [anafLoading, setAnafLoading] = useState(false);
 
 	const startTour = () => {
 		setCurrentStep(0);
@@ -76,6 +83,123 @@ function Page() {
 	useEffect(() => {
 		// User changed
 	}, [user]);
+
+	// ANAF Integration handlers
+	const handleAnafToggle = async (enabled: boolean) => {
+		if (!token || !tenant) return;
+		
+		setAnafLoading(true);
+		try {
+			// Update ANAF integration status
+			const response = await fetch(`/api/tenants/${tenant.id}/integrations/anaf`, {
+				method: 'PUT',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ enabled }),
+			});
+
+			if (response.ok) {
+				setAnafEnabled(enabled);
+				showAlert(
+					enabled ? t("settings.anaf.integration.enabled") : t("settings.anaf.integration.disabled"),
+					"success"
+				);
+			} else {
+				showAlert(t("settings.anaf.integration.error"), "error");
+			}
+		} catch (error) {
+			console.error('Error toggling ANAF integration:', error);
+			showAlert(t("settings.anaf.integration.error"), "error");
+		} finally {
+			setAnafLoading(false);
+		}
+	};
+
+	const handleAnafAuthenticate = async () => {
+		if (!token || !tenant) return;
+		
+		setAnafLoading(true);
+		try {
+			// Redirect to ANAF OAuth
+			const response = await fetch(`/api/anaf/oauth/authorize`, {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ 
+					tenantId: tenant.id,
+					userId: user?.id 
+				}),
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				window.location.href = data.authUrl;
+			} else {
+				showAlert(t("settings.anaf.integration.auth_error"), "error");
+			}
+		} catch (error) {
+			console.error('Error authenticating with ANAF:', error);
+			showAlert(t("settings.anaf.integration.auth_error"), "error");
+		} finally {
+			setAnafLoading(false);
+		}
+	};
+
+	const handleAnafDisconnect = async () => {
+		if (!token || !tenant) return;
+		
+		setAnafLoading(true);
+		try {
+			const response = await fetch(`/api/tenants/${tenant.id}/integrations/anaf`, {
+				method: 'DELETE',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+				},
+			});
+
+			if (response.ok) {
+				setAnafAuthenticated(false);
+				setAnafEnabled(false);
+				showAlert(t("settings.anaf.integration.disconnected"), "success");
+			} else {
+				showAlert(t("settings.anaf.integration.disconnect_error"), "error");
+			}
+		} catch (error) {
+			console.error('Error disconnecting ANAF:', error);
+			showAlert(t("settings.anaf.integration.disconnect_error"), "error");
+		} finally {
+			setAnafLoading(false);
+		}
+	};
+
+	// Check ANAF integration status on mount
+	useEffect(() => {
+		const checkAnafStatus = async () => {
+			if (!token || !tenant) return;
+			
+			try {
+				const response = await fetch(`/api/tenants/${tenant.id}/integrations/anaf`, {
+					headers: {
+						'Authorization': `Bearer ${token}`,
+					},
+				});
+
+				if (response.ok) {
+					const data = await response.json();
+					setAnafEnabled(data.enabled || false);
+					setAnafAuthenticated(data.authenticated || false);
+				}
+			} catch (error) {
+				console.error('Error checking ANAF status:', error);
+			}
+		};
+
+		checkAnafStatus();
+	}, [token, tenant]);
 
 	const currentPlan = subscription?.subscriptionPlan || "Free";
 	const isSubscribed = subscription?.subscriptionStatus === "active";
@@ -171,6 +295,12 @@ function Page() {
 												label: t("settings.tabs.privacy"),
 												icon: Shield,
 												description: t("settings.privacy.subtitle"),
+											},
+											{
+												id: "anaf",
+												label: t("settings.tabs.anaf"),
+												icon: FileText,
+												description: t("settings.anaf.subtitle"),
 											},
 										]}
 										activeTab={activeTab}
@@ -484,6 +614,44 @@ function Page() {
 										</CardHeader>
 										<CardContent>
 											<GDPRRights />
+										</CardContent>
+									</Card>
+								</div>
+							</PremiumTabContentWrapper>
+
+							{/* ANAF Integration Tab */}
+							<PremiumTabContentWrapper isActive={activeTab === "anaf"}>
+								<div className='space-y-6'>
+									<div>
+										<h2 className='text-2xl font-semibold text-foreground mb-2'>
+											{t("settings.anaf.title")}
+										</h2>
+										<p className='text-muted-foreground'>
+											{t("settings.anaf.subtitle")}
+										</p>
+									</div>
+
+									<Card className='border-border/20 backdrop-blur-sm shadow-lg border-0 bg-card'>
+										<CardHeader>
+											<CardTitle className='flex items-center gap-2'>
+												<div className='p-2 bg-primary/10 rounded-xl'>
+													<FileText className='w-5 h-5 text-primary' />
+												</div>
+												{t("settings.anaf.integration.title")}
+											</CardTitle>
+											<CardDescription>
+												{t("settings.anaf.integration.description")}
+											</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<ANAFIntegrationToggle
+												onToggle={handleAnafToggle}
+												isEnabled={anafEnabled}
+												isAuthenticated={anafAuthenticated}
+												onAuthenticate={handleAnafAuthenticate}
+												onDisconnect={handleAnafDisconnect}
+												isLoading={anafLoading}
+											/>
 										</CardContent>
 									</Card>
 								</div>

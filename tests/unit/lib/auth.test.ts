@@ -1,14 +1,53 @@
 // Mock the entire Prisma module before importing auth functions
-jest.mock('../../../src/lib/prisma', () => ({
-  findUniqueWithCache: jest.fn(),
-  findFirstWithCache: jest.fn(),
-  DEFAULT_CACHE_STRATEGIES: {
-    user: { ttl: 300, swr: 60 },
-    tenant: { ttl: 300, swr: 60 },
-    table: { ttl: 300, swr: 60 },
-    column: { ttl: 300, swr: 60 }
-  }
-}))
+jest.mock('../../../src/lib/prisma', () => {
+  const mockPrisma = {
+    user: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn()
+    },
+    tenant: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn()
+    },
+    userTenant: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn()
+    },
+    table: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn()
+    },
+    column: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn()
+    },
+    columnPermission: {
+      findFirst: jest.fn()
+    },
+    userPermission: {
+      findFirst: jest.fn()
+    },
+    tablePermission: {
+      findFirst: jest.fn()
+    }
+  };
+
+  const findUniqueWithCache = jest.fn();
+  const findFirstWithCache = jest.fn();
+
+  return {
+    default: mockPrisma,
+    ...mockPrisma,
+    findUniqueWithCache,
+    findFirstWithCache,
+    DEFAULT_CACHE_STRATEGIES: {
+      user: { ttl: 300, swr: 60 },
+      tenant: { ttl: 300, swr: 60 },
+      table: { ttl: 300, swr: 60 },
+      column: { ttl: 300, swr: 60 }
+    }
+  };
+})
 
 // Mock Response for Jest environment
 global.Response = class MockResponse {
@@ -375,13 +414,14 @@ describe('Auth Utilities', () => {
   describe('checkTableEditPermission', () => {
     // Import the mocked Prisma functions
     const { findUniqueWithCache, findFirstWithCache } = require('../../../src/lib/prisma')
+    const prisma = require('../../../src/lib/prisma').default
     
     beforeEach(() => {
       jest.clearAllMocks()
     })
     
     it('should return true for admin user', async () => {
-      findUniqueWithCache.mockResolvedValue({ role: 'ADMIN' })
+      prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' })
       
       const result = await checkTableEditPermission(1, 1, 1)
       
@@ -389,7 +429,7 @@ describe('Auth Utilities', () => {
     })
 
     it('should return true for user with table edit permission', async () => {
-      findUniqueWithCache.mockResolvedValue({ role: 'USER' })
+      prisma.user.findUnique.mockResolvedValue({ role: 'USER' })
       findFirstWithCache.mockResolvedValue({ canEdit: true })
       
       const result = await checkTableEditPermission(1, 1, 1)
@@ -418,9 +458,10 @@ describe('Auth Utilities', () => {
   describe('checkColumnEditPermission', () => {
     // Import the mocked Prisma functions
     const { findUniqueWithCache, findFirstWithCache } = require('../../../src/lib/prisma')
+    const prisma = require('../../../src/lib/prisma').default
     
     it('should return true for admin user', async () => {
-      findUniqueWithCache.mockResolvedValue({ role: 'ADMIN' })
+      prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' })
       
       const result = await checkColumnEditPermission(1, 1, 1, 1)
       
@@ -428,8 +469,8 @@ describe('Auth Utilities', () => {
     })
 
     it('should return true for user with column edit permission', async () => {
-      findUniqueWithCache.mockResolvedValue({ role: 'USER' })
-      findFirstWithCache.mockResolvedValueOnce({ canEdit: true })
+      prisma.user.findUnique.mockResolvedValue({ role: 'USER' })
+      prisma.columnPermission.findFirst.mockResolvedValue({ canEdit: true })
       
       const result = await checkColumnEditPermission(1, 1, 1, 1)
       
@@ -437,9 +478,9 @@ describe('Auth Utilities', () => {
     })
 
     it('should fallback to table permission check', async () => {
-      findUniqueWithCache.mockResolvedValue({ role: 'USER' })
-      findFirstWithCache.mockResolvedValueOnce(null) // No column permission
-      findFirstWithCache.mockResolvedValueOnce({ canEdit: true }) // Table permission
+      prisma.user.findUnique.mockResolvedValue({ role: 'USER' })
+      prisma.columnPermission.findFirst.mockResolvedValue(null) // No column permission
+      findFirstWithCache.mockResolvedValue({ canEdit: true }) // Table permission
       
       const result = await checkColumnEditPermission(1, 1, 1, 1)
       
@@ -447,7 +488,8 @@ describe('Auth Utilities', () => {
     })
 
     it('should return false for user without any permission', async () => {
-      findUniqueWithCache.mockResolvedValue({ role: 'USER' })
+      prisma.user.findUnique.mockResolvedValue({ role: 'USER' })
+      prisma.columnPermission.findFirst.mockResolvedValue(null)
       findFirstWithCache.mockResolvedValue(null)
       
       const result = await checkColumnEditPermission(1, 1, 1, 1)
@@ -495,6 +537,7 @@ describe('Auth Utilities', () => {
   describe('validatePublicApiAccess', () => {
     // Import the mocked Prisma functions
     const { findUniqueWithCache } = require('../../../src/lib/prisma')
+    const prisma = require('../../../src/lib/prisma').default
     
 
     
@@ -502,7 +545,7 @@ describe('Auth Utilities', () => {
       const token = jwt.sign({ userId: 1, role: 'ADMIN' }, mockPublicJwtSecret)
       const request = createMockRequest({ Authorization: `Bearer ${token}` })
       
-      findUniqueWithCache.mockResolvedValue({ tenantId: 1, role: 'ADMIN' })
+      prisma.userTenant.findUnique.mockResolvedValue({ tenantId: 1, userId: 1 })
       
       const result = await validatePublicApiAccess(request)
       
@@ -551,7 +594,7 @@ describe('Auth Utilities', () => {
       const token = jwt.sign({ userId: 1, role: 'ADMIN' }, mockPublicJwtSecret)
       const request = createMockRequest({ Authorization: `Bearer ${token}` })
       
-      findUniqueWithCache.mockResolvedValue(null)
+      prisma.userTenant.findUnique.mockResolvedValue(null)
       
       const result = await validatePublicApiAccess(request)
       

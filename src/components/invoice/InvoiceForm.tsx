@@ -72,6 +72,7 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProductDetailsModal } from "./ProductDetailsModal";
+import { ANAFIntegrationToggle } from "@/components/anaf/ANAFIntegrationToggle";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -2204,6 +2205,18 @@ export function InvoiceForm({
 								</CardContent>
 							</Card>
 						)}
+
+						{/* ANAF Integration Toggle */}
+						<div className='pt-4 border-t border-border/20'>
+							<ANAFIntegrationToggle
+								onToggle={(enabled) => console.log('ANAF toggle:', enabled)}
+								isEnabled={false}
+								isAuthenticated={false}
+								onAuthenticate={() => console.log('ANAF authenticate')}
+								onDisconnect={() => console.log('ANAF disconnect')}
+								isLoading={false}
+							/>
+						</div>
 
 						{/* Submit Button */}
 						<div className='flex justify-end pt-4'>

@@ -506,13 +506,13 @@ export class InvoiceTemplate {
         ${(data.totals.discountAmount || 0) > 0 ? `
         <div class="total-line">
           <span class="total-label">${t.discount || 'Discount'} ${data.totals.discountRate ? `(${formatNumber(data.totals.discountRate, 1)}%)` : ''}:</span>
-          <span class="total-amount" style="color: #dc2626;">-${formatCurrency(data.totals.discountAmount, currency)}</span>
+          <span class="total-amount" style="color: #dc2626;">-${formatCurrency(data.totals.discountAmount || 0, currency)}</span>
         </div>` : ''}
         
         ${(data.totals.shippingCost || 0) > 0 ? `
         <div class="total-line">
           <span class="total-label">${t.shipping || 'Shipping'}:</span>
-          <span class="total-amount">${formatCurrency(data.totals.shippingCost, currency)}</span>
+          <span class="total-amount">${formatCurrency(data.totals.shippingCost || 0, currency)}</span>
         </div>` : ''}
         
         ${(data.totals.taxTotal || 0) > 0 ? `
@@ -524,7 +524,7 @@ export class InvoiceTemplate {
         ${(data.totals.lateFee || 0) > 0 ? `
         <div class="total-line">
           <span class="total-label">${t.lateFee || 'Late Fee'}:</span>
-          <span class="total-amount">${formatCurrency(data.totals.lateFee, currency)}</span>
+          <span class="total-amount">${formatCurrency(data.totals.lateFee || 0, currency)}</span>
         </div>` : ''}
         
         <div class="total-line grand-total">
