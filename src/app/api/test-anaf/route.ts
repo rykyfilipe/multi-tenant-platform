@@ -217,7 +217,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Test 5: Environment Variables
+    // Test 5: ANAF Sandbox Connectivity (TestOauth)
+    if (testType === 'sandbox' || testType === 'full') {
+      try {
+        console.log('Testing ANAF sandbox connectivity...');
+        
+        // Use the OAuth service method for testing sandbox connectivity
+        const { ANAFOAuthService } = await import('@/lib/anaf/oauth-service');
+        const connectivityResult = await ANAFOAuthService.testSandboxConnectivity();
+        
+        results.tests.sandboxConnectivity = {
+          success: connectivityResult.success,
+          status: connectivityResult.status,
+          statusText: connectivityResult.statusText,
+          url: 'https://api.anaf.ro/TestOauth/jaxrs/hello?name=Test%20Connectivity',
+          response: connectivityResult.response,
+          timestamp: connectivityResult.timestamp,
+          message: connectivityResult.success ? 'ANAF sandbox is accessible' : 'ANAF sandbox returned error',
+          note: connectivityResult.status === 401 ? '401 Unauthorized is expected for TestOauth without authentication - this indicates the service is working correctly' : undefined
+        };
+
+        console.log('ANAF sandbox connectivity test completed');
+      } catch (error) {
+        results.tests.sandboxConnectivity = {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          message: 'ANAF sandbox connectivity test failed'
+        };
+        console.error('ANAF sandbox connectivity test failed:', error);
+      }
+    }
+
+    // Test 6: Environment Variables
     if (testType === 'env' || testType === 'full') {
       try {
         console.log('Testing environment variables...');

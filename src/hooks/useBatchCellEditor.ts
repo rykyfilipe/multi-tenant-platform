@@ -363,6 +363,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				}
 
 				const newRowsResult = await newRowsResponse.json();
+				console.log("🔍 DEBUG: New rows server response:", newRowsResult);
 				allNewRows.push(...(newRowsResult.rows || []));
 				setPendingNewRows([]);
 				console.log("✅ New rows saved successfully:", allNewRows);
@@ -417,7 +418,8 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 				const updateResult = await updateResponse.json();
 				console.log("🔍 DEBUG: Server response for cell updates:", updateResult);
-				console.log("🔍 DEBUG: updateResult.updatedCells:", updateResult.updatedCells);
+				console.log("🔍 DEBUG: updateResult.data.updatedCells:", updateResult.data?.updatedCells);
+				allUpdatedCells.push(...(updateResult.data?.updatedCells || []));
 				console.log("✅ Cell updates saved successfully:", allUpdatedCells);
 			}
 

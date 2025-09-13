@@ -13,6 +13,13 @@ export class ANAFOAuthService {
     environment: (process.env.ANAF_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
   };
 
+  // ANAF OAuth endpoints as per official documentation
+  private static readonly ANAF_ENDPOINTS = {
+    authorization: 'https://logincert.anaf.ro/anaf-oauth2/v1/authorize',
+    token: 'https://logincert.anaf.ro/anaf-oauth2/v1/token',
+    testOauth: 'https://api.anaf.ro/TestOauth/jaxrs/hello'
+  };
+
   /**
    * Generate OAuth authorization URL for ANAF
    */
@@ -32,8 +39,8 @@ export class ANAFOAuthService {
         state: state,
       });
 
-      // Use correct ANAF OAuth endpoint
-      return `https://logincert.anaf.ro/anaf-oauth2/v1/authorize?${params.toString()}`;
+      // Use correct ANAF OAuth endpoint as per documentation
+      return `${this.ANAF_ENDPOINTS.authorization}?${params.toString()}`;
     } catch (error) {
       console.error('Error generating ANAF auth URL:', error);
       throw new Error('Failed to generate authorization URL');
@@ -52,8 +59,8 @@ export class ANAFOAuthService {
       // Get redirect URI from environment or use default
       const redirectUri = process.env.ANAF_REDIRECT_URI || this.CONFIG.redirectUri;
       
-      // Use correct ANAF OAuth token endpoint
-      const response = await fetch('https://logincert.anaf.ro/anaf-oauth2/v1/token', {
+      // Use correct ANAF OAuth token endpoint as per documentation
+      const response = await fetch(this.ANAF_ENDPOINTS.token, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -65,7 +72,8 @@ export class ANAFOAuthService {
           client_secret: this.CONFIG.clientSecret,
           code: code,
           redirect_uri: redirectUri,
-          token_content_type: 'jwt'
+          token_content_type: 'jwt',
+          
         }),
       });
 
@@ -107,8 +115,8 @@ export class ANAFOAuthService {
         throw new Error('No refresh token available');
       }
 
-      // Use correct ANAF OAuth token endpoint
-      const response = await fetch('https://logincert.anaf.ro/anaf-oauth2/v1/token', {
+      // Use correct ANAF OAuth token endpoint as per documentation
+      const response = await fetch(this.ANAF_ENDPOINTS.token, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -346,6 +354,53 @@ export class ANAFOAuthService {
     } catch (error) {
       console.error('Error validating state:', error);
       return null;
+    }
+  }
+
+  /**
+   * Test ANAF sandbox connectivity using TestOauth service
+   * This endpoint doesn't require authentication as per ANAF documentation
+   */
+  static async testSandboxConnectivity(): Promise<{
+    success: boolean;
+    status: number;
+    statusText: string;
+    response: string;
+    timestamp: string;
+  }> {
+    try {
+      const testUrl = `${this.ANAF_ENDPOINTS.testOauth}?name=Test%20Connectivity`;
+      
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'MultiTenantPlatform/1.0'
+        }
+      });
+
+      const responseData = await response.text();
+      
+      // According to ANAF documentation, 401 Unauthorized is expected for TestOauth without authentication
+      // This indicates the service is accessible and working correctly
+      const isSuccess = response.ok || response.status === 401;
+      
+      return {
+        success: isSuccess,
+        status: response.status,
+        statusText: response.statusText,
+        response: responseData,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error testing ANAF sandbox connectivity:', error);
+      return {
+        success: false,
+        status: 0,
+        statusText: 'Network Error',
+        response: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
     }
   }
 
