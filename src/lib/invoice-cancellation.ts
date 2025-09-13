@@ -2,14 +2,13 @@
 
 import prisma from './prisma';
 import { DigitalSignatureService } from './digital-signature';
-import { ANAFIntegrationService } from './anaf-integration';
 
 export interface CancellationReason {
 	id: string;
 	name: string;
 	description: string;
 	requiresApproval: boolean;
-	requiresANAFNotification: boolean;
+	// ANAF notification removed as part of e-Invoice cleanup
 	requiresCustomerNotification: boolean;
 }
 
@@ -55,11 +54,9 @@ export interface CancellationDocument {
 export class InvoiceCancellationService {
 	private static instance: InvoiceCancellationService;
 	private digitalSignatureService: DigitalSignatureService;
-	private anafService: ANAFIntegrationService;
 
 	constructor() {
 		this.digitalSignatureService = DigitalSignatureService.getInstance();
-		this.anafService = ANAFIntegrationService.getInstance();
 	}
 
 	static getInstance(): InvoiceCancellationService {
@@ -79,7 +76,7 @@ export class InvoiceCancellationService {
 				name: 'Customer Request',
 				description: 'Invoice cancelled at customer request',
 				requiresApproval: false,
-				requiresANAFNotification: true,
+				// ANAF notification removed as part of e-Invoice cleanup
 				requiresCustomerNotification: true,
 			},
 			{
@@ -87,7 +84,7 @@ export class InvoiceCancellationService {
 				name: 'Duplicate Invoice',
 				description: 'Invoice was issued in error (duplicate)',
 				requiresApproval: true,
-				requiresANAFNotification: true,
+				// ANAF notification removed as part of e-Invoice cleanup
 				requiresCustomerNotification: true,
 			},
 			{
@@ -95,7 +92,7 @@ export class InvoiceCancellationService {
 				name: 'Incorrect Data',
 				description: 'Invoice contains incorrect data',
 				requiresApproval: true,
-				requiresANAFNotification: true,
+				// ANAF notification removed as part of e-Invoice cleanup
 				requiresCustomerNotification: true,
 			},
 			{
@@ -103,7 +100,7 @@ export class InvoiceCancellationService {
 				name: 'Payment Issue',
 				description: 'Payment processing issue',
 				requiresApproval: false,
-				requiresANAFNotification: false,
+				// ANAF notification removed as part of e-Invoice cleanup
 				requiresCustomerNotification: true,
 			},
 			{
@@ -111,7 +108,7 @@ export class InvoiceCancellationService {
 				name: 'System Error',
 				description: 'Technical error in invoice generation',
 				requiresApproval: true,
-				requiresANAFNotification: true,
+				// ANAF notification removed as part of e-Invoice cleanup
 				requiresCustomerNotification: false,
 			},
 		];
@@ -332,10 +329,7 @@ export class InvoiceCancellationService {
 				request.requestedBy
 			);
 
-			// Notify ANAF if required
-			if (reason.requiresANAFNotification) {
-				await this.notifyANAF(cancellationDocument);
-			}
+			// ANAF notification removed as part of e-Invoice cleanup
 
 			// Notify customer if required
 			if (reason.requiresCustomerNotification) {
@@ -455,19 +449,7 @@ export class InvoiceCancellationService {
 		}
 	}
 
-	/**
-	 * Notify ANAF about cancellation
-	 */
-	private async notifyANAF(cancellationDocument: CancellationDocument): Promise<void> {
-		try {
-			// This would integrate with ANAF API to notify about cancellation
-			console.log('Notifying ANAF about cancellation:', cancellationDocument.id);
-			// Implementation would go here
-		} catch (error) {
-			console.error('ANAF notification error:', error);
-			// Don't throw error as this is not critical
-		}
-	}
+	// ANAF notification method removed as part of e-Invoice cleanup
 
 	/**
 	 * Notify customer about cancellation

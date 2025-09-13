@@ -288,63 +288,109 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			const allUpdatedCells: any[] = [];
 			const allNewRows: any[] = [];
 
-			// 1. Salvează mai întâi rândurile noi (pentru a obține ID-uri reale)
-			if (pendingNewRows.length > 0) {
-				console.log("🆕 Saving new rows first:", pendingNewRows);
-				
-				const batchData = pendingNewRows.map((row) => ({
-					cells: row.cells.map((cell) => ({
-						columnId: cell.columnId,
-						value: cell.value,
-					})),
-				}));
+			// Pregătește datele pentru un singur request unificat
+			const newRowsData = pendingNewRows.length > 0 ? pendingNewRows.map((row) => ({
+				cells: row.cells.map((cell) => ({
+					columnId: cell.columnId,
+					value: cell.value,
+				})),
+			})) : [];
 
-				const response = await fetch(
-					`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/rows/batch`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
+			// Grupează modificările existente pentru request-uri batch
+			const changesByRow = new Map<string, PendingCellChange[]>();
+			pendingChanges.forEach((change) => {
+				const existing = changesByRow.get(change.rowId) || [];
+				existing.push(change);
+				changesByRow.set(change.rowId, existing);
+			});
+
+			// Creează payload-ul unificat
+			const unifiedPayload = {
+				newRows: newRowsData,
+				updates: Array.from(changesByRow.entries()).map(([rowId, rowChanges]) => ({
+					rowId,
+					operations: rowChanges.map((change) => ({
+						operation: "update",
+						data: {
+							rowId: change.rowId,
+							columnId: change.columnId,
+							cellId: change.cellId,
+							value: change.newValue,
 						},
-						body: JSON.stringify({ rows: batchData }),
+					})),
+				})),
+			};
+
+			console.log("🚀 Sending unified batch request:", {
+				newRowsCount: newRowsData.length,
+				updatesCount: changesByRow.size,
+				payload: unifiedPayload
+			});
+
+			// Un singur request pentru toate operațiunile
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/batch`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
 					},
+					body: JSON.stringify(unifiedPayload),
+				},
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(
+					errorData.error ||
+						errorData.message ||
+						`HTTP ${response.status}: ${response.statusText}`,
 				);
+			}
 
-				if (!response.ok) {
-					const errorData = await response.json().catch(() => ({}));
-					throw new Error(
-						errorData.error ||
-							errorData.message ||
-							`HTTP ${response.status}: ${response.statusText}`,
-					);
-				}
-
-				const result = await response.json();
-				allNewRows.push(...(result.rows || []));
-				
-				// Curăță rândurile noi din pending
+			const result = await response.json();
+			
+			// Procesează rezultatele
+			if (result.newRows) {
+				allNewRows.push(...result.newRows);
 				setPendingNewRows([]);
 				console.log("✅ New rows saved successfully:", allNewRows);
 			}
 
-			// 2. Apoi salvează modificările existente
-			if (pendingChanges.size > 0) {
-				console.log("🔄 Saving existing row changes:", pendingChanges);
+			if (result.updatedCells) {
+				allUpdatedCells.push(...result.updatedCells);
+				console.log("✅ Cell updates saved successfully:", allUpdatedCells);
+			}
+
+			// Fallback pentru cazurile în care serverul nu suportă payload-ul unificat
+			if (result.newRows === undefined && result.updatedCells === undefined) {
+				console.log("⚠️ Server doesn't support unified payload, falling back to separate requests");
 				
-				// Grupează modificările pe rând pentru a optimiza request-urile
-				const changesByRow = new Map<string, PendingCellChange[]>();
+				// Fallback la request-uri separate dacă serverul nu suportă payload-ul unificat
+				if (newRowsData.length > 0) {
+					const newRowsResponse = await fetch(
+						`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/rows/batch`,
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								Authorization: `Bearer ${token}`,
+							},
+							body: JSON.stringify({ rows: newRowsData }),
+						},
+					);
 
-				pendingChanges.forEach((change) => {
-					const existing = changesByRow.get(change.rowId) || [];
-					existing.push(change);
-					changesByRow.set(change.rowId, existing);
-				});
+					if (newRowsResponse.ok) {
+						const newRowsResult = await newRowsResponse.json();
+						allNewRows.push(...(newRowsResult.rows || []));
+						setPendingNewRows([]);
+					}
+				}
 
-				// Procesează fiecare rând cu batch API
+				// Procesează modificările existente separat
 				for (const [rowId, rowChanges] of changesByRow) {
 					try {
-						// Folosește noul endpoint batch pentru rând
 						const batchPayload = {
 							operations: rowChanges.map((change) => ({
 								operation: "update",
@@ -357,7 +403,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 							})),
 						};
 
-						const response = await fetch(
+						const updateResponse = await fetch(
 							`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/batch`,
 							{
 								method: "POST",
@@ -369,55 +415,12 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 							},
 						);
 
-						if (!response.ok) {
-							const errorData = await response.json().catch(() => ({}));
-							throw new Error(
-								errorData.error ||
-									errorData.message ||
-									`HTTP ${response.status}: ${response.statusText}`,
-							);
+						if (updateResponse.ok) {
+							const updateResult = await updateResponse.json();
+							allUpdatedCells.push(...(updateResult.updatedCells || []));
 						}
-
-						const batchResult = await response.json();
-						allUpdatedCells.push(...(batchResult.updatedCells || []));
 					} catch (rowError) {
 						console.error(`Failed to update row ${rowId}:`, rowError);
-
-						// Fallback la request-uri individuale pentru acest rând
-						try {
-							const individualUpdates = await Promise.all(
-								rowChanges.map(async (change) => {
-									const response = await fetch(
-										`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables/${table.id}/rows/${change.rowId}/cell/${change.cellId}`,
-										{
-											method: "PATCH",
-											headers: {
-												"Content-Type": "application/json",
-												Authorization: `Bearer ${token}`,
-											},
-											body: JSON.stringify({
-												value: change.newValue,
-											}),
-										},
-									);
-
-									if (!response.ok) {
-										const errorData = await response.json().catch(() => ({}));
-										throw new Error(
-											errorData.error ||
-												errorData.message ||
-												`HTTP ${response.status}: ${response.statusText}`,
-										);
-									}
-
-									return await response.json();
-								}),
-							);
-
-							allUpdatedCells.push(...individualUpdates);
-						} catch (fallbackError) {
-							throw new Error(`Failed to update row ${rowId}: ${fallbackError}`);
-						}
 					}
 				}
 			}

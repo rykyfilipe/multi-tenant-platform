@@ -2,7 +2,6 @@
 
 import prisma from './prisma';
 import { DigitalSignatureService } from './digital-signature';
-import { ANAFIntegrationService } from './anaf-integration';
 
 export interface ApprovalRule {
 	id: string;
@@ -78,11 +77,9 @@ export interface ApprovalWorkflow {
 export class InvoiceApprovalService {
 	private static instance: InvoiceApprovalService;
 	private digitalSignatureService: DigitalSignatureService;
-	private anafService: ANAFIntegrationService;
 
 	constructor() {
 		this.digitalSignatureService = DigitalSignatureService.getInstance();
-		this.anafService = ANAFIntegrationService.getInstance();
 	}
 
 	static getInstance(): InvoiceApprovalService {
@@ -456,10 +453,7 @@ export class InvoiceApprovalService {
 			// Notify stakeholders
 			await this.notifyApprovalCompletion(request);
 
-			// Submit to ANAF if required
-			if (process.env.REQUIRE_ANAF_SUBMISSION === 'true') {
-				await this.submitToANAF(request.invoiceId, request.tenantId);
-			}
+			// ANAF submission removed as part of e-Invoice cleanup
 		} catch (error) {
 			console.error('Process approved invoice error:', error);
 			// Don't throw error as this is not critical
@@ -674,19 +668,7 @@ export class InvoiceApprovalService {
 		}
 	}
 
-	/**
-	 * Submit to ANAF
-	 */
-	private async submitToANAF(invoiceId: string, tenantId: string): Promise<void> {
-		try {
-			// This would submit invoice to ANAF
-			console.log('Submitting invoice to ANAF:', invoiceId);
-			// Implementation would go here
-		} catch (error) {
-			console.error('Submit to ANAF error:', error);
-			// Don't throw error as this is not critical
-		}
-	}
+	// ANAF submission method removed as part of e-Invoice cleanup
 }
 
 export default InvoiceApprovalService;

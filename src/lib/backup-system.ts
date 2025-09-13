@@ -26,21 +26,46 @@ const execAsync = promisify(exec);
 class BackupSystem {
 	private backups: Map<string, BackupJob> = new Map();
 	private restores: Map<string, RestoreJob> = new Map();
-	private readonly backupDir = path.join(process.cwd(), "backups");
+	private backupDir: string | null = null;
+	private directoryEnsured: boolean = false;
 
 	constructor() {
-		this.ensureBackupDirectory();
+		// Don't create directory immediately - do it lazily when needed
 	}
 
 	/**
 	 * Ensure backup directory exists
+	 * Uses /tmp in serverless environments, project root in development
 	 */
 	private async ensureBackupDirectory(): Promise<void> {
+		if (this.directoryEnsured && this.backupDir) {
+			return;
+		}
+
+		// Detect if we're in a serverless environment
+		const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+		
+		if (isServerless) {
+			// Use /tmp directory in serverless environments (read-write)
+			this.backupDir = path.join("/tmp", "backups");
+		} else {
+			// Use project root in development/local environments
+			this.backupDir = path.join(process.cwd(), "backups");
+		}
+
 		try {
 			await fs.access(this.backupDir);
 		} catch {
 			await fs.mkdir(this.backupDir, { recursive: true });
 		}
+
+		this.directoryEnsured = true;
+		
+		logger.info("Backup directory ensured", {
+			component: "BackupSystem",
+			backupDir: this.backupDir,
+			isServerless,
+		});
 	}
 
 	/**
@@ -57,10 +82,13 @@ class BackupSystem {
 			throw new Error("DIRECT_URL not configured - required for backup operations");
 		}
 
+		// Ensure backup directory exists before using it
+		await this.ensureBackupDirectory();
+
 		const backupId = this.generateId();
 		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 		const fileName = `backup_${tenantId}_${type}_${timestamp}.sql`;
-		const filePath = path.join(this.backupDir, fileName);
+		const filePath = path.join(this.backupDir!, fileName);
 
 		const backupJob: BackupJob = {
 			id: backupId,
@@ -333,6 +361,26 @@ class BackupSystem {
 	 */
 	async getRestore(restoreId: string): Promise<RestoreJob | null> {
 		return this.restores.get(restoreId) || null;
+	}
+
+	/**
+	 * Get backup statistics for a tenant
+	 */
+	async getBackupStats(tenantId: string): Promise<BackupStats> {
+		const backups = await this.listBackups(tenantId);
+		const completedBackups = backups.filter(b => b.status === BackupStatus.COMPLETED);
+		const failedBackups = backups.filter(b => b.status === BackupStatus.FAILED);
+		
+		const totalSize = completedBackups.reduce((sum, backup) => sum + (backup.fileSize || 0), 0);
+		const lastBackup = completedBackups[0]; // Already sorted by date descending
+		const successRate = backups.length > 0 ? (completedBackups.length / backups.length) * 100 : 100;
+		
+		return {
+			totalBackups: backups.length,
+			totalSize: totalSize,
+			lastBackup: lastBackup?.completedAt || undefined,
+			successRate: Math.round(successRate * 100) / 100, // Round to 2 decimal places
+		};
 	}
 
 	/**

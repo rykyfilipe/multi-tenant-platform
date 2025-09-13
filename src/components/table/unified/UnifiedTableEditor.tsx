@@ -152,7 +152,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			
 			// Verifică dacă sunt rânduri noi complete sau doar modificări de celule
 			const isNewRow = (item: any) => item.cells && Array.isArray(item.cells) && item.id && item.tableId;
-			const isCellUpdate = (item: any) => item.columnId && item.rowId && !isNewRow(item);
+			const isCellUpdate = (item: any) => (item.columnId && item.rowId && !isNewRow(item)) || (item.column && item.rowId && !isNewRow(item));
 			
 			const newRows = updatedData.filter(isNewRow);
 			const cellUpdates = updatedData.filter(isCellUpdate);
@@ -221,30 +221,40 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 						const result = currentRows.map((row) => {
 							const updatedRow = { ...row };
 							normalCells.forEach((updatedCell) => {
+								// Normalize cell data - handle both formats (direct columnId or column.id)
+								const normalizedCell = {
+									...updatedCell,
+									columnId: updatedCell.columnId || updatedCell.column?.id,
+									rowId: updatedCell.rowId,
+									value: updatedCell.value,
+									id: updatedCell.id
+								};
+
 								console.log("🔍 DEBUG: Processing updatedCell", { 
-									updatedCell, 
+									originalCell: updatedCell,
+									normalizedCell,
 									rowId: updatedRow.id.toString(), 
-									updatedCellRowId: updatedCell.rowId.toString(),
+									updatedCellRowId: normalizedCell.rowId.toString(),
 									rowCells: updatedRow.cells.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
 								});
 								
-								if (updatedRow.id.toString() === updatedCell.rowId.toString()) {
+								if (updatedRow.id.toString() === normalizedCell.rowId.toString()) {
 									// First try to find by exact cell ID match
 									let cellIndex = updatedRow.cells.findIndex(
-										(cell: any) => cell.id === updatedCell.id
+										(cell: any) => cell.id === normalizedCell.id
 									);
 									
 									// If not found by ID, try to find by columnId (for cases where cell ID might be different)
 									if (cellIndex === -1) {
 										cellIndex = updatedRow.cells.findIndex(
-											(cell: any) => cell.columnId.toString() === updatedCell.columnId.toString()
+											(cell: any) => cell.columnId.toString() === normalizedCell.columnId.toString()
 										);
 									}
 									
 									console.log("🔍 DEBUG: Cell index found", { 
 										cellIndex, 
-										cellId: updatedCell.id, 
-										columnId: updatedCell.columnId,
+										cellId: normalizedCell.id, 
+										columnId: normalizedCell.columnId,
 										searchStrategy: cellIndex >= 0 ? "found" : "not found"
 									});
 									
@@ -252,31 +262,31 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 										// Store original value for potential rollback
 										const originalCell = { ...updatedRow.cells[cellIndex] };
 										updatedRow.cells[cellIndex] = { 
-											...updatedCell, 
+											...normalizedCell, 
 											originalValue: originalCell.value,
 											// Ensure we keep the original cell structure
-											id: updatedCell.id || originalCell.id,
-											columnId: updatedCell.columnId || originalCell.columnId,
-											rowId: updatedCell.rowId || originalCell.rowId
+											id: normalizedCell.id || originalCell.id,
+											columnId: normalizedCell.columnId || originalCell.columnId,
+											rowId: normalizedCell.rowId || originalCell.rowId
 										};
 										console.log("🔍 DEBUG: Updated existing cell", { 
 											cellIndex, 
-											newValue: updatedCell.value, 
+											newValue: normalizedCell.value, 
 											originalValue: originalCell.value,
 											finalCell: updatedRow.cells[cellIndex]
 										});
 									} else {
 										// Add new cell if it doesn't exist
 										const newCell = { 
-											...updatedCell, 
+											...normalizedCell, 
 											originalValue: null,
-											id: updatedCell.id,
-											columnId: updatedCell.columnId,
-											rowId: updatedCell.rowId
+											id: normalizedCell.id,
+											columnId: normalizedCell.columnId,
+											rowId: normalizedCell.rowId
 										};
 										updatedRow.cells.push(newCell);
 										console.log("🔍 DEBUG: Added new cell", { 
-											newValue: updatedCell.value,
+											newValue: normalizedCell.value,
 											newCell
 										});
 									}

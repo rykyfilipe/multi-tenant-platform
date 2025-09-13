@@ -538,25 +538,45 @@ export async function DELETE(
 
 		// Delete invoice items first (cascade delete)
 		for (const item of invoiceItems) {
-			// Delete cells for this item
-			await prisma.cell.deleteMany({
-				where: { rowId: item.id },
-			});
-			// Delete the item row
-			await prisma.row.delete({
+			// Verify the row still exists before attempting to delete
+			const rowExists = await prisma.row.findUnique({
 				where: { id: item.id },
+				select: { id: true }
 			});
+			
+			if (rowExists) {
+				// Delete cells for this item
+				await prisma.cell.deleteMany({
+					where: { rowId: item.id },
+				});
+				// Delete the item row
+				await prisma.row.delete({
+					where: { id: item.id },
+				});
+			} else {
+				console.warn(`Invoice item row with ID ${item.id} no longer exists, skipping deletion`);
+			}
 		}
 
-		// Delete invoice cells
-		await prisma.cell.deleteMany({
-			where: { rowId: Number(invoiceId) },
+		// Verify invoice row exists before deleting
+		const invoiceExists = await prisma.row.findUnique({
+			where: { id: Number(invoiceId) },
+			select: { id: true }
 		});
 
-		// Delete invoice row
-		await prisma.row.delete({
-			where: { id: Number(invoiceId) },
-		});
+		if (invoiceExists) {
+			// Delete invoice cells
+			await prisma.cell.deleteMany({
+				where: { rowId: Number(invoiceId) },
+			});
+
+			// Delete invoice row
+			await prisma.row.delete({
+				where: { id: Number(invoiceId) },
+			});
+		} else {
+			console.warn(`Invoice row with ID ${invoiceId} no longer exists, skipping deletion`);
+		}
 
 		return NextResponse.json({
 			message: "Invoice deleted successfully",

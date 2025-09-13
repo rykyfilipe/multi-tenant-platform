@@ -1396,12 +1396,22 @@ export class InvoiceSystemService {
 
 		// Delete cells and rows for existing items
 		for (const item of existingItems) {
-			await prisma.cell.deleteMany({
-				where: { rowId: item.id },
-			});
-			await prisma.row.delete({
+			// Verify the row still exists before attempting to delete
+			const rowExists = await prisma.row.findUnique({
 				where: { id: item.id },
+				select: { id: true }
 			});
+			
+			if (rowExists) {
+				await prisma.cell.deleteMany({
+					where: { rowId: item.id },
+				});
+				await prisma.row.delete({
+					where: { id: item.id },
+				});
+			} else {
+				console.warn(`Row with ID ${item.id} no longer exists, skipping deletion`);
+			}
 		}
 
 		// Get invoice item columns
