@@ -19,7 +19,7 @@ import { ANAFXMLGenerator } from './xml-generator';
 import { ANAFSignatureService } from './signature-service';
 import { ANAFErrorHandler, ANAFErrorType, ANAFErrorContext } from './error-handler';
 import { InvoiceSystemService } from '../invoice-system';
-import prisma from '../prisma';
+import prisma from '@/lib/prisma';
 
 export class ANAFIntegration implements InvoiceSubmissionProvider {
   private static readonly RETRY_OPTIONS: ANAFRetryOptions = {

@@ -35,67 +35,19 @@ export function useSilentANAF() {
         throw new Error(data.error || 'Failed to authenticate with ANAF');
       }
 
-      // If requires user interaction, open popup
+      // If requires user interaction, redirect in same window
       if (data.requiresUserInteraction && data.authUrl) {
-        return new Promise((resolve, reject) => {
-          const popup = window.open(
-            data.authUrl,
-            'anaf-auth',
-            'width=600,height=700,scrollbars=yes,resizable=yes'
-          );
-
-          if (!popup) {
-            reject(new Error('Popup blocked. Please allow popups for this site.'));
-            return;
-          }
-
-          // Listen for popup close or message
-          const checkClosed = setInterval(() => {
-            if (popup.closed) {
-              clearInterval(checkClosed);
-              // Check if authentication was successful
-              setTimeout(() => {
-                resolve({
-                  success: true,
-                  message: 'Authentication completed. Please refresh the page.',
-                  authenticated: true
-                });
-              }, 1000);
-            }
-          }, 1000);
-
-          // Listen for messages from popup
-          const messageHandler = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            
-            if (event.data.type === 'ANAF_AUTH_SUCCESS') {
-              clearInterval(checkClosed);
-              popup.close();
-              window.removeEventListener('message', messageHandler);
-              resolve({
-                success: true,
-                message: 'Authentication successful',
-                authenticated: true
-              });
-            } else if (event.data.type === 'ANAF_AUTH_ERROR') {
-              clearInterval(checkClosed);
-              popup.close();
-              window.removeEventListener('message', messageHandler);
-              reject(new Error(event.data.error || 'Authentication failed'));
-            }
-          };
-
-          window.addEventListener('message', messageHandler);
-
-          // Cleanup after 5 minutes
-          setTimeout(() => {
-            if (!popup.closed) {
-              popup.close();
-              clearInterval(checkClosed);
-              window.removeEventListener('message', messageHandler);
-              reject(new Error('Authentication timeout'));
-            }
-          }, 300000);
+        // Redirect to ANAF auth URL in the same window
+        window.location.href = data.authUrl;
+        
+        // Return a promise that resolves when user comes back
+        return new Promise((resolve) => {
+          // This will be handled by the callback page
+          resolve({
+            success: true,
+            message: 'Redirecting to ANAF authentication...',
+            requiresUserInteraction: true
+          });
         });
       }
 

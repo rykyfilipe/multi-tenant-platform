@@ -32,7 +32,6 @@ export default function InvoicesPage() {
 	const [editingInvoice, setEditingInvoice] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [moduleEnabled, setModuleEnabled] = useState(false);
-	const [anafAutoConnectAttempted, setAnafAutoConnectAttempted] = useState(false);
 
 	const { user, tenant, token } = useApp();
 	const { t } = useLanguage();
@@ -91,35 +90,25 @@ export default function InvoicesPage() {
 		checkModuleStatus();
 	}, [tenant, token]);
 
-	// Auto-connect to ANAF when entering invoices page using silent auth
-	useEffect(() => {
-		const autoConnectANAF = async () => {
-			// Only auto-connect if module is enabled, user is authenticated, and ANAF is not already connected
-			// Also check that there are no errors and we haven't already attempted
-			if (moduleEnabled && user?.id && tenant?.id && token && !isANAFAuthenticated && !anafLoading && !silentAuthLoading && !silentAuthError && !anafAutoConnectAttempted) {
-				try {
-					setAnafAutoConnectAttempted(true);
-					console.log('Auto-connecting to ANAF using silent auth...');
-					const result = await authenticateSilently();
-					if (result.success && result.authenticated) {
-						console.log('ANAF authentication successful');
-						// Refresh the page to update the UI
-						window.location.reload();
-					} else if (result.requiresUserInteraction) {
-						console.log('ANAF requires user interaction - popup will open');
-						// The popup will handle the authentication
-					}
-				} catch (error) {
-					console.error('Failed to auto-connect to ANAF:', error);
-					// Don't show error to user, just log it
+	// Manual ANAF authentication - no auto-connect
+	const handleANAFConnect = async () => {
+		if (moduleEnabled && user?.id && tenant?.id && token && !isANAFAuthenticated && !anafLoading && !silentAuthLoading) {
+			try {
+				console.log('Connecting to ANAF...');
+				const result = await authenticateSilently();
+				if (result.success && result.authenticated) {
+					console.log('ANAF authentication successful');
+					// Refresh the page to update the UI
+					window.location.reload();
+				} else if (result.requiresUserInteraction) {
+					console.log('Redirecting to ANAF authentication...');
+					// User will be redirected to ANAF and back
 				}
+			} catch (error) {
+				console.error('Failed to connect to ANAF:', error);
 			}
-		};
-
-		// Small delay to ensure all hooks are initialized
-		const timer = setTimeout(autoConnectANAF, 2000);
-		return () => clearTimeout(timer);
-	}, [moduleEnabled, user?.id, tenant?.id, token, isANAFAuthenticated, anafLoading, silentAuthLoading, silentAuthError, anafAutoConnectAttempted, authenticateSilently]);
+		}
+	};
 
 	const handleEditInvoice = (invoiceData: any) => {
 		setEditingInvoice(invoiceData);
