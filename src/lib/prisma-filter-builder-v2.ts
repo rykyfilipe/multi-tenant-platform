@@ -186,7 +186,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND ${castExpression} ${isBetween ? 'BETWEEN' : 'NOT BETWEEN'} $${param1Index} AND $${param2Index}
+      AND ${castExpression} ${isBetween ? 'BETWEEN' : 'NOT BETWEEN'} $${param1Index}::numeric AND $${param2Index}::numeric
     )`;
     
     this.addRawCondition(condition);
