@@ -291,6 +291,11 @@ export class ANAFOAuthService {
     tenantId: number
   ): Promise<ANAFUserCredentials | null> {
     try {
+      if (!prisma) {
+        console.error('Prisma client is not available');
+        return null;
+      }
+      
       const credentials = await prisma.anafCredentials.findUnique({
         where: {
           userId_tenantId: {

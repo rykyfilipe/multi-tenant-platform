@@ -162,6 +162,11 @@ export class ANAFJWTTokenService {
     tokenData: ANAFTokenResponse
   ): Promise<void> {
     try {
+      if (!prisma) {
+        console.error('Prisma client is not available');
+        throw new Error('Database connection not available');
+      }
+      
       // Calculate expiry from token if available, otherwise use expires_in
       let expiresAt: Date;
       
@@ -235,6 +240,11 @@ export class ANAFJWTTokenService {
    */
   static async cleanupExpiredTokens(): Promise<number> {
     try {
+      if (!prisma) {
+        console.error('Prisma client is not available');
+        return 0;
+      }
+      
       const result = await prisma.anafCredentials.updateMany({
         where: {
           tokenExpiresAt: {
@@ -260,6 +270,11 @@ export class ANAFJWTTokenService {
    */
   static async getActiveTokens(userId: number, tenantId: number): Promise<ANAFUserCredentials[]> {
     try {
+      if (!prisma) {
+        console.error('Prisma client is not available');
+        return [];
+      }
+      
       const credentials = await prisma.anafCredentials.findMany({
         where: {
           userId,
@@ -290,6 +305,11 @@ export class ANAFJWTTokenService {
    */
   static async revokeAllTokens(userId: number, tenantId: number): Promise<void> {
     try {
+      if (!prisma) {
+        console.error('Prisma client is not available');
+        return;
+      }
+      
       await prisma.anafCredentials.updateMany({
         where: {
           userId,

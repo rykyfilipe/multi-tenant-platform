@@ -53,7 +53,7 @@ export class PrismaFilterBuilderV2 {
     this.addRawCondition(`EXISTS (
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
-      AND c."value"::text ILIKE $${paramIndex}
+      AND c."value"#>>'{}' ILIKE $${paramIndex}
     )`);
 
     return this;
@@ -175,11 +175,11 @@ export class PrismaFilterBuilderV2 {
 
     let castExpression: string;
     if (this.isNumericColumn(columnType)) {
-      castExpression = '(c."value"::text)::numeric';
+      castExpression = '(c."value"#>>\'{}\')::numeric';
     } else if (this.isDateColumn(columnType)) {
-      castExpression = 'c."value"::text';
+      castExpression = 'c."value"#>>\'{}\'';
     } else {
-      castExpression = 'c."value"::text';
+      castExpression = 'c."value"#>>\'{}\'';
     }
 
     const condition = `EXISTS (
@@ -257,7 +257,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND (c."value"::text)::numeric ${sqlOperator} $${valueParam}
+      AND (c."value"#>>'{}')::numeric ${sqlOperator} $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -342,7 +342,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text ILIKE $${valueParam}
+      AND c."value"#>>'{}' ILIKE $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -356,7 +356,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text NOT ILIKE $${valueParam}
+      AND c."value"#>>'{}' NOT ILIKE $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -370,7 +370,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text = $${valueParam}
+      AND c."value"#>>'{}' = $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -384,7 +384,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text != $${valueParam}
+      AND c."value"#>>'{}' != $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -398,7 +398,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text ILIKE $${valueParam}
+      AND c."value"#>>'{}' ILIKE $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -412,7 +412,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text ILIKE $${valueParam}
+      AND c."value"#>>'{}' ILIKE $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -426,7 +426,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text ~ $${valueParam}
+      AND c."value"#>>'{}' ~ $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -475,8 +475,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -496,7 +496,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND NOT (c."value"::text >= $${startParam} AND c."value"::text < $${endParam})
+      AND NOT (c."value"#>>'{}' >= $${startParam} AND c."value"#>>'{}' < $${endParam})
     )`;
     
     this.addRawCondition(condition);
@@ -510,7 +510,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text < $${valueParam}
+      AND c."value"#>>'{}' < $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -524,7 +524,7 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text > $${valueParam}
+      AND c."value"#>>'{}' > $${valueParam}
     )`;
     
     this.addRawCondition(condition);
@@ -545,8 +545,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -568,8 +568,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -593,8 +593,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -615,8 +615,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -637,8 +637,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -664,8 +664,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -686,8 +686,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
@@ -708,8 +708,8 @@ export class PrismaFilterBuilderV2 {
       SELECT 1 FROM "Cell" c 
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${columnIdParam}
-      AND c."value"::text >= $${startParam}
-      AND c."value"::text < $${endParam}
+      AND c."value"#>>'{}' >= $${startParam}
+      AND c."value"#>>'{}' < $${endParam}
     )`;
     
     this.addRawCondition(condition);
