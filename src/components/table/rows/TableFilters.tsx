@@ -257,8 +257,11 @@ export function TableFilters({
 					"today",
 					"yesterday",
 					"this_week",
+					"last_week",
 					"this_month",
+					"last_month",
 					"this_year",
+					"last_year",
 					"is_empty",
 					"is_not_empty",
 				] as FilterOperator[];
@@ -273,6 +276,15 @@ export function TableFilters({
 	const renderFilterValue = (filter: FilterConfig) => {
 		const column = columns.find((col) => col.id === filter.columnId);
 		if (!column) return null;
+
+		// Handle operators that don't require user input
+		if (!operatorRequiresValue(filter.operator)) {
+			return (
+				<div className='text-sm text-muted-foreground p-2 bg-muted/20 rounded border'>
+					No input required for this filter
+				</div>
+			);
+		}
 
 		switch (column.type as ColumnType | string) {
 			case USER_FRIENDLY_COLUMN_TYPES.text:
@@ -358,23 +370,6 @@ export function TableFilters({
 				);
 
 			case USER_FRIENDLY_COLUMN_TYPES.date:
-				// Handle operators that don't require user input
-				if (
-					[
-						"today",
-						"yesterday",
-						"this_week",
-						"this_month",
-						"this_year",
-					].includes(filter.operator)
-				) {
-					return (
-						<div className='text-sm text-muted-foreground p-2 bg-muted/20 rounded border'>
-							No input required for this filter
-						</div>
-					);
-				}
-
 				if (
 					filter.operator === "between" ||
 					filter.operator === "not_between"
@@ -555,8 +550,13 @@ export function TableFilters({
 			"today",
 			"yesterday",
 			"this_week",
+			"last_week",
 			"this_month",
+			"last_month",
 			"this_year",
+			"last_year",
+			"is_empty",
+			"is_not_empty",
 		].includes(operator);
 	};
 
@@ -581,8 +581,11 @@ export function TableFilters({
 			today: "Date is today",
 			yesterday: "Date is yesterday",
 			this_week: "Date is in the current week",
+			last_week: "Date is in the last week",
 			this_month: "Date is in the current month",
+			last_month: "Date is in the last month",
 			this_year: "Date is in the current year",
+			last_year: "Date is in the last year",
 			is_empty: "Field is empty or null",
 			is_not_empty: "Field has a value",
 		};
@@ -781,6 +784,29 @@ export function TableFilters({
 						const currentYear = new Date().getFullYear();
 						const cellDateYear = new Date(cellValue);
 						return cellDateYear.getFullYear() === currentYear;
+					case "last_week":
+						const nowLastWeek = new Date();
+						const lastWeek = new Date(nowLastWeek);
+						lastWeek.setDate(nowLastWeek.getDate() - 7);
+						const startOfLastWeek = new Date(lastWeek);
+						startOfLastWeek.setDate(lastWeek.getDate() - lastWeek.getDay());
+						startOfLastWeek.setHours(0, 0, 0, 0);
+						const endOfLastWeek = new Date(startOfLastWeek);
+						endOfLastWeek.setDate(startOfLastWeek.getDate() + 7);
+						const cellDateLastWeek = new Date(cellValue);
+						return cellDateLastWeek >= startOfLastWeek && cellDateLastWeek < endOfLastWeek;
+					case "last_month":
+						const nowLastMonth = new Date();
+						const lastMonth = new Date(nowLastMonth.getFullYear(), nowLastMonth.getMonth() - 1, 1);
+						const endOfLastMonth = new Date(nowLastMonth.getFullYear(), nowLastMonth.getMonth(), 1);
+						const cellDateLastMonth = new Date(cellValue);
+						return cellDateLastMonth >= lastMonth && cellDateLastMonth < endOfLastMonth;
+					case "last_year":
+						const nowLastYear = new Date();
+						const lastYear = new Date(nowLastYear.getFullYear() - 1, 0, 1);
+						const endOfLastYear = new Date(nowLastYear.getFullYear(), 0, 1);
+						const cellDateLastYear = new Date(cellValue);
+						return cellDateLastYear >= lastYear && cellDateLastYear < endOfLastYear;
 					case "is_empty":
 						return (
 							cellValue === null || cellValue === undefined || cellValue === ""

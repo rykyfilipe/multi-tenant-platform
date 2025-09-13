@@ -200,11 +200,6 @@ export class ANAFJWTTokenService {
           isActive: true,
         },
       });
-
-        userId,
-        tenantId,
-        expiresAt: expiresAt.toISOString()
-      });
     } catch (error) {
       console.error('Error storing token with expiry:', error);
       throw new Error('Failed to store token with expiry');

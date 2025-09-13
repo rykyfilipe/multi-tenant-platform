@@ -225,6 +225,15 @@ export class PrismaFilterBuilderV2 {
       case 'this_year':
         this.addDateThisYearCondition(columnIdParam);
         break;
+      case 'last_week':
+        this.addDateLastWeekCondition(columnIdParam);
+        break;
+      case 'last_month':
+        this.addDateLastMonthCondition(columnIdParam);
+        break;
+      case 'last_year':
+        this.addDateLastYearCondition(columnIdParam);
+        break;
       default:
         console.warn(`Unsupported date operator: ${operator}`);
     }
@@ -621,6 +630,77 @@ export class PrismaFilterBuilderV2 {
     
     this.parameters.push(startOfYear.toISOString());
     this.parameters.push(endOfYear.toISOString());
+    
+    const condition = `EXISTS (
+      SELECT 1 FROM "Cell" c 
+      WHERE c."rowId" = "Row"."id" 
+      AND c."columnId" = $${columnIdParam}
+      AND c."value"::text >= $${startParam}
+      AND c."value"::text < $${endParam}
+    )`;
+    
+    this.addRawCondition(condition);
+  }
+
+  private addDateLastWeekCondition(columnIdParam: number): void {
+    const now = new Date();
+    const lastWeek = new Date(now);
+    lastWeek.setDate(now.getDate() - 7);
+    const startOfLastWeek = new Date(lastWeek);
+    startOfLastWeek.setDate(lastWeek.getDate() - lastWeek.getDay());
+    startOfLastWeek.setHours(0, 0, 0, 0);
+    const endOfLastWeek = new Date(startOfLastWeek);
+    endOfLastWeek.setDate(startOfLastWeek.getDate() + 7);
+    
+    const startParam = this.getNextParameterIndex();
+    const endParam = this.getNextParameterIndex();
+    
+    this.parameters.push(startOfLastWeek.toISOString());
+    this.parameters.push(endOfLastWeek.toISOString());
+    
+    const condition = `EXISTS (
+      SELECT 1 FROM "Cell" c 
+      WHERE c."rowId" = "Row"."id" 
+      AND c."columnId" = $${columnIdParam}
+      AND c."value"::text >= $${startParam}
+      AND c."value"::text < $${endParam}
+    )`;
+    
+    this.addRawCondition(condition);
+  }
+
+  private addDateLastMonthCondition(columnIdParam: number): void {
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const startParam = this.getNextParameterIndex();
+    const endParam = this.getNextParameterIndex();
+    
+    this.parameters.push(lastMonth.toISOString());
+    this.parameters.push(endOfLastMonth.toISOString());
+    
+    const condition = `EXISTS (
+      SELECT 1 FROM "Cell" c 
+      WHERE c."rowId" = "Row"."id" 
+      AND c."columnId" = $${columnIdParam}
+      AND c."value"::text >= $${startParam}
+      AND c."value"::text < $${endParam}
+    )`;
+    
+    this.addRawCondition(condition);
+  }
+
+  private addDateLastYearCondition(columnIdParam: number): void {
+    const now = new Date();
+    const lastYear = new Date(now.getFullYear() - 1, 0, 1);
+    const endOfLastYear = new Date(now.getFullYear(), 0, 1);
+    
+    const startParam = this.getNextParameterIndex();
+    const endParam = this.getNextParameterIndex();
+    
+    this.parameters.push(lastYear.toISOString());
+    this.parameters.push(endOfLastYear.toISOString());
     
     const condition = `EXISTS (
       SELECT 1 FROM "Cell" c 
