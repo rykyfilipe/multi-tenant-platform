@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 
 export function useANAF() {
-  const { user, tenant } = useApp();
+  const { user, tenant, token } = useApp();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      if (!user?.id || !tenant?.id) {
+      if (!user?.id || !tenant?.id || !token) {
         setIsAuthenticated(false);
         setIsLoading(false);
         return;
@@ -21,7 +21,9 @@ export function useANAF() {
         setIsLoading(true);
         setError(null);
         
-        const response = await fetch('/api/anaf/status');
+        const response = await fetch('/api/anaf/status', {
+          credentials: 'include', // Include cookies for session authentication
+        });
         const data = await response.json();
         
         if (data.success) {
@@ -40,18 +42,20 @@ export function useANAF() {
     };
 
     checkAuthentication();
-  }, [user?.id, tenant?.id]);
+  }, [user?.id, tenant?.id, token]);
 
   const authenticate = async () => {
-    if (!user?.id || !tenant?.id) {
-      throw new Error('User or tenant not available');
+    if (!user?.id || !tenant?.id || !token) {
+      throw new Error('User, tenant, or token not available');
     }
 
     try {
       setIsLoading(true);
       setError(null);
       
-      const response = await fetch('/api/anaf/auth-url');
+      const response = await fetch('/api/anaf/auth-url', {
+        credentials: 'include', // Include cookies for session authentication
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -69,8 +73,8 @@ export function useANAF() {
   };
 
   const disconnect = async () => {
-    if (!user?.id || !tenant?.id) {
-      throw new Error('User or tenant not available');
+    if (!user?.id || !tenant?.id || !token) {
+      throw new Error('User, tenant, or token not available');
     }
 
     try {
@@ -79,6 +83,7 @@ export function useANAF() {
       
       const response = await fetch('/api/anaf/disconnect', {
         method: 'POST',
+        credentials: 'include', // Include cookies for session authentication
         headers: {
           'Content-Type': 'application/json',
         },
