@@ -22,11 +22,12 @@ export class ANAFOAuthService {
 
   /**
    * Generate OAuth authorization URL for ANAF
+   * Conform documentației ANAF: Oauth procedura inregistrare aplicatii portal ANAF
    */
   static async getAuthUrl(userId: number, tenantId: number): Promise<string> {
     try {
       const state = this.generateState(userId, tenantId);
-      const scopes = 'e-factura';
+      const scopes = 'openid'; // Conform documentației ANAF
       
       // Get redirect URI from environment or use default
       const redirectUri = process.env.ANAF_REDIRECT_URI || this.CONFIG.redirectUri;
@@ -37,10 +38,22 @@ export class ANAFOAuthService {
         response_type: 'code',
         scope: scopes,
         state: state,
+        token_content_type: 'jwt' // Pentru JWT tokens conform documentației
       });
 
-      // Use correct ANAF OAuth endpoint as per documentation
-      return `${this.ANAF_ENDPOINTS.authorization}?${params.toString()}`;
+      const authUrl = `${this.ANAF_ENDPOINTS.authorization}?${params.toString()}`;
+      
+      console.log('ANAF OAuth Authorization URL generated:', {
+        userId,
+        tenantId,
+        clientId: this.CONFIG.clientId,
+        redirectUri,
+        scope: scopes,
+        state: state.substring(0, 20) + '...',
+        authUrl: authUrl.substring(0, 100) + '...'
+      });
+
+      return authUrl;
     } catch (error) {
       console.error('Error generating ANAF auth URL:', error);
       throw new Error('Failed to generate authorization URL');
@@ -49,6 +62,7 @@ export class ANAFOAuthService {
 
   /**
    * Exchange authorization code for access token
+   * Conform documentației ANAF: folosește Basic Auth pentru client credentials
    */
   static async exchangeCodeForToken(
     code: string,
@@ -59,40 +73,86 @@ export class ANAFOAuthService {
       // Get redirect URI from environment or use default
       const redirectUri = process.env.ANAF_REDIRECT_URI || this.CONFIG.redirectUri;
       
+      // Create Basic Auth header conform documentației ANAF
+      const basicAuth = Buffer.from(`${this.CONFIG.clientId}:${this.CONFIG.clientSecret}`).toString('base64');
+      
+      const requestBody = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+        token_content_type: 'jwt'
+      });
+
+      console.log('ANAF OAuth Token Exchange Request:', {
+        userId,
+        tenantId,
+        endpoint: this.ANAF_ENDPOINTS.token,
+        grantType: 'authorization_code',
+        redirectUri,
+        code: code.substring(0, 10) + '...',
+        hasBasicAuth: !!basicAuth
+      });
+
       // Use correct ANAF OAuth token endpoint as per documentation
       const response = await fetch(this.ANAF_ENDPOINTS.token, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
+          'Authorization': `Basic ${basicAuth}` // Conform documentației ANAF
         },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          client_id: this.CONFIG.clientId,
-          client_secret: this.CONFIG.clientSecret,
-          code: code,
-          redirect_uri: redirectUri,
-          token_content_type: 'jwt',
-          
-        }),
+        body: requestBody
+      });
+
+      const responseText = await response.text();
+      console.log('ANAF OAuth Token Exchange Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = { error: responseText };
+        }
+        
         console.error('ANAF OAuth token exchange failed:', {
           status: response.status,
           statusText: response.statusText,
           error: errorData
         });
+        
+        // Handle specific ANAF error codes
+        if (errorData.error === 'invalid_client') {
+          throw new Error('Invalid client credentials. Please check ANAF_CLIENT_ID and ANAF_CLIENT_SECRET.');
+        } else if (errorData.error === 'invalid_grant') {
+          throw new Error('Invalid authorization code. The code may have expired or been used already.');
+        } else if (errorData.error === 'unauthorized_client') {
+          throw new Error('Client not authorized for this grant type.');
+        }
+        
         throw new Error(`OAuth token exchange failed: ${errorData.error || response.statusText}`);
       }
 
-      const tokenData: ANAFTokenResponse = await response.json();
+      const tokenData: ANAFTokenResponse = JSON.parse(responseText);
       
       // Validate token response
-      if (!tokenData.access_token || !tokenData.refresh_token) {
-        throw new Error('Invalid token response from ANAF');
+      if (!tokenData.access_token) {
+        throw new Error('Invalid token response from ANAF: missing access_token');
       }
+      
+      console.log('ANAF OAuth Token Exchange Success:', {
+        userId,
+        tenantId,
+        hasAccessToken: !!tokenData.access_token,
+        hasRefreshToken: !!tokenData.refresh_token,
+        tokenType: tokenData.token_type,
+        expiresIn: tokenData.expires_in,
+        scope: tokenData.scope
+      });
       
       // Store tokens in database with proper JWT handling
       await ANAFJWTTokenService.storeTokenWithExpiry(userId, tenantId, tokenData);
@@ -106,6 +166,7 @@ export class ANAFOAuthService {
 
   /**
    * Refresh access token using refresh token
+   * Conform documentației ANAF: folosește Basic Auth pentru client credentials
    */
   static async refreshToken(userId: number, tenantId: number): Promise<ANAFTokenResponse> {
     try {
@@ -115,38 +176,84 @@ export class ANAFOAuthService {
         throw new Error('No refresh token available');
       }
 
+      // Create Basic Auth header conform documentației ANAF
+      const basicAuth = Buffer.from(`${this.CONFIG.clientId}:${this.CONFIG.clientSecret}`).toString('base64');
+      
+      const requestBody = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: credentials.refreshToken,
+        token_content_type: 'jwt'
+      });
+
+      console.log('ANAF OAuth Token Refresh Request:', {
+        userId,
+        tenantId,
+        endpoint: this.ANAF_ENDPOINTS.token,
+        grantType: 'refresh_token',
+        hasRefreshToken: !!credentials.refreshToken,
+        hasBasicAuth: !!basicAuth
+      });
+
       // Use correct ANAF OAuth token endpoint as per documentation
       const response = await fetch(this.ANAF_ENDPOINTS.token, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
+          'Authorization': `Basic ${basicAuth}` // Conform documentației ANAF
         },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          client_id: this.CONFIG.clientId,
-          client_secret: this.CONFIG.clientSecret,
-          refresh_token: credentials.refreshToken,
-          token_content_type: 'jwt'
-        }),
+        body: requestBody
+      });
+
+      const responseText = await response.text();
+      console.log('ANAF OAuth Token Refresh Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = { error: responseText };
+        }
+        
         console.error('ANAF token refresh failed:', {
           status: response.status,
           statusText: response.statusText,
           error: errorData
         });
+        
+        // Handle specific ANAF error codes
+        if (errorData.error === 'invalid_client') {
+          throw new Error('Invalid client credentials. Please check ANAF_CLIENT_ID and ANAF_CLIENT_SECRET.');
+        } else if (errorData.error === 'invalid_grant') {
+          throw new Error('Invalid refresh token. The token may have expired or been revoked.');
+        } else if (errorData.error === 'unauthorized_client') {
+          throw new Error('Client not authorized for this grant type.');
+        }
+        
         throw new Error(`Token refresh failed: ${errorData.error || response.statusText}`);
       }
 
-      const tokenData: ANAFTokenResponse = await response.json();
+      const tokenData: ANAFTokenResponse = JSON.parse(responseText);
       
       // Validate token response
       if (!tokenData.access_token) {
-        throw new Error('Invalid refresh token response from ANAF');
+        throw new Error('Invalid refresh token response from ANAF: missing access_token');
       }
+      
+      console.log('ANAF OAuth Token Refresh Success:', {
+        userId,
+        tenantId,
+        hasAccessToken: !!tokenData.access_token,
+        hasRefreshToken: !!tokenData.refresh_token,
+        tokenType: tokenData.token_type,
+        expiresIn: tokenData.expires_in,
+        scope: tokenData.scope
+      });
       
       // Update stored tokens with proper JWT handling
       await ANAFJWTTokenService.storeTokenWithExpiry(userId, tenantId, tokenData);

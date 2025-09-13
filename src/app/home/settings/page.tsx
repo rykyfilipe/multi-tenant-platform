@@ -123,7 +123,7 @@ function Page() {
 		setAnafLoading(true);
 		try {
 			// Redirect to ANAF OAuth
-			const response = await fetch(`/api/anaf/oauth/authorize`, {
+			const response = await fetch(`/api/anaf/auth-url`, {
 				method: 'POST',
 				headers: {
 					'Authorization': `Bearer ${token}`,

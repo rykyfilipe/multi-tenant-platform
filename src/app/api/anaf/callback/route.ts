@@ -14,23 +14,26 @@ export async function GET(request: NextRequest) {
     // Handle OAuth error
     if (error) {
       const errorDescription = searchParams.get('error_description') || 'OAuth authorization failed';
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ydv.digital';
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/invoices?anaf_error=${encodeURIComponent(errorDescription)}`
+        `${baseUrl}/invoices?anaf_error=${encodeURIComponent(errorDescription)}`
       );
     }
 
     // Validate required parameters
     if (!code || !state) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ydv.digital';
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/invoices?anaf_error=${encodeURIComponent('Missing authorization code or state')}`
+        `${baseUrl}/invoices?anaf_error=${encodeURIComponent('Missing authorization code or state')}`
       );
     }
 
     // Validate state parameter
     const stateData = ANAFOAuthService.validateState(state);
     if (!stateData) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ydv.digital';
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/invoices?anaf_error=${encodeURIComponent('Invalid state parameter')}`
+        `${baseUrl}/invoices?anaf_error=${encodeURIComponent('Invalid state parameter')}`
       );
     }
 
@@ -41,19 +44,22 @@ export async function GET(request: NextRequest) {
     const tokenResult = await anafIntegration.exchangeCodeForToken(code, userId, tenantId);
 
     if (tokenResult.success) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ydv.digital';
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/invoices?anaf_success=true&tenant_id=${tenantId}`
+        `${baseUrl}/invoices?anaf_success=true&tenant_id=${tenantId}`
       );
     } else {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ydv.digital';
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/invoices?anaf_error=${encodeURIComponent(tokenResult.error || 'Failed to exchange authorization code')}`
+        `${baseUrl}/invoices?anaf_error=${encodeURIComponent(tokenResult.error || 'Failed to exchange authorization code')}`
       );
     }
   } catch (error) {
     console.error('Error in OAuth callback:', error);
     
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ydv.digital';
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/invoices?anaf_error=${encodeURIComponent('OAuth callback failed')}`
+      `${baseUrl}/invoices?anaf_error=${encodeURIComponent('OAuth callback failed')}`
     );
   }
 }

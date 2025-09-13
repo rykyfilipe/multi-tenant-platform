@@ -54,7 +54,7 @@ export default function ANAFTestPage() {
     baseUrl: process.env.NEXT_PUBLIC_ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest',
     clientId: process.env.NEXT_PUBLIC_ANAF_CLIENT_ID || 'a1804dab99e7ed5fbb6188f09d182edd0c58d20fa532c568',
     clientSecret: process.env.NEXT_PUBLIC_ANAF_CLIENT_SECRET || '26b94e4f9f543c74fc2e9cbe91ce9d8c4273c816a2b92edd0c58d20fa532c568',
-    redirectUri: process.env.NEXT_PUBLIC_ANAF_REDIRECT_URI || 'https://ydv.digital/api/anaf/oauth/callback',
+    redirectUri: process.env.NEXT_PUBLIC_ANAF_REDIRECT_URI || 'https://ydv.digital/api/anaf/callback',
     environment: process.env.NEXT_PUBLIC_ANAF_ENVIRONMENT || 'sandbox'
   });
 
