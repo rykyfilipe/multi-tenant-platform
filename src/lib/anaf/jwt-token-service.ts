@@ -127,8 +127,8 @@ export class ANAFJWTTokenService {
    */
   static createInternalToken(payload: any, expiresIn: string = '1h'): string {
     try {
-      return jwt.sign(payload, this.JWT_SECRET, { 
-        expiresIn: expiresIn,
+      return jwt.sign(payload, this.JWT_SECRET as any, { 
+        expiresIn: Number(expiresIn) || 3600,
         issuer: 'anaf-integration',
         audience: 'anaf-api'
       });
@@ -224,7 +224,7 @@ export class ANAFJWTTokenService {
     return {
       isValid: validation.isValid,
       isExpired,
-      expiry,
+      expiry: expiry || new Date(),
       userInfo,
       error: validation.error
     };
@@ -271,7 +271,7 @@ export class ANAFJWTTokenService {
         }
       });
 
-      return credentials.map(cred => ({
+      return credentials.map((cred: any) => ({
         userId: cred.userId,
         tenantId: cred.tenantId,
         accessToken: cred.accessToken,

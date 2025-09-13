@@ -147,10 +147,12 @@ export class PrismaFilterBuilderV2 {
       WHERE c."rowId" = "Row"."id" 
       AND c."columnId" = $${this.getNextParameterIndex()}
       AND (
+        ${isEmpty ? '' : 'NOT ('}
         c."value" IS NULL 
         OR c."value" = 'null'::jsonb
         OR c."value" = '""'::jsonb
         OR c."value" = '""'::jsonb
+        ${isEmpty ? '' : ')'}
       )
     )`;
     
@@ -737,7 +739,7 @@ export class PrismaFilterBuilderV2 {
     }
 
     // For operators that don't require values, allow null/undefined
-    const operatorsWithoutValues = ['is_empty', 'is_not_empty', 'today', 'yesterday', 'this_week', 'this_month', 'this_year'];
+    const operatorsWithoutValues = ['is_empty', 'is_not_empty', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'];
     if (operatorsWithoutValues.includes(filter.operator)) {
       return true;
     }

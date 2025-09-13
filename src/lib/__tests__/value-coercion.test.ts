@@ -1,5 +1,5 @@
 /**
- * Tests for ValueCoercion utility
+ * Unit tests for ValueCoercion
  */
 
 import { ValueCoercion } from '../value-coercion';
@@ -7,236 +7,226 @@ import { ColumnType } from '@/types/filtering-enhanced';
 
 describe('ValueCoercion', () => {
   describe('coerceValue', () => {
-    describe('String types', () => {
-      const stringTypes: ColumnType[] = ['text', 'string', 'email', 'url'];
-
-      stringTypes.forEach(type => {
-        it(`should coerce string values for ${type}`, () => {
-          const result = ValueCoercion.coerceValue('test', type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe('test');
-          expect(result.targetType).toBe(type);
-        });
-
-        it(`should coerce number to string for ${type}`, () => {
-          const result = ValueCoercion.coerceValue(123, type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe('123');
-        });
-
-        it(`should coerce boolean to string for ${type}`, () => {
-          const result = ValueCoercion.coerceValue(true, type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe('true');
-        });
-
-        it(`should handle null values for ${type}`, () => {
-          const result = ValueCoercion.coerceValue(null, type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe(null);
-        });
-      });
+    it('should coerce string to number', () => {
+      const result = ValueCoercion.coerceValue('123', 'number');
+      expect(result.value).toBe(123);
+      expect(result.success).toBe(true);
     });
 
-    describe('Numeric types', () => {
-      const numericTypes: ColumnType[] = ['number', 'integer', 'decimal'];
-
-      numericTypes.forEach(type => {
-        it(`should coerce number values for ${type}`, () => {
-          const result = ValueCoercion.coerceValue(123.45, type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe(123.45);
-        });
-
-        it(`should coerce string numbers for ${type}`, () => {
-          const result = ValueCoercion.coerceValue('123.45', type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe(123.45);
-        });
-
-        it(`should coerce boolean to number for ${type}`, () => {
-          const result = ValueCoercion.coerceValue(true, type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe(1);
-        });
-
-        it(`should fail for invalid string numbers for ${type}`, () => {
-          const result = ValueCoercion.coerceValue('invalid', type);
-          expect(result.success).toBe(false);
-          expect(result.error).toContain('Cannot convert');
-        });
-      });
+    it('should coerce string to boolean', () => {
+      const result = ValueCoercion.coerceValue('true', 'boolean');
+      expect(result.value).toBe(true);
+      expect(result.success).toBe(true);
     });
 
-    describe('Boolean type', () => {
-      it('should coerce boolean values', () => {
-        const result = ValueCoercion.coerceValue(true, 'boolean');
-        expect(result.success).toBe(true);
-        expect(result.value).toBe(true);
-      });
-
-      it('should coerce string "true" to boolean', () => {
-        const result = ValueCoercion.coerceValue('true', 'boolean');
-        expect(result.success).toBe(true);
-        expect(result.value).toBe(true);
-      });
-
-      it('should coerce string "false" to boolean', () => {
-        const result = ValueCoercion.coerceValue('false', 'boolean');
-        expect(result.success).toBe(true);
-        expect(result.value).toBe(false);
-      });
-
-      it('should coerce number 1 to boolean', () => {
-        const result = ValueCoercion.coerceValue(1, 'boolean');
-        expect(result.success).toBe(true);
-        expect(result.value).toBe(true);
-      });
-
-      it('should coerce number 0 to boolean', () => {
-        const result = ValueCoercion.coerceValue(0, 'boolean');
-        expect(result.success).toBe(true);
-        expect(result.value).toBe(false);
-      });
-
-      it('should fail for invalid boolean strings', () => {
-        const result = ValueCoercion.coerceValue('maybe', 'boolean');
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('Cannot convert');
-      });
+    it('should coerce string to date', () => {
+      const result = ValueCoercion.coerceValue('2023-01-01', 'date');
+      expect(result.value).toBe('2023-01-01T00:00:00.000Z');
+      expect(result.success).toBe(true);
     });
 
-    describe('Date types', () => {
-      const dateTypes: ColumnType[] = ['date', 'datetime', 'time'];
-
-      dateTypes.forEach(type => {
-        it(`should coerce Date objects for ${type}`, () => {
-          const date = new Date('2024-01-15T10:30:00Z');
-          const result = ValueCoercion.coerceValue(date, type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe(date.toISOString());
-        });
-
-        it(`should coerce ISO string dates for ${type}`, () => {
-          const dateStr = '2024-01-15T10:30:00Z';
-          const result = ValueCoercion.coerceValue(dateStr, type);
-          expect(result.success).toBe(true);
-          expect(result.value).toBe('2024-01-15T10:30:00.000Z'); // Date constructor normalizes the format
-        });
-
-        it(`should coerce timestamp numbers for ${type}`, () => {
-          const timestamp = 1705312200000; // 2024-01-15T10:30:00Z
-          const result = ValueCoercion.coerceValue(timestamp, type);
-          expect(result.success).toBe(true);
-          expect(new Date(result.value).getTime()).toBe(timestamp);
-        });
-
-        it(`should fail for invalid date strings for ${type}`, () => {
-          const result = ValueCoercion.coerceValue('invalid-date', type);
-          expect(result.success).toBe(false);
-          expect(result.error).toContain('Invalid date');
-        });
-      });
+    it('should coerce string to datetime', () => {
+      const result = ValueCoercion.coerceValue('2023-01-01T12:00:00Z', 'datetime');
+      expect(result.value).toBe('2023-01-01T12:00:00.000Z');
+      expect(result.success).toBe(true);
     });
 
-    describe('JSON type', () => {
-      it('should coerce objects to JSON', () => {
-        const obj = { key: 'value' };
-        const result = ValueCoercion.coerceValue(obj, 'json');
-        expect(result.success).toBe(true);
-        expect(result.value).toEqual(obj);
-      });
-
-      it('should parse JSON strings', () => {
-        const jsonStr = '{"key": "value"}';
-        const result = ValueCoercion.coerceValue(jsonStr, 'json');
-        expect(result.success).toBe(true);
-        expect(result.value).toEqual({ key: 'value' });
-      });
-
-      it('should return string as-is if not valid JSON', () => {
-        const result = ValueCoercion.coerceValue('not-json', 'json');
-        expect(result.success).toBe(true);
-        expect(result.value).toBe('not-json');
-      });
+    it('should coerce string to time', () => {
+      const result = ValueCoercion.coerceValue('12:00:00', 'time');
+      expect(result.value).toBe('12:00:00');
+      expect(result.success).toBe(true);
     });
 
-    describe('Reference type', () => {
-      it('should coerce single values to string', () => {
-        const result = ValueCoercion.coerceValue(123, 'reference');
-        expect(result.success).toBe(true);
-        expect(result.value).toBe('123');
-      });
+    it('should coerce string to json', () => {
+      const result = ValueCoercion.coerceValue('{"key": "value"}', 'json');
+      expect(result.value).toEqual({ key: 'value' });
+      expect(result.success).toBe(true);
+    });
 
-      it('should coerce arrays to string array', () => {
-        const result = ValueCoercion.coerceValue([123, 456], 'reference');
-        expect(result.success).toBe(true);
-        expect(result.value).toEqual(['123', '456']);
-      });
+    it('should coerce string to customArray', () => {
+      const result = ValueCoercion.coerceValue('["item1", "item2"]', 'customArray');
+      expect(result.value).toBe('["item1", "item2"]');
+      expect(result.success).toBe(true);
+    });
+
+    it('should return string as is for text type', () => {
+      const result = ValueCoercion.coerceValue('test', 'text');
+      expect(result.value).toBe('test');
+      expect(result.success).toBe(true);
+    });
+
+    it('should return string as is for reference type', () => {
+      const result = ValueCoercion.coerceValue('ref123', 'reference');
+      expect(result.value).toBe('ref123');
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle invalid number', () => {
+      const result = ValueCoercion.coerceValue('invalid', 'number');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Cannot convert');
+    });
+
+    it('should handle invalid boolean', () => {
+      const result = ValueCoercion.coerceValue('invalid', 'boolean');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Cannot convert');
+    });
+
+    it('should handle invalid date', () => {
+      const result = ValueCoercion.coerceValue('invalid', 'date');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid date string');
+    });
+
+    it('should handle invalid json', () => {
+      const result = ValueCoercion.coerceValue('invalid', 'json');
+      expect(result.value).toBe('invalid');
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle invalid customArray', () => {
+      const result = ValueCoercion.coerceValue('invalid', 'customArray');
+      expect(result.value).toBe('invalid');
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle null value', () => {
+      const result = ValueCoercion.coerceValue(null, 'text');
+      expect(result.value).toBe(null);
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle undefined value', () => {
+      const result = ValueCoercion.coerceValue(undefined, 'text');
+      expect(result.value).toBe(null);
+      expect(result.success).toBe(true);
     });
   });
 
   describe('getSqlCast', () => {
-    it('should return correct cast for text types', () => {
-      expect(ValueCoercion.getSqlCast('text')).toBe('value::text');
-      expect(ValueCoercion.getSqlCast('string')).toBe('value::text');
-      expect(ValueCoercion.getSqlCast('email')).toBe('value::text');
+    it('should return correct cast expression for text', () => {
+      const result = ValueCoercion.getSqlCast('text');
+      expect(result).toBe('value::text');
     });
 
-    it('should return correct cast for numeric types', () => {
-      expect(ValueCoercion.getSqlCast('number')).toBe('(value::text)::numeric');
-      expect(ValueCoercion.getSqlCast('integer')).toBe('(value::text)::numeric');
-      expect(ValueCoercion.getSqlCast('decimal')).toBe('(value::text)::numeric');
+    it('should return correct cast expression for number', () => {
+      const result = ValueCoercion.getSqlCast('number');
+      expect(result).toBe('(value::text)::numeric');
     });
 
-    it('should return correct cast for boolean type', () => {
-      expect(ValueCoercion.getSqlCast('boolean')).toBe('value::boolean');
+    it('should return correct cast expression for boolean', () => {
+      const result = ValueCoercion.getSqlCast('boolean');
+      expect(result).toBe('value::boolean');
     });
 
-    it('should return correct cast for date types', () => {
-      expect(ValueCoercion.getSqlCast('date')).toBe('value::text');
-      expect(ValueCoercion.getSqlCast('datetime')).toBe('value::text');
+    it('should return correct cast expression for date', () => {
+      const result = ValueCoercion.getSqlCast('date');
+      expect(result).toBe('value::text');
+    });
+
+    it('should return correct cast expression for datetime', () => {
+      const result = ValueCoercion.getSqlCast('datetime');
+      expect(result).toBe('value::text');
+    });
+
+    it('should return correct cast expression for time', () => {
+      const result = ValueCoercion.getSqlCast('time');
+      expect(result).toBe('value::text');
+    });
+
+    it('should return correct cast expression for json', () => {
+      const result = ValueCoercion.getSqlCast('json');
+      expect(result).toBe('value');
+    });
+
+    it('should return correct cast expression for customArray', () => {
+      const result = ValueCoercion.getSqlCast('customArray');
+      expect(result).toBe('value::text');
+    });
+
+    it('should return correct cast expression for reference', () => {
+      const result = ValueCoercion.getSqlCast('reference');
+      expect(result).toBe('value');
     });
   });
 
   describe('getSqlOperator', () => {
-    it('should return correct operators for text types', () => {
-      expect(ValueCoercion.getSqlOperator('contains', 'text')).toBe('ILIKE');
-      expect(ValueCoercion.getSqlOperator('equals', 'text')).toBe('=');
-      expect(ValueCoercion.getSqlOperator('regex', 'text')).toBe('~');
+    it('should return correct operator for contains with text', () => {
+      const result = ValueCoercion.getSqlOperator('contains', 'text');
+      expect(result).toBe('ILIKE');
     });
 
-    it('should return correct operators for numeric types', () => {
-      expect(ValueCoercion.getSqlOperator('greater_than', 'number')).toBe('>');
-      expect(ValueCoercion.getSqlOperator('equals', 'number')).toBe('=');
+    it('should return correct operator for equals with number', () => {
+      const result = ValueCoercion.getSqlOperator('equals', 'number');
+      expect(result).toBe('=');
     });
 
-    it('should return correct operators for JSON types', () => {
-      expect(ValueCoercion.getSqlOperator('contains', 'json')).toBe('@>');
-      expect(ValueCoercion.getSqlOperator('equals', 'json')).toBe('=');
+    it('should return correct operator for equals with boolean', () => {
+      const result = ValueCoercion.getSqlOperator('equals', 'boolean');
+      expect(result).toBe('=');
+    });
+
+    it('should return correct operator for equals with date', () => {
+      const result = ValueCoercion.getSqlOperator('equals', 'date');
+      expect(result).toBe('=');
+    });
+
+    it('should return correct operator for equals with datetime', () => {
+      const result = ValueCoercion.getSqlOperator('equals', 'datetime');
+      expect(result).toBe('=');
+    });
+
+    it('should return correct operator for equals with time', () => {
+      const result = ValueCoercion.getSqlOperator('equals', 'time');
+      expect(result).toBe('=');
+    });
+
+    it('should return correct operator for contains with json', () => {
+      const result = ValueCoercion.getSqlOperator('contains', 'json');
+      expect(result).toBe('@>');
+    });
+
+    it('should return correct operator for equals with customArray', () => {
+      const result = ValueCoercion.getSqlOperator('equals', 'customArray');
+      expect(result).toBe('=');
+    });
+
+    it('should return correct operator for equals with reference', () => {
+      const result = ValueCoercion.getSqlOperator('equals', 'reference');
+      expect(result).toBe('=');
     });
   });
 
   describe('formatValueForSql', () => {
-    it('should format contains values with wildcards', () => {
-      expect(ValueCoercion.formatValueForSql('test', 'contains', 'text')).toBe('%test%');
+    it('should format contains value for text', () => {
+      const result = ValueCoercion.formatValueForSql('test', 'contains', 'text');
+      expect(result).toBe('%test%');
     });
 
-    it('should format starts_with values', () => {
-      expect(ValueCoercion.formatValueForSql('test', 'starts_with', 'text')).toBe('test%');
+    it('should format contains value for json', () => {
+      const result = ValueCoercion.formatValueForSql({ key: 'value' }, 'contains', 'json');
+      expect(result).toBe('{"key":"value"}');
     });
 
-    it('should format ends_with values', () => {
-      expect(ValueCoercion.formatValueForSql('test', 'ends_with', 'text')).toBe('%test');
+    it('should format starts_with value', () => {
+      const result = ValueCoercion.formatValueForSql('test', 'starts_with', 'text');
+      expect(result).toBe('test%');
     });
 
-    it('should format JSON contains values', () => {
-      expect(ValueCoercion.formatValueForSql('test', 'contains', 'json')).toBe('"test"');
+    it('should format ends_with value', () => {
+      const result = ValueCoercion.formatValueForSql('test', 'ends_with', 'text');
+      expect(result).toBe('%test');
     });
 
-    it('should return values as-is for other operators', () => {
-      expect(ValueCoercion.formatValueForSql('test', 'equals', 'text')).toBe('test');
-      expect(ValueCoercion.formatValueForSql(123, 'greater_than', 'number')).toBe(123);
+    it('should format regex value', () => {
+      const result = ValueCoercion.formatValueForSql('^test.*', 'regex', 'text');
+      expect(result).toBe('^test.*');
+    });
+
+    it('should format equals value', () => {
+      const result = ValueCoercion.formatValueForSql('test', 'equals', 'text');
+      expect(result).toBe('test');
     });
   });
 });

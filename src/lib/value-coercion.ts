@@ -63,8 +63,11 @@ export class ValueCoercion {
 
         case 'date':
         case 'datetime':
-        case 'time':
           coercedValue = this.coerceToDate(value);
+          break;
+
+        case 'time':
+          coercedValue = this.coerceToTime(value);
           break;
 
         case 'json':
@@ -205,6 +208,26 @@ export class ValueCoercion {
     }
     
     throw new Error(`Cannot convert ${typeof value} to date`);
+  }
+
+  /**
+   * Coerce value to time string
+   */
+  private static coerceToTime(value: any): string {
+    if (typeof value === 'string') {
+      // Validate time format (HH:MM:SS or HH:MM)
+      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/;
+      if (timeRegex.test(value)) {
+        return value;
+      }
+      throw new Error(`Invalid time format: "${value}"`);
+    }
+    
+    if (value instanceof Date) {
+      return value.toTimeString().split(' ')[0];
+    }
+    
+    throw new Error(`Cannot convert ${typeof value} to time`);
   }
 
   /**
