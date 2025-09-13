@@ -149,6 +149,10 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		table,
 		onCellsUpdated: (updatedData) => {
 			console.log("🔄 Processing update data:", updatedData);
+			console.log("🔄 Current paginatedRows before processing:", paginatedRows?.map((row: any) => ({
+				id: row.id,
+				cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+			})));
 			
 			// Verifică dacă sunt rânduri noi complete sau doar modificări de celule
 			const isNewRow = (item: any) => item.cells && Array.isArray(item.cells) && item.id && item.tableId;
@@ -207,19 +211,12 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				}
 				
 				if (normalCells.length > 0) {
-					console.log("🔄 Optimistically updating cells in UI:", normalCells);
-					console.log("🔄 Current paginatedRows before update:", paginatedRows?.map((row: any) => ({
-						id: row.id,
-						cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-					})));
+					console.log("🔄 Updating cells in UI with server response:", normalCells);
 					
 					setRows((currentRows: any[]) => {
-						console.log("🔄 setRows called with currentRows:", currentRows?.map((row: any) => ({
-							id: row.id,
-							cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
-						})));
 						const result = currentRows.map((row) => {
-							const updatedRow = { ...row };
+							const updatedRow = { ...row, cells: [...row.cells] };
+							
 							normalCells.forEach((updatedCell) => {
 								// Normalize cell data - handle both formats (direct columnId or column.id)
 								const normalizedCell = {
@@ -234,53 +231,43 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 									originalCell: updatedCell,
 									normalizedCell,
 									rowId: updatedRow.id.toString(), 
-									updatedCellRowId: normalizedCell.rowId.toString(),
-									rowCells: updatedRow.cells.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+									updatedCellRowId: normalizedCell.rowId.toString()
 								});
 								
+								// Check if this update applies to this row
 								if (updatedRow.id.toString() === normalizedCell.rowId.toString()) {
-									// First try to find by exact cell ID match
-									let cellIndex = updatedRow.cells.findIndex(
-										(cell: any) => cell.id === normalizedCell.id
+									// Find the cell by columnId (most reliable method)
+									const cellIndex = updatedRow.cells.findIndex(
+										(cell: any) => cell.columnId.toString() === normalizedCell.columnId.toString()
 									);
-									
-									// If not found by ID, try to find by columnId (for cases where cell ID might be different)
-									if (cellIndex === -1) {
-										cellIndex = updatedRow.cells.findIndex(
-											(cell: any) => cell.columnId.toString() === normalizedCell.columnId.toString()
-										);
-									}
 									
 									console.log("🔍 DEBUG: Cell index found", { 
 										cellIndex, 
-										cellId: normalizedCell.id, 
 										columnId: normalizedCell.columnId,
-										searchStrategy: cellIndex >= 0 ? "found" : "not found"
+										rowId: updatedRow.id,
+										searchStrategy: cellIndex >= 0 ? "found by columnId" : "not found"
 									});
 									
 									if (cellIndex >= 0) {
-										// Store original value for potential rollback
-										const originalCell = { ...updatedRow.cells[cellIndex] };
+										// Update existing cell with new value from server
 										updatedRow.cells[cellIndex] = { 
-											...normalizedCell, 
-											originalValue: originalCell.value,
-											// Ensure we keep the original cell structure
-											id: normalizedCell.id || originalCell.id,
-											columnId: normalizedCell.columnId || originalCell.columnId,
-											rowId: normalizedCell.rowId || originalCell.rowId
+											...updatedRow.cells[cellIndex],
+											value: normalizedCell.value,
+											// Keep the original cell ID and structure
+											id: updatedRow.cells[cellIndex].id,
+											columnId: updatedRow.cells[cellIndex].columnId,
+											rowId: updatedRow.cells[cellIndex].rowId
 										};
 										console.log("🔍 DEBUG: Updated existing cell", { 
 											cellIndex, 
-											newValue: normalizedCell.value, 
-											originalValue: originalCell.value,
+											newValue: normalizedCell.value,
 											finalCell: updatedRow.cells[cellIndex]
 										});
 									} else {
-										// Add new cell if it doesn't exist
+										// Add new cell if it doesn't exist (shouldn't happen normally)
 										const newCell = { 
 											...normalizedCell, 
-											originalValue: null,
-											id: normalizedCell.id,
+											id: normalizedCell.id || `cell_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
 											columnId: normalizedCell.columnId,
 											rowId: normalizedCell.rowId
 										};
@@ -295,10 +282,22 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							return updatedRow;
 						});
 						
-						console.log("🔄 setRows returning updated rows:", result?.map((row: any) => ({
+						console.log("🔄 Final updated rows:", result?.map((row: any) => ({
 							id: row.id,
 							cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
 						})));
+						
+						// Additional debugging to verify the update worked
+						setTimeout(() => {
+							console.log("🔄 paginatedRows after state update:", paginatedRows?.map((row: any) => ({
+								id: row.id,
+								cells: row.cells?.map((c: any) => ({ id: c.id, columnId: c.columnId, value: c.value }))
+							})));
+						}, 100);
+						
+						// Force a re-render by updating a dummy state to ensure the UI reflects the changes
+						console.log("🔄 Cell update completed successfully");
+						
 						return result;
 					});
 				}

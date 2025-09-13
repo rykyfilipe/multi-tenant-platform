@@ -73,7 +73,9 @@ export function RowGrid({
 
 	const getCellValue = (row: Row, column: Column) => {
 		const cell = row.cells?.find(c => c.columnId === column.id);
-		return cell?.value ?? null;
+		const pendingValue = getPendingValue(row.id.toString(), column.id.toString());
+		// Use pending value if available, otherwise use cell value
+		return pendingValue !== undefined ? pendingValue : (cell?.value ?? null);
 	};
 
 	const getCellId = (row: Row, column: Column) => {

@@ -1,6 +1,7 @@
 /** @format */
 
 import { ANAFTokenResponse, ANAFConfiguration, ANAFUserCredentials, ANAFError } from './types';
+import { ANAFJWTTokenService } from './jwt-token-service';
 import prisma from '../prisma';
 
 export class ANAFOAuthService {
@@ -31,7 +32,8 @@ export class ANAFOAuthService {
         state: state,
       });
 
-      return `${this.CONFIG.baseUrl}/oauth/authorize?${params.toString()}`;
+      // Use correct ANAF OAuth endpoint
+      return `https://logincert.anaf.ro/anaf-oauth2/v1/authorize?${params.toString()}`;
     } catch (error) {
       console.error('Error generating ANAF auth URL:', error);
       throw new Error('Failed to generate authorization URL');
@@ -50,10 +52,12 @@ export class ANAFOAuthService {
       // Get redirect URI from environment or use default
       const redirectUri = process.env.ANAF_REDIRECT_URI || this.CONFIG.redirectUri;
       
-      const response = await fetch(`${this.CONFIG.baseUrl}/oauth/token`, {
+      // Use correct ANAF OAuth token endpoint
+      const response = await fetch('https://logincert.anaf.ro/anaf-oauth2/v1/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
         },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
@@ -66,13 +70,23 @@ export class ANAFOAuthService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('ANAF OAuth token exchange failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
         throw new Error(`OAuth token exchange failed: ${errorData.error || response.statusText}`);
       }
 
       const tokenData: ANAFTokenResponse = await response.json();
       
-      // Store tokens in database
-      await this.storeUserCredentials(userId, tenantId, tokenData);
+      // Validate token response
+      if (!tokenData.access_token || !tokenData.refresh_token) {
+        throw new Error('Invalid token response from ANAF');
+      }
+      
+      // Store tokens in database with proper JWT handling
+      await ANAFJWTTokenService.storeTokenWithExpiry(userId, tenantId, tokenData);
       
       return tokenData;
     } catch (error) {
@@ -92,10 +106,12 @@ export class ANAFOAuthService {
         throw new Error('No refresh token available');
       }
 
-      const response = await fetch(`${this.CONFIG.baseUrl}/oauth/token`, {
+      // Use correct ANAF OAuth token endpoint
+      const response = await fetch('https://logincert.anaf.ro/anaf-oauth2/v1/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
         },
         body: new URLSearchParams({
           grant_type: 'refresh_token',
@@ -107,13 +123,23 @@ export class ANAFOAuthService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('ANAF token refresh failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
         throw new Error(`Token refresh failed: ${errorData.error || response.statusText}`);
       }
 
       const tokenData: ANAFTokenResponse = await response.json();
       
-      // Update stored tokens
-      await this.updateUserCredentials(userId, tenantId, tokenData);
+      // Validate token response
+      if (!tokenData.access_token) {
+        throw new Error('Invalid refresh token response from ANAF');
+      }
+      
+      // Update stored tokens with proper JWT handling
+      await ANAFJWTTokenService.storeTokenWithExpiry(userId, tenantId, tokenData);
       
       return tokenData;
     } catch (error) {
@@ -133,8 +159,8 @@ export class ANAFOAuthService {
         return false;
       }
 
-      // Check if token is expired
-      if (credentials.tokenExpiresAt && credentials.tokenExpiresAt <= new Date()) {
+      // Check if token is expired using JWT validation
+      if (credentials.accessToken && ANAFJWTTokenService.isTokenExpired(credentials.accessToken)) {
         // Try to refresh token
         try {
           await this.refreshToken(userId, tenantId);
@@ -163,8 +189,8 @@ export class ANAFOAuthService {
         throw new Error('No access token available. Please authenticate first.');
       }
 
-      // Check if token is expired
-      if (credentials.tokenExpiresAt && credentials.tokenExpiresAt <= new Date()) {
+      // Check if token is expired using JWT validation
+      if (credentials.accessToken && ANAFJWTTokenService.isTokenExpired(credentials.accessToken)) {
         const refreshedToken = await this.refreshToken(userId, tenantId);
         return refreshedToken.access_token;
       }

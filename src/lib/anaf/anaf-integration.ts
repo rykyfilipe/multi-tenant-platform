@@ -17,6 +17,7 @@ import {
 import { ANAFOAuthService } from './oauth-service';
 import { ANAFXMLGenerator } from './xml-generator';
 import { ANAFSignatureService } from './signature-service';
+import { ANAFErrorHandler, ANAFErrorType, ANAFErrorContext } from './error-handler';
 import { InvoiceSystemService } from '../invoice-system';
 import prisma from '../prisma';
 
@@ -31,15 +32,30 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
    * Submit invoice to ANAF e-Factura system
    */
   async submitInvoice(invoiceId: number, tenantId: number, options?: any): Promise<InvoiceSubmissionResult> {
+    const context: ANAFErrorContext = {
+      userId: options?.userId,
+      tenantId,
+      invoiceId,
+      operation: 'submit_invoice'
+    };
+
     try {
       console.log(`Submitting invoice ${invoiceId} to ANAF for tenant ${tenantId}`);
       
       // Check if user is authenticated
       const isAuthenticated = await ANAFOAuthService.isAuthenticated(options?.userId, tenantId);
       if (!isAuthenticated) {
+        const error = ANAFErrorHandler.createError(
+          ANAFErrorType.AUTHENTICATION_ERROR,
+          'User not authenticated with ANAF. Please authenticate first.',
+          undefined,
+          context
+        );
+        await ANAFErrorHandler.handleError(error, context);
+        
         return {
           success: false,
-          error: 'User not authenticated with ANAF. Please authenticate first.',
+          error: ANAFErrorHandler.getUserFriendlyMessage(error),
           timestamp: new Date().toISOString(),
         };
       }
@@ -47,9 +63,17 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       // Get invoice data
       const invoiceData = await this.getInvoiceData(invoiceId, tenantId);
       if (!invoiceData) {
+        const error = ANAFErrorHandler.createError(
+          ANAFErrorType.VALIDATION_ERROR,
+          'Invoice not found or invalid data',
+          undefined,
+          context
+        );
+        await ANAFErrorHandler.handleError(error, context);
+        
         return {
           success: false,
-          error: 'Invoice not found or invalid data',
+          error: ANAFErrorHandler.getUserFriendlyMessage(error),
           timestamp: new Date().toISOString(),
         };
       }
@@ -68,10 +92,10 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       
       return submissionResult;
     } catch (error) {
-      console.error('Error submitting invoice to ANAF:', error);
+      const anafError = await ANAFErrorHandler.handleError(error as Error, context);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error: ANAFErrorHandler.getUserFriendlyMessage(anafError),
         timestamp: new Date().toISOString(),
       };
     }
@@ -87,29 +111,45 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       // Get access token
       const accessToken = await ANAFOAuthService.getValidAccessToken(0, tenantId); // Use system user
       
-      // Query ANAF API
-      const response = await fetch(`${process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest'}/api/v1/invoices/${submissionId}/status`, {
+      // Use correct ANAF API endpoint for status check
+      const baseUrl = process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest';
+      const statusUrl = `${baseUrl}/status/${submissionId}`;
+      
+      console.log('Checking ANAF status:', {
+        url: statusUrl,
+        submissionId,
+        tenantId
+      });
+      
+      const response = await fetch(statusUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
 
+      console.log('ANAF status response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`ANAF API error: ${errorData.error || response.statusText}`);
+        const errorData = await response.text();
+        console.error('ANAF status API error:', errorData);
+        throw new Error(`ANAF API error (${response.status}): ${errorData || response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('ANAF status data:', data);
       
       // Update local status
       await this.updateSubmissionStatus(submissionId, data.status, data.message);
       
       return {
         submissionId,
-        status: data.status,
-        message: data.message,
+        status: data.status || 'unknown',
+        message: data.message || data.description,
         timestamp: new Date().toISOString(),
         responseData: data,
       };
@@ -134,8 +174,17 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       // Get access token
       const accessToken = await ANAFOAuthService.getValidAccessToken(0, tenantId); // Use system user
       
-      // Download from ANAF API
-      const response = await fetch(`${process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest'}/api/v1/invoices/${submissionId}/download`, {
+      // Use correct ANAF API endpoint for download
+      const baseUrl = process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest';
+      const downloadUrl = `${baseUrl}/download/${submissionId}`;
+      
+      console.log('Downloading from ANAF:', {
+        url: downloadUrl,
+        submissionId,
+        tenantId
+      });
+      
+      const response = await fetch(downloadUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -143,13 +192,25 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
         },
       });
 
+      console.log('ANAF download response:', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type')
+      });
+
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`ANAF API error: ${errorData || response.statusText}`);
+        console.error('ANAF download API error:', errorData);
+        throw new Error(`ANAF API error (${response.status}): ${errorData || response.statusText}`);
       }
 
       const content = await response.text();
       const filename = `anaf_response_${submissionId}.xml`;
+      
+      console.log('ANAF download successful:', {
+        contentLength: content.length,
+        filename
+      });
       
       return {
         success: true,
@@ -357,26 +418,46 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
     try {
       const accessToken = await ANAFOAuthService.getValidAccessToken(userId, tenantId);
       
-      const response = await fetch(`${process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest'}/api/v1/invoices`, {
+      // Use correct ANAF API endpoint for invoice submission
+      const baseUrl = process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest';
+      const uploadUrl = `${baseUrl}/upload`;
+      
+      console.log('Submitting invoice to ANAF:', {
+        url: uploadUrl,
+        contentLength: xmlContent.length,
+        userId,
+        tenantId
+      });
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/xml',
+          'Accept': 'application/json',
         },
         body: xmlContent,
       });
 
+      console.log('ANAF API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`ANAF API error: ${errorData || response.statusText}`);
+        console.error('ANAF API error response:', errorData);
+        throw new Error(`ANAF API error (${response.status}): ${errorData || response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('ANAF API success response:', data);
       
       return {
         success: true,
-        submissionId: data.submissionId,
-        message: data.message || 'Invoice submitted successfully',
+        submissionId: data.submissionId || data.id || data.uuid,
+        message: data.message || data.description || 'Invoice submitted successfully',
         status: data.status || 'pending',
         timestamp: new Date().toISOString(),
       };
