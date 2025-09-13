@@ -58,6 +58,7 @@ interface EnhancedInvoiceListProps {
 	deleteInvoice: (invoiceId: number) => Promise<boolean>;
 	getInvoiceDetails: (invoiceId: number) => Promise<any>;
 	refreshInvoices?: () => void;
+	isANAFAuthenticated?: boolean;
 }
 
 export function EnhancedInvoiceList({
@@ -69,6 +70,7 @@ export function EnhancedInvoiceList({
 	deleteInvoice,
 	getInvoiceDetails,
 	refreshInvoices,
+	isANAFAuthenticated = false,
 }: EnhancedInvoiceListProps) {
 	const { token, tenant, showAlert } = useApp();
 	const { t } = useLanguage();
@@ -759,6 +761,7 @@ export function EnhancedInvoiceList({
 									<ANAFInvoiceActions 
 										invoiceId={invoice.id}
 										invoiceNumber={invoice.invoice_number}
+										isAuthenticated={isANAFAuthenticated}
 										onStatusChange={(status) => {
 											// Update local state if needed
 											console.log('ANAF status changed:', status);

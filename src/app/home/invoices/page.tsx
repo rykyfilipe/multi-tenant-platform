@@ -22,6 +22,7 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useInvoiceSystem } from "@/hooks/useInvoiceSystem";
+import { useANAF } from "@/hooks/useANAF";
 import { TourManager } from "@/components/tours/TourManager";
 import { allTours } from "@/tours";
 
@@ -34,6 +35,9 @@ export default function InvoicesPage() {
 	const { user, tenant, token } = useApp();
 	const { t } = useLanguage();
 	const router = useRouter();
+
+	// ANAF authentication hook
+	const { isAuthenticated: isANAFAuthenticated, isLoading: anafLoading } = useANAF();
 
 	// Invoice system hook - moved here to avoid re-fetching on tab changes
 	const {
@@ -201,6 +205,7 @@ export default function InvoicesPage() {
 							deleteInvoice={deleteInvoice}
 							getInvoiceDetails={getInvoiceDetails}
 							refreshInvoices={refresh}
+							isANAFAuthenticated={isANAFAuthenticated}
 						/>
 					</TabsContent>
 

@@ -29,6 +29,17 @@ interface ANAFTestConfig {
   environment: string;
 }
 
+interface Invoice {
+  id: number;
+  invoice_number: string;
+  date: string;
+  due_date: string;
+  customer_name: string;
+  total_amount: number;
+  base_currency: string;
+  status: string;
+}
+
 export default function ANAFTestPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
@@ -37,12 +48,14 @@ export default function ANAFTestPage() {
   const [accessToken, setAccessToken] = useState<string>('');
   const [submissionId, setSubmissionId] = useState<string>('');
   const [xmlContent, setXmlContent] = useState<string>('');
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [config, setConfig] = useState<ANAFTestConfig>({
-    baseUrl: 'https://api.anaf.ro/test/FCTEL/rest',
-    clientId: '',
-    clientSecret: '',
-    redirectUri: '',
-    environment: 'sandbox'
+    baseUrl: process.env.NEXT_PUBLIC_ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest',
+    clientId: process.env.NEXT_PUBLIC_ANAF_CLIENT_ID || '',
+    clientSecret: process.env.NEXT_PUBLIC_ANAF_CLIENT_SECRET || '',
+    redirectUri: process.env.NEXT_PUBLIC_ANAF_REDIRECT_URI || '',
+    environment: process.env.NEXT_PUBLIC_ANAF_ENVIRONMENT || 'sandbox'
   });
 
   const addResult = (test: string, success: boolean, message: string, data?: any, error?: string) => {
@@ -59,6 +72,39 @@ export default function ANAFTestPage() {
 
   const clearResults = () => {
     setResults([]);
+  };
+
+  const fetchInvoices = async () => {
+    setIsLoading(true);
+    addResult('Fetch Invoices', false, 'Fetching invoices...');
+
+    try {
+      const response = await fetch('/api/test/anaf/invoices');
+      const data = await response.json();
+
+      if (response.ok) {
+        setInvoices(data.invoices || []);
+        addResult('Fetch Invoices', true, `Found ${data.invoices?.length || 0} invoices`, { count: data.invoices?.length || 0 });
+        toast.success(`Found ${data.invoices?.length || 0} invoices`);
+      } else {
+        addResult('Fetch Invoices', false, 'Failed to fetch invoices', null, data.error);
+        toast.error('Failed to fetch invoices');
+      }
+    } catch (error) {
+      addResult('Fetch Invoices', false, 'Network error', null, error instanceof Error ? error.message : 'Unknown error');
+      toast.error('Network error while fetching invoices');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const selectInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    addResult('Select Invoice', true, `Selected invoice #${invoice.invoice_number}`, { 
+      invoiceId: invoice.id, 
+      invoiceNumber: invoice.invoice_number 
+    });
+    toast.success(`Selected invoice #${invoice.invoice_number}`);
   };
 
   const testSandboxConnectivity = async () => {
@@ -148,29 +194,36 @@ export default function ANAFTestPage() {
     }
   };
 
-  const generateTestInvoice = async () => {
+  const generateInvoiceXML = async () => {
+    if (!selectedInvoice) {
+      toast.error('Please select an invoice first');
+      return;
+    }
+
     setIsLoading(true);
-    addResult('Generate Test Invoice', false, 'Generating...');
+    addResult('Generate Invoice XML', false, 'Generating XML for selected invoice...');
 
     try {
       const response = await fetch('/api/test/anaf/generate-invoice', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceId: selectedInvoice.id })
       });
       const data = await response.json();
 
       if (response.ok) {
         setXmlContent(data.xmlContent);
-        addResult('Generate Test Invoice', true, 'Test invoice generated successfully', { 
-          xmlLength: data.xmlContent.length 
+        addResult('Generate Invoice XML', true, 'Invoice XML generated successfully', { 
+          xmlLength: data.xmlContent.length,
+          invoiceNumber: selectedInvoice.invoice_number
         });
-        toast.success('Test invoice generated');
+        toast.success('Invoice XML generated');
       } else {
-        addResult('Generate Test Invoice', false, 'Failed to generate invoice', null, data.error);
-        toast.error('Failed to generate test invoice');
+        addResult('Generate Invoice XML', false, 'Failed to generate invoice XML', null, data.error);
+        toast.error('Failed to generate invoice XML');
       }
     } catch (error) {
-      addResult('Generate Test Invoice', false, 'Network error', null, error instanceof Error ? error.message : 'Unknown error');
+      addResult('Generate Invoice XML', false, 'Network error', null, error instanceof Error ? error.message : 'Unknown error');
       toast.error('Network error');
     } finally {
       setIsLoading(false);
@@ -184,12 +237,17 @@ export default function ANAFTestPage() {
     }
 
     if (!xmlContent) {
-      toast.error('Please generate a test invoice first');
+      toast.error('Please generate invoice XML first');
+      return;
+    }
+
+    if (!selectedInvoice) {
+      toast.error('Please select an invoice first');
       return;
     }
 
     setIsLoading(true);
-    addResult('Submit Invoice', false, 'Submitting...');
+    addResult('Submit Invoice', false, 'Submitting invoice to ANAF...');
 
     try {
       const response = await fetch('/api/test/anaf/submit-invoice', {
@@ -198,7 +256,8 @@ export default function ANAFTestPage() {
         body: JSON.stringify({ 
           accessToken, 
           xmlContent,
-          config 
+          config,
+          invoiceId: selectedInvoice.id
         })
       });
       const data = await response.json();
@@ -207,7 +266,8 @@ export default function ANAFTestPage() {
         setSubmissionId(data.submissionId);
         addResult('Submit Invoice', true, 'Invoice submitted successfully', { 
           submissionId: data.submissionId,
-          status: data.status 
+          status: data.status,
+          invoiceNumber: selectedInvoice.invoice_number
         });
         toast.success('Invoice submitted to ANAF');
       } else {
@@ -293,59 +353,73 @@ export default function ANAFTestPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Configuration */}
+        {/* Invoice Selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-            <CardDescription>ANAF API configuration for testing</CardDescription>
+            <CardTitle>Invoice Selection</CardTitle>
+            <CardDescription>Select an invoice to test with ANAF e-Factura</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="baseUrl">Base URL</Label>
-              <Input
-                id="baseUrl"
-                value={config.baseUrl}
-                onChange={(e) => setConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
-                placeholder="https://api.anaf.ro/test/FCTEL/rest"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="clientId">Client ID</Label>
-              <Input
-                id="clientId"
-                value={config.clientId}
-                onChange={(e) => setConfig(prev => ({ ...prev, clientId: e.target.value }))}
-                placeholder="Your ANAF Client ID"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="clientSecret">Client Secret</Label>
-              <Input
-                id="clientSecret"
-                type="password"
-                value={config.clientSecret}
-                onChange={(e) => setConfig(prev => ({ ...prev, clientSecret: e.target.value }))}
-                placeholder="Your ANAF Client Secret"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="redirectUri">Redirect URI</Label>
-              <Input
-                id="redirectUri"
-                value={config.redirectUri}
-                onChange={(e) => setConfig(prev => ({ ...prev, redirectUri: e.target.value }))}
-                placeholder="https://your-ngrok-url.ngrok.io/api/anaf/oauth/callback"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="environment">Environment</Label>
-              <Input
-                id="environment"
-                value={config.environment}
-                onChange={(e) => setConfig(prev => ({ ...prev, environment: e.target.value }))}
-                placeholder="sandbox"
-              />
-            </div>
+            <Button 
+              onClick={fetchInvoices} 
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Fetch Invoices
+            </Button>
+
+            {invoices.length > 0 && (
+              <div className="space-y-2">
+                <Label>Available Invoices</Label>
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {invoices.map((invoice) => (
+                    <div
+                      key={invoice.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedInvoice?.id === invoice.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                      onClick={() => selectInvoice(invoice)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium">#{invoice.invoice_number}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {invoice.customer_name} • {new Date(invoice.date).toLocaleDateString()}
+                          </div>
+                          <div className="text-sm font-medium">
+                            {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: invoice.base_currency,
+                            }).format(invoice.total_amount)}
+                          </div>
+                        </div>
+                        <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>
+                          {invoice.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedInvoice && (
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2">Selected Invoice</h4>
+                <div className="space-y-1 text-sm">
+                  <div><strong>Number:</strong> #{selectedInvoice.invoice_number}</div>
+                  <div><strong>Customer:</strong> {selectedInvoice.customer_name}</div>
+                  <div><strong>Date:</strong> {new Date(selectedInvoice.date).toLocaleDateString()}</div>
+                  <div><strong>Amount:</strong> {new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: selectedInvoice.base_currency,
+                  }).format(selectedInvoice.total_amount)}</div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -419,14 +493,14 @@ export default function ANAFTestPage() {
             <Separator />
 
             <div className="space-y-2">
-              <Label>Step 3: Generate Test Invoice</Label>
+              <Label>Step 3: Generate Invoice XML</Label>
               <Button 
-                onClick={generateTestInvoice} 
-                disabled={isLoading}
+                onClick={generateInvoiceXML} 
+                disabled={isLoading || !selectedInvoice}
                 className="w-full"
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Generate Test Invoice XML
+                Generate Invoice XML
               </Button>
               {xmlContent && (
                 <div className="space-y-2">
@@ -447,7 +521,7 @@ export default function ANAFTestPage() {
               <Label>Step 4: Submit Invoice</Label>
               <Button 
                 onClick={submitInvoice} 
-                disabled={isLoading || !accessToken || !xmlContent}
+                disabled={isLoading || !accessToken || !xmlContent || !selectedInvoice}
                 className="w-full"
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

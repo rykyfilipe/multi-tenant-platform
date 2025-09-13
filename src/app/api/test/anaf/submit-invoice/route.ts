@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { accessToken, xmlContent, config } = await request.json();
+    const { accessToken, xmlContent, config, invoiceId } = await request.json();
 
     if (!accessToken || !xmlContent) {
       return NextResponse.json({
@@ -33,12 +33,14 @@ export async function POST(request: NextRequest) {
         submissionId: data.submissionId || data.id || 'unknown',
         status: data.status || 'submitted',
         message: data.message || 'Invoice submitted successfully',
+        invoiceId: invoiceId,
         response: data
       });
     } else {
       return NextResponse.json({
         success: false,
         error: `HTTP ${response.status}: ${data.message || 'Unknown error'}`,
+        invoiceId: invoiceId,
         details: data
       }, { status: response.status });
     }
