@@ -37,7 +37,12 @@ export default function InvoicesPage() {
 	const router = useRouter();
 
 	// ANAF authentication hook
-	const { isAuthenticated: isANAFAuthenticated, isLoading: anafLoading } = useANAF();
+	const { 
+		isAuthenticated: isANAFAuthenticated, 
+		isLoading: anafLoading, 
+		authenticate: anafAuthenticate,
+		disconnect: anafDisconnect 
+	} = useANAF();
 
 	// Invoice system hook - moved here to avoid re-fetching on tab changes
 	const {
@@ -76,6 +81,26 @@ export default function InvoicesPage() {
 
 		checkModuleStatus();
 	}, [tenant, token]);
+
+	// Auto-connect to ANAF when entering invoices page
+	useEffect(() => {
+		const autoConnectANAF = async () => {
+			// Only auto-connect if module is enabled, user is authenticated, and ANAF is not already connected
+			if (moduleEnabled && user?.id && tenant?.id && token && !isANAFAuthenticated && !anafLoading) {
+				try {
+					console.log('Auto-connecting to ANAF...');
+					await anafAuthenticate();
+				} catch (error) {
+					console.error('Failed to auto-connect to ANAF:', error);
+					// Don't show error to user, just log it
+				}
+			}
+		};
+
+		// Small delay to ensure all hooks are initialized
+		const timer = setTimeout(autoConnectANAF, 1000);
+		return () => clearTimeout(timer);
+	}, [moduleEnabled, user?.id, tenant?.id, token, isANAFAuthenticated, anafLoading, anafAuthenticate]);
 
 	const handleEditInvoice = (invoiceData: any) => {
 		setEditingInvoice(invoiceData);
@@ -221,6 +246,10 @@ export default function InvoicesPage() {
 							getInvoiceDetails={getInvoiceDetails}
 							loading={invoiceOperationLoading}
 							error={invoiceError}
+							isANAFAuthenticated={isANAFAuthenticated}
+							anafLoading={anafLoading}
+							onANAFAuthenticate={anafAuthenticate}
+							onANAFDisconnect={anafDisconnect}
 						/>
 					</TabsContent>
 				</Tabs>

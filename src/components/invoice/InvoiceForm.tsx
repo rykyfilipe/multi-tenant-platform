@@ -78,7 +78,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface InvoiceFormProps {
 	open: boolean;
-			editInvoice?: any;
+		editInvoice?: any;
 	onInvoiceUpdated?: () => void;
 	onClose?: () => void;
 	onSuccess?: () => void;
@@ -89,6 +89,10 @@ interface InvoiceFormProps {
 	getInvoiceDetails: (invoiceId: number) => Promise<any>;
 	loading: boolean;
 	error: string | null;
+	isANAFAuthenticated?: boolean;
+	anafLoading?: boolean;
+	onANAFAuthenticate?: () => Promise<void>;
+	onANAFDisconnect?: () => Promise<void>;
 }
 
 export function InvoiceForm({
@@ -104,6 +108,10 @@ export function InvoiceForm({
 	getInvoiceDetails,
 	loading,
 	error,
+	isANAFAuthenticated = false,
+	anafLoading = false,
+	onANAFAuthenticate,
+	onANAFDisconnect,
 }: InvoiceFormProps) {
 	const { token, tenant, showAlert } = useApp();
 	const { t } = useLanguage();
@@ -2211,10 +2219,10 @@ export function InvoiceForm({
 							<ANAFIntegrationToggle
 								onToggle={(enabled) => console.log('ANAF toggle:', enabled)}
 								isEnabled={false}
-								isAuthenticated={false}
-								onAuthenticate={() => console.log('ANAF authenticate')}
-								onDisconnect={() => console.log('ANAF disconnect')}
-								isLoading={false}
+								isAuthenticated={isANAFAuthenticated}
+								onAuthenticate={onANAFAuthenticate || (() => console.log('ANAF authenticate'))}
+								onDisconnect={onANAFDisconnect || (() => console.log('ANAF disconnect'))}
+								isLoading={anafLoading}
 							/>
 						</div>
 

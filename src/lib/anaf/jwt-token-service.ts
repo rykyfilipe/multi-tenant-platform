@@ -2,7 +2,9 @@
 
 import jwt from 'jsonwebtoken';
 import { ANAFTokenResponse, ANAFUserCredentials } from './types';
-import prisma from '../prisma';
+import { PrismaClient } from '@/generated/prisma';
+
+const prisma = new PrismaClient();
 
 export class ANAFJWTTokenService {
   private static readonly JWT_SECRET = process.env.ANAF_JWT_SECRET || 'anaf-jwt-secret-key';

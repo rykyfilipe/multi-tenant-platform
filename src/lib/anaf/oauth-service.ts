@@ -2,7 +2,9 @@
 
 import { ANAFTokenResponse, ANAFConfiguration, ANAFUserCredentials, ANAFError } from './types';
 import { ANAFJWTTokenService } from './jwt-token-service';
-import prisma from '../prisma';
+import { PrismaClient } from '@/generated/prisma';
+
+const prisma = new PrismaClient();
 
 export class ANAFOAuthService {
   private static readonly CONFIG: ANAFConfiguration = {
