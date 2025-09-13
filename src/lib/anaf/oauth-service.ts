@@ -2,7 +2,8 @@
 
 import { ANAFTokenResponse, ANAFConfiguration, ANAFUserCredentials, ANAFError } from './types';
 import { ANAFJWTTokenService } from './jwt-token-service';
-import prisma from '@/lib/prisma';
+import { PrismaClient } from '@/generated/prisma';
+const prisma = new PrismaClient();
 
 export class ANAFOAuthService {
   private static readonly CONFIG: ANAFConfiguration = {
@@ -366,7 +367,7 @@ export class ANAFOAuthService {
     try {
       const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
       
-      await prisma.anafCredentials.upsert({
+      await prisma.aNAFCredentials.upsert({
         where: {
           userId_tenantId: {
             userId,
@@ -406,7 +407,7 @@ export class ANAFOAuthService {
     try {
       const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
       
-      await prisma.anafCredentials.update({
+      await prisma.aNAFCredentials.update({
         where: {
           userId_tenantId: {
             userId,
@@ -439,7 +440,13 @@ export class ANAFOAuthService {
         return null;
       }
       
-      const credentials = await prisma.anafCredentials.findUnique({
+      // Check if aNAFCredentials model exists
+      if (!prisma.aNAFCredentials) {
+        console.error('aNAFCredentials model is not available in Prisma client');
+        return null;
+      }
+      
+      const credentials = await prisma.aNAFCredentials.findUnique({
         where: {
           userId_tenantId: {
             userId,
@@ -455,9 +462,9 @@ export class ANAFOAuthService {
       return {
         userId: credentials.userId,
         tenantId: credentials.tenantId,
-        accessToken: credentials.accessToken,
-        refreshToken: credentials.refreshToken,
-        tokenExpiresAt: credentials.tokenExpiresAt,
+        accessToken: credentials.accessToken || undefined,
+        refreshToken: credentials.refreshToken || undefined,
+        tokenExpiresAt: credentials.tokenExpiresAt || undefined,
         isActive: credentials.isActive,
       };
     } catch (error) {
@@ -557,7 +564,7 @@ export class ANAFOAuthService {
    */
   static async revokeAccess(userId: number, tenantId: number): Promise<void> {
     try {
-      await prisma.anafCredentials.update({
+      await prisma.aNAFCredentials.update({
         where: {
           userId_tenantId: {
             userId,

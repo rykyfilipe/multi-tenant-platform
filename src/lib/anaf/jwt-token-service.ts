@@ -2,7 +2,8 @@
 
 import jwt from 'jsonwebtoken';
 import { ANAFTokenResponse, ANAFUserCredentials } from './types';
-import prisma from '@/lib/prisma';
+import { PrismaClient } from '@/generated/prisma';
+const prisma = new PrismaClient();
 
 export class ANAFJWTTokenService {
   private static readonly JWT_SECRET = process.env.ANAF_JWT_SECRET || 'anaf-jwt-secret-key';
@@ -225,7 +226,7 @@ export class ANAFJWTTokenService {
         expiresAt = new Date(Date.now() + this.ANAF_TOKEN_VALIDITY.ACCESS_TOKEN_MINUTES * 60 * 1000);
       }
 
-      await prisma.anafCredentials.upsert({
+      await prisma.aNAFCredentials.upsert({
         where: {
           userId_tenantId: {
             userId,
@@ -288,7 +289,7 @@ export class ANAFJWTTokenService {
         return 0;
       }
       
-      const result = await prisma.anafCredentials.updateMany({
+      const result = await prisma.aNAFCredentials.updateMany({
         where: {
           tokenExpiresAt: {
             lt: new Date()
@@ -318,7 +319,7 @@ export class ANAFJWTTokenService {
         return [];
       }
       
-      const credentials = await prisma.anafCredentials.findMany({
+      const credentials = await prisma.aNAFCredentials.findMany({
         where: {
           userId,
           tenantId,
@@ -353,7 +354,7 @@ export class ANAFJWTTokenService {
         return;
       }
       
-      await prisma.anafCredentials.updateMany({
+      await prisma.aNAFCredentials.updateMany({
         where: {
           userId,
           tenantId,
