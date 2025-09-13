@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { ANAFOAuthService } from '@/lib/anaf/oauth-service';
 
 export function useANAF() {
   const { user, tenant } = useApp();
@@ -22,8 +21,15 @@ export function useANAF() {
         setIsLoading(true);
         setError(null);
         
-        const authenticated = await ANAFOAuthService.isAuthenticated(user.id, tenant.id);
-        setIsAuthenticated(authenticated);
+        const response = await fetch('/api/anaf/status');
+        const data = await response.json();
+        
+        if (data.success) {
+          setIsAuthenticated(data.isAuthenticated);
+        } else {
+          setError(data.error || 'Failed to check authentication');
+          setIsAuthenticated(false);
+        }
       } catch (err) {
         console.error('Error checking ANAF authentication:', err);
         setError(err instanceof Error ? err.message : 'Failed to check authentication');
@@ -45,8 +51,14 @@ export function useANAF() {
       setIsLoading(true);
       setError(null);
       
-      const authUrl = await ANAFOAuthService.getAuthUrl(user.id, tenant.id);
-      window.location.href = authUrl;
+      const response = await fetch('/api/anaf/auth-url');
+      const data = await response.json();
+      
+      if (data.success) {
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error(data.error || 'Failed to get auth URL');
+      }
     } catch (err) {
       console.error('Error initiating ANAF authentication:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate authentication');
@@ -65,8 +77,20 @@ export function useANAF() {
       setIsLoading(true);
       setError(null);
       
-      await ANAFOAuthService.revokeAccess(user.id, tenant.id);
-      setIsAuthenticated(false);
+      const response = await fetch('/api/anaf/disconnect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsAuthenticated(false);
+      } else {
+        throw new Error(data.error || 'Failed to disconnect');
+      }
     } catch (err) {
       console.error('Error disconnecting from ANAF:', err);
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
