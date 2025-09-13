@@ -113,21 +113,12 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       const baseUrl = process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest';
       const statusUrl = `${baseUrl}/status/${submissionId}`;
       
-        url: statusUrl,
-        submissionId,
-        tenantId
-      });
-      
       const response = await fetch(statusUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json',
         },
-      });
-
-        status: response.status,
-        statusText: response.statusText
       });
 
       if (!response.ok) {
@@ -164,7 +155,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
    */
   async downloadResponse(submissionId: string, tenantId: number): Promise<DownloadResult> {
     try {
-      console.log(`Downloading response for submission ${submissionId} from ANAF`);
       
       // Get access token
       const accessToken = await ANAFOAuthService.getValidAccessToken(0, tenantId); // Use system user
@@ -173,24 +163,12 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       const baseUrl = process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest';
       const downloadUrl = `${baseUrl}/download/${submissionId}`;
       
-      console.log('Downloading from ANAF:', {
-        url: downloadUrl,
-        submissionId,
-        tenantId
-      });
-      
       const response = await fetch(downloadUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/xml',
         },
-      });
-
-      console.log('ANAF download response:', {
-        status: response.status,
-        statusText: response.statusText,
-        contentType: response.headers.get('content-type')
       });
 
       if (!response.ok) {
@@ -201,11 +179,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
 
       const content = await response.text();
       const filename = `anaf_response_${submissionId}.xml`;
-      
-      console.log('ANAF download successful:', {
-        contentLength: content.length,
-        filename
-      });
       
       return {
         success: true,
@@ -417,13 +390,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       const baseUrl = process.env.ANAF_BASE_URL || 'https://api.anaf.ro/test/FCTEL/rest';
       const uploadUrl = `${baseUrl}/upload`;
       
-      console.log('Submitting invoice to ANAF:', {
-        url: uploadUrl,
-        contentLength: xmlContent.length,
-        userId,
-        tenantId
-      });
-      
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
@@ -436,12 +402,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
         body: xmlContent,
       });
 
-      console.log('ANAF API response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-
       if (!response.ok) {
         const errorData = await response.text();
         console.error('ANAF API error response:', errorData);
@@ -449,7 +409,6 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       }
 
       const data = await response.json();
-      console.log('ANAF API success response:', data);
       
       return {
         success: true,
