@@ -141,6 +141,11 @@ const getMobileNavigationItems = (
 		icon: BarChart3,
 	},
 	{
+		title: t("nav.organization"),
+		url: "/home/tenant",
+		icon: Building2,
+	},
+	{
 		title: userRole === "ADMIN" ? t("nav.users") : t("nav.team"),
 		url: "/home/users",
 		icon: Users,
@@ -155,9 +160,24 @@ const getMobileNavigationItems = (
 				},
 		  ]
 		: []),
-	// ANAF Test for admins in development
+	// Backup for admins
+	...(user?.role === "ADMIN"
+		? [
+				{
+					title: t("nav.backup"),
+					url: "/home/backup",
+					icon: HardDrive,
+				},
+		  ]
+		: []),
+	// Development tools for admins
 	...(user?.role === "ADMIN" && process.env.NODE_ENV === "development"
 		? [
+				{
+					title: "Dev Tools",
+					url: "/home/dev",
+					icon: Code,
+				},
 				{
 					title: "ANAF Test",
 					url: "/test/anaf",
