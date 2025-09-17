@@ -257,31 +257,44 @@ export async function POST(
 			});
 
 			createdColumns.push(column);
+		}
 
-		// Create column permissions for all users in bulk
-		const columnPermissions = users.map((user: { id: number; role: string }) => ({
-			userId: user.id,
-			columnId: column.id,
-			tableId: Number(tableId),
-			tenantId: Number(tenantId),
-			canRead: true,
-			canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
-		}));
+		// Create column permissions for all users in bulk (moved outside the loop)
+		const allColumnPermissions = [];
+		for (const column of createdColumns) {
+			const columnPermissions = users.map((user: { id: number; role: string }) => ({
+				userId: user.id,
+				columnId: column.id,
+				tableId: Number(tableId),
+				tenantId: Number(tenantId),
+				canRead: true,
+				canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
+			}));
+			allColumnPermissions.push(...columnPermissions);
+		}
 
-		await prisma.columnPermission.createMany({
-			data: columnPermissions,
-		});
+		if (allColumnPermissions.length > 0) {
+			await prisma.columnPermission.createMany({
+				data: allColumnPermissions,
+			});
+		}
 
-			// Adăugăm valori implicite pentru coloanele existente
-			if (table.rows.length > 0) {
+		// Adăugăm valori implicite pentru coloanele existente (moved outside the loop)
+		if (table.rows.length > 0) {
+			const allCells = [];
+			for (const column of createdColumns) {
+				const columnData = parsedData.columns.find(col => col.name === column.name);
 				const cells = table.rows.map((row: { id: number }) => ({
 					rowId: row.id,
 					columnId: column.id,
-					value: columnData.defaultValue || getDefaultValue(columnData.type, columnData.required),
+					value: columnData?.defaultValue || getDefaultValue(column.type, column.required),
 				}));
+				allCells.push(...cells);
+			}
 
+			if (allCells.length > 0) {
 				await prisma.cell.createMany({
-					data: cells,
+					data: allCells,
 				});
 			}
 		}

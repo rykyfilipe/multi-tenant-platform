@@ -235,7 +235,6 @@ export function useTableTemplates() {
 
 					const createdColumns = await columnsResponse.json();
 					console.log(`Successfully created ${createdColumns.length} columns for table ${template.name}`);
-					console.log(`Columns response:`, createdColumns);
 
 					// Add a small delay to prevent overwhelming the API
 					await new Promise(resolve => setTimeout(resolve, 100));
