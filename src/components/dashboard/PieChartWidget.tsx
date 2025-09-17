@@ -10,11 +10,12 @@ interface PieChartWidgetProps {
 	widget: Widget;
 	isEditMode?: boolean;
 	onEdit?: () => void;
+	onDelete?: () => void;
 	tenantId?: number;
 	databaseId?: number;
 }
 
-export default function PieChartWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: PieChartWidgetProps) {
+export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: PieChartWidgetProps) {
 	// Safely extract config with comprehensive fallbacks
 	const config = (widget.config || {}) as LineChartConfig;
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
@@ -54,6 +55,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, tenantId, d
 			widget={widget}
 			isEditMode={isEditMode}
 			onEdit={onEdit}
+			onDelete={onDelete}
 			isLoading={isLoading}
 			error={null}
 			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}

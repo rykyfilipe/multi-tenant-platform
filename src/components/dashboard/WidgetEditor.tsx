@@ -43,6 +43,14 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   // Use schema cache for tables and columns
   const { tables, tablesLoading, loadTables } = useSchemaCache(tenantId, databaseId);
 
+  // Auto-load tables when editor opens
+  useEffect(() => {
+    if (!tables && !tablesLoading) {
+      console.log('[WidgetEditor] Auto-loading tables when editor opens');
+      loadTables();
+    }
+  }, [tables, tablesLoading, loadTables]);
+
   useEffect(() => {
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
   }, [editedWidget, widget]);
@@ -591,13 +599,9 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         <Label htmlFor="content">Content</Label>
                         <Textarea
                           id="content"
-                          value={editedWidget.config?.dataSource?.content || ''}
+                          value={editedWidget.config?.content || ''}
                           onChange={(e) => updateConfig({
-                            dataSource: {
-                              ...editedWidget.config?.dataSource,
-                              type: 'manual',
-                              content: e.target.value
-                            }
+                            content: e.target.value
                           })}
                           placeholder="Enter your text content..."
                           rows={8}

@@ -61,6 +61,7 @@ interface LineChartWidgetProps {
   widget: Widget;
   isEditMode?: boolean;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 // Mock data generator for demonstration
@@ -136,7 +137,7 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
   }
 };
 
-export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChartWidgetProps) {
+export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }: LineChartWidgetProps) {
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -255,12 +256,13 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
   // Error state is now handled by BaseWidget
 
   return (
-    <BaseWidget
-      widget={widget}
-      isEditMode={isEditMode}
-      onEdit={onEdit}
-      isLoading={isLoading}
-      error={error}
+      <BaseWidget
+        widget={widget}
+        isEditMode={isEditMode}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        isLoading={isLoading}
+        error={error}
       onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
       showRefresh={dataSource.type === 'table'}
     >

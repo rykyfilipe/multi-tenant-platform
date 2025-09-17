@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, RefreshCw, Edit3 } from 'lucide-react';
+import { AlertCircle, RefreshCw, Edit3, Trash2 } from 'lucide-react';
 
 export interface BaseWidgetProps {
   widget: {
@@ -13,6 +13,7 @@ export interface BaseWidgetProps {
   };
   isEditMode?: boolean;
   onEdit?: () => void;
+  onDelete?: () => void;
   isLoading?: boolean;
   error?: string | null;
   onRefresh?: () => void;
@@ -25,6 +26,7 @@ export default function BaseWidget({
   widget,
   isEditMode = false,
   onEdit,
+  onDelete,
   isLoading = false,
   error = null,
   onRefresh,
@@ -85,6 +87,29 @@ export default function BaseWidget({
                 className="z-10 relative"
               >
                 <Edit3 className="h-4 w-4" />
+              </Button>
+            )}
+            {isEditMode && onDelete && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Delete button clicked for widget:', widget.id);
+                  onDelete();
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onMouseUp={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="z-10 relative text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </div>

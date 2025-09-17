@@ -58,11 +58,12 @@ interface KPIWidgetProps {
   widget: Widget;
   isEditMode: boolean;
   onEdit: () => void;
+  onDelete?: () => void;
   tenantId?: number;
   databaseId?: number;
 }
 
-export function KPIWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: KPIWidgetProps) {
+export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: KPIWidgetProps) {
   const [data, setData] = useState<KPIDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -200,6 +201,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: 
         widget={widget}
         isEditMode={isEditMode}
         onEdit={onEdit}
+        onDelete={onDelete}
         isLoading={true}
         error={null}
         onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
@@ -220,6 +222,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: 
         widget={widget}
         isEditMode={isEditMode}
         onEdit={onEdit}
+        onDelete={onDelete}
         isLoading={false}
         error={error}
         onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
@@ -240,6 +243,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: 
       widget={widget}
       isEditMode={isEditMode}
       onEdit={onEdit}
+      onDelete={onDelete}
       isLoading={false}
       error={null}
       onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}

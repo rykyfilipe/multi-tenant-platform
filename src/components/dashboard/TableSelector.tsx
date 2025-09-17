@@ -83,6 +83,22 @@ export function TableSelector({
 	const [isLoadingColumns, setIsLoadingColumns] = useState(false);
 	const [columnsError, setColumnsError] = useState<string | null>(null);
 
+	// Auto-load tables when component mounts
+	useEffect(() => {
+		if (!tables && !tablesLoading && !tablesError) {
+			console.log('[TableSelector] Auto-loading tables on mount');
+			loadTables();
+		}
+	}, [tables, tablesLoading, tablesError, loadTables]);
+
+	// Auto-load columns when a table is selected
+	useEffect(() => {
+		if (selectedTableId && columns.length === 0 && !isLoadingColumns && !columnsError) {
+			console.log('[TableSelector] Auto-loading columns for selected table:', selectedTableId);
+			loadColumns(selectedTableId);
+		}
+	}, [selectedTableId, columns.length, isLoadingColumns, columnsError]);
+
   // Load columns only when explicitly requested by user
   const loadColumns = async (tableId: number) => {
     setIsLoadingColumns(true);

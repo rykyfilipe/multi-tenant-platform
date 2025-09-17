@@ -34,6 +34,7 @@ interface TextWidgetProps {
   widget: Widget;
   isEditMode: boolean;
   onEdit: () => void;
+  onDelete?: () => void;
 }
 
 // Simple markdown parser for basic formatting
@@ -49,7 +50,7 @@ const parseMarkdown = (text: string): string => {
     .replace(/\n/gim, '<br>');
 };
 
-export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
+export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetProps) {
   const [error, setError] = useState<string | null>(null);
 
   const config = widget.config as TextConfig;
@@ -169,6 +170,7 @@ export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
       widget={widget}
       isEditMode={isEditMode}
       onEdit={onEdit}
+      onDelete={onDelete}
       isLoading={false}
       error={error}
       onRefresh={undefined}

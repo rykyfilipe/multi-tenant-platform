@@ -10,11 +10,12 @@ interface BarChartWidgetProps {
 	widget: Widget;
 	isEditMode?: boolean;
 	onEdit?: () => void;
+	onDelete?: () => void;
 	tenantId?: number;
 	databaseId?: number;
 }
 
-export default function BarChartWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: BarChartWidgetProps) {
+export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: BarChartWidgetProps) {
 	// Safely extract config with comprehensive fallbacks
 	const config = (widget.config || {}) as LineChartConfig;
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
@@ -52,6 +53,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, tenantId, d
 			widget={widget}
 			isEditMode={isEditMode}
 			onEdit={onEdit}
+			onDelete={onDelete}
 			isLoading={isLoading}
 			error={null}
 			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}

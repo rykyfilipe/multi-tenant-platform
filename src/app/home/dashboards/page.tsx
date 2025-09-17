@@ -51,7 +51,7 @@ interface Widget {
 interface PendingChange {
   type: 'create' | 'update' | 'delete';
   widgetId?: number;
-  data?: Partial<Widget>;
+  data?: Partial<Widget> | null;
 }
 
 export default function DashboardsPage() {
@@ -173,40 +173,54 @@ export default function DashboardsPage() {
     try {
       setIsSaving(true);
       
-      // Process pending changes
-      for (const change of pendingChanges) {
-        if (change.type === 'create' && change.data) {
-          await fetch(`/api/dashboards/${selectedDashboard?.id}/widgets`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(change.data),
-          });
-        } else if (change.type === 'update' && change.widgetId && change.data) {
-          await fetch(`/api/dashboards/${selectedDashboard?.id}/widgets/${change.widgetId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(change.data),
-          });
-        } else if (change.type === 'delete' && change.widgetId) {
-          await fetch(`/api/dashboards/${selectedDashboard?.id}/widgets/${change.widgetId}`, {
-            method: 'DELETE',
-          });
-        }
+      // Prepare batch operations
+      const operations = pendingChanges.map(change => ({
+        type: change.type,
+        widgetId: change.widgetId,
+        data: change.data,
+      }));
+
+      // Send batch request
+      const response = await fetch(`/api/dashboards/${selectedDashboard?.id}/widgets/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operations }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save changes');
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        // Handle partial failures
+        const failedOperations = result.errors.map((err: any) => 
+          `Operation ${err.index + 1} (${err.type}): ${err.error}`
+        ).join(', ');
+        
+        toast({
+          title: 'Partial Success',
+          description: `Saved ${result.summary.successful} of ${result.summary.total} changes. Errors: ${failedOperations}`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'All changes saved successfully',
+        });
       }
 
       // Clear pending changes and refresh dashboard
       setPendingChanges([]);
       await fetchDashboards();
       
-      toast({
-        title: 'Success',
-        description: 'Changes saved successfully',
-      });
     } catch (error) {
       console.error('Error saving changes:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save changes',
+        description: error instanceof Error ? error.message : 'Failed to save changes',
         variant: 'destructive',
       });
     } finally {
@@ -279,6 +293,29 @@ export default function DashboardsPage() {
         ...prev,
         widgets: (prev.widgets ?? []).map(w => w.id === updatedWidget.id ? updatedWidget : w),
       };
+    });
+  };
+
+  const handleWidgetDelete = (widgetId: number) => {
+    // Add to pending changes for batch processing
+    setPendingChanges(prev => [...prev, {
+      type: 'delete',
+      widgetId: widgetId,
+      data: null
+    }]);
+
+    // Update local state immediately for better UX
+    setSelectedDashboard(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        widgets: (prev.widgets ?? []).filter(w => w.id !== widgetId),
+      };
+    });
+
+    toast({
+      title: 'Widget Deleted',
+      description: 'Widget will be permanently deleted when you save changes.',
     });
   };
 
@@ -412,6 +449,10 @@ export default function DashboardsPage() {
                 console.log('Bar chart edit clicked:', widget.id);
                 handleWidgetClick(widget);
               }}
+              onDelete={() => {
+                console.log('Bar chart delete clicked:', widget.id);
+                handleWidgetDelete(widget.id);
+              }}
               tenantId={tenant?.id}
               databaseId={1}
             />
@@ -426,6 +467,10 @@ export default function DashboardsPage() {
                 console.log('Pie chart edit clicked:', widget.id);
                 handleWidgetClick(widget);
               }}
+              onDelete={() => {
+                console.log('Pie chart delete clicked:', widget.id);
+                handleWidgetDelete(widget.id);
+              }}
               tenantId={tenant?.id}
               databaseId={1}
             />
@@ -439,6 +484,10 @@ export default function DashboardsPage() {
               console.log('Line chart edit clicked:', widget.id);
               handleWidgetClick(widget);
             }}
+            onDelete={() => {
+              console.log('Line chart delete clicked:', widget.id);
+              handleWidgetDelete(widget.id);
+            }}
           />
         );
       }
@@ -450,6 +499,10 @@ export default function DashboardsPage() {
             onEdit={() => {
               console.log('Table edit clicked:', widget.id);
               handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Table delete clicked:', widget.id);
+              handleWidgetDelete(widget.id);
             }}
             tenantId={tenant?.id}
             databaseId={1}
@@ -464,6 +517,10 @@ export default function DashboardsPage() {
               console.log('KPI edit clicked:', widget.id);
               handleWidgetClick(widget);
             }}
+            onDelete={() => {
+              console.log('KPI delete clicked:', widget.id);
+              handleWidgetDelete(widget.id);
+            }}
             tenantId={tenant?.id}
             databaseId={1}
           />
@@ -476,6 +533,10 @@ export default function DashboardsPage() {
             onEdit={() => {
               console.log('Text edit clicked:', widget.id);
               handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Text delete clicked:', widget.id);
+              handleWidgetDelete(widget.id);
             }}
           />
         );

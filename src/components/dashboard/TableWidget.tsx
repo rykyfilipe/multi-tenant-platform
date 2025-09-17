@@ -40,6 +40,7 @@ interface TableWidgetProps {
   widget: Widget;
   isEditMode?: boolean;
   onEdit?: () => void;
+  onDelete?: () => void;
   tenantId?: number;
   databaseId?: number;
 }
@@ -48,6 +49,7 @@ export default function TableWidget({
   widget, 
   isEditMode, 
   onEdit, 
+  onDelete,
   tenantId, 
   databaseId 
 }: TableWidgetProps) {
@@ -167,6 +169,7 @@ export default function TableWidget({
       widget={widget}
       isEditMode={isEditMode}
       onEdit={onEdit}
+      onDelete={onDelete}
       isLoading={isLoading}
       error={error}
       onRefresh={handleRefresh}
