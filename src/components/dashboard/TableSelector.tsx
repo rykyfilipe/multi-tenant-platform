@@ -54,7 +54,6 @@ interface TableSelectorProps {
 	onColumnXChange: (column: string) => void;
 	onColumnYChange: (column: string) => void;
 	tenantId: number;
-	databaseId: number;
 	// Type validation for widget compatibility
 	expectedXType?: 'text' | 'number' | 'date' | 'boolean';
 	expectedYType?: 'text' | 'number' | 'date' | 'boolean';
@@ -75,7 +74,6 @@ export function TableSelector({
 	onColumnXChange,
 	onColumnYChange,
 	tenantId,
-	databaseId,
 	expectedXType,
 	expectedYType,
 	loadTables: externalLoadTables,
@@ -140,10 +138,29 @@ export function TableSelector({
 
   // Load columns only when explicitly requested by user
   const loadColumns = async (tableId: number) => {
+    // Find the selected table to get its databaseId
+    const selectedTable = allTables.find(table => table.id === tableId);
+    const tableDatabaseId = selectedTable?.databaseId;
+    
+    console.log('[TableSelector] loadColumns called:', {
+      tableId,
+      databaseId: tableDatabaseId,
+      tenantId: tenant?.id,
+      hasToken: !!token,
+      selectedTable: selectedTable ? { id: selectedTable.id, name: selectedTable.name, databaseId: selectedTable.databaseId } : null
+    });
+    
+    if (!tableDatabaseId) {
+      console.error('[TableSelector] No databaseId found for selected table');
+      setColumnsError('No database found for selected table');
+      setIsLoadingColumns(false);
+      return;
+    }
+    
     setIsLoadingColumns(true);
     setColumnsError(null);
     try {
-      	const response = await fetch(`/api/tenants/${tenant?.id}/databases/tables/${tableId}/columns`, {
+      	const response = await fetch(`/api/tenants/${tenant?.id}/databases/${tableDatabaseId}/tables/${tableId}/columns`, {
 				headers: {
 					'Authorization': `Bearer ${token}`
 				}

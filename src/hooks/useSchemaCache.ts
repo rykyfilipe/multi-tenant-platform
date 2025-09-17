@@ -50,12 +50,29 @@ export function invalidateColumns(tenantId: number, databaseId: number, tableId:
 }
 
 export function useSchemaCache(tenantId: number, databaseId: number) {
+	console.log('[useSchemaCache] Initialized with:', {
+		tenantId,
+		databaseId,
+		hasTenantId: !!tenantId,
+		hasDatabaseId: !!databaseId
+	});
+	
 	const [tables, setTables] = useState<CachedTableMeta[] | null>(null)
 	const [tablesLoading, setTablesLoading] = useState(false)
 	const [tablesError, setTablesError] = useState<string | null>(null)
 
 	const loadTables = useCallback(async () => {
-		if (!tenantId || !databaseId) return
+		console.log('[useSchemaCache] loadTables called:', {
+			tenantId,
+			databaseId,
+			hasTenantId: !!tenantId,
+			hasDatabaseId: !!databaseId
+		});
+		
+		if (!tenantId || !databaseId) {
+			console.log('[useSchemaCache] Missing tenantId or databaseId, returning');
+			return;
+		}
 		const key = cacheKeyTables(tenantId, databaseId)
 		const now = Date.now()
 		const cached = tablesCache.get(key)

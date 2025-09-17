@@ -343,7 +343,6 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* Table Configuration with integrated TableSelector */}
                   <TableSelector
                     tenantId={tenantId}
-                    databaseId={databaseId}
                     selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
                     selectedColumns={editedWidget.config?.dataSource?.columns || []}
                     onColumnsChange={(columns) => updateConfig({
@@ -447,7 +446,6 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* KPI Configuration with integrated TableSelector */}
                   <TableSelector
                     tenantId={tenantId}
-                    databaseId={databaseId}
                     selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
                     selectedColumns={editedWidget.config?.dataSource?.column ? [editedWidget.config.dataSource.column] : []}
                     onColumnsChange={(columns) => updateConfig({
@@ -856,6 +854,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* Table Data Selector */}
                   {config.dataSource?.type === 'table' && (
                     <TableSelector
+                      tenantId={tenantId}
                       selectedTableId={config.dataSource.tableId}
                       selectedColumnX={config.dataSource.columnX}
                       selectedColumnY={config.dataSource.columnY}
@@ -864,8 +863,6 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       onTableChange={handleTableChange}
                       onColumnXChange={handleColumnXChange}
                       onColumnYChange={handleColumnYChange}
-                      tenantId={tenantId}
-                      databaseId={databaseId}
                       expectedXType="text"
                       expectedYType="number"
                       loadTables={loadTables}
