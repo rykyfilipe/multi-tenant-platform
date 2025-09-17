@@ -146,7 +146,7 @@ export const AnalyticsDashboard: React.FC = () => {
 	}
 
 	const { kpis, distributions, rankings, timeSeriesData, performance, health } =
-		data;
+		data || {};
 
 	const handleExportData = () => {
 		const dataStr = JSON.stringify(data, null, 2);
@@ -226,43 +226,43 @@ export const AnalyticsDashboard: React.FC = () => {
 					<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6'>
 						<KPICard
 							title='Total Databases'
-							value={kpis.totalDatabases}
+							value={kpis?.totalDatabases || 0}
 							icon={Database}
-							change={Math.abs(data.growth.weeklyDatabaseGrowth)}
-							changeType={data.growth.weeklyDatabaseGrowth >= 0 ? 'increase' : 'decrease'}
+							change={Math.abs(data?.growth?.weeklyDatabaseGrowth || 0)}
+							changeType={(data?.growth?.weeklyDatabaseGrowth || 0) >= 0 ? 'increase' : 'decrease'}
 							color='blue'
 							delay={0}
 						/>
 						<KPICard
 							title='Total Tables'
-							value={kpis.totalTables}
+							value={kpis?.totalTables || 0}
 							icon={Server}
-							change={Math.abs(data.growth.weeklyTableGrowth)}
-							changeType={data.growth.weeklyTableGrowth >= 0 ? 'increase' : 'decrease'}
+							change={Math.abs(data?.growth?.weeklyTableGrowth || 0)}
+							changeType={(data?.growth?.weeklyTableGrowth || 0) >= 0 ? 'increase' : 'decrease'}
 							color='green'
 							delay={0.1}
 						/>
 						<KPICard
 							title='Total Rows'
-							value={kpis.totalRows}
+							value={kpis?.totalRows || 0}
 							icon={BarChart3}
-							change={Math.abs(data.growth.weeklyRowGrowth)}
-							changeType={data.growth.weeklyRowGrowth >= 0 ? 'increase' : 'decrease'}
+							change={Math.abs(data?.growth?.weeklyRowGrowth || 0)}
+							changeType={(data?.growth?.weeklyRowGrowth || 0) >= 0 ? 'increase' : 'decrease'}
 							color='purple'
 							delay={0.2}
 						/>
 						<KPICard
 							title='Active Users'
-							value={kpis.activeUsers}
+							value={kpis?.activeUsers || 0}
 							icon={Users}
-							change={Math.abs(data.growth.weeklyUserGrowth)}
-							changeType={data.growth.weeklyUserGrowth >= 0 ? 'increase' : 'decrease'}
+							change={Math.abs(data?.growth?.weeklyUserGrowth || 0)}
+							changeType={(data?.growth?.weeklyUserGrowth || 0) >= 0 ? 'increase' : 'decrease'}
 							color='orange'
 							delay={0.3}
 						/>
 						<KPICard
 							title='Engagement Rate'
-							value={kpis.engagementRate}
+							value={kpis?.engagementRate || 0}
 							unit='%'
 							icon={Activity}
 							color='green'
@@ -270,13 +270,13 @@ export const AnalyticsDashboard: React.FC = () => {
 						/>
 						<KPICard
 							title='Health Score'
-							value={health.overall}
+							value={health?.overall || 0}
 							unit='/100'
 							icon={Target}
 							color={
-								health.overall >= 80
+								(health?.overall || 0) >= 80
 									? "green"
-									: health.overall >= 60
+									: (health?.overall || 0) >= 60
 									? "orange"
 									: "red"
 							}
@@ -334,7 +334,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<OverviewChart
 								title='User Activity Trend'
 								icon={Activity}
-								data={timeSeriesData.userActivity}
+								data={timeSeriesData?.userActivity || []}
 								dataKeys={[
 									{
 										key: "active",
@@ -351,14 +351,14 @@ export const AnalyticsDashboard: React.FC = () => {
 							<DistributionChart
 								title='Database Size Distribution'
 								icon={PieChart}
-								data={distributions.databaseSizes}
+								data={distributions?.databaseSizes || []}
 								delay={0.3}
 							/>
 
 							<TrendChart
 								title='Database Growth'
 								icon={TrendingUp}
-								data={timeSeriesData.databaseGrowth}
+								data={timeSeriesData?.databaseGrowth || []}
 								metrics={[
 									{
 										key: "databases",
@@ -374,8 +374,8 @@ export const AnalyticsDashboard: React.FC = () => {
 									},
 								]}
 								xAxisKey='date'
-								trend={data.growth.monthlyGrowthTrend}
-								trendValue={data.growth.weeklyDatabaseGrowth}
+								trend={data?.growth?.monthlyGrowthTrend || "stable"}
+								trendValue={data?.growth?.weeklyDatabaseGrowth || 0}
 								delay={0.4}
 							/>
 
@@ -383,11 +383,11 @@ export const AnalyticsDashboard: React.FC = () => {
 								title='Top Databases'
 								icon={Database}
 								items={(rankings?.topDatabases ?? []).map((db) => ({
-									name: db.name,
-									value: db.realSize || `${(db.size / 1024).toFixed(2)} MB`,
+									name: db?.name || "Unknown",
+									value: db?.realSize || `${((db?.size || 0) / 1024).toFixed(2)} MB`,
 									subtitle: `${
-										db.tables
-									} tables, ${db.rows.toLocaleString()} rows`,
+										db?.tables || 0
+									} tables, ${(db?.rows || 0).toLocaleString()} rows`,
 								}))}
 								delay={0.5}
 							/>
@@ -400,14 +400,14 @@ export const AnalyticsDashboard: React.FC = () => {
 							<ResourceUsageChart
 								title='Resource Utilization'
 								icon={Gauge}
-								data={distributions.resourceUsage}
+								data={distributions?.resourceUsage || []}
 								delay={0.2}
 							/>
 
 							<OverviewChart
 								title='Storage Usage Over Time'
 								icon={HardDrive}
-								data={timeSeriesData.storageUsage}
+								data={timeSeriesData?.storageUsage || []}
 								dataKeys={[
 									{
 										key: "percentage",
@@ -423,7 +423,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<OverviewChart
 								title='Storage Usage Trend'
 								icon={HardDrive}
-								data={timeSeriesData.storageUsage}
+								data={timeSeriesData?.storageUsage || []}
 								dataKeys={[
 									{
 										key: "used",
@@ -440,39 +440,39 @@ export const AnalyticsDashboard: React.FC = () => {
 							<div className='space-y-4'>
 								<KPICard
 									title='Storage Usage'
-									value={kpis.storageUsagePercentage}
+									value={kpis?.storageUsagePercentage || 0}
 									unit='%'
 									icon={HardDrive}
 									color={
-										kpis.storageUsagePercentage > 80
+										(kpis?.storageUsagePercentage || 0) > 80
 											? "red"
-											: kpis.storageUsagePercentage > 60
+											: (kpis?.storageUsagePercentage || 0) > 60
 											? "orange"
 											: "green"
 									}
 								/>
 								<KPICard
 									title='Resource Score'
-									value={kpis.resourceUtilizationScore}
+									value={kpis?.resourceUtilizationScore || 0}
 									unit='/100'
 									icon={Target}
 									color={
-										kpis.resourceUtilizationScore >= 80
+										(kpis?.resourceUtilizationScore || 0) >= 80
 											? "green"
-											: kpis.resourceUtilizationScore >= 60
+											: (kpis?.resourceUtilizationScore || 0) >= 60
 											? "orange"
 											: "red"
 									}
 								/>
 								<KPICard
 									title='Engagement Rate'
-									value={kpis.engagementRate}
+									value={kpis?.engagementRate || 0}
 									unit='%'
 									icon={Users}
 									color={
-										kpis.engagementRate >= 80
+										(kpis?.engagementRate || 0) >= 80
 											? "green"
-											: kpis.engagementRate >= 60
+											: (kpis?.engagementRate || 0) >= 60
 											? "orange"
 											: "red"
 									}
@@ -484,17 +484,17 @@ export const AnalyticsDashboard: React.FC = () => {
 						<div className="mt-6">
 							<RealSizeInfo
 								databases={(rankings?.topDatabases ?? []).map((db) => ({
-									name: db.name,
-									realSizeMB: (db.size / 1024), // Convert KB to MB
-									realSizeKB: db.size,
-									realSizeFormatted: db.realSize || `${(db.size / 1024).toFixed(2)} MB`,
-									tables: db.tables,
-									rows: db.rows,
-									cells: db.rows * 5 // Estimate cells per row
+									name: db?.name || "Unknown",
+									realSizeMB: ((db?.size || 0) / 1024), // Convert KB to MB
+									realSizeKB: db?.size || 0,
+									realSizeFormatted: db?.realSize || `${((db?.size || 0) / 1024).toFixed(2)} MB`,
+									tables: db?.tables || 0,
+									rows: db?.rows || 0,
+									cells: (db?.rows || 0) * 5 // Estimate cells per row
 								}))}
-								totalMemoryUsed={kpis.storageUsagePercentage * 100} // Convert percentage to MB
-								totalRows={kpis.totalRows}
-								totalTables={kpis.totalTables}
+								totalMemoryUsed={(kpis?.storageUsagePercentage || 0) * 100} // Convert percentage to MB
+								totalRows={kpis?.totalRows || 0}
+								totalTables={kpis?.totalTables || 0}
 								loading={false}
 							/>
 						</div>
@@ -507,8 +507,8 @@ export const AnalyticsDashboard: React.FC = () => {
 								title='User Roles Distribution'
 								icon={Users}
 								data={(distributions?.userRoles ?? []).map((role) => ({
-									name: role.role,
-									value: role.count,
+									name: role?.role || "Unknown",
+									value: role?.count || 0,
 								}))}
 								delay={0.2}
 							/>
@@ -517,10 +517,10 @@ export const AnalyticsDashboard: React.FC = () => {
 								title='Most Active Users'
 								icon={Activity}
 								items={(rankings?.mostActiveUsers ?? []).map((user) => ({
-									name: user.name,
+									name: user?.name || "Unknown",
 									value: "Active",
-									subtitle: user.email,
-									status: user.status,
+									subtitle: user?.email || "",
+									status: user?.status || "offline",
 								}))}
 								delay={0.3}
 							/>
@@ -528,7 +528,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<OverviewChart
 								title='User Engagement Trend'
 								icon={TrendingUp}
-								data={timeSeriesData.userActivity}
+								data={timeSeriesData?.userActivity || []}
 								dataKeys={[
 									{ key: "active", name: "Active Users", color: "#10b981" },
 									{ key: "total", name: "Total Users", color: "#6b7280" },
@@ -540,27 +540,27 @@ export const AnalyticsDashboard: React.FC = () => {
 							<div className='space-y-4'>
 								<KPICard
 									title='Total Users'
-									value={kpis.totalUsers}
+									value={kpis?.totalUsers || 0}
 									icon={Users}
 									color='blue'
 								/>
 								<KPICard
 									title='Active Users'
-									value={kpis.activeUsers}
+									value={kpis?.activeUsers || 0}
 									icon={Activity}
-									change={Math.abs(data.growth.weeklyUserGrowth)}
-									changeType={data.growth.weeklyUserGrowth >= 0 ? 'increase' : 'decrease'}
+									change={Math.abs(data?.growth?.weeklyUserGrowth || 0)}
+									changeType={(data?.growth?.weeklyUserGrowth || 0) >= 0 ? 'increase' : 'decrease'}
 									color='green'
 								/>
 								<KPICard
 									title='User Health'
-									value={health.users}
+									value={health?.users || 0}
 									unit='/100'
 									icon={Target}
 									color={
-										health.users >= 80
+										(health?.users || 0) >= 80
 											? "green"
-											: health.users >= 60
+											: (health?.users || 0) >= 60
 											? "orange"
 											: "red"
 									}
@@ -578,13 +578,13 @@ export const AnalyticsDashboard: React.FC = () => {
 								data={[
 									{
 										subject: "Database",
-										score: health.database,
+										score: health?.database || 0,
 										fullMark: 100,
 									},
-									{ subject: "Memory", score: health.memory, fullMark: 100 },
-									{ subject: "Storage", score: health.storage, fullMark: 100 },
-									{ subject: "Users", score: health.users, fullMark: 100 },
-									{ subject: "Overall", score: health.overall, fullMark: 100 },
+									{ subject: "Memory", score: health?.memory || 0, fullMark: 100 },
+									{ subject: "Storage", score: health?.storage || 0, fullMark: 100 },
+									{ subject: "Users", score: health?.users || 0, fullMark: 100 },
+									{ subject: "Overall", score: health?.overall || 0, fullMark: 100 },
 								]}
 								delay={0.2}
 							/>
@@ -592,7 +592,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<OverviewChart
 								title='Peak Usage Hours'
 								icon={Clock}
-								data={performance.peakUsageHours}
+								data={performance?.peakUsageHours || []}
 								dataKeys={[
 									{
 										key: "usage",
@@ -608,46 +608,46 @@ export const AnalyticsDashboard: React.FC = () => {
 							<div className='md:col-span-2 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4'>
 								<KPICard
 									title='Response Time'
-									value={performance.averageResponseTime}
+									value={performance?.averageResponseTime || 0}
 									unit='ms'
 									icon={Clock}
 									color={
-										performance.averageResponseTime < 100
+										(performance?.averageResponseTime || 0) < 100
 											? "green"
-											: performance.averageResponseTime < 200
+											: (performance?.averageResponseTime || 0) < 200
 											? "orange"
 											: "red"
 									}
 								/>
 								<KPICard
 									title='Uptime'
-									value={performance.uptime.toFixed(2)}
+									value={(performance?.uptime || 0).toFixed(2)}
 									unit='%'
 									icon={Server}
 									color={
-										performance.uptime >= 99.5
+										(performance?.uptime || 0) >= 99.5
 											? "green"
-											: performance.uptime >= 99
+											: (performance?.uptime || 0) >= 99
 											? "orange"
 											: "red"
 									}
 								/>
 								<KPICard
 									title='Error Rate'
-									value={performance.errorRate.toFixed(2)}
+									value={(performance?.errorRate || 0).toFixed(2)}
 									unit='%'
 									icon={Activity}
 									color={
-										performance.errorRate < 1
+										(performance?.errorRate || 0) < 1
 											? "green"
-											: performance.errorRate < 2
+											: (performance?.errorRate || 0) < 2
 											? "orange"
 											: "red"
 									}
 								/>
 								<KPICard
 									title='Throughput'
-									value={performance.throughput}
+									value={performance?.throughput || 0}
 									unit='req/min'
 									icon={Network}
 									color='blue'
@@ -664,9 +664,9 @@ export const AnalyticsDashboard: React.FC = () => {
 								title='Invoice Revenue Trends'
 								icon={DollarSign}
 								data={(businessData?.invoices?.monthlyData ?? []).map((item: any) => ({
-									date: item.month,
-									revenue: item.revenue,
-									arpu: item.invoices > 0 ? item.revenue / item.invoices : 0,
+									date: item?.month || "",
+									revenue: item?.revenue || 0,
+									arpu: (item?.invoices || 0) > 0 ? (item?.revenue || 0) / (item?.invoices || 1) : 0,
 								})) || []}
 								chartType='area'
 								delay={0.2}
@@ -739,9 +739,9 @@ export const AnalyticsDashboard: React.FC = () => {
 								icon={BarChart3}
 								items={
 									(businessData?.invoices?.topCustomers ?? []).map((customer: any) => ({
-										name: customer.name,
-										value: customer.totalSpent,
-										subtitle: `${customer.invoiceCount} invoices`,
+										name: customer?.name || "Unknown",
+										value: customer?.totalSpent || 0,
+										subtitle: `${customer?.invoiceCount || 0} invoices`,
 									})) || []
 								}
 								delay={0.7}

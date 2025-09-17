@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Database, Table, Columns, RefreshCw } from 'lucide-react';
+import { Database, Table, Columns } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { useSchemaCache, CachedColumnMeta } from '@/hooks/useSchemaCache';
 import { useApp } from '@/contexts/AppContext';
 import { FilterBuilder } from './FilterBuilder';
@@ -81,8 +80,7 @@ export function TableSelector({
 	expectedYType,
 	loadTables: externalLoadTables,
 }: TableSelectorProps) {
-	const { tenant } = useApp();
-	const { tables, tablesLoading, tablesError, loadTables, getColumns, invalidate } = useSchemaCache(tenantId, databaseId);
+	const { tenant, token } = useApp();
 	
 	// State for all tables from all databases (like invoice form)
 	const [allTables, setAllTables] = useState<TableMeta[]>([]);
@@ -101,10 +99,15 @@ export function TableSelector({
 		setAllTablesError(null);
 		
 		try {
-			const response = await fetch(`/api/tenants/${tenant.id}/databases/tables`);
+			const response = await fetch(`/api/tenants/${tenant.id}/databases/tables`, {
+				headers: {
+					'Authorization': `Bearer ${token}`
+				}
+			});
 			
 			if (response.ok) {
 				const tables = await response.json();
+				console.log('[TableSelector] Loaded all tables', tables);
 				setAllTables(tables);
 			} else {
 				throw new Error(`Failed to fetch tables: ${response.statusText}`);
@@ -115,43 +118,43 @@ export function TableSelector({
 		} finally {
 			setAllTablesLoading(false);
 		}
-	}, [tenant?.id]);
+	}, [tenant?.id, token]);
 
 	// Auto-load all tables when component mounts
 	useEffect(() => {
-		if (tenant?.id && allTables.length === 0 && !allTablesLoading && !allTablesError) {
+		if (tenant?.id && token) {
 			console.log('[TableSelector] Auto-loading all tables on mount');
 			loadAllTables();
 		}
-	}, [tenant?.id, allTables.length, allTablesLoading, allTablesError, loadAllTables]);
+	}, []);
 
-	// Auto-load tables when component mounts (fallback to specific database)
-	useEffect(() => {
-		if (!tables && !tablesLoading && !tablesError) {
-			console.log('[TableSelector] Auto-loading tables on mount');
-			loadTables();
-		}
-	}, [tables, tablesLoading, tablesError, loadTables]);
+	
 
 	// Auto-load columns when a table is selected
 	useEffect(() => {
-		if (selectedTableId && columns.length === 0 && !isLoadingColumns && !columnsError) {
+		if (selectedTableId && !isLoadingColumns && !columnsError) {
 			console.log('[TableSelector] Auto-loading columns for selected table:', selectedTableId);
 			loadColumns(selectedTableId);
 		}
-	}, [selectedTableId, columns.length, isLoadingColumns, columnsError]);
+	}, [selectedTableId]);
 
   // Load columns only when explicitly requested by user
   const loadColumns = async (tableId: number) => {
     setIsLoadingColumns(true);
     setColumnsError(null);
     try {
-      const cols = await getColumns(tableId);
-      console.info('[TableSelector] Loaded columns from cache', {
-        tableId,
-        count: cols.length,
-      });
-      setColumns(cols);
+      	const response = await fetch(`/api/tenants/${tenant?.id}/databases/tables/${tableId}/columns`, {
+				headers: {
+					'Authorization': `Bearer ${token}`
+				}
+			});
+			if (response.ok) {
+				const cols = await response.json();
+				console.log('[TableSelector] Loaded columns', cols);
+				setColumns(cols);
+			} else {
+				throw new Error(`Failed to fetch columns: ${response.statusText}`);
+			}
     } catch (e) {
       console.error('[TableSelector] Error loading columns:', e);
       setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
@@ -166,8 +169,9 @@ export function TableSelector({
 		// Reset columns when table changes
 		onColumnXChange('');
 		onColumnYChange('');
-		// Load columns for the selected table
-		await loadColumns(id);
+		// Reset columns state when table changes
+		setColumns([]);
+		setColumnsError(null);
 	};
 
 	return (
@@ -178,16 +182,7 @@ export function TableSelector({
 						<Database className="h-4 w-4 mr-2" />
 						Data Source
 					</CardTitle>
-					<div className="flex items-center gap-2">
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() => { loadAllTables(); }}
-							title="Refresh tables"
-						>
-							<RefreshCw className={`h-4 w-4 ${allTablesLoading ? 'animate-spin' : ''}`} />
-						</Button>
-					</div>
+					
 				</div>
 			</CardHeader>
 			<CardContent className="pt-0 space-y-4">
@@ -196,21 +191,12 @@ export function TableSelector({
 					<label className="text-xs font-medium text-gray-700 mb-2 block">
 						Table
 					</label>
-					{!allTables || allTables.length === 0 ? (
-						<Button
-							variant="outline"
-							onClick={loadAllTables}
-							disabled={allTablesLoading}
-							className="w-full h-8"
-						>
-							{allTablesLoading ? (
-								<RefreshCw className="h-4 w-4 animate-spin mr-2" />
-							) : (
-								<Database className="h-4 w-4 mr-2" />
-							)}
-							{allTablesLoading ? 'Loading tables...' : 'Load Tables'}
-						</Button>
-					) : allTablesLoading ? (
+					{(!allTables || allTables.length === 0) && !allTablesLoading && !allTablesError && (
+						<div className="text-sm text-gray-500 text-center py-4">
+							No tables available
+						</div>
+					)}
+					{allTablesLoading ? (
 						<Skeleton className="h-8 w-full" />
 					) : allTablesError ? (
 						<div className="text-sm text-red-600">{allTablesError}</div>
@@ -264,51 +250,37 @@ export function TableSelector({
 								<label className="text-xs font-medium text-gray-700 mb-2 block">
 									X-Axis Column {expectedXType && `(${expectedXType})`}
 								</label>
-							{columns.length === 0 && !isLoadingColumns && !columnsError ? (
-								<Button
-									variant="outline"
-									onClick={() => loadColumns(selectedTableId)}
-									disabled={isLoadingColumns}
-									className="w-full h-8"
-								>
-									{isLoadingColumns ? (
-										<RefreshCw className="h-4 w-4 animate-spin mr-2" />
-									) : (
-										<Columns className="h-4 w-4 mr-2" />
-									)}
-									{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
-								</Button>
-							) : isLoadingColumns ? (
-								<Skeleton className="h-8 w-full" />
-							) : columnsError ? (
-								<div className="text-sm text-red-600">{columnsError}</div>
-							) : (
-								<Select
-									value={selectedColumnX || ''}
-									onValueChange={onColumnXChange}
-								>
-									<SelectTrigger className="h-8">
-										<SelectValue placeholder="Select X-axis column" />
-									</SelectTrigger>
-									<SelectContent>
-										{(columns ?? [])
-											.filter(column => !expectedXType || isColumnTypeCompatible(column?.type, expectedXType))
-											.map((column) => (
-											<SelectItem key={column.id} value={column.name}>
-												<div className="flex items-center space-x-2">
-													<Columns className="h-4 w-4" />
-													<div>
-														<div className="font-medium">{column.name}</div>
-														<div className="text-xs text-gray-500">
-															{column.type} {column.isRequired && '• Required'}
+								{isLoadingColumns ? (
+									<Skeleton className="h-8 w-full" />
+								) : columnsError ? (
+									<div className="text-sm text-red-600">{columnsError}</div>
+								) : (
+									<Select
+										value={selectedColumnX || ''}
+										onValueChange={onColumnXChange}
+									>
+										<SelectTrigger className="h-8">
+											<SelectValue placeholder="Select X-axis column" />
+										</SelectTrigger>
+										<SelectContent>
+											{(columns ?? [])
+												.filter(column => !expectedXType || isColumnTypeCompatible(column?.type, expectedXType))
+												.map((column) => (
+												<SelectItem key={column.id} value={column.name}>
+													<div className="flex items-center space-x-2">
+														<Columns className="h-4 w-4" />
+														<div>
+															<div className="font-medium">{column.name}</div>
+															<div className="text-xs text-gray-500">
+																{column.type} {column.isRequired && '• Required'}
+															</div>
 														</div>
 													</div>
-												</div>
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
 							</div>
 						)}
 
@@ -318,21 +290,7 @@ export function TableSelector({
 							<label className="text-xs font-medium text-gray-700 mb-2 block">
 								{selectedColumnX === undefined ? 'Value Column' : 'Y-Axis Column'} {expectedYType && `(${expectedYType})`}
 							</label>
-							{columns.length === 0 && !isLoadingColumns && !columnsError ? (
-								<Button
-									variant="outline"
-									onClick={() => loadColumns(selectedTableId)}
-									disabled={isLoadingColumns}
-									className="w-full h-8"
-								>
-									{isLoadingColumns ? (
-										<RefreshCw className="h-4 w-4 animate-spin mr-2" />
-									) : (
-										<Columns className="h-4 w-4 mr-2" />
-									)}
-									{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
-								</Button>
-							) : isLoadingColumns ? (
+							{isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
 							) : columnsError ? (
 								<div className="text-sm text-red-600">{columnsError}</div>
@@ -374,25 +332,7 @@ export function TableSelector({
 						<label className="text-xs font-medium text-gray-700 mb-2 block">
 							Columns
 						</label>
-						{columns.length === 0 && !isLoadingColumns && !columnsError ? (
-							<Button
-								variant="outline"
-								onClick={() => loadColumns(selectedTableId)}
-								disabled={isLoadingColumns}
-								className="w-full h-24"
-							>
-								<div className="flex flex-col items-center space-y-2">
-									{isLoadingColumns ? (
-										<RefreshCw className="h-6 w-6 animate-spin" />
-									) : (
-										<Columns className="h-6 w-6" />
-									)}
-									<span className="text-sm">
-										{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
-									</span>
-								</div>
-							</Button>
-						) : isLoadingColumns ? (
+						{isLoadingColumns ? (
 							<Skeleton className="h-24 w-full" />
 						) : columnsError ? (
 							<div className="text-sm text-red-600">{columnsError}</div>
@@ -433,25 +373,7 @@ export function TableSelector({
 						<label className="text-xs font-medium text-gray-700 mb-2 block">
 							Filters
 						</label>
-						{columns.length === 0 && !isLoadingColumns && !columnsError ? (
-							<Button
-								variant="outline"
-								onClick={() => loadColumns(selectedTableId)}
-								disabled={isLoadingColumns}
-								className="w-full h-24"
-							>
-								<div className="flex flex-col items-center space-y-2">
-									{isLoadingColumns ? (
-										<RefreshCw className="h-6 w-6 animate-spin" />
-									) : (
-										<Columns className="h-6 w-6" />
-									)}
-									<span className="text-sm">
-										{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
-									</span>
-								</div>
-							</Button>
-						) : isLoadingColumns ? (
+						{isLoadingColumns ? (
 							<Skeleton className="h-24 w-full" />
 						) : columnsError ? (
 							<div className="text-sm text-red-600">{columnsError}</div>
