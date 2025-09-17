@@ -192,19 +192,36 @@ export class SecureFilterBuilder {
     const isBetween = operator === 'between';
     
     if (this.isNumericColumn(columnType)) {
-      const condition = {
-        numberValue: isBetween 
-          ? { gte: value, lte: secondValue }
-          : { not: { gte: value, lte: secondValue } }
-      };
-      return condition;
+      if (isBetween) {
+        return {
+          numberValue: { gte: value, lte: secondValue }
+        };
+      } else {
+        // not_between: NOT (value >= x AND x <= secondValue) = (value < x OR x > secondValue)
+        return {
+          OR: [
+            { numberValue: { lt: value } },
+            { numberValue: { gt: secondValue } }
+          ]
+        };
+      }
     } else if (this.isDateColumn(columnType)) {
-      const condition = {
-        dateValue: isBetween 
-          ? { gte: new Date(value), lte: new Date(secondValue) }
-          : { not: { gte: new Date(value), lte: new Date(secondValue) } }
-      };
-      return condition;
+      const startDate = new Date(value);
+      const endDate = new Date(secondValue);
+      
+      if (isBetween) {
+        return {
+          dateValue: { gte: startDate, lte: endDate }
+        };
+      } else {
+        // not_between: NOT (date >= startDate AND date <= endDate) = (date < startDate OR date > endDate)
+        return {
+          OR: [
+            { dateValue: { lt: startDate } },
+            { dateValue: { gt: endDate } }
+          ]
+        };
+      }
     }
     
     return null;
@@ -228,7 +245,9 @@ export class SecureFilterBuilder {
       case 'ends_with':
         return { stringValue: { endsWith: value, mode: 'insensitive' } };
       case 'regex':
-        return { stringValue: { regex: value, mode: 'insensitive' } };
+        // Use contains with case-insensitive mode as fallback for regex
+        // Note: Prisma doesn't support regex directly, using contains as approximation
+        return { stringValue: { contains: value, mode: 'insensitive' } };
       default:
         return null;
     }
@@ -297,13 +316,12 @@ export class SecureFilterBuilder {
         startOfDay2.setHours(0, 0, 0, 0);
         const endOfDay2 = new Date(dateValue);
         endOfDay2.setHours(23, 59, 59, 999);
+        // not_equals: NOT (date >= startOfDay AND date <= endOfDay) = (date < startOfDay OR date > endOfDay)
         return { 
-          dateValue: { 
-            not: { 
-              gte: startOfDay2, 
-              lte: endOfDay2 
-            } 
-          } 
+          OR: [
+            { dateValue: { lt: startOfDay2 } },
+            { dateValue: { gt: endOfDay2 } }
+          ]
         };
       case 'before':
         return { dateValue: { lt: dateValue } };
@@ -315,10 +333,16 @@ export class SecureFilterBuilder {
         return this.buildYesterdayCondition();
       case 'this_week':
         return this.buildThisWeekCondition();
+      case 'last_week':
+        return this.buildLastWeekCondition();
       case 'this_month':
         return this.buildThisMonthCondition();
+      case 'last_month':
+        return this.buildLastMonthCondition();
       case 'this_year':
         return this.buildThisYearCondition();
+      case 'last_year':
+        return this.buildLastYearCondition();
       default:
         return null;
     }
@@ -357,10 +381,6 @@ export class SecureFilterBuilder {
         return { value: { equals: value } };
       case 'not_equals':
         return { value: { not: { equals: value } } };
-      case 'contains':
-        return { value: { array_contains: value } };
-      case 'not_contains':
-        return { value: { not: { array_contains: value } } };
       default:
         return null;
     }
@@ -377,6 +397,19 @@ export class SecureFilterBuilder {
         return { value: { not: { equals: value } } };
       case 'contains':
         return { value: { path: [], string_contains: value } };
+      case 'not_contains':
+        return { value: { not: { path: [], string_contains: value } } };
+      case 'starts_with':
+        return { value: { path: [], string_starts_with: value } };
+      case 'ends_with':
+        return { value: { path: [], string_ends_with: value } };
+      case 'regex':
+        // Use contains as fallback for regex in JSON
+        return { value: { path: [], string_contains: value } };
+      case 'is_empty':
+        return { value: { equals: Prisma.JsonNull } };
+      case 'is_not_empty':
+        return { value: { not: { equals: Prisma.JsonNull } } };
       default:
         return null;
     }
@@ -420,6 +453,32 @@ export class SecureFilterBuilder {
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const endOfYear = new Date(now.getFullYear() + 1, 0, 1);
     return { dateValue: { gte: startOfYear, lt: endOfYear } };
+  }
+
+  private buildLastWeekCondition(): any {
+    const now = new Date();
+    const lastWeek = new Date(now);
+    lastWeek.setDate(now.getDate() - 7);
+    const startOfLastWeek = new Date(lastWeek);
+    startOfLastWeek.setDate(lastWeek.getDate() - lastWeek.getDay());
+    startOfLastWeek.setHours(0, 0, 0, 0);
+    const endOfLastWeek = new Date(startOfLastWeek);
+    endOfLastWeek.setDate(startOfLastWeek.getDate() + 7);
+    return { dateValue: { gte: startOfLastWeek, lt: endOfLastWeek } };
+  }
+
+  private buildLastMonthCondition(): any {
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { dateValue: { gte: lastMonth, lt: endOfLastMonth } };
+  }
+
+  private buildLastYearCondition(): any {
+    const now = new Date();
+    const lastYear = new Date(now.getFullYear() - 1, 0, 1);
+    const endOfLastYear = new Date(now.getFullYear(), 0, 1);
+    return { dateValue: { gte: lastYear, lt: endOfLastYear } };
   }
 
   // Utility methods

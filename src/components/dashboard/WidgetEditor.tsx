@@ -344,114 +344,37 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
             <TabsContent value="data" className="space-y-4">
               {widget.type === 'table' ? (
                 <div className="space-y-4">
-                  {/* Table Configuration */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium flex items-center space-x-2">
-                        <Database className="h-4 w-4" />
-                        <span>Table Configuration</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="tableSelect">Select Table</Label>
-                        <TableSelector
-                          tenantId={tenantId}
-                          databaseId={databaseId}
-                          selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
-                          selectedColumnX=""
-                          selectedColumnY=""
-                          onTableChange={(tableId) => {
-                            updateConfig({
-                              dataSource: {
-                                ...editedWidget.config?.dataSource,
-                                tableId: tableId,
-                                columns: []
-                              }
-                            });
-                          }}
-                          onColumnXChange={() => {}}
-                          onColumnYChange={() => {}}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Select Columns to Display</Label>
-                        <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded p-3">
-                          {columns.map((column) => (
-                            <label key={column.id} className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={editedWidget.config?.dataSource?.columns?.includes(column.name) || false}
-                                onChange={(e) => {
-                                  const currentColumns = editedWidget.config?.dataSource?.columns || [];
-                                  const newColumns = e.target.checked
-                                    ? [...currentColumns, column.name]
-                                    : currentColumns.filter((c: string) => c !== column.name);
-                                  
-                                  updateConfig({
-                                    dataSource: {
-                                      ...editedWidget.config?.dataSource,
-                                      columns: newColumns
-                                    }
-                                  });
-                                }}
-                                className="rounded"
-                              />
-                              <span className="text-sm">{column.name}</span>
-                              <span className="text-xs text-muted-foreground">({column.type})</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="sortBy">Sort By</Label>
-                          <Select
-                            value={editedWidget.config?.dataSource?.sortBy || 'id'}
-                            onValueChange={(value) => updateConfig({
-                              dataSource: {
-                                ...editedWidget.config?.dataSource,
-                                sortBy: value
-                              }
-                            })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {columns.map((column) => (
-                                <SelectItem key={column.id} value={column.name}>
-                                  {column.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="sortOrder">Sort Order</Label>
-                          <Select
-                            value={editedWidget.config?.dataSource?.sortOrder || 'asc'}
-                            onValueChange={(value) => updateConfig({
-                              dataSource: {
-                                ...editedWidget.config?.dataSource,
-                                sortOrder: value
-                              }
-                            })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="asc">Ascending</SelectItem>
-                              <SelectItem value="desc">Descending</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Table Configuration with integrated TableSelector */}
+                  <TableSelector
+                    tenantId={tenantId}
+                    databaseId={databaseId}
+                    selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
+                    selectedColumns={editedWidget.config?.dataSource?.columns || []}
+                    onColumnsChange={(columns) => updateConfig({
+                      dataSource: {
+                        ...editedWidget.config?.dataSource,
+                        columns: columns
+                      }
+                    })}
+                    filters={editedWidget.config?.dataSource?.filters || []}
+                    onFiltersChange={(filters) => updateConfig({
+                      dataSource: {
+                        ...editedWidget.config?.dataSource,
+                        filters: filters
+                      }
+                    })}
+                    onTableChange={(tableId) => {
+                      updateConfig({
+                        dataSource: {
+                          ...editedWidget.config?.dataSource,
+                          tableId: tableId,
+                          columns: []
+                        }
+                      });
+                    }}
+                    onColumnXChange={() => {}}
+                    onColumnYChange={() => {}}
+                  />
 
                   {/* Table Options */}
                   <Card>
@@ -629,20 +552,20 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       selectedTableId={config.dataSource.tableId}
                       selectedColumnX={config.dataSource.columnX}
                       selectedColumnY={config.dataSource.columnY}
+                      selectedColumns={config.dataSource.columns}
+                      onColumnsChange={(columns) => updateConfig({
+                        dataSource: {
+                          ...editedWidget.config?.dataSource,
+                          columns: columns
+                        }
+                      })}
+                      filters={config.dataSource.filters || []}
+                      onFiltersChange={handleFiltersChange}
                       onTableChange={handleTableChange}
                       onColumnXChange={handleColumnXChange}
                       onColumnYChange={handleColumnYChange}
                       tenantId={tenantId}
                       databaseId={databaseId}
-                    />
-                  )}
-
-                  {/* Filters for Table Data */}
-                  {config.dataSource?.type === 'table' && (
-                    <FilterBuilder
-                      filters={config.dataSource.filters || []}
-                      availableColumns={columns}
-                      onFiltersChange={handleFiltersChange}
                     />
                   )}
 
