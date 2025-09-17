@@ -27,6 +27,7 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 
 	// Initialize row data with default values
 	useEffect(() => {
+		console.log("🔍 InlineRowCreator useEffect called", { columns: columns.length });
 		const initialData: Record<string, any> = {};
 		columns.forEach((column) => {
 			if (column.defaultValue) {
@@ -43,6 +44,7 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 				initialData[column.id.toString()] = "";
 			}
 		});
+		console.log("✅ Setting initial rowData:", initialData);
 		setRowData(initialData);
 	}, [columns]);
 
@@ -90,8 +92,10 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 	};
 
 	const handleSave = () => {
+		console.log("🔍 InlineRowCreator handleSave called", { rowData, validateResult: validateRow() });
 		if (validateRow()) {
 			// Adaugă rândul în batch-ul de rânduri noi locale
+			console.log("✅ Calling onSave with rowData:", rowData);
 			onSave(rowData);
 			// Clear the form after successful save
 			clearForm();

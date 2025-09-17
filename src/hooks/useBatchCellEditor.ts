@@ -72,6 +72,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 
 	// Adaugă un rând nou local
 	const addNewRow = useCallback((rowData: Record<string, any>) => {
+		console.log("🔍 useBatchCellEditor addNewRow called", { rowData, table: table?.id });
 		if (!table) return;
 
 		const tempRowId = generateTempId();
@@ -88,6 +89,7 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			isLocalOnly: true,
 		};
 
+		console.log("✅ Adding new row to pendingNewRows:", newRow);
 		setPendingNewRows(prev => [...prev, newRow]);
 		onNewRowsAdded?.([newRow]);
 	}, [table, generateTempId, onNewRowsAdded]);

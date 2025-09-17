@@ -143,6 +143,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	} = useRowsTableEditor({
 		table,
 		onCellsUpdated: (updatedData) => {
+			console.log("🔍 UnifiedTableEditor onCellsUpdated called", { updatedData });
 			
 			// Verifică dacă sunt rânduri noi complete sau doar modificări de celule
 			const isNewRow = (item: any) => item.cells && Array.isArray(item.cells) && item.id && item.tableId;
@@ -158,6 +159,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			
 			const newRows = updatedData.filter(isNewRow);
 			const cellUpdates = updatedData.filter(isCellUpdate);
+			
+			console.log("🔍 Filtered data:", { newRows, cellUpdates });
 			
 		
 			// Gestionează rândurile noi salvate
@@ -1400,6 +1403,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								tables={tables || []}
 								showInlineRowCreator={tablePermissions.canEditTable()}
 								onSaveNewRow={(rowData) => {
+									console.log("🔍 UnifiedTableEditor onSaveNewRow called", { rowData });
 									// addNewRow expects columnId as keys, not column names
 									addNewRow(rowData);
 									showAlert("Row added to batch - will be saved when you click Save Changes", "info");

@@ -149,10 +149,10 @@ function useTableRows(
 			sortOrderParam: "asc" | "desc" = sortOrder,
 			showLoading: boolean = true,
 		) => {
-			
+			console.log("🔍 useTableRows fetchRows called", { page, pageSize, tableId });
 			
 			if (!token || !userId || !tenantId || !databaseId || !tableId || tableId === "" || tableId === "0") {
-				
+				console.log("❌ fetchRows early return - missing params");
 				return;
 			}
 
