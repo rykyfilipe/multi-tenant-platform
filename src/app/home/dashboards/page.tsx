@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -212,7 +212,6 @@ export default function DashboardsPage() {
   };
 
   const handleWidgetClick = (widget: Widget) => {
-    console.log('Widget clicked:', widget.id, 'Edit mode:', isEditMode);
     if (isEditMode) {
       setEditingWidget(widget);
       setShowWidgetEditor(true);
@@ -315,7 +314,10 @@ export default function DashboardsPage() {
             <BarChartWidget 
               widget={displayWidget} 
               isEditMode={isEditMode}
-              onEdit={() => handleWidgetClick(widget)}
+              onEdit={() => {
+                console.log('Bar chart edit clicked:', widget.id);
+                handleWidgetClick(widget);
+              }}
               tenantId={tenant?.id}
               databaseId={1}
             />
@@ -326,7 +328,10 @@ export default function DashboardsPage() {
             <PieChartWidget 
               widget={displayWidget} 
               isEditMode={isEditMode}
-              onEdit={() => handleWidgetClick(widget)}
+              onEdit={() => {
+                console.log('Pie chart edit clicked:', widget.id);
+                handleWidgetClick(widget);
+              }}
               tenantId={tenant?.id}
               databaseId={1}
             />
@@ -336,7 +341,10 @@ export default function DashboardsPage() {
           <LineChartWidget 
             widget={displayWidget} 
             isEditMode={isEditMode}
-            onEdit={() => handleWidgetClick(widget)}
+            onEdit={() => {
+              console.log('Line chart edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
           />
         );
       }
@@ -447,13 +455,37 @@ export default function DashboardsPage() {
                 </div>
                 
                 {isEditMode && (
-                  <Button
-                    onClick={() => handleAddWidget('chart')}
-                    className="flex items-center space-x-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Widget</span>
-                  </Button>
+                  <Select onValueChange={(value) => handleAddWidget(value)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Add Widget" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="chart">
+                        <div className="flex items-center space-x-2">
+                          <BarChart3 className="h-4 w-4" />
+                          <span>Chart</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="table">
+                        <div className="flex items-center space-x-2">
+                          <Database className="h-4 w-4" />
+                          <span>Table</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="metric">
+                        <div className="flex items-center space-x-2">
+                          <TrendingUp className="h-4 w-4" />
+                          <span>KPI/Metric</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="text">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="h-4 w-4" />
+                          <span>Text</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
             </div>
@@ -482,13 +514,6 @@ export default function DashboardsPage() {
                   <div 
                     key={widget.id} 
                     className="widget-container"
-                    onClick={(e) => {
-                      console.log('Widget container clicked:', widget.id);
-                      if (isEditMode) {
-                        e.stopPropagation();
-                        handleWidgetClick(widget);
-                      }
-                    }}
                   >
                     <motion.div
                       className="h-full"
