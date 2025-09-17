@@ -58,18 +58,27 @@ export class SecureFilterBuilder {
    * Build global search condition using Prisma's text search
    */
   private buildGlobalSearchCondition(searchTerm: string): any {
+    const conditions = [
+      { stringValue: { contains: searchTerm, mode: 'insensitive' } }
+    ];
+
+    // Add numeric search if search term is a number
+    if (!isNaN(Number(searchTerm))) {
+      conditions.push({ numberValue: { equals: Number(searchTerm) } });
+    }
+
+    // Add JSON value search
+    conditions.push({
+      value: {
+        path: [],
+        string_contains: searchTerm
+      }
+    });
+
     return {
       cells: {
         some: {
-          OR: [
-            { stringValue: { contains: searchTerm, mode: 'insensitive' } },
-            { 
-              value: {
-                path: [],
-                string_contains: searchTerm
-              }
-            }
-          ]
+          OR: conditions
         }
       }
     };

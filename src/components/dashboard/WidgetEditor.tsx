@@ -445,6 +445,314 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     </CardContent>
                   </Card>
                 </div>
+              ) : widget.type === 'metric' ? (
+                <div className="space-y-4">
+                  {/* KPI Configuration with integrated TableSelector */}
+                  <TableSelector
+                    tenantId={tenantId}
+                    databaseId={databaseId}
+                    selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
+                    selectedColumns={editedWidget.config?.dataSource?.column ? [editedWidget.config.dataSource.column] : []}
+                    onColumnsChange={(columns) => updateConfig({
+                      dataSource: {
+                        ...editedWidget.config?.dataSource,
+                        column: columns[0] || '',
+                        type: 'table'
+                      }
+                    })}
+                    filters={editedWidget.config?.dataSource?.filters || []}
+                    onFiltersChange={(filters) => updateConfig({
+                      dataSource: {
+                        ...editedWidget.config?.dataSource,
+                        filters: filters
+                      }
+                    })}
+                    onTableChange={(tableId) => {
+                      updateConfig({
+                        dataSource: {
+                          ...editedWidget.config?.dataSource,
+                          tableId: tableId,
+                          type: 'table'
+                        }
+                      });
+                    }}
+                    onColumnXChange={() => {}}
+                    onColumnYChange={() => {}}
+                  />
+
+                  {/* KPI Options */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Display Options</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="format">Format</Label>
+                          <Select
+                            value={editedWidget.config?.options?.format || 'number'}
+                            onValueChange={(value) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                format: value as 'number' | 'currency' | 'percentage'
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="number">Number</SelectItem>
+                              <SelectItem value="currency">Currency</SelectItem>
+                              <SelectItem value="percentage">Percentage</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="decimals">Decimals</Label>
+                          <Input
+                            id="decimals"
+                            type="number"
+                            value={editedWidget.config?.options?.decimals || 0}
+                            onChange={(e) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                decimals: parseInt(e.target.value) || 0
+                              }
+                            })}
+                            min="0"
+                            max="10"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="prefix">Prefix</Label>
+                          <Input
+                            id="prefix"
+                            value={editedWidget.config?.options?.prefix || ''}
+                            onChange={(e) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                prefix: e.target.value
+                              }
+                            })}
+                            placeholder="$"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="suffix">Suffix</Label>
+                          <Input
+                            id="suffix"
+                            value={editedWidget.config?.options?.suffix || ''}
+                            onChange={(e) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                suffix: e.target.value
+                              }
+                            })}
+                            placeholder="%"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showChange"
+                            checked={editedWidget.config?.options?.showChange || false}
+                            onCheckedChange={(checked) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                showChange: checked
+                              }
+                            })}
+                          />
+                          <Label htmlFor="showChange">Show Change</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showTrend"
+                            checked={editedWidget.config?.options?.showTrend || false}
+                            onCheckedChange={(checked) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                showTrend: checked
+                              }
+                            })}
+                          />
+                          <Label htmlFor="showTrend">Show Trend</Label>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : widget.type === 'text' ? (
+                <div className="space-y-4">
+                  {/* Text Configuration */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Content</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="content">Content</Label>
+                        <Textarea
+                          id="content"
+                          value={editedWidget.config?.content || ''}
+                          onChange={(e) => updateConfig({
+                            content: e.target.value
+                          })}
+                          placeholder="Enter your text content..."
+                          rows={8}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="textType">Content Type</Label>
+                        <Select
+                          value={editedWidget.config?.type || 'plain'}
+                          onValueChange={(value) => updateConfig({
+                            type: value as 'markdown' | 'html' | 'plain'
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="plain">Plain Text</SelectItem>
+                            <SelectItem value="markdown">Markdown</SelectItem>
+                            <SelectItem value="html">HTML</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Text Options */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Display Options</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="fontSize">Font Size</Label>
+                          <Select
+                            value={editedWidget.config?.options?.fontSize || 'base'}
+                            onValueChange={(value) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                fontSize: value as 'sm' | 'base' | 'lg' | 'xl' | '2xl'
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="base">Base</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                              <SelectItem value="2xl">2X Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="textAlign">Text Align</Label>
+                          <Select
+                            value={editedWidget.config?.options?.textAlign || 'left'}
+                            onValueChange={(value) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                textAlign: value as 'left' | 'center' | 'right' | 'justify'
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="left">Left</SelectItem>
+                              <SelectItem value="center">Center</SelectItem>
+                              <SelectItem value="right">Right</SelectItem>
+                              <SelectItem value="justify">Justify</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="textColor">Text Color</Label>
+                          <Input
+                            id="textColor"
+                            value={editedWidget.config?.options?.textColor || ''}
+                            onChange={(e) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                textColor: e.target.value
+                              }
+                            })}
+                            placeholder="#000000"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="backgroundColor">Background Color</Label>
+                          <Input
+                            id="backgroundColor"
+                            value={editedWidget.config?.options?.backgroundColor || ''}
+                            onChange={(e) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                backgroundColor: e.target.value
+                              }
+                            })}
+                            placeholder="#ffffff"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showBorder"
+                            checked={editedWidget.config?.options?.showBorder !== false}
+                            onCheckedChange={(checked) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                showBorder: checked
+                              }
+                            })}
+                          />
+                          <Label htmlFor="showBorder">Show Border</Label>
+                        </div>
+                        <div>
+                          <Label htmlFor="padding">Padding</Label>
+                          <Select
+                            value={editedWidget.config?.options?.padding || 'md'}
+                            onValueChange={(value) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                padding: value as 'sm' | 'md' | 'lg'
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               ) : isLineChart ? (
                 <div className="space-y-4">
                   {/* Chart Subtype & Data Source */}

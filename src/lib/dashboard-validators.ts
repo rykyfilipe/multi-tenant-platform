@@ -254,28 +254,43 @@ export const WidgetConfigValidation = {
 
   metric: z.object({
     dataSource: z.object({
-      tableId: z.number().int().positive(),
-      column: z.string().min(1),
-      aggregation: z.enum(['count', 'sum', 'avg', 'min', 'max']),
+      type: z.enum(['table', 'manual']),
+      tableId: z.number().int().positive().optional(),
+      column: z.string().min(1).optional(),
+      aggregation: z.enum(['sum', 'count', 'avg', 'min', 'max']).optional(),
       filters: z.array(z.any()).optional(),
     }),
     options: z.object({
-      format: z.enum(['number', 'currency', 'percentage', 'decimal']).default('number'),
+      format: z.enum(['number', 'currency', 'percentage']).optional(),
+      decimals: z.number().int().min(0).max(10).optional(),
       prefix: z.string().optional(),
       suffix: z.string().optional(),
-      color: z.string().optional(),
-      showTrend: z.boolean().default(false),
+      showChange: z.boolean().optional(),
+      showTrend: z.boolean().optional(),
+      thresholds: z.object({
+        warning: z.number().optional(),
+        danger: z.number().optional(),
+        success: z.number().optional(),
+      }).optional(),
+      colors: z.object({
+        positive: z.string().optional(),
+        negative: z.string().optional(),
+        neutral: z.string().optional(),
+      }).optional(),
     }).optional(),
   }),
 
   text: z.object({
-    content: z.string().min(1),
+    content: z.string().min(1, 'Content is required'),
+    type: z.enum(['markdown', 'html', 'plain']).default('plain'),
     options: z.object({
-      fontSize: z.enum(['small', 'medium', 'large']).default('medium'),
-      fontWeight: z.enum(['normal', 'bold']).default('normal'),
-      textAlign: z.enum(['left', 'center', 'right']).default('left'),
-      color: z.string().optional(),
+      fontSize: z.enum(['sm', 'base', 'lg', 'xl', '2xl']).optional(),
+      textAlign: z.enum(['left', 'center', 'right', 'justify']).optional(),
       backgroundColor: z.string().optional(),
+      textColor: z.string().optional(),
+      padding: z.enum(['sm', 'md', 'lg']).optional(),
+      showBorder: z.boolean().optional(),
+      borderRadius: z.enum(['none', 'sm', 'md', 'lg']).optional(),
     }).optional(),
   }),
 

@@ -17,6 +17,8 @@ import { LineChartWidget } from '@/components/dashboard/LineChartWidget';
 import BarChartWidget from '@/components/dashboard/BarChartWidget';
 import PieChartWidget from '@/components/dashboard/PieChartWidget';
 import TableWidget from '@/components/dashboard/TableWidget';
+import KPIWidget from '@/components/dashboard/KPIWidget';
+import TextWidget from '@/components/dashboard/TextWidget';
 import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
@@ -286,26 +288,33 @@ export default function DashboardsPage() {
     } else if (type === 'metric') {
       defaultConfig = {
         dataSource: {
-          tableId: 1,
-          column: 'id',
-          aggregation: 'count',
+          type: 'table',
+          tableId: 1, // Default table ID - will be updated when user selects a table
+          column: 'id', // Default column - will be updated when user selects column
+          aggregation: 'sum',
           filters: []
         },
         options: {
           format: 'number',
+          decimals: 0,
           prefix: '',
           suffix: '',
-          color: '#3B82F6',
-          showTrend: false
+          showChange: true,
+          showTrend: true
         }
       };
     } else if (type === 'text') {
       defaultConfig = {
-        content: 'New Text Widget Content',
+        content: 'Enter your text content here...',
+        type: 'plain',
         options: {
-          fontSize: 'medium',
-          fontWeight: 'normal',
-          textAlign: 'left'
+          fontSize: 'base',
+          textAlign: 'left',
+          backgroundColor: '',
+          textColor: '',
+          padding: 'md',
+          showBorder: true,
+          borderRadius: 'md'
         }
       };
     }
@@ -406,21 +415,27 @@ export default function DashboardsPage() {
         );
       case 'metric':
         return (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <TrendingUp className="h-8 w-8 mx-auto mb-2" />
-              <p>KPI/Metric Widget (Coming Soon)</p>
-            </div>
-          </div>
+          <KPIWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('KPI edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            tenantId={tenant?.id}
+            databaseId={1}
+          />
         );
       case 'text':
         return (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <FileText className="h-8 w-8 mx-auto mb-2" />
-              <p>Text Widget (Coming Soon)</p>
-            </div>
-          </div>
+          <TextWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Text edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+          />
         );
       default:
         return (
