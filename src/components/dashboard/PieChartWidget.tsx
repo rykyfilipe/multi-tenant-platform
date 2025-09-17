@@ -65,7 +65,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		shadow: options.shadow || 'sm',
 		padding: options.padding || 'md',
 		hoverEffect: options.hoverEffect || 'lift',
-		...widget.style
+		...(widget as any).style
 	};
 
 	return (
@@ -106,17 +106,17 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								data={processedData} 
 								dataKey={safeYAxis.key} 
 								nameKey={safeXAxis.key} 
-								outerRadius={options.outerRadius || 80}
-								innerRadius={options.innerRadius || 0}
-								paddingAngle={options.paddingAngle || 2}
-								stroke={options.stroke || '#ffffff'}
+								outerRadius={(options as any).outerRadius || 80}
+								innerRadius={(options as any).innerRadius || 0}
+								paddingAngle={(options as any).paddingAngle || 2}
+								stroke={(options as any).stroke || '#ffffff'}
 								strokeWidth={options.strokeWidth || 2}
 							>
 								{(processedData ?? []).map((_, index) => (
 									<Cell 
 										key={`cell-${index}`} 
 										fill={colors[index % colors.length]}
-										stroke={options.stroke || '#ffffff'}
+										stroke={(options as any).stroke || '#ffffff'}
 										strokeWidth={options.strokeWidth || 2}
 									/>
 								))}

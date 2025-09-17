@@ -317,7 +317,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     shadow: options.shadow || 'sm',
     padding: options.padding || 'md',
     hoverEffect: options.hoverEffect || 'lift',
-    ...widget.style
+    ...(widget as any).style
   };
 
   const handleRefresh = async () => {

@@ -63,9 +63,9 @@ export default function TableWidget({
   const [sortBy, setSortBy] = useState(dataSource.sortBy || 'id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(dataSource.sortOrder || 'asc');
 
-  const { tables, columns, isLoading: schemaLoading } = useSchemaCache(tenantId, databaseId);
+  const { tables, columns, tablesLoading: schemaLoading } = useSchemaCache(tenantId || 1, databaseId || 1);
   const currentTable = tables?.find(t => t.id === dataSource.tableId);
-  const availableColumns = (columns ?? []).filter(c => c?.tableId === dataSource.tableId) || [];
+  const availableColumns = (columns ?? []).filter((c: any) => c?.tableId === dataSource.tableId) || [];
 
   const pageSize = options.pageSize || 10;
   const totalPages = Math.ceil(data.length / pageSize);
@@ -92,7 +92,7 @@ export default function TableWidget({
         search: searchTerm || undefined,
         sortBy: sortBy,
         sortOrder: sortOrder,
-        columns: dataSource.columns
+        // columns: dataSource.columns // Removed as it's not part of QueryData interface
       });
 
       if (response.success && response.data) {
@@ -174,9 +174,9 @@ export default function TableWidget({
     >
       <div className="space-y-4">
         {/* Search and Controls */}
-        {(options.showSearch !== false || options.showColumnSelector !== false) && (
+        {options.showSearch !== false && (
           <div className="flex items-center justify-between space-x-2">
-            {options.showSearch !== false && (
+            {options.showSearch && (
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -198,7 +198,7 @@ export default function TableWidget({
             <TableHeader>
               <TableRow>
                 {(dataSource.columns ?? []).map((columnName) => {
-                  const column = (availableColumns ?? []).find(c => c?.name === columnName);
+                  const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
                   return (
                     <TableHead 
                       key={columnName}
@@ -206,7 +206,7 @@ export default function TableWidget({
                       onClick={() => handleSort(columnName)}
                     >
                       <div className="flex items-center space-x-1">
-                        <span>{column?.name || columnName}</span>
+                        <span>{(column as any)?.name || columnName}</span>
                         {sortBy === columnName && (
                           <span className="text-xs">
                             {sortOrder === 'asc' ? '↑' : '↓'}

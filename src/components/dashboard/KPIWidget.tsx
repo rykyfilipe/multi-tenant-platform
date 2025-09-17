@@ -159,7 +159,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       
       if (response.success && response.data) {
         // Store raw data for aggregation calculations
-        const rawData = (response.data.rows ?? []).map((row: any) => {
+        const rawData = (response.data ?? []).map((row: any) => {
           const processedRow: any = { id: row.id };
           
           // Process all cells to create a flat object
@@ -180,7 +180,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
         if (dataSource.compareWithPrevious) {
           // For now, we'll simulate previous period data
           // In a real implementation, you'd fetch data from a previous time period
-          const previousData = rawData.map(row => ({
+          const previousData = rawData.map((row: any) => ({
             ...row,
             [dataSource.column!]: (parseFloat(row[dataSource.column!]) || 0) * 0.9 // Simulate 10% decrease
           }));
@@ -270,7 +270,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     shadow: options.shadow || 'sm',
     padding: options.padding || 'md',
     hoverEffect: options.hoverEffect || 'lift',
-    ...widget.style
+    ...(widget as any).style
   };
 
   if (isLoading) {
@@ -341,13 +341,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       // Render multiple aggregations
       return (
         <div className={`space-y-3 ${layout === 'grid' ? 'grid grid-cols-2 gap-3' : ''}`}>
-          {Object.entries(aggregations).map(([type, result]) => {
-            const previousResult = previousAggregations[type as AggregationType];
+          {Object.entries(aggregations).map(([type, result]: [string, any]) => {
+            const previousResult = (previousAggregations as any)[type as AggregationType];
             const changePercent = previousResult 
-              ? calculatePercentageChange(result.value, previousResult.value)
+              ? calculatePercentageChange((result as any).value, (previousResult as any).value)
               : undefined;
             const trend = previousResult 
-              ? getTrendDirection(result.value, previousResult.value)
+              ? getTrendDirection((result as any).value, (previousResult as any).value)
               : 'stable';
 
             return (
@@ -373,7 +373,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
                 
                 <div className="flex items-baseline space-x-2">
                   <span className="text-xl font-bold text-foreground">
-                    {result.formatted}
+                    {(result as any).formatted}
                   </span>
                   {options.showChange && changePercent !== undefined && (
                     <span className={`text-xs ${
@@ -387,7 +387,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
                 
                 {options.showDataCount && (
                   <div className="text-xs text-muted-foreground mt-1">
-                    Based on {result.count} data points
+                    Based on {(result as any).count} data points
                   </div>
                 )}
               </div>
@@ -398,13 +398,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     } else {
       // Render single aggregation
       const primaryType = dataSource.aggregation || 'sum';
-      const result = aggregations[primaryType];
-      const previousResult = previousAggregations[primaryType];
+      const result = (aggregations as any)[primaryType];
+      const previousResult = (previousAggregations as any)[primaryType];
       const changePercent = previousResult 
-        ? calculatePercentageChange(result.value, previousResult.value)
+        ? calculatePercentageChange((result as any).value, (previousResult as any).value)
         : undefined;
       const trend = previousResult 
-        ? getTrendDirection(result.value, previousResult.value)
+        ? getTrendDirection((result as any).value, (previousResult as any).value)
         : 'stable';
 
       return (

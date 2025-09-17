@@ -65,7 +65,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		shadow: options.shadow || 'sm',
 		padding: options.padding || 'md',
 		hoverEffect: options.hoverEffect || 'lift',
-		...widget.style
+		...(widget as any).style
 	};
 
 	return (
