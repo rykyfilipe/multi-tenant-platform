@@ -35,9 +35,9 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
 	delay = 0,
 }) => {
 	const averageScore =
-		data.length > 0
+		data && data.length > 0
 			? Math.round(
-					data.reduce((acc, item) => acc + item.score, 0) / data.length,
+					data.reduce((acc, item) => acc + (item?.score || 0), 0) / data.length,
 			  )
 			: 0;
 
@@ -69,7 +69,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
 				</CardHeader>
 				<CardContent>
 					<div style={{ height }}>
-						{data.length > 0 ? (
+						{data && data.length > 0 ? (
 							<ResponsiveContainer width='100%' height='100%'>
 								<RadarChart cx='50%' cy='50%' outerRadius='80%' data={data}>
 									<PolarGrid stroke='hsl(var(--border))' />
@@ -120,7 +120,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
 						</div>
 
 						<div className='grid grid-cols-2 gap-4'>
-							{data.map((item, index) => (
+							{data?.map((item, index) => (
 								<div
 									key={item.subject}
 									className='flex justify-between items-center text-sm'>

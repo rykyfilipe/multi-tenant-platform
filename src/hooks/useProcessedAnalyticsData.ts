@@ -182,7 +182,7 @@ export const useProcessedAnalyticsData = (): {
 		const engagementRate =
 			totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0;
 		const memoryUsagePercentage = rawData.stats?.memoryPercentage || 0;
-		const storageUsagePercentage = rawData.usageData?.storage
+		const storageUsagePercentage = rawData.usageData?.storage?.used && rawData.usageData?.storage?.total
 			? (rawData.usageData.storage.used / rawData.usageData.storage.total) * 100
 			: 0;
 
@@ -264,7 +264,7 @@ export const useProcessedAnalyticsData = (): {
 				used: rawData.usageData?.databases?.used || 0,
 				total: rawData.usageData?.databases?.total || 1,
 				percentage: Math.max(
-					rawData.usageData?.databases?.total > 0
+					rawData.usageData?.databases?.used && rawData.usageData?.databases?.total > 0
 						? (rawData.usageData.databases.used /
 								rawData.usageData.databases.total) *
 						  100
@@ -277,7 +277,7 @@ export const useProcessedAnalyticsData = (): {
 				used: rawData.usageData?.tables?.used || 0,
 				total: rawData.usageData?.tables?.total || 1,
 				percentage: Math.max(
-					rawData.usageData?.tables?.total > 0
+					rawData.usageData?.tables?.used && rawData.usageData?.tables?.total > 0
 						? (rawData.usageData.tables.used / rawData.usageData.tables.total) *
 						  100
 						: 0,
@@ -289,7 +289,7 @@ export const useProcessedAnalyticsData = (): {
 				used: rawData.usageData?.users?.used || 0,
 				total: rawData.usageData?.users?.total || 1,
 				percentage: Math.max(
-					rawData.usageData?.users?.total > 0
+					rawData.usageData?.users?.used && rawData.usageData?.users?.total > 0
 						? (rawData.usageData.users.used / rawData.usageData.users.total) *
 						  100
 						: 0,

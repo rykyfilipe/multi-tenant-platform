@@ -68,7 +68,7 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 				</CardHeader>
 				<CardContent className='pt-0'>
 					<div style={{ height }}>
-						{data.length > 0 ? (
+						{data && data.length > 0 ? (
 							<ResponsiveContainer width='100%' height='100%'>
 								<BarChart 
 									data={data} 
@@ -85,7 +85,7 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 										domain={[0, 100]}
 										stroke={CHART_STYLES.axis.stroke}
 										fontSize={CHART_STYLES.axis.fontSize}
-										fontWeight={CHART_STYLES.axis.fontWeight}
+										fontWeight={500}
 										tickLine={false}
 										axisLine={false}
 										ticks={[0, 25, 50, 75, 100]}
@@ -96,7 +96,7 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 										type='category'
 										stroke={CHART_STYLES.axis.stroke}
 										fontSize={CHART_STYLES.axis.fontSize}
-										fontWeight={CHART_STYLES.axis.fontWeight}
+										fontWeight={500}
 										width={120}
 										tickLine={false}
 										axisLine={false}
@@ -118,9 +118,9 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 										dataKey='percentage' 
 										radius={[0, 6, 6, 0]}
 										strokeWidth={0}
-										fill={PREMIUM_CHART_COLORS.primary.black}
+										fill={PREMIUM_CHART_COLORS.secondary}
 									>
-										{data.map((entry, index) => (
+										{data?.map((entry, index) => (
 											<Cell
 												key={`cell-${index}`}
 												fill={getColorByPercentage(entry.percentage)}
@@ -144,7 +144,7 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 
 					{/* Resource Details */}
 					<div className='mt-6 space-y-3'>
-						{data.map((resource, index) => (
+						{data?.map((resource, index) => (
 							<motion.div
 								key={resource.resource}
 								initial={{ opacity: 0, x: -20 }}

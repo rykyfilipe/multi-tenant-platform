@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, FileText } from "lucide-react";
 import { EditableCell } from "../rows/EditableCell";
+import { InlineRowCreator } from "./InlineRowCreator";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -24,6 +25,11 @@ interface Props {
 	canEdit: boolean;
 	canDelete: boolean;
 	tables?: any[];
+	// Inline row creator props
+	showInlineRowCreator?: boolean;
+	onSaveNewRow?: (rowData: Record<string, any>) => void;
+	onCancelNewRow?: () => void;
+	isSavingNewRow?: boolean;
 }
 
 export function RowGrid({
@@ -41,6 +47,10 @@ export function RowGrid({
 	canEdit,
 	canDelete,
 	tables = [],
+	showInlineRowCreator = false,
+	onSaveNewRow,
+	onCancelNewRow,
+	isSavingNewRow = false,
 }: Props) {
 	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
@@ -142,6 +152,16 @@ export function RowGrid({
 				{/* Empty space for add column button */}
 				<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100" />
 			</div>
+
+			{/* Inline Row Creator */}
+			{showInlineRowCreator && canEdit && onSaveNewRow && onCancelNewRow && (
+				<InlineRowCreator
+					columns={columns}
+					onSave={onSaveNewRow}
+					onCancel={onCancelNewRow}
+					isSaving={isSavingNewRow}
+				/>
+			)}
 
 			{/* Data Rows */}
 			{rows.map((row, rowIndex) => {

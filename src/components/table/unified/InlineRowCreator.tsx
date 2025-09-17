@@ -227,17 +227,17 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 	};
 
 	return (
-		<div className="flex border-b border-neutral-200 bg-yellow-50 hover:bg-yellow-100 transition-colors duration-200 min-w-max">
-			{/* Row number - matches RowGrid selection column */}
-			<div className="w-12 sm:w-16 flex-shrink-0 border-r border-neutral-200 bg-yellow-100 flex items-center justify-center px-2 sm:px-4 py-2">
-				<Plus className="w-4 h-4 text-yellow-600" />
+		<div className="flex border-b-2 border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 transition-colors duration-200 min-w-max">
+			{/* Row selection column - matches RowGrid structure */}
+			<div className="w-12 sm:w-16 flex-shrink-0 border-r border-blue-200 bg-blue-100 flex items-center justify-center px-2 sm:px-4 py-2">
+				<Plus className="w-4 h-4 text-blue-600" />
 			</div>
 
-			{/* Data cells - matches RowGrid cell structure */}
+			{/* Data cells - matches RowGrid cell structure exactly */}
 			{columns.map((column) => (
 				<div
 					key={column.id}
-					className="flex-1 min-w-[100px] sm:min-w-[120px] border-r border-neutral-200 px-2 sm:px-4 py-2"
+					className="flex-1 min-w-[100px] sm:min-w-[120px] border-r border-blue-200 px-2 sm:px-4 py-2 hover:bg-blue-50 transition-all duration-200"
 					style={{ width: Math.max(200, 100) }}
 				>
 					<div className="w-full">
@@ -251,14 +251,15 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 				</div>
 			))}
 
-			{/* Actions - matches RowGrid empty space */}
-			<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-yellow-100 flex items-center justify-center gap-1 px-2 sm:px-4 py-2">
+			{/* Actions column - matches RowGrid empty space structure */}
+			<div className="w-12 sm:w-16 flex-shrink-0 border-l border-blue-200 bg-blue-100 flex items-center justify-center gap-1 px-2 sm:px-4 py-2">
 				<Button
 					variant="ghost"
 					size="sm"
 					onClick={handleSave}
 					disabled={isSaving}
 					className="h-6 w-6 p-0 hover:bg-green-100 text-green-600 hover:text-green-700"
+					title="Save new row"
 				>
 					<Check className="w-3 h-3" />
 				</Button>
@@ -271,6 +272,7 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 					}}
 					disabled={isSaving}
 					className="h-6 w-6 p-0 hover:bg-red-100 text-red-600 hover:text-red-700"
+					title="Cancel adding row"
 				>
 					<X className="w-3 h-3" />
 				</Button>

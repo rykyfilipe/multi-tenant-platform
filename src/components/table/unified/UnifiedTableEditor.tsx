@@ -93,9 +93,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [isImporting, setIsImporting] = useState(false);
 	const [importFile, setImportFile] = useState<File | null>(null);
 	
-	// Always-on inline row state
-	const [inlineRowData, setInlineRowData] = useState<Record<string, any>>({});
-	const [isInlineRowDirty, setIsInlineRowDirty] = useState(false);
 
 	// Permissions
 	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
@@ -755,63 +752,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		}
 	}, [showAlert]);
 
-	// Handle inline row input changes
-	const handleInlineRowChange = useCallback((columnId: string, value: any) => {
-		setInlineRowData(prev => ({
-			...prev,
-			[columnId]: value
-		}));
-		setIsInlineRowDirty(true);
-	}, []);
-
-	// Handle inline row save (Enter key or Save button)
-	const handleInlineRowSave = useCallback(async () => {
-		if (!tablePermissions.canEditTable()) {
-			showAlert("You don't have permission to add rows to this table", "error");
-			return;
-		}
-
-		// Check if there's any data to save
-		const hasData = Object.values(inlineRowData).some(value => 
-			value !== null && value !== undefined && value !== ""
-		);
-
-		if (!hasData) {
-			showAlert("Please enter some data before saving", "warning");
-			return;
-		}
-
-		// Convert inline row data to the format expected by addNewRow
-		const rowData: Record<string, any> = {};
-		columns?.forEach(col => {
-			if (inlineRowData[col.id.toString()] !== undefined) {
-				rowData[col.name] = inlineRowData[col.id.toString()];
-			}
-		});
-
-		// Add the row to the batch
-		addNewRow(rowData);
-		
-		// Clear the inline row
-		setInlineRowData({});
-		setIsInlineRowDirty(false);
-		
-		showAlert("Row added to batch - will be saved when you click Save Changes", "info");
-	}, [tablePermissions, showAlert, addNewRow, inlineRowData, columns]);
-
-	// Handle inline row clear
-	const handleInlineRowClear = useCallback(() => {
-		setInlineRowData({});
-		setIsInlineRowDirty(false);
-	}, []);
-
-	// Handle Enter key press in inline row
-	const handleInlineRowKeyPress = useCallback((e: React.KeyboardEvent) => {
-		if (e.key === 'Enter' && !e.shiftKey) {
-			e.preventDefault();
-			handleInlineRowSave();
-		}
-	}, [handleInlineRowSave]);
 
 
 	// handleSaveNewRows and handleDiscardNewRows are now handled by useRowsTableEditor
@@ -1048,60 +988,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							</div>
 
 							<div className='flex items-center gap-3'>
-								{/* Always-on inline row for adding new rows */}
-								{tablePermissions.canEditTable() && (
-									<div className="flex-1 bg-card border border-border/20 rounded-lg p-4 shadow-sm">
-										<div className="flex items-center gap-2 mb-2">
-											<Plus className="w-4 h-4 text-primary" />
-											<span className="text-sm font-medium text-foreground">Add New Row</span>
-											{isInlineRowDirty && (
-												<span className="text-xs text-muted-foreground">• Unsaved changes</span>
-											)}
-										</div>
-										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-											{columns?.map((column) => (
-												<div key={column.id} className="flex flex-col">
-													<label className="text-xs text-muted-foreground mb-1">
-														{column.name}
-														{column.required && <span className="text-red-500 ml-1">*</span>}
-													</label>
-													<input
-														type={column.type === 'number' ? 'number' : 
-															  column.type === 'date' ? 'date' : 
-															  column.type === 'boolean' ? 'checkbox' : 'text'}
-														value={inlineRowData[column.id.toString()] || ''}
-														onChange={(e) => {
-															const value = column.type === 'boolean' ? e.target.checked : e.target.value;
-															handleInlineRowChange(column.id.toString(), value);
-														}}
-														onKeyPress={handleInlineRowKeyPress}
-														placeholder={`Enter ${column.name.toLowerCase()}`}
-														className="w-full px-2 py-1 text-sm border border-input rounded focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-													/>
-												</div>
-											))}
-										</div>
-										<div className="flex items-center gap-2 mt-3">
-											<Button
-												onClick={handleInlineRowSave}
-												disabled={!isInlineRowDirty}
-												size="sm"
-												className="bg-primary hover:bg-primary/90 text-primary-foreground"
-											>
-												Save Row
-											</Button>
-											<Button
-												onClick={handleInlineRowClear}
-												disabled={!isInlineRowDirty}
-												variant="outline"
-												size="sm"
-											>
-												Clear
-											</Button>
-										</div>
-									</div>
-								)}
-
 								<SaveChangesButton
 									pendingNewRows={pendingNewRows}
 									isSavingNewRows={isSaving}
@@ -1512,6 +1398,22 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								canEdit={tablePermissions.canEditTable()}
 								canDelete={tablePermissions.canDeleteTable()}
 								tables={tables || []}
+								showInlineRowCreator={tablePermissions.canEditTable()}
+								onSaveNewRow={(rowData) => {
+									// Convert row data to the format expected by addNewRow
+									const convertedRowData: Record<string, any> = {};
+									columns?.forEach(col => {
+										if (rowData[col.id.toString()] !== undefined) {
+											convertedRowData[col.name] = rowData[col.id.toString()];
+										}
+									});
+									addNewRow(convertedRowData);
+									showAlert("Row added to batch - will be saved when you click Save Changes", "info");
+								}}
+								onCancelNewRow={() => {
+									// No-op for cancel
+								}}
+								isSavingNewRow={isSaving}
 							/>
 							</div>
 						</div>

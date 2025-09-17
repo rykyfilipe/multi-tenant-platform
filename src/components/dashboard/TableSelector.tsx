@@ -132,11 +132,11 @@ export function TableSelector({
 
 	// Auto-load columns when a table is selected
 	useEffect(() => {
-		if (selectedTableId && !isLoadingColumns && !columnsError) {
+		if (selectedTableId && allTables.length > 0 && !isLoadingColumns && !columnsError) {
 			console.log('[TableSelector] Auto-loading columns for selected table:', selectedTableId);
 			loadColumns(selectedTableId);
 		}
-	}, [selectedTableId]);
+	}, [selectedTableId, allTables.length]);
 
   // Load columns only when explicitly requested by user
   const loadColumns = async (tableId: number) => {
@@ -192,14 +192,20 @@ export function TableSelector({
 						Table
 					</label>
 					{(!allTables || allTables.length === 0) && !allTablesLoading && !allTablesError && (
-						<div className="text-sm text-gray-500 text-center py-4">
-							No tables available
+						<div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+							<Database className="h-12 w-12 text-gray-300 mb-3" />
+							<p className="text-sm text-gray-500 mb-1">No tables available</p>
+							<p className="text-xs text-gray-400">Please check your database connection</p>
 						</div>
 					)}
 					{allTablesLoading ? (
 						<Skeleton className="h-8 w-full" />
 					) : allTablesError ? (
-						<div className="text-sm text-red-600">{allTablesError}</div>
+						<div className="flex flex-col items-center justify-center py-6 px-4 text-center border border-red-200 rounded-lg bg-red-50">
+							<Database className="h-8 w-8 text-red-400 mb-2" />
+							<p className="text-sm text-red-600 font-medium mb-1">Failed to load tables</p>
+							<p className="text-xs text-red-500">{allTablesError}</p>
+						</div>
 					) : (
 						<Select
 							value={selectedTableId?.toString() || ''}
@@ -253,7 +259,17 @@ export function TableSelector({
 								{isLoadingColumns ? (
 									<Skeleton className="h-8 w-full" />
 								) : columnsError ? (
-									<div className="text-sm text-red-600">{columnsError}</div>
+									<div className="flex flex-col items-center justify-center py-4 px-3 text-center border border-red-200 rounded-lg bg-red-50">
+										<Columns className="h-6 w-6 text-red-400 mb-2" />
+										<p className="text-xs text-red-600 font-medium mb-1">Failed to load columns</p>
+										<p className="text-xs text-red-500">{columnsError}</p>
+									</div>
+								) : columns.length === 0 ? (
+									<div className="flex flex-col items-center justify-center py-4 px-3 text-center border border-gray-200 rounded-lg bg-gray-50">
+										<Columns className="h-6 w-6 text-gray-400 mb-2" />
+										<p className="text-xs text-gray-500 font-medium mb-1">No columns available</p>
+										<p className="text-xs text-gray-400">This table has no columns</p>
+									</div>
 								) : (
 									<Select
 										value={selectedColumnX || ''}
@@ -293,7 +309,17 @@ export function TableSelector({
 							{isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
 							) : columnsError ? (
-								<div className="text-sm text-red-600">{columnsError}</div>
+								<div className="flex flex-col items-center justify-center py-4 px-3 text-center border border-red-200 rounded-lg bg-red-50">
+									<Columns className="h-6 w-6 text-red-400 mb-2" />
+									<p className="text-xs text-red-600 font-medium mb-1">Failed to load columns</p>
+									<p className="text-xs text-red-500">{columnsError}</p>
+								</div>
+							) : columns.length === 0 ? (
+								<div className="flex flex-col items-center justify-center py-4 px-3 text-center border border-gray-200 rounded-lg bg-gray-50">
+									<Columns className="h-6 w-6 text-gray-400 mb-2" />
+									<p className="text-xs text-gray-500 font-medium mb-1">No columns available</p>
+									<p className="text-xs text-gray-400">This table has no columns</p>
+								</div>
 							) : (
 								<Select
 									value={selectedColumnY || ''}
@@ -335,7 +361,17 @@ export function TableSelector({
 						{isLoadingColumns ? (
 							<Skeleton className="h-24 w-full" />
 						) : columnsError ? (
-							<div className="text-sm text-red-600">{columnsError}</div>
+							<div className="flex flex-col items-center justify-center py-6 px-4 text-center border border-red-200 rounded-lg bg-red-50">
+								<Columns className="h-8 w-8 text-red-400 mb-2" />
+								<p className="text-sm text-red-600 font-medium mb-1">Failed to load columns</p>
+								<p className="text-xs text-red-500">{columnsError}</p>
+							</div>
+						) : columns.length === 0 ? (
+							<div className="flex flex-col items-center justify-center py-6 px-4 text-center border border-gray-200 rounded-lg bg-gray-50">
+								<Columns className="h-8 w-8 text-gray-400 mb-2" />
+								<p className="text-sm text-gray-500 font-medium mb-1">No columns available</p>
+								<p className="text-xs text-gray-400">This table has no columns to display</p>
+							</div>
 						) : (
 							<div className="max-h-52 overflow-auto border rounded p-2 space-y-1">
 								{(columns ?? []).map((column) => {
@@ -376,7 +412,17 @@ export function TableSelector({
 						{isLoadingColumns ? (
 							<Skeleton className="h-24 w-full" />
 						) : columnsError ? (
-							<div className="text-sm text-red-600">{columnsError}</div>
+							<div className="flex flex-col items-center justify-center py-6 px-4 text-center border border-red-200 rounded-lg bg-red-50">
+								<Columns className="h-8 w-8 text-red-400 mb-2" />
+								<p className="text-sm text-red-600 font-medium mb-1">Failed to load columns</p>
+								<p className="text-xs text-red-500">{columnsError}</p>
+							</div>
+						) : columns.length === 0 ? (
+							<div className="flex flex-col items-center justify-center py-6 px-4 text-center border border-gray-200 rounded-lg bg-gray-50">
+								<Columns className="h-8 w-8 text-gray-400 mb-2" />
+								<p className="text-sm text-gray-500 font-medium mb-1">No columns available</p>
+								<p className="text-xs text-gray-400">This table has no columns for filtering</p>
+							</div>
 						) : (
 							<FilterBuilder
 								filters={filters || []}

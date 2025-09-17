@@ -65,7 +65,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
 				</CardHeader>
 				<CardContent>
 					<div style={{ height }}>
-						{data.length > 0 ? (
+						{data && data.length > 0 ? (
 							<ResponsiveContainer width='100%' height='100%'>
 								<ChartComponent data={data}>
 									<CartesianGrid
@@ -161,7 +161,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
 					</div>
 
 					{/* Revenue Summary */}
-					{data.length > 0 && (
+					{data && data.length > 0 && (
 						<div className='mt-4 grid grid-cols-2 gap-4'>
 							<div className='text-center p-3 rounded-lg bg-green-500/10 border border-green-500/20'>
 								<div className='text-lg font-bold text-green-600'>
@@ -175,9 +175,9 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
 							<div className='text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20'>
 								<div className='text-lg font-bold text-blue-600'>
 									$
-									{(
-										data.reduce((sum, item) => sum + item.arpu, 0) / data.length
-									).toFixed(0)}
+									{data && data.length > 0
+										? (data.reduce((sum, item) => sum + (item?.arpu || 0), 0) / data.length).toFixed(0)
+										: '0'}
 								</div>
 								<p className='text-xs text-muted-foreground'>Avg ARPU</p>
 							</div>

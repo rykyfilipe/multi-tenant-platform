@@ -43,13 +43,13 @@ export const ErrorTrackingChart: React.FC<ErrorTrackingChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
-	const totalErrors = data.reduce((sum, item) => sum + item.errors, 0);
-	const totalWarnings = data.reduce((sum, item) => sum + item.warnings, 0);
-	const totalCritical = data.reduce((sum, item) => sum + item.critical, 0);
-	const totalResolved = data.reduce((sum, item) => sum + item.resolved, 0);
+	const totalErrors = data?.reduce((sum, item) => sum + (item?.errors || 0), 0) || 0;
+	const totalWarnings = data?.reduce((sum, item) => sum + (item?.warnings || 0), 0) || 0;
+	const totalCritical = data?.reduce((sum, item) => sum + (item?.critical || 0), 0) || 0;
+	const totalResolved = data?.reduce((sum, item) => sum + (item?.resolved || 0), 0) || 0;
 	const avgErrorRate =
-		data.length > 0
-			? data.reduce((sum, item) => sum + item.errorRate, 0) / data.length
+		data && data.length > 0
+			? data.reduce((sum, item) => sum + (item?.errorRate || 0), 0) / data.length
 			: 0;
 
 	const getErrorSeverity = (rate: number) => {
@@ -82,7 +82,7 @@ export const ErrorTrackingChart: React.FC<ErrorTrackingChartProps> = ({
 				</CardHeader>
 				<CardContent>
 					<div style={{ height }}>
-						{data.length > 0 ? (
+						{data && data.length > 0 ? (
 							<ResponsiveContainer width='100%' height='100%'>
 								<AreaChart data={data}>
 									<CartesianGrid
@@ -150,7 +150,7 @@ export const ErrorTrackingChart: React.FC<ErrorTrackingChartProps> = ({
 					</div>
 
 					{/* Error Summary */}
-					{data.length > 0 && (
+					{data && data.length > 0 && (
 						<div className='mt-4 space-y-3'>
 							<div className='flex justify-between items-center'>
 								<span className='text-sm text-muted-foreground'>

@@ -77,6 +77,18 @@ export const CHART_COLOR_PALETTES = {
     '#FFFF00', // Yellow
     '#FF00FF', // Magenta
     '#00FFFF', // Cyan
+  ],
+  
+  // Elegant professional
+  elegant: [
+    '#2C3E50', // Dark blue-gray
+    '#34495E', // Dark gray
+    '#7F8C8D', // Medium gray
+    '#BDC3C7', // Light gray
+    '#ECF0F1', // Very light gray
+    '#E8F4F8', // Light blue-gray
+    '#D5DBDB', // Silver
+    '#F8F9FA', // Off white
   ]
 } as const;
 
@@ -127,6 +139,23 @@ export function getChartColor(index: number, palette: ColorPalette = 'business')
   return colors[index % colors.length];
 }
 
+// Get gradient color for charts
+export function getGradientColor(
+  baseColor: string, 
+  opacity: number = 0.8, 
+  direction: 'lighter' | 'darker' = 'lighter'
+): string {
+  const rgb = hexToRgb(baseColor);
+  if (!rgb) return baseColor;
+  
+  const factor = direction === 'lighter' ? (1 + opacity) : (1 - opacity);
+  const newR = Math.min(255, Math.round(rgb.r * factor));
+  const newG = Math.min(255, Math.round(rgb.g * factor));
+  const newB = Math.min(255, Math.round(rgb.b * factor));
+  
+  return `rgba(${newR}, ${newG}, ${newB}, ${opacity})`;
+}
+
 // Generate gradient colors
 export function generateGradientColors(
   startColor: string, 
@@ -170,7 +199,8 @@ export function getColorPaletteNames(): Array<{ key: ColorPalette; name: string;
     { key: 'vibrant', name: 'Vibrant', description: 'Bright and modern colors' },
     { key: 'luxury', name: 'Luxury', description: 'Sophisticated dark tones' },
     { key: 'pastel', name: 'Pastel', description: 'Soft and gentle colors' },
-    { key: 'highContrast', name: 'High Contrast', description: 'Maximum visibility colors' }
+    { key: 'highContrast', name: 'High Contrast', description: 'Maximum visibility colors' },
+    { key: 'elegant', name: 'Elegant', description: 'Professional elegant grays and blues' }
   ];
 }
 
@@ -181,4 +211,113 @@ export function generateRandomColors(count: number): string[] {
     colors.push(`hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`);
   }
   return colors;
+}
+
+// Premium chart colors - luxury white and black design
+export const PREMIUM_CHART_COLORS = {
+  primary: '#FFFFFF',      // Pure white
+  secondary: '#000000',    // Pure black
+  accent: '#F5F5F5',       // Light gray
+  background: '#FAFAFA',   // Off white
+  text: '#1A1A1A',         // Dark gray
+  border: '#E0E0E0',       // Light border
+  success: '#10B981',      // Emerald green
+  warning: '#F59E0B',      // Amber
+  error: '#EF4444',        // Red
+  info: '#3B82F6',         // Blue
+} as const;
+
+// Chart styles for premium design
+export const CHART_STYLES = {
+  // Line chart styles
+  line: {
+    strokeWidth: 2,
+    strokeOpacity: 0.9,
+    dot: {
+      fill: PREMIUM_CHART_COLORS.primary,
+      stroke: PREMIUM_CHART_COLORS.secondary,
+      strokeWidth: 2,
+      r: 4,
+    },
+    activeDot: {
+      r: 6,
+      fill: PREMIUM_CHART_COLORS.secondary,
+      stroke: PREMIUM_CHART_COLORS.primary,
+      strokeWidth: 2,
+    },
+  },
+  
+  // Bar chart styles
+  bar: {
+    fillOpacity: 0.8,
+    stroke: PREMIUM_CHART_COLORS.secondary,
+    strokeWidth: 1,
+  },
+  
+  // Area chart styles
+  area: {
+    fillOpacity: 0.1,
+    strokeWidth: 2,
+  },
+  
+  // Pie chart styles
+  pie: {
+    stroke: PREMIUM_CHART_COLORS.primary,
+    strokeWidth: 2,
+  },
+  
+  // General chart styling
+  chart: {
+    backgroundColor: PREMIUM_CHART_COLORS.background,
+    color: PREMIUM_CHART_COLORS.text,
+    fontSize: 12,
+    fontFamily: 'Inter, system-ui, sans-serif',
+  },
+  
+  // Grid and axes
+  grid: {
+    stroke: PREMIUM_CHART_COLORS.border,
+    strokeWidth: 1,
+    strokeOpacity: 0.5,
+    strokeDasharray: '3 3',
+  },
+  
+  // Axis styling
+  axis: {
+    stroke: PREMIUM_CHART_COLORS.text,
+    fontSize: 12,
+    fontFamily: 'Inter, system-ui, sans-serif',
+    fontWeight: 500,
+  },
+  
+  // Animation styles
+  animation: {
+    duration: 300,
+    easing: 'ease-in-out',
+  },
+  
+  // Card styling
+  card: {
+    backgroundColor: PREMIUM_CHART_COLORS.primary,
+    border: `1px solid ${PREMIUM_CHART_COLORS.border}`,
+    borderRadius: 8,
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+  },
+  
+  // Tooltip styling
+  tooltip: {
+    backgroundColor: PREMIUM_CHART_COLORS.primary,
+    border: `1px solid ${PREMIUM_CHART_COLORS.border}`,
+    borderRadius: 8,
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    color: PREMIUM_CHART_COLORS.text,
+  },
+} as const;
+
+// Get status color based on percentage
+export function getStatusColor(percentage: number): string {
+  if (percentage >= 90) return '#EF4444'; // Red - Critical
+  if (percentage >= 75) return '#F59E0B'; // Amber - Warning
+  if (percentage >= 50) return '#3B82F6'; // Blue - Good
+  return '#10B981'; // Green - Excellent
 }
