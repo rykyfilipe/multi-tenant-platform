@@ -90,22 +90,36 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
   }
 
   try {
-    const response = await fetch(`/api/tenants/1/databases/1/tables/${dataSource.tableId}/rows`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filters: dataSource.filters || [],
-        limit: 1000,
-        offset: 0,
-      }),
-    });
+    const params = new URLSearchParams();
+    params.set('page', '1');
+    params.set('pageSize', '1000');
+    params.set('includeCells', 'true');
+    if (dataSource.filters && dataSource.filters.length > 0) {
+      params.set('filters', encodeURIComponent(JSON.stringify(dataSource.filters)));
+    }
+    
+    const response = await fetch(`/api/tenants/1/databases/1/tables/${dataSource.tableId}/rows?` + params.toString());
 
     if (!response.ok) {
       throw new Error(`Failed to fetch table data: ${response.statusText}`);
     }
 
     const result = await response.json();
-    return result.rows || [];
+    const rows = result.data || [];
+    
+    // Transform rows with cells to chart data
+    return rows.map((row: any) => {
+      const dataPoint: any = {};
+      if (row.cells) {
+        // Find X and Y column values from cells
+        const xCell = row.cells.find((cell: any) => cell.column.name === dataSource.columnX);
+        const yCell = row.cells.find((cell: any) => cell.column.name === dataSource.columnY);
+        
+        dataPoint[dataSource.columnX || 'x'] = xCell?.value || '';
+        dataPoint[dataSource.columnY || 'y'] = parseFloat(yCell?.value) || 0;
+      }
+      return dataPoint;
+    }).filter(point => point[dataSource.columnX || 'x'] && point[dataSource.columnY || 'y'] !== undefined);
   } catch (error) {
     console.error('Error fetching table data:', error);
     throw error;
