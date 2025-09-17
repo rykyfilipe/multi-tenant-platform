@@ -1400,14 +1400,8 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								tables={tables || []}
 								showInlineRowCreator={tablePermissions.canEditTable()}
 								onSaveNewRow={(rowData) => {
-									// Convert row data to the format expected by addNewRow
-									const convertedRowData: Record<string, any> = {};
-									columns?.forEach(col => {
-										if (rowData[col.id.toString()] !== undefined) {
-											convertedRowData[col.name] = rowData[col.id.toString()];
-										}
-									});
-									addNewRow(convertedRowData);
+									// addNewRow expects columnId as keys, not column names
+									addNewRow(rowData);
 									showAlert("Row added to batch - will be saved when you click Save Changes", "info");
 								}}
 								onCancelNewRow={() => {

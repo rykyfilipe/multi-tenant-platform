@@ -153,8 +153,8 @@ export function RowGrid({
 				<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100" />
 			</div>
 
-			{/* Inline Row Creator */}
-			{showInlineRowCreator && canEdit && onSaveNewRow && onCancelNewRow && (
+			{/* Inline Row Creator - Always show if user can edit */}
+			{canEdit && onSaveNewRow && onCancelNewRow && (
 				<InlineRowCreator
 					columns={columns}
 					onSave={onSaveNewRow}

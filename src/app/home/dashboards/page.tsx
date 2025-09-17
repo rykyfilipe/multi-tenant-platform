@@ -174,11 +174,22 @@ export default function DashboardsPage() {
       setIsSaving(true);
       
       // Prepare batch operations
-      const operations = pendingChanges.map(change => ({
-        type: change.type,
-        widgetId: change.widgetId,
-        data: change.data,
-      }));
+      const operations = pendingChanges.map(change => {
+        const operation: any = {
+          type: change.type,
+          widgetId: change.widgetId,
+        };
+        
+        // For create operations, exclude the id field to let Prisma auto-generate it
+        if (change.type === 'create' && change.data) {
+          const { id, ...dataWithoutId } = change.data;
+          operation.data = dataWithoutId;
+        } else {
+          operation.data = change.data;
+        }
+        
+        return operation;
+      });
 
       // Send batch request
       const response = await fetch(`/api/dashboards/${selectedDashboard?.id}/widgets/batch`, {

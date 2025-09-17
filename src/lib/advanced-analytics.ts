@@ -359,7 +359,8 @@ class AdvancedAnalytics {
 		chartType: ChartType,
 		metricType: AnalyticsMetricType,
 		config: DashboardWidget["config"],
-		position: DashboardWidget["position"]
+		position: DashboardWidget["position"],
+		createdBy: string
 	): Promise<DashboardWidget> {
 		const widget: DashboardWidget = {
 			id: this.generateId(),
@@ -385,15 +386,15 @@ class AdvancedAnalytics {
 
 		// Store in database
 		try {
-			await prisma.dashboardWidget.create({
+			await prisma.widget.create({
 				data: {
-					id: widget.id,
-					dashboardId: dashboardId,
+					dashboardId: parseInt(dashboardId),
+					type: chartType,
 					title: title,
-					chartType: chartType,
-					metricType: metricType,
-					config: JSON.stringify(config),
-					position: JSON.stringify(position),
+					position: position,
+					config: config,
+					createdBy: parseInt(createdBy),
+					updatedBy: parseInt(createdBy),
 				},
 			});
 		} catch (error) {
