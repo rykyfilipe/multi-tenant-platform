@@ -40,13 +40,26 @@ export default function BaseWidget({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 widget-header-buttons">
             {showRefresh && onRefresh && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={onRefresh}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRefresh();
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onMouseUp={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 disabled={isLoading}
+                className="z-10 relative"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
@@ -56,10 +69,20 @@ export default function BaseWidget({
                 variant="ghost" 
                 size="sm" 
                 onClick={(e) => {
-                  console.log('Edit button clicked for widget:', widget.id);
+                  e.preventDefault();
                   e.stopPropagation();
+                  console.log('Edit button clicked for widget:', widget.id);
                   onEdit();
                 }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onMouseUp={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="z-10 relative"
               >
                 <Edit3 className="h-4 w-4" />
               </Button>

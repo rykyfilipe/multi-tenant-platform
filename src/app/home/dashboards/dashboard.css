@@ -77,6 +77,19 @@
   height: 100%;
 }
 
+/* Ensure buttons in widget headers are clickable */
+.widget-container button {
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+.widget-container .widget-header-buttons {
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
 .widget-container .react-resizable-handle {
   background: #3b82f6;
   opacity: 0.6;

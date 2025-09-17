@@ -588,6 +588,13 @@ export default function DashboardsPage() {
                   <div 
                     key={widget.id} 
                     className="widget-container"
+                    onMouseDown={(e) => {
+                      // Allow buttons to work by checking if click is on a button
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button')) {
+                        e.stopPropagation();
+                      }
+                    }}
                   >
                     <motion.div
                       className="h-full"
