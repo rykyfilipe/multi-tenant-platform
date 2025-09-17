@@ -277,7 +277,7 @@ export default function DashboardsPage() {
       if (!prev) return prev;
       return {
         ...prev,
-        widgets: prev.widgets.map(w => w.id === updatedWidget.id ? updatedWidget : w),
+        widgets: (prev.widgets ?? []).map(w => w.id === updatedWidget.id ? updatedWidget : w),
       };
     });
   };
@@ -367,7 +367,7 @@ export default function DashboardsPage() {
       position: { x: 0, y: 0, width: 6, height: 4 },
       config: defaultConfig,
       isVisible: true,
-      order: selectedDashboard?.widgets.length || 0,
+      order: (selectedDashboard?.widgets ?? []).length || 0,
     };
 
     setPendingChanges(prev => [...prev, {
@@ -385,7 +385,7 @@ export default function DashboardsPage() {
       if (!prev) return prev;
       return {
         ...prev,
-        widgets: [...prev.widgets, tempWidget],
+        widgets: [...(prev.widgets ?? []), tempWidget],
       };
     });
   };
@@ -625,7 +625,7 @@ export default function DashboardsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <ResponsiveGridLayout
                 className="layout"
-                layouts={{ lg: selectedDashboard.widgets.map(w => ({
+                layouts={{ lg: (selectedDashboard?.widgets ?? []).map(w => ({
                   i: w.id.toString(),
                   x: w.position.x,
                   y: w.position.y,
@@ -641,7 +641,7 @@ export default function DashboardsPage() {
                 margin={[16, 16]}
                 containerPadding={[0, 0]}
               >
-                {selectedDashboard.widgets.map((widget) => (
+                {(selectedDashboard?.widgets ?? []).map((widget) => (
                   <div 
                     key={widget.id} 
                     className="widget-container"
