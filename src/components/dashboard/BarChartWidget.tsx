@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Edit3 } from 'lucide-react';
 import type { Widget, LineChartConfig } from './LineChartWidget';
 import { useChartData } from './BaseChartWidget';
 
@@ -16,7 +16,7 @@ interface BarChartWidgetProps {
 	databaseId?: number;
 }
 
-export default function BarChartWidget({ widget, tenantId, databaseId }: BarChartWidgetProps) {
+export default function BarChartWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: BarChartWidgetProps) {
 	const config = (widget.config || {}) as LineChartConfig;
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
 	const options = config.options || {};
@@ -36,6 +36,19 @@ export default function BarChartWidget({ widget, tenantId, databaseId }: BarChar
 					{dataSource.type === 'table' && (
 						<Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isLoading}>
 							<RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+						</Button>
+					)}
+					{isEditMode && onEdit && (
+						<Button 
+							variant="ghost" 
+							size="sm" 
+							onClick={(e) => {
+								console.log('Bar chart edit button clicked:', widget.id);
+								e.stopPropagation();
+								onEdit();
+							}}
+						>
+							<Edit3 className="h-4 w-4" />
 						</Button>
 					)}
 				</div>
