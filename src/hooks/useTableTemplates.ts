@@ -206,7 +206,7 @@ export function useTableTemplates() {
 						}
 
 						// Handle custom options for customArray type
-						if (col.type === "customArray" && col.customOptions) {
+						if ((col.type === "customArray" || col.type === "custom_array") && col.customOptions) {
 							columnData.customOptions = col.customOptions;
 						}
 
