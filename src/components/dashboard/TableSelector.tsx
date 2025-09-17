@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSchemaCache, CachedColumnMeta } from '@/hooks/useSchemaCache';
 import { useApp } from '@/contexts/AppContext';
 import { FilterBuilder } from './FilterBuilder';
-import { Filter } from './LineChartWidget';
+import { FilterConfig } from '@/types/filtering-enhanced';
 
 // Type validation helpers
 const getColumnTypeCategory = (type: string): 'text' | 'number' | 'date' | 'boolean' | 'other' => {
@@ -48,8 +48,8 @@ interface TableSelectorProps {
 	onColumnsChange?: (columns: string[]) => void;
 	columnLimit?: number; // optional soft limit for multi-select
 	// Filters support
-	filters?: Filter[];
-	onFiltersChange?: (filters: Filter[]) => void;
+	filters?: FilterConfig[];
+	onFiltersChange?: (filters: FilterConfig[]) => void;
 	onTableChange: (tableId: number) => void;
 	onColumnXChange: (column: string) => void;
 	onColumnYChange: (column: string) => void;

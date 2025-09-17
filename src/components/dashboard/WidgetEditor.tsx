@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataEditor } from './DataEditor';
 import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
-import { LineChartConfig, DataSource, Filter, ChartDataPoint } from './LineChartWidget';
+import { LineChartConfig, DataSource, ChartDataPoint } from './LineChartWidget';
+import { FilterConfig } from '@/types/filtering-enhanced';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
 
@@ -201,7 +202,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
     updateConfig({ dataSource: newDataSource });
   };
 
-  const handleFiltersChange = (filters: Filter[]) => {
+  const handleFiltersChange = (filters: FilterConfig[]) => {
     const currentDataSource = editedWidget.config?.dataSource || {};
     const newDataSource = {
       ...currentDataSource,
@@ -938,7 +939,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       selectedTableId={config.dataSource.tableId}
                       selectedColumnX={config.dataSource.columnX}
                       selectedColumnY={config.dataSource.columnY}
-                      filters={config.dataSource.filters || []}
+                      filters={[]}
                       onFiltersChange={handleFiltersChange}
                       onTableChange={handleTableChange}
                       onColumnXChange={handleColumnXChange}

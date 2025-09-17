@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import BaseWidget from './BaseWidget';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
+import { FilterConfig } from '@/types/filtering-enhanced';
 
 export interface TableWidgetConfig {
   title?: string;
@@ -16,7 +17,7 @@ export interface TableWidgetConfig {
     type: 'table';
     tableId: number;
     columns: string[];
-    filters?: any[];
+    filters?: FilterConfig[];
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   };
@@ -26,6 +27,7 @@ export interface TableWidgetConfig {
     showSearch?: boolean;
   };
 }
+
 
 export interface Widget {
   id: number | string;
@@ -86,12 +88,36 @@ export default function TableWidget({
     setError(null);
     
     try {
+      // Convert filters to the format expected by the API
+      const apiFilters = dataSource.filters?.map(filter => {
+        // Map FilterOperator to FilterData operator
+        const operatorMap: Record<string, string> = {
+          'equals': 'equals',
+          'not_equals': 'not_equals',
+          'contains': 'contains',
+          'not_contains': 'not_contains',
+          'greater_than': 'gt',
+          'greater_than_or_equal': 'gte',
+          'less_than': 'lt',
+          'less_than_or_equal': 'lte',
+          'is_empty': 'equals',
+          'is_not_empty': 'not_equals'
+        };
+        
+        return {
+          column: filter.columnName,
+          operator: (operatorMap[filter.operator] || 'equals') as 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in',
+          value: filter.operator === 'is_empty' ? null : filter.operator === 'is_not_empty' ? null : filter.value
+        };
+      }) || [];
+
       const response = await api.tables.rows(tenantId, databaseId, dataSource.tableId, {
         page: currentPage,
         limit: pageSize,
         search: searchTerm || undefined,
         sortBy: sortBy,
         sortOrder: sortOrder,
+        filters: apiFilters.length > 0 ? apiFilters : undefined,
         // columns: dataSource.columns // Removed as it's not part of QueryData interface
       });
 

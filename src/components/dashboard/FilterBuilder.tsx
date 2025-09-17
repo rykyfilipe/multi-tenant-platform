@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Filter as FilterType } from './LineChartWidget';
+import { FilterConfig } from '@/types/filtering-enhanced';
 
 interface ColumnMeta {
   id: number;
@@ -19,9 +20,9 @@ interface ColumnMeta {
 }
 
 interface FilterBuilderProps {
-  filters: FilterType[];
+  filters: FilterConfig[];
   availableColumns: ColumnMeta[];
-  onFiltersChange: (filters: FilterType[]) => void;
+  onFiltersChange: (filters: FilterConfig[]) => void;
 }
 
 const OPERATORS = [
@@ -36,13 +37,13 @@ const OPERATORS = [
 ];
 
 export function FilterBuilder({ filters, availableColumns, onFiltersChange }: FilterBuilderProps) {
-  const [editingFilters, setEditingFilters] = useState<FilterType[]>(filters);
+  const [editingFilters, setEditingFilters] = useState<FilterConfig[]>(filters);
 
   useEffect(() => {
     setEditingFilters(filters);
   }, [filters]);
 
-  const handleFilterChange = (index: number, field: keyof FilterType, value: string | number) => {
+  const handleFilterChange = (index: number, field: keyof FilterConfig, value: string | number) => {
     const newFilters = [...editingFilters];
     newFilters[index] = { ...newFilters[index], [field]: value };
     setEditingFilters(newFilters);
@@ -50,10 +51,12 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
   };
 
   const handleAddFilter = () => {
-    const newFilter: FilterType = {
+    const newFilter: FilterConfig = {
       id: `filter_${Date.now()}`,
-      column: availableColumns[0]?.name || '',
-      operator: 'equals',
+      columnId: availableColumns[0]?.id || 0,
+      columnName: availableColumns[0]?.name || '',
+      columnType: availableColumns[0]?.type as any || 'text',
+      operator: 'equals' as any,
       value: '',
     };
     const newFilters = [...editingFilters, newFilter];
@@ -140,15 +143,22 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                         Column
                       </Label>
                       <Select
-                        value={filter.column}
-                        onValueChange={(value) => handleFilterChange(index, 'column', value)}
+                        value={filter.columnId?.toString() || ''}
+                        onValueChange={(value) => {
+                          const column = availableColumns.find(col => col.id.toString() === value);
+                          if (column) {
+                            handleFilterChange(index, 'columnId', parseInt(value));
+                            handleFilterChange(index, 'columnName', column.name);
+                            handleFilterChange(index, 'columnType', column.type);
+                          }
+                        }}
                       >
                         <SelectTrigger className="h-8">
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
                           {(availableColumns ?? []).map((column) => (
-                            <SelectItem key={column.id} value={column.name}>
+                            <SelectItem key={column.id} value={column.id.toString()}>
                               <div className="flex items-center space-x-2">
                                 <span>{column.name}</span>
                                 <span className="text-xs text-gray-500">({column.type})</span>
@@ -190,7 +200,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                         <Input
                           id={`value-${index}`}
                           type={getValueInputType(filter.operator)}
-                          value={filter.value}
+                          value={String(filter.value || '')}
                           onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
                           placeholder="Enter value"
                           className="h-8"

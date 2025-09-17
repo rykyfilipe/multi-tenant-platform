@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
+import { FilterConfig } from '@/types/filtering-enhanced';
 
 export interface ChartDataPoint {
   [key: string]: any;
@@ -17,6 +18,7 @@ export interface DataSource {
   filters?: Filter[];
   manualData?: ChartDataPoint[];
 }
+
 
 export interface Filter {
   id: string;
@@ -98,7 +100,7 @@ const generateMockData = (count: number = 10): ChartDataPoint[] => {
 
 // Fetch data from table API
 // Helper function to convert frontend filters to API format
-const convertFiltersToApiFormat = (filters: Filter[], columns: any[]): any[] => {
+const convertFiltersToApiFormat = (filters: Filter[], columns: any[]): FilterConfig[] => {
   return filters.map(filter => {
     // Find the column by name to get its ID and type
     const column = columns.find(col => col.name === filter.column);
@@ -111,12 +113,12 @@ const convertFiltersToApiFormat = (filters: Filter[], columns: any[]): any[] => 
       id: filter.id,
       columnId: column.id,
       columnName: column.name,
-      columnType: column.type,
-      operator: filter.operator,
+      columnType: column.type as any,
+      operator: filter.operator as any,
       value: filter.value,
       secondValue: null
     };
-  }).filter(Boolean);
+  }).filter(Boolean) as FilterConfig[];
 };
 
 const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]> => {
