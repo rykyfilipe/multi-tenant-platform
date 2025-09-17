@@ -2,9 +2,7 @@
 
 import { useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, Edit3 } from 'lucide-react';
+import BaseWidget from './BaseWidget';
 import type { Widget, LineChartConfig } from './LineChartWidget';
 import { useChartData } from './BaseChartWidget';
 
@@ -29,45 +27,26 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, tenantId, d
 	}, [dataSource, data]);
 
 	return (
-		<Card className="h-full">
-			<CardHeader className="pb-2">
-				<div className="flex items-center justify-between">
-					<CardTitle className="text-sm font-medium">{widget.title || config.title || 'Bar Chart'}</CardTitle>
-					{dataSource.type === 'table' && (
-						<Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isLoading}>
-							<RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-						</Button>
-					)}
-					{isEditMode && onEdit && (
-						<Button 
-							variant="ghost" 
-							size="sm" 
-							onClick={(e) => {
-								console.log('Bar chart edit button clicked:', widget.id);
-								e.stopPropagation();
-								onEdit();
-							}}
-						>
-							<Edit3 className="h-4 w-4" />
-						</Button>
-					)}
-				</div>
-			</CardHeader>
-			<CardContent className="pt-0 h-full">
-				<div className="h-full min-h-[200px]">
-					<ResponsiveContainer width="100%" height="100%">
-						<BarChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-							{options.showGrid !== false && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
-							<XAxis dataKey={config.xAxis?.key || 'x'} label={{ value: config.xAxis?.label, position: 'insideBottom', offset: -5 }} />
-							<YAxis label={{ value: config.yAxis?.label, angle: -90, position: 'insideLeft' }} />
-							<Tooltip />
-							{options.showLegend !== false && <Legend />}
-							<Bar dataKey={config.yAxis?.key || 'y'} fill={(options.colors && options.colors[0]) || '#3B82F6'} />
-						</BarChart>
-					</ResponsiveContainer>
-				</div>
-			</CardContent>
-		</Card>
+		<BaseWidget
+			widget={widget}
+			isEditMode={isEditMode}
+			onEdit={onEdit}
+			isLoading={isLoading}
+			error={null}
+			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
+			showRefresh={dataSource.type === 'table'}
+		>
+			<ResponsiveContainer width="100%" height="100%">
+				<BarChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+					{options.showGrid !== false && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
+					<XAxis dataKey={config.xAxis?.key || 'x'} label={{ value: config.xAxis?.label, position: 'insideBottom', offset: -5 }} />
+					<YAxis label={{ value: config.yAxis?.label, angle: -90, position: 'insideLeft' }} />
+					<Tooltip />
+					{options.showLegend !== false && <Legend />}
+					<Bar dataKey={config.yAxis?.key || 'y'} fill={(options.colors && options.colors[0]) || '#3B82F6'} />
+				</BarChart>
+			</ResponsiveContainer>
+		</BaseWidget>
 	);
 }
 

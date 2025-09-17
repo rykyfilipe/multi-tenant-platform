@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { Edit3, RefreshCw, AlertCircle } from 'lucide-react';
+import BaseWidget from './BaseWidget';
 
 export interface ChartDataPoint {
   [key: string]: any;
@@ -190,163 +187,63 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card className="h-full">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">
-              {widget.title || config.title || 'Line Chart'}
-            </CardTitle>
-            {isEditMode && onEdit && (
-              <Button variant="ghost" size="sm" onClick={(e) => {
-                  console.log('Edit button clicked for widget:', widget.id);
-                  e.stopPropagation();
-                  onEdit();
-                }}>
-                <Edit3 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 h-full">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-32 w-full" />
-            <div className="flex space-x-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Loading state is now handled by BaseWidget
 
-  if (error) {
-    return (
-      <Card className="h-full">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-red-600">
-              {widget.title || config.title || 'Line Chart'}
-            </CardTitle>
-            {isEditMode && onEdit && (
-              <Button variant="ghost" size="sm" onClick={(e) => {
-                  console.log('Edit button clicked for widget:', widget.id);
-                  e.stopPropagation();
-                  onEdit();
-                }}>
-                <Edit3 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 h-full flex items-center justify-center">
-          <div className="text-center text-red-600">
-            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm">{error}</p>
-            {dataSource.type === 'table' && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRefresh}
-                className="mt-2"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Error state is now handled by BaseWidget
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-sm font-medium">
-              {widget.title || config.title || 'Line Chart'}
-            </CardTitle>
-            {dataSource.type === 'table' && lastFetchTime && (
-              <p className="text-xs text-gray-500 mt-1">
-                Last updated: {lastFetchTime.toLocaleTimeString()}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center space-x-2">
-            {dataSource.type === 'table' && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleRefresh}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
-            )}
-            {isEditMode && onEdit && (
-              <Button variant="ghost" size="sm" onClick={(e) => {
-                  console.log('Edit button clicked for widget:', widget.id);
-                  e.stopPropagation();
-                  onEdit();
-                }}>
-                <Edit3 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0 h-full">
-        <div className="h-full min-h-[200px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={processedData} 
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              {options.showGrid !== false && (
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              )}
-              <XAxis 
-                dataKey={config.xAxis?.key || 'x'}
-                stroke="#666"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                label={config.xAxis?.label ? { value: config.xAxis.label, position: 'insideBottom', offset: -5 } : undefined}
-              />
-              <YAxis 
-                stroke="#666"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                label={config.yAxis?.label ? { value: config.yAxis.label, angle: -90, position: 'insideLeft' } : undefined}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                }}
-                labelStyle={{ color: '#374151', fontWeight: '500' }}
-              />
-              {options.showLegend !== false && <Legend />}
-              <Line
-                type={curveType}
-                dataKey={config.yAxis?.key || 'y'}
-                stroke={colors[0]}
-                strokeWidth={strokeWidth}
-                dot={{ fill: colors[0], strokeWidth: 2, r: dotSize }}
-                activeDot={{ r: dotSize + 2, stroke: colors[0], strokeWidth: 2 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
+    <BaseWidget
+      widget={widget}
+      isEditMode={isEditMode}
+      onEdit={onEdit}
+      isLoading={isLoading}
+      error={error}
+      onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
+      showRefresh={dataSource.type === 'table'}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart 
+          data={processedData} 
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
+          {options.showGrid !== false && (
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          )}
+          <XAxis 
+            dataKey={config.xAxis?.key || 'x'}
+            stroke="#666"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            label={config.xAxis?.label ? { value: config.xAxis.label, position: 'insideBottom', offset: -5 } : undefined}
+          />
+          <YAxis 
+            stroke="#666"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            label={config.yAxis?.label ? { value: config.yAxis.label, angle: -90, position: 'insideLeft' } : undefined}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            }}
+            labelStyle={{ color: '#374151', fontWeight: '500' }}
+          />
+          {options.showLegend !== false && <Legend />}
+          <Line
+            type={curveType}
+            dataKey={config.yAxis?.key || 'y'}
+            stroke={colors[0]}
+            strokeWidth={strokeWidth}
+            dot={{ fill: colors[0], strokeWidth: 2, r: dotSize }}
+            activeDot={{ r: dotSize + 2, stroke: colors[0], strokeWidth: 2 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </BaseWidget>
   );
 }
