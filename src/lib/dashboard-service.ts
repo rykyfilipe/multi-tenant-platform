@@ -210,7 +210,7 @@ export class DashboardService {
       console.error('Error fetching dashboard:', error);
       errorTracker.trackError(
         error as Error,
-        { action: 'getDashboard', dashboardId, tenantId, userId },
+        { action: 'getDashboard', tenantId, userId },
         'high'
       );
       throw error;
@@ -404,7 +404,7 @@ export class DashboardService {
       console.error('Error updating dashboard:', error);
       errorTracker.trackError(
         error as Error,
-        { action: 'updateDashboard', dashboardId, tenantId, userId },
+        { action: 'updateDashboard', tenantId, userId },
         'high'
       );
       throw error;
@@ -458,7 +458,7 @@ export class DashboardService {
       console.error('Error deleting dashboard:', error);
       errorTracker.trackError(
         error as Error,
-        { action: 'deleteDashboard', dashboardId, tenantId, userId },
+        { action: 'deleteDashboard', tenantId, userId },
         'high'
       );
       throw error;
@@ -532,7 +532,7 @@ export class DashboardService {
       console.error('Error fetching widgets:', error);
       errorTracker.trackError(
         error as Error,
-        { action: 'getWidgets', dashboardId, tenantId, userId },
+        { action: 'getWidgets', tenantId, userId },
         'high'
       );
       throw error;
@@ -612,7 +612,7 @@ export class DashboardService {
       console.error('Error creating widget:', error);
       errorTracker.trackError(
         error as Error,
-        { action: 'createWidget', dashboardId, tenantId, userId },
+        { action: 'createWidget', tenantId, userId },
         'high'
       );
       throw error;
@@ -704,7 +704,7 @@ export class DashboardService {
       console.error('Error updating widget:', error);
       errorTracker.trackError(
         error as Error,
-        { action: 'updateWidget', dashboardId, widgetId, tenantId, userId },
+        { action: 'updateWidget', tenantId, userId },
         'high'
       );
       throw error;
@@ -766,7 +766,7 @@ export class DashboardService {
       console.error('Error deleting widget:', error);
       errorTracker.trackError(
         error as Error,
-        { action: 'deleteWidget', dashboardId, widgetId, tenantId, userId },
+        { action: 'deleteWidget', tenantId, userId },
         'high'
       );
       throw error;

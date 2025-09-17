@@ -93,7 +93,30 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 		if (validateRow()) {
 			// Adaugă rândul în batch-ul de rânduri noi locale
 			onSave(rowData);
+			// Clear the form after successful save
+			clearForm();
 		}
+	};
+
+	const clearForm = () => {
+		const initialData: Record<string, any> = {};
+		columns.forEach((column) => {
+			if (column.defaultValue) {
+				initialData[column.id.toString()] = column.defaultValue;
+			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo) {
+				initialData[column.id.toString()] = false;
+			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.number) {
+				initialData[column.id.toString()] = 0;
+			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.link) {
+				initialData[column.id.toString()] = [];
+			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+				initialData[column.id.toString()] = "";
+			} else {
+				initialData[column.id.toString()] = "";
+			}
+		});
+		setRowData(initialData);
+		setErrors({});
 	};
 
 	const renderCellEditor = (column: Column) => {
@@ -242,7 +265,10 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 				<Button
 					variant="ghost"
 					size="sm"
-					onClick={onCancel}
+					onClick={() => {
+						clearForm();
+						onCancel();
+					}}
 					disabled={isSaving}
 					className="h-6 w-6 p-0 hover:bg-red-100 text-red-600 hover:text-red-700"
 				>
