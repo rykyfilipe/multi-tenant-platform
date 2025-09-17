@@ -162,6 +162,14 @@ export function RowGrid({
 					isSaving={isSavingNewRow}
 				/>
 			)}
+			
+			{/* Debug info - remove after fixing */}
+			{process.env.NODE_ENV === 'development' && (
+				<div className="text-xs text-gray-500 p-2 bg-yellow-50 border border-yellow-200">
+					Debug: showInlineRowCreator={showInlineRowCreator.toString()}, canEdit={canEdit.toString()}, 
+					onSaveNewRow={!!onSaveNewRow}, onCancelNewRow={!!onCancelNewRow}
+				</div>
+			)}
 
 			{/* Data Rows */}
 			{rows.map((row, rowIndex) => {
