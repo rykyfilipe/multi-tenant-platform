@@ -48,6 +48,33 @@ export interface DashboardWithWidgets {
 
 export class DashboardService {
   /**
+   * Convert BigInt values to strings for JSON serialization
+   */
+  private static serializeBigInt(obj: any): any {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+    
+    if (typeof obj === 'bigint') {
+      return obj.toString();
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.serializeBigInt(item));
+    }
+    
+    if (typeof obj === 'object') {
+      const result: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        result[key] = this.serializeBigInt(value);
+      }
+      return result;
+    }
+    
+    return obj;
+  }
+
+  /**
    * Get dashboards for a tenant with filtering and pagination
    */
   static async getDashboards(
@@ -527,7 +554,7 @@ export class DashboardService {
         { dashboardId, ...filters }
       );
 
-      return widgets;
+      return this.serializeBigInt(widgets);
     } catch (error) {
       console.error('Error fetching widgets:', error);
       errorTracker.trackError(
@@ -607,7 +634,7 @@ export class DashboardService {
         { dashboardId, widgetId: widget.id, type: widget.type }
       );
 
-      return widget;
+      return this.serializeBigInt(widget);
     } catch (error) {
       console.error('Error creating widget:', error);
       errorTracker.trackError(
@@ -699,7 +726,7 @@ export class DashboardService {
         { dashboardId, widgetId, updatedFields: Object.keys(validatedData) }
       );
 
-      return updatedWidget;
+      return this.serializeBigInt(updatedWidget);
     } catch (error) {
       console.error('Error updating widget:', error);
       errorTracker.trackError(

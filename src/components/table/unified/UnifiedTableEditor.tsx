@@ -98,6 +98,10 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [isExporting, setIsExporting] = useState(false);
 	const [isImporting, setIsImporting] = useState(false);
 	const [importFile, setImportFile] = useState<File | null>(null);
+	
+	// Always-on inline row state
+	const [inlineRowData, setInlineRowData] = useState<Record<string, any>>({});
+	const [isInlineRowDirty, setIsInlineRowDirty] = useState(false);
 
 	// Permissions
 	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
@@ -628,8 +632,53 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				throw new Error("CSV file must have at least a header row and one data row");
 			}
 
-			// Parse header
-			const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
+			// Improved CSV parsing function
+			const parseCSVLine = (line: string): string[] => {
+				const result: string[] = [];
+				let current = '';
+				let inQuotes = false;
+				
+				for (let i = 0; i < line.length; i++) {
+					const char = line[i];
+					
+					if (char === '"') {
+						if (inQuotes && line[i + 1] === '"') {
+							// Escaped quote
+							current += '"';
+							i++; // Skip next quote
+						} else {
+							// Toggle quote state
+							inQuotes = !inQuotes;
+						}
+					} else if (char === ',' && !inQuotes) {
+						// Field separator
+						result.push(current.trim());
+						current = '';
+					} else {
+						current += char;
+					}
+				}
+				
+				// Add the last field
+				result.push(current.trim());
+				return result;
+			};
+
+			// Parse header - try both comma and semicolon separators
+			let headers: string[];
+			const firstLine = lines[0];
+			
+			// Detect separator by counting occurrences
+			const commaCount = (firstLine.match(/,/g) || []).length;
+			const semicolonCount = (firstLine.match(/;/g) || []).length;
+			
+			if (commaCount > semicolonCount) {
+				// Use comma separator
+				headers = parseCSVLine(firstLine);
+			} else {
+				// Use semicolon separator (fallback)
+				headers = firstLine.split(';').map(h => h.trim().replace(/"/g, ''));
+			}
 			
 			// Map headers to column IDs
 			const columnMapping: Record<string, number> = {};
@@ -643,7 +692,15 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			// Parse data rows
 			const rows: Array<{ cells: Array<{ columnId: number; value: any }> }> = [];
 			for (let i = 1; i < lines.length; i++) {
-				const values = lines[i].split(';').map(v => v.trim().replace(/"/g, ''));
+				let values: string[];
+				
+				// Use the same separator detection for data rows
+				if (commaCount > semicolonCount) {
+					values = parseCSVLine(lines[i]);
+				} else {
+					values = lines[i].split(';').map(v => v.trim().replace(/"/g, ''));
+				}
+				
 				const cells: Array<{ columnId: number; value: any }> = [];
 				
 				headers.forEach((header, index) => {

@@ -47,7 +47,7 @@ export interface KPIConfig {
 }
 
 export interface Widget {
-  id: number;
+  id: number | string;
   type: string;
   title: string | null;
   position: { x: number; y: number; width: number; height: number };

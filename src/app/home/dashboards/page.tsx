@@ -39,7 +39,7 @@ interface Dashboard {
 }
 
 interface Widget {
-  id: number;
+  id: number | string;
   type: string;
   title: string | null;
   position: { x: number; y: number; width: number; height: number };
@@ -50,7 +50,7 @@ interface Widget {
 
 interface PendingChange {
   type: 'create' | 'update' | 'delete';
-  widgetId?: number;
+  widgetId?: number | string;
   data?: Partial<Widget> | null;
 }
 
@@ -451,7 +451,7 @@ export default function DashboardsPage() {
               }}
               onDelete={() => {
                 console.log('Bar chart delete clicked:', widget.id);
-                handleWidgetDelete(widget.id);
+                handleWidgetDelete(Number(widget.id));
               }}
               tenantId={tenant?.id}
               databaseId={1}
@@ -469,7 +469,7 @@ export default function DashboardsPage() {
               }}
               onDelete={() => {
                 console.log('Pie chart delete clicked:', widget.id);
-                handleWidgetDelete(widget.id);
+                handleWidgetDelete(Number(widget.id));
               }}
               tenantId={tenant?.id}
               databaseId={1}
@@ -486,7 +486,7 @@ export default function DashboardsPage() {
             }}
             onDelete={() => {
               console.log('Line chart delete clicked:', widget.id);
-              handleWidgetDelete(widget.id);
+              handleWidgetDelete(Number(widget.id));
             }}
           />
         );
@@ -502,7 +502,7 @@ export default function DashboardsPage() {
             }}
             onDelete={() => {
               console.log('Table delete clicked:', widget.id);
-              handleWidgetDelete(widget.id);
+              handleWidgetDelete(Number(widget.id));
             }}
             tenantId={tenant?.id}
             databaseId={1}
@@ -519,7 +519,7 @@ export default function DashboardsPage() {
             }}
             onDelete={() => {
               console.log('KPI delete clicked:', widget.id);
-              handleWidgetDelete(widget.id);
+              handleWidgetDelete(Number(widget.id));
             }}
             tenantId={tenant?.id}
             databaseId={1}
@@ -536,7 +536,7 @@ export default function DashboardsPage() {
             }}
             onDelete={() => {
               console.log('Text delete clicked:', widget.id);
-              handleWidgetDelete(widget.id);
+              handleWidgetDelete(Number(widget.id));
             }}
           />
         );

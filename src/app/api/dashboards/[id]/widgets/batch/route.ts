@@ -8,7 +8,7 @@ import { z } from 'zod';
 // Batch operation schema
 const BatchOperationSchema = z.object({
   type: z.enum(['create', 'update', 'delete']),
-  widgetId: z.number().optional(),
+  widgetId: z.union([z.number(), z.string()]).optional(),
   data: z.any().optional(),
 });
 
@@ -85,7 +85,7 @@ export async function POST(
             
             result = await DashboardService.updateWidget(
               dashboardId,
-              operation.widgetId,
+              Number(operation.widgetId),
               updateData as any,
               Number(session.user.tenantId),
               Number(session.user.id)
@@ -99,7 +99,7 @@ export async function POST(
             
             await DashboardService.deleteWidget(
               dashboardId,
-              operation.widgetId,
+              Number(operation.widgetId),
               Number(session.user.tenantId),
               Number(session.user.id)
             );

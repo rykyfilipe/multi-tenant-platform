@@ -30,7 +30,7 @@ export interface TableWidgetConfig {
 }
 
 export interface Widget {
-  id: number;
+  id: number | string;
   title?: string | null;
   type: string;
   config?: TableWidgetConfig;

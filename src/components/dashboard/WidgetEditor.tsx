@@ -19,7 +19,7 @@ import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
 
 interface Widget {
-  id: number;
+  id: number | string;
   type: string;
   title: string | null;
   position: { x: number; y: number; width: number; height: number };
