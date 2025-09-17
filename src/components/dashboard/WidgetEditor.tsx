@@ -861,13 +861,6 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       selectedTableId={config.dataSource.tableId}
                       selectedColumnX={config.dataSource.columnX}
                       selectedColumnY={config.dataSource.columnY}
-                      selectedColumns={config.dataSource.columns}
-                      onColumnsChange={(columns) => updateConfig({
-                        dataSource: {
-                          ...editedWidget.config?.dataSource,
-                          columns: columns
-                        }
-                      })}
                       filters={config.dataSource.filters || []}
                       onFiltersChange={handleFiltersChange}
                       onTableChange={handleTableChange}
