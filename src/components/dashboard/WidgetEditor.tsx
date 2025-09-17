@@ -153,7 +153,13 @@ export function WidgetEditor({ widget, onClose, onSave }: WidgetEditorProps) {
   };
 
   const isLineChart = widget.type === 'chart';
-  const config = editedWidget.config as LineChartConfig;
+  const config = (editedWidget.config as LineChartConfig) || {
+    title: '',
+    dataSource: { type: 'manual', manualData: [] },
+    xAxis: { key: 'x', label: 'X Axis', type: 'category' },
+    yAxis: { key: 'y', label: 'Y Axis', type: 'number' },
+    options: {}
+  };
 
   return (
     <motion.div

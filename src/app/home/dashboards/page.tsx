@@ -222,11 +222,40 @@ export default function DashboardsPage() {
   };
 
   const handleAddWidget = (type: string) => {
+    // Create default config based on widget type
+    let defaultConfig = {};
+    
+    if (type === 'chart') {
+      defaultConfig = {
+        title: '',
+        dataSource: {
+          type: 'manual',
+          manualData: [
+            { x: 'Jan', y: 100 },
+            { x: 'Feb', y: 150 },
+            { x: 'Mar', y: 200 },
+            { x: 'Apr', y: 180 },
+            { x: 'May', y: 250 },
+          ]
+        },
+        xAxis: { key: 'x', label: 'Month', type: 'category' },
+        yAxis: { key: 'y', label: 'Value', type: 'number' },
+        options: {
+          colors: ['#3B82F6'],
+          showLegend: true,
+          showGrid: true,
+          strokeWidth: 2,
+          dotSize: 4,
+          curveType: 'monotone'
+        }
+      };
+    }
+
     const newWidget: Partial<Widget> = {
       type,
       title: `New ${type} Widget`,
       position: { x: 0, y: 0, width: 6, height: 4 },
-      config: {},
+      config: defaultConfig,
       isVisible: true,
       order: selectedDashboard?.widgets.length || 0,
     };

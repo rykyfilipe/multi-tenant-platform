@@ -122,9 +122,9 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
   const [error, setError] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
 
-  const config = widget.config as LineChartConfig;
+  const config = widget.config as LineChartConfig || {};
   const options = config.options || {};
-  const dataSource = config.dataSource;
+  const dataSource = config.dataSource || { type: 'manual', manualData: [] };
 
   // Process data based on data source type
   const processedData = useMemo(() => {
@@ -306,19 +306,19 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 )}
                 <XAxis 
-                  dataKey={config.xAxis.key}
+                  dataKey={config.xAxis?.key || 'x'}
                   stroke="#666"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  label={config.xAxis.label ? { value: config.xAxis.label, position: 'insideBottom', offset: -5 } : undefined}
+                  label={config.xAxis?.label ? { value: config.xAxis.label, position: 'insideBottom', offset: -5 } : undefined}
                 />
                 <YAxis 
                   stroke="#666"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  label={config.yAxis.label ? { value: config.yAxis.label, angle: -90, position: 'insideLeft' } : undefined}
+                  label={config.yAxis?.label ? { value: config.yAxis.label, angle: -90, position: 'insideLeft' } : undefined}
                 />
                 <Tooltip
                   contentStyle={{
@@ -332,7 +332,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
                 {options.showLegend !== false && <Legend />}
                 <Line
                   type={curveType}
-                  dataKey={config.yAxis.key}
+                  dataKey={config.yAxis?.key || 'y'}
                   stroke={colors[0]}
                   strokeWidth={strokeWidth}
                   dot={{ fill: colors[0], strokeWidth: 2, r: dotSize }}
