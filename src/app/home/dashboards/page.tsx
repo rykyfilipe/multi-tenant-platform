@@ -344,7 +344,10 @@ export default function DashboardsPage() {
       };
     } else if (type === 'text') {
       defaultConfig = {
-        content: 'Enter your text content here...',
+        dataSource: {
+          type: 'manual',
+          content: 'Enter your text content here...'
+        },
         type: 'plain',
         options: {
           fontSize: 'base',

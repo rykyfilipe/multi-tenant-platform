@@ -13,6 +13,7 @@ import { api } from '@/lib/api-client';
 export interface TableWidgetConfig {
   title?: string;
   dataSource: {
+    type: 'table';
     tableId: number;
     columns: string[];
     filters?: any[];

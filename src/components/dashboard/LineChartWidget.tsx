@@ -119,7 +119,7 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
         dataPoint[dataSource.columnY || 'y'] = parseFloat(yCell?.value) || 0;
       }
       return dataPoint;
-    }).filter(point => point[dataSource.columnX || 'x'] && point[dataSource.columnY || 'y'] !== undefined);
+    }).filter((point: any) => point[dataSource.columnX || 'x'] && point[dataSource.columnY || 'y'] !== undefined);
   } catch (error) {
     console.error('Error fetching table data:', error);
     throw error;

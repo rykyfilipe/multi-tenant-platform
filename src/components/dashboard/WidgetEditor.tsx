@@ -601,9 +601,13 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         <Label htmlFor="content">Content</Label>
                         <Textarea
                           id="content"
-                          value={editedWidget.config?.content || ''}
+                          value={editedWidget.config?.dataSource?.content || ''}
                           onChange={(e) => updateConfig({
-                            content: e.target.value
+                            dataSource: {
+                              ...editedWidget.config?.dataSource,
+                              type: 'manual',
+                              content: e.target.value
+                            }
                           })}
                           placeholder="Enter your text content..."
                           rows={8}

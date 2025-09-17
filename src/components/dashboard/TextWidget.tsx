@@ -6,7 +6,10 @@ import BaseWidget from './BaseWidget';
 
 export interface TextConfig {
   title?: string;
-  content: string;
+  dataSource: {
+    type: 'manual';
+    content: string;
+  };
   type: 'markdown' | 'html' | 'plain';
   options?: {
     fontSize?: 'sm' | 'base' | 'lg' | 'xl' | '2xl';
@@ -51,6 +54,7 @@ export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
 
   const config = widget.config as TextConfig;
   const options = config.options || {};
+  const content = config.dataSource?.content || '';
 
   useEffect(() => {
     // Validate content based on type
@@ -59,7 +63,7 @@ export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
         // Basic HTML validation - check for potentially dangerous tags
         const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form'];
         const hasDangerousTags = dangerousTags.some(tag => 
-          config.content.toLowerCase().includes(`<${tag}`)
+          content.toLowerCase().includes(`<${tag}`)
         );
         
         if (hasDangerousTags) {
@@ -73,7 +77,7 @@ export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
     } else {
       setError(null);
     }
-  }, [config.content, config.type]);
+  }, [content, config.type]);
 
   const getFontSizeClass = () => {
     switch (options.fontSize) {
@@ -135,7 +139,7 @@ export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
           <div 
             className={baseClasses}
             style={style}
-            dangerouslySetInnerHTML={{ __html: config.content }}
+            dangerouslySetInnerHTML={{ __html: content }}
           />
         );
       
@@ -144,7 +148,7 @@ export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
           <div 
             className={baseClasses}
             style={style}
-            dangerouslySetInnerHTML={{ __html: parseMarkdown(config.content) }}
+            dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }}
           />
         );
       
@@ -154,7 +158,7 @@ export function TextWidget({ widget, isEditMode, onEdit }: TextWidgetProps) {
             className={`${baseClasses} whitespace-pre-wrap`}
             style={style}
           >
-            {config.content}
+            {content}
           </div>
         );
     }
