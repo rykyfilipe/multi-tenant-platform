@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +18,7 @@ import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
 import { useToast } from '@/hooks/use-toast';
+import { useApp } from '@/contexts/AppContext';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -60,6 +61,7 @@ export default function DashboardsPage() {
   const [showWidgetEditor, setShowWidgetEditor] = useState(false);
   
   const { toast } = useToast();
+  const { tenant } = useApp();
 
   // Fetch dashboards on component mount
   useEffect(() => {
@@ -166,6 +168,21 @@ export default function DashboardsPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const revertChanges = () => {
+    if (pendingChanges.length === 0) return;
+    
+    // Clear pending changes and reload dashboard data
+    setPendingChanges([]);
+    if (selectedDashboard) {
+      fetchDashboards();
+    }
+    
+    toast({
+      title: "Changes reverted",
+      description: "All pending changes have been discarded.",
+    });
   };
 
   const handleLayoutChange = (layout: any[]) => {
@@ -342,16 +359,28 @@ export default function DashboardsPage() {
                 </div>
                 
                 {isEditMode && (
-                  <Button
-                    onClick={saveChanges}
-                    disabled={pendingChanges.length === 0 || isSaving}
-                    className="flex items-center space-x-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    <span>
-                      {isSaving ? 'Saving...' : `Save (${pendingChanges.length})`}
-                    </span>
-                  </Button>
+                  <>
+                    <Button
+                      onClick={saveChanges}
+                      disabled={pendingChanges.length === 0 || isSaving}
+                      className="flex items-center space-x-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      <span>
+                        {isSaving ? 'Saving...' : `Save (${pendingChanges.length})`}
+                      </span>
+                    </Button>
+                    
+                    <Button
+                      onClick={revertChanges}
+                      disabled={pendingChanges.length === 0}
+                      variant="outline"
+                      className="flex items-center space-x-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span>Revert</span>
+                    </Button>
+                  </>
                 )}
               </>
             )}
@@ -481,6 +510,8 @@ export default function DashboardsPage() {
               setEditingWidget(null);
             }}
             onSave={handleWidgetUpdate}
+            tenantId={tenant?.id || 1}
+            databaseId={1} // Default database ID for now
           />
         )}
       </AnimatePresence>

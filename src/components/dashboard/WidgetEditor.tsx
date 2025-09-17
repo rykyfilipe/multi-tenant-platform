@@ -15,6 +15,8 @@ import { DataEditor } from './DataEditor';
 import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
 import { LineChartConfig, DataSource, Filter, ChartDataPoint } from './LineChartWidget';
+import { useSchemaCache } from '@/hooks/useSchemaCache';
+import { api } from '@/lib/api-client';
 
 interface Widget {
   id: number;
@@ -30,12 +32,17 @@ interface WidgetEditorProps {
   widget: Widget;
   onClose: () => void;
   onSave: (widget: Widget) => void;
+  tenantId: number;
+  databaseId: number;
 }
 
-export function WidgetEditor({ widget, onClose, onSave }: WidgetEditorProps) {
+export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: WidgetEditorProps) {
   const [editedWidget, setEditedWidget] = useState<Widget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
   const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+  
+  // Use schema cache for tables and columns
+  const { tables, tablesLoading, getColumns } = useSchemaCache(tenantId, databaseId);
 
   useEffect(() => {
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
@@ -367,8 +374,8 @@ export function WidgetEditor({ widget, onClose, onSave }: WidgetEditorProps) {
                       onTableChange={handleTableChange}
                       onColumnXChange={handleColumnXChange}
                       onColumnYChange={handleColumnYChange}
-                      tenantId={1} // TODO: Get from context
-                      databaseId={1} // TODO: Get from context
+                      tenantId={tenantId}
+                      databaseId={databaseId}
                     />
                   )}
 
