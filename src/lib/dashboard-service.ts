@@ -550,7 +550,7 @@ export class DashboardService {
         200,
         Date.now() - performance.now(),
         undefined,
-        JSON.stringify(widgets).length,
+        JSON.stringify(this.serializeBigInt(widgets)).length,
         { dashboardId, ...filters }
       );
 
@@ -629,8 +629,8 @@ export class DashboardService {
         'POST',
         201,
         Date.now() - performance.now(),
-        JSON.stringify(data).length,
-        JSON.stringify(widget).length,
+        JSON.stringify(this.serializeBigInt(data)).length,
+        JSON.stringify(this.serializeBigInt(widget)).length,
         { dashboardId, widgetId: widget.id, type: widget.type }
       );
 
@@ -721,8 +721,8 @@ export class DashboardService {
         'PUT',
         200,
         Date.now() - performance.now(),
-        JSON.stringify(data).length,
-        JSON.stringify(updatedWidget).length,
+        JSON.stringify(this.serializeBigInt(data)).length,
+        JSON.stringify(this.serializeBigInt(updatedWidget)).length,
         { dashboardId, widgetId, updatedFields: Object.keys(validatedData) }
       );
 
