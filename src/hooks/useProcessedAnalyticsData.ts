@@ -137,8 +137,8 @@ export const useProcessedAnalyticsData = (): {
 				);
 				if (response.ok) {
 					const data = await response.json();
-					setRealTimeData(data.realTimeData);
-					setBusinessData(data.businessData);
+					setRealTimeData(data?.realTimeData || null);
+					setBusinessData(data?.businessData || null);
 				}
 			} catch (error) {
 				console.error("Failed to fetch real-time data:", error);
