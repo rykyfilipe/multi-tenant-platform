@@ -183,7 +183,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   const updatePosition = (positionUpdates: Partial<{ x: number; y: number; width: number; height: number }>) => {
     setEditedWidget(prev => ({
       ...prev,
-      position: { ...prev.position, ...positionUpdates }
+      position: { ...(prev.position || {}), ...positionUpdates }
     }));
   };
 
@@ -371,7 +371,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       <Input
                         id="x"
                         type="number"
-                        value={editedWidget.position.x}
+                        value={editedWidget.position?.x || 0}
                         onChange={(e) => updatePosition({ x: parseInt(e.target.value) || 0 })}
                         min="0"
                       />
@@ -381,7 +381,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       <Input
                         id="y"
                         type="number"
-                        value={editedWidget.position.y}
+                        value={editedWidget.position?.y || 0}
                         onChange={(e) => updatePosition({ y: parseInt(e.target.value) || 0 })}
                         min="0"
                       />
@@ -394,7 +394,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       <Input
                         id="width"
                         type="number"
-                        value={editedWidget.position.width}
+                        value={editedWidget.position?.width || 4}
                         onChange={(e) => updatePosition({ width: parseInt(e.target.value) || 1 })}
                         min="1"
                         max="12"
@@ -405,7 +405,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       <Input
                         id="height"
                         type="number"
-                        value={editedWidget.position.height}
+                        value={editedWidget.position?.height || 4}
                         onChange={(e) => updatePosition({ height: parseInt(e.target.value) || 1 })}
                         min="1"
                         max="20"

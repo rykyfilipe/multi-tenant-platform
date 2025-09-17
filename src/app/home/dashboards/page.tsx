@@ -365,7 +365,7 @@ export default function DashboardsPage() {
     let lowestY = 0;
     widgets.forEach(widget => {
       if (widget.position) {
-        lowestY = Math.max(lowestY, widget.position.y + widget.position.height);
+        lowestY = Math.max(lowestY, (widget.position.y || 0) + (widget.position.height || 4));
       }
     });
     
@@ -750,10 +750,10 @@ export default function DashboardsPage() {
                 className="layout"
                 layouts={{ lg: (selectedDashboard?.widgets ?? []).map(w => ({
                   i: w.id.toString(),
-                  x: w.position.x,
-                  y: w.position.y,
-                  w: w.position.width,
-                  h: w.position.height,
+                  x: w.position?.x || 0,
+                  y: w.position?.y || 0,
+                  w: w.position?.width || 4,
+                  h: w.position?.height || 4,
                 })) }}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
