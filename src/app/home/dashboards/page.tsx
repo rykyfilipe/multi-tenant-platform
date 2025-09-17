@@ -22,6 +22,7 @@ import TextWidget from '@/components/dashboard/TextWidget';
 import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
+import { useWidgetPendingChanges } from '@/hooks/useWidgetPendingChanges';
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
 
@@ -48,25 +49,47 @@ interface Widget {
   order: number;
 }
 
-interface PendingChange {
-  type: 'create' | 'update' | 'delete';
-  widgetId?: number | string;
-  data?: Partial<Widget> | null;
-}
+// Removed PendingChange interface - now using the one from useWidgetPendingChanges hook
 
 export default function DashboardsPage() {
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
   const [showWidgetEditor, setShowWidgetEditor] = useState(false);
   
   const { toast } = useToast();
   const { tenant } = useApp();
+
+  // Use the new pending changes hook
+  const {
+    pendingChanges,
+    isSaving,
+    pendingChangesCount,
+    addPendingChange,
+    removePendingChange,
+    clearPendingChanges,
+    savePendingChanges,
+    discardPendingChanges,
+    hasPendingChange,
+    getPendingChange,
+  } = useWidgetPendingChanges({
+    onSuccess: (results) => {
+      toast({
+        title: 'Success',
+        description: 'All changes saved successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Fetch dashboards on component mount
   useEffect(() => {
@@ -168,82 +191,23 @@ export default function DashboardsPage() {
   };
 
   const saveChanges = async () => {
-    if (pendingChanges.length === 0) return;
+    if (pendingChangesCount === 0 || !selectedDashboard) return;
 
     try {
-      setIsSaving(true);
-      
-      // Prepare batch operations
-      const operations = pendingChanges.map(change => {
-        const operation: any = {
-          type: change.type,
-          widgetId: change.widgetId,
-        };
-        
-        // For create operations, exclude the id field to let Prisma auto-generate it
-        if (change.type === 'create' && change.data) {
-          const { id, ...dataWithoutId } = change.data;
-          operation.data = dataWithoutId;
-        } else {
-          operation.data = change.data;
-        }
-        
-        return operation;
-      });
-
-      // Send batch request
-      const response = await fetch(`/api/dashboards/${selectedDashboard?.id}/widgets/batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operations }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save changes');
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        // Handle partial failures
-        const failedOperations = result.errors.map((err: any) => 
-          `Operation ${err.index + 1} (${err.type}): ${err.error}`
-        ).join(', ');
-        
-        toast({
-          title: 'Partial Success',
-          description: `Saved ${result.summary.successful} of ${result.summary.total} changes. Errors: ${failedOperations}`,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Success',
-          description: 'All changes saved successfully',
-        });
-      }
-
-      // Clear pending changes and refresh dashboard
-      setPendingChanges([]);
+      await savePendingChanges(selectedDashboard.id);
+      // Refresh dashboard data after successful save
       await fetchDashboards();
-      
     } catch (error) {
       console.error('Error saving changes:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save changes',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
+      // Error handling is done in the hook's onError callback
     }
   };
 
   const revertChanges = () => {
-    if (pendingChanges.length === 0) return;
+    if (pendingChangesCount === 0) return;
     
     // Clear pending changes and reload dashboard data
-    setPendingChanges([]);
+    discardPendingChanges();
     if (selectedDashboard) {
       fetchDashboards();
     }
@@ -257,24 +221,20 @@ export default function DashboardsPage() {
   const handleLayoutChange = (layout: any[]) => {
     if (!isEditMode) return;
 
-    const changes: PendingChange[] = layout.map((item) => ({
-      type: 'update',
-      widgetId: parseInt(item.i),
-      data: {
-        position: {
-          x: item.x,
-          y: item.y,
-          width: item.w,
-          height: item.h,
-        },
-      },
-    }));
+    layout.forEach((item) => {
+      const widgetId = parseInt(item.i);
+      const newPosition = {
+        x: item.x,
+        y: item.y,
+        width: item.w,
+        height: item.h,
+      };
 
-    setPendingChanges(prev => {
-      const filtered = prev.filter(change => 
-        !changes.some(c => c.widgetId === change.widgetId && change.type === 'update')
-      );
-      return [...filtered, ...changes];
+      // Get original widget data for comparison
+      const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
+      const originalPosition = originalWidget?.position;
+
+      addPendingChange('update', widgetId, { position: newPosition }, { position: originalPosition });
     });
   };
 
@@ -286,16 +246,10 @@ export default function DashboardsPage() {
   };
 
   const handleWidgetUpdate = (updatedWidget: Widget) => {
-    setPendingChanges(prev => {
-      const filtered = prev.filter(change => 
-        !(change.widgetId === updatedWidget.id && change.type === 'update')
-      );
-      return [...filtered, {
-        type: 'update',
-        widgetId: updatedWidget.id,
-        data: updatedWidget,
-      }];
-    });
+    // Get original widget data for comparison
+    const originalWidget = selectedDashboard?.widgets.find(w => w.id === updatedWidget.id);
+    
+    addPendingChange('update', updatedWidget.id, updatedWidget, originalWidget);
 
     // Update local state immediately for better UX
     setSelectedDashboard(prev => {
@@ -309,11 +263,7 @@ export default function DashboardsPage() {
 
   const handleWidgetDelete = (widgetId: number) => {
     // Add to pending changes for batch processing
-    setPendingChanges(prev => [...prev, {
-      type: 'delete',
-      widgetId: widgetId,
-      data: null
-    }]);
+    addPendingChange('delete', widgetId, null);
 
     // Update local state immediately for better UX
     setSelectedDashboard(prev => {
@@ -480,14 +430,15 @@ export default function DashboardsPage() {
       order: (selectedDashboard?.widgets ?? []).length || 0,
     };
 
-    setPendingChanges(prev => [...prev, {
-      type: 'create',
-      data: newWidget,
-    }]);
+    // Generate temporary ID for the new widget
+    const tempId = Date.now();
+    
+    // Add to pending changes
+    addPendingChange('create', tempId, newWidget);
 
     // Add to local state immediately
     const tempWidget: Widget = {
-      id: Date.now(), // Temporary ID
+      id: tempId, // Temporary ID
       ...newWidget,
     } as Widget;
 
@@ -502,9 +453,7 @@ export default function DashboardsPage() {
 
   const renderWidget = (widget: Widget) => {
     // Check if widget has pending changes and use them for live preview
-    const pendingChange = pendingChanges.find(change => 
-      change.widgetId === widget.id && change.type === 'update'
-    );
+    const pendingChange = getPendingChange(widget.id, 'update');
     
     const displayWidget = pendingChange && pendingChange.data 
       ? { ...widget, ...pendingChange.data }
@@ -666,18 +615,18 @@ export default function DashboardsPage() {
                   <>
                     <Button
                       onClick={saveChanges}
-                      disabled={pendingChanges.length === 0 || isSaving}
+                      disabled={pendingChangesCount === 0 || isSaving}
                       className="flex items-center space-x-2"
                     >
                       <Save className="h-4 w-4" />
                       <span>
-                        {isSaving ? 'Saving...' : `Save (${pendingChanges.length})`}
+                        {isSaving ? 'Saving...' : `Save (${pendingChangesCount})`}
                       </span>
                     </Button>
                     
                     <Button
                       onClick={revertChanges}
-                      disabled={pendingChanges.length === 0}
+                      disabled={pendingChangesCount === 0}
                       variant="outline"
                       className="flex items-center space-x-2"
                     >
