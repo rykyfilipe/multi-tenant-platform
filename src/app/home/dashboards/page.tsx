@@ -295,25 +295,32 @@ export default function DashboardsPage() {
   };
 
   const renderWidget = (widget: Widget) => {
+    // Check if widget has pending changes and use them for live preview
+    const pendingChange = pendingChanges.find(change => 
+      change.widgetId === widget.id && change.type === 'update'
+    );
+    
+    const displayWidget = pendingChange && pendingChange.data 
+      ? { ...widget, ...pendingChange.data }
+      : widget;
+
     switch (widget.type) {
       case 'chart':
         return (
           <LineChartWidget 
-            widget={widget} 
+            widget={displayWidget} 
             isEditMode={isEditMode}
             onEdit={() => handleWidgetClick(widget)}
           />
         );
       default:
         return (
-          <Card className="h-full">
-            <CardContent className="p-4 h-full flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <Settings className="h-8 w-8 mx-auto mb-2" />
-                <p>Widget type "{widget.type}" not implemented</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <Settings className="h-8 w-8 mx-auto mb-2" />
+              <p>Widget type "{widget.type}" not implemented</p>
+            </div>
+          </div>
         );
     }
   };
@@ -451,26 +458,7 @@ export default function DashboardsPage() {
                       whileHover={isEditMode ? { scale: 1.02 } : {}}
                       transition={{ duration: 0.2 }}
                     >
-                      <Card 
-                        className={`h-full cursor-pointer transition-all duration-200 ${
-                          isEditMode 
-                            ? 'hover:shadow-lg border-blue-300' 
-                            : 'hover:shadow-md'
-                        }`}
-                        onClick={() => handleWidgetClick(widget)}
-                      >
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium flex items-center justify-between">
-                            <span>{widget.title || `Widget ${widget.id}`}</span>
-                            {isEditMode && (
-                              <Edit3 className="h-4 w-4 text-blue-500" />
-                            )}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0 h-full">
-                          {renderWidget(widget)}
-                        </CardContent>
-                      </Card>
+                      {renderWidget(widget)}
                     </motion.div>
                   </div>
                 ))}
