@@ -9,7 +9,7 @@ export interface BaseChartWidgetProps {
 	onEdit?: () => void;
 }
 
-export function useChartData(widget: Widget) {
+export function useChartData(widget: Widget, tenantId?: number, databaseId?: number) {
 	const config = (widget.config || {}) as LineChartConfig;
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
 	const [data, setData] = useState<ChartDataPoint[]>(dataSource.type === 'manual' ? (dataSource.manualData || []) : []);
@@ -20,7 +20,7 @@ export function useChartData(widget: Widget) {
 	useEffect(() => {
 		let active = true;
 		async function load() {
-			if (dataSource.type !== 'table' || !dataSource.tableId) return;
+			if (dataSource.type !== 'table' || !dataSource.tableId || !tenantId || !databaseId) return;
 			try {
 				setIsLoading(true);
 				setError(null);
@@ -31,8 +31,6 @@ export function useChartData(widget: Widget) {
 				if (dataSource.filters && dataSource.filters.length > 0) {
 					params.set('filters', encodeURIComponent(JSON.stringify(dataSource.filters)));
 				}
-				const tenantId = (widget as any)?.dashboardTenantId || '';
-				const databaseId = (widget as any)?.dashboardDatabaseId || 1;
 				const res = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${dataSource.tableId}/rows?` + params.toString());
 				if (!res.ok) throw new Error('Failed to fetch data');
 				const json = await res.json();
@@ -56,7 +54,7 @@ export function useChartData(widget: Widget) {
 			active = false;
 		};
 	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [JSON.stringify(config.dataSource)]);
+	}, [JSON.stringify(config.dataSource), tenantId, databaseId]);
 
 	const handleRefresh = async () => {
 		if (dataSource.type !== 'table') return;

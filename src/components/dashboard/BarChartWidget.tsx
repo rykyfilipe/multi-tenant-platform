@@ -5,21 +5,23 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import type { Widget, LineChartConfig, ChartDataPoint } from './LineChartWidget';
+import type { Widget, LineChartConfig } from './LineChartWidget';
+import { useChartData } from './BaseChartWidget';
 
 interface BarChartWidgetProps {
 	widget: Widget;
 	isEditMode?: boolean;
 	onEdit?: () => void;
-	data?: ChartDataPoint[];
-	isLoading?: boolean;
-	onRefresh?: () => void;
+	tenantId?: number;
+	databaseId?: number;
 }
 
-export default function BarChartWidget({ widget, data = [], isLoading, onRefresh }: BarChartWidgetProps) {
+export default function BarChartWidget({ widget, tenantId, databaseId }: BarChartWidgetProps) {
 	const config = (widget.config || {}) as LineChartConfig;
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
 	const options = config.options || {};
+	
+	const { data, isLoading, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
 	const processedData = useMemo(() => {
 		if (dataSource.type === 'manual') return dataSource.manualData || [];
@@ -32,7 +34,7 @@ export default function BarChartWidget({ widget, data = [], isLoading, onRefresh
 				<div className="flex items-center justify-between">
 					<CardTitle className="text-sm font-medium">{widget.title || config.title || 'Bar Chart'}</CardTitle>
 					{dataSource.type === 'table' && (
-						<Button variant="ghost" size="sm" onClick={onRefresh} disabled={isLoading}>
+						<Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isLoading}>
 							<RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
 						</Button>
 					)}

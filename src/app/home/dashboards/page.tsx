@@ -316,6 +316,8 @@ export default function DashboardsPage() {
               widget={displayWidget} 
               isEditMode={isEditMode}
               onEdit={() => handleWidgetClick(widget)}
+              tenantId={tenant?.id}
+              databaseId={1}
             />
           );
         }
@@ -325,6 +327,8 @@ export default function DashboardsPage() {
               widget={displayWidget} 
               isEditMode={isEditMode}
               onEdit={() => handleWidgetClick(widget)}
+              tenantId={tenant?.id}
+              databaseId={1}
             />
           );
         }
