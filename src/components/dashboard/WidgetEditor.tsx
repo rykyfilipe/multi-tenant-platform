@@ -344,15 +344,61 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
             <TabsContent value="data" className="space-y-4">
               {isLineChart ? (
                 <div className="space-y-4">
-                  {/* Data Source Type Selection */}
+                  {/* Chart Subtype & Data Source */}
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium flex items-center space-x-2">
                         <BarChart3 className="h-4 w-4" />
-                        <span>Data Source</span>
+                        <span>Chart Type & Data Source</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="chartSubtype">Chart Subtype</Label>
+                          <Select
+                            value={(config as any)?.chartType || 'line'}
+                            onValueChange={(value) => updateConfig({ ...(config || {}), chartType: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="line">Line</SelectItem>
+                              <SelectItem value="bar">Bar</SelectItem>
+                              <SelectItem value="pie">Pie</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="dataSourceType">Data Source Type</Label>
+                          <Select
+                            value={config.dataSource?.type || 'manual'}
+                            onValueChange={(value) => handleDataSourceChange({
+                              ...config.dataSource,
+                              type: value as 'manual' | 'table'
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="manual">
+                                <div className="flex items-center space-x-2">
+                                  <FileText className="h-4 w-4" />
+                                  <span>Manual Data</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="table">
+                                <div className="flex items-center space-x-2">
+                                  <Database className="h-4 w-4" />
+                                  <span>Table Data</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                       <div>
                         <Label htmlFor="dataSourceType">Data Source Type</Label>
                         <Select

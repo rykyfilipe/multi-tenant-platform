@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { LineChartWidget } from '@/components/dashboard/LineChartWidget';
+import BarChartWidget from '@/components/dashboard/BarChartWidget';
+import PieChartWidget from '@/components/dashboard/PieChartWidget';
 import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
@@ -306,7 +308,26 @@ export default function DashboardsPage() {
       : widget;
 
     switch (widget.type) {
-      case 'chart':
+      case 'chart': {
+        const subType = (displayWidget?.config?.chartType) || (displayWidget as any).subType || 'line';
+        if (subType === 'bar') {
+          return (
+            <BarChartWidget 
+              widget={displayWidget} 
+              isEditMode={isEditMode}
+              onEdit={() => handleWidgetClick(widget)}
+            />
+          );
+        }
+        if (subType === 'pie') {
+          return (
+            <PieChartWidget 
+              widget={displayWidget} 
+              isEditMode={isEditMode}
+              onEdit={() => handleWidgetClick(widget)}
+            />
+          );
+        }
         return (
           <LineChartWidget 
             widget={displayWidget} 
@@ -314,6 +335,7 @@ export default function DashboardsPage() {
             onEdit={() => handleWidgetClick(widget)}
           />
         );
+      }
       default:
         return (
           <div className="h-full flex items-center justify-center">
