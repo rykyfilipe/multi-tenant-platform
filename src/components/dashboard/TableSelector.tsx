@@ -62,7 +62,13 @@ export function TableSelector({
           throw new Error(`Failed to fetch columns: ${response.statusText}`);
         }
         const cols = await response.json();
-        if (mounted) setColumns(cols);
+        // Some endpoints return { columns: [...] }
+        const parsed = Array.isArray(cols) ? cols : (cols?.columns ?? []);
+        console.info('[TableSelector] Loaded columns', {
+          tableId: selectedTableId,
+          count: Array.isArray(parsed) ? parsed.length : 0,
+        });
+        if (mounted) setColumns(parsed);
       } catch (e) {
         if (mounted) setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
       } finally {
@@ -109,6 +115,12 @@ export function TableSelector({
 					<label className="text-xs font-medium text-gray-700 mb-2 block">
 						Table
 					</label>
+          {console.info('[TableSelector] Tables state', {
+            loading: tablesLoading,
+            error: tablesError,
+            count: (tables || []).length,
+            tables,
+          })}
 					{tablesLoading ? (
 						<Skeleton className="h-8 w-full" />
 					) : tablesError ? (

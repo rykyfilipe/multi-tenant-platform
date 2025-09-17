@@ -66,10 +66,24 @@ export function useSchemaCache(tenantId: number, databaseId: number) {
 		setTablesLoading(true)
 		setTablesError(null)
 		try {
-			// Use dev API for now since we don't have authentication set up
-			const data = await fetchJSON<{ tables: CachedTableMeta[] }>(`/api/dev/tables`)
-			tablesCache.set(key, { value: data.tables ?? [], expireAt: now + TABLES_TTL_MS })
-			setTables(data.tables ?? [])
+			// Prefer tenant API; fall back to dev API if unauthorized
+			let data: { tables: CachedTableMeta[] } | null = null
+			try {
+				const res = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables`)
+				if (res.ok) {
+					data = await res.json()
+				} else if (res.status === 401 || res.status === 403) {
+					console.warn('[useSchemaCache] Auth blocked, falling back to /api/dev/tables')
+					data = await fetchJSON<{ tables: CachedTableMeta[] }>(`/api/dev/tables`)
+				} else {
+					throw new Error(`Tables request failed ${res.status}`)
+				}
+			} catch (err) {
+				console.warn('[useSchemaCache] Primary tables request failed, trying /api/dev/tables', err)
+				data = await fetchJSON<{ tables: CachedTableMeta[] }>(`/api/dev/tables`)
+			}
+			tablesCache.set(key, { value: data?.tables ?? [], expireAt: now + TABLES_TTL_MS })
+			setTables(data?.tables ?? [])
 		} catch (e) {
 			setTablesError(e instanceof Error ? e.message : 'Failed to load tables')
 		} finally {
