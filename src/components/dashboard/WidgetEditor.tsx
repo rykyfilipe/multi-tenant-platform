@@ -939,7 +939,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       selectedTableId={config.dataSource.tableId}
                       selectedColumnX={config.dataSource.columnX}
                       selectedColumnY={config.dataSource.columnY}
-                      filters={[]}
+                      filters={config.dataSource?.filters || []}
                       onFiltersChange={handleFiltersChange}
                       onTableChange={handleTableChange}
                       onColumnXChange={handleColumnXChange}

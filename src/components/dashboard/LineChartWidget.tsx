@@ -15,7 +15,7 @@ export interface DataSource {
   tableId?: number;
   columnX?: string;
   columnY?: string;
-  filters?: Filter[];
+  filters?: FilterConfig[];
   manualData?: ChartDataPoint[];
 }
 
@@ -99,26 +99,13 @@ const generateMockData = (count: number = 10): ChartDataPoint[] => {
 };
 
 // Fetch data from table API
-// Helper function to convert frontend filters to API format
-const convertFiltersToApiFormat = (filters: Filter[], columns: any[]): FilterConfig[] => {
-  return filters.map(filter => {
-    // Find the column by name to get its ID and type
-    const column = columns.find(col => col.name === filter.column);
-    if (!column) {
-      console.warn(`Column not found: ${filter.column}`);
-      return null;
-    }
-
-    return {
-      id: filter.id,
-      columnId: column.id,
-      columnName: column.name,
-      columnType: column.type as any,
-      operator: filter.operator as any,
-      value: filter.value,
-      secondValue: null
-    };
-  }).filter(Boolean) as FilterConfig[];
+// Helper function to convert FilterConfig to API format
+const convertFiltersToApiFormat = (filters: FilterConfig[]): any[] => {
+  return filters.map(filter => ({
+    column: filter.columnName,
+    operator: filter.operator,
+    value: filter.value
+  }));
 };
 
 const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]> => {
@@ -127,14 +114,6 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
   }
 
   try {
-    // First, get table columns to convert filters properly
-    const columnsResponse = await fetch(`/api/tenants/1/databases/1/tables/${dataSource.tableId}/columns`);
-    if (!columnsResponse.ok) {
-      throw new Error(`Failed to fetch table columns: ${columnsResponse.statusText}`);
-    }
-    const columnsData = await columnsResponse.json();
-    const columns = columnsData || [];
-
     // Fetch all data with pagination support
     let allRows: any[] = [];
     let page = 1;
@@ -148,7 +127,7 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
       params.set('includeCells', 'true');
       
       if (dataSource.filters && dataSource.filters.length > 0) {
-        const apiFilters = convertFiltersToApiFormat(dataSource.filters, columns);
+        const apiFilters = convertFiltersToApiFormat(dataSource.filters);
         if (apiFilters.length > 0) {
           params.set('filters', encodeURIComponent(JSON.stringify(apiFilters)));
         }
