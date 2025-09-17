@@ -105,6 +105,11 @@ export const useDashboardData = () => {
 		}
 
 		try {
+			console.log('[useDashboardData] Starting API calls:', {
+				tenantId: tenant.id,
+				hasToken: !!token
+			});
+			
 			// Fetch only essential data first for faster FCP
 			const [databasesResponse, usersResponse] = await Promise.all([
 				fetch(`/api/tenants/${tenant.id}/databases`, {
@@ -115,6 +120,13 @@ export const useDashboardData = () => {
 				}),
 			]);
 
+			console.log('[useDashboardData] API responses:', {
+				databasesOk: databasesResponse.ok,
+				databasesStatus: databasesResponse.status,
+				usersOk: usersResponse.ok,
+				usersStatus: usersResponse.status
+			});
+
 			if (!databasesResponse.ok || !usersResponse.ok) {
 				throw new Error("Failed to fetch essential dashboard data");
 			}
@@ -123,6 +135,13 @@ export const useDashboardData = () => {
 				databasesResponse.json(),
 				usersResponse.json(),
 			]);
+
+			console.log('[useDashboardData] Parsed data:', {
+				databasesLength: Array.isArray(databasesData) ? databasesData.length : 'not array',
+				usersLength: Array.isArray(usersData) ? usersData.length : 'not array',
+				databasesData: databasesData,
+				usersData: usersData
+			});
 
 			// Process essential data
 			const databases = Array.isArray(databasesData) ? databasesData : [];
@@ -144,8 +163,16 @@ export const useDashboardData = () => {
 
 			const activeUsers = users.length + 1;
 
+			console.log('[useDashboardData] Building essential data object:', {
+				totalDatabases: databases.length,
+				totalTables,
+				totalUsers: users.length + 1,
+				totalRows,
+				activeUsers
+			});
+
 			// Return essential stats for immediate display
-			return {
+			const essentialData = {
 				stats: {
 					totalDatabases: databases.length,
 					totalTables,
@@ -231,7 +258,17 @@ export const useDashboardData = () => {
 					},
 				},
 			};
+
+			console.log('[useDashboardData] Essential data created successfully:', {
+				hasStats: !!essentialData.stats,
+				hasDatabaseData: !!essentialData.databaseData,
+				hasUserData: !!essentialData.userData,
+				hasUsageData: !!essentialData.usageData
+			});
+
+			return essentialData;
 		} catch (error) {
+			console.error('[useDashboardData] Error in fetchEssentialData:', error);
 			throw error;
 		}
 	}, [token, tenant, subscription?.subscriptionPlan, planLimits]);
@@ -352,19 +389,34 @@ export const useDashboardData = () => {
 
 	useEffect(() => {
 		const loadDashboardData = async () => {
+			console.log('[useDashboardData] loadDashboardData called:', {
+				hasToken: !!token,
+				hasTenant: !!tenant,
+				tenantId: tenant?.id
+			});
+
 			if (!token || !tenant) {
+				console.log('[useDashboardData] No token or tenant, setting loading false');
 				setLoading(false);
 				return;
 			}
 
 			try {
+				console.log('[useDashboardData] Starting data loading...');
 				setLoading(true);
 				setError(null);
 				setLoadingPhase("initial");
 
 				// Phase 1: Load essential data for immediate display
+				console.log('[useDashboardData] Calling fetchEssentialData...');
 				const essentialData = await fetchEssentialData();
+				console.log('[useDashboardData] fetchEssentialData result:', {
+					hasEssentialData: !!essentialData,
+					essentialDataKeys: essentialData ? Object.keys(essentialData) : null
+				});
+				
 				if (essentialData) {
+					console.log('[useDashboardData] Setting data and updating loading state');
 					setData(essentialData);
 					setLoadingPhase("charts");
 					setLoading(false); // Show content immediately
@@ -379,8 +431,12 @@ export const useDashboardData = () => {
 							console.warn("Background memory data loading failed:", error);
 						}
 					}, 100); // Small delay to prioritize UI rendering
+				} else {
+					console.log('[useDashboardData] No essential data returned, setting loading false');
+					setLoading(false);
 				}
 			} catch (error) {
+				console.error('[useDashboardData] Error in loadDashboardData:', error);
 				setError(error instanceof Error ? error.message : "Unknown error");
 				setLoading(false);
 			}
