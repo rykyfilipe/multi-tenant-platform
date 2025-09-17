@@ -97,28 +97,84 @@ const generateMockData = (count: number = 10): ChartDataPoint[] => {
 };
 
 // Fetch data from table API
+// Helper function to convert frontend filters to API format
+const convertFiltersToApiFormat = (filters: Filter[], columns: any[]): any[] => {
+  return filters.map(filter => {
+    // Find the column by name to get its ID and type
+    const column = columns.find(col => col.name === filter.column);
+    if (!column) {
+      console.warn(`Column not found: ${filter.column}`);
+      return null;
+    }
+
+    return {
+      id: filter.id,
+      columnId: column.id,
+      columnName: column.name,
+      columnType: column.type,
+      operator: filter.operator,
+      value: filter.value,
+      secondValue: null
+    };
+  }).filter(Boolean);
+};
+
 const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]> => {
   if (dataSource.type !== 'table' || !dataSource.tableId) {
     throw new Error('Invalid table data source');
   }
 
   try {
-    const params = new URLSearchParams();
-    params.set('page', '1');
-    params.set('pageSize', '1000');
-    params.set('includeCells', 'true');
-    if (dataSource.filters && dataSource.filters.length > 0) {
-      params.set('filters', encodeURIComponent(JSON.stringify(dataSource.filters)));
+    // First, get table columns to convert filters properly
+    const columnsResponse = await fetch(`/api/tenants/1/databases/1/tables/${dataSource.tableId}/columns`);
+    if (!columnsResponse.ok) {
+      throw new Error(`Failed to fetch table columns: ${columnsResponse.statusText}`);
     }
-    
-    const response = await fetch(`/api/tenants/1/databases/1/tables/${dataSource.tableId}/rows?` + params.toString());
+    const columnsData = await columnsResponse.json();
+    const columns = columnsData || [];
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch table data: ${response.statusText}`);
+    // Fetch all data with pagination support
+    let allRows: any[] = [];
+    let page = 1;
+    const pageSize = 1000; // Reasonable page size
+    let hasMoreData = true;
+
+    while (hasMoreData) {
+      const params = new URLSearchParams();
+      params.set('page', page.toString());
+      params.set('pageSize', pageSize.toString());
+      params.set('includeCells', 'true');
+      
+      if (dataSource.filters && dataSource.filters.length > 0) {
+        const apiFilters = convertFiltersToApiFormat(dataSource.filters, columns);
+        if (apiFilters.length > 0) {
+          params.set('filters', encodeURIComponent(JSON.stringify(apiFilters)));
+        }
+      }
+      
+      const response = await fetch(`/api/tenants/1/databases/1/tables/${dataSource.tableId}/rows?` + params.toString());
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch table data: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const rows = result.data || [];
+      
+      allRows = [...allRows, ...rows];
+      
+      // Check if we have more data
+      hasMoreData = rows.length === pageSize;
+      page++;
+      
+      // Safety limit to prevent infinite loops
+      if (page > 100) {
+        console.warn('Reached maximum page limit (100) for chart data');
+        break;
+      }
     }
 
-    const result = await response.json();
-    const rows = result.data || [];
+    const rows = allRows;
     
     // Transform rows with cells to chart data
     const xKey = dataSource.columnX || 'x';

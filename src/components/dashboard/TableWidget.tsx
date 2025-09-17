@@ -99,7 +99,21 @@ export default function TableWidget({
       });
 
       if (response.success && response.data) {
-        setData(response.data.rows || []);
+        // Transform data from API format { id, cells: [...] } to { columnName: value }
+        const transformedData = (response.data || []).map((row: any) => {
+          if (row.cells && Array.isArray(row.cells)) {
+            // Transform cells array to object with column names as keys
+            const rowData: any = { id: row.id };
+            row.cells.forEach((cell: any) => {
+              if (cell.column && cell.column.name) {
+                rowData[cell.column.name] = cell.value;
+              }
+            });
+            return rowData;
+          }
+          return row; // Fallback if no cells structure
+        });
+        setData(transformedData);
       } else {
         setError(response.message || 'Failed to fetch data');
       }

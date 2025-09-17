@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Database, Table, Columns, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useSchemaCache, CachedColumnMeta } from '@/hooks/useSchemaCache';
+import { useApp } from '@/contexts/AppContext';
 import { FilterBuilder } from './FilterBuilder';
 import { Filter } from './LineChartWidget';
 
@@ -30,6 +31,8 @@ interface TableMeta {
 	id: number;
 	name: string;
 	description?: string;
+	databaseId?: number;
+	databaseName?: string;
 	_count?: {
 		columns: number;
 		rows: number;
@@ -78,12 +81,51 @@ export function TableSelector({
 	expectedYType,
 	loadTables: externalLoadTables,
 }: TableSelectorProps) {
+	const { tenant } = useApp();
 	const { tables, tablesLoading, tablesError, loadTables, getColumns, invalidate } = useSchemaCache(tenantId, databaseId);
+	
+	// State for all tables from all databases (like invoice form)
+	const [allTables, setAllTables] = useState<TableMeta[]>([]);
+	const [allTablesLoading, setAllTablesLoading] = useState(false);
+	const [allTablesError, setAllTablesError] = useState<string | null>(null);
+	
 	const [columns, setColumns] = useState<CachedColumnMeta[]>([]);
 	const [isLoadingColumns, setIsLoadingColumns] = useState(false);
 	const [columnsError, setColumnsError] = useState<string | null>(null);
 
-	// Auto-load tables when component mounts
+	// Function to load all tables from all databases (like invoice form)
+	const loadAllTables = useCallback(async () => {
+		if (!tenant?.id) return;
+		
+		setAllTablesLoading(true);
+		setAllTablesError(null);
+		
+		try {
+			const response = await fetch(`/api/tenants/${tenant.id}/databases/tables`);
+			
+			if (response.ok) {
+				const tables = await response.json();
+				setAllTables(tables);
+			} else {
+				throw new Error(`Failed to fetch tables: ${response.statusText}`);
+			}
+		} catch (error) {
+			console.error('Error fetching all tables:', error);
+			setAllTablesError(error instanceof Error ? error.message : 'Failed to load tables');
+		} finally {
+			setAllTablesLoading(false);
+		}
+	}, [tenant?.id]);
+
+	// Auto-load all tables when component mounts
+	useEffect(() => {
+		if (tenant?.id && allTables.length === 0 && !allTablesLoading && !allTablesError) {
+			console.log('[TableSelector] Auto-loading all tables on mount');
+			loadAllTables();
+		}
+	}, [tenant?.id, allTables.length, allTablesLoading, allTablesError, loadAllTables]);
+
+	// Auto-load tables when component mounts (fallback to specific database)
 	useEffect(() => {
 		if (!tables && !tablesLoading && !tablesError) {
 			console.log('[TableSelector] Auto-loading tables on mount');
@@ -140,10 +182,10 @@ export function TableSelector({
 						<Button
 							variant="ghost"
 							size="sm"
-							onClick={() => { invalidate(); loadTables(); }}
+							onClick={() => { loadAllTables(); }}
 							title="Refresh tables"
 						>
-							<RefreshCw className={`h-4 w-4 ${tablesLoading ? 'animate-spin' : ''}`} />
+							<RefreshCw className={`h-4 w-4 ${allTablesLoading ? 'animate-spin' : ''}`} />
 						</Button>
 					</div>
 				</div>
@@ -154,24 +196,24 @@ export function TableSelector({
 					<label className="text-xs font-medium text-gray-700 mb-2 block">
 						Table
 					</label>
-					{!tables ? (
+					{!allTables || allTables.length === 0 ? (
 						<Button
 							variant="outline"
-							onClick={externalLoadTables || loadTables}
-							disabled={tablesLoading}
+							onClick={loadAllTables}
+							disabled={allTablesLoading}
 							className="w-full h-8"
 						>
-							{tablesLoading ? (
+							{allTablesLoading ? (
 								<RefreshCw className="h-4 w-4 animate-spin mr-2" />
 							) : (
 								<Database className="h-4 w-4 mr-2" />
 							)}
-							{tablesLoading ? 'Loading tables...' : 'Load Tables'}
+							{allTablesLoading ? 'Loading tables...' : 'Load Tables'}
 						</Button>
-					) : tablesLoading ? (
+					) : allTablesLoading ? (
 						<Skeleton className="h-8 w-full" />
-					) : tablesError ? (
-						<div className="text-sm text-red-600">{tablesError}</div>
+					) : allTablesError ? (
+						<div className="text-sm text-red-600">{allTablesError}</div>
 					) : (
 						<Select
 							value={selectedTableId?.toString() || ''}
@@ -181,17 +223,24 @@ export function TableSelector({
 								<SelectValue placeholder="Select a table" />
 							</SelectTrigger>
 							<SelectContent>
-								{(tables ?? []).map((table) => (
+								{allTables.map((table) => (
 									<SelectItem key={table.id} value={table.id.toString()}>
 										<div className="flex items-center space-x-2">
 											<Table className="h-4 w-4" />
-											<div>
+											<div className="flex-1">
 												<div className="font-medium">{table.name}</div>
-												{(table as any)._count && (
-													<div className="text-xs text-gray-500">
-														{(table as any)._count.columns ?? 0} columns • {(table as any)._count.rows ?? 0} rows
-													</div>
-												)}
+												<div className="text-xs text-gray-500 flex items-center gap-2">
+													{table.databaseName && (
+														<span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
+															{table.databaseName}
+														</span>
+													)}
+													{(table as any)._count && (
+														<span>
+															{(table as any)._count.columns ?? 0} columns • {(table as any)._count.rows ?? 0} rows
+														</span>
+													)}
+												</div>
 											</div>
 										</div>
 									</SelectItem>
@@ -419,7 +468,7 @@ export function TableSelector({
 				{/* Summary */}
 				{selectedTableId && columns.length > 0 && (
 					<div className="text-xs text-gray-500 space-y-1 pt-2 border-t">
-						<p>Selected table: {(tables || []).find(t => t.id === selectedTableId)?.name}</p>
+						<p>Selected table: {(allTables || []).find(t => t.id === selectedTableId)?.name}</p>
 						<p>Available columns: {columns.length}</p>
 						{onColumnsChange && (
 							<p>Selected: {selectedColumns?.length || 0}{columnLimit ? ` / ${columnLimit}` : ''}</p>
