@@ -45,30 +45,35 @@ export function TableSelector({
 	const [isLoadingColumns, setIsLoadingColumns] = useState(false);
 	const [columnsError, setColumnsError] = useState<string | null>(null);
 
-	// Load columns on table change
-	useEffect(() => {
-		let mounted = true;
-		async function load() {
-			if (!selectedTableId) {
-				setColumns([]);
-				return;
-			}
-			setIsLoadingColumns(true);
-			setColumnsError(null);
-			try {
-				const cols = await getColumns(selectedTableId);
-				if (mounted) setColumns(cols);
-			} catch (e) {
-				if (mounted) setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
-			} finally {
-				if (mounted) setIsLoadingColumns(false);
-			}
-		}
-		load();
-		return () => {
-			mounted = false;
-		};
-	}, [getColumns, selectedTableId]);
+  // Load columns on table change
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      if (!selectedTableId) {
+        setColumns([]);
+        return;
+      }
+      setIsLoadingColumns(true);
+      setColumnsError(null);
+      try {
+        // Use the API client to fetch columns
+        const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${selectedTableId}/columns`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch columns: ${response.statusText}`);
+        }
+        const cols = await response.json();
+        if (mounted) setColumns(cols);
+      } catch (e) {
+        if (mounted) setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
+      } finally {
+        if (mounted) setIsLoadingColumns(false);
+      }
+    }
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedTableId, tenantId, databaseId]);
 
 	const handleTableChange = (tableId: string) => {
 		const id = parseInt(tableId);

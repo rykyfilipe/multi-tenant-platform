@@ -10,9 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Filter as FilterType } from './LineChartWidget';
 
+interface ColumnMeta {
+  id: number;
+  name: string;
+  type: string;
+  required?: boolean;
+  unique?: boolean;
+}
+
 interface FilterBuilderProps {
   filters: FilterType[];
-  availableColumns: string[];
+  availableColumns: ColumnMeta[];
   onFiltersChange: (filters: FilterType[]) => void;
 }
 
@@ -44,7 +52,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
   const handleAddFilter = () => {
     const newFilter: FilterType = {
       id: `filter_${Date.now()}`,
-      column: availableColumns[0] || '',
+      column: availableColumns[0]?.name || '',
       operator: 'equals',
       value: '',
     };
@@ -140,8 +148,11 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                         </SelectTrigger>
                         <SelectContent>
                           {availableColumns.map((column) => (
-                            <SelectItem key={column} value={column}>
-                              {column}
+                            <SelectItem key={column.id} value={column.name}>
+                              <div className="flex items-center space-x-2">
+                                <span>{column.name}</span>
+                                <span className="text-xs text-gray-500">({column.type})</span>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>

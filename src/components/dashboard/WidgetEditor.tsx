@@ -39,7 +39,7 @@ interface WidgetEditorProps {
 export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: WidgetEditorProps) {
   const [editedWidget, setEditedWidget] = useState<Widget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
-  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+  const [columns, setColumns] = useState<any[]>([]);
   
   // Use schema cache for tables and columns
   const { tables, tablesLoading, getColumns } = useSchemaCache(tenantId, databaseId);
@@ -126,7 +126,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
     updateConfig({ dataSource: newDataSource });
   };
 
-  const handleTableChange = (tableId: number) => {
+  const handleTableChange = async (tableId: number) => {
     const newDataSource = {
       ...editedWidget.config.dataSource,
       type: 'table' as const,
@@ -135,6 +135,17 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       columnY: ''
     };
     updateConfig({ dataSource: newDataSource });
+    
+    // Load columns for the selected table
+    try {
+      const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`);
+      if (response.ok) {
+        const cols = await response.json();
+        setColumns(cols);
+      }
+    } catch (error) {
+      console.error('Failed to load columns:', error);
+    }
   };
 
   const handleColumnXChange = (column: string) => {
@@ -143,6 +154,15 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       columnX: column
     };
     updateConfig({ dataSource: newDataSource });
+    
+    // Update xAxis key to match selected column
+    updateConfig({ 
+      xAxis: { 
+        key: column, 
+        label: column, 
+        type: 'category' 
+      } 
+    });
   };
 
   const handleColumnYChange = (column: string) => {
@@ -151,6 +171,15 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       columnY: column
     };
     updateConfig({ dataSource: newDataSource });
+    
+    // Update yAxis key to match selected column
+    updateConfig({ 
+      yAxis: { 
+        key: column, 
+        label: column, 
+        type: 'number' 
+      } 
+    });
   };
 
   const handleAxisChange = (axis: 'xAxis' | 'yAxis', updates: any) => {
@@ -383,7 +412,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {config.dataSource?.type === 'table' && (
                     <FilterBuilder
                       filters={config.dataSource.filters || []}
-                      availableColumns={availableColumns}
+                      availableColumns={columns}
                       onFiltersChange={handleFiltersChange}
                     />
                   )}
