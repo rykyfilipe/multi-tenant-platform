@@ -50,10 +50,8 @@ import { RowGrid } from "./RowGrid";
 import { ColumnPropertiesSidebar } from "./ColumnPropertiesSidebar";
 import { AddColumnForm } from "./AddColumnForm";
 import { ColumnToolbar } from "./ColumnToolbar";
-import { InlineRowCreator } from "./InlineRowCreator";
 import { TableFilters } from "../rows/TableFilters";
 import { SaveChangesButton } from "../rows/SaveChangesButton";
-import AddRowForm from "../rows/AddRowForm";
 import { Pagination } from "../../ui/pagination";
 import { cn } from "@/lib/utils";
 
@@ -75,19 +73,15 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	const [showColumnSidebar, setShowColumnSidebar] = useState(false);
 	const [showFilters, setShowFilters] = useState(false);
 	const [showAddColumnForm, setShowAddColumnForm] = useState(false);
-	const [showAddRowForm, setShowAddRowForm] = useState(false);
 	const [editingColumn, setEditingColumn] = useState<Column | null>(null);
 	const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 	const [serverError, setServerError] = useState<string | null>(null);
-	const [cells, setCells] = useState<any[]>([]);
-	const [isAddingRow, setIsAddingRow] = useState(false);
 	const [deletingRows, setDeletingRows] = useState<Set<string>>(new Set());
 	// const [pendingNewRows, setPendingNewRows] = useState<any[]>([]); // Moved to useRowsTableEditor
 	const [isSavingNewRows, setIsSavingNewRows] = useState(false);
 	const [newColumn, setNewColumn] = useState<CreateColumnRequest | null>(null);
 	const [isAddingColumn, setIsAddingColumn] = useState(false);
 	const [isUpdatingColumn, setIsUpdatingColumn] = useState(false);
-	const [showInlineRowCreator, setShowInlineRowCreator] = useState(false);
 	const [showColumnToolbar, setShowColumnToolbar] = useState(false);
 	const [selectedColumn, setSelectedColumn] = useState<Column | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
@@ -505,14 +499,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		}
 	};
 
-	// Row management functions
-	const handleAddRow = useCallback(() => {
-		setShowAddRowForm(true);
-	}, []);
-
-	const handleInlineAddRow = useCallback(() => {
-		setShowInlineRowCreator(true);
-	}, []);
+	// Row management functions - now handled by always-on inline row
 
 	// Toolbar functions
 	const handleSearch = useCallback((query: string) => {
@@ -768,103 +755,64 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		}
 	}, [showAlert]);
 
-	const handleInlineRowSave = useCallback(async (rowData: Record<string, any>) => {
+	// Handle inline row input changes
+	const handleInlineRowChange = useCallback((columnId: string, value: any) => {
+		setInlineRowData(prev => ({
+			...prev,
+			[columnId]: value
+		}));
+		setIsInlineRowDirty(true);
+	}, []);
+
+	// Handle inline row save (Enter key or Save button)
+	const handleInlineRowSave = useCallback(async () => {
 		if (!tablePermissions.canEditTable()) {
 			showAlert("You don't have permission to add rows to this table", "error");
 			return;
 		}
 
-		// Adaugă rândul în batch-ul de rânduri noi locale
+		// Check if there's any data to save
+		const hasData = Object.values(inlineRowData).some(value => 
+			value !== null && value !== undefined && value !== ""
+		);
+
+		if (!hasData) {
+			showAlert("Please enter some data before saving", "warning");
+			return;
+		}
+
+		// Convert inline row data to the format expected by addNewRow
+		const rowData: Record<string, any> = {};
+		columns?.forEach(col => {
+			if (inlineRowData[col.id.toString()] !== undefined) {
+				rowData[col.name] = inlineRowData[col.id.toString()];
+			}
+		});
+
+		// Add the row to the batch
 		addNewRow(rowData);
-		setShowInlineRowCreator(false);
+		
+		// Clear the inline row
+		setInlineRowData({});
+		setIsInlineRowDirty(false);
 		
 		showAlert("Row added to batch - will be saved when you click Save Changes", "info");
-	}, [tablePermissions, showAlert, addNewRow]);
+	}, [tablePermissions, showAlert, addNewRow, inlineRowData, columns]);
 
-	const handleInlineRowCancel = useCallback(() => {
-		setShowInlineRowCreator(false);
+	// Handle inline row clear
+	const handleInlineRowClear = useCallback(() => {
+		setInlineRowData({});
+		setIsInlineRowDirty(false);
 	}, []);
 
-	const handleAdd = useCallback(
-		async (e: FormEvent) => {
+	// Handle Enter key press in inline row
+	const handleInlineRowKeyPress = useCallback((e: React.KeyboardEvent) => {
+		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
+			handleInlineRowSave();
+		}
+	}, [handleInlineRowSave]);
 
-			if (!tablePermissions.canEditTable()) {
-				showAlert("You don't have permission to add rows to this table", "error");
-				return;
-			}
-
-			if (isAddingRow) return;
-
-			setServerError(null);
-			setIsAddingRow(true);
-
-			const tempRowId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-			// Create optimistic row
-			const optimisticRow = {
-				id: tempRowId,
-				tableId: table?.id || 0,
-				createdAt: new Date().toISOString(),
-				cells: cells.map((cell) => ({
-					id: `temp_cell_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-					rowId: tempRowId,
-					columnId: cell.columnId,
-					value: cell.value,
-					column: columns?.find((col) => col.id === cell.columnId) || null,
-				})),
-				isOptimistic: true,
-			};
-
-			// Add optimistic row immediately to UI
-			setRows((currentRows) => [optimisticRow, ...currentRows]);
-
-			// Close form and reset
-			setShowAddRowForm(false);
-			setCells([]);
-			setIsAddingRow(false);
-
-			// Make API call in background
-			try {
-				const response = await fetch(
-					`/api/tenants/${tenantId}/databases/${table?.databaseId}/tables/${table?.id}/rows`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							cells: cells.map((cell) => ({
-								columnId: cell.columnId,
-								value: cell.value,
-							})),
-						}),
-					},
-				);
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-
-				const createdRow = await response.json();
-
-				// Replace optimistic row with real row
-				setRows((currentRows) =>
-					currentRows.map((row) =>
-						row.id === tempRowId ? { ...createdRow, isOptimistic: false } : row
-					)
-				);
-
-				showAlert("Row added successfully!", "success");
-			} catch (error: any) {
-				// Remove optimistic row on failure
-				setRows((currentRows) => currentRows.filter((row) => row.id !== tempRowId));
-				showAlert(error.message || "Failed to add row. Please try again.", "error");
-			}
-		},
-		[cells, setRows, isAddingRow, showAlert, tablePermissions, columns, table?.id, token, tenantId],
-	);
 
 	// handleSaveNewRows and handleDiscardNewRows are now handled by useRowsTableEditor
 
@@ -1100,14 +1048,59 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 							</div>
 
 							<div className='flex items-center gap-3'>
-								<Button
-									onClick={handleInlineAddRow}
-									disabled={!tablePermissions.canEditTable() || showInlineRowCreator}
-									className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
-									size='lg'>
-									<Plus className='w-4 h-4 mr-2' />
-									Add Row
-								</Button>
+								{/* Always-on inline row for adding new rows */}
+								{tablePermissions.canEditTable() && (
+									<div className="flex-1 bg-card border border-border/20 rounded-lg p-4 shadow-sm">
+										<div className="flex items-center gap-2 mb-2">
+											<Plus className="w-4 h-4 text-primary" />
+											<span className="text-sm font-medium text-foreground">Add New Row</span>
+											{isInlineRowDirty && (
+												<span className="text-xs text-muted-foreground">• Unsaved changes</span>
+											)}
+										</div>
+										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+											{columns?.map((column) => (
+												<div key={column.id} className="flex flex-col">
+													<label className="text-xs text-muted-foreground mb-1">
+														{column.name}
+														{column.required && <span className="text-red-500 ml-1">*</span>}
+													</label>
+													<input
+														type={column.type === 'number' ? 'number' : 
+															  column.type === 'date' ? 'date' : 
+															  column.type === 'boolean' ? 'checkbox' : 'text'}
+														value={inlineRowData[column.id.toString()] || ''}
+														onChange={(e) => {
+															const value = column.type === 'boolean' ? e.target.checked : e.target.value;
+															handleInlineRowChange(column.id.toString(), value);
+														}}
+														onKeyPress={handleInlineRowKeyPress}
+														placeholder={`Enter ${column.name.toLowerCase()}`}
+														className="w-full px-2 py-1 text-sm border border-input rounded focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+													/>
+												</div>
+											))}
+										</div>
+										<div className="flex items-center gap-2 mt-3">
+											<Button
+												onClick={handleInlineRowSave}
+												disabled={!isInlineRowDirty}
+												size="sm"
+												className="bg-primary hover:bg-primary/90 text-primary-foreground"
+											>
+												Save Row
+											</Button>
+											<Button
+												onClick={handleInlineRowClear}
+												disabled={!isInlineRowDirty}
+												variant="outline"
+												size="sm"
+											>
+												Clear
+											</Button>
+										</div>
+									</div>
+								)}
 
 								<SaveChangesButton
 									pendingNewRows={pendingNewRows}
@@ -1388,36 +1381,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 			{/* Main Content - Mobile Optimized */}
 			<div className='w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8'>
-				{/* Add Row Form */}
-				{showAddRowForm && (
-					<div className='mb-8'>
-						<div className='bg-card border border-border/20 rounded-2xl shadow-2xl backdrop-blur-sm bg-gradient-to-br from-card to-card/80'>
-							<div className='p-8'>
-								<div className='flex items-center gap-3 mb-6'>
-									<div className='w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center'>
-										<Plus className='w-5 h-5 text-primary' />
-									</div>
-									<div>
-										<h2 className='text-xl font-semibold text-foreground'>Add New Row</h2>
-										<p className='text-sm text-muted-foreground'>
-											Fill in the form below to create a new row
-										</p>
-									</div>
-								</div>
-
-								<AddRowForm
-									columns={columns}
-									cells={cells}
-									setCells={setCells}
-									onAdd={handleAdd}
-									tables={tables || []}
-									serverError={serverError}
-									isSubmitting={isAddingRow}
-								/>
-							</div>
-						</div>
-					</div>
-				)}
 
 				{/* Filters Section */}
 				{showFilters && (
@@ -1531,15 +1494,6 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								)}
 							</div>
 
-							{/* Inline Row Creator */}
-							{showInlineRowCreator && (
-								<InlineRowCreator
-									columns={columns || []}
-									onSave={handleInlineRowSave}
-									onCancel={handleInlineRowCancel}
-									isSaving={isAddingRow}
-								/>
-							)}
 
 							{/* Data Rows */}
 							<div className="data-grid">

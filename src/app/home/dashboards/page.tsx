@@ -319,6 +319,59 @@ export default function DashboardsPage() {
     });
   };
 
+  // Function to find a free position for a new widget
+  const findFreePosition = (widgets: Widget[], width: number = 6, height: number = 4) => {
+    const gridWidth = 12; // Total grid width
+    const maxY = 20; // Maximum Y position to search
+    
+    // Create a grid to track occupied positions
+    const occupied = new Set<string>();
+    
+    widgets.forEach(widget => {
+      if (widget.position) {
+        const { x, y, width: w, height: h } = widget.position;
+        // Mark all cells occupied by this widget
+        for (let dy = 0; dy < h; dy++) {
+          for (let dx = 0; dx < w; dx++) {
+            occupied.add(`${x + dx},${y + dy}`);
+          }
+        }
+      }
+    });
+    
+    // Find the first free position, prioritizing top-left positions
+    for (let y = 0; y < maxY; y++) {
+      for (let x = 0; x <= gridWidth - width; x++) {
+        let canPlace = true;
+        
+        // Check if this position is free
+        for (let dy = 0; dy < height; dy++) {
+          for (let dx = 0; dx < width; dx++) {
+            if (occupied.has(`${x + dx},${y + dy}`)) {
+              canPlace = false;
+              break;
+            }
+          }
+          if (!canPlace) break;
+        }
+        
+        if (canPlace) {
+          return { x, y, width, height };
+        }
+      }
+    }
+    
+    // If no free position found, find the lowest Y position and place there
+    let lowestY = 0;
+    widgets.forEach(widget => {
+      if (widget.position) {
+        lowestY = Math.max(lowestY, widget.position.y + widget.position.height);
+      }
+    });
+    
+    return { x: 0, y: lowestY, width, height };
+  };
+
   const handleAddWidget = (type: string) => {
     // Create default config based on widget type
     let defaultConfig = {};
@@ -398,10 +451,19 @@ export default function DashboardsPage() {
       };
     }
 
+    // Find a free position for the new widget, considering both existing widgets and pending changes
+    const allWidgets = [
+      ...(selectedDashboard?.widgets ?? []),
+      ...pendingChanges
+        .filter(change => change.type === 'create' && change.data)
+        .map(change => change.data as Widget)
+    ];
+    const freePosition = findFreePosition(allWidgets);
+
     const newWidget: Partial<Widget> = {
       type,
       title: `New ${type} Widget`,
-      position: { x: 0, y: 0, width: 6, height: 4 },
+      position: freePosition,
       config: defaultConfig,
       isVisible: true,
       order: (selectedDashboard?.widgets ?? []).length || 0,
