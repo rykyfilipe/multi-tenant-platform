@@ -66,7 +66,8 @@ export function useSchemaCache(tenantId: number, databaseId: number) {
 		setTablesLoading(true)
 		setTablesError(null)
 		try {
-			const data = await fetchJSON<{ tables: CachedTableMeta[] }>(`/api/tenants/${tenantId}/databases/${databaseId}/tables`)
+			// Use dev API for now since we don't have authentication set up
+			const data = await fetchJSON<{ tables: CachedTableMeta[] }>(`/api/dev/tables`)
 			tablesCache.set(key, { value: data.tables ?? [], expireAt: now + TABLES_TTL_MS })
 			setTables(data.tables ?? [])
 		} catch (e) {
@@ -88,7 +89,7 @@ export function useSchemaCache(tenantId: number, databaseId: number) {
 		if (cached && cached.expireAt > now) {
 			return cached.value
 		}
-		const data = await fetchJSON<{ columns: CachedColumnMeta[] }>(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`)
+		const data = await fetchJSON<{ columns: CachedColumnMeta[] }>(`/api/dev/tables/${tableId}/columns`)
 		columnsCache.set(key, { value: data.columns ?? [], expireAt: now + COLUMNS_TTL_MS })
 		return data.columns ?? []
 	}, [tenantId, databaseId])
@@ -104,5 +105,6 @@ export function useSchemaCache(tenantId: number, databaseId: number) {
 		loadTables,
 		getColumns,
 		invalidate,
+		columns: [], // Add empty columns array as fallback
 	}
 }

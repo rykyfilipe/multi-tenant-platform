@@ -64,8 +64,8 @@ export default function TableWidget({
   const [showColumnSelector, setShowColumnSelector] = useState(false);
 
   const { tables, columns, isLoading: schemaLoading } = useSchemaCache(tenantId, databaseId);
-  const currentTable = tables.find(t => t.id === dataSource.tableId);
-  const availableColumns = columns.filter(c => c.tableId === dataSource.tableId);
+  const currentTable = tables?.find(t => t.id === dataSource.tableId);
+  const availableColumns = columns?.filter(c => c.tableId === dataSource.tableId) || [];
 
   const pageSize = options.pageSize || 10;
   const totalPages = Math.ceil(data.length / pageSize);
@@ -240,7 +240,7 @@ export default function TableWidget({
             <TableHeader>
               <TableRow>
                 {dataSource.columns.map((columnName) => {
-                  const column = availableColumns.find(c => c.name === columnName);
+                  const column = availableColumns?.find(c => c.name === columnName);
                   return (
                     <TableHead 
                       key={columnName}
