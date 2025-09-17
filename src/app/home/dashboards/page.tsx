@@ -210,6 +210,7 @@ export default function DashboardsPage() {
   };
 
   const handleWidgetClick = (widget: Widget) => {
+    console.log('Widget clicked:', widget.id, 'Edit mode:', isEditMode);
     if (isEditMode) {
       setEditingWidget(widget);
       setShowWidgetEditor(true);
@@ -452,7 +453,17 @@ export default function DashboardsPage() {
                 containerPadding={[0, 0]}
               >
                 {selectedDashboard.widgets.map((widget) => (
-                  <div key={widget.id} className="widget-container">
+                  <div 
+                    key={widget.id} 
+                    className="widget-container"
+                    onClick={(e) => {
+                      console.log('Widget container clicked:', widget.id);
+                      if (isEditMode) {
+                        e.stopPropagation();
+                        handleWidgetClick(widget);
+                      }
+                    }}
+                  >
                     <motion.div
                       className="h-full"
                       whileHover={isEditMode ? { scale: 1.02 } : {}}

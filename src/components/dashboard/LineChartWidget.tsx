@@ -199,7 +199,11 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
               {widget.title || config.title || 'Line Chart'}
             </CardTitle>
             {isEditMode && onEdit && (
-              <Button variant="ghost" size="sm" onClick={onEdit}>
+              <Button variant="ghost" size="sm" onClick={(e) => {
+                  console.log('Edit button clicked for widget:', widget.id);
+                  e.stopPropagation();
+                  onEdit();
+                }}>
                 <Edit3 className="h-4 w-4" />
               </Button>
             )}
@@ -228,7 +232,11 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
               {widget.title || config.title || 'Line Chart'}
             </CardTitle>
             {isEditMode && onEdit && (
-              <Button variant="ghost" size="sm" onClick={onEdit}>
+              <Button variant="ghost" size="sm" onClick={(e) => {
+                  console.log('Edit button clicked for widget:', widget.id);
+                  e.stopPropagation();
+                  onEdit();
+                }}>
                 <Edit3 className="h-4 w-4" />
               </Button>
             )}
@@ -281,7 +289,11 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
               </Button>
             )}
             {isEditMode && onEdit && (
-              <Button variant="ghost" size="sm" onClick={onEdit}>
+              <Button variant="ghost" size="sm" onClick={(e) => {
+                  console.log('Edit button clicked for widget:', widget.id);
+                  e.stopPropagation();
+                  onEdit();
+                }}>
                 <Edit3 className="h-4 w-4" />
               </Button>
             )}
