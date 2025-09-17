@@ -203,7 +203,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-xl z-50"
+      className="fixed right-0 top-0 h-full w-[600px] bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col"
     >
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -614,7 +614,10 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {config.dataSource?.type === 'manual' && (
                     <DataEditor
                       data={config.dataSource.manualData || []}
-                      columns={[config.xAxis?.key || 'x', config.yAxis?.key || 'y']}
+                      columns={[
+                        { name: config.xAxis?.key || 'x', type: 'string' },
+                        { name: config.yAxis?.key || 'y', type: 'number' }
+                      ]}
                       onDataChange={handleManualDataChange}
                       onSave={() => {}}
                     />

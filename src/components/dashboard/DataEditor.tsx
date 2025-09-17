@@ -9,9 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartDataPoint } from './LineChartWidget';
 
+interface ColumnType {
+  name: string;
+  type: 'string' | 'number' | 'date' | 'boolean';
+}
+
 interface DataEditorProps {
   data: ChartDataPoint[];
-  columns: string[];
+  columns: ColumnType[];
   onDataChange: (data: ChartDataPoint[]) => void;
   onSave: () => void;
 }
@@ -30,7 +35,26 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
     if (!newData[index]) {
       newData[index] = {};
     }
-    newData[index][column] = value;
+    
+    // Convert value based on column type
+    const columnType = columns.find(col => col.name === column)?.type || 'string';
+    let convertedValue: any = value;
+    
+    switch (columnType) {
+      case 'number':
+        convertedValue = value === '' ? null : parseFloat(value);
+        break;
+      case 'date':
+        convertedValue = value === '' ? null : new Date(value);
+        break;
+      case 'boolean':
+        convertedValue = value === 'true' || value === '1' || value === 'yes';
+        break;
+      default:
+        convertedValue = value;
+    }
+    
+    newData[index][column] = convertedValue;
     setEditingData(newData);
     setHasChanges(true);
     onDataChange(newData);
@@ -39,7 +63,7 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
   const handleAddRow = () => {
     const newRow: ChartDataPoint = {};
     columns.forEach(col => {
-      newRow[col] = '';
+      newRow[col.name] = '';
     });
     const newData = [...editingData, newRow];
     setEditingData(newData);
@@ -92,11 +116,11 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
   const handleExport = () => {
     if (editingData.length === 0) return;
 
-    const headers = columns.join(',');
+    const headers = columns.map(col => col.name);
     const rows = editingData.map(row => 
-      columns.map(col => row[col] || '').join(',')
+      columns.map(col => row[col.name] || '').join(',')
     );
-    const csv = [headers, ...rows].join('\n');
+    const csv = [headers.join(','), ...rows].join('\n');
     
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -154,8 +178,11 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
                 <thead className="bg-gray-50">
                   <tr>
                     {columns.map((column) => (
-                      <th key={column} className="px-3 py-2 text-left font-medium text-gray-700">
-                        {column}
+                      <th key={column.name} className="px-3 py-2 text-left font-medium text-gray-700">
+                        <div className="flex flex-col">
+                          <span>{column.name}</span>
+                          <span className="text-xs text-gray-500 font-normal">({column.type})</span>
+                        </div>
                       </th>
                     ))}
                     <th className="px-3 py-2 text-left font-medium text-gray-700 w-12">
@@ -174,13 +201,41 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
                       className="hover:bg-gray-50"
                     >
                       {columns.map((column) => (
-                        <td key={column} className="px-3 py-2">
-                          <Input
-                            value={row[column] || ''}
-                            onChange={(e) => handleDataChange(index, column, e.target.value)}
-                            placeholder={`Enter ${column}`}
-                            className="h-8 text-xs"
-                          />
+                        <td key={column.name} className="px-3 py-2">
+                          {column.type === 'boolean' ? (
+                            <select
+                              value={row[column.name] ? 'true' : 'false'}
+                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
+                              className="h-8 text-xs border border-gray-300 rounded px-2 w-full"
+                            >
+                              <option value="true">True</option>
+                              <option value="false">False</option>
+                            </select>
+                          ) : column.type === 'date' ? (
+                            <Input
+                              type="date"
+                              value={row[column.name] ? new Date(row[column.name]).toISOString().split('T')[0] : ''}
+                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
+                              placeholder={`Enter ${column.name}`}
+                              className="h-8 text-xs"
+                            />
+                          ) : column.type === 'number' ? (
+                            <Input
+                              type="number"
+                              value={row[column.name] || ''}
+                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
+                              placeholder={`Enter ${column.name}`}
+                              className="h-8 text-xs"
+                              step="any"
+                            />
+                          ) : (
+                            <Input
+                              value={row[column.name] || ''}
+                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
+                              placeholder={`Enter ${column.name}`}
+                              className="h-8 text-xs"
+                            />
+                          )}
                         </td>
                       ))}
                       <td className="px-3 py-2">
