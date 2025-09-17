@@ -112,12 +112,7 @@ export function useSchemaCache(tenantId: number, databaseId: number) {
 		invalidateTables(tenantId, databaseId)
 	}, [tenantId, databaseId])
 
-	// Auto-load tables when tenantId and databaseId are available
-	useEffect(() => {
-		if (tenantId && databaseId) {
-			loadTables()
-		}
-	}, [tenantId, databaseId, loadTables])
+	// Don't auto-load tables - let components control when to load
 
 	return {
 		tables,

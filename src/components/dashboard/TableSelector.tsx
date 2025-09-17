@@ -56,6 +56,8 @@ interface TableSelectorProps {
 	// Type validation for widget compatibility
 	expectedXType?: 'text' | 'number' | 'date' | 'boolean';
 	expectedYType?: 'text' | 'number' | 'date' | 'boolean';
+	// Load tables function
+	loadTables?: () => Promise<void>;
 }
 
 export function TableSelector({
@@ -74,48 +76,40 @@ export function TableSelector({
 	databaseId,
 	expectedXType,
 	expectedYType,
+	loadTables: externalLoadTables,
 }: TableSelectorProps) {
 	const { tables, tablesLoading, tablesError, loadTables, getColumns, invalidate } = useSchemaCache(tenantId, databaseId);
 	const [columns, setColumns] = useState<CachedColumnMeta[]>([]);
 	const [isLoadingColumns, setIsLoadingColumns] = useState(false);
 	const [columnsError, setColumnsError] = useState<string | null>(null);
 
-  // Load columns on table change using useSchemaCache
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      if (!selectedTableId) {
-        setColumns([]);
-        return;
-      }
-      setIsLoadingColumns(true);
-      setColumnsError(null);
-      try {
-        const cols = await getColumns(selectedTableId);
-        console.info('[TableSelector] Loaded columns from cache', {
-          tableId: selectedTableId,
-          count: cols.length,
-        });
-        if (mounted) setColumns(cols);
-      } catch (e) {
-        console.error('[TableSelector] Error loading columns:', e);
-        if (mounted) setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
-      } finally {
-        if (mounted) setIsLoadingColumns(false);
-      }
+  // Load columns only when explicitly requested by user
+  const loadColumns = async (tableId: number) => {
+    setIsLoadingColumns(true);
+    setColumnsError(null);
+    try {
+      const cols = await getColumns(tableId);
+      console.info('[TableSelector] Loaded columns from cache', {
+        tableId,
+        count: cols.length,
+      });
+      setColumns(cols);
+    } catch (e) {
+      console.error('[TableSelector] Error loading columns:', e);
+      setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
+    } finally {
+      setIsLoadingColumns(false);
     }
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [selectedTableId, getColumns]);
+  };
 
-	const handleTableChange = (tableId: string) => {
+	const handleTableChange = async (tableId: string) => {
 		const id = parseInt(tableId);
 		onTableChange(id);
 		// Reset columns when table changes
 		onColumnXChange('');
 		onColumnYChange('');
+		// Load columns for the selected table
+		await loadColumns(id);
 	};
 
 	return (
@@ -144,7 +138,21 @@ export function TableSelector({
 					<label className="text-xs font-medium text-gray-700 mb-2 block">
 						Table
 					</label>
-         	{tablesLoading ? (
+					{!tables ? (
+						<Button
+							variant="outline"
+							onClick={externalLoadTables || loadTables}
+							disabled={tablesLoading}
+							className="w-full h-8"
+						>
+							{tablesLoading ? (
+								<RefreshCw className="h-4 w-4 animate-spin mr-2" />
+							) : (
+								<Database className="h-4 w-4 mr-2" />
+							)}
+							{tablesLoading ? 'Loading tables...' : 'Load Tables'}
+						</Button>
+					) : tablesLoading ? (
 						<Skeleton className="h-8 w-full" />
 					) : tablesError ? (
 						<div className="text-sm text-red-600">{tablesError}</div>
@@ -191,7 +199,21 @@ export function TableSelector({
 								<label className="text-xs font-medium text-gray-700 mb-2 block">
 									X-Axis Column {expectedXType && `(${expectedXType})`}
 								</label>
-							{isLoadingColumns ? (
+							{columns.length === 0 && !isLoadingColumns && !columnsError ? (
+								<Button
+									variant="outline"
+									onClick={() => loadColumns(selectedTableId)}
+									disabled={isLoadingColumns}
+									className="w-full h-8"
+								>
+									{isLoadingColumns ? (
+										<RefreshCw className="h-4 w-4 animate-spin mr-2" />
+									) : (
+										<Columns className="h-4 w-4 mr-2" />
+									)}
+									{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
+								</Button>
+							) : isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
 							) : columnsError ? (
 								<div className="text-sm text-red-600">{columnsError}</div>
@@ -231,7 +253,21 @@ export function TableSelector({
 							<label className="text-xs font-medium text-gray-700 mb-2 block">
 								{selectedColumnX === undefined ? 'Value Column' : 'Y-Axis Column'} {expectedYType && `(${expectedYType})`}
 							</label>
-							{isLoadingColumns ? (
+							{columns.length === 0 && !isLoadingColumns && !columnsError ? (
+								<Button
+									variant="outline"
+									onClick={() => loadColumns(selectedTableId)}
+									disabled={isLoadingColumns}
+									className="w-full h-8"
+								>
+									{isLoadingColumns ? (
+										<RefreshCw className="h-4 w-4 animate-spin mr-2" />
+									) : (
+										<Columns className="h-4 w-4 mr-2" />
+									)}
+									{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
+								</Button>
+							) : isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
 							) : columnsError ? (
 								<div className="text-sm text-red-600">{columnsError}</div>
@@ -273,7 +309,25 @@ export function TableSelector({
 						<label className="text-xs font-medium text-gray-700 mb-2 block">
 							Columns
 						</label>
-						{isLoadingColumns ? (
+						{columns.length === 0 && !isLoadingColumns && !columnsError ? (
+							<Button
+								variant="outline"
+								onClick={() => loadColumns(selectedTableId)}
+								disabled={isLoadingColumns}
+								className="w-full h-24"
+							>
+								<div className="flex flex-col items-center space-y-2">
+									{isLoadingColumns ? (
+										<RefreshCw className="h-6 w-6 animate-spin" />
+									) : (
+										<Columns className="h-6 w-6" />
+									)}
+									<span className="text-sm">
+										{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
+									</span>
+								</div>
+							</Button>
+						) : isLoadingColumns ? (
 							<Skeleton className="h-24 w-full" />
 						) : columnsError ? (
 							<div className="text-sm text-red-600">{columnsError}</div>
@@ -314,7 +368,25 @@ export function TableSelector({
 						<label className="text-xs font-medium text-gray-700 mb-2 block">
 							Filters
 						</label>
-						{isLoadingColumns ? (
+						{columns.length === 0 && !isLoadingColumns && !columnsError ? (
+							<Button
+								variant="outline"
+								onClick={() => loadColumns(selectedTableId)}
+								disabled={isLoadingColumns}
+								className="w-full h-24"
+							>
+								<div className="flex flex-col items-center space-y-2">
+									{isLoadingColumns ? (
+										<RefreshCw className="h-6 w-6 animate-spin" />
+									) : (
+										<Columns className="h-6 w-6" />
+									)}
+									<span className="text-sm">
+										{isLoadingColumns ? 'Loading columns...' : 'Load Columns'}
+									</span>
+								</div>
+							</Button>
+						) : isLoadingColumns ? (
 							<Skeleton className="h-24 w-full" />
 						) : columnsError ? (
 							<div className="text-sm text-red-600">{columnsError}</div>

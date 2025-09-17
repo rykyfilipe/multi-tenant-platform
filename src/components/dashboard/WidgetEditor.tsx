@@ -39,10 +39,9 @@ interface WidgetEditorProps {
 export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: WidgetEditorProps) {
   const [editedWidget, setEditedWidget] = useState<Widget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
-  const [columns, setColumns] = useState<any[]>([]);
   
   // Use schema cache for tables and columns
-  const { tables, tablesLoading, getColumns } = useSchemaCache(tenantId, databaseId);
+  const { tables, tablesLoading, loadTables } = useSchemaCache(tenantId, databaseId);
 
   useEffect(() => {
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
@@ -126,7 +125,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
     updateConfig({ dataSource: newDataSource });
   };
 
-  const handleTableChange = async (tableId: number) => {
+  const handleTableChange = (tableId: number) => {
     const newDataSource = {
       ...editedWidget.config.dataSource,
       type: 'table' as const,
@@ -135,17 +134,6 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       columnY: ''
     };
     updateConfig({ dataSource: newDataSource });
-    
-    // Load columns for the selected table
-    try {
-      const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`);
-      if (response.ok) {
-        const cols = await response.json();
-        setColumns(cols);
-      }
-    } catch (error) {
-      console.error('Failed to load columns:', error);
-    }
   };
 
   const handleColumnXChange = (column: string) => {
@@ -374,6 +362,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     }}
                     onColumnXChange={() => {}}
                     onColumnYChange={() => {}}
+                    loadTables={loadTables}
                   />
 
                   {/* Table Options */}
@@ -479,6 +468,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     onColumnXChange={() => {}}
                     onColumnYChange={() => {}}
                     expectedYType="number"
+                    loadTables={loadTables}
                   />
 
                   {/* KPI Options */}
@@ -874,6 +864,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       databaseId={databaseId}
                       expectedXType="text"
                       expectedYType="number"
+                      loadTables={loadTables}
                     />
                   )}
 
