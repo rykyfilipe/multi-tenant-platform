@@ -118,7 +118,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
           dataSource: {
             type: 'table',
             tableId: undefined,
-            column: ''
+            column: '',
+            aggregation: 'sum'
           },
           options: {
             format: 'number',
@@ -453,6 +454,67 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     loadTables={loadTables}
                   />
 
+                  {/* Table Aggregation Options */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Data Aggregation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="tableAggregation">Default Aggregation</Label>
+                          <Select
+                            value={editedWidget.config?.dataSource?.aggregation || 'none'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                aggregation: value === 'none' ? undefined : value
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Aggregation</SelectItem>
+                              <SelectItem value="sum">Sum</SelectItem>
+                              <SelectItem value="count">Count</SelectItem>
+                              <SelectItem value="avg">Average</SelectItem>
+                              <SelectItem value="min">Minimum</SelectItem>
+                              <SelectItem value="max">Maximum</SelectItem>
+                              <SelectItem value="median">Median</SelectItem>
+                              <SelectItem value="stddev">Standard Deviation</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="tableGroupBy">Group By</Label>
+                          <Select
+                            value={editedWidget.config?.dataSource?.groupBy || 'none'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                groupBy: value === 'none' ? undefined : value
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Grouping</SelectItem>
+                              <SelectItem value="day">Day</SelectItem>
+                              <SelectItem value="week">Week</SelectItem>
+                              <SelectItem value="month">Month</SelectItem>
+                              <SelectItem value="quarter">Quarter</SelectItem>
+                              <SelectItem value="year">Year</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Table Options */}
                   <Card>
                     <CardHeader className="pb-3">
@@ -528,11 +590,11 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   <TableSelector
                     tenantId={tenantId}
                     selectedTableId={editedWidget.config?.dataSource?.tableId}
-                    selectedColumns={editedWidget.config?.dataSource?.column ? [editedWidget.config?.dataSource?.column] : []}
-                    onColumnsChange={(columns) => updateConfig({
+                    selectedColumnY={editedWidget.config?.dataSource?.column || ''}
+                    onColumnYChange={(column) => updateConfig({
                       dataSource: {
                         ...editedWidget.config?.dataSource,
-                        column: columns[0] || '',
+                        column: column,
                         type: 'table'
                       }
                     })}
@@ -553,10 +615,43 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       });
                     }}
                     onColumnXChange={() => {}}
-                    onColumnYChange={() => {}}
                     expectedYType="number"
                     loadTables={loadTables}
                   />
+
+                  {/* Aggregation Options */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Aggregation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="aggregation">Aggregation Function</Label>
+                        <Select
+                          value={editedWidget.config?.dataSource?.aggregation || 'sum'}
+                          onValueChange={(value) => updateConfig({
+                            dataSource: {
+                              ...editedWidget.config?.dataSource,
+                              aggregation: value
+                            }
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sum">Sum</SelectItem>
+                            <SelectItem value="count">Count</SelectItem>
+                            <SelectItem value="avg">Average</SelectItem>
+                            <SelectItem value="min">Minimum</SelectItem>
+                            <SelectItem value="max">Maximum</SelectItem>
+                            <SelectItem value="median">Median</SelectItem>
+                            <SelectItem value="stddev">Standard Deviation</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   {/* KPI Options */}
                   <Card>
@@ -948,6 +1043,79 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       expectedYType="number"
                       loadTables={loadTables}
                     />
+                  )}
+
+                  {/* Chart Aggregation Options */}
+                  {config.dataSource?.type === 'table' && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">Data Aggregation</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="xAxisAggregation">X-Axis Aggregation</Label>
+                            <Select
+                              value={config.xAxis?.aggregation || 'none'}
+                              onValueChange={(value) => handleAxisChange('xAxis', { aggregation: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No Aggregation</SelectItem>
+                                <SelectItem value="count">Count</SelectItem>
+                                <SelectItem value="distinct">Distinct Count</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="yAxisAggregation">Y-Axis Aggregation</Label>
+                            <Select
+                              value={config.yAxis?.aggregation || 'sum'}
+                              onValueChange={(value) => handleAxisChange('yAxis', { aggregation: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sum">Sum</SelectItem>
+                                <SelectItem value="count">Count</SelectItem>
+                                <SelectItem value="avg">Average</SelectItem>
+                                <SelectItem value="min">Minimum</SelectItem>
+                                <SelectItem value="max">Maximum</SelectItem>
+                                <SelectItem value="median">Median</SelectItem>
+                                <SelectItem value="stddev">Standard Deviation</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="groupBy">Group By</Label>
+                          <Select
+                            value={config.dataSource?.groupBy || 'none'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...config.dataSource,
+                                groupBy: value === 'none' ? undefined : value
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Grouping</SelectItem>
+                              <SelectItem value="day">Day</SelectItem>
+                              <SelectItem value="week">Week</SelectItem>
+                              <SelectItem value="month">Month</SelectItem>
+                              <SelectItem value="quarter">Quarter</SelectItem>
+                              <SelectItem value="year">Year</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardContent>
+                    </Card>
                   )}
 
                   {/* Axis Configuration */}

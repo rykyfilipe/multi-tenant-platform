@@ -17,6 +17,8 @@ export interface DataSource {
   columnY?: string;
   filters?: FilterConfig[];
   manualData?: ChartDataPoint[];
+  aggregation?: string;
+  groupBy?: string;
 }
 
 
@@ -34,11 +36,13 @@ export interface LineChartConfig {
     key: string;
     label?: string;
     type?: 'category' | 'number' | 'time';
+    aggregation?: string;
   };
   yAxis: {
     key: string;
     label?: string;
     type?: 'number';
+    aggregation?: string;
   };
   options?: {
     colors?: string[];
