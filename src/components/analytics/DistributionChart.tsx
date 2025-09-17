@@ -84,7 +84,7 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ 
 				duration: CHART_STYLES.animation.duration, 
-				ease: CHART_STYLES.animation.easing,
+				ease: "easeInOut",
 				delay 
 			}}
 			whileHover={{ 
@@ -138,7 +138,11 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 										contentStyle={CHART_STYLES.tooltip}
 									/>
 									<Legend 
-										wrapperStyle={CHART_STYLES.legend}
+										wrapperStyle={{
+											fontSize: 12,
+											fontFamily: 'Inter, system-ui, sans-serif',
+											color: '#1A1A1A'
+										}}
 									/>
 								</PieChart>
 							</ResponsiveContainer>
