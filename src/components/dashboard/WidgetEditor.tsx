@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Save, Settings, Palette, BarChart3 } from 'lucide-react';
+import { X, Save, Settings, Palette, BarChart3, Database, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DataEditor } from './DataEditor';
+import { FilterBuilder } from './FilterBuilder';
+import { TableSelector } from './TableSelector';
+import { LineChartConfig, DataSource, Filter, ChartDataPoint } from './LineChartWidget';
 
 interface Widget {
   id: number;
   type: string;
   title: string | null;
   position: { x: number; y: number; width: number; height: number };
-  config: any;
+  config: LineChartConfig | any;
   isVisible: boolean;
   order: number;
 }
@@ -31,10 +35,45 @@ interface WidgetEditorProps {
 export function WidgetEditor({ widget, onClose, onSave }: WidgetEditorProps) {
   const [editedWidget, setEditedWidget] = useState<Widget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
+  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
 
   useEffect(() => {
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
   }, [editedWidget, widget]);
+
+  // Initialize LineChart config if needed
+  useEffect(() => {
+    if (widget.type === 'chart' && !editedWidget.config.dataSource) {
+      const defaultConfig: LineChartConfig = {
+        title: '',
+        dataSource: {
+          type: 'manual',
+          manualData: [
+            { x: 'Jan', y: 100 },
+            { x: 'Feb', y: 150 },
+            { x: 'Mar', y: 200 },
+            { x: 'Apr', y: 180 },
+            { x: 'May', y: 250 },
+          ]
+        },
+        xAxis: { key: 'x', label: 'Month', type: 'category' },
+        yAxis: { key: 'y', label: 'Value', type: 'number' },
+        options: {
+          colors: ['#3B82F6'],
+          showLegend: true,
+          showGrid: true,
+          strokeWidth: 2,
+          dotSize: 4,
+          curveType: 'monotone'
+        }
+      };
+      
+      setEditedWidget(prev => ({
+        ...prev,
+        config: { ...prev.config, ...defaultConfig }
+      }));
+    }
+  }, [widget.type, editedWidget.config.dataSource]);
 
   const handleSave = () => {
     onSave(editedWidget);
@@ -58,6 +97,63 @@ export function WidgetEditor({ widget, onClose, onSave }: WidgetEditorProps) {
       position: { ...prev.position, ...positionUpdates }
     }));
   };
+
+  // LineChart-specific handlers
+  const handleDataSourceChange = (dataSource: DataSource) => {
+    updateConfig({ dataSource });
+  };
+
+  const handleManualDataChange = (data: ChartDataPoint[]) => {
+    const newDataSource = {
+      ...editedWidget.config.dataSource,
+      manualData: data
+    };
+    updateConfig({ dataSource: newDataSource });
+  };
+
+  const handleFiltersChange = (filters: Filter[]) => {
+    const newDataSource = {
+      ...editedWidget.config.dataSource,
+      filters
+    };
+    updateConfig({ dataSource: newDataSource });
+  };
+
+  const handleTableChange = (tableId: number) => {
+    const newDataSource = {
+      ...editedWidget.config.dataSource,
+      type: 'table' as const,
+      tableId,
+      columnX: '',
+      columnY: ''
+    };
+    updateConfig({ dataSource: newDataSource });
+  };
+
+  const handleColumnXChange = (column: string) => {
+    const newDataSource = {
+      ...editedWidget.config.dataSource,
+      columnX: column
+    };
+    updateConfig({ dataSource: newDataSource });
+  };
+
+  const handleColumnYChange = (column: string) => {
+    const newDataSource = {
+      ...editedWidget.config.dataSource,
+      columnY: column
+    };
+    updateConfig({ dataSource: newDataSource });
+  };
+
+  const handleAxisChange = (axis: 'xAxis' | 'yAxis', updates: any) => {
+    updateConfig({
+      [axis]: { ...editedWidget.config[axis], ...updates }
+    });
+  };
+
+  const isLineChart = widget.type === 'chart';
+  const config = editedWidget.config as LineChartConfig;
 
   return (
     <motion.div
@@ -204,156 +300,214 @@ export function WidgetEditor({ widget, onClose, onSave }: WidgetEditorProps) {
 
             {/* Data Tab */}
             <TabsContent value="data" className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center space-x-2">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Data Source</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {editedWidget.type === 'chart' && (
-                    <>
+              {isLineChart ? (
+                <div className="space-y-4">
+                  {/* Data Source Type Selection */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                        <BarChart3 className="h-4 w-4" />
+                        <span>Data Source</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="chartType">Chart Type</Label>
+                        <Label htmlFor="dataSourceType">Data Source Type</Label>
                         <Select
-                          value={editedWidget.config?.chartType || 'line'}
-                          onValueChange={(value) => updateConfig({ chartType: value })}
+                          value={config.dataSource?.type || 'manual'}
+                          onValueChange={(value) => handleDataSourceChange({
+                            ...config.dataSource,
+                            type: value as 'manual' | 'table'
+                          })}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="line">Line Chart</SelectItem>
-                            <SelectItem value="bar">Bar Chart</SelectItem>
-                            <SelectItem value="pie">Pie Chart</SelectItem>
-                            <SelectItem value="area">Area Chart</SelectItem>
+                            <SelectItem value="manual">
+                              <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4" />
+                                <span>Manual Data</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="table">
+                              <div className="flex items-center space-x-2">
+                                <Database className="h-4 w-4" />
+                                <span>Table Data</span>
+                              </div>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
+                    </CardContent>
+                  </Card>
 
-                      <div>
-                        <Label htmlFor="tableId">Table ID</Label>
-                        <Input
-                          id="tableId"
-                          type="number"
-                          value={editedWidget.config?.dataSource?.tableId || ''}
-                          onChange={(e) => updateConfig({
-                            dataSource: {
-                              ...editedWidget.config?.dataSource,
-                              tableId: parseInt(e.target.value) || 0
-                            }
-                          })}
-                          placeholder="Enter table ID"
-                        />
+                  {/* Manual Data Editor */}
+                  {config.dataSource?.type === 'manual' && (
+                    <DataEditor
+                      data={config.dataSource.manualData || []}
+                      columns={[config.xAxis?.key || 'x', config.yAxis?.key || 'y']}
+                      onDataChange={handleManualDataChange}
+                      onSave={() => {}}
+                    />
+                  )}
+
+                  {/* Table Data Selector */}
+                  {config.dataSource?.type === 'table' && (
+                    <TableSelector
+                      selectedTableId={config.dataSource.tableId}
+                      selectedColumnX={config.dataSource.columnX}
+                      selectedColumnY={config.dataSource.columnY}
+                      onTableChange={handleTableChange}
+                      onColumnXChange={handleColumnXChange}
+                      onColumnYChange={handleColumnYChange}
+                      tenantId={1} // TODO: Get from context
+                      databaseId={1} // TODO: Get from context
+                    />
+                  )}
+
+                  {/* Filters for Table Data */}
+                  {config.dataSource?.type === 'table' && (
+                    <FilterBuilder
+                      filters={config.dataSource.filters || []}
+                      availableColumns={availableColumns}
+                      onFiltersChange={handleFiltersChange}
+                    />
+                  )}
+
+                  {/* Axis Configuration */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Axis Configuration</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="xAxisKey">X-Axis Key</Label>
+                          <Input
+                            id="xAxisKey"
+                            value={config.xAxis?.key || ''}
+                            onChange={(e) => handleAxisChange('xAxis', { key: e.target.value })}
+                            placeholder="X-axis data key"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="xAxisLabel">X-Axis Label</Label>
+                          <Input
+                            id="xAxisLabel"
+                            value={config.xAxis?.label || ''}
+                            onChange={(e) => handleAxisChange('xAxis', { label: e.target.value })}
+                            placeholder="X-axis label"
+                          />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="columnX">X Column</Label>
+                          <Label htmlFor="yAxisKey">Y-Axis Key</Label>
                           <Input
-                            id="columnX"
-                            value={editedWidget.config?.dataSource?.columnX || ''}
-                            onChange={(e) => updateConfig({
-                              dataSource: {
-                                ...editedWidget.config?.dataSource,
-                                columnX: e.target.value
-                              }
-                            })}
-                            placeholder="X axis column"
+                            id="yAxisKey"
+                            value={config.yAxis?.key || ''}
+                            onChange={(e) => handleAxisChange('yAxis', { key: e.target.value })}
+                            placeholder="Y-axis data key"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="columnY">Y Column</Label>
+                          <Label htmlFor="yAxisLabel">Y-Axis Label</Label>
                           <Input
-                            id="columnY"
-                            value={editedWidget.config?.dataSource?.columnY || ''}
-                            onChange={(e) => updateConfig({
-                              dataSource: {
-                                ...editedWidget.config?.dataSource,
-                                columnY: e.target.value
-                              }
-                            })}
-                            placeholder="Y axis column"
+                            id="yAxisLabel"
+                            value={config.yAxis?.label || ''}
+                            onChange={(e) => handleAxisChange('yAxis', { label: e.target.value })}
+                            placeholder="Y-axis label"
                           />
                         </div>
                       </div>
-                    </>
-                  )}
-
-                  {editedWidget.type === 'text' && (
-                    <div>
-                      <Label htmlFor="content">Content</Label>
-                      <Textarea
-                        id="content"
-                        value={editedWidget.config?.content || ''}
-                        onChange={(e) => updateConfig({ content: e.target.value })}
-                        placeholder="Enter text content"
-                        rows={4}
-                      />
-                    </div>
-                  )}
-
-                  {editedWidget.type === 'metric' && (
-                    <>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Data Source</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {editedWidget.type === 'text' && (
                       <div>
-                        <Label htmlFor="metricTableId">Table ID</Label>
-                        <Input
-                          id="metricTableId"
-                          type="number"
-                          value={editedWidget.config?.dataSource?.tableId || ''}
-                          onChange={(e) => updateConfig({
-                            dataSource: {
-                              ...editedWidget.config?.dataSource,
-                              tableId: parseInt(e.target.value) || 0
-                            }
-                          })}
-                          placeholder="Enter table ID"
+                        <Label htmlFor="content">Content</Label>
+                        <Textarea
+                          id="content"
+                          value={editedWidget.config?.content || ''}
+                          onChange={(e) => updateConfig({ content: e.target.value })}
+                          placeholder="Enter text content"
+                          rows={4}
                         />
                       </div>
+                    )}
 
-                      <div>
-                        <Label htmlFor="metricColumn">Column</Label>
-                        <Input
-                          id="metricColumn"
-                          value={editedWidget.config?.dataSource?.column || ''}
-                          onChange={(e) => updateConfig({
-                            dataSource: {
-                              ...editedWidget.config?.dataSource,
-                              column: e.target.value
-                            }
-                          })}
-                          placeholder="Column name"
-                        />
-                      </div>
+                    {editedWidget.type === 'metric' && (
+                      <>
+                        <div>
+                          <Label htmlFor="metricTableId">Table ID</Label>
+                          <Input
+                            id="metricTableId"
+                            type="number"
+                            value={editedWidget.config?.dataSource?.tableId || ''}
+                            onChange={(e) => updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                tableId: parseInt(e.target.value) || 0
+                              }
+                            })}
+                            placeholder="Enter table ID"
+                          />
+                        </div>
 
-                      <div>
-                        <Label htmlFor="aggregation">Aggregation</Label>
-                        <Select
-                          value={editedWidget.config?.dataSource?.aggregation || 'sum'}
-                          onValueChange={(value) => updateConfig({
-                            dataSource: {
-                              ...editedWidget.config?.dataSource,
-                              aggregation: value
-                            }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sum">Sum</SelectItem>
-                            <SelectItem value="count">Count</SelectItem>
-                            <SelectItem value="avg">Average</SelectItem>
-                            <SelectItem value="min">Minimum</SelectItem>
-                            <SelectItem value="max">Maximum</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                        <div>
+                          <Label htmlFor="metricColumn">Column</Label>
+                          <Input
+                            id="metricColumn"
+                            value={editedWidget.config?.dataSource?.column || ''}
+                            onChange={(e) => updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                column: e.target.value
+                              }
+                            })}
+                            placeholder="Column name"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="aggregation">Aggregation</Label>
+                          <Select
+                            value={editedWidget.config?.dataSource?.aggregation || 'sum'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                aggregation: value
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sum">Sum</SelectItem>
+                              <SelectItem value="count">Count</SelectItem>
+                              <SelectItem value="avg">Average</SelectItem>
+                              <SelectItem value="min">Minimum</SelectItem>
+                              <SelectItem value="max">Maximum</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Style Tab */}
@@ -366,131 +520,176 @@ export function WidgetEditor({ widget, onClose, onSave }: WidgetEditorProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {editedWidget.type === 'chart' && (
+                  {isLineChart ? (
                     <>
+                      {/* Chart Title */}
                       <div>
                         <Label htmlFor="chartTitle">Chart Title</Label>
                         <Input
                           id="chartTitle"
-                          value={editedWidget.config?.options?.title || ''}
-                          onChange={(e) => updateConfig({
-                            options: {
-                              ...editedWidget.config?.options,
-                              title: e.target.value
-                            }
-                          })}
+                          value={config.title || ''}
+                          onChange={(e) => updateConfig({ title: e.target.value })}
                           placeholder="Chart title"
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="xAxisLabel">X Axis Label</Label>
-                          <Input
-                            id="xAxisLabel"
-                            value={editedWidget.config?.options?.xAxisLabel || ''}
-                            onChange={(e) => updateConfig({
-                              options: {
-                                ...editedWidget.config?.options,
-                                xAxisLabel: e.target.value
-                              }
-                            })}
-                            placeholder="X axis label"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="yAxisLabel">Y Axis Label</Label>
-                          <Input
-                            id="yAxisLabel"
-                            value={editedWidget.config?.options?.yAxisLabel || ''}
-                            onChange={(e) => updateConfig({
-                              options: {
-                                ...editedWidget.config?.options,
-                                yAxisLabel: e.target.value
-                              }
-                            })}
-                            placeholder="Y axis label"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="showLegend"
-                            checked={editedWidget.config?.options?.showLegend !== false}
-                            onCheckedChange={(checked) => updateConfig({
-                              options: {
-                                ...editedWidget.config?.options,
-                                showLegend: checked
-                              }
-                            })}
-                          />
-                          <Label htmlFor="showLegend">Show Legend</Label>
+                      {/* Chart Options */}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="strokeWidth">Stroke Width</Label>
+                            <Input
+                              id="strokeWidth"
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={config.options?.strokeWidth || 2}
+                              onChange={(e) => updateConfig({
+                                options: {
+                                  ...config.options,
+                                  strokeWidth: parseInt(e.target.value) || 2
+                                }
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="dotSize">Dot Size</Label>
+                            <Input
+                              id="dotSize"
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={config.options?.dotSize || 4}
+                              onChange={(e) => updateConfig({
+                                options: {
+                                  ...config.options,
+                                  dotSize: parseInt(e.target.value) || 4
+                                }
+                              })}
+                            />
+                          </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="showGrid"
-                            checked={editedWidget.config?.options?.showGrid !== false}
-                            onCheckedChange={(checked) => updateConfig({
+                        <div>
+                          <Label htmlFor="curveType">Curve Type</Label>
+                          <Select
+                            value={config.options?.curveType || 'monotone'}
+                            onValueChange={(value) => updateConfig({
                               options: {
-                                ...editedWidget.config?.options,
-                                showGrid: checked
+                                ...config.options,
+                                curveType: value
                               }
                             })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="monotone">Monotone</SelectItem>
+                              <SelectItem value="linear">Linear</SelectItem>
+                              <SelectItem value="step">Step</SelectItem>
+                              <SelectItem value="stepBefore">Step Before</SelectItem>
+                              <SelectItem value="stepAfter">Step After</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="showLegend"
+                              checked={config.options?.showLegend !== false}
+                              onCheckedChange={(checked) => updateConfig({
+                                options: {
+                                  ...config.options,
+                                  showLegend: checked
+                                }
+                              })}
+                            />
+                            <Label htmlFor="showLegend">Show Legend</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="showGrid"
+                              checked={config.options?.showGrid !== false}
+                              onCheckedChange={(checked) => updateConfig({
+                                options: {
+                                  ...config.options,
+                                  showGrid: checked
+                                }
+                              })}
+                            />
+                            <Label htmlFor="showGrid">Show Grid</Label>
+                          </div>
+                        </div>
+
+                        {/* Colors */}
+                        <div>
+                          <Label htmlFor="colors">Colors (comma-separated hex codes)</Label>
+                          <Input
+                            id="colors"
+                            value={config.options?.colors?.join(', ') || '#3B82F6'}
+                            onChange={(e) => updateConfig({
+                              options: {
+                                ...config.options,
+                                colors: e.target.value.split(',').map(c => c.trim()).filter(Boolean)
+                              }
+                            })}
+                            placeholder="#3B82F6, #EF4444, #10B981"
                           />
-                          <Label htmlFor="showGrid">Show Grid</Label>
                         </div>
                       </div>
                     </>
-                  )}
-
-                  {editedWidget.type === 'text' && (
+                  ) : (
                     <>
-                      <div>
-                        <Label htmlFor="fontSize">Font Size</Label>
-                        <Select
-                          value={editedWidget.config?.options?.fontSize || 'medium'}
-                          onValueChange={(value) => updateConfig({
-                            options: {
-                              ...editedWidget.config?.options,
-                              fontSize: value
-                            }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="small">Small</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="large">Large</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {editedWidget.type === 'text' && (
+                        <>
+                          <div>
+                            <Label htmlFor="fontSize">Font Size</Label>
+                            <Select
+                              value={editedWidget.config?.options?.fontSize || 'medium'}
+                              onValueChange={(value) => updateConfig({
+                                options: {
+                                  ...editedWidget.config?.options,
+                                  fontSize: value
+                                }
+                              })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="small">Small</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="large">Large</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                      <div>
-                        <Label htmlFor="textAlign">Text Alignment</Label>
-                        <Select
-                          value={editedWidget.config?.options?.textAlign || 'left'}
-                          onValueChange={(value) => updateConfig({
-                            options: {
-                              ...editedWidget.config?.options,
-                              textAlign: value
-                            }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="left">Left</SelectItem>
-                            <SelectItem value="center">Center</SelectItem>
-                            <SelectItem value="right">Right</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          <div>
+                            <Label htmlFor="textAlign">Text Alignment</Label>
+                            <Select
+                              value={editedWidget.config?.options?.textAlign || 'left'}
+                              onValueChange={(value) => updateConfig({
+                                options: {
+                                  ...editedWidget.config?.options,
+                                  textAlign: value
+                                }
+                              })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="left">Left</SelectItem>
+                                <SelectItem value="center">Center</SelectItem>
+                                <SelectItem value="right">Right</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </CardContent>

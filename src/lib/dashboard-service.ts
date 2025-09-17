@@ -3,7 +3,7 @@
  * Business logic for dashboard and widget operations
  */
 
-import { prisma } from '@/lib/prisma';
+import  prisma  from '@/lib/prisma';
 import { errorTracker } from '@/lib/error-tracker';
 import { usageAnalytics } from '@/lib/usage-analytics';
 import { DashboardValidators, WidgetType } from './dashboard-validators';

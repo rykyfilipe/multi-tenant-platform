@@ -76,8 +76,8 @@ export async function PUT(
       dashboardId,
       widgetId,
       validatedData as any,
-      session.user.tenantId,
-      session.user.id
+      Number(session.user.tenantId)  ,
+      Number(session.user.id)
     );
 
     return NextResponse.json(updatedWidget);
@@ -124,8 +124,8 @@ export async function DELETE(
     await DashboardService.deleteWidget(
       dashboardId,
       widgetId,
-      session.user.tenantId,
-      session.user.id
+      Number(session.user.tenantId),
+      Number(session.user.id)
     );
 
     return NextResponse.json({ message: 'Widget deleted successfully' });

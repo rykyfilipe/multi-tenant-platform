@@ -254,7 +254,13 @@ export default function DashboardsPage() {
   const renderWidget = (widget: Widget) => {
     switch (widget.type) {
       case 'chart':
-        return <LineChartWidget widget={widget} />;
+        return (
+          <LineChartWidget 
+            widget={widget} 
+            isEditMode={isEditMode}
+            onEdit={() => handleWidgetClick(widget)}
+          />
+        );
       default:
         return (
           <Card className="h-full">

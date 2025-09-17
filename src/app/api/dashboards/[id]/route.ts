@@ -25,8 +25,8 @@ export async function GET(
 
     const dashboard = await DashboardService.getDashboard(
       dashboardId,
-      session.user.tenantId,
-      session.user.id
+      Number(session.user.tenantId),
+      Number(session.user.id)   
     );
 
     if (!dashboard) {
@@ -69,8 +69,8 @@ export async function PUT(
     const updatedDashboard = await DashboardService.updateDashboard(
       dashboardId,
       validatedData,
-      session.user.tenantId,
-      session.user.id
+      Number(session.user.tenantId),
+      Number(session.user.id)
     );
 
     return NextResponse.json(updatedDashboard);
@@ -114,8 +114,8 @@ export async function DELETE(
 
     await DashboardService.deleteDashboard(
       dashboardId,
-      session.user.tenantId,
-      session.user.id
+      Number(session.user.tenantId),
+      Number(session.user.id)       
     );
 
     return NextResponse.json({ message: 'Dashboard deleted successfully' });

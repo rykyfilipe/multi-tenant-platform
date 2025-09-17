@@ -84,7 +84,8 @@ export function useTableTemplates() {
 			"date": "date",
 			"timestamp": "date",
 			"reference": "reference",
-			"customArray": "customArray"
+			"customArray": "customArray",
+			"custom_array": "customArray" // Add mapping for custom_array from templates
 		};
 		return typeMap[templateType] || "text";
 	};

@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const queryParams = DashboardValidators.validateQuery(searchParams);
 
     const result = await DashboardService.getDashboards(
-      session.user.tenantId,
-      session.user.id,
+      Number(session.user.tenantId)     ,
+      Number(session.user.id),
       queryParams
     );
 
@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
 
     const dashboard = await DashboardService.createDashboard(
       validatedData,
-      session.user.tenantId,
-      session.user.id
+      Number(session.user.tenantId),
+      Number(session.user.id)
     );
 
     return NextResponse.json(dashboard, { status: 201 });

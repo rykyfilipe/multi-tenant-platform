@@ -21,6 +21,7 @@ import {
 	FileText,
 	Code,
 	HardDrive,
+	LayoutDashboard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -49,6 +50,12 @@ const getNavigationItems = (
 	tenant?: any,
 	user?: any,
 ) => [
+	{
+		title: t("nav.dashboards"),
+		url: "/home/dashboards",
+		icon: LayoutDashboard,
+		description: t("nav.dashboards.description"),
+	},
 	{
 		title: t("nav.analytics"),
 		url: "/home/analytics",
@@ -131,14 +138,19 @@ const getMobileNavigationItems = (
 	user?: any,
 ) => [
 	{
-		title: t("nav.database"),
-		url: "/home/database",
-		icon: Database,
+		title: t("nav.dashboards"),
+		url: "/home/dashboards",
+		icon: LayoutDashboard,
 	},
 	{
 		title: t("nav.analytics"),
 		url: "/home/analytics",
 		icon: BarChart3,
+	},
+	{
+		title: t("nav.database"),
+		url: "/home/database",
+		icon: Database,
 	},
 	{
 		title: t("nav.organization"),

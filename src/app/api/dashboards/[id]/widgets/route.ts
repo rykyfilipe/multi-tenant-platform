@@ -28,8 +28,8 @@ export async function GET(
 
     const widgets = await DashboardService.getWidgets(
       dashboardId,
-      session.user.tenantId,
-      session.user.id,
+      Number(session.user.tenantId),
+      Number(session.user.id)   ,
       queryParams as any
     );
 
@@ -76,8 +76,8 @@ export async function POST(
     const widget = await DashboardService.createWidget(
       dashboardId,
       validatedData as any,
-      session.user.tenantId,
-      session.user.id
+      Number(session.user.tenantId) ,
+      Number(session.user.id)
     );
 
     return NextResponse.json(widget, { status: 201 });
