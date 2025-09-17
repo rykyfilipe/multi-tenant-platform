@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Search, Download, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import BaseWidget from './BaseWidget';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
@@ -24,8 +24,6 @@ export interface TableWidgetConfig {
     pageSize?: number;
     showPagination?: boolean;
     showSearch?: boolean;
-    showExport?: boolean;
-    showColumnSelector?: boolean;
   };
 }
 
@@ -64,7 +62,6 @@ export default function TableWidget({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState(dataSource.sortBy || 'id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(dataSource.sortOrder || 'asc');
-  const [showColumnSelector, setShowColumnSelector] = useState(false);
 
   const { tables, columns, isLoading: schemaLoading } = useSchemaCache(tenantId, databaseId);
   const currentTable = tables?.find(t => t.id === dataSource.tableId);
@@ -143,20 +140,6 @@ export default function TableWidget({
     }
   };
 
-  const handleColumnToggle = (columnName: string) => {
-    const newColumns = (dataSource.columns ?? []).includes(columnName)
-      ? (dataSource.columns ?? []).filter(c => c !== columnName)
-      : [...(dataSource.columns ?? []), columnName];
-    
-    // This would need to be handled by the parent component
-    // For now, we'll just log it
-    console.log('Column toggle:', columnName, newColumns);
-  };
-
-  const handleExport = () => {
-    // Export functionality would go here
-    console.log('Export data:', data);
-  };
 
   const paginatedData = useMemo(() => {
     return data.slice(startIndex, endIndex);
@@ -205,52 +188,9 @@ export default function TableWidget({
               </div>
             )}
             
-            <div className="flex items-center space-x-2">
-              {options.showColumnSelector !== false && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowColumnSelector(!showColumnSelector)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Columns
-                </Button>
-              )}
-              
-              {options.showExport !== false && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              )}
-            </div>
           </div>
         )}
 
-        {/* Column Selector */}
-        {showColumnSelector && (
-          <div className="p-4 border rounded-lg bg-muted/50">
-            <h4 className="text-sm font-medium mb-3">Select Columns to Display</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {(availableColumns ?? []).map((column) => (
-                <label key={column?.id || ''} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={(dataSource.columns ?? []).includes(column?.name || '')}
-                    onChange={() => handleColumnToggle(column?.name || '')}
-                    className="rounded"
-                  />
-                  <span className="text-sm">{column?.name || ''}</span>
-                  <span className="text-xs text-muted-foreground">({column?.type || ''})</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Table */}
         <div className="border rounded-lg overflow-hidden">

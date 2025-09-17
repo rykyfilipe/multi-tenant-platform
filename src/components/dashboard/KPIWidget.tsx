@@ -1,11 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle, BarChart3, Calculator } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import BaseWidget from './BaseWidget';
 import { api } from '@/lib/api-client';
+import { 
+  calculateAggregation, 
+  calculateMultipleAggregations,
+  getAvailableAggregations,
+  getAggregationLabel,
+  getAggregationDescription,
+  getTrendDirection,
+  calculatePercentageChange,
+  type AggregationType,
+  type AggregationResult
+} from '@/lib/aggregation-utils';
 
 export interface KPIDataPoint {
   label: string;
@@ -19,20 +30,29 @@ export interface KPIDataSource {
   type: 'table' | 'manual';
   tableId?: number;
   column?: string;
-  aggregation?: 'sum' | 'count' | 'avg' | 'min' | 'max';
+  aggregation?: AggregationType;
   filters?: any[];
+  // Advanced aggregation options
+  showMultipleAggregations?: boolean;
+  selectedAggregations?: AggregationType[];
+  compareWithPrevious?: boolean;
+  previousPeriodData?: any[];
 }
 
 export interface KPIConfig {
   title?: string;
   dataSource: KPIDataSource;
   options?: {
-    format?: 'number' | 'currency' | 'percentage';
+    format?: 'number' | 'currency' | 'percentage' | 'decimal';
     decimals?: number;
     prefix?: string;
     suffix?: string;
     showChange?: boolean;
     showTrend?: boolean;
+    showMultipleValues?: boolean;
+    showAggregationType?: boolean;
+    showDataCount?: boolean;
+    layout?: 'single' | 'grid' | 'list';
     thresholds?: {
       warning?: number;
       danger?: number;
@@ -42,7 +62,15 @@ export interface KPIConfig {
       positive?: string;
       negative?: string;
       neutral?: string;
+      primary?: string;
+      secondary?: string;
     };
+    // Enhanced styling options
+    backgroundColor?: string;
+    borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+    shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+    padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+    hoverEffect?: 'none' | 'lift' | 'glow' | 'scale' | 'rotate';
   };
 }
 
@@ -64,7 +92,8 @@ interface KPIWidgetProps {
 }
 
 export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: KPIWidgetProps) {
-  const [data, setData] = useState<KPIDataPoint[]>([]);
+  const [rawData, setRawData] = useState<any[]>([]);
+  const [previousData, setPreviousData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,16 +101,41 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
   const dataSource = config.dataSource;
   const options = config.options || {};
 
+  // Calculate aggregations using the new utility functions
+  const aggregations = useMemo(() => {
+    if (!rawData.length || !dataSource.column) return {};
+
+    const column = dataSource.column;
+    const aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
+      ? dataSource.selectedAggregations
+      : [dataSource.aggregation || 'sum'];
+
+    return calculateMultipleAggregations(rawData, column, aggregationsToCalculate);
+  }, [rawData, dataSource.column, dataSource.aggregation, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
+
+  // Calculate previous period aggregations for comparison
+  const previousAggregations = useMemo(() => {
+    if (!previousData.length || !dataSource.column) return {};
+
+    const column = dataSource.column;
+    const aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
+      ? dataSource.selectedAggregations
+      : [dataSource.aggregation || 'sum'];
+
+    return calculateMultipleAggregations(previousData, column, aggregationsToCalculate);
+  }, [previousData, dataSource.column, dataSource.aggregation, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
+
   useEffect(() => {
     if (dataSource.type === 'table' && tenantId && databaseId && dataSource.tableId && dataSource.column) {
       fetchTableData();
     } else if (dataSource.type === 'manual') {
       // For manual data, we'll use mock data for now
-      setData([
-        { label: 'Total Revenue', value: 125000, previousValue: 110000, change: 15000, changePercent: 13.6 },
-        { label: 'Active Users', value: 2847, previousValue: 2650, change: 197, changePercent: 7.4 },
-        { label: 'Conversion Rate', value: 3.2, previousValue: 2.8, change: 0.4, changePercent: 14.3 },
-      ]);
+      const mockData = [
+        { id: 1, revenue: 125000, users: 2847, conversion: 3.2 },
+        { id: 2, revenue: 110000, users: 2650, conversion: 2.8 },
+        { id: 3, revenue: 135000, users: 3100, conversion: 3.5 },
+      ];
+      setRawData(mockData);
     }
   }, [dataSource, tenantId, databaseId]);
 
@@ -104,20 +158,34 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       const response = await api.tables.rows(tenantId, databaseId, dataSource.tableId, queryData);
       
       if (response.success && response.data) {
-        const values = (response.data.rows ?? []).map((row: any) => {
-          const cell = row?.cells?.find((c: any) => c?.column?.name === dataSource.column);
-          return cell ? parseFloat(cell.value) || 0 : 0;
+        // Store raw data for aggregation calculations
+        const rawData = (response.data.rows ?? []).map((row: any) => {
+          const processedRow: any = { id: row.id };
+          
+          // Process all cells to create a flat object
+          if (row.cells) {
+            row.cells.forEach((cell: any) => {
+              if (cell?.column?.name) {
+                processedRow[cell.column.name] = cell.value;
+              }
+            });
+          }
+          
+          return processedRow;
         });
 
-        const aggregatedValue = aggregateValues(values, dataSource.aggregation || 'sum');
-        
-        setData([{
-          label: dataSource.column,
-          value: aggregatedValue,
-          previousValue: aggregatedValue * 0.9, // Mock previous value
-          change: aggregatedValue * 0.1,
-          changePercent: 10
-        }]);
+        setRawData(rawData);
+
+        // If we need to compare with previous period, fetch that data too
+        if (dataSource.compareWithPrevious) {
+          // For now, we'll simulate previous period data
+          // In a real implementation, you'd fetch data from a previous time period
+          const previousData = rawData.map(row => ({
+            ...row,
+            [dataSource.column!]: (parseFloat(row[dataSource.column!]) || 0) * 0.9 // Simulate 10% decrease
+          }));
+          setPreviousData(previousData);
+        }
       }
     } catch (err) {
       console.error('Error fetching KPI data:', err);
@@ -195,6 +263,16 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     }
   };
 
+  // Enhanced styling configuration
+  const widgetStyle = {
+    backgroundColor: options.backgroundColor || 'transparent',
+    borderRadius: options.borderRadius || 'lg',
+    shadow: options.shadow || 'sm',
+    padding: options.padding || 'md',
+    hoverEffect: options.hoverEffect || 'lift',
+    ...widget.style
+  };
+
   if (isLoading) {
     return (
       <BaseWidget
@@ -206,6 +284,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
         error={null}
         onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
         showRefresh={dataSource.type === 'table'}
+        style={widgetStyle}
       >
         <div className="space-y-4">
           <Skeleton className="h-8 w-3/4" />
@@ -227,6 +306,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
         error={error}
         onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
         showRefresh={dataSource.type === 'table'}
+        style={widgetStyle}
       >
         <div className="flex items-center justify-center h-32">
           <div className="text-center">
@@ -238,6 +318,138 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     );
   }
 
+  // Render KPI values based on configuration
+  const renderKPIContent = () => {
+    if (!dataSource.column || Object.keys(aggregations).length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="text-center p-6">
+            <Calculator className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-sm">No data available</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Select a table and column to see KPI values
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const layout = options.layout || 'single';
+    const showMultiple = options.showMultipleValues || dataSource.showMultipleAggregations;
+
+    if (showMultiple && Object.keys(aggregations).length > 1) {
+      // Render multiple aggregations
+      return (
+        <div className={`space-y-3 ${layout === 'grid' ? 'grid grid-cols-2 gap-3' : ''}`}>
+          {Object.entries(aggregations).map(([type, result]) => {
+            const previousResult = previousAggregations[type as AggregationType];
+            const changePercent = previousResult 
+              ? calculatePercentageChange(result.value, previousResult.value)
+              : undefined;
+            const trend = previousResult 
+              ? getTrendDirection(result.value, previousResult.value)
+              : 'stable';
+
+            return (
+              <div key={type} className="p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {getAggregationLabel(type as AggregationType)}
+                    </span>
+                  </div>
+                  {options.showTrend && previousResult && (
+                    <div className={`flex items-center space-x-1 ${
+                      trend === 'up' ? 'text-green-600' : 
+                      trend === 'down' ? 'text-red-600' : 'text-gray-500'
+                    }`}>
+                      {trend === 'up' ? <TrendingUp className="h-3 w-3" /> :
+                       trend === 'down' ? <TrendingDown className="h-3 w-3" /> :
+                       <Minus className="h-3 w-3" />}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-baseline space-x-2">
+                  <span className="text-xl font-bold text-foreground">
+                    {result.formatted}
+                  </span>
+                  {options.showChange && changePercent !== undefined && (
+                    <span className={`text-xs ${
+                      changePercent > 0 ? 'text-green-600' : 
+                      changePercent < 0 ? 'text-red-600' : 'text-gray-500'
+                    }`}>
+                      {changePercent > 0 ? '+' : ''}{changePercent.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+                
+                {options.showDataCount && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Based on {result.count} data points
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+    } else {
+      // Render single aggregation
+      const primaryType = dataSource.aggregation || 'sum';
+      const result = aggregations[primaryType];
+      const previousResult = previousAggregations[primaryType];
+      const changePercent = previousResult 
+        ? calculatePercentageChange(result.value, previousResult.value)
+        : undefined;
+      const trend = previousResult 
+        ? getTrendDirection(result.value, previousResult.value)
+        : 'stable';
+
+      return (
+        <div className="text-center space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-center space-x-2">
+              <BarChart3 className="h-5 w-5 text-muted-foreground" />
+              {options.showAggregationType && (
+                <span className="text-sm text-muted-foreground">
+                  {getAggregationLabel(primaryType)}
+                </span>
+              )}
+            </div>
+            
+            <div className="text-4xl font-bold text-foreground">
+              {result.formatted}
+            </div>
+            
+            {options.showTrend && previousResult && (
+              <div className={`flex items-center justify-center space-x-2 ${
+                trend === 'up' ? 'text-green-600' : 
+                trend === 'down' ? 'text-red-600' : 'text-gray-500'
+              }`}>
+                {trend === 'up' ? <TrendingUp className="h-5 w-5" /> :
+                 trend === 'down' ? <TrendingDown className="h-5 w-5" /> :
+                 <Minus className="h-5 w-5" />}
+                {options.showChange && changePercent !== undefined && (
+                  <span className="text-sm font-medium">
+                    {changePercent > 0 ? '+' : ''}{changePercent.toFixed(1)}%
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {options.showDataCount && (
+              <div className="text-sm text-muted-foreground">
+                Based on {result.count} data points
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+  };
+
   return (
     <BaseWidget
       widget={widget}
@@ -248,25 +460,9 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       error={null}
       onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
       showRefresh={dataSource.type === 'table'}
+      style={widgetStyle}
     >
-      <div className="space-y-4">
-        {(data ?? []).map((kpi, index) => (
-          <div key={index} className="text-center">
-            <div className="text-sm text-gray-600 mb-1">{kpi?.label || ''}</div>
-            <div className={`text-3xl font-bold ${getThresholdColor(kpi?.value || 0)}`}>
-              {formatValue(kpi?.value || 0)}
-            </div>
-            {options.showChange && kpi?.changePercent !== undefined && (
-              <div className={`flex items-center justify-center space-x-1 text-sm ${getTrendColor(kpi.changePercent)}`}>
-                {options.showTrend && getTrendIcon(kpi.changePercent)}
-                <span>
-                  {kpi.changePercent > 0 ? '+' : ''}{kpi.changePercent.toFixed(1)}%
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {renderKPIContent()}
     </BaseWidget>
   );
 }

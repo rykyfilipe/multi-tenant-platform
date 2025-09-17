@@ -103,7 +103,7 @@ export function useSchemaCache(tenantId: number, databaseId: number) {
 		if (cached && cached.expireAt > now) {
 			return cached.value
 		}
-		const data = await fetchJSON<{ columns: CachedColumnMeta[] }>(`/api/dev/tables/${tableId}/columns`)
+		const data = await fetchJSON<{ success: boolean; columns: CachedColumnMeta[] }>(`/api/dev/tables/${tableId}/columns`)
 		columnsCache.set(key, { value: data.columns ?? [], expireAt: now + COLUMNS_TTL_MS })
 		return data.columns ?? []
 	}, [tenantId, databaseId])
