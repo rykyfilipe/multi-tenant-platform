@@ -277,7 +277,7 @@ export default function DashboardsPage() {
   const handleWidgetUpdate = (updatedWidget: Widget) => {
     setPendingChanges(prev => {
       const filtered = prev.filter(change => 
-        !(change.widgetId === updatedWidget.id && change.type === 'update')
+        !(change.widgetId === Number(updatedWidget.id) && change.type === 'update')
       );
       return [...filtered, {
         type: 'update',
@@ -291,7 +291,7 @@ export default function DashboardsPage() {
       if (!prev) return prev;
       return {
         ...prev,
-        widgets: (prev.widgets ?? []).map(w => w.id === updatedWidget.id ? updatedWidget : w),
+        widgets: (prev.widgets ?? []).map(w => Number(w.id) === Number(updatedWidget.id) ? updatedWidget : w),
       };
     });
   };
@@ -309,7 +309,7 @@ export default function DashboardsPage() {
       if (!prev) return prev;
       return {
         ...prev,
-        widgets: (prev.widgets ?? []).filter(w => w.id !== widgetId),
+        widgets: (prev.widgets ?? []).filter(w => Number(w.id) !== widgetId),
       };
     });
 
@@ -492,7 +492,7 @@ export default function DashboardsPage() {
   const renderWidget = (widget: Widget) => {
     // Check if widget has pending changes and use them for live preview
     const pendingChange = pendingChanges.find(change => 
-      change.widgetId === widget.id && change.type === 'update'
+      change.widgetId === Number(widget.id) && change.type === 'update'
     );
     
     const displayWidget = pendingChange && pendingChange.data 
