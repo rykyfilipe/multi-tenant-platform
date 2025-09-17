@@ -24,7 +24,7 @@ interface DatabaseContextType {
 	setSelectedDatabase: (database: Database) => void;
 
 	tables: Table[] | null;
-	setTables: (tables: Table[]) => void;
+	setTables: (tables: Table[] | null | ((prev: Table[] | null) => Table[] | null)) => void;
 
 	showAddTableModal: boolean;
 	setShowAddTableModal: (state: boolean) => void;

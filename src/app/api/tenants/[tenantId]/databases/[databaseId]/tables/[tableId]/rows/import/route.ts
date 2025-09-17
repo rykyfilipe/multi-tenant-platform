@@ -625,6 +625,7 @@ export async function POST(
 		const response: any = {
 			message: `Successfully imported ${importedRows.length} rows`,
 			importedRows: importedRows.length,
+			importedRowsData: importedRows, // Include the actual row data
 			totalRows: rows.length,
 			validRows: validRows.length,
 			summary: {

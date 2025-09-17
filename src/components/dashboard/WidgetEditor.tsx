@@ -102,7 +102,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
         return {
           dataSource: {
             type: 'table',
-            tableId: 1,
+            tableId: undefined,
             columns: []
           },
           options: {
@@ -116,7 +116,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
         return {
           dataSource: {
             type: 'table',
-            tableId: 1,
+            tableId: undefined,
             column: ''
           },
           options: {
@@ -423,7 +423,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* Table Configuration with integrated TableSelector */}
                   <TableSelector
                     tenantId={tenantId}
-                    selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
+                    selectedTableId={editedWidget.config?.dataSource?.tableId}
                     selectedColumns={editedWidget.config?.dataSource?.columns || []}
                     onColumnsChange={(columns) => updateConfig({
                       dataSource: {
@@ -526,7 +526,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* KPI Configuration with integrated TableSelector */}
                   <TableSelector
                     tenantId={tenantId}
-                    selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
+                    selectedTableId={editedWidget.config?.dataSource?.tableId}
                     selectedColumns={editedWidget.config?.dataSource?.column ? [editedWidget.config?.dataSource?.column] : []}
                     onColumnsChange={(columns) => updateConfig({
                       dataSource: {

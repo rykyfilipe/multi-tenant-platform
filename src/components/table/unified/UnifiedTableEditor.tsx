@@ -69,7 +69,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	refreshTable 
 }: Props) {
 	const { showAlert, token, user, tenant } = useApp();
-	const { selectedDatabase, tables } = useDatabase();
+	const { selectedDatabase, tables, setTables } = useDatabase();
 	const [showColumnSidebar, setShowColumnSidebar] = useState(false);
 	const [showFilters, setShowFilters] = useState(false);
 	const [showAddColumnForm, setShowAddColumnForm] = useState(false);
@@ -338,7 +338,16 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					);
 				}
 
-				// Cache refresh removed - using direct Prisma queries
+				// Update context with updated table
+				if (setTables && tables) {
+					setTables((prevTables: Table[] | null) => 
+						prevTables ? prevTables.map((t: Table) => 
+							t.id === table.id 
+								? { ...t, columns: [...(t.columns || []), ...createdColumns] }
+								: t
+						) : []
+					);
+				}
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to add column");
@@ -424,7 +433,18 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					);
 				}
 
-				// Cache refresh removed - using direct Prisma queries
+				// Update context with updated table
+				if (setTables && tables) {
+					setTables((prevTables: Table[] | null) => 
+						prevTables ? prevTables.map((t: Table) => 
+							t.id === table.id 
+								? { ...t, columns: (t.columns || []).map((col: any) => 
+									col.id === selectedColumn.id ? { ...col, ...updatedColumnData } : col
+								) }
+								: t
+						) : []
+					);
+				}
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to update column");
@@ -482,7 +502,16 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 			);
 
 			if (response.ok) {
-				// Cache refresh removed - using direct Prisma queries
+				// Update context with updated table
+				if (setTables && tables) {
+					setTables((prevTables: Table[] | null) => 
+						prevTables ? prevTables.map((t: Table) => 
+							t.id === table.id 
+								? { ...t, columns: (t.columns || []).filter((col: any) => col.id.toString() !== columnId) }
+								: t
+						) : []
+					);
+				}
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to delete column");
@@ -731,8 +760,16 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				const fileInput = document.getElementById('import-file-input') as HTMLInputElement;
 				if (fileInput) fileInput.value = '';
 				
-				// Refresh table data
-				await refetchRows();
+				// Update local state with imported rows
+				if (result.importedRowsData && result.importedRowsData.length > 0) {
+					setRows((currentRows: any[]) => {
+						// Add imported rows to the beginning of the current rows
+						return [...result.importedRowsData, ...(currentRows || [])];
+					});
+				} else {
+					// Fallback: refresh table data if no row data returned
+					await refetchRows();
+				}
 			} else {
 				throw new Error(result.error || "Failed to import data");
 			}
