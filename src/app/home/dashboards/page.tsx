@@ -21,10 +21,21 @@ import KPIWidget from '@/components/dashboard/KPIWidget';
 import TextWidget from '@/components/dashboard/TextWidget';
 import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
+import { DashboardDetailsEditor } from '@/components/dashboard/DashboardDetailsEditor';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
 import { useWidgetPendingChanges } from '@/hooks/useWidgetPendingChanges';
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -59,6 +70,9 @@ export default function DashboardsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
   const [showWidgetEditor, setShowWidgetEditor] = useState(false);
+  const [showDetailsEditor, setShowDetailsEditor] = useState(false);
+  const [pendingDashboardSwitch, setPendingDashboardSwitch] = useState<Dashboard | null>(null);
+  const [showUnsavedChangesAlert, setShowUnsavedChangesAlert] = useState(false);
   
   const { toast } = useToast();
   const { tenant } = useApp();
@@ -216,6 +230,116 @@ export default function DashboardsPage() {
       title: "Changes reverted",
       description: "All pending changes have been discarded.",
     });
+  };
+
+  // Handle dashboard switch with unsaved changes check
+  const handleDashboardSwitch = (dashboard: Dashboard) => {
+    if (pendingChangesCount > 0) {
+      // Show alert for unsaved changes
+      setPendingDashboardSwitch(dashboard);
+      setShowUnsavedChangesAlert(true);
+    } else {
+      // Switch directly if no pending changes
+      switchToDashboard(dashboard);
+    }
+  };
+
+  // Actually switch to the dashboard
+  const switchToDashboard = async (dashboard: Dashboard) => {
+    try {
+      setIsLoading(true);
+      
+      // Clear pending changes
+      discardPendingChanges();
+      
+      // Fetch the specific dashboard with widgets
+      const response = await fetch(`/api/dashboards/${dashboard.id}`);
+      if (!response.ok) throw new Error('Failed to fetch dashboard');
+      
+      const data = await response.json();
+      setSelectedDashboard(data);
+      
+      // Reset edit mode when switching dashboards
+      setIsEditMode(false);
+      
+    } catch (error) {
+      console.error('Error switching dashboard:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load dashboard',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle unsaved changes alert actions
+  const handleUnsavedChangesAction = (action: 'save' | 'discard' | 'cancel') => {
+    setShowUnsavedChangesAlert(false);
+    
+    if (action === 'cancel') {
+      setPendingDashboardSwitch(null);
+      return;
+    }
+    
+    if (action === 'save') {
+      // Save changes first, then switch
+      if (selectedDashboard) {
+        saveChanges().then(() => {
+          if (pendingDashboardSwitch) {
+            switchToDashboard(pendingDashboardSwitch);
+            setPendingDashboardSwitch(null);
+          }
+        });
+      }
+    } else if (action === 'discard') {
+      // Discard changes and switch
+      discardPendingChanges();
+      if (pendingDashboardSwitch) {
+        switchToDashboard(pendingDashboardSwitch);
+        setPendingDashboardSwitch(null);
+      }
+    }
+  };
+
+  // Handle dashboard details update
+  const handleDashboardDetailsUpdate = async (data: { name: string; description?: string; isPublic?: boolean }) => {
+    if (!selectedDashboard) return;
+
+    try {
+      const response = await fetch(`/api/dashboards/${selectedDashboard.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update dashboard');
+      }
+
+      const updatedDashboard = await response.json();
+      
+      // Update local state
+      setDashboards(prev => 
+        prev.map(d => d.id === selectedDashboard.id ? updatedDashboard : d)
+      );
+      setSelectedDashboard(updatedDashboard);
+
+      toast({
+        title: 'Success',
+        description: 'Dashboard details updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating dashboard details:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update dashboard details',
+        variant: 'destructive',
+      });
+      throw error; // Re-throw to let the editor handle it
+    }
   };
 
   const handleLayoutChange = (layout: any[]) => {
@@ -592,7 +716,7 @@ export default function DashboardsPage() {
             <DashboardSelector
               dashboards={dashboards}
               selectedDashboard={selectedDashboard}
-              onSelect={setSelectedDashboard}
+              onSelect={handleDashboardSwitch}
               onCreateNew={() => setShowCreateDialog(true)}
             />
           </div>
@@ -600,6 +724,16 @@ export default function DashboardsPage() {
           <div className="flex items-center space-x-3">
             {selectedDashboard && (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDetailsEditor(true)}
+                  className="flex items-center space-x-2"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  <span>Edit Details</span>
+                </Button>
+                
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="edit-mode" className="text-sm font-medium">
                     Edit Mode
@@ -783,6 +917,43 @@ export default function DashboardsPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Dashboard Details Editor */}
+      {selectedDashboard && (
+        <DashboardDetailsEditor
+          dashboard={selectedDashboard}
+          isOpen={showDetailsEditor}
+          onClose={() => setShowDetailsEditor(false)}
+          onSave={handleDashboardDetailsUpdate}
+        />
+      )}
+
+      {/* Unsaved Changes Alert */}
+      <AlertDialog open={showUnsavedChangesAlert} onOpenChange={setShowUnsavedChangesAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have {pendingChangesCount} unsaved change{pendingChangesCount !== 1 ? 's' : ''} in the current dashboard. 
+              What would you like to do with these changes before switching to "{pendingDashboardSwitch?.name}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleUnsavedChangesAction('cancel')}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => handleUnsavedChangesAction('discard')}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard Changes
+            </AlertDialogAction>
+            <AlertDialogAction onClick={() => handleUnsavedChangesAction('save')}>
+              Save Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
