@@ -108,18 +108,28 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
     const rows = result.data || [];
     
     // Transform rows with cells to chart data
+    const xKey = dataSource.columnX || 'x';
+    const yKey = dataSource.columnY || 'y';
+    
     return rows.map((row: any) => {
       const dataPoint: any = {};
-      if (row.cells) {
+      if (row.cells && Array.isArray(row.cells)) {
         // Find X and Y column values from cells
-        const xCell = row.cells.find((cell: any) => cell.column.name === dataSource.columnX);
-        const yCell = row.cells.find((cell: any) => cell.column.name === dataSource.columnY);
+        const xCell = row.cells.find((cell: any) => cell?.column?.name === xKey);
+        const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
         
-        dataPoint[dataSource.columnX || 'x'] = xCell?.value || '';
-        dataPoint[dataSource.columnY || 'y'] = parseFloat(yCell?.value) || 0;
+        // Safely assign values with fallbacks
+        dataPoint[xKey] = xCell?.value || '';
+        dataPoint[yKey] = parseFloat(yCell?.value) || 0;
       }
       return dataPoint;
-    }).filter((point: any) => point[dataSource.columnX || 'x'] && point[dataSource.columnY || 'y'] !== undefined);
+    }).filter((point: any) => {
+      // Ensure both x and y values exist and are valid
+      const xValue = point[xKey];
+      const yValue = point[yKey];
+      return xValue !== undefined && xValue !== null && xValue !== '' && 
+             yValue !== undefined && yValue !== null && !isNaN(yValue);
+    });
   } catch (error) {
     console.error('Error fetching table data:', error);
     throw error;
@@ -139,9 +149,9 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
   // Process data based on data source type
   const processedData = useMemo(() => {
     if (dataSource.type === 'manual' && dataSource.manualData) {
-      return dataSource.manualData;
+      return Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
     }
-    return data;
+    return Array.isArray(data) ? data : [];
   }, [dataSource, data]);
 
   // Fetch data when dataSource changes
@@ -215,11 +225,12 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
       onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
       showRefresh={dataSource.type === 'table'}
     >
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart 
-          data={processedData} 
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
+      {processedData && processedData.length > 0 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart 
+            data={processedData} 
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
           {options.showGrid !== false && (
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           )}
@@ -257,7 +268,20 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
             activeDot={{ r: dotSize + 2, stroke: colors[0], strokeWidth: 2 }}
           />
         </LineChart>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      ) : (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="text-center">
+            <p className="text-sm">No data available</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {dataSource.type === 'manual' 
+                ? 'Add some data points to see the chart' 
+                : 'Select a table and columns to load data'
+              }
+            </p>
+          </div>
+        </div>
+      )}
     </BaseWidget>
   );
 }

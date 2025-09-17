@@ -22,8 +22,8 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, tenantId, d
 	const { data, isLoading, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
 	const processedData = useMemo(() => {
-		if (dataSource.type === 'manual') return dataSource.manualData || [];
-		return data;
+		if (dataSource.type === 'manual') return Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
+		return Array.isArray(data) ? data : [];
 	}, [dataSource, data]);
 
 	return (
@@ -36,16 +36,30 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, tenantId, d
 			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
 			showRefresh={dataSource.type === 'table'}
 		>
-			<ResponsiveContainer width="100%" height="100%">
-				<BarChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-					{options.showGrid !== false && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
-					<XAxis dataKey={config.xAxis?.key || 'x'} label={{ value: config.xAxis?.label, position: 'insideBottom', offset: -5 }} />
-					<YAxis label={{ value: config.yAxis?.label, angle: -90, position: 'insideLeft' }} />
-					<Tooltip />
-					{options.showLegend !== false && <Legend />}
-					<Bar dataKey={config.yAxis?.key || 'y'} fill={(options.colors && options.colors[0]) || '#3B82F6'} />
-				</BarChart>
-			</ResponsiveContainer>
+			{processedData && processedData.length > 0 ? (
+				<ResponsiveContainer width="100%" height="100%">
+					<BarChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+						{options.showGrid !== false && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
+						<XAxis dataKey={config.xAxis?.key || 'x'} label={{ value: config.xAxis?.label, position: 'insideBottom', offset: -5 }} />
+						<YAxis label={{ value: config.yAxis?.label, angle: -90, position: 'insideLeft' }} />
+						<Tooltip />
+						{options.showLegend !== false && <Legend />}
+						<Bar dataKey={config.yAxis?.key || 'y'} fill={(options.colors && options.colors[0]) || '#3B82F6'} />
+					</BarChart>
+				</ResponsiveContainer>
+			) : (
+				<div className="flex items-center justify-center h-full text-muted-foreground">
+					<div className="text-center">
+						<p className="text-sm">No data available</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							{dataSource.type === 'manual' 
+								? 'Add some data points to see the chart' 
+								: 'Select a table and columns to load data'
+							}
+						</p>
+					</div>
+				</div>
+			)}
 		</BaseWidget>
 	);
 }

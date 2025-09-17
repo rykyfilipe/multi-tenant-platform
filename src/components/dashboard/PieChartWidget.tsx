@@ -22,8 +22,8 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, tenantId, d
 	const { data, isLoading, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
 	const processedData = useMemo(() => {
-		if (dataSource.type === 'manual') return dataSource.manualData || [];
-		return data;
+		if (dataSource.type === 'manual') return Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
+		return Array.isArray(data) ? data : [];
 	}, [dataSource, data]);
 
 	const colors = options.colors || ['#3B82F6', '#22C55E', '#F97316', '#EF4444', '#A855F7'];
@@ -38,17 +38,31 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, tenantId, d
 			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
 			showRefresh={dataSource.type === 'table'}
 		>
-			<ResponsiveContainer width="100%" height="100%">
-				<PieChart>
-					<Tooltip />
-					{options.showLegend !== false && <Legend />}
-					<Pie data={processedData} dataKey={config.yAxis?.key || 'value'} nameKey={config.xAxis?.key || 'name'} outerRadius={80}>
-						{processedData.map((_, index) => (
-							<Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-						))}
-					</Pie>
-				</PieChart>
-			</ResponsiveContainer>
+			{processedData && processedData.length > 0 ? (
+				<ResponsiveContainer width="100%" height="100%">
+					<PieChart>
+						<Tooltip />
+						{options.showLegend !== false && <Legend />}
+						<Pie data={processedData} dataKey={config.yAxis?.key || 'value'} nameKey={config.xAxis?.key || 'name'} outerRadius={80}>
+							{processedData.map((_, index) => (
+								<Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+							))}
+						</Pie>
+					</PieChart>
+				</ResponsiveContainer>
+			) : (
+				<div className="flex items-center justify-center h-full text-muted-foreground">
+					<div className="text-center">
+						<p className="text-sm">No data available</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							{dataSource.type === 'manual' 
+								? 'Add some data points to see the chart' 
+								: 'Select a table and columns to load data'
+							}
+						</p>
+					</div>
+				</div>
+			)}
 		</BaseWidget>
 	);
 }

@@ -37,18 +37,28 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const rows = json?.data || [];
 				
 				// Transform rows with cells to chart data
+				const xKey = dataSource.columnX || config.xAxis?.key || 'x';
+				const yKey = dataSource.columnY || config.yAxis?.key || 'y';
+				
 				const mapped: ChartDataPoint[] = rows.map((row: any) => {
 					const dataPoint: any = {};
-					if (row.cells) {
+					if (row.cells && Array.isArray(row.cells)) {
 						// Find X and Y column values from cells
-						const xCell = row.cells.find((cell: any) => cell.column.name === (dataSource.columnX || config.xAxis?.key || 'name'));
-						const yCell = row.cells.find((cell: any) => cell.column.name === (dataSource.columnY || config.yAxis?.key || 'price'));
+						const xCell = row.cells.find((cell: any) => cell?.column?.name === xKey);
+						const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
 						
-						dataPoint[dataSource.columnX || config.xAxis?.key || 'x'] = xCell?.value || '';
-						dataPoint[dataSource.columnY || config.yAxis?.key || 'y'] = parseFloat(yCell?.value) || 0;
+						// Safely assign values with fallbacks
+						dataPoint[xKey] = xCell?.value || '';
+						dataPoint[yKey] = parseFloat(yCell?.value) || 0;
 					}
 					return dataPoint;
-				}).filter(point => point[dataSource.columnX || config.xAxis?.key || 'x'] && point[dataSource.columnY || config.yAxis?.key || 'y'] !== undefined);
+				}).filter(point => {
+					// Ensure both x and y values exist and are valid
+					const xValue = point[xKey];
+					const yValue = point[yKey];
+					return xValue !== undefined && xValue !== null && xValue !== '' && 
+						   yValue !== undefined && yValue !== null && !isNaN(yValue);
+				});
 				if (active) {
 					setData(mapped);
 					setLastFetchTime(new Date());
