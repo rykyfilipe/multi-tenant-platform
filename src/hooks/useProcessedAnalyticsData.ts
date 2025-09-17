@@ -152,7 +152,17 @@ export const useProcessedAnalyticsData = (): {
 	}, [token, tenant]);
 
 	const processedData = useMemo(() => {
-		if (!rawData) return null;
+		console.log('[useProcessedAnalyticsData] Processing data:', {
+			hasRawData: !!rawData,
+			rawDataKeys: rawData ? Object.keys(rawData) : null,
+			hasRealTimeData: !!realTimeData,
+			hasBusinessData: !!businessData
+		});
+		
+		if (!rawData) {
+			console.log('[useProcessedAnalyticsData] No rawData, returning null');
+			return null;
+		}
 
 		// Helper function to generate real time series data from raw data
 		const generateTimeSeriesData = (days = 30) => {

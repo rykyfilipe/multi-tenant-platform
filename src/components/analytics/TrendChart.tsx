@@ -70,6 +70,13 @@ export const TrendChart: React.FC<TrendChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
+	console.log('[TrendChart] Render:', {
+		title,
+		hasData: !!data,
+		dataLength: data?.length || 0,
+		metricsLength: metrics?.length || 0,
+		xAxisKey
+	});
 	return (
 		<motion.div
 			initial={{ opacity: 0, y: 20 }}

@@ -93,7 +93,16 @@ export const useDashboardData = () => {
 
 	// Progressive loading: First load essential stats, then charts
 	const fetchEssentialData = useCallback(async () => {
-		if (!token || !tenant) return null;
+		console.log('[useDashboardData] fetchEssentialData called:', {
+			hasToken: !!token,
+			hasTenant: !!tenant,
+			tenantId: tenant?.id
+		});
+		
+		if (!token || !tenant) {
+			console.log('[useDashboardData] Missing token or tenant, returning null');
+			return null;
+		}
 
 		try {
 			// Fetch only essential data first for faster FCP
@@ -381,13 +390,25 @@ export const useDashboardData = () => {
 	}, [token, tenant?.id, subscription?.subscriptionPlan, planLimits]);
 
 	// Memoize the return value to prevent unnecessary re-renders
-	return useMemo(
-		() => ({
-			data,
-			loading,
-			error,
-			loadingPhase,
-		}),
+	const returnValue = useMemo(
+		() => {
+			console.log('[useDashboardData] Returning value:', {
+				hasData: !!data,
+				loading,
+				error,
+				loadingPhase,
+				dataKeys: data ? Object.keys(data) : null
+			});
+			
+			return {
+				data,
+				loading,
+				error,
+				loadingPhase,
+			};
+		},
 		[data, loading, error, loadingPhase],
 	);
+	
+	return returnValue;
 };

@@ -42,6 +42,11 @@ export const ResourceUsageChart: React.FC<ResourceUsageChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
+	console.log('[ResourceUsageChart] Render:', {
+		title,
+		hasData: !!data,
+		dataLength: data?.length || 0
+	});
 	return (
 		<motion.div
 			initial={{ opacity: 0, y: 20 }}

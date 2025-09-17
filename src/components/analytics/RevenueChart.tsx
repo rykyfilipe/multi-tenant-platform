@@ -44,6 +44,12 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
+	console.log('[RevenueChart] Render:', {
+		title,
+		hasData: !!data,
+		dataLength: data?.length || 0,
+		chartType
+	});
 	const ChartComponent =
 		chartType === "area"
 			? AreaChart

@@ -34,6 +34,11 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
+	console.log('[PerformanceChart] Render:', {
+		title,
+		hasData: !!data,
+		dataLength: data?.length || 0
+	});
 	const averageScore =
 		data && data.length > 0
 			? Math.round(

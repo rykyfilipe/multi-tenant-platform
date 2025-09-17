@@ -48,6 +48,11 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
+	console.log('[DistributionChart] Render:', {
+		title,
+		hasData: !!data,
+		dataLength: data?.length || 0
+	});
 	const renderCustomLabel = ({
 		cx,
 		cy,

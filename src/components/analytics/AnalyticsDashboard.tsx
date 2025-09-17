@@ -65,6 +65,16 @@ export const AnalyticsDashboard: React.FC = () => {
 	const [timeFilter, setTimeFilter] = useState<TimeFilter>("30d");
 	const [activeTab, setActiveTab] = useState("overview");
 
+	// Debug logging
+	console.log('[AnalyticsDashboard] Render state:', {
+		loading,
+		error,
+		hasData: !!data,
+		dataKeys: data ? Object.keys(data) : null,
+		hasRealTimeData: !!realTimeData,
+		hasBusinessData: !!businessData
+	});
+
 	if (loading) {
 		return (
 			<div className='h-full bg-background'>

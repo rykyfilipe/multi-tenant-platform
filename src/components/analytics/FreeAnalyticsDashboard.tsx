@@ -30,6 +30,15 @@ export function FreeAnalyticsDashboard() {
 		loading 
 	} = useDashboardData();
 
+	// Debug logging
+	console.log('[FreeAnalyticsDashboard] Render state:', {
+		loading,
+		hasData: !!data,
+		dataKeys: data ? Object.keys(data) : null,
+		tenantId: tenant?.id,
+		userId: user?.id
+	});
+
 	if(!data) {
 		return (
 			<div className="space-y-6">

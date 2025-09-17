@@ -44,6 +44,13 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
+	console.log('[OverviewChart] Render:', {
+		title,
+		hasData: !!data,
+		dataLength: data?.length || 0,
+		dataKeysLength: dataKeys?.length || 0,
+		xAxisKey
+	});
 	const hasAreaData = dataKeys.some((key) => key.type === "area");
 	const ChartComponent = hasAreaData ? AreaChart : LineChart;
 

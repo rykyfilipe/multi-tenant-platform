@@ -43,6 +43,11 @@ export const ErrorTrackingChart: React.FC<ErrorTrackingChartProps> = ({
 	height = 300,
 	delay = 0,
 }) => {
+	console.log('[ErrorTrackingChart] Render:', {
+		title,
+		hasData: !!data,
+		dataLength: data?.length || 0
+	});
 	const totalErrors = data?.reduce((sum, item) => sum + (item?.errors || 0), 0) || 0;
 	const totalWarnings = data?.reduce((sum, item) => sum + (item?.warnings || 0), 0) || 0;
 	const totalCritical = data?.reduce((sum, item) => sum + (item?.critical || 0), 0) || 0;
