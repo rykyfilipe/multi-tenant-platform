@@ -588,7 +588,7 @@ model Dashboard {
 }
 
 model Widget {
-  id          BigInt    @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   dashboardId Int
   type        String
   title       String?
