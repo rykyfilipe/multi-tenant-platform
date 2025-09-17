@@ -47,6 +47,7 @@ model Tenant {
   databases           Database[]
   invitations         Invitation[]
   tablePermissions    TablePermission[]
+  dashboards          Dashboard[]
   admin               User               @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   users               User[]             @relation("TenantUsers")
   userActivities      UserActivity[]
@@ -92,6 +93,10 @@ model User {
   errorLogs                    ErrorLog[]
   userPreferences              UserPreferences?
   anafCredentials              ANAFCredentials[]
+  createdDashboards            Dashboard[] @relation("DashboardCreator")
+  updatedDashboards            Dashboard[] @relation("DashboardUpdater")
+  createdWidgets               Widget[] @relation("WidgetCreator")
+  updatedWidgets               Widget[] @relation("WidgetUpdater")
 
   @@index([tenantId])
 }
@@ -128,7 +133,10 @@ model Table {
   database            Database           @relation(fields: [databaseId], references: [id], onDelete: Cascade)
   tablePermissions    TablePermission[]
 
+  @@unique([databaseId, name])
   @@index([databaseId])
+  @@index([databaseId, name])
+  @@index([isPublic, isProtected]) // For public/protected table queries
 }
 
 model Column {
@@ -148,11 +156,13 @@ model Column {
   isModuleColumn    Boolean            @default(false)
   semanticType      String?
   cells             Cell[]
-  referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id])
+  referenceTable    Table?             @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id], onDelete: SetNull)
   table             Table              @relation(fields: [tableId], references: [id], onDelete: Cascade)
   columnPermissions ColumnPermission[]
 
+  @@unique([tableId, name])
   @@index([tableId])
+  @@index([tableId, name])
   @@index([referenceTableId])
 }
 
@@ -167,15 +177,24 @@ model Row {
 }
 
 model Cell {
-  id       Int    @id @default(autoincrement())
-  rowId    Int
-  columnId Int
-  value    Json
-  column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  row      Row    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  id           Int      @id @default(autoincrement())
+  rowId        Int
+  columnId     Int
+  value        Json     // Keep for flexibility and complex data
+  stringValue  String?  // For text columns - enables efficient text searches
+  numberValue  Decimal? // For numeric columns - enables efficient sorting/filtering
+  dateValue    DateTime? // For date columns - enables efficient date operations
+  booleanValue Boolean? // For boolean columns - enables efficient boolean operations
+  column       Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  row          Row      @relation(fields: [rowId], references: [id], onDelete: Cascade)
 
+  @@unique([rowId, columnId])
   @@index([rowId])
   @@index([columnId])
+  @@index([stringValue]) // For text searches
+  @@index([numberValue]) // For numeric sorts and filters
+  @@index([dateValue])   // For date ranges
+  @@index([booleanValue]) // For boolean filters
 }
 
 model TablePermission {
@@ -579,4 +598,54 @@ model ANAFSubmissionLog {
   @@index([submissionId])
   @@index([status])
   @@index([submittedAt])
+}
+
+model Dashboard {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  name        String
+  description String?
+  mode        String   @default("view") // view, edit
+  isPublic    Boolean  @default(false)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   Int
+  updatedBy   Int
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  widgets  Widget[]
+  creator  User    @relation("DashboardCreator", fields: [createdBy], references: [id])
+  updater  User    @relation("DashboardUpdater", fields: [updatedBy], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, isDefault])
+  @@index([createdBy])
+  @@index([updatedBy])
+}
+
+model Widget {
+  id          Int      @id @default(autoincrement())
+  dashboardId Int
+  type        String   // chart, table, metric, text, filter, etc.
+  title       String?
+  position    Json     // { x: number, y: number, width: number, height: number }
+  config      Json     // Widget-specific configuration
+  isVisible   Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   Int
+  updatedBy   Int
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  creator   User      @relation("WidgetCreator", fields: [createdBy], references: [id])
+  updater   User      @relation("WidgetUpdater", fields: [updatedBy], references: [id])
+
+  @@index([dashboardId])
+  @@index([dashboardId, order])
+  @@index([type])
+  @@index([createdBy])
+  @@index([updatedBy])
 }

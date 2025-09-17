@@ -105,44 +105,42 @@ export async function POST(
 
 		const subscriptionPlan = tenant?.admin?.subscriptionPlan || "Free";
 
-		// Create table permissions for all users
-		await Promise.all(
-			users.map((user: { id: number; role: string }) =>
-				prisma.tablePermission.create({
-					data: {
-						userId: user.id,
-						tableId: table.id,
-						tenantId: Number(tenantId),
-						canDelete: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
-						canRead: true,
-						canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
-					},
-				}),
-			),
-		);
+		// Create table permissions for all users in bulk
+		const tablePermissions = users.map((user: { id: number; role: string }) => ({
+			userId: user.id,
+			tableId: table.id,
+			tenantId: Number(tenantId),
+			canDelete: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
+			canRead: true,
+			canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
+		}));
+
+		await prisma.tablePermission.createMany({
+			data: tablePermissions,
+		});
 
 		// Get columns for the table to create column permissions
 		const columns = await prisma.column.findMany({
 			where: { tableId: table.id },
 		});
 
-		// Create column permissions for all users
-		await Promise.all(
-			users.flatMap((user: { id: number; role: string }) =>
-				columns.map((column: { id: number }) =>
-					prisma.columnPermission.create({
-						data: {
-							userId: user.id,
-							columnId: column.id,
-							tableId: table.id,
-							tenantId: Number(tenantId),
-							canRead: true,
-							canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
-						},
-					}),
-				),
-			),
+		// Create column permissions for all users in bulk
+		const columnPermissions = users.flatMap((user: { id: number; role: string }) =>
+			columns.map((column: { id: number }) => ({
+				userId: user.id,
+				columnId: column.id,
+				tableId: table.id,
+				tenantId: Number(tenantId),
+				canRead: true,
+				canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
+			}))
 		);
+
+		if (columnPermissions.length > 0) {
+			await prisma.columnPermission.createMany({
+				data: columnPermissions,
+			});
+		}
 
 		return NextResponse.json(table, { status: 201 });
 	} catch (error) {

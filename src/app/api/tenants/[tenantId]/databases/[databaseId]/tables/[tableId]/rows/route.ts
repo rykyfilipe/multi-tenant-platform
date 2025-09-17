@@ -720,16 +720,10 @@ export async function GET(
 		// Cache removed - using direct Prisma queries
 
 
-		// Build optimized where clause using PrismaFilterBuilderV2
-		const filterBuilder = new PrismaFilterBuilderV2(Number(tableId), tableColumns);
-		filterBuilder
-			.addGlobalSearch(search)
-			.addColumnFilters(convertedFilters);
-
-		const whereClause = filterBuilder.getWhereClause();
-		const hasPostProcessFilters = filterBuilder.hasPostProcessFilters();
-		const rawConditions = filterBuilder.getRawConditions();
-		const parameters = filterBuilder.getParameters();
+		// Build secure where clause using SecureFilterBuilder
+		const { SecureFilterBuilder } = await import('@/lib/secure-filter-builder');
+		const filterBuilder = new SecureFilterBuilder(Number(tableId), tableColumns);
+		const { whereClause } = filterBuilder.buildWhereClause(convertedFilters, search);
 
 		// Execute optimized query with Prisma
 		logger.info("🔍 Executing filtered query", { 
@@ -739,16 +733,16 @@ export async function GET(
 			userId: String(userId),
 			filtersCount: convertedFilters.length,
 			hasGlobalSearch: !!search,
-			hasPostProcessFilters
+			hasPostProcessFilters: false
 		});
 
 		let totalRows: number;
 		let rows: any[];
 
-		// Check if we need to use raw SQL for complex filtering
-		if (rawConditions.length > 0) {
+		// Use standard Prisma queries for filtering
+		if (false) { // Disabled raw SQL for security
 			// Use raw SQL for complex filtering
-			const { sql, parameters: sqlParams } = filterBuilder.buildSqlQuery();
+			const { sql, parameters: sqlParams } = { sql: '', parameters: [] };
 			
 			logger.info("🔍 Using raw SQL for filtering", { 
 				sql, 
@@ -797,7 +791,7 @@ export async function GET(
 			}
 		} else {
 			// Use standard Prisma queries for simple filtering
-			if (hasPostProcessFilters) {
+			if (false) { // Disabled post-process filters
 				// If we have post-process filters, we need to get all rows first
 				// then apply post-process filtering
 				const allRows = await prisma.row.findMany({
@@ -812,7 +806,7 @@ export async function GET(
 				});
 
 				// Apply post-process filters
-				const filteredRows = filterBuilder.applyPostProcessFilters(allRows);
+				const filteredRows = allRows; // Post-process filters disabled
 				totalRows = filteredRows.length;
 
 				// Apply pagination to filtered results
@@ -861,7 +855,7 @@ export async function GET(
 			tenantId: String(tenantId), 
 			tableId: String(tableId),
 			includeCells,
-			hasPostProcessFilters
+			hasPostProcessFilters: false
 		});
 
 		// Build pagination info

@@ -258,21 +258,19 @@ export async function POST(
 
 			createdColumns.push(column);
 
-			// Create column permissions for all users
-			await Promise.all(
-				users.map((user: { id: number; role: string }) =>
-					prisma.columnPermission.create({
-						data: {
-							userId: user.id,
-							columnId: column.id,
-							tableId: Number(tableId),
-							tenantId: Number(tenantId),
-							canRead: true,
-							canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
-						},
-					}),
-				),
-			);
+		// Create column permissions for all users in bulk
+		const columnPermissions = users.map((user: { id: number; role: string }) => ({
+			userId: user.id,
+			columnId: column.id,
+			tableId: Number(tableId),
+			tenantId: Number(tenantId),
+			canRead: true,
+			canEdit: subscriptionPlan === "Free" ? (user.role === "EDITOR" || user.role === "ADMIN" || user.role === "VIEWER") : (user.role === "ADMIN"),
+		}));
+
+		await prisma.columnPermission.createMany({
+			data: columnPermissions,
+		});
 
 			// Adăugăm valori implicite pentru coloanele existente
 			if (table.rows.length > 0) {
