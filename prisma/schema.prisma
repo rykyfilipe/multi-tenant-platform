@@ -12,23 +12,23 @@ datasource db {
 }
 
 model Tenant {
-  id                  Int                @id @default(autoincrement())
-  name                String             @unique
-  adminId             Int                @unique
+  id                  Int                 @id @default(autoincrement())
+  name                String              @unique
+  adminId             Int                 @unique
   address             String?
   companyEmail        String?
-  createdAt           DateTime           @default(now())
+  createdAt           DateTime            @default(now())
   language            String?
   logoUrl             String?
   phone               String?
   theme               String?
   timezone            String?
-  updatedAt           DateTime           @updatedAt
+  updatedAt           DateTime            @updatedAt
   website             String?
   lastMemoryUpdate    DateTime?
-  memoryLimitGB       Float              @default(0.1)
-  memoryUsedGB        Float              @default(0)
-  defaultCurrency     String?            @default("USD")
+  memoryLimitGB       Float               @default(0.1)
+  memoryUsedGB        Float               @default(0)
+  defaultCurrency     String?             @default("USD")
   companyBank         String?
   companyCity         String?
   companyCountry      String?
@@ -38,18 +38,17 @@ model Tenant {
   companyStreetNumber String?
   companyTaxId        String?
   registrationNumber  String?
-  // Invoice numbering settings
-  invoiceStartNumber  Int?               @default(1)
-  invoiceSeriesPrefix String?            @default("INV")
-  invoiceIncludeYear  Boolean?           @default(true)
-  enabledModules      String[]           @default([])
+  invoiceStartNumber  Int?                @default(1)
+  invoiceSeriesPrefix String?             @default("INV")
+  invoiceIncludeYear  Boolean?            @default(true)
+  enabledModules      String[]            @default([])
   columnPermissions   ColumnPermission[]
   databases           Database[]
   invitations         Invitation[]
   tablePermissions    TablePermission[]
   dashboards          Dashboard[]
-  admin               User               @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  users               User[]             @relation("TenantUsers")
+  admin               User                @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  users               User[]              @relation("TenantUsers")
   userActivities      UserActivity[]
   databaseActivities  DatabaseActivity[]
   systemMetrics       SystemMetrics[]
@@ -93,22 +92,22 @@ model User {
   errorLogs                    ErrorLog[]
   userPreferences              UserPreferences?
   anafCredentials              ANAFCredentials[]
-  createdDashboards            Dashboard[] @relation("DashboardCreator")
-  updatedDashboards            Dashboard[] @relation("DashboardUpdater")
-  createdWidgets               Widget[] @relation("WidgetCreator")
-  updatedWidgets               Widget[] @relation("WidgetUpdater")
+  createdDashboards            Dashboard[]        @relation("DashboardCreator")
+  updatedDashboards            Dashboard[]        @relation("DashboardUpdater")
+  createdWidgets               Widget[]           @relation("WidgetCreator")
+  updatedWidgets               Widget[]           @relation("WidgetUpdater")
 
   @@index([tenantId])
 }
 
 model Database {
-  id        Int      @id @default(autoincrement())
-  tenantId  Int
-  createdAt DateTime @default(now())
-  name      String   @default("Main Database")
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tables    Table[]
+  id                 Int                @id @default(autoincrement())
+  tenantId           Int
+  createdAt          DateTime           @default(now())
+  name               String             @default("Main Database")
+  updatedAt          DateTime           @updatedAt
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tables             Table[]
   databaseActivities DatabaseActivity[]
   invoiceSeries      InvoiceSeries[]
   invoiceAuditLogs   InvoiceAuditLog[]
@@ -136,7 +135,7 @@ model Table {
   @@unique([databaseId, name])
   @@index([databaseId])
   @@index([databaseId, name])
-  @@index([isPublic, isProtected]) // For public/protected table queries
+  @@index([isPublic, isProtected])
 }
 
 model Column {
@@ -177,24 +176,24 @@ model Row {
 }
 
 model Cell {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   rowId        Int
   columnId     Int
-  value        Json     // Keep for flexibility and complex data
-  stringValue  String?  // For text columns - enables efficient text searches
-  numberValue  Decimal? // For numeric columns - enables efficient sorting/filtering
-  dateValue    DateTime? // For date columns - enables efficient date operations
-  booleanValue Boolean? // For boolean columns - enables efficient boolean operations
-  column       Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  row          Row      @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  value        Json
+  stringValue  String?
+  numberValue  Decimal?
+  dateValue    DateTime?
+  booleanValue Boolean?
+  column       Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  row          Row       @relation(fields: [rowId], references: [id], onDelete: Cascade)
 
   @@unique([rowId, columnId])
   @@index([rowId])
   @@index([columnId])
-  @@index([stringValue]) // For text searches
-  @@index([numberValue]) // For numeric sorts and filters
-  @@index([dateValue])   // For date ranges
-  @@index([booleanValue]) // For boolean filters
+  @@index([stringValue])
+  @@index([numberValue])
+  @@index([dateValue])
+  @@index([booleanValue])
 }
 
 model TablePermission {
@@ -294,12 +293,6 @@ model Invitation {
   @@index([tenantId])
 }
 
-enum Role {
-  ADMIN
-  EDITOR
-  VIEWER
-}
-
 model UserActivity {
   id         Int      @id @default(autoincrement())
   tenantId   Int
@@ -311,9 +304,8 @@ model UserActivity {
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([userId, createdAt])
@@ -321,19 +313,18 @@ model UserActivity {
 }
 
 model DatabaseActivity {
-  id            Int      @id @default(autoincrement())
-  tenantId      Int
-  databaseId    Int
-  action        String
-  tableName     String?
-  query         String?
-  responseTime  Int?
-  rowsAffected  Int?
-  metadata      Json?
-  createdAt     DateTime @default(now())
-
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  databaseId   Int
+  action       String
+  tableName    String?
+  query        String?
+  responseTime Int?
+  rowsAffected Int?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  database     Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([databaseId, createdAt])
@@ -350,25 +341,23 @@ model SystemMetrics {
   activeConnections Int      @default(0)
   metadata          Json?
   createdAt         DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
 }
 
 model TenantUsage {
-  id               Int       @id @default(autoincrement())
-  tenantId         Int
-  cpuUsage         Decimal   @db.Decimal(5, 2)
-  memoryUsage      Decimal   @db.Decimal(5, 2)
-  storageUsage     Decimal   @db.Decimal(10, 2)
-  apiCalls         Int       @default(0)
-  databaseQueries  Int       @default(0)
-  overageAmount    Decimal   @default(0) @db.Decimal(10, 2)
-  lastActivity     DateTime?
-  createdAt        DateTime  @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id              Int       @id @default(autoincrement())
+  tenantId        Int
+  cpuUsage        Decimal   @db.Decimal(5, 2)
+  memoryUsage     Decimal   @db.Decimal(5, 2)
+  storageUsage    Decimal   @db.Decimal(10, 2)
+  apiCalls        Int       @default(0)
+  databaseQueries Int       @default(0)
+  overageAmount   Decimal   @default(0) @db.Decimal(10, 2)
+  lastActivity    DateTime?
+  createdAt       DateTime  @default(now())
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
 }
@@ -386,9 +375,8 @@ model ApiUsage {
   ipAddress    String?
   userAgent    String?
   createdAt    DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, createdAt])
   @@index([endpoint, createdAt])
@@ -406,9 +394,8 @@ model ErrorLog {
   metadata     Json?
   resolved     Boolean  @default(false)
   createdAt    DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, createdAt])
   @@index([errorType, createdAt])
@@ -416,25 +403,23 @@ model ErrorLog {
 }
 
 model PerformanceAlert {
-  id            Int       @id @default(autoincrement())
-  tenantId      Int
-  alertType     String
-  metric        String
-  threshold     Decimal   @db.Decimal(10, 2)
-  currentValue  Decimal   @db.Decimal(10, 2)
-  severity      String
-  message       String
-  resolved      Boolean   @default(false)
-  resolvedAt    DateTime?
-  createdAt     DateTime  @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id           Int       @id @default(autoincrement())
+  tenantId     Int
+  alertType    String
+  metric       String
+  threshold    Decimal   @db.Decimal(10, 2)
+  currentValue Decimal   @db.Decimal(10, 2)
+  severity     String
+  message      String
+  resolved     Boolean   @default(false)
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([alertType, createdAt])
 }
 
-// Invoice System Tables
 model InvoiceSeries {
   id            Int      @id @default(autoincrement())
   tenantId      Int
@@ -449,15 +434,13 @@ model InvoiceSeries {
   currentNumber Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  database      Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, databaseId, series])
   @@index([tenantId])
   @@index([databaseId])
 }
-
 
 model InvoiceAuditLog {
   id         Int      @id @default(autoincrement())
@@ -469,9 +452,8 @@ model InvoiceAuditLog {
   changes    Json?
   metadata   Json?
   createdAt  DateTime @default(now())
-
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([databaseId])
@@ -480,96 +462,78 @@ model InvoiceAuditLog {
 }
 
 model UserPreferences {
-  id                    Int      @id @default(autoincrement())
-  userId                Int      @unique
-  tenantId              Int
-  
-  // Tour completion tracking
-  tourDashboardDone     Boolean  @default(false)
-  tourInvoiceDone       Boolean  @default(false)
-  tourDatabaseDone      Boolean  @default(false)
-  tourUsersDone         Boolean  @default(false)
-  tourSettingsDone      Boolean  @default(false)
-  tourAnalyticsDone     Boolean  @default(false)
-  
-  // Tour preferences
-  autoStartTours        Boolean  @default(true)
-  showTourHints         Boolean  @default(true)
-  tourSpeed             String   @default("normal") // slow, normal, fast
-  
-  // UI preferences
-  theme                 String   @default("system") // light, dark, system
-  language              String   @default("en")
-  timezone              String   @default("UTC")
-  
-  // Notification preferences
-  emailNotifications    Boolean  @default(true)
-  pushNotifications     Boolean  @default(true)
-  weeklyDigest          Boolean  @default(true)
-  
-  // Other preferences
-  sidebarCollapsed      Boolean  @default(false)
-  compactMode           Boolean  @default(false)
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  tenantId           Int
+  tourDashboardDone  Boolean  @default(false)
+  tourInvoiceDone    Boolean  @default(false)
+  tourDatabaseDone   Boolean  @default(false)
+  tourUsersDone      Boolean  @default(false)
+  tourSettingsDone   Boolean  @default(false)
+  tourAnalyticsDone  Boolean  @default(false)
+  autoStartTours     Boolean  @default(true)
+  showTourHints      Boolean  @default(true)
+  tourSpeed          String   @default("normal")
+  theme              String   @default("system")
+  language           String   @default("en")
+  timezone           String   @default("UTC")
+  emailNotifications Boolean  @default(true)
+  pushNotifications  Boolean  @default(true)
+  weeklyDigest       Boolean  @default(true)
+  sidebarCollapsed   Boolean  @default(false)
+  compactMode        Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([userId])
 }
 
-// PDF Analytics and Tracking
 model PDFAnalytics {
-  id            Int      @id @default(autoincrement())
-  tenantId      Int
-  templateId    String
-  generationTime Int      // in milliseconds
-  fileSize      Int      // in bytes
-  pageCount     Int
-  features      String[] // QR Code, Barcode, Watermark, etc.
-  generatedAt   DateTime @default(now())
-  generatedBy   String   // user ID or system
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id             Int      @id @default(autoincrement())
+  tenantId       Int
+  templateId     String
+  generationTime Int
+  fileSize       Int
+  pageCount      Int
+  features       String[]
+  generatedAt    DateTime @default(now())
+  generatedBy    String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([templateId])
   @@index([generatedAt])
 }
 
-// PDF Templates Configuration
 model PDFTemplateConfig {
   id            Int      @id @default(autoincrement())
   tenantId      Int
   templateId    String
-  customization Json     // PDFCustomization object
+  customization Json
   isDefault     Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, templateId])
   @@index([tenantId])
 }
 
-// ANAF e-Factura Integration Tables
 model ANAFCredentials {
-  id              Int       @id @default(autoincrement())
-  userId          Int
-  tenantId        Int
-  accessToken     String?
-  refreshToken    String?
-  tokenExpiresAt  DateTime?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  tenantId       Int
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([userId, tenantId])
   @@index([tenantId])
@@ -581,17 +545,16 @@ model ANAFSubmissionLog {
   invoiceId      Int
   tenantId       Int
   submissionId   String?
-  status         String   // pending, processing, accepted, rejected, error, timeout
+  status         String
   message        String?
   error          String?
-  xmlContent     String?  @db.Text
-  responseXml    String?  @db.Text
+  xmlContent     String?
+  responseXml    String?
   submittedAt    DateTime @default(now())
   updatedAt      DateTime @updatedAt
   retryCount     Int      @default(0)
-  submissionType String   // automatic, manual
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  submissionType String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([invoiceId])
@@ -605,18 +568,17 @@ model Dashboard {
   tenantId    Int
   name        String
   description String?
-  mode        String   @default("view") // view, edit
+  mode        String   @default("view")
   isPublic    Boolean  @default(false)
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdBy   Int
   updatedBy   Int
-
-  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  widgets  Widget[]
-  creator  User    @relation("DashboardCreator", fields: [createdBy], references: [id])
-  updater  User    @relation("DashboardUpdater", fields: [updatedBy], references: [id])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  widgets     Widget[]
+  creator     User     @relation("DashboardCreator", fields: [createdBy], references: [id])
+  updater     User     @relation("DashboardUpdater", fields: [updatedBy], references: [id])
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -626,26 +588,31 @@ model Dashboard {
 }
 
 model Widget {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   dashboardId Int
-  type        String   // chart, table, metric, text, filter, etc.
+  type        String
   title       String?
-  position    Json     // { x: number, y: number, width: number, height: number }
-  config      Json     // Widget-specific configuration
-  isVisible   Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  position    Json
+  config      Json      @default("{}")
+  isVisible   Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   createdBy   Int
   updatedBy   Int
-
-  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  creator   User      @relation("WidgetCreator", fields: [createdBy], references: [id])
-  updater   User      @relation("WidgetUpdater", fields: [updatedBy], references: [id])
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  creator     User      @relation("WidgetCreator", fields: [createdBy], references: [id])
+  updater     User      @relation("WidgetUpdater", fields: [updatedBy], references: [id])
 
   @@index([dashboardId])
   @@index([dashboardId, order])
   @@index([type])
   @@index([createdBy])
   @@index([updatedBy])
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
 }

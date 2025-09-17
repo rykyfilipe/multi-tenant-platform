@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Database, Table, Column } from 'lucide-react';
+import { Database, Table, Columns } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -197,7 +197,7 @@ export function TableSelector({
                     {columns.map((column) => (
                       <SelectItem key={column.id} value={column.name}>
                         <div className="flex items-center space-x-2">
-                          <Column className="h-4 w-4" />
+                          <Columns className="h-4 w-4" />
                           <div>
                             <div className="font-medium">{column.name}</div>
                             <div className="text-xs text-gray-500">
@@ -231,7 +231,7 @@ export function TableSelector({
                     {columns.map((column) => (
                       <SelectItem key={column.id} value={column.name}>
                         <div className="flex items-center space-x-2">
-                          <Column className="h-4 w-4" />
+                          <Columns className="h-4 w-4" />
                           <div>
                             <div className="font-medium">{column.name}</div>
                             <div className="text-xs text-gray-500">
