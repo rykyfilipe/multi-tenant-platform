@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { LineChartWidget } from '@/components/dashboard/LineChartWidget';
 import BarChartWidget from '@/components/dashboard/BarChartWidget';
 import PieChartWidget from '@/components/dashboard/PieChartWidget';
+import TableWidget from '@/components/dashboard/TableWidget';
 import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
@@ -265,6 +266,48 @@ export default function DashboardsPage() {
         xAxis: { key: 'id', label: 'X Axis', type: 'category' },
         yAxis: { key: 'id', label: 'Y Axis', type: 'number' }
       };
+    } else if (type === 'table') {
+      defaultConfig = {
+        dataSource: {
+          tableId: 1, // Default table ID - will be updated when user selects a table
+          columns: ['id'], // Default columns - will be updated when user selects columns
+          filters: [],
+          sortBy: 'id',
+          sortOrder: 'asc'
+        },
+        options: {
+          pageSize: 10,
+          showPagination: true,
+          showSearch: true,
+          showExport: true,
+          showColumnSelector: true
+        }
+      };
+    } else if (type === 'metric') {
+      defaultConfig = {
+        dataSource: {
+          tableId: 1,
+          column: 'id',
+          aggregation: 'count',
+          filters: []
+        },
+        options: {
+          format: 'number',
+          prefix: '',
+          suffix: '',
+          color: '#3B82F6',
+          showTrend: false
+        }
+      };
+    } else if (type === 'text') {
+      defaultConfig = {
+        content: 'New Text Widget Content',
+        options: {
+          fontSize: 'medium',
+          fontWeight: 'normal',
+          textAlign: 'left'
+        }
+      };
     }
 
     const newWidget: Partial<Widget> = {
@@ -348,6 +391,37 @@ export default function DashboardsPage() {
           />
         );
       }
+      case 'table':
+        return (
+          <TableWidget 
+            widget={displayWidget} 
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Table edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            tenantId={tenant?.id}
+            databaseId={1}
+          />
+        );
+      case 'metric':
+        return (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <TrendingUp className="h-8 w-8 mx-auto mb-2" />
+              <p>KPI/Metric Widget (Coming Soon)</p>
+            </div>
+          </div>
+        );
+      case 'text':
+        return (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <FileText className="h-8 w-8 mx-auto mb-2" />
+              <p>Text Widget (Coming Soon)</p>
+            </div>
+          </div>
+        );
       default:
         return (
           <div className="h-full flex items-center justify-center">

@@ -342,7 +342,187 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
 
             {/* Data Tab */}
             <TabsContent value="data" className="space-y-4">
-              {isLineChart ? (
+              {widget.type === 'table' ? (
+                <div className="space-y-4">
+                  {/* Table Configuration */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                        <Database className="h-4 w-4" />
+                        <span>Table Configuration</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="tableSelect">Select Table</Label>
+                        <TableSelector
+                          tenantId={tenantId}
+                          databaseId={databaseId}
+                          selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
+                          selectedColumnX=""
+                          selectedColumnY=""
+                          onTableChange={(tableId) => {
+                            updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                tableId: tableId,
+                                columns: []
+                              }
+                            });
+                          }}
+                          onColumnXChange={() => {}}
+                          onColumnYChange={() => {}}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Select Columns to Display</Label>
+                        <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded p-3">
+                          {columns.map((column) => (
+                            <label key={column.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={editedWidget.config?.dataSource?.columns?.includes(column.name) || false}
+                                onChange={(e) => {
+                                  const currentColumns = editedWidget.config?.dataSource?.columns || [];
+                                  const newColumns = e.target.checked
+                                    ? [...currentColumns, column.name]
+                                    : currentColumns.filter((c: string) => c !== column.name);
+                                  
+                                  updateConfig({
+                                    dataSource: {
+                                      ...editedWidget.config?.dataSource,
+                                      columns: newColumns
+                                    }
+                                  });
+                                }}
+                                className="rounded"
+                              />
+                              <span className="text-sm">{column.name}</span>
+                              <span className="text-xs text-muted-foreground">({column.type})</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="sortBy">Sort By</Label>
+                          <Select
+                            value={editedWidget.config?.dataSource?.sortBy || 'id'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                sortBy: value
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {columns.map((column) => (
+                                <SelectItem key={column.id} value={column.name}>
+                                  {column.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="sortOrder">Sort Order</Label>
+                          <Select
+                            value={editedWidget.config?.dataSource?.sortOrder || 'asc'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...editedWidget.config?.dataSource,
+                                sortOrder: value
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="asc">Ascending</SelectItem>
+                              <SelectItem value="desc">Descending</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Table Options */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Display Options</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="pageSize">Page Size</Label>
+                          <Input
+                            id="pageSize"
+                            type="number"
+                            value={editedWidget.config?.options?.pageSize || 10}
+                            onChange={(e) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                pageSize: parseInt(e.target.value) || 10
+                              }
+                            })}
+                            min="1"
+                            max="100"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showPagination"
+                            checked={editedWidget.config?.options?.showPagination !== false}
+                            onCheckedChange={(checked) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                showPagination: checked
+                              }
+                            })}
+                          />
+                          <Label htmlFor="showPagination">Show Pagination</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showSearch"
+                            checked={editedWidget.config?.options?.showSearch !== false}
+                            onCheckedChange={(checked) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                showSearch: checked
+                              }
+                            })}
+                          />
+                          <Label htmlFor="showSearch">Show Search</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showExport"
+                            checked={editedWidget.config?.options?.showExport !== false}
+                            onCheckedChange={(checked) => updateConfig({
+                              options: {
+                                ...editedWidget.config?.options,
+                                showExport: checked
+                              }
+                            })}
+                          />
+                          <Label htmlFor="showExport">Show Export</Label>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : isLineChart ? (
                 <div className="space-y-4">
                   {/* Chart Subtype & Data Source */}
                   <Card>
