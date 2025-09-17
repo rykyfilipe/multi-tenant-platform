@@ -53,7 +53,7 @@ const parseMarkdown = (text: string): string => {
 export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetProps) {
   const [error, setError] = useState<string | null>(null);
 
-  const config = widget.config as TextConfig;
+  const config = (widget.config || {}) as TextConfig;
   const options = config.options || {};
   const content = config.dataSource?.content || '';
 

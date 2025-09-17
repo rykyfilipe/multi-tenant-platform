@@ -170,7 +170,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
 
   const updateConfig = (configUpdates: any) => {
     setEditedWidget(prev => {
-      const newConfig = { ...prev.config, ...configUpdates };
+      const currentConfig = prev.config || {};
+      const newConfig = { ...currentConfig, ...configUpdates };
       console.log('[WidgetEditor] Config updated:', configUpdates);
       return {
         ...prev,
@@ -192,24 +193,27 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   };
 
   const handleManualDataChange = (data: ChartDataPoint[]) => {
+    const currentDataSource = editedWidget.config?.dataSource || {};
     const newDataSource = {
-      ...editedWidget.config.dataSource,
+      ...currentDataSource,
       manualData: data
     };
     updateConfig({ dataSource: newDataSource });
   };
 
   const handleFiltersChange = (filters: Filter[]) => {
+    const currentDataSource = editedWidget.config?.dataSource || {};
     const newDataSource = {
-      ...editedWidget.config.dataSource,
+      ...currentDataSource,
       filters
     };
     updateConfig({ dataSource: newDataSource });
   };
 
   const handleTableChange = (tableId: number) => {
+    const currentDataSource = editedWidget.config?.dataSource || {};
     const newDataSource = {
-      ...editedWidget.config.dataSource,
+      ...currentDataSource,
       type: 'table' as const,
       tableId,
       columnX: '',
@@ -219,8 +223,9 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   };
 
   const handleColumnXChange = (column: string) => {
+    const currentDataSource = editedWidget.config?.dataSource || {};
     const newDataSource = {
-      ...editedWidget.config.dataSource,
+      ...currentDataSource,
       columnX: column
     };
     updateConfig({ dataSource: newDataSource });
@@ -236,8 +241,9 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   };
 
   const handleColumnYChange = (column: string) => {
+    const currentDataSource = editedWidget.config?.dataSource || {};
     const newDataSource = {
-      ...editedWidget.config.dataSource,
+      ...currentDataSource,
       columnY: column
     };
     updateConfig({ dataSource: newDataSource });
@@ -254,7 +260,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
 
   const handleAxisChange = (axis: 'xAxis' | 'yAxis', updates: any) => {
     updateConfig({
-      [axis]: { ...editedWidget.config[axis], ...updates }
+      [axis]: { ...editedWidget.config?.[axis], ...updates }
     });
   };
 
@@ -521,7 +527,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   <TableSelector
                     tenantId={tenantId}
                     selectedTableId={editedWidget.config?.dataSource?.tableId || 1}
-                    selectedColumns={editedWidget.config?.dataSource?.column ? [editedWidget.config.dataSource.column] : []}
+                    selectedColumns={editedWidget.config?.dataSource?.column ? [editedWidget.config?.dataSource?.column] : []}
                     onColumnsChange={(columns) => updateConfig({
                       dataSource: {
                         ...editedWidget.config?.dataSource,

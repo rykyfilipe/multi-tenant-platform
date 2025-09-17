@@ -97,8 +97,8 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const config = widget.config as KPIConfig;
-  const dataSource = config.dataSource;
+  const config = (widget.config || {}) as KPIConfig;
+  const dataSource = config.dataSource || {};
   const options = config.options || {};
 
   // Calculate aggregations using the new utility functions

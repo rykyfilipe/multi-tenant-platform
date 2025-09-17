@@ -135,7 +135,7 @@ export class DashboardService {
               select: { id: true, firstName: true, lastName: true, email: true },
             },
             widgets: {
-              select: { id: true, type: true, title: true, isVisible: true, order: true },
+              select: { id: true, type: true, title: true, isVisible: true, order: true, config: true },
               orderBy: { order: 'asc' },
             },
             _count: {
