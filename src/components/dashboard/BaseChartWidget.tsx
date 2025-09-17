@@ -34,11 +34,21 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const res = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${dataSource.tableId}/rows?` + params.toString());
 				if (!res.ok) throw new Error('Failed to fetch data');
 				const json = await res.json();
-				const rows = json?.rows || json?.data || [];
-				const mapped: ChartDataPoint[] = rows.map((row: any) => ({
-					[dataSource.columnX || config.xAxis?.key || 'x']: row[dataSource.columnX || config.xAxis?.key || 'x'],
-					[dataSource.columnY || config.yAxis?.key || 'y']: row[dataSource.columnY || config.yAxis?.key || 'y'],
-				}));
+				const rows = json?.data || [];
+				
+				// Transform rows with cells to chart data
+				const mapped: ChartDataPoint[] = rows.map((row: any) => {
+					const dataPoint: any = {};
+					if (row.cells) {
+						// Find X and Y column values from cells
+						const xCell = row.cells.find((cell: any) => cell.column.name === (dataSource.columnX || config.xAxis?.key || 'name'));
+						const yCell = row.cells.find((cell: any) => cell.column.name === (dataSource.columnY || config.yAxis?.key || 'price'));
+						
+						dataPoint[dataSource.columnX || config.xAxis?.key || 'x'] = xCell?.value || '';
+						dataPoint[dataSource.columnY || config.yAxis?.key || 'y'] = parseFloat(yCell?.value) || 0;
+					}
+					return dataPoint;
+				}).filter(point => point[dataSource.columnX || config.xAxis?.key || 'x'] && point[dataSource.columnY || config.yAxis?.key || 'y'] !== undefined);
 				if (active) {
 					setData(mapped);
 					setLastFetchTime(new Date());

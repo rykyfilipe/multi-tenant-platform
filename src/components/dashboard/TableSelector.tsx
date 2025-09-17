@@ -11,6 +11,21 @@ import { useSchemaCache, CachedColumnMeta } from '@/hooks/useSchemaCache';
 import { FilterBuilder } from './FilterBuilder';
 import { Filter } from './LineChartWidget';
 
+// Type validation helpers
+const getColumnTypeCategory = (type: string): 'text' | 'number' | 'date' | 'boolean' | 'other' => {
+	const normalizedType = type.toLowerCase();
+	if (['text', 'string', 'varchar', 'char', 'email', 'url'].includes(normalizedType)) return 'text';
+	if (['number', 'integer', 'decimal', 'float', 'double', 'numeric'].includes(normalizedType)) return 'number';
+	if (['date', 'datetime', 'timestamp', 'time'].includes(normalizedType)) return 'date';
+	if (['boolean', 'bool'].includes(normalizedType)) return 'boolean';
+	return 'other';
+};
+
+const isColumnTypeCompatible = (columnType: string, expectedType: 'text' | 'number' | 'date' | 'boolean'): boolean => {
+	const category = getColumnTypeCategory(columnType);
+	return category === expectedType || category === 'other';
+};
+
 interface TableMeta {
 	id: number;
 	name: string;
@@ -38,6 +53,9 @@ interface TableSelectorProps {
 	onColumnYChange: (column: string) => void;
 	tenantId: number;
 	databaseId: number;
+	// Type validation for widget compatibility
+	expectedXType?: 'text' | 'number' | 'date' | 'boolean';
+	expectedYType?: 'text' | 'number' | 'date' | 'boolean';
 }
 
 export function TableSelector({
@@ -54,13 +72,15 @@ export function TableSelector({
 	onColumnYChange,
 	tenantId,
 	databaseId,
+	expectedXType,
+	expectedYType,
 }: TableSelectorProps) {
 	const { tables, tablesLoading, tablesError, loadTables, getColumns, invalidate } = useSchemaCache(tenantId, databaseId);
 	const [columns, setColumns] = useState<CachedColumnMeta[]>([]);
 	const [isLoadingColumns, setIsLoadingColumns] = useState(false);
 	const [columnsError, setColumnsError] = useState<string | null>(null);
 
-  // Load columns on table change
+  // Load columns on table change using useSchemaCache
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -71,20 +91,14 @@ export function TableSelector({
       setIsLoadingColumns(true);
       setColumnsError(null);
       try {
-        // Use the API client to fetch columns
-        const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${selectedTableId}/columns`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch columns: ${response.statusText}`);
-        }
-        const cols = await response.json();
-        // Some endpoints return { columns: [...] }
-        const parsed = Array.isArray(cols) ? cols : (cols?.columns ?? []);
-        console.info('[TableSelector] Loaded columns', {
+        const cols = await getColumns(selectedTableId);
+        console.info('[TableSelector] Loaded columns from cache', {
           tableId: selectedTableId,
-          count: Array.isArray(parsed) ? parsed.length : 0,
+          count: cols.length,
         });
-        if (mounted) setColumns(parsed);
+        if (mounted) setColumns(cols);
       } catch (e) {
+        console.error('[TableSelector] Error loading columns:', e);
         if (mounted) setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
       } finally {
         if (mounted) setIsLoadingColumns(false);
@@ -94,7 +108,7 @@ export function TableSelector({
     return () => {
       mounted = false;
     };
-  }, [selectedTableId, tenantId, databaseId]);
+  }, [selectedTableId, getColumns]);
 
 	const handleTableChange = (tableId: string) => {
 		const id = parseInt(tableId);
@@ -174,7 +188,7 @@ export function TableSelector({
 						{/* X-Axis Column */}
 						<div>
 							<label className="text-xs font-medium text-gray-700 mb-2 block">
-								X-Axis Column
+								X-Axis Column {expectedXType && `(${expectedXType})`}
 							</label>
 							{isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
@@ -189,7 +203,9 @@ export function TableSelector({
 										<SelectValue placeholder="Select X-axis column" />
 									</SelectTrigger>
 									<SelectContent>
-										{columns.map((column) => (
+										{columns
+											.filter(column => !expectedXType || isColumnTypeCompatible(column.type, expectedXType))
+											.map((column) => (
 											<SelectItem key={column.id} value={column.name}>
 												<div className="flex items-center space-x-2">
 													<Columns className="h-4 w-4" />
@@ -210,7 +226,7 @@ export function TableSelector({
 						{/* Y-Axis Column */}
 						<div>
 							<label className="text-xs font-medium text-gray-700 mb-2 block">
-								Y-Axis Column
+								Y-Axis Column {expectedYType && `(${expectedYType})`}
 							</label>
 							{isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
@@ -225,7 +241,9 @@ export function TableSelector({
 										<SelectValue placeholder="Select Y-axis column" />
 									</SelectTrigger>
 									<SelectContent>
-										{columns.map((column) => (
+										{columns
+											.filter(column => !expectedYType || isColumnTypeCompatible(column.type, expectedYType))
+											.map((column) => (
 											<SelectItem key={column.id} value={column.name}>
 												<div className="flex items-center space-x-2">
 													<Columns className="h-4 w-4" />

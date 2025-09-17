@@ -478,6 +478,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     }}
                     onColumnXChange={() => {}}
                     onColumnYChange={() => {}}
+                    expectedYType="number"
                   />
 
                   {/* KPI Options */}
@@ -874,6 +875,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       onColumnYChange={handleColumnYChange}
                       tenantId={tenantId}
                       databaseId={databaseId}
+                      expectedXType="text"
+                      expectedYType="number"
                     />
                   )}
 
