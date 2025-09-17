@@ -8,6 +8,16 @@
 import { logger } from "./error-logger";
 import prisma from "./prisma";
 
+// Helper function to safely serialize objects with BigInt values
+function safeJsonStringify(obj: any): string {
+	return JSON.stringify(obj, (key, value) => {
+		if (typeof value === "bigint") {
+			return value.toString();
+		}
+		return value;
+	});
+}
+
 export enum AnalyticsMetricType {
 	// User Metrics
 	USER_ACTIVITY = "user_activity",
@@ -311,18 +321,14 @@ class AdvancedAnalytics {
 
 		// Store in database
 		try {
-			await prisma.customDashboard.create({
+			await prisma.dashboard.create({
 				data: {
-					id: dashboard.id,
 					tenantId: parseInt(tenantId),
 					name: name,
 					description: description,
-					type: type,
 					isPublic: dashboard.isPublic,
-					layout: JSON.stringify(dashboard.layout),
-					theme: JSON.stringify(dashboard.theme),
-					permissions: JSON.stringify(dashboard.permissions),
-					createdBy: createdBy,
+					createdBy: parseInt(createdBy),
+					updatedBy: parseInt(createdBy),
 				},
 			});
 		} catch (error) {
@@ -409,8 +415,8 @@ class AdvancedAnalytics {
 		if (!dashboard) {
 			// Try to load from database
 			try {
-				const dbDashboard = await prisma.customDashboard.findUnique({
-					where: { id: dashboardId },
+				const dbDashboard = await prisma.dashboard.findUnique({
+					where: { id: parseInt(dashboardId) },
 					include: {
 						widgets: true,
 					},
@@ -418,27 +424,40 @@ class AdvancedAnalytics {
 
 				if (dbDashboard) {
 					const customDashboard: CustomDashboard = {
-						id: dbDashboard.id,
+						id: dbDashboard.id.toString(),
 						tenantId: dbDashboard.tenantId.toString(),
 						name: dbDashboard.name,
 						description: dbDashboard.description || "",
-						type: dbDashboard.type as DashboardType,
+						type: DashboardType.CUSTOM, // Default to CUSTOM since we don't have type in Dashboard model
 						isPublic: dbDashboard.isPublic,
-						widgets: dbDashboard.widgets.map((w : any)=> ({
-							id: w.id,
-							dashboardId: w.dashboardId,
-							title: w.title,
-							chartType: w.chartType as ChartType,
-							metricType: w.metricType as AnalyticsMetricType,
-							config: JSON.parse(w.config || "{}"),
-							position: JSON.parse(w.position || "{}"),
+						widgets: dbDashboard.widgets.map((w: any) => ({
+							id: w.id.toString(),
+							dashboardId: w.dashboardId.toString(),
+							title: w.title || "",
+							chartType: w.type as ChartType || ChartType.LINE,
+							metricType: AnalyticsMetricType.USER_ACTIVITY, // Default metric type
+							config: typeof w.config === 'string' ? JSON.parse(w.config || "{}") : w.config || {},
+							position: typeof w.position === 'string' ? JSON.parse(w.position || "{}") : w.position || {},
 							createdAt: w.createdAt.toISOString(),
 							updatedAt: w.updatedAt.toISOString(),
 						})),
-						layout: JSON.parse(dbDashboard.layout || "{}"),
-						theme: JSON.parse(dbDashboard.theme || "{}"),
-						permissions: JSON.parse(dbDashboard.permissions || "{}"),
-						createdBy: dbDashboard.createdBy,
+						layout: {
+							columns: 12,
+							rows: 8,
+							gap: 16,
+						},
+						theme: {
+							primaryColor: "#3b82f6",
+							backgroundColor: "#ffffff",
+							textColor: "#1f2937",
+							accentColor: "#10b981",
+						},
+						permissions: {
+							view: [],
+							edit: [],
+							share: [],
+						},
+						createdBy: dbDashboard.createdBy.toString(),
 						createdAt: dbDashboard.createdAt.toISOString(),
 						updatedAt: dbDashboard.updatedAt.toISOString(),
 					};
@@ -462,7 +481,7 @@ class AdvancedAnalytics {
 	 */
 	async getDashboards(tenantId: string): Promise<CustomDashboard[]> {
 		try {
-			const dbDashboards = await prisma.customDashboard.findMany({
+			const dbDashboards = await prisma.dashboard.findMany({
 				where: { tenantId: parseInt(tenantId) },
 				include: {
 					widgets: true,
@@ -470,28 +489,41 @@ class AdvancedAnalytics {
 				orderBy: { updatedAt: "desc" },
 			});
 
-			return dbDashboards.map((db : any)=> ({
-				id: db.id,
+			return dbDashboards.map((db: any) => ({
+				id: db.id.toString(),
 				tenantId: db.tenantId.toString(),
 				name: db.name,
 				description: db.description || "",
-				type: db.type as DashboardType,
+				type: DashboardType.CUSTOM, // Default to CUSTOM since we don't have type in Dashboard model
 				isPublic: db.isPublic,
-				widgets: db.widgets.map((w : any)=> ({
-					id: w.id,
-					dashboardId: w.dashboardId,
-					title: w.title,
-					chartType: w.chartType as ChartType,
-					metricType: w.metricType as AnalyticsMetricType,
-					config: JSON.parse(w.config || "{}"),
-					position: JSON.parse(w.position || "{}"),
+				widgets: db.widgets.map((w: any) => ({
+					id: w.id.toString(),
+					dashboardId: w.dashboardId.toString(),
+					title: w.title || "",
+					chartType: w.type as ChartType || ChartType.LINE,
+					metricType: AnalyticsMetricType.USER_ACTIVITY, // Default metric type
+					config: typeof w.config === 'string' ? JSON.parse(w.config || "{}") : w.config || {},
+					position: typeof w.position === 'string' ? JSON.parse(w.position || "{}") : w.position || {},
 					createdAt: w.createdAt.toISOString(),
 					updatedAt: w.updatedAt.toISOString(),
 				})),
-				layout: JSON.parse(db.layout || "{}"),
-				theme: JSON.parse(db.theme || "{}"),
-				permissions: JSON.parse(db.permissions || "{}"),
-				createdBy: db.createdBy,
+				layout: {
+					columns: 12,
+					rows: 8,
+					gap: 16,
+				},
+				theme: {
+					primaryColor: "#3b82f6",
+					backgroundColor: "#ffffff",
+					textColor: "#1f2937",
+					accentColor: "#10b981",
+				},
+				permissions: {
+					view: [],
+					edit: [],
+					share: [],
+				},
+				createdBy: db.createdBy.toString(),
 				createdAt: db.createdAt.toISOString(),
 				updatedAt: db.updatedAt.toISOString(),
 			}));

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
+import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
 export interface ChartDataPoint {
   [key: string]: any;
@@ -39,11 +40,22 @@ export interface LineChartConfig {
   };
   options?: {
     colors?: string[];
+    colorPalette?: ColorPalette;
     showLegend?: boolean;
     showGrid?: boolean;
     strokeWidth?: number;
     dotSize?: number;
     curveType?: 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
+    // Enhanced styling options
+    backgroundColor?: string;
+    borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+    shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+    padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+    hoverEffect?: 'none' | 'lift' | 'glow' | 'scale' | 'rotate';
+    showDataSummary?: boolean;
+    gradientFill?: boolean;
+    areaFill?: boolean;
+    animation?: boolean;
   };
 }
 
@@ -229,10 +241,28 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     loadData();
   }, [dataSource]);
 
-  const colors = options.colors || ['#3B82F6', '#EF4444', '#10B981', '#F59E0B'];
+  // Generate automatic colors based on data length
+  const colors = useMemo(() => {
+    if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
+      return options.colors;
+    }
+    const colorPalette = options.colorPalette || 'business';
+    return generateChartColors(processedData.length > 0 ? 1 : 4, colorPalette);
+  }, [options.colors, options.colorPalette, processedData.length]);
+
   const strokeWidth = options.strokeWidth || 2;
   const dotSize = options.dotSize || 4;
   const curveType = options.curveType || 'monotone';
+
+  // Enhanced styling configuration
+  const widgetStyle = {
+    backgroundColor: options.backgroundColor || 'transparent',
+    borderRadius: options.borderRadius || 'lg',
+    shadow: options.shadow || 'sm',
+    padding: options.padding || 'md',
+    hoverEffect: options.hoverEffect || 'lift',
+    ...widget.style
+  };
 
   const handleRefresh = async () => {
     if (dataSource.type === 'table' && dataSource.tableId) {
@@ -263,57 +293,109 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
         onDelete={onDelete}
         isLoading={isLoading}
         error={error}
-      onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
-      showRefresh={dataSource.type === 'table'}
-    >
+        onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
+        showRefresh={dataSource.type === 'table'}
+        style={widgetStyle}
+      >
       {processedData && processedData.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart 
-            data={processedData} 
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
-          {options.showGrid !== false && (
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+        <div className="h-full flex flex-col">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart 
+              data={processedData} 
+              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            >
+              {options.showGrid !== false && (
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="hsl(var(--muted-foreground) / 0.2)" 
+                  strokeWidth={1}
+                />
+              )}
+              <XAxis 
+                dataKey={safeXAxis.key}
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                label={safeXAxis.label ? { 
+                  value: safeXAxis.label, 
+                  position: 'insideBottom', 
+                  offset: -10,
+                  style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
+                } : undefined}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                label={safeYAxis.label ? { 
+                  value: safeYAxis.label, 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
+                } : undefined}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  fontSize: '14px'
+                }}
+                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: '500' }}
+                formatter={(value, name) => [value, name]}
+              />
+              {options.showLegend !== false && (
+                <Legend 
+                  wrapperStyle={{
+                    fontSize: '12px',
+                    paddingTop: '10px'
+                  }}
+                />
+              )}
+              <Line
+                type={curveType}
+                dataKey={safeYAxis.key}
+                stroke={colors[0]}
+                strokeWidth={strokeWidth}
+                dot={{ fill: colors[0], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
+                activeDot={{ 
+                  r: dotSize + 2, 
+                  stroke: colors[0], 
+                  strokeWidth: 2,
+                  fill: '#ffffff'
+                }}
+                animationDuration={options.animation !== false ? 1000 : 0}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          
+          {/* Data summary */}
+          {options.showDataSummary && (
+            <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+              <div className="text-sm font-medium text-muted-foreground mb-2">Summary</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>Data Points: {processedData.length}</div>
+                <div>Max Value: {Math.max(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
+                <div>Min Value: {Math.min(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
+                <div>Avg Value: {(processedData.reduce((sum, d) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(2)}</div>
+              </div>
+            </div>
           )}
-          <XAxis 
-            dataKey={safeXAxis.key}
-            stroke="#666"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            label={safeXAxis.label ? { value: safeXAxis.label, position: 'insideBottom', offset: -5 } : undefined}
-          />
-          <YAxis 
-            stroke="#666"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            label={safeYAxis.label ? { value: safeYAxis.label, angle: -90, position: 'insideLeft' } : undefined}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            }}
-            labelStyle={{ color: '#374151', fontWeight: '500' }}
-          />
-          {options.showLegend !== false && <Legend />}
-          <Line
-            type={curveType}
-            dataKey={safeYAxis.key}
-            stroke={colors[0]}
-            strokeWidth={strokeWidth}
-            dot={{ fill: colors[0], strokeWidth: 2, r: dotSize }}
-            activeDot={{ r: dotSize + 2, stroke: colors[0], strokeWidth: 2 }}
-          />
-        </LineChart>
-        </ResponsiveContainer>
+        </div>
       ) : (
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          <div className="text-center">
-            <p className="text-sm">No data available</p>
+          <div className="text-center p-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/20 flex items-center justify-center">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium">No data available</p>
             <p className="text-xs text-muted-foreground mt-1">
               {dataSource.type === 'manual' 
                 ? 'Add some data points to see the chart' 

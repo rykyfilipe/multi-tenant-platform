@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { advancedAnalytics, DashboardType } from "@/lib/advanced-analytics";
 import { logger } from "@/lib/error-logger";
+import { createSafeJsonResponse } from "@/lib/bigint-serializer";
 import { z } from "zod";
 
 const createDashboardSchema = z.object({
@@ -61,7 +62,7 @@ export async function GET(
 
 		const dashboards = await advancedAnalytics.getDashboards(tenantId.toString());
 
-		return NextResponse.json({
+		return createSafeJsonResponse({
 			success: true,
 			data: dashboards,
 		});
@@ -138,10 +139,10 @@ export async function POST(
 			name: dashboard.name,
 		});
 
-		return NextResponse.json({
+		return createSafeJsonResponse({
 			success: true,
 			data: dashboard,
-		}, { status: 201 });
+		}, 201);
 
 	} catch (error) {
 		if (error instanceof z.ZodError) {
