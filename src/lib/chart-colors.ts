@@ -225,6 +225,22 @@ export const PREMIUM_CHART_COLORS = {
   warning: '#F59E0B',      // Amber
   error: '#EF4444',        // Red
   info: '#3B82F6',         // Blue
+  white: '#FFFFFF',        // Pure white
+  black: '#000000',        // Pure black
+  // Data colors for charts
+  data: {
+    primary: '#000000',    // Pure black
+    secondary: '#374151',  // Dark gray
+    tertiary: '#6B7280',   // Medium gray
+    quaternary: '#9CA3AF', // Light gray
+    accent: '#F59E0B',     // Gold accent
+  },
+  // Accent colors
+  accent: {
+    charcoal: '#1F2937',   // Charcoal
+    graphite: '#374151',   // Graphite
+    platinum: '#E5E7EB',   // Platinum
+  },
 } as const;
 
 // Chart styles for premium design
@@ -293,7 +309,7 @@ export const CHART_STYLES = {
   // Animation styles
   animation: {
     duration: 300,
-    easing: 'ease-in-out',
+    easing: 'easeInOut',
   },
   
   // Card styling
@@ -310,6 +326,13 @@ export const CHART_STYLES = {
     border: `1px solid ${PREMIUM_CHART_COLORS.border}`,
     borderRadius: 8,
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    color: PREMIUM_CHART_COLORS.text,
+  },
+  
+  // Legend styling
+  legend: {
+    fontSize: 12,
+    fontFamily: 'Inter, system-ui, sans-serif',
     color: PREMIUM_CHART_COLORS.text,
   },
 } as const;
