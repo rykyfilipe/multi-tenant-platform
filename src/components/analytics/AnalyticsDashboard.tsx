@@ -53,6 +53,8 @@ import {
 	RevenueChart,
 	ErrorTrackingChart,
 	RealDataStatus,
+	InvoiceAnalytics,
+	PremiumChartDemo,
 } from "./index";
 import { RealSizeInfo } from "./RealSizeInfo";
 import { useProcessedAnalyticsData } from "@/hooks/useProcessedAnalyticsData";
@@ -300,7 +302,7 @@ export const AnalyticsDashboard: React.FC = () => {
 					value={activeTab}
 					onValueChange={setActiveTab}
 					className='space-y-4 sm:space-y-6'>
-					<TabsList className='grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 h-auto'>
+					<TabsList className='grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 h-auto'>
 						<TabsTrigger
 							value='overview'
 							className='text-xs sm:text-sm py-2 sm:py-3'>
@@ -325,6 +327,16 @@ export const AnalyticsDashboard: React.FC = () => {
 							value='business'
 							className='text-xs sm:text-sm py-2 sm:py-3'>
 							Business
+						</TabsTrigger>
+						<TabsTrigger
+							value='invoices'
+							className='text-xs sm:text-sm py-2 sm:py-3'>
+							Invoices
+						</TabsTrigger>
+						<TabsTrigger
+							value='premium'
+							className='text-xs sm:text-sm py-2 sm:py-3'>
+							Premium
 						</TabsTrigger>
 						<TabsTrigger
 							value='errors'
@@ -793,6 +805,16 @@ export const AnalyticsDashboard: React.FC = () => {
 								unit="invoices"
 							/>
 						</div>
+					</TabsContent>
+
+					{/* Invoices Tab */}
+					<TabsContent value='invoices' className='space-y-4 sm:space-y-6'>
+						<InvoiceAnalytics />
+					</TabsContent>
+
+					{/* Premium Tab */}
+					<TabsContent value='premium' className='space-y-4 sm:space-y-6'>
+						<PremiumChartDemo />
 					</TabsContent>
 
 					{/* Errors Tab */}

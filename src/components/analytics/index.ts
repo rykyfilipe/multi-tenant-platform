@@ -11,3 +11,5 @@ export { BusinessMetricsCard } from "./BusinessMetricsCard";
 export { RevenueChart } from "./RevenueChart";
 export { ErrorTrackingChart } from "./ErrorTrackingChart";
 export { RealDataStatus } from "./RealDataStatus";
+export { InvoiceAnalytics } from "./InvoiceAnalytics";
+export { PremiumChartDemo } from "./PremiumChartDemo";
