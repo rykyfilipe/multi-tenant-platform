@@ -58,7 +58,7 @@ export class SecureFilterBuilder {
    * Build global search condition using Prisma's text search
    */
   private buildGlobalSearchCondition(searchTerm: string): any {
-    const conditions = [
+    const conditions: any[] = [
       { stringValue: { contains: searchTerm, mode: 'insensitive' } }
     ];
 
@@ -67,7 +67,7 @@ export class SecureFilterBuilder {
       conditions.push({ numberValue: { equals: Number(searchTerm) } });
     }
 
-    // Add JSON value search
+    // Add JSON value search for generic value field
     conditions.push({
       value: {
         path: [],
