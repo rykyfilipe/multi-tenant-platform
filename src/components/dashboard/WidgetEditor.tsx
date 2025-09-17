@@ -55,54 +55,128 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
   }, [editedWidget, widget]);
 
-  // Initialize LineChart config if needed
+  // Initialize widget config if needed
   useEffect(() => {
-    if (widget.type === 'chart' && !editedWidget.config.dataSource) {
-      const defaultConfig: LineChartConfig = {
-        title: '',
-        dataSource: {
-          type: 'manual',
-          manualData: [
-            { x: 'Jan', y: 100 },
-            { x: 'Feb', y: 150 },
-            { x: 'Mar', y: 200 },
-            { x: 'Apr', y: 180 },
-            { x: 'May', y: 250 },
-          ]
-        },
-        xAxis: { key: 'x', label: 'Month', type: 'category' },
-        yAxis: { key: 'y', label: 'Value', type: 'number' },
-        options: {
-          colors: ['#3B82F6'],
-          showLegend: true,
-          showGrid: true,
-          strokeWidth: 2,
-          dotSize: 4,
-          curveType: 'monotone'
-        }
-      };
-      
+    if (!editedWidget.config || Object.keys(editedWidget.config).length === 0) {
+      console.log('[WidgetEditor] Initializing default config for type:', editedWidget.type);
       setEditedWidget(prev => ({
         ...prev,
-        config: { ...prev.config, ...defaultConfig }
+        config: getDefaultConfig(prev.type)
       }));
     }
-  }, [widget.type, editedWidget.config.dataSource]);
+  }, [editedWidget.type, editedWidget.config]);
 
   const handleSave = () => {
     onSave(editedWidget);
     onClose();
   };
 
+  // Default configurations for each widget type
+  const getDefaultConfig = (type: string) => {
+    switch (type) {
+      case 'chart':
+        return {
+          title: '',
+          dataSource: {
+            type: 'manual',
+            manualData: [
+              { x: 'Jan', y: 100 },
+              { x: 'Feb', y: 150 },
+              { x: 'Mar', y: 200 },
+              { x: 'Apr', y: 180 },
+              { x: 'May', y: 250 },
+            ]
+          },
+          xAxis: { key: 'x', label: 'Month', type: 'category' },
+          yAxis: { key: 'y', label: 'Value', type: 'number' },
+          options: {
+            colors: ['#3B82F6'],
+            showLegend: true,
+            showGrid: true,
+            strokeWidth: 2,
+            dotSize: 4,
+            curveType: 'monotone'
+          }
+        };
+      case 'table':
+        return {
+          dataSource: {
+            type: 'table',
+            tableId: 1,
+            columns: []
+          },
+          options: {
+            showHeader: true,
+            showPagination: true,
+            pageSize: 10,
+            sortable: true
+          }
+        };
+      case 'metric':
+        return {
+          dataSource: {
+            type: 'table',
+            tableId: 1,
+            column: ''
+          },
+          options: {
+            format: 'number',
+            prefix: '',
+            suffix: '',
+            decimals: 0
+          }
+        };
+      case 'text':
+        return {
+          content: 'Enter your text here...',
+          options: {
+            fontSize: 16,
+            fontWeight: 'normal',
+            color: '#000000',
+            textAlign: 'left'
+          }
+        };
+      case 'filter':
+        return {
+          filters: [],
+          options: {
+            showLabels: true,
+            showOperators: true,
+            allowMultiple: true
+          }
+        };
+      default:
+        return {};
+    }
+  };
+
   const updateWidget = (updates: Partial<Widget>) => {
-    setEditedWidget(prev => ({ ...prev, ...updates }));
+    setEditedWidget(prev => {
+      const newWidget = { ...prev, ...updates };
+      
+      // If type changed, replace entire widget with default config for new type
+      if (updates.type && updates.type !== prev.type) {
+        console.log('[WidgetEditor] Type changed from', prev.type, 'to', updates.type);
+        return {
+          ...newWidget,
+          config: getDefaultConfig(updates.type as string),
+          title: `New ${updates.type} Widget`
+        };
+      }
+      
+      return newWidget;
+    });
   };
 
   const updateConfig = (configUpdates: any) => {
-    setEditedWidget(prev => ({
-      ...prev,
-      config: { ...prev.config, ...configUpdates }
-    }));
+    setEditedWidget(prev => {
+      const newConfig = { ...prev.config, ...configUpdates };
+      console.log('[WidgetEditor] Config updated:', configUpdates);
+      return {
+        ...prev,
+        config: newConfig
+      };
+    });
   };
 
   const updatePosition = (positionUpdates: Partial<{ x: number; y: number; width: number; height: number }>) => {
