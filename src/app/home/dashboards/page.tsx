@@ -244,27 +244,24 @@ export default function DashboardsPage() {
     
     if (type === 'chart') {
       defaultConfig = {
-        title: '',
+        chartType: 'line',
         dataSource: {
-          type: 'manual',
-          manualData: [
-            { x: 'Jan', y: 100 },
-            { x: 'Feb', y: 150 },
-            { x: 'Mar', y: 200 },
-            { x: 'Apr', y: 180 },
-            { x: 'May', y: 250 },
-          ]
+          tableId: 1, // Default table ID - will be updated when user selects a table
+          columnX: 'id', // Default column - will be updated when user selects columns
+          columnY: 'id', // Default column - will be updated when user selects columns
+          filters: []
         },
-        xAxis: { key: 'x', label: 'Month', type: 'category' },
-        yAxis: { key: 'y', label: 'Value', type: 'number' },
         options: {
+          title: '',
+          xAxisLabel: 'X Axis',
+          yAxisLabel: 'Y Axis',
           colors: ['#3B82F6'],
           showLegend: true,
-          showGrid: true,
-          strokeWidth: 2,
-          dotSize: 4,
-          curveType: 'monotone'
-        }
+          showGrid: true
+        },
+        // Additional fields for LineChartWidget compatibility
+        xAxis: { key: 'id', label: 'X Axis', type: 'category' },
+        yAxis: { key: 'id', label: 'Y Axis', type: 'number' }
       };
     }
 

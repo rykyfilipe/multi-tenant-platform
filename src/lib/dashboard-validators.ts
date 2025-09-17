@@ -223,6 +223,17 @@ export const WidgetConfigValidation = {
       showLegend: z.boolean().default(true),
       showGrid: z.boolean().default(true),
     }).optional(),
+    // Additional fields for LineChartWidget compatibility
+    xAxis: z.object({
+      key: z.string(),
+      label: z.string().optional(),
+      type: z.enum(['category', 'number', 'time']).optional(),
+    }).optional(),
+    yAxis: z.object({
+      key: z.string(),
+      label: z.string().optional(),
+      type: z.enum(['number']).optional(),
+    }).optional(),
   }),
 
   table: z.object({
