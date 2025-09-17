@@ -185,11 +185,12 @@ export function TableSelector({
 						transition={{ duration: 0.2 }}
 						className="space-y-4"
 					>
-						{/* X-Axis Column */}
-						<div>
-							<label className="text-xs font-medium text-gray-700 mb-2 block">
-								X-Axis Column {expectedXType && `(${expectedXType})`}
-							</label>
+						{/* X-Axis Column - only show if selectedColumnX is provided */}
+						{selectedColumnX !== undefined && (
+							<div>
+								<label className="text-xs font-medium text-gray-700 mb-2 block">
+									X-Axis Column {expectedXType && `(${expectedXType})`}
+								</label>
 							{isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
 							) : columnsError ? (
@@ -221,12 +222,14 @@ export function TableSelector({
 									</SelectContent>
 								</Select>
 							)}
-						</div>
+							</div>
+						)}
 
-						{/* Y-Axis Column */}
+						{/* Y-Axis Column - only show if selectedColumnY is provided */}
+						{selectedColumnY !== undefined && (
 						<div>
 							<label className="text-xs font-medium text-gray-700 mb-2 block">
-								Y-Axis Column {expectedYType && `(${expectedYType})`}
+								{selectedColumnX === undefined ? 'Value Column' : 'Y-Axis Column'} {expectedYType && `(${expectedYType})`}
 							</label>
 							{isLoadingColumns ? (
 								<Skeleton className="h-8 w-full" />
@@ -238,7 +241,7 @@ export function TableSelector({
 									onValueChange={onColumnYChange}
 								>
 									<SelectTrigger className="h-8">
-										<SelectValue placeholder="Select Y-axis column" />
+										<SelectValue placeholder={selectedColumnX === undefined ? "Select value column" : "Select Y-axis column"} />
 									</SelectTrigger>
 									<SelectContent>
 										{columns
@@ -260,6 +263,7 @@ export function TableSelector({
 								</Select>
 							)}
 						</div>
+						)}
 					</motion.div>
 				)}
 
