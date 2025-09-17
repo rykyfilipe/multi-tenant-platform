@@ -165,7 +165,7 @@ export class DashboardService {
         { search, mode, isPublic, page, limit }
       );
 
-      return {
+      return this.serializeBigInt({
         dashboards,
         pagination: {
           page,
@@ -175,7 +175,7 @@ export class DashboardService {
           hasNext: page * limit < total,
           hasPrev: page > 1,
         },
-      };
+      });
     } catch (error) {
       console.error('Error fetching dashboards:', error);
       errorTracker.trackError(
@@ -232,7 +232,7 @@ export class DashboardService {
         );
       }
 
-      return dashboard;
+      return this.serializeBigInt(dashboard);
     } catch (error) {
       console.error('Error fetching dashboard:', error);
       errorTracker.trackError(
@@ -320,7 +320,7 @@ export class DashboardService {
         { dashboardId: dashboard.id, name: dashboard.name }
       );
 
-      return dashboard;
+      return this.serializeBigInt(dashboard);
     } catch (error) {
       console.error('Error creating dashboard:', error);
       errorTracker.trackError(
