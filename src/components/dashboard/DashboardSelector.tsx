@@ -64,7 +64,7 @@ export function DashboardSelector({
         </SelectTrigger>
         
         <SelectContent>
-          {dashboards.map((dashboard) => (
+          {(dashboards ?? []).map((dashboard) => (
             <SelectItem key={dashboard.id} value={dashboard.id.toString()}>
               <div className="flex items-center space-x-3 py-2">
                 {dashboard.mode === 'edit' ? (

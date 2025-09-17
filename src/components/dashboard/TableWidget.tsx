@@ -66,7 +66,7 @@ export default function TableWidget({
 
   const { tables, columns, isLoading: schemaLoading } = useSchemaCache(tenantId, databaseId);
   const currentTable = tables?.find(t => t.id === dataSource.tableId);
-  const availableColumns = columns?.filter(c => c.tableId === dataSource.tableId) || [];
+  const availableColumns = (columns ?? []).filter(c => c?.tableId === dataSource.tableId) || [];
 
   const pageSize = options.pageSize || 10;
   const totalPages = Math.ceil(data.length / pageSize);
@@ -128,9 +128,9 @@ export default function TableWidget({
   };
 
   const handleColumnToggle = (columnName: string) => {
-    const newColumns = dataSource.columns.includes(columnName)
-      ? dataSource.columns.filter(c => c !== columnName)
-      : [...dataSource.columns, columnName];
+    const newColumns = (dataSource.columns ?? []).includes(columnName)
+      ? (dataSource.columns ?? []).filter(c => c !== columnName)
+      : [...(dataSource.columns ?? []), columnName];
     
     // This would need to be handled by the parent component
     // For now, we'll just log it
@@ -219,16 +219,16 @@ export default function TableWidget({
           <div className="p-4 border rounded-lg bg-muted/50">
             <h4 className="text-sm font-medium mb-3">Select Columns to Display</h4>
             <div className="grid grid-cols-2 gap-2">
-              {availableColumns.map((column) => (
-                <label key={column.id} className="flex items-center space-x-2">
+              {(availableColumns ?? []).map((column) => (
+                <label key={column?.id || ''} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={dataSource.columns.includes(column.name)}
-                    onChange={() => handleColumnToggle(column.name)}
+                    checked={(dataSource.columns ?? []).includes(column?.name || '')}
+                    onChange={() => handleColumnToggle(column?.name || '')}
                     className="rounded"
                   />
-                  <span className="text-sm">{column.name}</span>
-                  <span className="text-xs text-muted-foreground">({column.type})</span>
+                  <span className="text-sm">{column?.name || ''}</span>
+                  <span className="text-xs text-muted-foreground">({column?.type || ''})</span>
                 </label>
               ))}
             </div>
@@ -240,8 +240,8 @@ export default function TableWidget({
           <Table>
             <TableHeader>
               <TableRow>
-                {dataSource.columns.map((columnName) => {
-                  const column = availableColumns?.find(c => c.name === columnName);
+                {(dataSource.columns ?? []).map((columnName) => {
+                  const column = (availableColumns ?? []).find(c => c?.name === columnName);
                   return (
                     <TableHead 
                       key={columnName}
@@ -264,16 +264,16 @@ export default function TableWidget({
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={dataSource.columns.length} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-8 text-muted-foreground">
                     {isLoading ? 'Loading...' : 'No data available'}
                   </TableCell>
                 </TableRow>
               ) : (
                 paginatedData.map((row, index) => (
-                  <TableRow key={row.id || index}>
-                    {dataSource.columns.map((columnName) => (
+                  <TableRow key={row?.id || index}>
+                    {(dataSource.columns ?? []).map((columnName) => (
                       <TableCell key={columnName}>
-                        {renderCellValue(row[columnName])}
+                        {renderCellValue(row?.[columnName])}
                       </TableCell>
                     ))}
                   </TableRow>

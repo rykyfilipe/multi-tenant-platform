@@ -62,8 +62,8 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
 
   const handleAddRow = () => {
     const newRow: ChartDataPoint = {};
-    columns.forEach(col => {
-      newRow[col.name] = '';
+    (columns ?? []).forEach(col => {
+      newRow[col?.name || ''] = '';
     });
     const newData = [...editingData, newRow];
     setEditingData(newData);
@@ -72,7 +72,7 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
   };
 
   const handleDeleteRow = (index: number) => {
-    const newData = editingData.filter((_, i) => i !== index);
+    const newData = (editingData ?? []).filter((_, i) => i !== index);
     setEditingData(newData);
     setHasChanges(true);
     onDataChange(newData);
@@ -96,7 +96,7 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
         const importedData: ChartDataPoint[] = lines.slice(1).map(line => {
           const values = line.split(',').map(v => v.trim());
           const row: ChartDataPoint = {};
-          headers.forEach((header, i) => {
+          (headers ?? []).forEach((header, i) => {
             row[header] = values[i] || '';
           });
           return row;
@@ -116,9 +116,9 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
   const handleExport = () => {
     if (editingData.length === 0) return;
 
-    const headers = columns.map(col => col.name);
-    const rows = editingData.map(row => 
-      columns.map(col => row[col.name] || '').join(',')
+    const headers = (columns ?? []).map(col => col?.name || '');
+    const rows = (editingData ?? []).map(row => 
+      (columns ?? []).map(col => row?.[col?.name || ''] || '').join(',')
     );
     const csv = [headers.join(','), ...rows].join('\n');
     
@@ -177,11 +177,11 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    {columns.map((column) => (
-                      <th key={column.name} className="px-3 py-2 text-left font-medium text-gray-700">
+                    {(columns ?? []).map((column) => (
+                      <th key={column?.name || ''} className="px-3 py-2 text-left font-medium text-gray-700">
                         <div className="flex flex-col">
-                          <span>{column.name}</span>
-                          <span className="text-xs text-gray-500 font-normal">({column.type})</span>
+                          <span>{column?.name || ''}</span>
+                          <span className="text-xs text-gray-500 font-normal">({column?.type || ''})</span>
                         </div>
                       </th>
                     ))}
@@ -191,7 +191,7 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {editingData.map((row, index) => (
+                  {(editingData ?? []).map((row, index) => (
                     <motion.tr
                       key={index}
                       initial={{ opacity: 0, y: 10 }}
@@ -200,39 +200,39 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
                       transition={{ duration: 0.2 }}
                       className="hover:bg-gray-50"
                     >
-                      {columns.map((column) => (
-                        <td key={column.name} className="px-3 py-2">
-                          {column.type === 'boolean' ? (
+                      {(columns ?? []).map((column) => (
+                        <td key={column?.name || ''} className="px-3 py-2">
+                          {column?.type === 'boolean' ? (
                             <select
-                              value={row[column.name] ? 'true' : 'false'}
-                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
+                              value={row?.[column?.name || ''] ? 'true' : 'false'}
+                              onChange={(e) => handleDataChange(index, column?.name || '', e.target.value)}
                               className="h-8 text-xs border border-gray-300 rounded px-2 w-full"
                             >
                               <option value="true">True</option>
                               <option value="false">False</option>
                             </select>
-                          ) : column.type === 'date' ? (
+                          ) : column?.type === 'date' ? (
                             <Input
                               type="date"
-                              value={row[column.name] ? new Date(row[column.name]).toISOString().split('T')[0] : ''}
-                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
-                              placeholder={`Enter ${column.name}`}
+                              value={row?.[column?.name || ''] ? new Date(row?.[column?.name || '']).toISOString().split('T')[0] : ''}
+                              onChange={(e) => handleDataChange(index, column?.name || '', e.target.value)}
+                              placeholder={`Enter ${column?.name || ''}`}
                               className="h-8 text-xs"
                             />
-                          ) : column.type === 'number' ? (
+                          ) : column?.type === 'number' ? (
                             <Input
                               type="number"
-                              value={row[column.name] || ''}
-                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
-                              placeholder={`Enter ${column.name}`}
+                              value={row?.[column?.name || ''] || ''}
+                              onChange={(e) => handleDataChange(index, column?.name || '', e.target.value)}
+                              placeholder={`Enter ${column?.name || ''}`}
                               className="h-8 text-xs"
                               step="any"
                             />
                           ) : (
                             <Input
-                              value={row[column.name] || ''}
-                              onChange={(e) => handleDataChange(index, column.name, e.target.value)}
-                              placeholder={`Enter ${column.name}`}
+                              value={row?.[column?.name || ''] || ''}
+                              onChange={(e) => handleDataChange(index, column?.name || '', e.target.value)}
+                              placeholder={`Enter ${column?.name || ''}`}
                               className="h-8 text-xs"
                             />
                           )}

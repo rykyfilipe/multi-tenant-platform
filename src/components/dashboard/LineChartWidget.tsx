@@ -111,9 +111,9 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
     const xKey = dataSource.columnX || 'x';
     const yKey = dataSource.columnY || 'y';
     
-    return rows.map((row: any) => {
+    return (rows ?? []).map((row: any) => {
       const dataPoint: any = {};
-      if (row.cells && Array.isArray(row.cells)) {
+      if (row?.cells && Array.isArray(row.cells)) {
         // Find X and Y column values from cells
         const xCell = row.cells.find((cell: any) => cell?.column?.name === xKey);
         const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
@@ -125,8 +125,8 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
       return dataPoint;
     }).filter((point: any) => {
       // Ensure both x and y values exist and are valid
-      const xValue = point[xKey];
-      const yValue = point[yKey];
+      const xValue = point?.[xKey];
+      const yValue = point?.[yKey];
       return xValue !== undefined && xValue !== null && xValue !== '' && 
              yValue !== undefined && yValue !== null && !isNaN(yValue);
     });
@@ -185,8 +185,8 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
       if (!item || typeof item !== 'object') return false;
       
       // Ensure the item has the required properties
-      const xValue = item[safeXAxis.key];
-      const yValue = item[safeYAxis.key];
+      const xValue = item?.[safeXAxis.key];
+      const yValue = item?.[safeYAxis.key];
       
       return xValue !== undefined && xValue !== null && xValue !== '' &&
              yValue !== undefined && yValue !== null && !isNaN(Number(yValue));

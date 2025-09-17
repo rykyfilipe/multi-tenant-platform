@@ -46,9 +46,9 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const xKey = dataSource.columnX || safeXAxis.key;
 				const yKey = dataSource.columnY || safeYAxis.key;
 				
-				const mapped: ChartDataPoint[] = rows.map((row: any) => {
+				const mapped: ChartDataPoint[] = (rows ?? []).map((row: any) => {
 					const dataPoint: any = {};
-					if (row.cells && Array.isArray(row.cells)) {
+					if (row?.cells && Array.isArray(row.cells)) {
 						// Find X and Y column values from cells
 						const xCell = row.cells.find((cell: any) => cell?.column?.name === xKey);
 						const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
@@ -60,8 +60,8 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 					return dataPoint;
 				}).filter((point: any) => {
 					// Ensure both x and y values exist and are valid
-					const xValue = point[xKey];
-					const yValue = point[yKey];
+					const xValue = point?.[xKey];
+					const yValue = point?.[yKey];
 					return xValue !== undefined && xValue !== null && xValue !== '' && 
 						   yValue !== undefined && yValue !== null && !isNaN(yValue);
 				});

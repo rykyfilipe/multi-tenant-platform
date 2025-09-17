@@ -84,14 +84,14 @@ export const AnalyticsDashboard: React.FC = () => {
 
 					{/* KPI Cards skeleton */}
 					<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4'>
-						{Array.from({ length: 6 }).map((_, i) => (
+						{(Array.from({ length: 6 }) ?? []).map((_, i) => (
 							<div key={i} className='h-24 sm:h-32 bg-muted rounded-lg'></div>
 						))}
 					</div>
 
 					{/* Charts skeleton */}
 					<div className='grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'>
-						{Array.from({ length: 4 }).map((_, i) => (
+						{(Array.from({ length: 4 }) ?? []).map((_, i) => (
 							<div
 								key={i}
 								className='h-64 sm:h-80 md:h-96 bg-muted rounded-lg'></div>
@@ -382,7 +382,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<TopItemsList
 								title='Top Databases'
 								icon={Database}
-								items={rankings.topDatabases.map((db) => ({
+								items={(rankings?.topDatabases ?? []).map((db) => ({
 									name: db.name,
 									value: db.realSize || `${(db.size / 1024).toFixed(2)} MB`,
 									subtitle: `${
@@ -483,7 +483,7 @@ export const AnalyticsDashboard: React.FC = () => {
 						{/* Real Database Sizes */}
 						<div className="mt-6">
 							<RealSizeInfo
-								databases={rankings.topDatabases.map((db) => ({
+								databases={(rankings?.topDatabases ?? []).map((db) => ({
 									name: db.name,
 									realSizeMB: (db.size / 1024), // Convert KB to MB
 									realSizeKB: db.size,
@@ -506,7 +506,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<DistributionChart
 								title='User Roles Distribution'
 								icon={Users}
-								data={distributions.userRoles.map((role) => ({
+								data={(distributions?.userRoles ?? []).map((role) => ({
 									name: role.role,
 									value: role.count,
 								}))}
@@ -516,7 +516,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<TopItemsList
 								title='Most Active Users'
 								icon={Activity}
-								items={rankings.mostActiveUsers.map((user) => ({
+								items={(rankings?.mostActiveUsers ?? []).map((user) => ({
 									name: user.name,
 									value: "Active",
 									subtitle: user.email,
@@ -663,7 +663,7 @@ export const AnalyticsDashboard: React.FC = () => {
 							<RevenueChart
 								title='Invoice Revenue Trends'
 								icon={DollarSign}
-								data={businessData?.invoices?.monthlyData?.map((item: any) => ({
+								data={(businessData?.invoices?.monthlyData ?? []).map((item: any) => ({
 									date: item.month,
 									revenue: item.revenue,
 									arpu: item.invoices > 0 ? item.revenue / item.invoices : 0,
@@ -729,7 +729,7 @@ export const AnalyticsDashboard: React.FC = () => {
 										name: 'Overdue',
 										value: businessData?.invoices?.overdueInvoices || 0,
 									},
-								].filter(item => item.value > 0)}
+								].filter(item => (item?.value ?? 0) > 0)}
 								delay={0.6}
 							/>
 
@@ -738,7 +738,7 @@ export const AnalyticsDashboard: React.FC = () => {
 								title='Top Customers by Revenue'
 								icon={BarChart3}
 								items={
-									businessData?.invoices?.topCustomers?.map((customer: any) => ({
+									(businessData?.invoices?.topCustomers ?? []).map((customer: any) => ({
 										name: customer.name,
 										value: customer.totalSpent,
 										subtitle: `${customer.invoiceCount} invoices`,
@@ -767,7 +767,7 @@ export const AnalyticsDashboard: React.FC = () => {
 								icon={Clock}
 								change={5}
 								changeType="increase"
-								color='yellow'
+								color='green'
 								delay={0.9}
 								unit="invoices"
 							/>

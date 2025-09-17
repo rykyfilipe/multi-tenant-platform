@@ -250,7 +250,7 @@ export function AdvancedAnalyticsDashboard({ tenantId }: AdvancedAnalyticsDashbo
 	if (loading) {
 		return (
 			<div className="space-y-4">
-				{[...Array(3)].map((_, i) => (
+				{(Array.from({ length: 3 }) ?? []).map((_, i) => (
 					<Card key={i}>
 						<CardContent className="p-6">
 							<div className="animate-pulse space-y-4">
@@ -304,7 +304,7 @@ export function AdvancedAnalyticsDashboard({ tenantId }: AdvancedAnalyticsDashbo
 							<div>
 								<h4 className="font-medium mb-2">Trends</h4>
 								<div className="space-y-2">
-									{insights.trends?.map((trend: any, index: number) => (
+									{(insights?.trends ?? []).map((trend: any, index: number) => (
 										<div key={index} className="flex items-center gap-2 text-sm">
 											<TrendingUp className="h-4 w-4 text-green-600" />
 											<span>{trend.metric}: {trend.percentage}%</span>
@@ -316,7 +316,7 @@ export function AdvancedAnalyticsDashboard({ tenantId }: AdvancedAnalyticsDashbo
 							<div>
 								<h4 className="font-medium mb-2">Recommendations</h4>
 								<div className="space-y-2">
-									{insights.recommendations?.map((rec: any, index: number) => (
+									{(insights?.recommendations ?? []).map((rec: any, index: number) => (
 										<div key={index} className="text-sm">
 											<div className="flex items-center gap-2">
 												<span className="font-medium">{rec.title}</span>
@@ -340,7 +340,7 @@ export function AdvancedAnalyticsDashboard({ tenantId }: AdvancedAnalyticsDashbo
 				setSelectedDashboard(dashboard || null);
 			}}>
 				<TabsList className="grid w-full grid-cols-4">
-					{dashboards.map((dashboard) => (
+					{(dashboards ?? []).map((dashboard) => (
 						<TabsTrigger key={dashboard.id} value={dashboard.id}>
 							{dashboard.name}
 						</TabsTrigger>
@@ -351,7 +351,7 @@ export function AdvancedAnalyticsDashboard({ tenantId }: AdvancedAnalyticsDashbo
 					</TabsTrigger>
 				</TabsList>
 
-				{dashboards.map((dashboard) => (
+				{(dashboards ?? []).map((dashboard) => (
 					<TabsContent key={dashboard.id} value={dashboard.id} className="space-y-4">
 						{/* Dashboard Header */}
 						<div className="flex items-center justify-between">
@@ -374,7 +374,7 @@ export function AdvancedAnalyticsDashboard({ tenantId }: AdvancedAnalyticsDashbo
 
 						{/* Dashboard Widgets */}
 						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-							{dashboard.widgets.map((widget) => (
+							{(dashboard?.widgets ?? []).map((widget) => (
 								<Card key={widget.id} className="col-span-1">
 									<CardHeader className="pb-3">
 										<CardTitle className="text-sm flex items-center gap-2">

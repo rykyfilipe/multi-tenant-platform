@@ -62,7 +62,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
   };
 
   const handleRemoveFilter = (index: number) => {
-    const newFilters = editingFilters.filter((_, i) => i !== index);
+    const newFilters = (editingFilters ?? []).filter((_, i) => i !== index);
     setEditingFilters(newFilters);
     onFiltersChange(newFilters);
   };
@@ -110,7 +110,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
             </div>
           ) : (
             <AnimatePresence>
-              {editingFilters.map((filter, index) => (
+              {(editingFilters ?? []).map((filter, index) => (
                 <motion.div
                   key={filter.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -147,7 +147,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableColumns.map((column) => (
+                          {(availableColumns ?? []).map((column) => (
                             <SelectItem key={column.id} value={column.name}>
                               <div className="flex items-center space-x-2">
                                 <span>{column.name}</span>
@@ -172,7 +172,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                           <SelectValue placeholder="Select operator" />
                         </SelectTrigger>
                         <SelectContent>
-                          {OPERATORS.map((op) => (
+                          {(OPERATORS ?? []).map((op) => (
                             <SelectItem key={op.value} value={op.value}>
                               {op.label}
                             </SelectItem>

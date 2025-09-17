@@ -165,7 +165,7 @@ export function TableSelector({
 								<SelectValue placeholder="Select a table" />
 							</SelectTrigger>
 							<SelectContent>
-								{(tables || []).map((table) => (
+								{(tables ?? []).map((table) => (
 									<SelectItem key={table.id} value={table.id.toString()}>
 										<div className="flex items-center space-x-2">
 											<Table className="h-4 w-4" />
@@ -226,8 +226,8 @@ export function TableSelector({
 										<SelectValue placeholder="Select X-axis column" />
 									</SelectTrigger>
 									<SelectContent>
-										{columns
-											.filter(column => !expectedXType || isColumnTypeCompatible(column.type, expectedXType))
+										{(columns ?? [])
+											.filter(column => !expectedXType || isColumnTypeCompatible(column?.type, expectedXType))
 											.map((column) => (
 											<SelectItem key={column.id} value={column.name}>
 												<div className="flex items-center space-x-2">
@@ -280,8 +280,8 @@ export function TableSelector({
 										<SelectValue placeholder={selectedColumnX === undefined ? "Select value column" : "Select Y-axis column"} />
 									</SelectTrigger>
 									<SelectContent>
-										{columns
-											.filter(column => !expectedYType || isColumnTypeCompatible(column.type, expectedYType))
+										{(columns ?? [])
+											.filter(column => !expectedYType || isColumnTypeCompatible(column?.type, expectedYType))
 											.map((column) => (
 											<SelectItem key={column.id} value={column.name}>
 												<div className="flex items-center space-x-2">
@@ -333,24 +333,24 @@ export function TableSelector({
 							<div className="text-sm text-red-600">{columnsError}</div>
 						) : (
 							<div className="max-h-52 overflow-auto border rounded p-2 space-y-1">
-								{columns.map((column) => {
-									const checked = (selectedColumns || []).includes(column.name)
+								{(columns ?? []).map((column) => {
+									const checked = (selectedColumns ?? []).includes(column?.name || '')
 									const disabled = !!columnLimit && !checked && (selectedColumns?.length || 0) >= columnLimit
 									return (
-										<label key={column.id} className={`flex items-center gap-2 text-sm ${disabled ? 'opacity-50' : ''}`}>
+										<label key={column?.id || ''} className={`flex items-center gap-2 text-sm ${disabled ? 'opacity-50' : ''}`}>
 											<input
 												type="checkbox"
 												checked={checked}
 												disabled={disabled}
 												onChange={(e) => {
-													const next = new Set(selectedColumns || [])
-													if (e.target.checked) next.add(column.name); else next.delete(column.name)
+													const next = new Set(selectedColumns ?? [])
+													if (e.target.checked) next.add(column?.name || ''); else next.delete(column?.name || '')
 													onColumnsChange(Array.from(next))
 												}}
 												className="h-3.5 w-3.5"
 											/>
-											<span className="flex-1 truncate">{column.name}</span>
-											<span className="text-xs text-gray-500">{column.type}</span>
+											<span className="flex-1 truncate">{column?.name || ''}</span>
+											<span className="text-xs text-gray-500">{column?.type || ''}</span>
 										</label>
 									)
 								})}

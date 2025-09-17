@@ -103,8 +103,8 @@ export function KPIWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: 
       const response = await api.tables.rows(tenantId, databaseId, dataSource.tableId, queryData);
       
       if (response.success && response.data) {
-        const values = response.data.rows.map((row: any) => {
-          const cell = row.cells.find((c: any) => c.column.name === dataSource.column);
+        const values = (response.data.rows ?? []).map((row: any) => {
+          const cell = row?.cells?.find((c: any) => c?.column?.name === dataSource.column);
           return cell ? parseFloat(cell.value) || 0 : 0;
         });
 
@@ -246,13 +246,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, tenantId, databaseId }: 
       showRefresh={dataSource.type === 'table'}
     >
       <div className="space-y-4">
-        {data.map((kpi, index) => (
+        {(data ?? []).map((kpi, index) => (
           <div key={index} className="text-center">
-            <div className="text-sm text-gray-600 mb-1">{kpi.label}</div>
-            <div className={`text-3xl font-bold ${getThresholdColor(kpi.value)}`}>
-              {formatValue(kpi.value)}
+            <div className="text-sm text-gray-600 mb-1">{kpi?.label || ''}</div>
+            <div className={`text-3xl font-bold ${getThresholdColor(kpi?.value || 0)}`}>
+              {formatValue(kpi?.value || 0)}
             </div>
-            {options.showChange && kpi.changePercent !== undefined && (
+            {options.showChange && kpi?.changePercent !== undefined && (
               <div className={`flex items-center justify-center space-x-1 text-sm ${getTrendColor(kpi.changePercent)}`}>
                 {options.showTrend && getTrendIcon(kpi.changePercent)}
                 <span>

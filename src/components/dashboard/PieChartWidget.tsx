@@ -39,8 +39,8 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, tenantId, d
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
-			const nameValue = item[safeXAxis.key];
-			const valueValue = item[safeYAxis.key];
+			const nameValue = item?.[safeXAxis.key];
+			const valueValue = item?.[safeYAxis.key];
 			
 			return nameValue !== undefined && nameValue !== null && nameValue !== '' &&
 				   valueValue !== undefined && valueValue !== null && !isNaN(Number(valueValue));
@@ -65,7 +65,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, tenantId, d
 						<Tooltip />
 						{options.showLegend !== false && <Legend />}
 						<Pie data={processedData} dataKey={safeYAxis.key} nameKey={safeXAxis.key} outerRadius={80}>
-							{processedData.map((_, index) => (
+							{(processedData ?? []).map((_, index) => (
 								<Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
 							))}
 						</Pie>

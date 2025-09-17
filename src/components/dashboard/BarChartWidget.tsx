@@ -39,8 +39,8 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, tenantId, d
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
-			const xValue = item[safeXAxis.key];
-			const yValue = item[safeYAxis.key];
+			const xValue = item?.[safeXAxis.key];
+			const yValue = item?.[safeYAxis.key];
 			
 			return xValue !== undefined && xValue !== null && xValue !== '' &&
 				   yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
