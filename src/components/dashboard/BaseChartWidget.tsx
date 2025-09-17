@@ -10,8 +10,14 @@ export interface BaseChartWidgetProps {
 }
 
 export function useChartData(widget: Widget, tenantId?: number, databaseId?: number) {
+	// Safely extract config with comprehensive fallbacks
 	const config = (widget.config || {}) as LineChartConfig;
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
+	
+	// Ensure xAxis and yAxis have proper fallbacks
+	const safeXAxis = config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const };
+	const safeYAxis = config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const };
+	
 	const [data, setData] = useState<ChartDataPoint[]>(dataSource.type === 'manual' ? (dataSource.manualData || []) : []);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -37,8 +43,8 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const rows = json?.data || [];
 				
 				// Transform rows with cells to chart data
-				const xKey = dataSource.columnX || config.xAxis?.key || 'x';
-				const yKey = dataSource.columnY || config.yAxis?.key || 'y';
+				const xKey = dataSource.columnX || safeXAxis.key;
+				const yKey = dataSource.columnY || safeYAxis.key;
 				
 				const mapped: ChartDataPoint[] = rows.map((row: any) => {
 					const dataPoint: any = {};
@@ -52,7 +58,7 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 						dataPoint[yKey] = parseFloat(yCell?.value) || 0;
 					}
 					return dataPoint;
-				}).filter(point => {
+				}).filter((point: any) => {
 					// Ensure both x and y values exist and are valid
 					const xValue = point[xKey];
 					const yValue = point[yKey];

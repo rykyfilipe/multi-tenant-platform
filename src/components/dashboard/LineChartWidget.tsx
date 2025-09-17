@@ -142,17 +142,56 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
   const [error, setError] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
 
-  const config = widget.config as LineChartConfig || {};
+  // Safely extract config with comprehensive fallbacks
+  const config = (widget.config as LineChartConfig) || {};
   const options = config.options || {};
   const dataSource = config.dataSource || { type: 'manual', manualData: [] };
+  
+  // Ensure xAxis and yAxis have proper fallbacks
+  const safeXAxis = config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const };
+  const safeYAxis = config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const };
+
+  // Early return if widget is malformed
+  if (!widget || typeof widget !== 'object') {
+    return (
+      <BaseWidget
+        widget={widget}
+        isEditMode={isEditMode}
+        onEdit={onEdit}
+        isLoading={false}
+        error="Invalid widget configuration"
+      >
+        <div className="flex items-center justify-center h-full text-red-500">
+          <div className="text-center">
+            <p className="text-sm">Invalid widget configuration</p>
+          </div>
+        </div>
+      </BaseWidget>
+    );
+  }
 
   // Process data based on data source type
   const processedData = useMemo(() => {
+    let rawData: any[] = [];
+    
     if (dataSource.type === 'manual' && dataSource.manualData) {
-      return Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
+      rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
+    } else {
+      rawData = Array.isArray(data) ? data : [];
     }
-    return Array.isArray(data) ? data : [];
-  }, [dataSource, data]);
+    
+    // Validate and clean data to prevent 'x' property errors
+    return rawData.filter(item => {
+      if (!item || typeof item !== 'object') return false;
+      
+      // Ensure the item has the required properties
+      const xValue = item[safeXAxis.key];
+      const yValue = item[safeYAxis.key];
+      
+      return xValue !== undefined && xValue !== null && xValue !== '' &&
+             yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
+    });
+  }, [dataSource, data, safeXAxis.key, safeYAxis.key]);
 
   // Fetch data when dataSource changes
   useEffect(() => {
@@ -235,19 +274,19 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           )}
           <XAxis 
-            dataKey={config.xAxis?.key || 'x'}
+            dataKey={safeXAxis.key}
             stroke="#666"
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            label={config.xAxis?.label ? { value: config.xAxis.label, position: 'insideBottom', offset: -5 } : undefined}
+            label={safeXAxis.label ? { value: safeXAxis.label, position: 'insideBottom', offset: -5 } : undefined}
           />
           <YAxis 
             stroke="#666"
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            label={config.yAxis?.label ? { value: config.yAxis.label, angle: -90, position: 'insideLeft' } : undefined}
+            label={safeYAxis.label ? { value: safeYAxis.label, angle: -90, position: 'insideLeft' } : undefined}
           />
           <Tooltip
             contentStyle={{
@@ -261,7 +300,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit }: LineChar
           {options.showLegend !== false && <Legend />}
           <Line
             type={curveType}
-            dataKey={config.yAxis?.key || 'y'}
+            dataKey={safeYAxis.key}
             stroke={colors[0]}
             strokeWidth={strokeWidth}
             dot={{ fill: colors[0], strokeWidth: 2, r: dotSize }}
