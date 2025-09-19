@@ -160,11 +160,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	// Enhanced styling configuration
 	const widgetStyle = {
 		backgroundColor: options.backgroundColor || 'transparent',
-		borderRadius: options.borderRadius || 'lg',
-		shadow: options.shadow || 'sm',
-		padding: options.padding || 'md',
-		hoverEffect: options.hoverEffect || 'lift',
-		...(widget as any).style
+		borderRadius: (options.borderRadius as any) || 'lg',
 	};
 
 	return (

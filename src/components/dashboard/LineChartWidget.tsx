@@ -17,21 +17,25 @@ import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
 // LineChart configuration interface
 export interface LineChartConfig {
+	title?: string;
 	dataSource?: EnhancedDataSource;
 	xAxis?: ChartAxisConfig;
 	yAxis?: ChartAxisConfig;
-  options?: {
-    colors?: string[];
-    colorPalette?: ColorPalette;
-    strokeWidth?: number;
-    dotSize?: number;
-    curveType?: 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
+	options?: {
+		colors?: string[];
+		colorPalette?: ColorPalette;
+		strokeWidth?: number;
+		dotSize?: number;
+		curveType?: 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
 		showGrid?: boolean;
 		showLegend?: boolean;
-    showDataSummary?: boolean;
-    animation?: boolean;
+		showDataSummary?: boolean;
+		animation?: boolean;
 		backgroundColor?: string;
 		borderRadius?: string;
+		shadow?: boolean;
+		padding?: number;
+		hoverEffect?: boolean;
 	};
 }
 
@@ -137,23 +141,43 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 		
 		// For multi-column support on Y-axis (multiple series)
 		if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
+			console.log('[LineChart] Processing multi-column Y-axis:', {
+				yColumns: enhancedDataSource.yAxis.columns,
+				rawDataCount: rawData.length
+			});
+			
 			const transformedData: any[] = [];
 			const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
 			
-			rawData.forEach(item => {
-				const baseItem: any = {
-					[xColumn]: item[xColumn]
-				};
-				
-				enhancedDataSource.yAxis!.columns.forEach(yCol => {
-					if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
-						baseItem[yCol] = item[yCol];
+			// Group data by X column value to ensure proper multi-series structure
+			const groupedData = rawData.reduce((acc: Record<string, any>, item: any) => {
+				const xValue = item[xColumn];
+				if (xValue !== undefined && xValue !== null && xValue !== '') {
+					if (!acc[xValue]) {
+						acc[xValue] = { [xColumn]: xValue };
 					}
-				});
-				
-				if (Object.keys(baseItem).length > 1) { // Has at least one Y value
-					transformedData.push(baseItem);
+					
+					// Add all Y column values for this X value
+					enhancedDataSource.yAxis!.columns.forEach(yCol => {
+						if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
+							acc[xValue][yCol] = item[yCol];
+						}
+					});
 				}
+				return acc;
+			}, {});
+			
+			// Convert grouped data to array
+			Object.values(groupedData).forEach(item => {
+				if (Object.keys(item).length > 1) { // Has at least one Y value
+					transformedData.push(item);
+				}
+			});
+			
+			console.log('[LineChart] Multi-column Y-axis result:', {
+				transformedDataCount: transformedData.length,
+				sampleData: transformedData.slice(0, 2),
+				yColumns: enhancedDataSource.yAxis.columns
 			});
 			
 			// Apply aggregation if specified for multi-column
@@ -503,6 +527,26 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
         </div>
     </BaseWidget>
   );
+}
+
+// Data source interface
+export interface DataSource {
+	type: 'table' | 'manual';
+	tableId?: number;
+	xAxis?: ChartAxisConfig;
+	yAxis?: ChartAxisConfig;
+	columnX?: string;
+	columnY?: string;
+	xColumns?: string[];
+	yColumns?: string[];
+	columns?: string[];
+	filters?: any[];
+	groupBy?: string;
+}
+
+// Chart data point interface
+export interface ChartDataPoint {
+	[key: string]: any;
 }
 
 // Export the config type for use in other components
