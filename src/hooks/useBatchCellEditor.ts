@@ -366,7 +366,8 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			);
 			
 			// 🔧 FIX: Update local state with server response data
-			onSuccess?.([...allUpdatedCells, ...allNewRows]);
+			// Only include cell updates, not new rows (they're already added locally via onNewRowsAdded)
+			onSuccess?.(allUpdatedCells);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to save changes";

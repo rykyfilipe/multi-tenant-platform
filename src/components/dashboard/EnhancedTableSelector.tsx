@@ -59,9 +59,14 @@ export interface ChartAxisConfig {
 export interface EnhancedDataSource {
 	type: 'table' | 'manual';
 	tableId?: number;
-	// For charts: X and Y axis configuration
+	// For charts: X and Y axis configuration (legacy)
 	xAxis?: ChartAxisConfig;
 	yAxis?: ChartAxisConfig;
+	// For charts: Simple column selection
+	columnX?: string;
+	columnY?: string;
+	xColumns?: string[];
+	yColumns?: string[];
 	// For tables: selected columns
 	columns?: string[];
 	// Filters
@@ -240,7 +245,7 @@ export function EnhancedTableSelector({
 		
 		const newColumns = isSelected
 			? [...currentColumns, columnName]
-			: currentColumns.filter(col => col !== columnName);
+			: currentColumns.filter((col: string) => col !== columnName);
 
 		const newDataSource = {
 			...dataSource,
@@ -380,7 +385,7 @@ export function EnhancedTableSelector({
 				{/* Show selected columns for multi-column mode */}
 				{allowMultiColumn && currentColumns.length > 0 && (
 					<div className="flex flex-wrap gap-1">
-						{currentColumns.map((column) => (
+						{currentColumns.map((column: string) => (
 							<Badge key={column} variant="secondary" className="text-xs">
 								{column}
 								<Button
