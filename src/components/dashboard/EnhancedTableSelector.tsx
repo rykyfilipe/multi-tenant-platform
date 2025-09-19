@@ -224,40 +224,29 @@ export function EnhancedTableSelector({
 		setColumnsError(null);
 	};
 
-	const handleAxisChange = (axis: 'x' | 'y', updates: Partial<ChartAxisConfig>) => {
-		const currentAxis = axis === 'x' ? dataSource.xAxis : dataSource.yAxis;
-		const newAxis: ChartAxisConfig = {
-			key: '',
-			label: '',
-			type: axis === 'x' ? (expectedXType || 'text') : (expectedYType || 'number'),
-			columns: [],
-			...currentAxis,
-			...updates
-		};
-
-		const newDataSource: EnhancedDataSource = {
+	// Simplified column selection handlers
+	const handleColumnSelect = (axis: 'x' | 'y', columnName: string) => {
+		console.log('[EnhancedTableSelector] Column select:', { axis, columnName });
+		const newDataSource = {
 			...dataSource,
-			[axis === 'x' ? 'xAxis' : 'yAxis']: newAxis
+			[axis === 'x' ? 'columnX' : 'columnY']: columnName
 		};
 		onDataSourceChange(newDataSource);
 	};
 
 	const handleColumnToggle = (axis: 'x' | 'y', columnName: string, isSelected: boolean) => {
-		const currentAxis = axis === 'x' ? dataSource.xAxis : dataSource.yAxis;
-		if (!currentAxis) return;
-
+		console.log('[EnhancedTableSelector] Column toggle:', { axis, columnName, isSelected });
+		const currentColumns = axis === 'x' ? (dataSource.xColumns || []) : (dataSource.yColumns || []);
+		
 		const newColumns = isSelected
-			? [...currentAxis.columns, columnName]
-			: currentAxis.columns.filter(col => col !== columnName);
+			? [...currentColumns, columnName]
+			: currentColumns.filter(col => col !== columnName);
 
-		// Update axis key to first selected column (for backward compatibility)
-		const newKey = newColumns.length > 0 ? newColumns[0] : '';
-
-		handleAxisChange(axis, {
-			columns: newColumns,
-			key: newKey,
-			label: newKey
-		});
+		const newDataSource = {
+			...dataSource,
+			[axis === 'x' ? 'xColumns' : 'yColumns']: newColumns
+		};
+		onDataSourceChange(newDataSource);
 	};
 
 	const handleTableColumnsChange = (selectedColumns: string[]) => {
@@ -284,16 +273,23 @@ export function EnhancedTableSelector({
 	};
 
 	const renderAxisSelector = (axis: 'x' | 'y', label: string, expectedType?: 'text' | 'number' | 'date' | 'boolean') => {
-		const currentAxis = axis === 'x' ? dataSource.xAxis : dataSource.yAxis;
+		// Get current selection from dataSource
+		const currentColumn = axis === 'x' ? dataSource.columnX : dataSource.columnY;
+		const currentColumns = axis === 'x' ? (dataSource.xColumns || []) : (dataSource.yColumns || []);
+		
 		console.log('[EnhancedTableSelector] renderAxisSelector:', {
 			axis,
 			label,
 			expectedType,
 			dataSource,
-			currentAxis,
-			xAxis: dataSource.xAxis,
-			yAxis: dataSource.yAxis
+			currentColumn,
+			currentColumns,
+			columnX: dataSource.columnX,
+			columnY: dataSource.columnY,
+			xColumns: dataSource.xColumns,
+			yColumns: dataSource.yColumns
 		});
+		
 		const compatibleColumns = getCompatibleColumns(expectedType);
 
 		return (
@@ -321,8 +317,8 @@ export function EnhancedTableSelector({
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline" className="w-full justify-between h-8">
 								<span className="text-xs">
-									{currentAxis?.columns && currentAxis.columns.length > 0 
-										? `${currentAxis.columns.length} column(s) selected`
+									{currentColumns.length > 0 
+										? `${currentColumns.length} column(s) selected`
 										: 'Select columns'
 									}
 								</span>
@@ -331,12 +327,12 @@ export function EnhancedTableSelector({
 						</DropdownMenuTrigger>
 						<DropdownMenuContent className="w-full min-w-[200px] max-h-60 overflow-auto">
 							{compatibleColumns.map((column) => {
-								const isSelected = currentAxis?.columns.includes(column.name) || false;
+								const isSelected = currentColumns.includes(column.name);
 								console.log('[EnhancedTableSelector] Column checkbox:', { 
 									columnName: column.name, 
 									isSelected, 
-									currentAxisColumns: currentAxis?.columns,
-									currentAxis 
+									currentColumns,
+									axis
 								});
 								return (
 									<DropdownMenuCheckboxItem
@@ -357,8 +353,8 @@ export function EnhancedTableSelector({
 				) : (
 					// Single column selection
 					<Select
-						value={currentAxis?.key || ''}
-						onValueChange={(value) => handleAxisChange(axis, { key: value, label: value, columns: [value] })}
+						value={currentColumn || ''}
+						onValueChange={(value) => handleColumnSelect(axis, value)}
 					>
 						<SelectTrigger className="h-8">
 							<SelectValue placeholder={`Select ${label.toLowerCase()} column`} />
@@ -382,9 +378,9 @@ export function EnhancedTableSelector({
 				)}
 				
 				{/* Show selected columns for multi-column mode */}
-				{allowMultiColumn && currentAxis?.columns && currentAxis.columns.length > 0 && (
+				{allowMultiColumn && currentColumns.length > 0 && (
 					<div className="flex flex-wrap gap-1">
-						{currentAxis.columns.map((column) => (
+						{currentColumns.map((column) => (
 							<Badge key={column} variant="secondary" className="text-xs">
 								{column}
 								<Button
