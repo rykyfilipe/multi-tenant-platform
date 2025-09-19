@@ -36,6 +36,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 						error={error}
 						onRefresh={refetch}
 						config={config}
+						dataSource={dataSource}
 						safeXAxis={safeXAxis}
 						safeYAxis={safeYAxis}
 						options={options}
@@ -56,6 +57,7 @@ interface PieChartWidgetContentProps {
 	error: string | null;
 	onRefresh: () => void;
 	config: LineChartConfig;
+	dataSource: any;
 	safeXAxis: any;
 	safeYAxis: any;
 	options: any;
@@ -71,6 +73,7 @@ function PieChartWidgetContent({
 	error, 
 	onRefresh,
 	config,
+	dataSource,
 	safeXAxis,
 	safeYAxis,
 	options

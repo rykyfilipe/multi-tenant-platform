@@ -222,6 +222,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
             error={error}
             onRefresh={refetch}
             config={config}
+            dataSource={dataSource}
             safeXAxis={safeXAxis}
             safeYAxis={safeYAxis}
             options={options}
@@ -242,6 +243,7 @@ interface LineChartWidgetContentProps {
   error: string | null;
   onRefresh: () => void;
   config: LineChartConfig;
+  dataSource: DataSource;
   safeXAxis: any;
   safeYAxis: any;
   options: any;
@@ -257,6 +259,7 @@ function LineChartWidgetContent({
   error, 
   onRefresh,
   config,
+  dataSource,
   safeXAxis,
   safeYAxis,
   options

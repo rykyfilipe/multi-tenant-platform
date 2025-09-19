@@ -36,6 +36,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 						error={error}
 						onRefresh={refetch}
 						config={config}
+						dataSource={dataSource}
 						safeXAxis={safeXAxis}
 						safeYAxis={safeYAxis}
 						options={options}
@@ -56,6 +57,7 @@ interface BarChartWidgetContentProps {
 	error: string | null;
 	onRefresh: () => void;
 	config: LineChartConfig;
+	dataSource: any;
 	safeXAxis: any;
 	safeYAxis: any;
 	options: any;
@@ -71,6 +73,7 @@ function BarChartWidgetContent({
 	error, 
 	onRefresh,
 	config,
+	dataSource,
 	safeXAxis,
 	safeYAxis,
 	options
