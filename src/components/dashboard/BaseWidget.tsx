@@ -597,10 +597,9 @@ export default function BaseWidget({
 
   return (
     <WidgetErrorBoundary widget={widget}>
-      <Card 
+      <div 
         className={cn(
-          getMinimalistStyles.cardStyle(),
-          'h-full transition-all duration-200 group overflow-hidden',
+          'h-full w-full bg-white border border-gray-200 rounded-lg overflow-hidden relative',
           className
         )}
         style={{
@@ -608,116 +607,22 @@ export default function BaseWidget({
           ...(widgetStyle.titleColor && { '--title-color': widgetStyle.titleColor } as React.CSSProperties)
         }}
       >
-      <CardHeader className={getMinimalistStyles.headerStyle()}>
-        <div className={cn(
-          getMinimalistStyles.layout.between,
-          'gap-2 min-h-0'
-        )}>
-          <CardTitle 
-            className={cn(
-              getMinimalistStyles.titleStyle('md'),
-              'truncate flex-1 min-w-0 pr-2'
-            )}
-            style={{ color: widgetStyle.titleColor }}
-          >
-            {title}
-          </CardTitle>
-          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-            {showRefresh && onRefresh && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRefresh();
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                disabled={isLoading}
-                className={getMinimalistStyles.button.icon}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
-            )}
-            {isEditMode && onStyleEdit && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onStyleEdit();
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className={getMinimalistStyles.button.icon}
-              >
-                <Palette className="h-4 w-4" />
-              </Button>
-            )}
-            {isEditMode && onEdit && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Edit button clicked for widget:', widget.id);
-                  onEdit();
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className={getMinimalistStyles.button.icon}
-              >
-                <Edit3 className="h-4 w-4" />
-              </Button>
-            )}
-            {isEditMode && onDelete && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Delete button clicked for widget:', widget.id);
-                  onDelete();
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+        {/* Simple header - just title */}
+        {title && (
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h3 
+              className={cn(
+                'text-sm font-medium text-gray-900 truncate',
+                getMinimalistStyles.titleStyle('sm')
+              )}
+              style={{ color: widgetStyle.titleColor }}
+            >
+              {title}
+            </h3>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className={getMinimalistStyles.contentStyle('h-full')}>
+        )}
+
+        {/* Clean content area */}
         <div className="h-full w-full overflow-hidden flex flex-col">
           {isLoading ? (
             <WidgetLoading type="skeleton" size="md" />
@@ -734,8 +639,56 @@ export default function BaseWidget({
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Edit mode buttons - floating */}
+        {isEditMode && (
+          <div className="absolute top-2 right-2 z-10 flex items-center space-x-1">
+            {showRefresh && onRefresh && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRefresh();
+                }}
+                disabled={isLoading}
+                className="h-6 w-6 p-0 bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+              >
+                <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+            {onEdit && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="h-6 w-6 p-0 bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+              >
+                <Edit3 className="h-3 w-3" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="h-6 w-6 p-0 bg-white border border-gray-200 shadow-sm hover:bg-red-50 text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
     </WidgetErrorBoundary>
   );
 }

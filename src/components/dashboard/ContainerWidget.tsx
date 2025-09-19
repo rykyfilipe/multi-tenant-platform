@@ -48,21 +48,15 @@ export default function ContainerWidget({
   databaseId 
 }: ContainerWidgetProps) {
   const config = (widget.config || {}) as ContainerWidgetConfig;
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  // Simple options - clean container
   const options = {
     layout: config.layout || 'grid',
     columns: config.columns || 2,
     gap: config.gap || 16,
     padding: config.padding || 16,
-    backgroundColor: config.backgroundColor || '#f8fafc',
-    borderColor: config.borderColor || '#e2e8f0',
-    borderRadius: config.borderRadius || 8,
-    showBorder: config.showBorder !== false,
-    showBackground: config.showBackground !== false,
-    ...config
   };
-
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [showAddMenu, setShowAddMenu] = useState(false);
 
   // Widget types available for adding
   const widgetTypes: { type: WidgetType; label: string; icon: any }[] = [
@@ -83,176 +77,115 @@ export default function ContainerWidget({
     setShowAddMenu(false);
   };
 
+  // Simple container style - just a div
   const containerStyle = {
     display: options.layout === 'flex' ? 'flex' : 'grid',
     gridTemplateColumns: options.layout === 'grid' ? `repeat(${options.columns}, 1fr)` : undefined,
     gap: `${options.gap}px`,
     padding: `${options.padding}px`,
-    backgroundColor: options.showBackground ? options.backgroundColor : 'transparent',
-    border: options.showBorder ? `1px solid ${options.borderColor}` : 'none',
-    borderRadius: `${options.borderRadius}px`,
-    minHeight: '200px',
     width: '100%',
+    height: '100%',
   };
 
   return (
-    <WidgetDataProvider widget={widget}>
-      {({ data, isLoading, error, refetch }) => (
-        <BaseWidget
-          widget={widget}
-          isEditMode={isEditMode}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          isLoading={isLoading}
-          error={error}
-          onRefresh={refetch}
-          showRefresh={false}
-        >
-          <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
-            {/* Container Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Layout className="h-4 w-4 text-gray-500" />
-                <span className={`${getMinimalistStyles.titleStyle('sm')} text-gray-700`}>
-                  {config.title || 'Container'}
-                </span>
-                {config.children && config.children.length > 0 && (
-                  <span className={`${getMinimalistStyles.mutedStyle()} text-xs`}>
-                    ({config.children.length} widgets)
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center space-x-1">
-                {isEditMode && (
-                  <DropdownMenu open={showAddMenu} onOpenChange={setShowAddMenu}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-6 w-6"
-                        title="Add Widget"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      {widgetTypes.map(({ type, label, icon: Icon }) => (
-                        <DropdownMenuItem
-                          key={type}
-                          onClick={() => handleAddWidget(type)}
-                          className="flex items-center space-x-2"
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span>{label}</span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="p-1 h-6 w-6"
-                >
-                  {isExpanded ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                </Button>
-              </div>
-            </div>
-
-            {/* Container Content */}
-            {isExpanded && (
-              <div className="flex-1">
-                <div 
-                  style={containerStyle}
-                  className="transition-all duration-200"
-                >
-                  {/* Render child widgets */}
-                  {config.children && config.children.length > 0 ? (
-                    config.children.map((childWidget, index) => (
-                      <div key={childWidget.id || index} className="relative group">
-                        {/* Widget placeholder - in a real implementation, you'd render the actual widget */}
-                        <div className="bg-white border border-gray-200 rounded-lg p-4 h-full min-h-[100px] flex flex-col">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              {widgetTypes.find(w => w.type === childWidget.type)?.icon && 
-                                React.createElement(widgetTypes.find(w => w.type === childWidget.type)!.icon, { 
-                                  className: "h-4 w-4 text-gray-500" 
-                                })
-                              }
-                              <span className="text-sm font-medium text-gray-700">
-                                {WidgetFactory.getTypeDisplayName(childWidget.type as WidgetType)}
-                              </span>
-                            </div>
-                            {isEditMode && (
-                              <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onEditWidget?.(childWidget.id)}
-                                  className="p-1 h-6 w-6"
-                                  title="Edit Widget"
-                                >
-                                  <Edit3 className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onDeleteWidget?.(childWidget.id)}
-                                  className="p-1 h-6 w-6 text-red-500 hover:text-red-700"
-                                  title="Delete Widget"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 flex items-center justify-center text-gray-400">
-                            <p className="text-xs">Widget Preview</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    /* Empty state */
-                    <div className="flex items-center justify-center h-full min-h-[120px] text-center">
-                      <div className="space-y-2">
-                        <Layout className="h-8 w-8 mx-auto text-gray-400" />
-                        <p className={`${getMinimalistStyles.mutedStyle()} text-xs sm:text-sm`}>
-                          {isEditMode ? 'Click + to add widgets' : 'No widgets in container'}
-                        </p>
-                        <p className={`${getMinimalistStyles.mutedStyle()} text-xs`}>
-                          Layout: {options.layout} • Columns: {options.columns}
-                        </p>
-                      </div>
+    <div className="w-full h-full relative">
+      {/* Simple container - just a div with grid/flex layout */}
+      <div
+        style={containerStyle}
+        className="w-full h-full"
+      >
+        {/* Render child widgets directly - clean */}
+        {config.children && config.children.length > 0 ? (
+          config.children.map((childWidget, index) => (
+            <div key={childWidget.id || index} className="relative group w-full h-full">
+              {/* Clean widget container - just border and padding */}
+              <div className="w-full h-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="p-4 h-full flex flex-col">
+                  {/* Simple header with just title */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      {widgetTypes.find(w => w.type === childWidget.type)?.icon &&
+                        React.createElement(widgetTypes.find(w => w.type === childWidget.type)!.icon, {
+                          className: "h-4 w-4 text-gray-500"
+                        })
+                      }
+                      <span className="text-sm font-medium text-gray-700">
+                        {WidgetFactory.getTypeDisplayName(childWidget.type as WidgetType)}
+                      </span>
                     </div>
-                  )}
+                    {isEditMode && (
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEditWidget?.(childWidget.id)}
+                          className="p-1 h-6 w-6"
+                          title="Edit Widget"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDeleteWidget?.(childWidget.id)}
+                          className="p-1 h-6 w-6 text-red-500 hover:text-red-700"
+                          title="Delete Widget"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {/* Widget content area */}
+                  <div className="flex-1 flex items-center justify-center text-gray-400">
+                    <p className="text-xs">Widget Preview</p>
+                  </div>
                 </div>
               </div>
-            )}
-
-            {/* Container Info */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <div className="font-medium text-gray-600">Layout</div>
-                <div className="text-gray-900 capitalize">{options.layout}</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <div className="font-medium text-gray-600">Columns</div>
-                <div className="text-gray-900">{options.columns}</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <div className="font-medium text-gray-600">Gap</div>
-                <div className="text-gray-900">{options.gap}px</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <div className="font-medium text-gray-600">Padding</div>
-                <div className="text-gray-900">{options.padding}px</div>
-              </div>
+            </div>
+          ))
+        ) : (
+          /* Empty state - simple */
+          <div className="flex items-center justify-center h-full min-h-[120px] text-center">
+            <div className="space-y-2">
+              <Layout className="h-8 w-8 mx-auto text-gray-400" />
+              <p className="text-sm text-gray-500">
+                {isEditMode ? 'Click + to add widgets' : 'No widgets in container'}
+              </p>
             </div>
           </div>
-        </BaseWidget>
+        )}
+      </div>
+
+      {/* Add widget button - only in edit mode, floating */}
+      {isEditMode && (
+        <div className="absolute top-2 right-2 z-10">
+          <DropdownMenu open={showAddMenu} onOpenChange={setShowAddMenu}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 h-8 w-8 bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+                title="Add Widget"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {widgetTypes.map(({ type, label, icon: Icon }) => (
+                <DropdownMenuItem
+                  key={type}
+                  onClick={() => handleAddWidget(type)}
+                  className="flex items-center space-x-2"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )}
-    </WidgetDataProvider>
+    </div>
   );
 }
