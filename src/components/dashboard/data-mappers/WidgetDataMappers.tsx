@@ -190,7 +190,12 @@ export class ChartDataMapper implements WidgetDataMapper<ChartMappedData> {
  */
 export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
   map(data: any[], config: any, dataSource: DataSource): TableMappedData {
+    console.log('[TableDataMapper] Input data:', data);
+    console.log('[TableDataMapper] Config:', config);
+    console.log('[TableDataMapper] Data source:', dataSource);
+    
     if (!data || data.length === 0) {
+      console.log('[TableDataMapper] No data, returning empty result');
       return {
         columns: [],
         rows: [],
@@ -206,8 +211,13 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
       'column' in item && 'value' in item
     );
 
+    console.log('[TableDataMapper] Is complex format:', isComplexFormat);
+    console.log('[TableDataMapper] Columns from data source:', columns);
+
     if (isComplexFormat) {
-      return this.mapComplexData(data, columns);
+      const result = this.mapComplexData(data, columns);
+      console.log('[TableDataMapper] Complex data mapping result:', result);
+      return result;
     }
 
     // Simple format - direct mapping
@@ -232,21 +242,34 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
   }
 
   private mapComplexData(data: any[], columns?: string[]): TableMappedData {
+    console.log('[TableDataMapper] mapComplexData - Input data:', data);
+    console.log('[TableDataMapper] mapComplexData - Columns:', columns);
+    
     // Group data by rowId
     const rowMap = new Map<number, any>();
     
-    data.forEach(cell => {
-      if (!cell.rowId) return;
+    data.forEach((cell, index) => {
+      console.log(`[TableDataMapper] Processing cell ${index}:`, cell);
+      
+      if (!cell.rowId) {
+        console.log(`[TableDataMapper] Cell ${index} has no rowId, skipping`);
+        return;
+      }
       
       if (!rowMap.has(cell.rowId)) {
         rowMap.set(cell.rowId, { id: cell.rowId });
+        console.log(`[TableDataMapper] Created new row for rowId ${cell.rowId}`);
       }
       
       const row = rowMap.get(cell.rowId);
       const columnName = cell.column?.name;
+      console.log(`[TableDataMapper] Column name: ${columnName}`);
+      
       if (columnName) {
         // Extract the actual value based on column type
-        row[columnName] = this.extractValue(cell);
+        const extractedValue = this.extractValue(cell);
+        console.log(`[TableDataMapper] Extracted value for ${columnName}:`, extractedValue);
+        row[columnName] = extractedValue;
       }
     });
 
@@ -282,20 +305,27 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
   }
 
   private extractValue(cell: any): any {
+    console.log('[TableDataMapper] extractValue - Input cell:', cell);
+    
     // Extract the actual value based on the column type
     if (cell.stringValue !== null && cell.stringValue !== undefined) {
+      console.log('[TableDataMapper] Using stringValue:', cell.stringValue);
       return cell.stringValue;
     }
     if (cell.numberValue !== null && cell.numberValue !== undefined) {
+      console.log('[TableDataMapper] Using numberValue:', cell.numberValue);
       return cell.numberValue;
     }
     if (cell.dateValue !== null && cell.dateValue !== undefined) {
+      console.log('[TableDataMapper] Using dateValue:', cell.dateValue);
       return cell.dateValue;
     }
     if (cell.booleanValue !== null && cell.booleanValue !== undefined) {
+      console.log('[TableDataMapper] Using booleanValue:', cell.booleanValue);
       return cell.booleanValue;
     }
     // Fallback to the generic value
+    console.log('[TableDataMapper] Using fallback value:', cell.value);
     return cell.value;
   }
 

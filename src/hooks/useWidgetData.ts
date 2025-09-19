@@ -54,8 +54,13 @@ export function useWidgetData(widget: BaseWidget): WidgetDataHookReturn {
 
       const rawData = response.data || [];
       
+      console.log('[useWidgetData] Raw data from server:', rawData);
+      console.log('[useWidgetData] Widget config:', widget.config);
+      console.log('[useWidgetData] Data source:', dataSource);
+      
       // Map data using the appropriate mapper for the widget type
       const mappedData = WidgetDataMapperFactory.mapData(widget, rawData);
+      console.log('[useWidgetData] Mapped data:', mappedData);
       setData(mappedData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';

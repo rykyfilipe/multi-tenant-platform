@@ -419,7 +419,7 @@ export function TableSelector({
 				)}
 
 				{/* Column Selection - single selects for chart axes */}
-				{selectedTableId && (onColumnXChange || onColumnYChange) && (
+				{selectedTableId && (onColumnXChange) && (
 					<div className="space-y-4">
 						{/* X Axis Column Selection */}
 						{onColumnXChange && (
