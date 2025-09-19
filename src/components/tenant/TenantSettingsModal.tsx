@@ -18,14 +18,8 @@ import { useTenantTheme } from "@/contexts/ThemeContext";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { useApp } from "@/contexts/AppContext";
@@ -254,23 +248,27 @@ function TenantSettingsModal({ tenant, onClose }: Props) {
 							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
 								<div className='space-y-2'>
 									<Label htmlFor='timezone'>{t("tenant.timezone")}</Label>
-									<select
-										id='timezone'
+									<Select
 										value={formData.timezone}
-										onChange={(e) =>
+										onValueChange={(value) =>
 											setFormData((prev) => ({
 												...prev,
-												timezone: e.target.value,
+												timezone: value,
 											}))
 										}
 										disabled={loading}
-										className='w-full px-3 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-ring'>
-										{timezones.map((tz) => (
-											<option key={tz} value={tz}>
-												{tz}
-											</option>
-										))}
-									</select>
+									>
+										<SelectTrigger className='w-full px-3 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-ring'>
+											<SelectValue placeholder="Select timezone" />
+										</SelectTrigger>
+										<SelectContent>
+											{timezones.map((tz) => (
+												<SelectItem key={tz} value={tz}>
+													{tz}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								</div>
 
 								<div className='space-y-2'>

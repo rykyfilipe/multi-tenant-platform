@@ -4,6 +4,7 @@
 
 import { memo, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useOptimizedDatabase } from "@/hooks/useOptimizedDatabase";
 import { useAuth, useAlert } from "@/contexts/OptimizedAppContext";
@@ -197,21 +198,26 @@ const OptimizedDatabaseSelector = memo(function OptimizedDatabaseSelector({
 	}
 
 	return (
-		<select
-			value={selectedDatabase?.id || ""}
-			onChange={(e) => {
+		<Select
+			value={selectedDatabase?.id?.toString() || ""}
+			onValueChange={(value) => {
 				const database = databases.find(
-					(db) => db.id.toString() === e.target.value,
+					(db) => db.id.toString() === value,
 				);
 				if (database) onSelect(database);
 			}}
-			className='px-3 py-2 border rounded-md bg-background'>
-			{databases.map((database) => (
-				<option key={database.id} value={database.id}>
-					{database.name}
-				</option>
-			))}
-		</select>
+		>
+			<SelectTrigger className='px-3 py-2 border rounded-md bg-background'>
+				<SelectValue placeholder="Select database" />
+			</SelectTrigger>
+			<SelectContent>
+				{databases.map((database) => (
+					<SelectItem key={database.id} value={database.id.toString()}>
+						{database.name}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
 	);
 });
 

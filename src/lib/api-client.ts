@@ -137,7 +137,7 @@ export const api = {
 				}
 
 				const queryString = searchParams.toString();
-				const endpoint = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows/filtered?${queryString}`;
+				const endpoint = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows?${queryString}`;
 				
 				const response = await fetch(endpoint, {
 					method: 'GET',

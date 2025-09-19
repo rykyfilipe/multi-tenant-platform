@@ -534,7 +534,7 @@ function useTableRows(
 				}
 
 				const response = await fetch(
-					`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows/filtered?${params.toString()}`,
+					`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows?${params.toString()}`,
 					{
 						method: 'GET',
 						headers: {

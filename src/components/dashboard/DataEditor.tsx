@@ -6,6 +6,7 @@ import { Plus, Trash2, Download, Upload, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartDataPoint } from './LineChartWidget';
 
@@ -203,14 +204,18 @@ export function DataEditor({ data, columns, onDataChange, onSave }: DataEditorPr
                       {(columns ?? []).map((column) => (
                         <td key={column?.name || ''} className="px-3 py-2">
                           {column?.type === 'boolean' ? (
-                            <select
+                            <Select
                               value={row?.[column?.name || ''] ? 'true' : 'false'}
-                              onChange={(e) => handleDataChange(index, column?.name || '', e.target.value)}
-                              className="h-8 text-xs border border-gray-300 rounded px-2 w-full"
+                              onValueChange={(value) => handleDataChange(index, column?.name || '', value)}
                             >
-                              <option value="true">True</option>
-                              <option value="false">False</option>
-                            </select>
+                              <SelectTrigger className="h-8 text-xs border border-gray-300 rounded px-2 w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="true">True</SelectItem>
+                                <SelectItem value="false">False</SelectItem>
+                              </SelectContent>
+                            </Select>
                           ) : column?.type === 'date' ? (
                             <Input
                               type="date"
