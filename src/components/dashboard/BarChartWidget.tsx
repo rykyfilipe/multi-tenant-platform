@@ -4,8 +4,8 @@ import { useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { WidgetProps } from '@/types/widgets';
 import BaseWidget from './BaseWidget';
+import { WidgetDataProvider } from './WidgetDataProvider';
 import type { LineChartConfig } from './LineChartWidget';
-import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
 interface BarChartWidgetProps extends WidgetProps {
@@ -21,25 +21,67 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	// Ensure xAxis and yAxis have proper fallbacks
 	const safeXAxis = config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const };
 	const safeYAxis = config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const };
-	
-	const { data, isLoading, handleRefresh } = useChartData(widget, tenantId, databaseId);
+
+	return (
+		<WidgetDataProvider widget={widget}>
+			{({ data, isLoading, error, refetch }) => {
+				return (
+					<BarChartWidgetContent
+						widget={widget}
+						isEditMode={isEditMode}
+						onEdit={onEdit}
+						onDelete={onDelete}
+						data={data}
+						isLoading={isLoading}
+						error={error}
+						onRefresh={refetch}
+						config={config}
+						safeXAxis={safeXAxis}
+						safeYAxis={safeYAxis}
+						options={options}
+					/>
+				);
+			}}
+		</WidgetDataProvider>
+	);
+}
+
+interface BarChartWidgetContentProps {
+	widget: import('@/types/widgets').BaseWidget;
+	isEditMode: boolean;
+	onEdit?: () => void;
+	onDelete?: () => void;
+	data: any;
+	isLoading: boolean;
+	error: string | null;
+	onRefresh: () => void;
+	config: LineChartConfig;
+	safeXAxis: any;
+	safeYAxis: any;
+	options: any;
+}
+
+function BarChartWidgetContent({ 
+	widget, 
+	isEditMode, 
+	onEdit, 
+	onDelete, 
+	data, 
+	isLoading, 
+	error, 
+	onRefresh,
+	config,
+	safeXAxis,
+	safeYAxis,
+	options
+}: BarChartWidgetContentProps) {
 
 	const processedData = useMemo(() => {
-		let rawData: any[] = [];
-		
-		if (dataSource.type === 'manual') {
-			rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
-		} else {
-			// Data is already mapped by useWidgetData hook
-			rawData = Array.isArray(data) ? data : [];
-		}
-		
-		// For chart widgets, data should already be in the correct format
-		// If it's mapped data with labels/datasets, extract the data points
-		if (rawData.length > 0 && rawData[0].labels && rawData[0].datasets) {
-			const chartData = rawData[0];
-			const labels = chartData.labels || [];
-			const datasets = chartData.datasets || [];
+		// Data is already mapped by WidgetDataProvider and ChartDataMapper
+		if (data && typeof data === 'object' && 'labels' in data && 'datasets' in data) {
+			// Chart data is already in the correct format
+			const labels = data.labels || [];
+			const datasets = data.datasets || [];
 			
 			if (datasets.length > 0) {
 				return labels.map((label: string, index: number) => ({
@@ -49,7 +91,8 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			}
 		}
 		
-		// Fallback to original data processing
+		// Fallback: process raw data if it's not in chart format
+		const rawData = Array.isArray(data) ? data : [];
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
@@ -59,7 +102,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			return xValue !== undefined && xValue !== null && xValue !== '' &&
 				   yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
 		});
-	}, [dataSource, data, safeXAxis.key, safeYAxis.key]);
+	}, [data, safeXAxis.key, safeYAxis.key]);
 
 	// Generate automatic colors based on data length
 	const colors = useMemo(() => {
@@ -87,9 +130,9 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			onEdit={onEdit}
 			onDelete={onDelete}
 			isLoading={isLoading}
-			error={null}
-			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
-			showRefresh={dataSource.type === 'table'}
+			error={error}
+			onRefresh={onRefresh}
+			showRefresh={true}
 			style={widgetStyle}
 		>
 			{processedData && processedData.length > 0 ? (

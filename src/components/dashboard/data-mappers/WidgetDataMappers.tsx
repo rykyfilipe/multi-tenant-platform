@@ -69,15 +69,26 @@ export class ChartDataMapper implements WidgetDataMapper<ChartMappedData> {
     const yKey = yAxis?.key || 'y';
     const labelKey = xAxis?.key || 'label';
 
+    // Check if data is in complex format (with cell objects)
+    const isComplexFormat = data.some(item => 
+      item && typeof item === 'object' && 
+      'column' in item && 'value' in item
+    );
+
+    let processedData = data;
+    if (isComplexFormat) {
+      processedData = this.mapComplexData(data);
+    }
+
     // Extract unique labels from x-axis
-    const labels = [...new Set(data.map(item => item[xKey] || item[labelKey]).filter(Boolean))];
+    const labels = [...new Set(processedData.map(item => item[xKey] || item[labelKey]).filter(Boolean))];
 
     // For single series charts (line, bar, pie)
     if (chartType === 'line' || chartType === 'bar' || chartType === 'pie') {
       const dataset = {
         label: yAxis?.label || 'Value',
         data: labels.map(label => {
-          const item = data.find(d => (d[xKey] || d[labelKey]) === label);
+          const item = processedData.find(d => (d[xKey] || d[labelKey]) === label);
           return item ? Number(item[yKey]) || 0 : 0;
         }),
         backgroundColor: config.colors?.[0] || '#3B82F6',
@@ -96,6 +107,46 @@ export class ChartDataMapper implements WidgetDataMapper<ChartMappedData> {
       labels,
       datasets: []
     };
+  }
+
+  private mapComplexData(data: any[]): any[] {
+    // Group data by rowId
+    const rowMap = new Map<number, any>();
+    
+    data.forEach(cell => {
+      if (!cell.rowId) return;
+      
+      if (!rowMap.has(cell.rowId)) {
+        rowMap.set(cell.rowId, { id: cell.rowId });
+      }
+      
+      const row = rowMap.get(cell.rowId);
+      const columnName = cell.column?.name;
+      if (columnName) {
+        // Extract the actual value based on column type
+        row[columnName] = this.extractValue(cell);
+      }
+    });
+
+    return Array.from(rowMap.values());
+  }
+
+  private extractValue(cell: any): any {
+    // Extract the actual value based on the column type
+    if (cell.stringValue !== null && cell.stringValue !== undefined) {
+      return cell.stringValue;
+    }
+    if (cell.numberValue !== null && cell.numberValue !== undefined) {
+      return cell.numberValue;
+    }
+    if (cell.dateValue !== null && cell.dateValue !== undefined) {
+      return cell.dateValue;
+    }
+    if (cell.booleanValue !== null && cell.booleanValue !== undefined) {
+      return cell.booleanValue;
+    }
+    // Fallback to the generic value
+    return cell.value;
   }
 
   validate(data: any[], config: any, dataSource: DataSource): { isValid: boolean; errors: string[] } {

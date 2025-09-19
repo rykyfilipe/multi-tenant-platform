@@ -454,7 +454,7 @@ export default function DashboardsPage() {
     return { x: 0, y: lowestY, width, height };
   };
 
-  const handleAddWidget = (type: string) => {
+  const handleAddWidget = (type: string, parentId?: string) => {
     // Get all existing widgets for smart positioning
     const allWidgets = [
       ...(selectedDashboard?.widgets ?? []),
@@ -468,9 +468,29 @@ export default function DashboardsPage() {
       type as WidgetType,
       allWidgets,
       {
-        order: (selectedDashboard?.widgets ?? []).length || 0
+        order: (selectedDashboard?.widgets ?? []).length || 0,
+        parentId: parentId // Add parentId if this widget is being added to a container
       }
     );
+
+    // If this widget is being added to a container, update the container's children
+    if (parentId) {
+      // Find the container widget and add this widget to its children
+      const containerWidget = allWidgets.find(w => w.id === parentId);
+      if (containerWidget && containerWidget.type === 'container') {
+        const containerConfig = containerWidget.config as any;
+        const updatedConfig = {
+          ...containerConfig,
+          children: [...(containerConfig.children || []), newWidget]
+        };
+        
+        // Update the container widget
+        addPendingChange('update', parentId, {
+          ...containerWidget,
+          config: updatedConfig
+        });
+      }
+    }
 
     // Add to pending changes
     addPendingChange('create', newWidget.id, newWidget);
@@ -487,6 +507,31 @@ export default function DashboardsPage() {
     // Open widget editor immediately for live preview
     setEditingWidget(newWidget as Widget);
     setShowWidgetEditor(true);
+  };
+
+  // Function to handle editing a widget within a container
+  const handleEditWidget = (widgetId: string) => {
+    // Find the widget and open the editor
+    const widget = selectedDashboard?.widgets.find(w => w.id === widgetId);
+    if (widget) {
+      setEditingWidget(widget);
+      setShowWidgetEditor(true);
+    }
+  };
+
+  // Function to handle deleting a widget from a container
+  const handleDeleteWidget = (widgetId: string) => {
+    // Add to pending changes for deletion
+    addPendingChange('delete', widgetId, null);
+    
+    // Remove from local state immediately
+    setSelectedDashboard(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        widgets: prev.widgets.filter(w => w.id !== widgetId)
+      };
+    });
   };
 
   const renderWidget = (widget: Widget) => {
@@ -510,6 +555,18 @@ export default function DashboardsPage() {
           onDelete: () => {
             console.log('Widget delete clicked:', widget.id);
             handleWidgetDelete(Number(widget.id));
+          },
+          onAddWidget: (type: string, parentId?: string) => {
+            console.log('Add widget to container:', type, parentId);
+            handleAddWidget(type, parentId);
+          },
+          onEditWidget: (widgetId: string) => {
+            console.log('Edit widget in container:', widgetId);
+            handleEditWidget(widgetId);
+          },
+          onDeleteWidget: (widgetId: string) => {
+            console.log('Delete widget from container:', widgetId);
+            handleDeleteWidget(widgetId);
           },
           tenantId: tenant?.id,
           databaseId: 1

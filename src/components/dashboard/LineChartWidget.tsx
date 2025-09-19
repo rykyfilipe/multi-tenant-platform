@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
+import { WidgetDataProvider } from './WidgetDataProvider';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 import { WidgetProps, BaseWidget as BaseWidgetType } from '@/types/widgets';
 import { FilterConfig } from '@/types/filtering-enhanced';
@@ -179,11 +180,6 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
 };
 
 export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }: LineChartWidgetProps) {
-  const [data, setData] = useState<ChartDataPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
-
   // Safely extract config with comprehensive fallbacks
   const config = (widget.config as LineChartConfig) || {};
   const options = config.options || {};
@@ -212,23 +208,67 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     );
   }
 
-  // Process data based on data source type
+  return (
+    <WidgetDataProvider widget={widget}>
+      {({ data, isLoading, error, refetch }) => {
+        return (
+          <LineChartWidgetContent
+            widget={widget}
+            isEditMode={isEditMode}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            data={data}
+            isLoading={isLoading}
+            error={error}
+            onRefresh={refetch}
+            config={config}
+            safeXAxis={safeXAxis}
+            safeYAxis={safeYAxis}
+            options={options}
+          />
+        );
+      }}
+    </WidgetDataProvider>
+  );
+}
+
+interface LineChartWidgetContentProps {
+  widget: BaseWidgetType;
+  isEditMode: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  data: any;
+  isLoading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+  config: LineChartConfig;
+  safeXAxis: any;
+  safeYAxis: any;
+  options: any;
+}
+
+function LineChartWidgetContent({ 
+  widget, 
+  isEditMode, 
+  onEdit, 
+  onDelete, 
+  data, 
+  isLoading, 
+  error, 
+  onRefresh,
+  config,
+  safeXAxis,
+  safeYAxis,
+  options
+}: LineChartWidgetContentProps) {
+
+  // Process data from WidgetDataProvider
   const processedData = useMemo(() => {
-    let rawData: any[] = [];
-    
-    if (dataSource.type === 'manual' && dataSource.manualData) {
-      rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
-    } else {
-      // Data is already mapped by useWidgetData hook
-      rawData = Array.isArray(data) ? data : [];
-    }
-    
-    // For chart widgets, data should already be in the correct format
-    // If it's mapped data with labels/datasets, extract the data points
-    if (rawData.length > 0 && rawData[0].labels && rawData[0].datasets) {
-      const chartData = rawData[0];
-      const labels = chartData.labels || [];
-      const datasets = chartData.datasets || [];
+    // Data is already mapped by WidgetDataProvider and ChartDataMapper
+    if (data && typeof data === 'object' && 'labels' in data && 'datasets' in data) {
+      // Chart data is already in the correct format
+      const labels = data.labels || [];
+      const datasets = data.datasets || [];
       
       if (datasets.length > 0) {
         return labels.map((label: string, index: number) => ({
@@ -238,7 +278,8 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
       }
     }
     
-    // Fallback to original data processing
+    // Fallback: process raw data if it's not in chart format
+    const rawData = Array.isArray(data) ? data : [];
     return rawData.filter(item => {
       if (!item || typeof item !== 'object') return false;
       
@@ -248,42 +289,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
       return xValue !== undefined && xValue !== null && xValue !== '' &&
              yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
     });
-  }, [dataSource, data, safeXAxis.key, safeYAxis.key]);
-
-  // Fetch data when dataSource changes
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        if (dataSource.type === 'manual' && dataSource.manualData) {
-          // Use manual data directly
-          setData(dataSource.manualData);
-        } else if (dataSource.type === 'table' && dataSource.tableId) {
-          // Fetch from table
-          const tableData = await fetchTableData(dataSource);
-          setData(tableData);
-          setLastFetchTime(new Date());
-        } else {
-          // Fallback to mock data
-          const mockData = generateMockData(20);
-          setData(mockData);
-        }
-      } catch (err) {
-        console.error('Error loading chart data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load chart data');
-        
-        // Fallback to mock data on error
-        const mockData = generateMockData(20);
-        setData(mockData);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [dataSource]);
+  }, [data, safeXAxis.key, safeYAxis.key]);
 
   // Generate automatic colors based on data length
   const colors = useMemo(() => {
