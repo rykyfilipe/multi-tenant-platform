@@ -186,6 +186,14 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
   const [error, setError] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
 
+  // Debug data changes
+  useEffect(() => {
+    console.log('[LineChart] Data state changed:', {
+      dataLength: data.length,
+      sampleData: data.slice(0, 2)
+    });
+  }, [data]);
+
   // Safely extract config with comprehensive fallbacks
   const config = (widget.config as LineChartConfig) || {};
   const options = config.options || {};
@@ -237,7 +245,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
       
       rawData.forEach(item => {
         const baseItem: any = {
-          [safeXAxis.key]: item[xColumn]
+          [xColumn]: item[xColumn]
         };
         
         enhancedDataSource.yAxis!.columns.forEach(yCol => {
@@ -282,7 +290,13 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     processedDataCount: processedData.length,
     sampleProcessedData: processedData.slice(0, 2),
     xKey: enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key,
-    yKey: enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key
+    yKey: enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key,
+    enhancedDataSource: {
+      xAxis: enhancedDataSource.xAxis,
+      yAxis: enhancedDataSource.yAxis,
+      xColumns: enhancedDataSource.xColumns,
+      yColumns: enhancedDataSource.yColumns
+    }
   });
 
   // Fetch data when dataSource changes
@@ -297,6 +311,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
           console.log('[LineChart] Loading data for table:', dataSource.tableId);
           const tableData = await fetchTableData(dataSource);
           console.log('[LineChart] Fetched table data:', tableData);
+          console.log('[LineChart] Setting data state with:', tableData.length, 'items');
           setData(tableData);
           setLastFetchTime(new Date());
         } else {
