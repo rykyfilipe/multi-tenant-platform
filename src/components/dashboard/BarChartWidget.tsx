@@ -26,7 +26,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const safeXAxis = config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const };
 	const safeYAxis = config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const };
 	
-	const { data, isLoading, handleRefresh } = useChartData(widget, tenantId, databaseId);
+	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
 	const processedData = useMemo(() => {
 		let rawData: any[] = [];
@@ -75,17 +75,22 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			onEdit={onEdit}
 			onDelete={onDelete}
 			isLoading={isLoading}
-			error={null}
+			error={error}
 			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
 			showRefresh={dataSource.type === 'table'}
 			style={widgetStyle}
 		>
 			{processedData && processedData.length > 0 ? (
-				<div className="h-full flex flex-col">
-					<ResponsiveContainer width="100%" height="100%">
+				<div className="h-full flex flex-col min-h-0">
+					<ResponsiveContainer width="100%" height="100%" minHeight={200}>
 						<BarChart 
 							data={processedData} 
-							margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+							margin={{ 
+								top: 10, 
+								right: 20, 
+								left: 10, 
+								bottom: 10 
+							}}
 						>
 							{options.showGrid !== false && (
 								<CartesianGrid 

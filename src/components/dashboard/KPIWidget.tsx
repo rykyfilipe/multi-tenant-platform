@@ -30,7 +30,7 @@ export interface KPIDataSource {
   type: 'table' | 'manual';
   tableId?: number;
   column?: string;
-  aggregation?: AggregationType;
+  aggregation: AggregationType; // Required aggregation function
   filters?: any[];
   // Advanced aggregation options
   showMultipleAggregations?: boolean;
@@ -103,30 +103,30 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
 
   // Calculate aggregations using the new utility functions
   const aggregations = useMemo(() => {
-    if (!rawData.length || !dataSource.column) return {};
+    if (!rawData.length || !dataSource.column || !dataSource.aggregation) return {};
 
     const column = dataSource.column;
     const aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
       ? dataSource.selectedAggregations
-      : [dataSource.aggregation || 'sum'];
+      : [dataSource.aggregation];
 
     return calculateMultipleAggregations(rawData, column, aggregationsToCalculate);
   }, [rawData, dataSource.column, dataSource.aggregation, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
 
   // Calculate previous period aggregations for comparison
   const previousAggregations = useMemo(() => {
-    if (!previousData.length || !dataSource.column) return {};
+    if (!previousData.length || !dataSource.column || !dataSource.aggregation) return {};
 
     const column = dataSource.column;
     const aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
       ? dataSource.selectedAggregations
-      : [dataSource.aggregation || 'sum'];
+      : [dataSource.aggregation];
 
     return calculateMultipleAggregations(previousData, column, aggregationsToCalculate);
   }, [previousData, dataSource.column, dataSource.aggregation, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
 
   useEffect(() => {
-    if (dataSource.type === 'table' && tenantId && databaseId && dataSource.tableId && dataSource.column) {
+    if (dataSource.type === 'table' && tenantId && databaseId && dataSource.tableId && dataSource.column && dataSource.aggregation) {
       fetchTableData();
     } else if (dataSource.type === 'manual') {
       // For manual data, we'll use mock data for now
@@ -140,7 +140,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
   }, [dataSource, tenantId, databaseId]);
 
   const fetchTableData = async () => {
-    if (!tenantId || !databaseId || !dataSource.tableId || !dataSource.column) return;
+    if (!tenantId || !databaseId || !dataSource.tableId || !dataSource.column || !dataSource.aggregation) return;
 
     setIsLoading(true);
     setError(null);
@@ -320,14 +320,60 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
 
   // Render KPI values based on configuration
   const renderKPIContent = () => {
-    if (!dataSource.column || Object.keys(aggregations).length === 0) {
+    // Check if both table and column are selected
+    if (!dataSource.tableId || dataSource.tableId === 0) {
       return (
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          <div className="text-center p-6">
-            <Calculator className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm">No data available</p>
+        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
+          <div className="text-center p-4 sm:p-6">
+            <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
+            <p className="text-xs sm:text-sm font-medium">No table selected</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Select a table and column to see KPI values
+              Please select a table to configure this KPI widget
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Check if column is selected
+    if (!dataSource.column || dataSource.column === '') {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
+          <div className="text-center p-4 sm:p-6">
+            <Calculator className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
+            <p className="text-xs sm:text-sm font-medium">No column selected</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Please select a column from the table to calculate KPI values
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Check if aggregation function is selected
+    if (!dataSource.aggregation || dataSource.aggregation === '') {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
+          <div className="text-center p-4 sm:p-6">
+            <Calculator className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
+            <p className="text-xs sm:text-sm font-medium">No aggregation function selected</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Please select an aggregation function (sum, count, avg, etc.) to calculate KPI values
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Check if we have data and aggregations
+    if (Object.keys(aggregations).length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
+          <div className="text-center p-4 sm:p-6">
+            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
+            <p className="text-xs sm:text-sm font-medium">No data available</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              No data found for the selected column and aggregation function
             </p>
           </div>
         </div>
@@ -340,7 +386,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     if (showMultiple && Object.keys(aggregations).length > 1) {
       // Render multiple aggregations
       return (
-        <div className={`space-y-3 ${layout === 'grid' ? 'grid grid-cols-2 gap-3' : ''}`}>
+        <div className={`space-y-2 sm:space-y-3 ${layout === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3' : ''}`}>
           {Object.entries(aggregations).map(([type, result]: [string, any]) => {
             const previousResult = (previousAggregations as any)[type as AggregationType];
             const changePercent = previousResult 
@@ -408,10 +454,10 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
         : 'stable';
 
       return (
-        <div className="text-center space-y-4">
-          <div className="space-y-2">
+        <div className="text-center space-y-2 sm:space-y-4 h-full flex flex-col justify-center">
+          <div className="space-y-1 sm:space-y-2">
             <div className="flex items-center justify-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-muted-foreground" />
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
               {options.showAggregationType && (
                 <span className="text-sm text-muted-foreground">
                   {getAggregationLabel(primaryType)}
@@ -419,7 +465,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
               )}
             </div>
             
-            <div className="text-4xl font-bold text-foreground">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
               {result.formatted}
             </div>
             

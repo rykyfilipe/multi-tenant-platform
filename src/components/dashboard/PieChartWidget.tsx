@@ -26,7 +26,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const safeXAxis = config.xAxis || { key: 'name', label: 'Name', type: 'category' as const };
 	const safeYAxis = config.yAxis || { key: 'value', label: 'Value', type: 'number' as const };
 	
-	const { data, isLoading, handleRefresh } = useChartData(widget, tenantId, databaseId);
+	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
 	const processedData = useMemo(() => {
 		let rawData: any[] = [];
@@ -75,14 +75,14 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			onEdit={onEdit}
 			onDelete={onDelete}
 			isLoading={isLoading}
-			error={null}
+			error={error}
 			onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
 			showRefresh={dataSource.type === 'table'}
 			style={widgetStyle}
 		>
 			{processedData && processedData.length > 0 ? (
-				<div className="h-full flex flex-col">
-					<ResponsiveContainer width="100%" height="100%">
+				<div className="h-full flex flex-col min-h-0">
+					<ResponsiveContainer width="100%" height="100%" minHeight={200}>
 						<PieChart>
 							<Tooltip 
 								contentStyle={{

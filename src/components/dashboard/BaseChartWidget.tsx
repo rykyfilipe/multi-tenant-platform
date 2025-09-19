@@ -26,7 +26,19 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 	useEffect(() => {
 		let active = true;
 		async function load() {
-			if (dataSource.type !== 'table' || !dataSource.tableId || !tenantId || !databaseId) return;
+			if (dataSource.type !== 'table') return;
+			
+			// If no table is selected, show empty data with error message
+			if (!dataSource.tableId || dataSource.tableId === 0) {
+				if (active) {
+					setData([]);
+					setError('Please select a table and configure columns in the widget editor');
+					setIsLoading(false);
+				}
+				return;
+			}
+			
+			if (!tenantId || !databaseId) return;
 			try {
 				setIsLoading(true);
 				setError(null);

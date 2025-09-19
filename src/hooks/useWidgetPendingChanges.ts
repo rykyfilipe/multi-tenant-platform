@@ -18,20 +18,30 @@ interface PendingChange {
   widgetId?: number | string;
   data?: Partial<Widget> | null;
   originalData?: Partial<Widget>; // For tracking original values to detect cancellations
+  timestamp: number; // For auto-save timing
 }
 
 interface UseWidgetPendingChangesOptions {
   onSuccess?: (results: any[]) => void;
   onError?: (error: string) => void;
+  autoSaveDelay?: number; // Auto-save after X ms of inactivity (0 = immediate, -1 = disabled)
+  showAlert?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions = {}) {
-  const { tenant } = useApp();
-  const { onSuccess, onError } = options;
+  const { tenant, showAlert } = useApp();
+  const { onSuccess, onError, autoSaveDelay = 2000, showAlert: customShowAlert } = options;
 
   // State pentru modificările pending
   const [pendingChanges, setPendingChanges] = useState<Map<string, PendingChange>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
+
+  // Refs pentru auto-save
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveFunctionRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Use custom showAlert if provided, otherwise use context showAlert
+  const alert = customShowAlert || showAlert;
 
   // Generează cheia unică pentru o modificare
   const getChangeKey = useCallback((widgetId: number | string, type: 'create' | 'update' | 'delete') => {
@@ -102,12 +112,37 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         widgetId,
         data,
         originalData,
+        timestamp: Date.now(),
       };
       newMap.set(changeKey, pendingChange);
       
       return newMap;
     });
-  }, [getChangeKey]);
+
+    // Programează auto-save doar dacă autoSaveDelay > 0
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    if (autoSaveDelay > 0) {
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        if (saveFunctionRef.current) {
+          saveFunctionRef.current();
+        }
+      }, autoSaveDelay);
+    } else if (autoSaveDelay === 0) {
+      // Pentru autoSaveDelay = 0, face save imediat
+      if (saveFunctionRef.current) {
+        // Folosește setTimeout pentru a evita probleme de sincronizare
+        setTimeout(() => {
+          if (saveFunctionRef.current) {
+            saveFunctionRef.current();
+          }
+        }, 100);
+      }
+    }
+    // Pentru autoSaveDelay < 0, nu face nimic (dezactivează auto-save)
+  }, [getChangeKey, autoSaveDelay]);
 
   // Elimină o modificare pending
   const removePendingChange = useCallback((widgetId: number | string, type: 'create' | 'update' | 'delete') => {
@@ -177,17 +212,21 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save changes');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || 
+          errorData.message || 
+          `HTTP ${response.status}: ${response.statusText}`
+        );
       }
 
       const result = await response.json();
       
       if (!result.success) {
         // Gestionează eșecurile parțiale
-        const failedOperations = result.errors.map((err: any) => 
+        const failedOperations = result.errors?.map((err: any) => 
           `Operation ${err.index + 1} (${err.type}): ${err.error}`
-        ).join(', ');
+        ).join(', ') || 'Unknown error';
         
         throw new Error(`Partial success: ${failedOperations}`);
       }
@@ -196,20 +235,67 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       setPendingChanges(new Map());
       
       // Notifică succesul
+      const totalChanges = operations.length;
+      alert(`Successfully saved ${totalChanges} widget change${totalChanges !== 1 ? 's' : ''}`, 'success');
       onSuccess?.(result.results || []);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save changes';
+      alert(errorMessage, 'error');
       onError?.(errorMessage);
       throw error;
     } finally {
       setIsSaving(false);
     }
-  }, [pendingChanges, tenant?.id, onSuccess, onError]);
+  }, [pendingChanges, tenant?.id, onSuccess, onError, alert]);
 
   // Anulează toate modificările pending
   const discardPendingChanges = useCallback(() => {
     setPendingChanges(new Map());
+    
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    alert('Changes discarded', 'info');
+  }, [alert]);
+
+  // Salvează manual (forțat)
+  const saveNow = useCallback(async (dashboardId: number) => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    await savePendingChanges(dashboardId);
+  }, [savePendingChanges]);
+
+  // Actualizează ref-ul cu funcția de save
+  saveFunctionRef.current = () => savePendingChanges(0); // Will be overridden with actual dashboardId
+
+  // Auto-save la beforeunload (când utilizatorul părăsește pagina)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (pendingChanges.size > 0) {
+        // Afișează dialog de confirmare
+        e.preventDefault();
+        e.returnValue = "You have unsaved widget changes. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [pendingChanges.size]);
+
+  // Cleanup la unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Obține numărul de modificări pending
@@ -218,12 +304,20 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
   // Obține lista de modificări pending ca array
   const pendingChangesArray = Array.from(pendingChanges.values());
 
+  // Obține modificările grupate pe tip
+  const changesByType = {
+    create: pendingChangesArray.filter(change => change.type === 'create'),
+    update: pendingChangesArray.filter(change => change.type === 'update'),
+    delete: pendingChangesArray.filter(change => change.type === 'delete'),
+  };
+
   return {
     // State
     pendingChanges: pendingChangesArray,
     pendingChangesMap: pendingChanges,
     isSaving,
     pendingChangesCount,
+    changesByType,
 
     // Actions
     addPendingChange,
@@ -231,6 +325,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     clearPendingChanges,
     savePendingChanges,
     discardPendingChanges,
+    saveNow,
 
     // Helpers
     hasPendingChange,

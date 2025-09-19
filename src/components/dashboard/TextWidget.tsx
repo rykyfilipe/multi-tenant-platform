@@ -40,12 +40,12 @@ interface TextWidgetProps {
 // Simple markdown parser for basic formatting
 const parseMarkdown = (text: string): string => {
   return text
-    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-2">$1</h1>')
-    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mb-2">$1</h2>')
-    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-medium mb-1">$1</h3>')
+    .replace(/^# (.*$)/gim, '<h1 class="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">$1</h1>')
+    .replace(/^## (.*$)/gim, '<h2 class="text-base sm:text-xl font-semibold mb-1 sm:mb-2">$1</h2>')
+    .replace(/^### (.*$)/gim, '<h3 class="text-sm sm:text-lg font-medium mb-1">$1</h3>')
     .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
     .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
-    .replace(/`(.*?)`/gim, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">$1</code>')
+    .replace(/`(.*?)`/gim, '<code class="bg-gray-100 px-1 py-0.5 rounded text-xs sm:text-sm font-mono">$1</code>')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/\n/gim, '<br>');
 };
@@ -82,11 +82,11 @@ export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetP
 
   const getFontSizeClass = () => {
     switch (options.fontSize) {
-      case 'sm': return 'text-sm';
-      case 'lg': return 'text-lg';
-      case 'xl': return 'text-xl';
-      case '2xl': return 'text-2xl';
-      default: return 'text-base';
+      case 'sm': return 'text-xs sm:text-sm';
+      case 'lg': return 'text-sm sm:text-lg';
+      case 'xl': return 'text-base sm:text-xl';
+      case '2xl': return 'text-lg sm:text-2xl';
+      default: return 'text-sm sm:text-base';
     }
   };
 
@@ -101,9 +101,9 @@ export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetP
 
   const getPaddingClass = () => {
     switch (options.padding) {
-      case 'sm': return 'p-2';
-      case 'lg': return 'p-6';
-      default: return 'p-4';
+      case 'sm': return 'p-2 sm:p-3';
+      case 'lg': return 'p-4 sm:p-6';
+      default: return 'p-3 sm:p-4';
     }
   };
 
@@ -119,10 +119,10 @@ export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetP
   const renderContent = () => {
     if (error) {
       return (
-        <div className="flex items-center justify-center h-32">
-          <div className="text-center">
-            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-            <p className="text-sm text-red-600">{error}</p>
+        <div className="flex items-center justify-center h-24 sm:h-32">
+          <div className="text-center p-4">
+            <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500 mx-auto mb-2" />
+            <p className="text-xs sm:text-sm text-red-600">{error}</p>
           </div>
         </div>
       );

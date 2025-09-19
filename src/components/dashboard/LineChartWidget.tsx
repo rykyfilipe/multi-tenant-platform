@@ -257,13 +257,17 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
         if (dataSource.type === 'manual' && dataSource.manualData) {
           // Use manual data directly
           setData(dataSource.manualData);
-        } else if (dataSource.type === 'table' && dataSource.tableId) {
+        } else if (dataSource.type === 'table' && dataSource.tableId && dataSource.tableId > 0) {
           // Fetch from table
           const tableData = await fetchTableData(dataSource);
           setData(tableData);
           setLastFetchTime(new Date());
+        } else if (dataSource.type === 'table') {
+          // No table selected
+          setData([]);
+          setError('Please select a table and configure columns in the widget editor');
         } else {
-          // Fallback to mock data
+          // Fallback to mock data for manual data type
           const mockData = generateMockData(20);
           setData(mockData);
         }
@@ -339,11 +343,16 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
         style={widgetStyle}
       >
       {processedData && processedData.length > 0 ? (
-        <div className="h-full flex flex-col">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-full flex flex-col min-h-0">
+          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <LineChart 
               data={processedData} 
-              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              margin={{ 
+                top: 10, 
+                right: 20, 
+                left: 10, 
+                bottom: 10 
+              }}
             >
               {options.showGrid !== false && (
                 <CartesianGrid 
@@ -417,26 +426,26 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
           
           {/* Data summary */}
           {options.showDataSummary && (
-            <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-              <div className="text-sm font-medium text-muted-foreground mb-2">Summary</div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>Data Points: {processedData.length}</div>
-                <div>Max Value: {Math.max(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-                <div>Min Value: {Math.min(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-                <div>Avg Value: {(processedData.reduce((sum, d) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(2)}</div>
+            <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-muted/30 rounded-lg flex-shrink-0">
+              <div className="text-xs sm:text-sm font-medium text-muted-foreground mb-1 sm:mb-2">Summary</div>
+              <div className="grid grid-cols-2 gap-1 sm:gap-2 text-xs">
+                <div className="truncate">Points: {processedData.length}</div>
+                <div className="truncate">Max: {Math.max(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
+                <div className="truncate">Min: {Math.min(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
+                <div className="truncate">Avg: {(processedData.reduce((sum, d) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(1)}</div>
               </div>
             </div>
           )}
         </div>
       ) : (
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          <div className="text-center p-6">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/20 flex items-center justify-center">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[200px]">
+          <div className="text-center p-4 sm:p-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-muted/20 flex items-center justify-center">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <p className="text-sm font-medium">No data available</p>
+            <p className="text-xs sm:text-sm font-medium">No data available</p>
             <p className="text-xs text-muted-foreground mt-1">
               {dataSource.type === 'manual' 
                 ? 'Add some data points to see the chart' 

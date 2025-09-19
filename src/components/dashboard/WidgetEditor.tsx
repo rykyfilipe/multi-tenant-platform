@@ -335,6 +335,10 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         <SelectItem value="table">Table</SelectItem>
                         <SelectItem value="metric">Metric</SelectItem>
                         <SelectItem value="text">Text</SelectItem>
+                        <SelectItem value="clock">Clock</SelectItem>
+                        <SelectItem value="tasks">Tasks</SelectItem>
+                        <SelectItem value="weather">Weather</SelectItem>
+                        <SelectItem value="calendar">Calendar</SelectItem>
                         <SelectItem value="filter">Filter</SelectItem>
                       </SelectContent>
                     </Select>
@@ -921,6 +925,351 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                               <SelectItem value="lg">Large</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : widget.type === 'clock' ? (
+                <div className="space-y-4">
+                  {/* Clock Configuration */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Clock Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="timezone">Timezone</Label>
+                        <Select
+                          value={editedWidget.config?.timezone || 'local'}
+                          onValueChange={(value) => updateConfig({ timezone: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="local">Local Time</SelectItem>
+                            <SelectItem value="UTC">UTC</SelectItem>
+                            <SelectItem value="America/New_York">New York</SelectItem>
+                            <SelectItem value="America/Los_Angeles">Los Angeles</SelectItem>
+                            <SelectItem value="Europe/London">London</SelectItem>
+                            <SelectItem value="Europe/Paris">Paris</SelectItem>
+                            <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
+                            <SelectItem value="Asia/Shanghai">Shanghai</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="format">Time Format</Label>
+                          <Select
+                            value={editedWidget.config?.format || '24h'}
+                            onValueChange={(value) => updateConfig({ format: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="12h">12 Hour (AM/PM)</SelectItem>
+                              <SelectItem value="24h">24 Hour</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showSeconds"
+                            checked={editedWidget.config?.showSeconds !== false}
+                            onCheckedChange={(checked) => updateConfig({ showSeconds: checked })}
+                          />
+                          <Label htmlFor="showSeconds">Show Seconds</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showDate"
+                            checked={editedWidget.config?.showDate !== false}
+                            onCheckedChange={(checked) => updateConfig({ showDate: checked })}
+                          />
+                          <Label htmlFor="showDate">Show Date</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showTimezone"
+                            checked={editedWidget.config?.showTimezone !== false}
+                            onCheckedChange={(checked) => updateConfig({ showTimezone: checked })}
+                          />
+                          <Label htmlFor="showTimezone">Show Timezone</Label>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : widget.type === 'tasks' ? (
+                <div className="space-y-4">
+                  {/* Tasks Configuration */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Tasks Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="maxTasks">Max Tasks</Label>
+                          <Input
+                            id="maxTasks"
+                            type="number"
+                            value={editedWidget.config?.maxTasks || 50}
+                            onChange={(e) => updateConfig({ maxTasks: parseInt(e.target.value) || 50 })}
+                            min="1"
+                            max="1000"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="sortBy">Sort By</Label>
+                          <Select
+                            value={editedWidget.config?.sortBy || 'created'}
+                            onValueChange={(value) => updateConfig({ sortBy: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="created">Created Date</SelectItem>
+                              <SelectItem value="priority">Priority</SelectItem>
+                              <SelectItem value="alphabetical">Alphabetical</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showCompleted"
+                            checked={editedWidget.config?.showCompleted !== false}
+                            onCheckedChange={(checked) => updateConfig({ showCompleted: checked })}
+                          />
+                          <Label htmlFor="showCompleted">Show Completed</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showPriority"
+                            checked={editedWidget.config?.showPriority !== false}
+                            onCheckedChange={(checked) => updateConfig({ showPriority: checked })}
+                          />
+                          <Label htmlFor="showPriority">Show Priority</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showDates"
+                            checked={editedWidget.config?.style?.showDates !== false}
+                            onCheckedChange={(checked) => updateConfig({ 
+                              style: { 
+                                ...editedWidget.config?.style, 
+                                showDates: checked 
+                              } 
+                            })}
+                          />
+                          <Label htmlFor="showDates">Show Dates</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="compactMode"
+                            checked={editedWidget.config?.style?.compactMode || false}
+                            onCheckedChange={(checked) => updateConfig({ 
+                              style: { 
+                                ...editedWidget.config?.style, 
+                                compactMode: checked 
+                              } 
+                            })}
+                          />
+                          <Label htmlFor="compactMode">Compact Mode</Label>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : widget.type === 'weather' ? (
+                <div className="space-y-4">
+                  {/* Weather Configuration */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Weather Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="city">City</Label>
+                          <Input
+                            id="city"
+                            value={editedWidget.config?.city || ''}
+                            onChange={(e) => updateConfig({ city: e.target.value })}
+                            placeholder="Enter city name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="country">Country</Label>
+                          <Input
+                            id="country"
+                            value={editedWidget.config?.country || ''}
+                            onChange={(e) => updateConfig({ country: e.target.value })}
+                            placeholder="Enter country code (e.g., UK, US)"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="units">Units</Label>
+                          <Select
+                            value={editedWidget.config?.units || 'metric'}
+                            onValueChange={(value) => updateConfig({ units: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="metric">Metric (°C, m/s)</SelectItem>
+                              <SelectItem value="imperial">Imperial (°F, mph)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="refreshInterval">Refresh Interval (minutes)</Label>
+                          <Input
+                            id="refreshInterval"
+                            type="number"
+                            value={editedWidget.config?.refreshInterval || 30}
+                            onChange={(e) => updateConfig({ refreshInterval: parseInt(e.target.value) || 30 })}
+                            min="5"
+                            max="1440"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showDetails"
+                            checked={editedWidget.config?.showDetails !== false}
+                            onCheckedChange={(checked) => updateConfig({ showDetails: checked })}
+                          />
+                          <Label htmlFor="showDetails">Show Details</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showIcon"
+                            checked={editedWidget.config?.style?.showIcon !== false}
+                            onCheckedChange={(checked) => updateConfig({ 
+                              style: { 
+                                ...editedWidget.config?.style, 
+                                showIcon: checked 
+                              } 
+                            })}
+                          />
+                          <Label htmlFor="showIcon">Show Weather Icon</Label>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : widget.type === 'calendar' ? (
+                <div className="space-y-4">
+                  {/* Calendar Configuration */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Calendar Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="viewMode">View Mode</Label>
+                          <Select
+                            value={editedWidget.config?.viewMode || 'month'}
+                            onValueChange={(value) => updateConfig({ viewMode: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="month">Month View</SelectItem>
+                              <SelectItem value="week">Week View</SelectItem>
+                              <SelectItem value="day">Day View</SelectItem>
+                              <SelectItem value="list">List View</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="startOfWeek">Start of Week</Label>
+                          <Select
+                            value={editedWidget.config?.startOfWeek || 'monday'}
+                            onValueChange={(value) => updateConfig({ startOfWeek: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="monday">Monday</SelectItem>
+                              <SelectItem value="sunday">Sunday</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="maxEvents">Max Events</Label>
+                          <Input
+                            id="maxEvents"
+                            type="number"
+                            value={editedWidget.config?.maxEvents || 100}
+                            onChange={(e) => updateConfig({ maxEvents: parseInt(e.target.value) || 100 })}
+                            min="10"
+                            max="1000"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showWeekends"
+                            checked={editedWidget.config?.showWeekends !== false}
+                            onCheckedChange={(checked) => updateConfig({ showWeekends: checked })}
+                          />
+                          <Label htmlFor="showWeekends">Show Weekends</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showTime"
+                            checked={editedWidget.config?.style?.showTime !== false}
+                            onCheckedChange={(checked) => updateConfig({ 
+                              style: { 
+                                ...editedWidget.config?.style, 
+                                showTime: checked 
+                              } 
+                            })}
+                          />
+                          <Label htmlFor="showTime">Show Time</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="showLocation"
+                            checked={editedWidget.config?.style?.showLocation !== false}
+                            onCheckedChange={(checked) => updateConfig({ 
+                              style: { 
+                                ...editedWidget.config?.style, 
+                                showLocation: checked 
+                              } 
+                            })}
+                          />
+                          <Label htmlFor="showLocation">Show Location</Label>
                         </div>
                       </div>
                     </CardContent>

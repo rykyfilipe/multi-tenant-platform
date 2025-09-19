@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, LineChart, PieChart, BarChart, Activity, Type, Trash2 } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, LineChart, PieChart, BarChart, Activity, Type, Trash2, Clock, CheckSquare, Cloud, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,10 +20,15 @@ import PieChartWidget from '@/components/dashboard/PieChartWidget';
 import TableWidget from '@/components/dashboard/TableWidget';
 import KPIWidget from '@/components/dashboard/KPIWidget';
 import TextWidget from '@/components/dashboard/TextWidget';
+import ClockWidget from '@/components/dashboard/ClockWidget';
+import TasksWidget from '@/components/dashboard/TasksWidget';
+import WeatherWidget from '@/components/dashboard/WeatherWidget';
+import CalendarWidget from '@/components/dashboard/CalendarWidget';
 import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
 import { useWidgetPendingChanges } from '@/hooks/useWidgetPendingChanges';
+import { SaveChangesButton } from '@/components/dashboard/SaveChangesButton';
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
 
@@ -82,6 +87,30 @@ const WIDGET_TYPES = [
     label: 'Text',
     icon: Type,
     description: 'Add a text widget'
+  },
+  {
+    type: 'clock',
+    label: 'Clock',
+    icon: Clock,
+    description: 'Add a clock widget with timezone support'
+  },
+  {
+    type: 'tasks',
+    label: 'Tasks',
+    icon: CheckSquare,
+    description: 'Add a tasks widget with data persistence'
+  },
+  {
+    type: 'weather',
+    label: 'Weather',
+    icon: Cloud,
+    description: 'Add a weather widget with real data'
+  },
+  {
+    type: 'calendar',
+    label: 'Calendar',
+    icon: Calendar,
+    description: 'Add a calendar widget with events'
   }
 ];
 
@@ -99,26 +128,32 @@ export default function DashboardsPage() {
   const { toast } = useToast();
   const { tenant } = useApp();
 
-  // Use the new pending changes hook
+  // Use the enhanced pending changes hook with batch system
   const {
     pendingChanges,
+    pendingChangesMap,
     isSaving,
     pendingChangesCount,
+    changesByType,
     addPendingChange,
     removePendingChange,
     clearPendingChanges,
     savePendingChanges,
     discardPendingChanges,
+    saveNow,
     hasPendingChange,
     getPendingChange,
   } = useWidgetPendingChanges({
+    autoSaveDelay: 3000, // Auto-save after 3 seconds of inactivity
     onSuccess: (results) => {
-      toast({
-        title: 'Success',
-        description: 'All changes saved successfully',
-      });
+      console.log('Widget changes saved successfully:', results);
+      // Refresh dashboard data after successful save
+      if (selectedDashboard) {
+        fetchDashboards();
+      }
     },
     onError: (error) => {
+      console.error('Failed to save widget changes:', error);
       toast({
         title: 'Error',
         description: error,
@@ -358,8 +393,35 @@ export default function DashboardsPage() {
     });
   };
 
-  // Function to find a free position for a new widget
-  const findFreePosition = (widgets: Widget[], width: number = 6, height: number = 4) => {
+  // Function to find a free position for a new widget with optimized default sizes
+  const findFreePosition = (widgets: Widget[], width: number = 6, height: number = 4, widgetType?: string) => {
+    // Set optimized default dimensions based on widget type
+    let optimizedWidth = width;
+    let optimizedHeight = height;
+    
+    if (widgetType) {
+      switch (widgetType) {
+        case 'table':
+          optimizedWidth = 8; // Tables need more width for columns
+          optimizedHeight = 6; // Tables need more height for rows
+          break;
+        case 'chart':
+          optimizedWidth = 6; // Charts work well in square-ish format
+          optimizedHeight = 5; // Slightly taller for better chart visibility
+          break;
+        case 'metric':
+          optimizedWidth = 3; // KPI widgets are compact
+          optimizedHeight = 3; // Square format for metrics
+          break;
+        case 'text':
+          optimizedWidth = 4; // Text widgets are medium width
+          optimizedHeight = 3; // Compact height for text
+          break;
+        default:
+          optimizedWidth = 6;
+          optimizedHeight = 4;
+      }
+    }
     const gridWidth = 12; // Total grid width
     const maxY = 20; // Maximum Y position to search
     
@@ -380,12 +442,12 @@ export default function DashboardsPage() {
     
     // Find the first free position, prioritizing top-left positions
     for (let y = 0; y < maxY; y++) {
-      for (let x = 0; x <= gridWidth - width; x++) {
+      for (let x = 0; x <= gridWidth - optimizedWidth; x++) {
         let canPlace = true;
         
         // Check if this position is free
-        for (let dy = 0; dy < height; dy++) {
-          for (let dx = 0; dx < width; dx++) {
+        for (let dy = 0; dy < optimizedHeight; dy++) {
+          for (let dx = 0; dx < optimizedWidth; dx++) {
             if (occupied.has(`${x + dx},${y + dy}`)) {
               canPlace = false;
               break;
@@ -395,7 +457,7 @@ export default function DashboardsPage() {
         }
         
         if (canPlace) {
-          return { x, y, width, height };
+          return { x, y, width: optimizedWidth, height: optimizedHeight };
         }
       }
     }
@@ -408,7 +470,7 @@ export default function DashboardsPage() {
       }
     });
     
-    return { x: 0, y: lowestY, width, height };
+    return { x: 0, y: lowestY, width: optimizedWidth, height: optimizedHeight };
   };
 
   const handleAddWidget = (type: string, subType?: string) => {
@@ -459,8 +521,8 @@ export default function DashboardsPage() {
         dataSource: {
           type: 'table',
           tableId: 0, // No default table - user must select one
-          column: '', // No default column - will be updated when user selects column
-          aggregation: 'sum',
+          column: '', // No default column - user must select one
+          aggregation: '', // No default aggregation - user must select one
           filters: []
         },
         options: {
@@ -489,6 +551,56 @@ export default function DashboardsPage() {
           borderRadius: 'md'
         }
       };
+    } else if (type === 'clock') {
+      defaultConfig = {
+        timezone: 'local',
+        format: '24h',
+        showDate: true,
+        showSeconds: true,
+        showTimezone: true,
+        style: {
+          fontSize: '2xl',
+          fontFamily: 'mono',
+          color: '',
+          backgroundColor: ''
+        }
+      };
+    } else if (type === 'tasks') {
+      defaultConfig = {
+        showCompleted: true,
+        showPriority: true,
+        maxTasks: 50,
+        sortBy: 'created',
+        style: {
+          showDates: true,
+          compactMode: false
+        }
+      };
+    } else if (type === 'weather') {
+      defaultConfig = {
+        city: 'London',
+        country: 'UK',
+        units: 'metric',
+        showDetails: true,
+        showForecast: false,
+        refreshInterval: 30,
+        style: {
+          showIcon: true,
+          compactMode: false
+        }
+      };
+    } else if (type === 'calendar') {
+      defaultConfig = {
+        viewMode: 'month',
+        showWeekends: true,
+        startOfWeek: 'monday',
+        maxEvents: 100,
+        style: {
+          compactMode: false,
+          showTime: true,
+          showLocation: true
+        }
+      };
     }
 
     // Find a free position for the new widget, considering both existing widgets and pending changes
@@ -498,7 +610,7 @@ export default function DashboardsPage() {
         .filter(change => change.type === 'create' && change.data)
         .map(change => change.data as Widget)
     ];
-    const freePosition = findFreePosition(allWidgets);
+    const freePosition = findFreePosition(allWidgets, 6, 4, type);
 
     const newWidget: Partial<Widget> = {
       type,
@@ -641,6 +753,66 @@ export default function DashboardsPage() {
             }}
           />
         );
+      case 'clock':
+        return (
+          <ClockWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Clock edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Clock delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+          />
+        );
+      case 'tasks':
+        return (
+          <TasksWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Tasks edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Tasks delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+          />
+        );
+      case 'weather':
+        return (
+          <WeatherWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Weather edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Weather delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+          />
+        );
+      case 'calendar':
+        return (
+          <CalendarWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Calendar edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Calendar delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+          />
+        );
       default:
         return (
           <div className="h-full flex items-center justify-center">
@@ -777,6 +949,16 @@ export default function DashboardsPage() {
                       </TooltipProvider>
                     </div>
                   )}
+                  
+                  {/* Save Changes Button */}
+                  <SaveChangesButton
+                    pendingChanges={pendingChanges}
+                    isSaving={isSaving}
+                    onSave={() => selectedDashboard && savePendingChanges(selectedDashboard.id)}
+                    onDiscard={discardPendingChanges}
+                    size="sm"
+                    showDetails={true}
+                  />
                   
                   {/* Delete Dashboard Button */}
                   <Button

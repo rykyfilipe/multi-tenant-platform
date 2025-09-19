@@ -197,102 +197,107 @@ export default function TableWidget({
       error={error}
       onRefresh={handleRefresh}
       showRefresh={true}
+      className="table-widget-responsive"
     >
-      <div className="space-y-4">
+      <div className="space-y-2 sm:space-y-3 md:space-y-4 h-full flex flex-col">
         {/* Search and Controls */}
         {options.showSearch !== false && (
-          <div className="flex items-center justify-between space-x-2">
+          <div className="flex items-center justify-between space-x-2 flex-shrink-0">
             {options.showSearch && (
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="relative flex-1 max-w-xs sm:max-w-sm">
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-7 sm:pl-10 h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
             )}
-            
           </div>
         )}
 
 
         {/* Table */}
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-hidden flex-1 min-h-0">
           {!dataSource.tableId || dataSource.tableId === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <Database className="h-12 w-12 text-gray-300 mb-3" />
-              <p className="text-sm text-gray-500 mb-1">No table selected</p>
+            <div className="flex flex-col items-center justify-center py-8 sm:py-12 px-4 text-center h-full">
+              <Database className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300 mb-2 sm:mb-3" />
+              <p className="text-xs sm:text-sm text-gray-500 mb-1">No table selected</p>
               <p className="text-xs text-gray-400">Please select a table to view data</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {(dataSource.columns ?? []).map((columnName) => {
-                    const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
-                    return (
-                      <TableHead 
-                        key={columnName}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort(columnName)}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>{(column as any)?.name || columnName}</span>
-                          {sortBy === columnName && (
-                            <span className="text-xs">
-                              {sortOrder === 'asc' ? '↑' : '↓'}
-                            </span>
-                          )}
-                        </div>
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.length === 0 ? (
+            <div className="h-full overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
-                    <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-8 text-muted-foreground">
-                      {isLoading ? 'Loading...' : 'No data available'}
-                    </TableCell>
+                    {(dataSource.columns ?? []).map((columnName) => {
+                      const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
+                      return (
+                        <TableHead 
+                          key={columnName}
+                          className="cursor-pointer hover:bg-muted/50 text-xs sm:text-sm font-medium"
+                          onClick={() => handleSort(columnName)}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span className="truncate">{(column as any)?.name || columnName}</span>
+                            {sortBy === columnName && (
+                              <span className="text-xs flex-shrink-0">
+                                {sortOrder === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
-                ) : (
-                  paginatedData.map((row, index) => (
-                    <TableRow key={row?.id || index}>
-                      {(dataSource.columns ?? []).map((columnName) => (
-                        <TableCell key={columnName}>
-                          {renderCellValue(row?.[columnName])}
-                        </TableCell>
-                      ))}
+                </TableHeader>
+                <TableBody>
+                  {paginatedData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-6 sm:py-8 text-muted-foreground">
+                        {isLoading ? 'Loading...' : 'No data available'}
+                      </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    paginatedData.map((row, index) => (
+                      <TableRow key={row?.id || index} className="hover:bg-muted/50">
+                        {(dataSource.columns ?? []).map((columnName) => (
+                          <TableCell key={columnName} className="text-xs sm:text-sm py-2 sm:py-3">
+                            <div className="truncate max-w-[200px] sm:max-w-none">
+                              {renderCellValue(row?.[columnName])}
+                            </div>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
 
         {/* Pagination */}
         {options.showPagination !== false && totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 flex-shrink-0">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} entries
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
+                className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
               >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline ml-1">Previous</span>
               </Button>
               
               <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                   const page = i + 1;
                   return (
                     <Button
@@ -300,11 +305,15 @@ export default function TableWidget({
                       variant={currentPage === page ? "default" : "outline"}
                       size="sm"
                       onClick={() => setCurrentPage(page)}
+                      className="h-7 sm:h-8 w-7 sm:w-8 p-0 text-xs sm:text-sm"
                     >
                       {page}
                     </Button>
                   );
                 })}
+                {totalPages > 3 && (
+                  <span className="text-xs text-muted-foreground px-1">...</span>
+                )}
               </div>
               
               <Button
@@ -312,9 +321,10 @@ export default function TableWidget({
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
+                className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
               >
-                Next
-                <ChevronRight className="h-4 w-4" />
+                <span className="hidden sm:inline mr-1">Next</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
