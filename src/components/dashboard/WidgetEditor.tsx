@@ -90,7 +90,9 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
               { x: 'Mar', y: 200 },
               { x: 'Apr', y: 180 },
               { x: 'May', y: 250 },
-            ]
+            ],
+            xAxis: { key: 'x', label: 'Month', type: 'text', columns: [] },
+            yAxis: { key: 'y', label: 'Value', type: 'number', columns: [] }
           },
           xAxis: { key: 'x', label: 'Month', type: 'category' },
           yAxis: { key: 'y', label: 'Value', type: 'number' },
@@ -108,7 +110,9 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
           dataSource: {
             type: 'table',
             tableId: undefined,
-            columns: []
+            columns: [],
+            xAxis: { key: '', label: '', type: 'text', columns: [] },
+            yAxis: { key: '', label: '', type: 'number', columns: [] }
           },
           options: {
             showHeader: true,
@@ -123,7 +127,9 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
             type: 'table',
             tableId: undefined,
             column: '',
-            aggregation: 'sum'
+            aggregation: 'sum',
+            xAxis: { key: '', label: '', type: 'text', columns: [] },
+            yAxis: { key: '', label: '', type: 'number', columns: [] }
           },
           options: {
             format: 'number',

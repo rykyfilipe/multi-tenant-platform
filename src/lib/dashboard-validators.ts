@@ -22,6 +22,9 @@ export const WIDGET_TYPES = [
   'form',
   'button',
   'divider',
+  'clock',
+  'tasks',
+  'weather',
 ] as const;
 
 export type WidgetType = typeof WIDGET_TYPES[number];
@@ -307,6 +310,47 @@ export const WidgetConfigValidation = {
       multiple: z.boolean().default(false),
     }).optional(),
   }),
+
+  clock: z.object({
+    timezone: z.string().default('local'),
+    format: z.enum(['12h', '24h']).default('24h'),
+    showSeconds: z.boolean().default(true),
+    showDate: z.boolean().default(true),
+    showTimezone: z.boolean().default(false),
+  }),
+
+  tasks: z.object({
+    maxTasks: z.number().int().min(1).max(1000).default(50),
+    sortBy: z.enum(['created', 'priority', 'alphabetical']).default('created'),
+    showCompleted: z.boolean().default(true),
+    showPriority: z.boolean().default(true),
+    style: z.object({
+      showDates: z.boolean().default(true),
+      compactMode: z.boolean().default(false),
+    }).optional(),
+  }),
+
+  weather: z.object({
+    city: z.string().min(1, 'City is required'),
+    country: z.string().optional(),
+    units: z.enum(['metric', 'imperial']).default('metric'),
+    refreshInterval: z.number().int().min(5).max(1440).default(30),
+    showDetails: z.boolean().default(true),
+    style: z.object({
+      showIcon: z.boolean().default(true),
+    }).optional(),
+  }),
+
+  calendar: z.object({
+    viewMode: z.enum(['month', 'week', 'day', 'list']).default('month'),
+    startOfWeek: z.enum(['monday', 'sunday']).default('monday'),
+    maxEvents: z.number().int().min(10).max(1000).default(100),
+    showWeekends: z.boolean().default(true),
+    style: z.object({
+      showTime: z.boolean().default(true),
+      showLocation: z.boolean().default(false),
+    }).optional(),
+  }),
 };
 
 // Validation helper functions
@@ -370,6 +414,14 @@ export class DashboardValidators {
         return WidgetConfigValidation.text.parse(config);
       case 'filter':
         return WidgetConfigValidation.filter.parse(config);
+      case 'clock':
+        return WidgetConfigValidation.clock.parse(config);
+      case 'tasks':
+        return WidgetConfigValidation.tasks.parse(config);
+      case 'weather':
+        return WidgetConfigValidation.weather.parse(config);
+      case 'calendar':
+        return WidgetConfigValidation.calendar.parse(config);
       default:
         return z.record(z.any()).parse(config);
     }
