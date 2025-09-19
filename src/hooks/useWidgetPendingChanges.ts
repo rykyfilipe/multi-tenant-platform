@@ -18,6 +18,8 @@ interface PendingChange {
   widgetId?: number | string;
   data?: Partial<Widget> | null;
   originalData?: Partial<Widget>; // For tracking original values to detect cancellations
+  fieldPath?: string; // For nested field changes
+  timestamp: number; // For conflict resolution
 }
 
 interface UseWidgetPendingChangesOptions {
@@ -33,19 +35,25 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
   const [pendingChanges, setPendingChanges] = useState<Map<string, PendingChange>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
 
-  // Generează cheia unică pentru o modificare
-  const getChangeKey = useCallback((widgetId: number | string, type: 'create' | 'update' | 'delete') => {
-    return `${type}_${widgetId}`;
+  // Generează cheia unică pentru o modificare cu suport pentru nested fields
+  const getChangeKey = useCallback((
+    widgetId: number | string, 
+    type: 'create' | 'update' | 'delete',
+    fieldPath?: string
+  ) => {
+    const baseKey = `${type}_${widgetId}`;
+    return fieldPath ? `${baseKey}_${fieldPath}` : baseKey;
   }, []);
 
-  // Adaugă o modificare pending
+  // Adaugă o modificare pending cu deduplicare îmbunătățită
   const addPendingChange = useCallback((
     type: 'create' | 'update' | 'delete',
     widgetId: number | string,
     data?: Partial<Widget> | null,
-    originalData?: Partial<Widget>
+    originalData?: Partial<Widget>,
+    fieldPath?: string
   ) => {
-    const changeKey = getChangeKey(widgetId, type);
+    const changeKey = getChangeKey(widgetId, type, fieldPath);
     
     setPendingChanges(prev => {
       const newMap = new Map(prev);
@@ -96,12 +104,23 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         }
       }
 
+      // Verifică dacă există deja o modificare pentru același field
+      if (type === 'update' && fieldPath) {
+        const existingChange = newMap.get(changeKey);
+        if (existingChange && existingChange.timestamp > Date.now() - 1000) {
+          // Dacă există o modificare recentă pentru același field, o înlocuim
+          // (last-write-wins strategy)
+        }
+      }
+
       // Adaugă modificarea în pending changes
       const pendingChange: PendingChange = {
         type,
         widgetId,
         data,
         originalData,
+        fieldPath,
+        timestamp: Date.now(),
       };
       newMap.set(changeKey, pendingChange);
       
@@ -110,12 +129,53 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
   }, [getChangeKey]);
 
   // Elimină o modificare pending
-  const removePendingChange = useCallback((widgetId: number | string, type: 'create' | 'update' | 'delete') => {
-    const changeKey = getChangeKey(widgetId, type);
+  const removePendingChange = useCallback((
+    widgetId: number | string, 
+    type: 'create' | 'update' | 'delete',
+    fieldPath?: string
+  ) => {
+    const changeKey = getChangeKey(widgetId, type, fieldPath);
     
     setPendingChanges(prev => {
       const newMap = new Map(prev);
       newMap.delete(changeKey);
+      return newMap;
+    });
+  }, [getChangeKey]);
+
+  // Funcție helper pentru a merge modificările pending pentru același widget
+  const mergePendingChanges = useCallback((widgetId: number | string) => {
+    setPendingChanges(prev => {
+      const newMap = new Map(prev);
+      const widgetChanges = Array.from(prev.entries())
+        .filter(([key, change]) => change.widgetId === widgetId)
+        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+      if (widgetChanges.length <= 1) return newMap;
+
+      // Găsește ultima modificare pentru fiecare field
+      const latestChanges = new Map<string, PendingChange>();
+      
+      for (const [key, change] of widgetChanges) {
+        const fieldKey = change.fieldPath || 'root';
+        const existing = latestChanges.get(fieldKey);
+        
+        if (!existing || change.timestamp > existing.timestamp) {
+          latestChanges.set(fieldKey, change);
+        }
+      }
+
+      // Elimină toate modificările vechi pentru acest widget
+      for (const [key] of widgetChanges) {
+        newMap.delete(key);
+      }
+
+      // Adaugă doar ultimele modificări
+      for (const change of latestChanges.values()) {
+        const key = getChangeKey(change.widgetId!, change.type, change.fieldPath);
+        newMap.set(key, change);
+      }
+
       return newMap;
     });
   }, [getChangeKey]);
@@ -235,6 +295,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     clearPendingChanges,
     savePendingChanges,
     discardPendingChanges,
+    mergePendingChanges,
 
     // Helpers
     hasPendingChange,

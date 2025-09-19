@@ -750,7 +750,7 @@ export default function DashboardsPage() {
                         className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
                         title="Add Container Widget"
                       >
-                        <Layout className="h-4 w-4" />
+                        <BarChart3 className="h-4 w-4" />
                         <span className="text-sm">Container</span>
                       </Button>
                     </div>
@@ -761,24 +761,8 @@ export default function DashboardsPage() {
 
             {/* Grid Layout */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <ResponsiveGridLayout
-                className="layout"
-                layouts={{ lg: (selectedDashboard?.widgets ?? []).map(w => ({
-                  i: w.id.toString(),
-                  x: w.position?.x || 0,
-                  y: w.position?.y || 0,
-                  w: w.position?.width || 8,
-                  h: w.position?.height || 6,
-                })) }}
-                breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-                cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                rowHeight={60}
-                isDraggable={isEditMode && !isDragging}
-                isResizable={isEditMode && !isDragging}
-                onLayoutChange={handleLayoutChange}
-                margin={[16, 16]}
-                containerPadding={[0, 0]}
-                onMouseDown={(e) => {
+              <div
+                onMouseDown={(e: React.MouseEvent) => {
                   // Allow button interactions by checking if click is on interactive elements
                   const target = e.target as HTMLElement;
                   if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('textarea')) {
@@ -788,6 +772,24 @@ export default function DashboardsPage() {
                     setTimeout(() => setIsDragging(false), 100);
                   }
                 }}
+              >
+                <ResponsiveGridLayout
+                  className="layout"
+                  layouts={{ lg: (selectedDashboard?.widgets ?? []).map(w => ({
+                    i: w.id.toString(),
+                    x: w.position?.x || 0,
+                    y: w.position?.y || 0,
+                    w: w.position?.width || 8,
+                    h: w.position?.height || 6,
+                  })) }}
+                  breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+                  cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+                  rowHeight={60}
+                  isDraggable={isEditMode && !isDragging}
+                  isResizable={isEditMode && !isDragging}
+                  onLayoutChange={handleLayoutChange}
+                  margin={[16, 16]}
+                  containerPadding={[0, 0]}
               >
                 {(selectedDashboard?.widgets ?? []).map((widget) => (
                   <div 
@@ -831,6 +833,7 @@ export default function DashboardsPage() {
                   </div>
                 ))}
               </ResponsiveGridLayout>
+              </div>
             </div>
           </div>
         ) : (

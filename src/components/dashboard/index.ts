@@ -16,14 +16,62 @@ import { TasksWidget } from './TasksWidget';
 import { ClockWidget } from './ClockWidget';
 import { CalendarWidget } from './CalendarWidget';
 import { WeatherWidget } from './WeatherWidget';
-// Register main widget types
-WidgetRegistry.register('table', TableWidget);
-WidgetRegistry.register('metric', KPIWidget);
-WidgetRegistry.register('text', TextWidget);
-WidgetRegistry.register('tasks', TasksWidget);
-WidgetRegistry.register('clock', ClockWidget);
-WidgetRegistry.register('calendar', CalendarWidget);
-WidgetRegistry.register('weather', WeatherWidget);
+// Register main widget types with metadata
+WidgetRegistry.register('table', TableWidget, {
+  requiredFields: ['titleColumn', 'valueColumn'],
+  defaultConfig: { dataSource: { type: 'table', tableId: null, mapping: {} } },
+  dataSourceTypes: ['table', 'manual'],
+  description: 'Display data in a tabular format',
+  icon: 'Table'
+});
+
+WidgetRegistry.register('metric', KPIWidget, {
+  requiredFields: ['valueColumn'],
+  defaultConfig: { dataSource: { type: 'table', tableId: null, mapping: {} } },
+  dataSourceTypes: ['table', 'manual'],
+  description: 'Display key performance indicators',
+  icon: 'TrendingUp'
+});
+
+WidgetRegistry.register('text', TextWidget, {
+  requiredFields: [],
+  defaultConfig: { dataSource: { type: 'manual', content: '' } },
+  dataSourceTypes: ['manual'],
+  description: 'Display custom text content',
+  icon: 'FileText'
+});
+
+WidgetRegistry.register('tasks', TasksWidget, {
+  requiredFields: ['titleColumn', 'statusColumn'],
+  defaultConfig: { dataSource: { type: 'table', tableId: null, mapping: {} } },
+  dataSourceTypes: ['table', 'manual'],
+  description: 'Manage and display task lists',
+  icon: 'CheckSquare'
+});
+
+WidgetRegistry.register('clock', ClockWidget, {
+  requiredFields: [],
+  defaultConfig: { dataSource: { type: 'manual' } },
+  dataSourceTypes: ['manual'],
+  description: 'Display current time and date',
+  icon: 'Clock'
+});
+
+WidgetRegistry.register('calendar', CalendarWidget, {
+  requiredFields: ['dateColumn', 'titleColumn'],
+  defaultConfig: { dataSource: { type: 'table', tableId: null, mapping: {} } },
+  dataSourceTypes: ['table', 'manual'],
+  description: 'Display events and appointments',
+  icon: 'Calendar'
+});
+
+WidgetRegistry.register('weather', WeatherWidget, {
+  requiredFields: ['locationColumn'],
+  defaultConfig: { dataSource: { type: 'table', tableId: null, mapping: {} } },
+  dataSourceTypes: ['table', 'manual', 'api'],
+  description: 'Display weather information',
+  icon: 'Cloud'
+});
 
 // Register chart sub-types
 WidgetRegistry.registerChartSubType('line', LineChartWidget);

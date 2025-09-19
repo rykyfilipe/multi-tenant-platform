@@ -7,16 +7,11 @@
 export const CHART_COLOR_PALETTES = {
   // Professional business colors
   business: [
-    '#3B82F6', // Blue
-    '#10B981', // Emerald
-    '#F59E0B', // Amber
-    '#EF4444', // Red
-    '#8B5CF6', // Violet
-    '#06B6D4', // Cyan
-    '#84CC16', // Lime
-    '#F97316', // Orange
-    '#EC4899', // Pink
-    '#6B7280', // Gray
+    '#3b82f6', // Blue
+    '#10b981', // Emerald
+    '#f59e0b', // Amber
+    '#ef4444', // Red
+    '#8b5cf6', // Violet
   ],
   
   // Elegant monochrome
@@ -103,14 +98,8 @@ export function generateChartColors(
   const result: string[] = [];
   
   for (let i = 0; i < count; i++) {
-    if (i < colors.length) {
-      result.push(colors[i]);
-    } else {
-      // Generate additional colors by cycling through the palette
-      const baseColor = colors[i % colors.length];
-      const variation = Math.floor(i / colors.length);
-      result.push(generateColorVariation(baseColor, variation));
-    }
+    // Always cycle through the palette
+    result.push(colors[i % colors.length]);
   }
   
   return result;
@@ -136,17 +125,38 @@ function generateColorVariation(baseColor: string, variation: number): string {
 // Get a single color by index
 export function getChartColor(index: number, palette: ColorPalette = 'business'): string {
   const colors = CHART_COLOR_PALETTES[palette];
-  return colors[index % colors.length];
+  // Handle edge cases
+  if (isNaN(index) || !isFinite(index)) {
+    return colors[0];
+  }
+  // Handle negative indices by converting to positive
+  const normalizedIndex = index < 0 ? 0 : Math.floor(index);
+  return colors[normalizedIndex % colors.length];
 }
 
-// Get gradient color for charts
+// Get multiple colors for charts (alias for generateChartColors)
+export function getChartColors(count: number, palette: ColorPalette = 'business'): string[] {
+  if (count <= 0) return [];
+  return generateChartColors(count, palette);
+}
+
+// Get gradient color for charts (overloaded function)
+export function getGradientColor(baseColor: string, opacity?: number, direction?: 'lighter' | 'darker'): string;
+export function getGradientColor(index: number): string;
 export function getGradientColor(
-  baseColor: string, 
+  baseColorOrIndex: string | number, 
   opacity: number = 0.8, 
   direction: 'lighter' | 'darker' = 'lighter'
 ): string {
-  const rgb = hexToRgb(baseColor);
-  if (!rgb) return baseColor;
+  // Handle index-based gradient (for test compatibility)
+  if (typeof baseColorOrIndex === 'number') {
+    const index = baseColorOrIndex < 0 ? 0 : Math.floor(baseColorOrIndex) % 10; // Cycle through 0-9
+    return `url(#gradient-${index})`;
+  }
+  
+  // Handle color-based gradient
+  const rgb = hexToRgb(baseColorOrIndex);
+  if (!rgb) return baseColorOrIndex;
   
   const factor = direction === 'lighter' ? (1 + opacity) : (1 - opacity);
   const newR = Math.min(255, Math.round(rgb.r * factor));
@@ -337,10 +347,36 @@ export const CHART_STYLES = {
   },
 } as const;
 
-// Get status color based on percentage
-export function getStatusColor(percentage: number): string {
-  if (percentage >= 90) return '#EF4444'; // Red - Critical
-  if (percentage >= 75) return '#F59E0B'; // Amber - Warning
-  if (percentage >= 50) return '#3B82F6'; // Blue - Good
-  return '#10B981'; // Green - Excellent
+// Get status color based on percentage or status string
+export function getStatusColor(percentage: number): string;
+export function getStatusColor(status: string): string;
+export function getStatusColor(percentageOrStatus: number | string): string {
+  // Handle null/undefined
+  if (percentageOrStatus == null) {
+    return '#6b7280'; // gray-500
+  }
+  
+  // Handle string status (for test compatibility)
+  if (typeof percentageOrStatus === 'string') {
+    const status = percentageOrStatus.toLowerCase();
+    switch (status) {
+      case 'success':
+        return '#10b981'; // emerald-500
+      case 'warning':
+        return '#f59e0b'; // amber-500
+      case 'error':
+        return '#ef4444'; // red-500
+      case 'info':
+        return '#3b82f6'; // blue-500
+      default:
+        return '#6b7280'; // gray-500
+    }
+  }
+  
+  // Handle numeric percentage
+  const percentage = percentageOrStatus;
+  if (percentage >= 90) return '#ef4444'; // Red - Critical
+  if (percentage >= 75) return '#f59e0b'; // Amber - Warning
+  if (percentage >= 50) return '#3b82f6'; // Blue - Good
+  return '#10b981'; // Green - Excellent
 }

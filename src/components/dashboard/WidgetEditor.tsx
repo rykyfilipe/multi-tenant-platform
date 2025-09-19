@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataEditor } from './DataEditor';
 import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
+import { DataMappingFlow } from './DataMappingFlow';
 import { LineChartConfig, DataSource, ChartDataPoint } from './LineChartWidget';
 import { FilterConfig } from '@/types/filtering-enhanced';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
@@ -23,6 +24,7 @@ import { BaseWidget, WidgetEditorProps, WidgetType, WidgetConfig } from '@/types
 export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: WidgetEditorProps) {
   const [editedWidget, setEditedWidget] = useState<BaseWidget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
+  const [showDataMapping, setShowDataMapping] = useState(false);
   
   // Use schema cache for tables and columns
   const { tables, tablesLoading, loadTables } = useSchemaCache(tenantId, databaseId);
@@ -255,6 +257,22 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
     });
   };
 
+  // Data mapping flow handlers
+  const handleDataMappingComplete = (mapping: Record<string, string>) => {
+    const currentDataSource = editedWidget.config?.dataSource || {};
+    const newDataSource = {
+      ...currentDataSource,
+      type: 'table' as const,
+      mapping: mapping
+    };
+    updateConfig({ dataSource: newDataSource });
+    setShowDataMapping(false);
+  };
+
+  const handleDataMappingCancel = () => {
+    setShowDataMapping(false);
+  };
+
   const isLineChart = widget.type === 'chart';
   const config = (editedWidget.config as LineChartConfig) || {
     title: '',
@@ -409,6 +427,50 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
 
             {/* Data Tab */}
             <TabsContent value="data" className="space-y-4">
+              {/* Enhanced Data Mapping Flow for supported widgets */}
+              {['tasks', 'calendar', 'weather', 'clock'].includes(widget.type) && (
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Data Source Configuration</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              Configure how data from your tables maps to this widget's fields
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={() => setShowDataMapping(true)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Configure Mapping
+                          </Button>
+                        </div>
+                        
+                        {editedWidget.config?.dataSource?.mapping && (
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium text-gray-700">Current Mapping:</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {Object.entries(editedWidget.config.dataSource.mapping).map(([field, column]) => (
+                                <div key={field} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                                  <span className="font-medium">{field}</span>
+                                  <span className="text-gray-600">→</span>
+                                  <span className="text-blue-600">{String(column)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
               {widget.type === 'table' ? (
                 <div className="space-y-4">
                   {/* Table Configuration with integrated TableSelector */}
@@ -1448,6 +1510,31 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
           </div>
         </div>
       </div>
+
+      {/* Data Mapping Flow Modal */}
+      {showDataMapping && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <DataMappingFlow
+              widgetType={widget.type}
+              selectedTableId={editedWidget.config?.dataSource?.tableId || undefined}
+              currentMapping={editedWidget.config?.dataSource?.mapping || {}}
+              onTableSelect={(tableId) => {
+                const currentDataSource = editedWidget.config?.dataSource || {};
+                const newDataSource = {
+                  ...currentDataSource,
+                  type: 'table' as const,
+                  tableId: tableId
+                };
+                updateConfig({ dataSource: newDataSource });
+              }}
+              onMappingComplete={handleDataMappingComplete}
+              onCancel={handleDataMappingCancel}
+              tenantId={tenantId || 1}
+            />
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
