@@ -57,11 +57,21 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		}
 		
 		// Single column mode - validate and clean data
+		const xKey = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
+		const yKey = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
+		
+		console.log('[BarChart] Processing data:', {
+			rawDataCount: rawData.length,
+			xKey,
+			yKey,
+			sampleData: rawData.slice(0, 2)
+		});
+		
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
-			const xValue = item?.[safeXAxis.key];
-			const yValue = item?.[safeYAxis.key];
+			const xValue = item?.[xKey];
+			const yValue = item?.[yKey];
 			
 			return xValue !== undefined && xValue !== null && xValue !== '' &&
 				   yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
@@ -119,14 +129,14 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								/>
 							)}
 							<XAxis 
-								dataKey={safeXAxis.key} 
+								dataKey={enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key} 
 								stroke="hsl(var(--muted-foreground))"
 								fontSize={12}
 								tickLine={false}
 								axisLine={false}
 								tick={{ fill: 'hsl(var(--muted-foreground))' }}
 								label={{ 
-									value: safeXAxis.label, 
+									value: enhancedDataSource.xAxis?.label || safeXAxis.label, 
 									position: 'insideBottom', 
 									offset: -10,
 									style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
@@ -139,7 +149,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								axisLine={false}
 								tick={{ fill: 'hsl(var(--muted-foreground))' }}
 								label={{ 
-									value: safeYAxis.label, 
+									value: enhancedDataSource.yAxis?.label || safeYAxis.label, 
 									angle: -90, 
 									position: 'insideLeft',
 									style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
@@ -169,7 +179,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								enhancedDataSource.xAxis.columns.map((xCol, index) => (
 									<Bar 
 										key={xCol}
-										dataKey={safeYAxis.key} 
+										dataKey={enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key} 
 										fill={colors[index % colors.length]}
 										radius={[4, 4, 0, 0]}
 										animationDuration={options.animation !== false ? 1000 : 0}
@@ -178,7 +188,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								))
 							) : (
 								<Bar 
-									dataKey={safeYAxis.key} 
+									dataKey={enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key} 
 									fill={colors[0]}
 									radius={[4, 4, 0, 0]}
 									animationDuration={options.animation !== false ? 1000 : 0}

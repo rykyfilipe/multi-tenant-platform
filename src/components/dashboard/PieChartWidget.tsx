@@ -42,6 +42,13 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
 		const yColumn = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
 		
+		console.log('[PieChart] Processing data:', {
+			rawDataCount: rawData.length,
+			xColumn,
+			yColumn,
+			sampleData: rawData.slice(0, 2)
+		});
+		
 		// Validate and clean data to prevent property errors
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
@@ -52,8 +59,8 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			return nameValue !== undefined && nameValue !== null && nameValue !== '' &&
 				   valueValue !== undefined && valueValue !== null && !isNaN(Number(valueValue));
 		}).map(item => ({
-			[safeXAxis.key]: item[xColumn],
-			[safeYAxis.key]: item[yColumn]
+			[xColumn]: item[xColumn],
+			[yColumn]: item[yColumn]
 		}));
 	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
@@ -112,8 +119,8 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 							)}
 							<Pie 
 								data={processedData} 
-								dataKey={safeYAxis.key} 
-								nameKey={safeXAxis.key} 
+								dataKey={enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key} 
+								nameKey={enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key} 
 								outerRadius={(options as any).outerRadius || 80}
 								innerRadius={(options as any).innerRadius || 0}
 								paddingAngle={(options as any).paddingAngle || 2}

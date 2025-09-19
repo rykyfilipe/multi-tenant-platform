@@ -217,6 +217,14 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
   const processedData = useMemo(() => {
     const rawData = Array.isArray(data) ? data : [];
     
+    console.log('[LineChart] Processing data in useMemo:', {
+      rawDataCount: rawData.length,
+      enhancedDataSource,
+      safeXAxis,
+      safeYAxis,
+      sampleRawData: rawData.slice(0, 2)
+    });
+    
     // For multi-column support in line charts, we create multiple lines
     if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
       const transformedData: any[] = [];
@@ -242,17 +250,35 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     }
     
     // Single column mode - validate and clean data
+    const xKey = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
+    const yKey = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
+    
+    console.log('[LineChart] Processing data:', {
+      rawDataCount: rawData.length,
+      xKey,
+      yKey,
+      sampleData: rawData.slice(0, 2)
+    });
+    
     return rawData.filter(item => {
       if (!item || typeof item !== 'object') return false;
       
       // Ensure the item has the required properties
-      const xValue = item?.[safeXAxis.key];
-      const yValue = item?.[safeYAxis.key];
+      const xValue = item?.[xKey];
+      const yValue = item?.[yKey];
       
       return xValue !== undefined && xValue !== null && xValue !== '' &&
              yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
     });
   }, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
+
+  // Debug processed data
+  console.log('[LineChart] Final processed data:', {
+    processedDataCount: processedData.length,
+    sampleProcessedData: processedData.slice(0, 2),
+    xKey: enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key,
+    yKey: enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key
+  });
 
   // Fetch data when dataSource changes
   useEffect(() => {
@@ -359,14 +385,14 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
                 />
               )}
               <XAxis 
-                dataKey={safeXAxis.key}
+                dataKey={enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key}
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                label={safeXAxis.label ? { 
-                  value: safeXAxis.label, 
+                label={enhancedDataSource.xAxis?.label || safeXAxis.label ? { 
+                  value: enhancedDataSource.xAxis?.label || safeXAxis.label, 
                   position: 'insideBottom', 
                   offset: -10,
                   style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
@@ -378,8 +404,8 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                label={safeYAxis.label ? { 
-                  value: safeYAxis.label, 
+                label={enhancedDataSource.yAxis?.label || safeYAxis.label ? { 
+                  value: enhancedDataSource.yAxis?.label || safeYAxis.label, 
                   angle: -90, 
                   position: 'insideLeft',
                   style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
@@ -427,7 +453,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
               ) : (
                 <Line
                   type={curveType}
-                  dataKey={safeYAxis.key}
+                  dataKey={enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key}
                   stroke={colors[0]}
                   strokeWidth={strokeWidth}
                   dot={{ fill: colors[0], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
