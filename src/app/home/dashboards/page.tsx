@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, CheckSquare, Clock, Calendar, Cloud, Layout } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, CheckSquare, Clock, Calendar, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -63,6 +63,7 @@ export default function DashboardsPage() {
   const [showDetailsEditor, setShowDetailsEditor] = useState(false);
   const [pendingDashboardSwitch, setPendingDashboardSwitch] = useState<Dashboard | null>(null);
   const [showUnsavedChangesAlert, setShowUnsavedChangesAlert] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   
   const { toast } = useToast();
   const { tenant } = useApp();
@@ -454,7 +455,7 @@ export default function DashboardsPage() {
     return { x: 0, y: lowestY, width, height };
   };
 
-  const handleAddWidget = (type: string, parentId?: string) => {
+  const handleAddWidget = (type: string) => {
     // Get all existing widgets for smart positioning
     const allWidgets = [
       ...(selectedDashboard?.widgets ?? []),
@@ -469,28 +470,9 @@ export default function DashboardsPage() {
       allWidgets,
       {
         order: (selectedDashboard?.widgets ?? []).length || 0,
-        parentId: parentId // Add parentId if this widget is being added to a container
       }
     );
 
-    // If this widget is being added to a container, update the container's children
-    if (parentId) {
-      // Find the container widget and add this widget to its children
-      const containerWidget = allWidgets.find(w => w.id === parentId);
-      if (containerWidget && containerWidget.type === 'container') {
-        const containerConfig = containerWidget.config as any;
-        const updatedConfig = {
-          ...containerConfig,
-          children: [...(containerConfig.children || []), newWidget]
-        };
-        
-        // Update the container widget
-        addPendingChange('update', parentId, {
-          ...containerWidget,
-          config: updatedConfig
-        });
-      }
-    }
 
     // Add to pending changes
     addPendingChange('create', newWidget.id, newWidget);
@@ -556,17 +538,9 @@ export default function DashboardsPage() {
             console.log('Widget delete clicked:', widget.id);
             handleWidgetDelete(Number(widget.id));
           },
-          onAddWidget: (type: string, parentId?: string) => {
-            console.log('Add widget to container:', type, parentId);
-            handleAddWidget(type, parentId);
-          },
-          onEditWidget: (widgetId: string) => {
-            console.log('Edit widget in container:', widgetId);
-            handleEditWidget(widgetId);
-          },
-          onDeleteWidget: (widgetId: string) => {
-            console.log('Delete widget from container:', widgetId);
-            handleDeleteWidget(widgetId);
+          onAddWidget: (type: string) => {
+            console.log('Add widget:', type);
+            handleAddWidget(type);
           },
           onConfigChange: (newConfig: any) => {
             console.log('Widget config changed:', widget.id, newConfig);
@@ -799,27 +773,41 @@ export default function DashboardsPage() {
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
                 rowHeight={60}
-                isDraggable={isEditMode}
-                isResizable={isEditMode}
+                isDraggable={isEditMode && !isDragging}
+                isResizable={isEditMode && !isDragging}
                 onLayoutChange={handleLayoutChange}
                 margin={[16, 16]}
                 containerPadding={[0, 0]}
+                onMouseDown={(e) => {
+                  // Allow button interactions by checking if click is on interactive elements
+                  const target = e.target as HTMLElement;
+                  if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('textarea')) {
+                    setIsDragging(true);
+                    e.stopPropagation();
+                    // Reset dragging state after a short delay
+                    setTimeout(() => setIsDragging(false), 100);
+                  }
+                }}
               >
                 {(selectedDashboard?.widgets ?? []).map((widget) => (
                   <div 
                     key={widget.id} 
                     className="widget-container"
                     onMouseDown={(e) => {
-                      // Allow buttons to work by checking if click is on a button
+                      // Allow buttons to work by checking if click is on interactive elements
                       const target = e.target as HTMLElement;
-                      if (target.closest('button')) {
+                      if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('textarea')) {
                         e.stopPropagation();
+                        e.preventDefault();
+                        setIsDragging(true);
+                        // Reset dragging state after a short delay
+                        setTimeout(() => setIsDragging(false), 200);
                       }
                     }}
                     onClick={(e) => {
-                      // Prevent widget selection when clicking on buttons
+                      // Prevent widget selection when clicking on interactive elements
                       const target = e.target as HTMLElement;
-                      if (target.closest('button')) {
+                      if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('textarea')) {
                         e.preventDefault();
                         e.stopPropagation();
                       }
@@ -830,9 +818,9 @@ export default function DashboardsPage() {
                       whileHover={isEditMode ? { scale: 1.02 } : {}}
                       transition={{ duration: 0.2 }}
                       onClick={(e) => {
-                        // Prevent widget selection when clicking on buttons
+                        // Prevent widget selection when clicking on interactive elements
                         const target = e.target as HTMLElement;
-                        if (target.closest('button')) {
+                        if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('textarea')) {
                           e.preventDefault();
                           e.stopPropagation();
                         }

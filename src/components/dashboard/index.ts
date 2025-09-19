@@ -16,8 +16,6 @@ import { TasksWidget } from './TasksWidget';
 import { ClockWidget } from './ClockWidget';
 import { CalendarWidget } from './CalendarWidget';
 import { WeatherWidget } from './WeatherWidget';
-import ContainerWidget from './ContainerWidget';
-
 // Register main widget types
 WidgetRegistry.register('table', TableWidget);
 WidgetRegistry.register('metric', KPIWidget);
@@ -26,7 +24,6 @@ WidgetRegistry.register('tasks', TasksWidget);
 WidgetRegistry.register('clock', ClockWidget);
 WidgetRegistry.register('calendar', CalendarWidget);
 WidgetRegistry.register('weather', WeatherWidget);
-WidgetRegistry.register('container', ContainerWidget);
 
 // Register chart sub-types
 WidgetRegistry.registerChartSubType('line', LineChartWidget);
@@ -48,7 +45,6 @@ export { TasksWidget } from './TasksWidget';
 export { ClockWidget } from './ClockWidget';
 export { CalendarWidget } from './CalendarWidget';
 export { WeatherWidget } from './WeatherWidget';
-export { default as ContainerWidget } from './ContainerWidget';
 
 // Export other dashboard components
 export { default as BaseWidget } from './BaseWidget';

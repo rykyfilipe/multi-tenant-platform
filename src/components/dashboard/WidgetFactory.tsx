@@ -21,7 +21,6 @@ export class WidgetFactory {
       isVisible: overrides.isVisible ?? true,
       order: overrides.order ?? 0,
       style: overrides.style,
-      parentId: overrides.parentId
     };
 
     return baseWidget;
@@ -217,22 +216,6 @@ export class WidgetFactory {
           refreshInterval: 30
         }
       },
-      container: {
-        dataSource: {
-          type: 'manual'
-        },
-        options: {
-          layout: 'grid',
-          columns: 2,
-          gap: 16,
-          padding: 16,
-          backgroundColor: '#f8fafc',
-          borderColor: '#e2e8f0',
-          borderRadius: 8,
-          showBorder: true,
-          showBackground: true
-        }
-      }
     };
 
     const defaultConfig = configs[type];
@@ -335,7 +318,6 @@ export class WidgetFactory {
       clock: 'Clock',
       calendar: 'Calendar',
       weather: 'Weather',
-      container: 'Container'
     };
     
     return displayNames[type] || type;
@@ -354,7 +336,6 @@ export class WidgetFactory {
       clock: 'Display current time with timezone support and customizable format',
       calendar: 'Show calendar with events and date navigation',
       weather: 'Display weather information with forecasts and location support',
-      container: 'Organize widgets in a container with customizable layout and styling'
     };
     
     return descriptions[type] || 'Unknown widget type';
@@ -373,7 +354,6 @@ export class WidgetFactory {
       clock: 'Clock',
       calendar: 'Calendar',
       weather: 'Cloud',
-      container: 'Layout'
     };
     
     return icons[type] || 'Settings';

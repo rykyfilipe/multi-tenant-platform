@@ -6,7 +6,7 @@
 import { ColumnType, FilterOperator, FilterValue } from './filtering-enhanced';
 
 // Base Widget Types
-export type WidgetType = 'chart' | 'table' | 'metric' | 'text' | 'tasks' | 'clock' | 'calendar' | 'weather' | 'container';
+export type WidgetType = 'chart' | 'table' | 'metric' | 'text' | 'tasks' | 'clock' | 'calendar' | 'weather';
 export type ChartType = 'line' | 'bar' | 'pie';
 
 // Position and Layout
@@ -177,7 +177,6 @@ export interface BaseWidget {
   isVisible: boolean;
   order: number;
   style?: WidgetStyleConfig;
-  parentId?: string;
 }
 
 // Widget Props Interface
@@ -245,5 +244,4 @@ export interface WidgetFactoryOptions {
   title?: string;
   isVisible?: boolean;
   order?: number;
-  parentId?: string;
 }
