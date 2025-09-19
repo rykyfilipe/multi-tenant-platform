@@ -13,6 +13,7 @@ import { WidgetProps, BaseWidget as BaseWidgetType, WidgetType } from '@/types/w
 import { WidgetDataProvider } from './WidgetDataProvider';
 import { getMinimalistStyles } from './design/MinimalistDesignSystem';
 import { WidgetFactory } from './WidgetFactory';
+import { WidgetRegistry } from './WidgetRegistry';
 
 export interface ContainerWidgetConfig {
   title?: string;
@@ -34,6 +35,9 @@ interface ContainerWidgetProps extends WidgetProps {
   onAddWidget?: (type: WidgetType, parentId?: string) => void;
   onEditWidget?: (widgetId: string) => void;
   onDeleteWidget?: (widgetId: string) => void;
+  onConfigChange?: (config: ContainerWidgetConfig) => void;
+  tenantId?: number;
+  databaseId?: number;
 }
 
 export default function ContainerWidget({ 
@@ -44,6 +48,7 @@ export default function ContainerWidget({
   onAddWidget,
   onEditWidget,
   onDeleteWidget,
+  onConfigChange,
   tenantId, 
   databaseId 
 }: ContainerWidgetProps) {
@@ -77,7 +82,7 @@ export default function ContainerWidget({
     setShowAddMenu(false);
   };
 
-  // Simple container style - just a div
+  // Responsive container style
   const containerStyle = {
     display: options.layout === 'flex' ? 'flex' : 'grid',
     gridTemplateColumns: options.layout === 'grid' ? `repeat(${options.columns}, 1fr)` : undefined,
@@ -85,65 +90,112 @@ export default function ContainerWidget({
     padding: `${options.padding}px`,
     width: '100%',
     height: '100%',
+    minHeight: '200px', // Ensure minimum height
+  };
+
+  // Responsive grid classes
+  const getResponsiveGridClasses = () => {
+    if (options.layout === 'flex') {
+      return 'flex flex-col sm:flex-row flex-wrap';
+    }
+    
+    // Responsive grid columns
+    const baseColumns = Math.min(options.columns, 2); // Max 2 on mobile
+    const smColumns = Math.min(options.columns, 3); // Max 3 on small screens
+    const mdColumns = Math.min(options.columns, 4); // Max 4 on medium screens
+    const lgColumns = options.columns; // Full columns on large screens
+    
+    return `grid grid-cols-${baseColumns} sm:grid-cols-${smColumns} md:grid-cols-${mdColumns} lg:grid-cols-${lgColumns}`;
   };
 
   return (
     <div className="w-full h-full relative">
-      {/* Simple container - just a div with grid/flex layout */}
+      {/* Responsive container with grid/flex layout */}
       <div
         style={containerStyle}
-        className="w-full h-full"
+        className={`w-full h-full ${getResponsiveGridClasses()}`}
       >
-        {/* Render child widgets directly - clean */}
+        {/* Render child widgets - real widgets with live preview */}
         {config.children && config.children.length > 0 ? (
-          config.children.map((childWidget, index) => (
-            <div key={childWidget.id || index} className="relative group w-full h-full">
-              {/* Clean widget container - just border and padding */}
-              <div className="w-full h-full bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <div className="p-4 h-full flex flex-col">
-                  {/* Simple header with just title */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      {widgetTypes.find(w => w.type === childWidget.type)?.icon &&
-                        React.createElement(widgetTypes.find(w => w.type === childWidget.type)!.icon, {
-                          className: "h-4 w-4 text-gray-500"
-                        })
-                      }
-                      <span className="text-sm font-medium text-gray-700">
-                        {WidgetFactory.getTypeDisplayName(childWidget.type as WidgetType)}
-                      </span>
-                    </div>
-                    {isEditMode && (
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onEditWidget?.(childWidget.id)}
-                          className="p-1 h-6 w-6"
-                          title="Edit Widget"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onDeleteWidget?.(childWidget.id)}
-                          className="p-1 h-6 w-6 text-red-500 hover:text-red-700"
-                          title="Delete Widget"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
+          config.children.map((childWidget, index) => {
+            const WidgetComponent = WidgetRegistry.getComponent(childWidget.type as WidgetType);
+            
+            return (
+              <div key={childWidget.id || index} className="relative group w-full h-full min-h-[200px] sm:min-h-[250px] md:min-h-[300px]">
+                {/* Real widget rendering */}
+                <div className="w-full h-full flex flex-col">
+                  {WidgetComponent ? (
+                    <WidgetComponent
+                      widget={childWidget}
+                      isEditMode={isEditMode}
+                      onEdit={() => onEditWidget?.(childWidget.id)}
+                      onDelete={() => onDeleteWidget?.(childWidget.id)}
+                      onConfigChange={(newConfig) => {
+                        // Update child widget config and trigger parent update
+                        const updatedChildren = config.children?.map(child => 
+                          child.id === childWidget.id 
+                            ? { ...child, config: newConfig }
+                            : child
+                        ) || [];
+                        
+                        const updatedConfig = {
+                          ...config,
+                          children: updatedChildren
+                        };
+                        
+                        onConfigChange?.(updatedConfig);
+                      }}
+                      tenantId={tenantId}
+                      databaseId={databaseId}
+                    />
+                  ) : (
+                    /* Fallback for unknown widget types */
+                    <div className="w-full h-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="p-4 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            {widgetTypes.find(w => w.type === childWidget.type)?.icon &&
+                              React.createElement(widgetTypes.find(w => w.type === childWidget.type)!.icon, {
+                                className: "h-4 w-4 text-gray-500"
+                              })
+                            }
+                            <span className="text-sm font-medium text-gray-700">
+                              {WidgetFactory.getTypeDisplayName(childWidget.type as WidgetType)}
+                            </span>
+                          </div>
+                          {isEditMode && (
+                            <div className="flex items-center space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onEditWidget?.(childWidget.id)}
+                                className="p-1 h-6 w-6"
+                                title="Edit Widget"
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onDeleteWidget?.(childWidget.id)}
+                                className="p-1 h-6 w-6 text-red-500 hover:text-red-700"
+                                title="Delete Widget"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 flex items-center justify-center text-gray-400">
+                          <p className="text-xs">Unknown Widget Type</p>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  {/* Widget content area */}
-                  <div className="flex-1 flex items-center justify-center text-gray-400">
-                    <p className="text-xs">Widget Preview</p>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           /* Empty state - simple */
           <div className="flex items-center justify-center h-full min-h-[120px] text-center">
