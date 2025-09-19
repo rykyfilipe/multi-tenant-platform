@@ -646,8 +646,10 @@ export default function DashboardsPage() {
     // Adaugă widget-urile locale din pending changes
     pendingChanges.forEach((change, key) => {
       if (change.type === 'create' && change.data) {
+        // Cheia este formatată ca "create_${widgetId}"
+        const widgetId = key.replace('create_', '');
         const localWidget: Widget = {
-          id: parseInt(key.split('-')[0]), // Extrage ID-ul din cheie
+          id: parseInt(widgetId), // Extrage ID-ul din cheie
           ...change.data,
         } as Widget;
         localWidgets.push(localWidget);
