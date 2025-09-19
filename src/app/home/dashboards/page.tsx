@@ -163,11 +163,9 @@ export default function DashboardsPage() {
       });
     },
     onDiscard: () => {
-      console.log('Discarding changes, reloading dashboard data');
-      // Reload dashboard data to reset local state
-      if (selectedDashboard) {
-        fetchDashboards();
-      }
+      console.log('Discarding changes optimistically');
+      // Nu mai face reload - pending changes se vor curăța automat
+      // Widget-urile locale vor dispărea din UI prin getFinalWidget
     },
   });
 
@@ -636,20 +634,28 @@ export default function DashboardsPage() {
     // Add to pending changes with logica inteligentă
     addPendingChange('create', tempId, newWidget);
 
-    // Add to local state immediately pentru afișare
-    const tempWidget: Widget = {
-      id: tempId, // Temporary ID
-      ...newWidget,
-    } as Widget;
-
-    setSelectedDashboard(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        widgets: [...(prev.widgets ?? []), tempWidget],
-      };
-    });
+    // Nu mai adaug în local state - getFinalWidget se ocupă de afișare
+    // Widget-ul va apărea în UI prin pending changes
   };
+
+  // Funcție helper pentru a obține toate widget-urile (din DB + locale)
+  const getAllWidgets = useCallback(() => {
+    const dbWidgets = selectedDashboard?.widgets ?? [];
+    const localWidgets: Widget[] = [];
+    
+    // Adaugă widget-urile locale din pending changes
+    pendingChanges.forEach((change, key) => {
+      if (change.type === 'create' && change.data) {
+        const localWidget: Widget = {
+          id: parseInt(key.split('-')[0]), // Extrage ID-ul din cheie
+          ...change.data,
+        } as Widget;
+        localWidgets.push(localWidget);
+      }
+    });
+    
+    return [...dbWidgets, ...localWidgets];
+  }, [selectedDashboard?.widgets, pendingChanges]);
 
   const renderWidget = (widget: Widget) => {
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate
@@ -996,35 +1002,35 @@ export default function DashboardsPage() {
               <ResponsiveGridLayout
                 className="layout"
                 layouts={{ 
-                  lg: (selectedDashboard?.widgets ?? []).map(w => ({
+                  lg: getAllWidgets().map(w => ({
                     i: w.id.toString(),
                     x: w.position?.x || 0,
                     y: w.position?.y || 0,
                     w: w.position?.width || 4,
                     h: w.position?.height || 4,
                   })),
-                  md: (selectedDashboard?.widgets ?? []).map(w => ({
+                  md: getAllWidgets().map(w => ({
                     i: w.id.toString(),
                     x: Math.min(w.position?.x || 0, 9),
                     y: w.position?.y || 0,
                     w: Math.min(w.position?.width || 4, 10),
                     h: w.position?.height || 4,
                   })),
-                  sm: (selectedDashboard?.widgets ?? []).map(w => ({
+                  sm: getAllWidgets().map(w => ({
                     i: w.id.toString(),
                     x: Math.min(w.position?.x || 0, 5),
                     y: w.position?.y || 0,
                     w: Math.min(w.position?.width || 4, 6),
                     h: w.position?.height || 4,
                   })),
-                  xs: (selectedDashboard?.widgets ?? []).map(w => ({
+                  xs: getAllWidgets().map(w => ({
                     i: w.id.toString(),
                     x: Math.min(w.position?.x || 0, 3),
                     y: w.position?.y || 0,
                     w: Math.min(w.position?.width || 4, 4),
                     h: w.position?.height || 4,
                   })),
-                  xxs: (selectedDashboard?.widgets ?? []).map(w => ({
+                  xxs: getAllWidgets().map(w => ({
                     i: w.id.toString(),
                     x: 0,
                     y: w.position?.y || 0,
@@ -1045,7 +1051,7 @@ export default function DashboardsPage() {
                 preventCollision={false}
                 compactType="vertical"
               >
-                {(selectedDashboard?.widgets ?? []).map((widget) => (
+                {getAllWidgets().map((widget) => (
                   <div 
                     key={widget.id} 
                     className="widget-container"
