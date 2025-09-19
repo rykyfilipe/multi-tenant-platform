@@ -226,12 +226,12 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
       ? columns.map(col => ({
           key: col,
           label: col.charAt(0).toUpperCase() + col.slice(1),
-          type: this.inferType(sampleItem[col])
+          type: this.inferType(sampleItem?.[col])
         }))
-      : Object.keys(sampleItem).map(key => ({
+      : Object.keys(sampleItem || {}).map(key => ({
           key,
           label: key.charAt(0).toUpperCase() + key.slice(1),
-          type: this.inferType(sampleItem[key])
+          type: this.inferType(sampleItem?.[key])
         }));
 
     return {
@@ -289,12 +289,12 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
       ? columns.map(col => ({
           key: col,
           label: col.charAt(0).toUpperCase() + col.slice(1),
-          type: this.inferType(sampleRow[col])
+          type: this.inferType(sampleRow?.[col])
         }))
-      : Object.keys(sampleRow).filter(key => key !== 'id').map(key => ({
+      : Object.keys(sampleRow || {}).filter(key => key !== 'id').map(key => ({
           key,
           label: key.charAt(0).toUpperCase() + key.slice(1),
-          type: this.inferType(sampleRow[key])
+          type: this.inferType(sampleRow?.[key])
         }));
 
     return {
@@ -330,6 +330,7 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
   }
 
   private inferType(value: any): string {
+    if (value === null || value === undefined) return 'string';
     if (typeof value === 'number') return 'number';
     if (typeof value === 'boolean') return 'boolean';
     if (value instanceof Date) return 'date';
