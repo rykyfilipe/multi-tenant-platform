@@ -24,13 +24,14 @@ interface PendingChange {
 interface UseWidgetPendingChangesOptions {
   onSuccess?: (results: any[]) => void;
   onError?: (error: string) => void;
+  onDiscard?: () => void; // Callback pentru discard - poate actualiza local state
   autoSaveDelay?: number; // Auto-save after X ms of inactivity (0 = immediate, -1 = disabled)
   showAlert?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions = {}) {
   const { tenant, showAlert } = useApp();
-  const { onSuccess, onError, autoSaveDelay = 2000, showAlert: customShowAlert } = options;
+  const { onSuccess, onError, onDiscard, autoSaveDelay = 2000, showAlert: customShowAlert } = options;
 
   // State pentru modificările pending
   const [pendingChanges, setPendingChanges] = useState<Map<string, PendingChange>>(new Map());
@@ -292,6 +293,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         if (change.type === 'create' && change.data) {
           const { id, ...dataWithoutId } = change.data;
           operation.data = dataWithoutId;
+          console.log('🔍 Create operation data:', operation.data);
         } else {
           operation.data = change.data;
         }
@@ -352,8 +354,11 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
+    // Apelează callback-ul pentru a actualiza local state-ul
+    onDiscard?.();
+
     alert('Changes discarded', 'info');
-  }, [alert]);
+  }, [alert, onDiscard]);
 
   // Salvează manual (forțat)
   const saveNow = useCallback(async (dashboardId: number) => {

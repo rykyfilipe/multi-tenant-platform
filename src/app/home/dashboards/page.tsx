@@ -162,6 +162,12 @@ export default function DashboardsPage() {
         variant: 'destructive',
       });
     },
+    onDiscard: () => {
+      // Refresh dashboard data to remove locally created widgets
+      if (selectedDashboard) {
+        fetchDashboards();
+      }
+    },
   });
 
   // Fetch dashboards on component mount
