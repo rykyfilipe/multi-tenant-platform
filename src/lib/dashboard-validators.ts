@@ -213,10 +213,43 @@ export const WidgetConfigValidation = {
   chart: z.object({
     chartType: z.enum(['line', 'bar', 'pie', 'doughnut', 'area', 'scatter']),
     dataSource: z.object({
-      tableId: z.number().int().positive(),
-      columnX: z.string().min(1),
-      columnY: z.string().min(1),
+      type: z.enum(['table', 'manual']).default('table'),
+      tableId: z.number().int().positive().optional(),
+      // Legacy column selection
+      columnX: z.string().optional(),
+      columnY: z.string().optional(),
+      // New axis-based configuration
+      xAxis: z.object({
+        key: z.string().optional(),
+        label: z.string().optional(),
+        type: z.enum(['category', 'number', 'time']).optional(),
+        columns: z.array(z.string()).optional(),
+        aggregation: z.string().optional(),
+      }).optional(),
+      yAxis: z.object({
+        key: z.string().optional(),
+        label: z.string().optional(),
+        type: z.enum(['number']).optional(),
+        columns: z.array(z.string()).optional(),
+        aggregation: z.string().optional(),
+      }).optional(),
+      // Additional columns support
+      xColumns: z.array(z.string()).optional(),
+      yColumns: z.array(z.string()).optional(),
+      // Filters and other options
       filters: z.array(z.any()).optional(),
+      groupBy: z.string().optional(),
+    }).refine((data) => {
+      // At least one of the column selection methods must be provided
+      const hasLegacyColumns = data.columnX && data.columnY;
+      const hasAxisColumns = (data.xAxis?.columns && data.xAxis.columns.length > 0) || 
+                            (data.yAxis?.columns && data.yAxis.columns.length > 0);
+      const hasSimpleColumns = (data.xColumns && data.xColumns.length > 0) || 
+                              (data.yColumns && data.yColumns.length > 0);
+      
+      return hasLegacyColumns || hasAxisColumns || hasSimpleColumns;
+    }, {
+      message: "At least one column selection method must be provided (columnX/columnY, xAxis/yAxis columns, or xColumns/yColumns)"
     }),
     options: z.object({
       title: z.string().optional(),
@@ -241,11 +274,18 @@ export const WidgetConfigValidation = {
 
   table: z.object({
     dataSource: z.object({
-      tableId: z.number().int().positive(),
-      columns: z.array(z.string()).min(1),
+      type: z.enum(['table', 'manual']).default('table'),
+      tableId: z.number().int().positive().optional(),
+      columns: z.array(z.string()).min(1).optional(),
       filters: z.array(z.any()).optional(),
       sortBy: z.string().optional(),
       sortOrder: z.enum(['asc', 'desc']).optional(),
+      groupBy: z.string().optional(),
+    }).refine((data) => {
+      // For table widgets, we need either columns or tableId
+      return data.columns && data.columns.length > 0;
+    }, {
+      message: "At least one column must be selected for table widgets"
     }),
     options: z.object({
       pageSize: z.number().int().min(1).max(100).default(10),
@@ -259,9 +299,16 @@ export const WidgetConfigValidation = {
     dataSource: z.object({
       type: z.enum(['table', 'manual']),
       tableId: z.number().int().positive().optional(),
-      column: z.string().min(1).optional(),
+      column: z.string().optional(),
+      columns: z.array(z.string()).optional(),
       aggregation: z.enum(['sum', 'count', 'avg', 'min', 'max']).optional(),
       filters: z.array(z.any()).optional(),
+      groupBy: z.string().optional(),
+    }).refine((data) => {
+      // For metric widgets, we need either a single column or multiple columns
+      return data.column || (data.columns && data.columns.length > 0);
+    }, {
+      message: "At least one column must be specified for metric widgets"
     }),
     options: z.object({
       format: z.enum(['number', 'currency', 'percentage']).optional(),
@@ -299,9 +346,17 @@ export const WidgetConfigValidation = {
 
   filter: z.object({
     dataSource: z.object({
-      tableId: z.number().int().positive(),
-      column: z.string().min(1),
+      type: z.enum(['table', 'manual']).default('table'),
+      tableId: z.number().int().positive().optional(),
+      column: z.string().optional(),
+      columns: z.array(z.string()).optional(),
       filterType: z.enum(['text', 'number', 'date', 'select', 'multiselect']),
+      groupBy: z.string().optional(),
+    }).refine((data) => {
+      // For filter widgets, we need either a single column or multiple columns
+      return data.column || (data.columns && data.columns.length > 0);
+    }, {
+      message: "At least one column must be specified for filter widgets"
     }),
     options: z.object({
       label: z.string().optional(),

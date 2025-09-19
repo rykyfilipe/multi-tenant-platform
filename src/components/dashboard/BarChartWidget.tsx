@@ -100,7 +100,38 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const processedData = useMemo(() => {
 		const rawData = Array.isArray(data) ? data : [];
 		
-		// For multi-column support, we need to transform the data
+		// For multi-column support on Y-axis (multiple series)
+		if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
+			const transformedData: any[] = [];
+			const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
+			
+			rawData.forEach(item => {
+				const baseItem: any = {
+					[xColumn]: item[xColumn]
+				};
+				
+				enhancedDataSource.yAxis!.columns.forEach(yCol => {
+					if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
+						baseItem[yCol] = item[yCol];
+					}
+				});
+				
+				if (Object.keys(baseItem).length > 1) { // Has at least one Y value
+					transformedData.push(baseItem);
+				}
+			});
+			
+			// Apply aggregation if specified for multi-column
+			const yAggregation = enhancedDataSource.yAxis?.aggregation;
+			if (yAggregation && yAggregation !== 'none') {
+				console.log('[BarChart] Applying Y-axis aggregation for multi-column:', yAggregation);
+				return applyAggregation(transformedData, xColumn, yAggregation);
+			}
+			
+			return transformedData;
+		}
+		
+		// For multi-column support on X-axis (multiple series)
 		if (enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1) {
 			// If multiple X columns, we need to create multiple series
 			const transformedData: any[] = [];
@@ -157,22 +188,27 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		return filteredData;
 	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
-	// Generate automatic colors based on number of X columns
+	// Generate automatic colors based on number of columns
 	const colors = useMemo(() => {
 		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
 			return options.colors;
 		}
 		const colorPalette = (options.colorPalette as ColorPalette) || 'business';
+		// Prioritize Y columns for multi-series, fallback to X columns
+		const yColumnsCount = enhancedDataSource.yAxis?.columns?.length || 1;
 		const xColumnsCount = enhancedDataSource.xAxis?.columns?.length || 1;
-		const colorsNeeded = Math.max(xColumnsCount, 4);
+		const columnsCount = Math.max(yColumnsCount, xColumnsCount);
+		const colorsNeeded = Math.max(columnsCount, 4);
 		const generatedColors = generateChartColors(colorsNeeded, colorPalette);
 		console.log('[BarChart] Generated colors:', {
+			yColumnsCount,
 			xColumnsCount,
+			columnsCount,
 			colorsNeeded,
 			colors: generatedColors
 		});
 		return generatedColors;
-	}, [options.colors, options.colorPalette, enhancedDataSource.xAxis?.columns?.length]);
+	}, [options.colors, options.colorPalette, enhancedDataSource.xAxis?.columns?.length, enhancedDataSource.yAxis?.columns?.length]);
 
 	// Enhanced styling configuration
 	const widgetStyle = {
@@ -269,8 +305,20 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 									}}
 								/>
 							)}
-							{/* Render multiple bars if multiple X columns are selected */}
-							{enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1 ? (
+							{/* Render multiple bars if multiple Y columns are selected */}
+							{enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 ? (
+								enhancedDataSource.yAxis.columns.map((yCol, index) => (
+									<Bar 
+										key={yCol}
+										dataKey={yCol} 
+										fill={colors[index % colors.length]}
+										radius={[4, 4, 0, 0]}
+										animationDuration={options.animation !== false ? 1000 : 0}
+										name={yCol}
+									/>
+								))
+							) : enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1 ? (
+								/* Render multiple bars if multiple X columns are selected */
 								enhancedDataSource.xAxis.columns.map((xCol, index) => (
 									<Bar 
 										key={xCol}

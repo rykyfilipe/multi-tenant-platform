@@ -323,6 +323,13 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
         }
       });
       
+      // Apply aggregation if specified for multi-column
+      const yAggregation = enhancedDataSource.yAxis?.aggregation;
+      if (yAggregation && yAggregation !== 'none') {
+        console.log('[LineChart] Applying Y-axis aggregation for multi-column:', yAggregation);
+        return applyAggregation(transformedData, xColumn, yAggregation);
+      }
+      
       return transformedData;
     }
     
