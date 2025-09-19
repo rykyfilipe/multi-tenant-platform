@@ -1,12 +1,39 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useMemo } from 'react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
-import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
-import { FilterConfig } from '@/types/filtering-enhanced';
+// Widget interface
+interface Widget {
+	id: number;
+	title: string;
+	type: string;
+	config?: any;
+	position?: { x: number; y: number; w: number; h: number };
+}
 import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
-import { api } from '@/lib/api-client';
+import { useChartData } from './BaseChartWidget';
+import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
+
+// LineChart configuration interface
+export interface LineChartConfig {
+	dataSource?: EnhancedDataSource;
+	xAxis?: ChartAxisConfig;
+	yAxis?: ChartAxisConfig;
+  options?: {
+    colors?: string[];
+    colorPalette?: ColorPalette;
+    strokeWidth?: number;
+    dotSize?: number;
+    curveType?: 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
+		showGrid?: boolean;
+		showLegend?: boolean;
+    showDataSummary?: boolean;
+    animation?: boolean;
+		backgroundColor?: string;
+		borderRadius?: string;
+	};
+}
 
 // Aggregation functions
 const applyAggregation = (data: any[], key: string, aggregation?: string): any[] => {
@@ -72,204 +99,176 @@ const applyAggregation = (data: any[], key: string, aggregation?: string): any[]
   });
 };
 
-export interface ChartDataPoint {
-  [key: string]: any;
-}
-
-export interface DataSource {
-  type: 'table';
-  tableId?: number;
-  columnX?: string;
-  columnY?: string;
-  filters?: FilterConfig[];
-  aggregation?: string;
-  groupBy?: string;
-}
-
-
-export interface Filter {
-  id: string;
-  column: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
-  value: string | number;
-}
-
-export interface LineChartConfig {
-  title?: string;
-  dataSource: DataSource;
-  xAxis: {
-    key: string;
-    label?: string;
-    type?: 'category' | 'number' | 'time';
-    aggregation?: string;
-  };
-  yAxis: {
-    key: string;
-    label?: string;
-    type?: 'number';
-    aggregation?: string;
-  };
-  options?: {
-    colors?: string[];
-    colorPalette?: ColorPalette;
-    showLegend?: boolean;
-    showGrid?: boolean;
-    strokeWidth?: number;
-    dotSize?: number;
-    curveType?: 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
-    // Enhanced styling options
-    backgroundColor?: string;
-    borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
-    shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-    padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
-    hoverEffect?: 'none' | 'lift' | 'glow' | 'scale' | 'rotate';
-    showDataSummary?: boolean;
-    gradientFill?: boolean;
-    areaFill?: boolean;
-    animation?: boolean;
-  };
-}
-
-export interface Widget {
-  id: number | string;
-  type: string;
-  title: string | null;
-  position: { x: number; y: number; width: number; height: number };
-  config: LineChartConfig;
-  isVisible: boolean;
-  order: number;
-}
-
 interface LineChartWidgetProps {
   widget: Widget;
   isEditMode?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+	tenantId?: number;
+	databaseId?: number;
 }
 
-// Mock data generator for demonstration
-const generateMockData = (count: number = 10): ChartDataPoint[] => {
-  const data: ChartDataPoint[] = [];
-  const now = new Date();
-  
-  for (let i = count - 1; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      value: Math.floor(Math.random() * 1000) + 100,
-      sales: Math.floor(Math.random() * 500) + 50,
-      users: Math.floor(Math.random() * 200) + 20,
-    });
-  }
-  
-  return data;
-};
+export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: LineChartWidgetProps) {
+	// Safely extract config with comprehensive fallbacks
+	const config = (widget.config || {}) as LineChartConfig;
+	const dataSource = config.dataSource || { type: 'table', tableId: 0 };
+	const options = config.options || {};
+	
+	// Support both old and new data source formats
+	const enhancedDataSource = dataSource as EnhancedDataSource;
+	const legacyDataSource = dataSource as any; // For backward compatibility
+	
+	// Determine axis configuration - prefer new format, fallback to legacy
+	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
+	const safeYAxis = enhancedDataSource.yAxis || config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const, columns: ['y'] };
+	
+	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
-// Fetch data from table API
-// Helper function to convert FilterConfig to API format
-const convertFiltersToApiFormat = (filters: FilterConfig[]): any[] => {
-  return filters.map(filter => ({
-    column: filter.columnName,
-    operator: filter.operator,
-    value: filter.value
-  }));
-};
+	const processedData = useMemo(() => {
+		const rawData = Array.isArray(data) ? data : [];
+		
+		console.log('[LineChart] Processing data:', {
+			rawDataCount: rawData.length,
+			enhancedDataSource,
+			safeXAxis,
+			safeYAxis,
+			sampleRawData: rawData.slice(0, 2)
+		});
+		
+		// For multi-column support on Y-axis (multiple series)
+		if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
+			const transformedData: any[] = [];
+			const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
+			
+			rawData.forEach(item => {
+				const baseItem: any = {
+					[xColumn]: item[xColumn]
+				};
+				
+				enhancedDataSource.yAxis!.columns.forEach(yCol => {
+					if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
+						baseItem[yCol] = item[yCol];
+					}
+				});
+				
+				if (Object.keys(baseItem).length > 1) { // Has at least one Y value
+					transformedData.push(baseItem);
+				}
+			});
+			
+			// Apply aggregation if specified for multi-column
+			const yAggregation = enhancedDataSource.yAxis?.aggregation;
+			if (yAggregation && yAggregation !== 'none') {
+				console.log('[LineChart] Applying Y-axis aggregation for multi-column:', yAggregation);
+				return applyAggregation(transformedData, xColumn, yAggregation);
+			}
+			
+			return transformedData;
+		}
+		
+		// For multi-column support on X-axis (multiple series)
+		if (enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1) {
+			// If multiple X columns, we need to create multiple series
+			const transformedData: any[] = [];
+			rawData.forEach(item => {
+				enhancedDataSource.xAxis!.columns.forEach(xCol => {
+					const yCol = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
+					if (item[xCol] !== undefined && item[xCol] !== null && 
+						item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
+						transformedData.push({
+							[safeXAxis.key]: item[xCol],
+							[safeYAxis.key]: item[yCol],
+							series: xCol
+						});
+					}
+				});
+			});
+			return transformedData;
+		}
+		
+		// Single column mode - validate and clean data
+		const xKey = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
+		const yKey = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
+		
+		console.log('[LineChart] Processing single column data:', {
+			rawDataCount: rawData.length,
+			xKey,
+			yKey,
+			sampleData: rawData.slice(0, 2)
+		});
+		
+		// Filter and clean data
+		const filteredData = rawData.filter(item => {
+			if (!item || typeof item !== 'object') return false;
+			
+			const xValue = item?.[xKey];
+			const yValue = item?.[yKey];
+			
+			return xValue !== undefined && xValue !== null && xValue !== '' &&
+				   yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
+		});
 
-const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]> => {
-  if (dataSource.type !== 'table' || !dataSource.tableId) {
-    throw new Error('Invalid table data source');
-  }
+		// Apply aggregation if specified
+		const xAggregation = enhancedDataSource.xAxis?.aggregation;
+		const yAggregation = enhancedDataSource.yAxis?.aggregation;
+		
+		if (xAggregation && xAggregation !== 'none') {
+			console.log('[LineChart] Applying X-axis aggregation:', xAggregation);
+			return applyAggregation(filteredData, xKey, xAggregation);
+		} else if (yAggregation && yAggregation !== 'none') {
+			console.log('[LineChart] Applying Y-axis aggregation:', yAggregation);
+			return applyAggregation(filteredData, yKey, yAggregation);
+		}
+		
+		return filteredData;
+	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
-  try {
-    // Use getAllRows to fetch all data
-    const response = await api.tables.getAllRows(1, 1, dataSource.tableId, {
-      filters: dataSource.filters ? convertFiltersToApiFormat(dataSource.filters) : [],
-      search: '',
-      sortBy: 'id',
-      sortOrder: 'desc',
-    });
+	// Generate automatic colors based on number of columns
+	const colors = useMemo(() => {
+		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
+			return options.colors;
+		}
+		const colorPalette = (options.colorPalette as ColorPalette) || 'business';
+		// Prioritize Y columns for multi-series, fallback to X columns
+		const yColumnsCount = enhancedDataSource.yAxis?.columns?.length || 1;
+		const xColumnsCount = enhancedDataSource.xAxis?.columns?.length || 1;
+		const columnsCount = Math.max(yColumnsCount, xColumnsCount);
+		const colorsNeeded = Math.max(columnsCount, 4);
+		const generatedColors = generateChartColors(colorsNeeded, colorPalette);
+		console.log('[LineChart] Generated colors:', {
+			yColumnsCount,
+			xColumnsCount,
+			columnsCount,
+			colorsNeeded,
+			colors: generatedColors
+		});
+		return generatedColors;
+	}, [options.colors, options.colorPalette, enhancedDataSource.xAxis?.columns?.length, enhancedDataSource.yAxis?.columns?.length]);
 
-    if (!response.success || !response.data) {
-      throw new Error('Failed to fetch table data');
-    }
+	// Enhanced styling configuration
+	const widgetStyle = {
+		backgroundColor: options.backgroundColor || 'transparent',
+		borderRadius: (options.borderRadius as any) || 'lg',
+	};
 
-    const rows = response.data;
-    console.log('[LineChart] API response:', {
-      success: response.success,
-      rowsCount: rows?.length || 0,
-      sampleRow: rows?.[0]
-    });
-    
-    // Transform rows with cells to chart data
-    // Use enhanced data source format
-    const enhancedDataSource = dataSource as any;
-    const xColumns = enhancedDataSource.xAxis?.columns || enhancedDataSource.xColumns || [];
-    const yColumns = enhancedDataSource.yAxis?.columns || enhancedDataSource.yColumns || [];
-    
-    const xKey = xColumns[0] || 'x';
-    const yKey = yColumns[0] || 'y';
-    
-    console.log('[LineChart] Mapping data:', {
-      xColumns,
-      yColumns,
-      xKey,
-      yKey,
-      rowsCount: rows.length
-    });
-    
-    return (rows ?? []).map((row: any) => {
-      const dataPoint: any = {};
-      if (row?.cells && Array.isArray(row.cells)) {
-        // Find X and Y column values from cells
-        const xCell = row.cells.find((cell: any) => cell?.column?.name === xKey);
-        const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
-        
-        // Safely assign values with fallbacks
-        dataPoint[xKey] = xCell?.value || '';
-        dataPoint[yKey] = parseFloat(yCell?.value) || 0;
-      }
-      return dataPoint;
-    }).filter((point: any) => {
-      // Ensure both x and y values exist and are valid
-      const xValue = point?.[xKey];
-      const yValue = point?.[yKey];
-      return xValue !== undefined && xValue !== null && xValue !== '' && 
-             yValue !== undefined && yValue !== null && !isNaN(yValue);
-    });
-  } catch (error) {
-    console.error('Error fetching table data:', error);
-    throw error;
-  }
-};
+	// Chart styling options
+	const strokeWidth = options.strokeWidth || 2;
+	const dotSize = options.dotSize || 4;
+	const curveType = options.curveType || 'monotone';
 
-export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }: LineChartWidgetProps) {
-  const [data, setData] = useState<ChartDataPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
-
-  // Debug data changes
-  useEffect(() => {
-    console.log('[LineChart] Data state changed:', {
-      dataLength: data.length,
-      sampleData: data.slice(0, 2)
-    });
-  }, [data]);
-
-  // Safely extract config with comprehensive fallbacks
-  const config = (widget.config as LineChartConfig) || {};
-  const options = config.options || {};
-  const dataSource = config.dataSource || { type: 'table', tableId: 0 };
-  
-  // Support both old and new data source formats
-  const enhancedDataSource = dataSource as EnhancedDataSource;
-  const legacyDataSource = dataSource as any; // For backward compatibility
-  
-  // Determine axis configuration - prefer new format, fallback to legacy
-  const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
-  const safeYAxis = enhancedDataSource.yAxis || config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const, columns: ['y'] };
+	// Debug processed data
+	console.log('[LineChart] Final processed data:', {
+		processedDataCount: processedData.length,
+		sampleProcessedData: processedData.slice(0, 2),
+		xKey: enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key,
+		yKey: enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key,
+		enhancedDataSource: {
+			xAxis: enhancedDataSource.xAxis,
+			yAxis: enhancedDataSource.yAxis,
+			xColumns: enhancedDataSource.xColumns,
+			yColumns: enhancedDataSource.yColumns
+		}
+	});
 
   // Early return if widget is malformed
   if (!widget || typeof widget !== 'object') {
@@ -278,6 +277,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
         widget={widget}
         isEditMode={isEditMode}
         onEdit={onEdit}
+				onDelete={onDelete}
         isLoading={false}
         error="Invalid widget configuration"
       >
@@ -290,184 +290,68 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     );
   }
 
-  // Process data based on data source type
-  const processedData = useMemo(() => {
-    const rawData = Array.isArray(data) ? data : [];
-    
-    console.log('[LineChart] Processing data in useMemo:', {
-      rawDataCount: rawData.length,
-      enhancedDataSource,
-      safeXAxis,
-      safeYAxis,
-      sampleRawData: rawData.slice(0, 2)
-    });
-    
-    // For multi-column support in line charts, we create multiple lines
-    if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
-      const transformedData: any[] = [];
-      const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
-      
-      rawData.forEach(item => {
-        const baseItem: any = {
-          [xColumn]: item[xColumn]
-        };
-        
-        enhancedDataSource.yAxis!.columns.forEach(yCol => {
-          if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
-            baseItem[yCol] = item[yCol];
-          }
-        });
-        
-        if (Object.keys(baseItem).length > 1) { // Has at least one Y value
-          transformedData.push(baseItem);
-        }
-      });
-      
-      // Apply aggregation if specified for multi-column
-      const yAggregation = enhancedDataSource.yAxis?.aggregation;
-      if (yAggregation && yAggregation !== 'none') {
-        console.log('[LineChart] Applying Y-axis aggregation for multi-column:', yAggregation);
-        return applyAggregation(transformedData, xColumn, yAggregation);
-      }
-      
-      return transformedData;
-    }
-    
-    // Single column mode - validate and clean data
-    const xKey = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
-    const yKey = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
-    
-    console.log('[LineChart] Processing data:', {
-      rawDataCount: rawData.length,
-      xKey,
-      yKey,
-      sampleData: rawData.slice(0, 2)
-    });
-    
-    // Filter and clean data
-    const filteredData = rawData.filter(item => {
-      if (!item || typeof item !== 'object') return false;
-      
-      // Ensure the item has the required properties
-      const xValue = item?.[xKey];
-      const yValue = item?.[yKey];
-      
-      return xValue !== undefined && xValue !== null && xValue !== '' &&
-             yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
-    });
+	// Show error state
+	if (error) {
+		return (
+			<BaseWidget
+				widget={widget}
+				isEditMode={isEditMode}
+				onEdit={onEdit}
+				onDelete={onDelete}
+				isLoading={false}
+				error={error}
+				onRefresh={handleRefresh}
+			>
+				<div className="flex items-center justify-center h-full text-red-500">
+					<div className="text-center">
+						<p className="text-sm font-medium">Error loading data</p>
+						<p className="text-xs text-muted-foreground mt-1">{error}</p>
+					</div>
+				</div>
+			</BaseWidget>
+		);
+	}
 
-    // Apply aggregation if specified
-    const xAggregation = enhancedDataSource.xAxis?.aggregation;
-    const yAggregation = enhancedDataSource.yAxis?.aggregation;
-    
-    if (xAggregation && xAggregation !== 'none') {
-      console.log('[LineChart] Applying X-axis aggregation:', xAggregation);
-      return applyAggregation(filteredData, xKey, xAggregation);
-    } else if (yAggregation && yAggregation !== 'none') {
-      console.log('[LineChart] Applying Y-axis aggregation:', yAggregation);
-      return applyAggregation(filteredData, yKey, yAggregation);
-    }
-    
-    return filteredData;
-  }, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
+	// Show loading state
+	if (isLoading) {
+		return (
+			<BaseWidget
+				widget={widget}
+				isEditMode={isEditMode}
+				onEdit={onEdit}
+				onDelete={onDelete}
+				isLoading={true}
+			>
+				<div className="flex items-center justify-center h-full">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+						<p className="text-sm text-muted-foreground">Loading chart data...</p>
+					</div>
+				</div>
+			</BaseWidget>
+		);
+	}
 
-  // Debug processed data
-  console.log('[LineChart] Final processed data:', {
-    processedDataCount: processedData.length,
-    sampleProcessedData: processedData.slice(0, 2),
-    xKey: enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key,
-    yKey: enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key,
-    enhancedDataSource: {
-      xAxis: enhancedDataSource.xAxis,
-      yAxis: enhancedDataSource.yAxis,
-      xColumns: enhancedDataSource.xColumns,
-      yColumns: enhancedDataSource.yColumns
-    }
-  });
-
-  // Fetch data when dataSource changes
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        if (dataSource.type === 'table' && dataSource.tableId && dataSource.tableId > 0) {
-          // Fetch from table
-          console.log('[LineChart] Loading data for table:', dataSource.tableId);
-          const tableData = await fetchTableData(dataSource);
-          console.log('[LineChart] Fetched table data:', tableData);
-          console.log('[LineChart] Setting data state with:', tableData.length, 'items');
-          setData(tableData);
-          setLastFetchTime(new Date());
-        } else {
-          // No table selected
-          setData([]);
-          setError('Please select a table and configure columns in the widget editor');
-        }
-      } catch (err) {
-        console.error('Error loading chart data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load chart data');
-        setData([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [dataSource]);
-
-  // Generate automatic colors based on number of Y columns
-  const colors = useMemo(() => {
-    if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
-      return options.colors;
-    }
-    const colorPalette = options.colorPalette || 'business';
-    const yColumnsCount = enhancedDataSource.yAxis?.columns?.length || 1;
-    const colorsNeeded = Math.max(yColumnsCount, 4);
-    const generatedColors = generateChartColors(colorsNeeded, colorPalette);
-    console.log('[LineChart] Generated colors:', {
-      yColumnsCount,
-      colorsNeeded,
-      colors: generatedColors
-    });
-    return generatedColors;
-  }, [options.colors, options.colorPalette, enhancedDataSource.yAxis?.columns?.length]);
-
-  const strokeWidth = options.strokeWidth || 2;
-  const dotSize = options.dotSize || 4;
-  const curveType = options.curveType || 'monotone';
-
-  // Enhanced styling configuration
-  const widgetStyle = {
-    backgroundColor: options.backgroundColor || 'transparent',
-    borderRadius: options.borderRadius || 'lg',
-    shadow: options.shadow || 'sm',
-    padding: options.padding || 'md',
-    hoverEffect: options.hoverEffect || 'lift',
-    ...(widget as any).style
-  };
-
-  const handleRefresh = async () => {
-    if (dataSource.type === 'table' && dataSource.tableId) {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const tableData = await fetchTableData(dataSource);
-        setData(tableData);
-        setLastFetchTime(new Date());
-      } catch (err) {
-        console.error('Error refreshing data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to refresh data');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  // Loading state is now handled by BaseWidget
-
-  // Error state is now handled by BaseWidget
+	// Show no data state
+	if (!processedData || processedData.length === 0) {
+		return (
+			<BaseWidget
+				widget={widget}
+				isEditMode={isEditMode}
+				onEdit={onEdit}
+				onDelete={onDelete}
+				isLoading={false}
+				onRefresh={handleRefresh}
+			>
+				<div className="flex items-center justify-center h-full text-muted-foreground">
+					<div className="text-center">
+						<p className="text-sm font-medium">No data available</p>
+						<p className="text-xs mt-1">Select a table and configure columns to display data</p>
+					</div>
+				</div>
+			</BaseWidget>
+		);
+	}
 
   return (
       <BaseWidget
@@ -476,22 +360,19 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
         onEdit={onEdit}
         onDelete={onDelete}
         isLoading={isLoading}
-        error={error}
-        onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
-        showRefresh={dataSource.type === 'table'}
+			onRefresh={handleRefresh}
         style={widgetStyle}
       >
-      {processedData && processedData.length > 0 ? (
-        <div className="h-full flex flex-col min-h-0">
-          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+			<div className="h-full flex flex-col min-h-0">
+				<ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <LineChart 
               data={processedData} 
-              margin={{ 
-                top: 10, 
-                right: 20, 
-                left: 10, 
-                bottom: 10 
-              }}
+						margin={{ 
+							top: 10, 
+							right: 20, 
+							left: 10, 
+							bottom: 10 
+						}}
             >
               {options.showGrid !== false && (
                 <CartesianGrid 
@@ -501,18 +382,18 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
                 />
               )}
               <XAxis 
-                dataKey={enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key}
+							dataKey={enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key} 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                label={enhancedDataSource.xAxis?.label || safeXAxis.label ? { 
-                  value: enhancedDataSource.xAxis?.label || safeXAxis.label, 
+							label={{ 
+								value: enhancedDataSource.xAxis?.label || safeXAxis.label, 
                   position: 'insideBottom', 
                   offset: -10,
                   style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
-                } : undefined}
+							}} 
               />
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
@@ -520,12 +401,12 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                label={enhancedDataSource.yAxis?.label || safeYAxis.label ? { 
-                  value: enhancedDataSource.yAxis?.label || safeYAxis.label, 
+							label={{ 
+								value: enhancedDataSource.yAxis?.label || safeYAxis.label, 
                   angle: -90, 
                   position: 'insideLeft',
                   style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
-                } : undefined}
+							}} 
               />
               <Tooltip
                 contentStyle={{
@@ -542,85 +423,87 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
                 <Legend 
                   wrapperStyle={{
                     fontSize: '12px',
-                    paddingTop: '10px',
-                    maxHeight: '100px',
-                    overflow: 'hidden'
-                  }}
-                  verticalAlign="bottom"
-                  height={36}
-                  formatter={(value, entry) => {
-                    // Truncate long names and show full on hover
-                    return value.length > 15 ? value.substring(0, 15) + '...' : value;
+									paddingTop: '10px',
+									maxHeight: '100px',
+									overflow: 'hidden'
+								}}
+								verticalAlign="bottom"
+								height={36}
+								formatter={(value, entry) => {
+									// Truncate long names and show full on hover
+									return value.length > 15 ? value.substring(0, 15) + '...' : value;
                   }}
                 />
               )}
-              {/* Render multiple lines if multiple Y columns are selected */}
-              {enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 ? (
-                enhancedDataSource.yAxis.columns.map((yCol, index) => (
-                  <Line
-                    key={yCol}
-                    type={curveType}
-                    dataKey={yCol}
-                    stroke={colors[index % colors.length]}
-                    strokeWidth={strokeWidth}
-                    dot={{ fill: colors[index % colors.length], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
-                    activeDot={{ 
-                      r: dotSize + 2, 
-                      stroke: colors[index % colors.length], 
-                      strokeWidth: 2,
-                      fill: '#ffffff'
-                    }}
-                    animationDuration={options.animation !== false ? 1000 : 0}
-                    name={yCol}
-                  />
-                ))
-              ) : (
-                <Line
-                  type={curveType}
-                  dataKey={enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key}
-                  stroke={colors[0]}
-                  strokeWidth={strokeWidth}
-                  dot={{ fill: colors[0], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
-                  activeDot={{ 
-                    r: dotSize + 2, 
-                    stroke: colors[0], 
-                    strokeWidth: 2,
-                    fill: '#ffffff'
-                  }}
-                  animationDuration={options.animation !== false ? 1000 : 0}
-                />
-              )}
+						{/* Render multiple lines if multiple Y columns are selected */}
+						{enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 ? (
+							enhancedDataSource.yAxis.columns.map((yCol, index) => (
+								<Line
+									key={yCol}
+									type={curveType}
+									dataKey={yCol}
+									stroke={colors[index % colors.length]}
+									strokeWidth={strokeWidth}
+									dot={{ fill: colors[index % colors.length], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
+									activeDot={{ 
+										r: dotSize + 2, 
+										stroke: colors[index % colors.length], 
+										strokeWidth: 2,
+										fill: '#ffffff'
+									}}
+									animationDuration={options.animation !== false ? 1000 : 0}
+									name={yCol}
+								/>
+							))
+						) : enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1 ? (
+							/* Render multiple lines if multiple X columns are selected */
+							enhancedDataSource.xAxis.columns.map((xCol, index) => (
+								<Line
+									key={xCol}
+									type={curveType}
+									dataKey={enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key}
+									stroke={colors[index % colors.length]}
+									strokeWidth={strokeWidth}
+									dot={{ fill: colors[index % colors.length], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
+									activeDot={{ 
+										r: dotSize + 2, 
+										stroke: colors[index % colors.length], 
+										strokeWidth: 2,
+										fill: '#ffffff'
+									}}
+									animationDuration={options.animation !== false ? 1000 : 0}
+									name={xCol}
+								/>
+							))
+						) : (
+              <Line
+                type={curveType}
+								dataKey={enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key}
+                stroke={colors[0]}
+                strokeWidth={strokeWidth}
+                dot={{ fill: colors[0], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
+                activeDot={{ 
+                  r: dotSize + 2, 
+                  stroke: colors[0], 
+                  strokeWidth: 2,
+                  fill: '#ffffff'
+                }}
+                animationDuration={options.animation !== false ? 1000 : 0}
+              />
+						)}
             </LineChart>
           </ResponsiveContainer>
           
           {/* Data summary */}
           {options.showDataSummary && (
-            <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-muted/30 rounded-lg flex-shrink-0">
-              <div className="text-xs sm:text-sm font-medium text-muted-foreground mb-1 sm:mb-2">Summary</div>
-              <div className="grid grid-cols-2 gap-1 sm:gap-2 text-xs">
-                <div className="truncate">Points: {processedData.length}</div>
-                <div className="truncate">Max: {Math.max(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-                <div className="truncate">Min: {Math.min(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-                <div className="truncate">Avg: {(processedData.reduce((sum, d) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(1)}</div>
-              </div>
+					<div className="mt-2 text-xs text-muted-foreground text-center">
+						{processedData.length} data points
             </div>
           )}
         </div>
-      ) : (
-        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[200px]">
-          <div className="text-center p-4 sm:p-6">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-muted/20 flex items-center justify-center">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <p className="text-xs sm:text-sm font-medium">No data available</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Select a table and columns to load data
-            </p>
-          </div>
-        </div>
-      )}
     </BaseWidget>
   );
 }
+
+// Export the config type for use in other components
+export type { Widget };
