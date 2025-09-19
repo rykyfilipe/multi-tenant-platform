@@ -6,6 +6,7 @@ import BaseWidget from './BaseWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 import { FilterConfig } from '@/types/filtering-enhanced';
 import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
+import { api } from '@/lib/api-client';
 
 export interface ChartDataPoint {
   [key: string]: any;
@@ -119,48 +120,19 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
   }
 
   try {
-    // Fetch all data with pagination support
-    let allRows: any[] = [];
-    let page = 1;
-    const pageSize = 1000; // Reasonable page size
-    let hasMoreData = true;
+    // Use getAllRows to fetch all data
+    const response = await api.tables.getAllRows(1, 1, dataSource.tableId, {
+      filters: dataSource.filters ? convertFiltersToApiFormat(dataSource.filters) : [],
+      search: '',
+      sortBy: 'id',
+      sortOrder: 'desc',
+    });
 
-    while (hasMoreData) {
-      const params = new URLSearchParams();
-      params.set('page', page.toString());
-      params.set('pageSize', pageSize.toString());
-      params.set('includeCells', 'true');
-      
-      if (dataSource.filters && dataSource.filters.length > 0) {
-        const apiFilters = convertFiltersToApiFormat(dataSource.filters);
-        if (apiFilters.length > 0) {
-          params.set('filters', encodeURIComponent(JSON.stringify(apiFilters)));
-        }
-      }
-      
-      const response = await fetch(`/api/tenants/1/databases/1/tables/${dataSource.tableId}/rows?` + params.toString());
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch table data: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      const rows = result.data || [];
-      
-      allRows = [...allRows, ...rows];
-      
-      // Check if we have more data
-      hasMoreData = rows.length === pageSize;
-      page++;
-      
-      // Safety limit to prevent infinite loops
-      if (page > 100) {
-        console.warn('Reached maximum page limit (100) for chart data');
-        break;
-      }
+    if (!response.success || !response.data) {
+      throw new Error('Failed to fetch table data');
     }
 
-    const rows = allRows;
+    const rows = response.data;
     
     // Transform rows with cells to chart data
     const xKey = dataSource.columnX || 'x';

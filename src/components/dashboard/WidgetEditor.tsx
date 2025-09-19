@@ -431,7 +431,11 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                 <div className="space-y-4">
                   {/* Enhanced Table Configuration */}
                   <EnhancedTableSelector
-                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { type: 'table' }}
+                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { 
+                      type: 'table',
+                      xAxis: { key: '', label: '', type: 'text', columns: [] },
+                      yAxis: { key: '', label: '', type: 'number', columns: [] }
+                    }}
                     onDataSourceChange={(newDataSource) => {
                       updateConfig({ dataSource: newDataSource });
                     }}
@@ -573,7 +577,11 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                 <div className="space-y-4">
                   {/* Enhanced KPI Configuration */}
                   <EnhancedTableSelector
-                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { type: 'table' }}
+                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { 
+                      type: 'table',
+                      xAxis: { key: '', label: '', type: 'text', columns: [] },
+                      yAxis: { key: '', label: '', type: 'number', columns: [] }
+                    }}
                     onDataSourceChange={(newDataSource) => {
                       updateConfig({ dataSource: newDataSource });
                     }}
@@ -1316,7 +1324,11 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* Enhanced Table Data Selector */}
                   {config.dataSource?.type === 'table' && (
                     <EnhancedTableSelector
-                      dataSource={config.dataSource as EnhancedDataSource}
+                      dataSource={config.dataSource as EnhancedDataSource || { 
+                        type: 'table',
+                        xAxis: { key: '', label: '', type: 'text', columns: [] },
+                        yAxis: { key: '', label: '', type: 'number', columns: [] }
+                      }}
                       onDataSourceChange={(newDataSource) => {
                         updateConfig({ dataSource: newDataSource });
                       }}

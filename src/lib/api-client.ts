@@ -117,6 +117,52 @@ export const api = {
 			const endpoint = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows${queryString ? `?${queryString}` : ''}`;
 			return request<any>(endpoint);
 		},
+		getAllRows: async (tenantId: number, databaseId: number, tableId: number, query?: QueryData) => {
+			const allRows: any[] = [];
+			let page = 1;
+			const pageSize = 1000; // Large page size to minimize requests
+			let hasMoreData = true;
+
+			while (hasMoreData) {
+				const searchParams = new URLSearchParams();
+				searchParams.set('page', page.toString());
+				searchParams.set('pageSize', pageSize.toString());
+				searchParams.set('includeCells', 'true');
+				
+				if (query) {
+					if (query.filters) searchParams.set('filters', JSON.stringify(query.filters));
+					if (query.search) searchParams.set('search', query.search);
+					if (query.sortBy) searchParams.set('sortBy', query.sortBy);
+					if (query.sortOrder) searchParams.set('sortOrder', query.sortOrder);
+				}
+
+				const queryString = searchParams.toString();
+				const endpoint = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows/filtered?${queryString}`;
+				
+				const response = await fetch(endpoint, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+
+				const data = await response.json();
+				
+				if (data.success && data.data) {
+					allRows.push(...data.data);
+					hasMoreData = data.data.length === pageSize;
+					page++;
+				} else {
+					hasMoreData = false;
+				}
+			}
+
+			return { success: true, data: allRows };
+		},
 		columns: (tenantId: number, databaseId: number, tableId: number) => request<any[]>(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`),
 		list: (tenantId: number, databaseId: number) => request<any[]>(`/api/tenants/${tenantId}/databases/${databaseId}/tables`),
 	},

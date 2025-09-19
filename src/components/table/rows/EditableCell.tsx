@@ -803,10 +803,7 @@ export function EditableCell({
 						onValueChange={(v) => {
 							setValue(v);
 							currentValueRef.current = v; // Update ref immediately
-							// Auto-save for customArray values
-							const normalizedValue = normalizeReferenceValue(v, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
-							onSave(normalizedValue);
-							onCancel();
+							// Don't auto-save - let user confirm with Enter or click outside
 						}}
 						options={column.customOptions || []}
 						placeholder='Select an option'

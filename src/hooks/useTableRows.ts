@@ -48,6 +48,12 @@ interface UseTableRowsResult {
 	updateGlobalSearch: (search: string) => void;
 	updateSorting: (sortBy: string, sortOrder: "asc" | "desc") => void;
 	clearFilters: () => void;
+	fetchAllRows: (
+		filters?: FilterConfig[],
+		globalSearch?: string,
+		sortBy?: string,
+		sortOrder?: "asc" | "desc",
+	) => Promise<Row[]>;
 	setRows: (rows: Row[] | ((prevRows: Row[]) => Row[])) => void;
 }
 
@@ -494,6 +500,72 @@ function useTableRows(
 		// Removed fetchRows from dependencies to prevent infinite loop
 	]);
 
+	// Funcție pentru a lua toate rândurile (pentru widget-uri)
+	const fetchAllRows = useCallback(async (
+		filtersParam: FilterConfig[] = filters,
+		globalSearchParam: string = globalSearch,
+		sortByParam: string = sortBy,
+		sortOrderParam: "asc" | "desc" = sortOrder,
+	): Promise<Row[]> => {
+		if (!tableId || !tenantId || !databaseId) {
+			console.warn("❌ useTableRows - fetchAllRows: Missing required parameters");
+			return [];
+		}
+
+		try {
+			console.log("🔄 useTableRows - fetchAllRows: Starting to fetch all rows");
+			
+			const allRows: Row[] = [];
+			let page = 1;
+			const pageSize = 1000; // Large page size to minimize requests
+			let hasMoreData = true;
+
+			while (hasMoreData) {
+				const params = new URLSearchParams();
+				params.set('page', page.toString());
+				params.set('pageSize', pageSize.toString());
+				params.set('includeCells', 'true');
+				params.set('search', globalSearchParam);
+				params.set('sortBy', sortByParam);
+				params.set('sortOrder', sortOrderParam);
+				
+				if (filtersParam.length > 0) {
+					params.set('filters', JSON.stringify(filtersParam));
+				}
+
+				const response = await fetch(
+					`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows/filtered?${params.toString()}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+					}
+				);
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+
+				const data = await response.json();
+				
+				if (data.success && data.data) {
+					allRows.push(...data.data);
+					hasMoreData = data.data.length === pageSize;
+					page++;
+				} else {
+					hasMoreData = false;
+				}
+			}
+
+			console.log(`✅ useTableRows - fetchAllRows: Fetched ${allRows.length} total rows`);
+			return allRows;
+		} catch (error) {
+			console.error("❌ useTableRows - fetchAllRows failed:", error);
+			throw error;
+		}
+	}, [tableId, tenantId, databaseId, filters, globalSearch, sortBy, sortOrder]);
+
 	// Cleanup la unmount
 	useEffect(() => {
 		return () => {
@@ -518,6 +590,7 @@ function useTableRows(
 		updateGlobalSearch,
 		updateSorting,
 		clearFilters,
+		fetchAllRows,
 		setRows,
 	};
 }

@@ -197,20 +197,17 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     setError(null);
 
     try {
-      const queryData = {
+      // Use fetchAllRows to get all data for aggregation
+      const allRows = await api.tables.getAllRows(tenantId, databaseId, dataSource.tableId, {
         filters: dataSource.filters || [],
         search: '',
-        sortBy: 'id', // Use valid Row property for sorting
+        sortBy: 'id',
         sortOrder: 'desc' as const,
-        page: 1,
-        pageSize: 1000, // Get all data for aggregation
-      };
+      });
 
-      const response = await api.tables.rows(tenantId, databaseId, dataSource.tableId, queryData);
-      
-      if (response.success && response.data) {
+      if (allRows.success && allRows.data) {
         // Store raw data for aggregation calculations
-        const rawData = (response.data ?? []).map((row: any) => {
+        const rawData = (allRows.data ?? []).map((row: any) => {
           const processedRow: any = { id: row.id };
           
           // Process all cells to create a flat object
