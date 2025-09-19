@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Minus, AlertCircle, BarChart3, Calculator } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle, BarChart3, Calculator, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BaseWidget from './BaseWidget';
 import { api } from '@/lib/api-client';
 import { 
@@ -99,6 +100,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
   const [previousData, setPreviousData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRowColumn, setSelectedRowColumn] = useState<string>('');
 
   const config = (widget.config || {}) as KPIConfig;
   const dataSource = config.dataSource || {};
@@ -506,6 +508,10 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
         ? getTrendDirection((result as any).value, (previousResult as any).value)
         : 'stable';
 
+      // Check if this is a row-returning aggregation (max, min)
+      const isRowReturning = ['max', 'min'].includes(primaryType);
+      const availableColumns = rawData.length > 0 ? Object.keys(rawData[0] || {}).filter(key => key !== 'id') : [];
+      
       return (
         <div className="text-center space-y-2 sm:space-y-4 h-full flex flex-col justify-center">
           <div className="space-y-1 sm:space-y-2">
@@ -521,6 +527,43 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
               {result.formatted}
             </div>
+            
+            {/* Dropdown pentru coloane pentru funcțiile max/min */}
+            {isRowReturning && availableColumns.length > 0 && (
+              <div className="mt-2 space-y-1">
+                <Select value={selectedRowColumn} onValueChange={setSelectedRowColumn}>
+                  <SelectTrigger className="w-32 h-8 text-xs">
+                    <SelectValue placeholder="Column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableColumns.map((column) => (
+                      <SelectItem key={column} value={column} className="text-xs">
+                        {column}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Afișează valoarea din coloana selectată */}
+                {selectedRowColumn && rawData.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    {(() => {
+                      // Găsește rândul cu valoarea maximă/minimă
+                      const targetValue = result.value;
+                      const targetRow = rawData.find(row => {
+                        const rowValue = parseFloat(row[dataSource.yAxis?.columns?.[0] || dataSource.column || '']);
+                        return !isNaN(rowValue) && rowValue === targetValue;
+                      });
+                      
+                      if (targetRow && targetRow[selectedRowColumn]) {
+                        return `${selectedRowColumn}: ${targetRow[selectedRowColumn]}`;
+                      }
+                      return 'No matching row found';
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
             
             {options.showTrend && previousResult && (
               <div className={`flex items-center justify-center space-x-2 ${

@@ -304,6 +304,12 @@ export function EnhancedTableSelector({
 					<div className="max-h-40 overflow-auto border rounded p-2 space-y-1">
 						{compatibleColumns.map((column) => {
 							const isSelected = currentAxis?.columns.includes(column.name) || false;
+							console.log('[EnhancedTableSelector] Column checkbox:', { 
+								columnName: column.name, 
+								isSelected, 
+								currentAxisColumns: currentAxis?.columns,
+								currentAxis 
+							});
 							return (
 								<label key={column.id} className="flex items-center gap-2 text-sm">
 									<input
