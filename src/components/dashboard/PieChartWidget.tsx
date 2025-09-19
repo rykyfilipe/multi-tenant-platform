@@ -8,6 +8,70 @@ import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelecto
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
+// Aggregation functions
+const applyAggregation = (data: any[], key: string, aggregation?: string): any[] => {
+  if (!aggregation || aggregation === 'none') {
+    return data;
+  }
+
+  const grouped = data.reduce((acc, item) => {
+    const groupKey = item[key];
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
+    }
+    acc[groupKey].push(item);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  return Object.entries(grouped).map(([groupKey, items]) => {
+    const aggregatedItem: any = { [key]: groupKey };
+    
+    // Apply aggregation to all numeric columns
+    items.forEach(item => {
+      Object.keys(item).forEach(colKey => {
+        if (colKey !== key && typeof item[colKey] === 'number') {
+          const values = items.map(i => i[colKey]).filter(v => !isNaN(v));
+          if (values.length > 0) {
+            switch (aggregation) {
+              case 'sum':
+                aggregatedItem[colKey] = values.reduce((a, b) => a + b, 0);
+                break;
+              case 'count':
+                aggregatedItem[colKey] = values.length;
+                break;
+              case 'avg':
+                aggregatedItem[colKey] = values.reduce((a, b) => a + b, 0) / values.length;
+                break;
+              case 'min':
+                aggregatedItem[colKey] = Math.min(...values);
+                break;
+              case 'max':
+                aggregatedItem[colKey] = Math.max(...values);
+                break;
+              case 'median':
+                const sorted = values.sort((a, b) => a - b);
+                const mid = Math.floor(sorted.length / 2);
+                aggregatedItem[colKey] = sorted.length % 2 === 0 
+                  ? (sorted[mid - 1] + sorted[mid]) / 2 
+                  : sorted[mid];
+                break;
+              case 'stddev':
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+                aggregatedItem[colKey] = Math.sqrt(variance);
+                break;
+              default:
+                aggregatedItem[colKey] = item[colKey];
+            }
+          }
+        }
+      });
+    });
+    
+    return aggregatedItem;
+  });
+};
+
 interface PieChartWidgetProps {
 	widget: Widget;
 	isEditMode?: boolean;
@@ -50,7 +114,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		});
 		
 		// Validate and clean data to prevent property errors
-		return rawData.filter(item => {
+		const filteredData = rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
 			const nameValue = item?.[xColumn];
@@ -62,6 +126,20 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			[xColumn]: item[xColumn],
 			[yColumn]: item[yColumn]
 		}));
+
+		// Apply aggregation if specified
+		const xAggregation = enhancedDataSource.xAxis?.aggregation;
+		const yAggregation = enhancedDataSource.yAxis?.aggregation;
+		
+		if (xAggregation && xAggregation !== 'none') {
+			console.log('[PieChart] Applying X-axis aggregation:', xAggregation);
+			return applyAggregation(filteredData, xColumn, xAggregation);
+		} else if (yAggregation && yAggregation !== 'none') {
+			console.log('[PieChart] Applying Y-axis aggregation:', yAggregation);
+			return applyAggregation(filteredData, yColumn, yAggregation);
+		}
+		
+		return filteredData;
 	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
 	// Generate automatic colors based on data length

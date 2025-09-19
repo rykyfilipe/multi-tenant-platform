@@ -8,6 +8,70 @@ import { FilterConfig } from '@/types/filtering-enhanced';
 import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
 import { api } from '@/lib/api-client';
 
+// Aggregation functions
+const applyAggregation = (data: any[], key: string, aggregation?: string): any[] => {
+  if (!aggregation || aggregation === 'none') {
+    return data;
+  }
+
+  const grouped = data.reduce((acc, item) => {
+    const groupKey = item[key];
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
+    }
+    acc[groupKey].push(item);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  return Object.entries(grouped).map(([groupKey, items]) => {
+    const aggregatedItem: any = { [key]: groupKey };
+    
+    // Apply aggregation to all numeric columns
+    items.forEach(item => {
+      Object.keys(item).forEach(colKey => {
+        if (colKey !== key && typeof item[colKey] === 'number') {
+          const values = items.map(i => i[colKey]).filter(v => !isNaN(v));
+          if (values.length > 0) {
+            switch (aggregation) {
+              case 'sum':
+                aggregatedItem[colKey] = values.reduce((a, b) => a + b, 0);
+                break;
+              case 'count':
+                aggregatedItem[colKey] = values.length;
+                break;
+              case 'avg':
+                aggregatedItem[colKey] = values.reduce((a, b) => a + b, 0) / values.length;
+                break;
+              case 'min':
+                aggregatedItem[colKey] = Math.min(...values);
+                break;
+              case 'max':
+                aggregatedItem[colKey] = Math.max(...values);
+                break;
+              case 'median':
+                const sorted = values.sort((a, b) => a - b);
+                const mid = Math.floor(sorted.length / 2);
+                aggregatedItem[colKey] = sorted.length % 2 === 0 
+                  ? (sorted[mid - 1] + sorted[mid]) / 2 
+                  : sorted[mid];
+                break;
+              case 'stddev':
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+                aggregatedItem[colKey] = Math.sqrt(variance);
+                break;
+              default:
+                aggregatedItem[colKey] = item[colKey];
+            }
+          }
+        }
+      });
+    });
+    
+    return aggregatedItem;
+  });
+};
+
 export interface ChartDataPoint {
   [key: string]: any;
 }
@@ -273,7 +337,8 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
       sampleData: rawData.slice(0, 2)
     });
     
-    return rawData.filter(item => {
+    // Filter and clean data
+    const filteredData = rawData.filter(item => {
       if (!item || typeof item !== 'object') return false;
       
       // Ensure the item has the required properties
@@ -283,6 +348,20 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
       return xValue !== undefined && xValue !== null && xValue !== '' &&
              yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
     });
+
+    // Apply aggregation if specified
+    const xAggregation = enhancedDataSource.xAxis?.aggregation;
+    const yAggregation = enhancedDataSource.yAxis?.aggregation;
+    
+    if (xAggregation && xAggregation !== 'none') {
+      console.log('[LineChart] Applying X-axis aggregation:', xAggregation);
+      return applyAggregation(filteredData, xKey, xAggregation);
+    } else if (yAggregation && yAggregation !== 'none') {
+      console.log('[LineChart] Applying Y-axis aggregation:', yAggregation);
+      return applyAggregation(filteredData, yKey, yAggregation);
+    }
+    
+    return filteredData;
   }, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
   // Debug processed data

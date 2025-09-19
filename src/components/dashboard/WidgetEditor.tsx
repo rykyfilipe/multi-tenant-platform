@@ -1298,6 +1298,93 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     tenantId={tenantId}
                   />
 
+                  {/* Chart Aggregation Options */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Data Aggregation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="xAxisAggregation">X-Axis Aggregation</Label>
+                          <Select
+                            value={config.dataSource?.xAxis?.aggregation || 'none'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...config.dataSource,
+                                xAxis: {
+                                  ...config.dataSource?.xAxis,
+                                  aggregation: value === 'none' ? undefined : value
+                                }
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Aggregation</SelectItem>
+                              <SelectItem value="count">Count</SelectItem>
+                              <SelectItem value="distinct">Distinct Count</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="yAxisAggregation">Y-Axis Aggregation</Label>
+                          <Select
+                            value={config.dataSource?.yAxis?.aggregation || 'sum'}
+                            onValueChange={(value) => updateConfig({
+                              dataSource: {
+                                ...config.dataSource,
+                                yAxis: {
+                                  ...config.dataSource?.yAxis,
+                                  aggregation: value === 'none' ? undefined : value
+                                }
+                              }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sum">Sum</SelectItem>
+                              <SelectItem value="count">Count</SelectItem>
+                              <SelectItem value="avg">Average</SelectItem>
+                              <SelectItem value="min">Minimum</SelectItem>
+                              <SelectItem value="max">Maximum</SelectItem>
+                              <SelectItem value="median">Median</SelectItem>
+                              <SelectItem value="stddev">Standard Deviation</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="groupBy">Group By</Label>
+                        <Select
+                          value={config.dataSource?.groupBy || 'none'}
+                          onValueChange={(value) => updateConfig({
+                            dataSource: {
+                              ...config.dataSource,
+                              groupBy: value === 'none' ? undefined : value
+                            }
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No Grouping</SelectItem>
+                            <SelectItem value="day">Day</SelectItem>
+                            <SelectItem value="week">Week</SelectItem>
+                            <SelectItem value="month">Month</SelectItem>
+                            <SelectItem value="quarter">Quarter</SelectItem>
+                            <SelectItem value="year">Year</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                 </div>
               ) : (
                 <Card>
