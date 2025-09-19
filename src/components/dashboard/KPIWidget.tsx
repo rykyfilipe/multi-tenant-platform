@@ -132,14 +132,14 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
             onRefresh={refetch}
             showRefresh={true}
           >
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
               {/* Main Value Display */}
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">
+              <div className="text-center flex-1 flex flex-col justify-center">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
                   {formatValue(mainValue)}
                 </div>
                 {dataSource.column && (
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
                     {dataSource.column}
                   </div>
                 )}
@@ -147,13 +147,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
 
               {/* Additional Aggregations */}
               {dataSource.showMultipleAggregations && dataSource.selectedAggregations && (
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                   {dataSource.selectedAggregations.map((agg) => (
-                    <div key={agg} className="text-center">
-                      <div className="font-medium text-gray-600">
+                    <div key={agg} className="text-center p-2 bg-gray-50 rounded-lg">
+                      <div className="font-medium text-gray-600 truncate">
                         {getAggregationLabel(agg)}
                       </div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-900 font-semibold">
                         {formatValue((aggregations[agg] as number) || 0)}
                       </div>
                     </div>

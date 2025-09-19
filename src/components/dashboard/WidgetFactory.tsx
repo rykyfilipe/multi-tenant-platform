@@ -215,6 +215,22 @@ export class WidgetFactory {
           autoRefresh: true,
           refreshInterval: 30
         }
+      },
+      container: {
+        dataSource: {
+          type: 'manual'
+        },
+        options: {
+          layout: 'grid',
+          columns: 2,
+          gap: 16,
+          padding: 16,
+          backgroundColor: '#f8fafc',
+          borderColor: '#e2e8f0',
+          borderRadius: 8,
+          showBorder: true,
+          showBackground: true
+        }
       }
     };
 
@@ -317,7 +333,8 @@ export class WidgetFactory {
       tasks: 'Tasks',
       clock: 'Clock',
       calendar: 'Calendar',
-      weather: 'Weather'
+      weather: 'Weather',
+      container: 'Container'
     };
     
     return displayNames[type] || type;
@@ -335,7 +352,8 @@ export class WidgetFactory {
       tasks: 'Manage and track tasks with add, edit, and delete functionality',
       clock: 'Display current time with timezone support and customizable format',
       calendar: 'Show calendar with events and date navigation',
-      weather: 'Display weather information with forecasts and location support'
+      weather: 'Display weather information with forecasts and location support',
+      container: 'Organize widgets in a container with customizable layout and styling'
     };
     
     return descriptions[type] || 'Unknown widget type';
@@ -353,7 +371,8 @@ export class WidgetFactory {
       tasks: 'CheckSquare',
       clock: 'Clock',
       calendar: 'Calendar',
-      weather: 'Cloud'
+      weather: 'Cloud',
+      container: 'Layout'
     };
     
     return icons[type] || 'Settings';

@@ -600,7 +600,7 @@ export default function BaseWidget({
       <Card 
         className={cn(
           getMinimalistStyles.cardStyle(),
-          'h-full transition-all duration-200 group',
+          'h-full transition-all duration-200 group overflow-hidden',
           className
         )}
         style={{
@@ -609,17 +609,20 @@ export default function BaseWidget({
         }}
       >
       <CardHeader className={getMinimalistStyles.headerStyle()}>
-        <div className={getMinimalistStyles.layout.between}>
+        <div className={cn(
+          getMinimalistStyles.layout.between,
+          'gap-2 min-h-0'
+        )}>
           <CardTitle 
             className={cn(
               getMinimalistStyles.titleStyle('md'),
-              'truncate flex-1 min-w-0'
+              'truncate flex-1 min-w-0 pr-2'
             )}
             style={{ color: widgetStyle.titleColor }}
           >
             {title}
           </CardTitle>
-          <div className="flex items-center space-x-2 flex-shrink-0">
+          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
             {showRefresh && onRefresh && (
               <Button 
                 variant="ghost" 
@@ -715,18 +718,18 @@ export default function BaseWidget({
         </div>
       </CardHeader>
       <CardContent className={getMinimalistStyles.contentStyle('h-full')}>
-        <div className="h-full w-full overflow-hidden">
+        <div className="h-full w-full overflow-hidden flex flex-col">
           {isLoading ? (
             <WidgetLoading type="skeleton" size="md" />
           ) : error ? (
-            <div className="flex items-center justify-center h-full min-h-[120px] sm:min-h-[150px]">
-              <div className="text-center text-muted-foreground p-4">
-                <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-red-500" />
+            <div className="flex items-center justify-center h-full min-h-[100px] sm:min-h-[120px] md:min-h-[150px]">
+              <div className="text-center text-muted-foreground p-2 sm:p-4">
+                <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 mx-auto mb-2 text-red-500" />
                 <p className="text-xs sm:text-sm font-medium break-words">{error}</p>
               </div>
             </div>
           ) : (
-            <div className="h-full w-full overflow-auto">
+            <div className="h-full w-full overflow-auto flex-1 min-h-0">
               {children}
             </div>
           )}

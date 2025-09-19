@@ -208,9 +208,9 @@ export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidge
             )}
 
             {/* Clock Display */}
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-2 sm:space-y-3 flex flex-col h-full justify-center">
               <div className="flex items-center justify-center space-x-2">
-                <Clock className="h-5 w-5 text-gray-400" />
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 {options.showTimezone && (
                   <span className={getMinimalistStyles.mutedStyle()}>
                     {options.timezone}
@@ -218,12 +218,12 @@ export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidge
                 )}
               </div>
               
-              <div className={getTimeSize()}>
+              <div className={`${getTimeSize()} leading-tight`}>
                 {timeString}
               </div>
               
               {options.showDate && (
-                <div className={getMinimalistStyles.subtitleStyle()}>
+                <div className={`${getMinimalistStyles.subtitleStyle()} truncate`}>
                   {dateString}
                 </div>
               )}

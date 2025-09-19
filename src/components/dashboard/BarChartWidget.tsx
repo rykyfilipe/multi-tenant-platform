@@ -167,9 +167,9 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 							<div className="text-sm font-medium text-muted-foreground mb-2">Summary</div>
 							<div className="grid grid-cols-2 gap-2 text-xs">
 								<div>Data Points: {processedData.length}</div>
-								<div>Max Value: {Math.max(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-								<div>Min Value: {Math.min(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-								<div>Avg Value: {(processedData.reduce((sum, d) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(2)}</div>
+								<div>Max Value: {Math.max(...processedData.map((	d : any) => Number(d[safeYAxis.key] || 0)))}</div>
+								<div>Min Value: {Math.min(...processedData.map((d : any) => Number(d[safeYAxis.key] || 0)))}</div>
+								<div>Avg Value: {(processedData.reduce((sum : any, d : any) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(2)}</div>
 							</div>
 						</div>
 					)}

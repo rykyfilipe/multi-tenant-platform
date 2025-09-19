@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, CheckSquare, Clock, Calendar, Cloud } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, CheckSquare, Clock, Calendar, Cloud, Layout } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -360,10 +360,17 @@ export default function DashboardsPage() {
   };
 
   const handleWidgetUpdate = (updatedWidget: Widget) => {
-    // Get original widget data for comparison
-    const originalWidget = selectedDashboard?.widgets.find(w => w.id === updatedWidget.id);
+    // Check if this is a new widget (create) or existing widget (update)
+    const isNewWidget = !selectedDashboard?.widgets.find(w => w.id === updatedWidget.id);
     
-    addPendingChange('update', updatedWidget.id, updatedWidget, originalWidget);
+    if (isNewWidget) {
+      // For new widgets, update the create pending change
+      addPendingChange('create', updatedWidget.id, updatedWidget);
+    } else {
+      // For existing widgets, get original widget data for comparison
+      const originalWidget = selectedDashboard?.widgets.find(w => w.id === updatedWidget.id);
+      addPendingChange('update', updatedWidget.id, updatedWidget, originalWidget);
+    }
 
     // Update local state immediately for better UX
     setSelectedDashboard(prev => {
@@ -476,6 +483,10 @@ export default function DashboardsPage() {
         widgets: [...(prev.widgets ?? []), newWidget as Widget],
       };
     });
+
+    // Open widget editor immediately for live preview
+    setEditingWidget(newWidget as Widget);
+    setShowWidgetEditor(true);
   };
 
   const renderWidget = (widget: Widget) => {
@@ -696,6 +707,16 @@ export default function DashboardsPage() {
                       >
                         <Cloud className="h-4 w-4" />
                         <span className="text-sm">Weather</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('container')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
+                        title="Add Container Widget"
+                      >
+                        <Layout className="h-4 w-4" />
+                        <span className="text-sm">Container</span>
                       </Button>
                     </div>
                   </div>

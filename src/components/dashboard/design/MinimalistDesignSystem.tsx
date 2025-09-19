@@ -24,13 +24,13 @@ export const MINIMALIST_DESIGN = {
     sizes: {
       xs: 'text-xs',      // 12px
       sm: 'text-sm',      // 14px
-      base: 'text-base',  // 16px
-      lg: 'text-lg',      // 18px
-      xl: 'text-xl',      // 20px
-      '2xl': 'text-2xl',  // 24px
-      '3xl': 'text-3xl',  // 30px
-      '4xl': 'text-4xl',  // 36px
-      '5xl': 'text-5xl',  // 48px
+      base: 'text-sm sm:text-base',  // 14px mobile, 16px desktop
+      lg: 'text-base sm:text-lg',    // 16px mobile, 18px desktop
+      xl: 'text-lg sm:text-xl',      // 18px mobile, 20px desktop
+      '2xl': 'text-xl sm:text-2xl',  // 20px mobile, 24px desktop
+      '3xl': 'text-2xl sm:text-3xl', // 24px mobile, 30px desktop
+      '4xl': 'text-3xl sm:text-4xl', // 30px mobile, 36px desktop
+      '5xl': 'text-4xl sm:text-5xl', // 36px mobile, 48px desktop
     },
     weights: {
       normal: 'font-normal',
@@ -53,15 +53,15 @@ export const MINIMALIST_DESIGN = {
   // Component Styles
   components: {
     card: {
-      base: 'bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200',
-      header: 'px-6 py-4 border-b border-gray-100',
-      content: 'px-6 py-4',
+      base: 'bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 h-full flex flex-col',
+      header: 'px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-4 border-b border-gray-100 flex-shrink-0',
+      content: 'px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-4 flex-1 flex flex-col min-h-0',
     },
     button: {
-      primary: 'bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-      secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-      ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-2 py-1 rounded-md text-sm transition-colors',
-      icon: 'p-2 hover:bg-gray-100 rounded-lg transition-colors',
+      primary: 'bg-black text-white hover:bg-gray-800 px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors',
+      secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors',
+      ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-1 py-1 sm:px-2 rounded-md text-xs sm:text-sm transition-colors',
+      icon: 'p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8',
     },
     input: {
       base: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -167,7 +167,7 @@ export const getMinimalistStyles = {
       md: MINIMALIST_DESIGN.typography.sizes.xl,
       lg: MINIMALIST_DESIGN.typography.sizes['2xl'],
     };
-    return `${sizeMap[size]} ${MINIMALIST_DESIGN.typography.weights.semibold} text-gray-900 ${className || ''}`;
+    return `${sizeMap[size]} ${MINIMALIST_DESIGN.typography.weights.semibold} text-gray-900 truncate ${className || ''}`;
   },
   
   valueStyle: (size: 'sm' | 'md' | 'lg' | 'xl' = 'lg', className?: string) => {
@@ -177,7 +177,7 @@ export const getMinimalistStyles = {
       lg: MINIMALIST_DESIGN.typography.sizes['3xl'],
       xl: MINIMALIST_DESIGN.typography.sizes['4xl'],
     };
-    return `${sizeMap[size]} ${MINIMALIST_DESIGN.typography.weights.bold} text-gray-900 ${className || ''}`;
+    return `${sizeMap[size]} ${MINIMALIST_DESIGN.typography.weights.bold} text-gray-900 leading-tight ${className || ''}`;
   },
   
   subtitleStyle: (className?: string) => 

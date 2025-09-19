@@ -6,7 +6,7 @@
 import { ColumnType, FilterOperator, FilterValue } from './filtering-enhanced';
 
 // Base Widget Types
-export type WidgetType = 'chart' | 'table' | 'metric' | 'text' | 'tasks' | 'clock' | 'calendar' | 'weather';
+export type WidgetType = 'chart' | 'table' | 'metric' | 'text' | 'tasks' | 'clock' | 'calendar' | 'weather' | 'container';
 export type ChartType = 'line' | 'bar' | 'pie';
 
 // Position and Layout

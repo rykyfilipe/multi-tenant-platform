@@ -118,7 +118,7 @@ export async function POST(
             break;
             
           default:
-            throw new Error(`Unknown operation type: ${operation.type}`);
+            throw new Error(`Unknown operation type: ${operation}`);
         }
         
         results.push({

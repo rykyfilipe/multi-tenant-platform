@@ -151,24 +151,6 @@ export default function TableWidget({
     }
   };
 
-
-
-  const renderCellValue = (value: any) => {
-    if (value === null || value === undefined) {
-      return <span className="text-muted-foreground">-</span>;
-    }
-    
-    if (typeof value === 'boolean') {
-      return value ? 'Yes' : 'No';
-    }
-    
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    
-    return String(value);
-  };
-
   return (
     <WidgetDataProvider widget={widget}>
       {({ data, isLoading, error, refetch }) => {
@@ -182,6 +164,22 @@ export default function TableWidget({
         const endIndex = startIndex + pageSize;
         
         const paginatedData = tableRows.slice(startIndex, endIndex);
+
+        const renderCellValue = (value: any) => {
+          if (value === null || value === undefined) {
+            return <span className="text-muted-foreground">-</span>;
+          }
+          
+          if (typeof value === 'boolean') {
+            return value ? 'Yes' : 'No';
+          }
+          
+          if (typeof value === 'object') {
+            return JSON.stringify(value);
+          }
+          
+          return String(value);
+        };
         
         return (
         <BaseWidget
@@ -197,49 +195,49 @@ export default function TableWidget({
       <div className="space-y-4">
         {/* Search and Controls */}
         {options.showSearch !== false && (
-          <div className="flex items-center justify-between space-x-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 mb-4">
             {options.showSearch && (
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 sm:pl-10 text-sm"
                 />
               </div>
             )}
-            
           </div>
         )}
 
 
         {/* Table */}
         <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {(dataSource.columns ?? []).map((columnName) => {
-                  const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
-                  return (
-                    <TableHead 
-                      key={columnName}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort(columnName)}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>{(column as any)?.name || columnName}</span>
-                        {sortBy === columnName && (
-                          <span className="text-xs">
-                            {sortOrder === 'asc' ? '↑' : '↓'}
-                          </span>
-                        )}
-                      </div>
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            </TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {(dataSource.columns ?? []).map((columnName) => {
+                    const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
+                    return (
+                      <TableHead 
+                        key={columnName}
+                        className="cursor-pointer hover:bg-muted/50 text-xs sm:text-sm whitespace-nowrap"
+                        onClick={() => handleSort(columnName)}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span className="truncate">{(column as any)?.name || columnName}</span>
+                          {sortBy === columnName && (
+                            <span className="text-xs flex-shrink-0">
+                              {sortOrder === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
@@ -251,8 +249,10 @@ export default function TableWidget({
                 paginatedData.map((row, index) => (
                   <TableRow key={row?.id || index}>
                     {tableColumns.map((column: any) => (
-                      <TableCell key={column.key}>
-                        {renderCellValue(row?.[column.key])}
+                      <TableCell key={column.key} className="text-xs sm:text-sm whitespace-nowrap">
+                        <div className="truncate max-w-[150px] sm:max-w-none">
+                          {renderCellValue(row?.[column.key])}
+                        </div>
                       </TableCell>
                     ))}
                   </TableRow>
@@ -264,19 +264,20 @@ export default function TableWidget({
 
         {/* Pagination */}
         {options.showPagination !== false && totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
+            <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
               Showing {startIndex + 1} to {Math.min(endIndex, tableRows.length)} of {tableRows.length} entries
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
+                className="text-xs px-2 py-1"
               >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline ml-1">Previous</span>
               </Button>
               
               <div className="flex items-center space-x-1">
@@ -300,13 +301,15 @@ export default function TableWidget({
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
+                className="text-xs px-2 py-1"
               >
-                Next
-                <ChevronRight className="h-4 w-4" />
+                <span className="hidden sm:inline mr-1">Next</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
         )}
+      </div>
       </div>
     </BaseWidget>
         );

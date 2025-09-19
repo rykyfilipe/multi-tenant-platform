@@ -39,6 +39,18 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
   }, [editedWidget, widget]);
 
+  // Live preview - send changes immediately to parent
+  useEffect(() => {
+    if (hasChanges && onSave) {
+      // Debounce the live preview to avoid too many updates
+      const timeoutId = setTimeout(() => {
+        onSave(editedWidget as any);
+      }, 100); // 100ms debounce for faster preview
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [editedWidget, hasChanges, onSave]);
+
   // Initialize widget config if needed
   useEffect(() => {
     if (!editedWidget.config || Object.keys(editedWidget.config).length === 0) {
@@ -426,12 +438,6 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         }
                       });
                     }}
-                    onColumnsChange={(columns) => updateConfig({
-                      dataSource: {
-                        ...editedWidget.config?.dataSource,
-                        columns: columns
-                      }
-                    })}
                     onColumnXChange={() => {}}
                     onColumnYChange={() => {}}
                     loadTables={loadTables}
