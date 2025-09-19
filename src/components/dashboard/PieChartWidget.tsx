@@ -14,7 +14,7 @@ const applyAggregation = (data: any[], key: string, aggregation?: string): any[]
     return data;
   }
 
-  const grouped = data.reduce((acc, item) => {
+  const grouped = data.reduce((acc: Record<string, any[]>, item: any) => {
     const groupKey = item[key];
     if (!acc[groupKey]) {
       acc[groupKey] = [];
@@ -23,24 +23,24 @@ const applyAggregation = (data: any[], key: string, aggregation?: string): any[]
     return acc;
   }, {} as Record<string, any[]>);
 
-  return Object.entries(grouped).map(([groupKey, items]) => {
+  return Object.entries(grouped).map(([groupKey, items]: [string, any[]]) => {
     const aggregatedItem: any = { [key]: groupKey };
     
     // Apply aggregation to all numeric columns
-    items.forEach(item => {
+    items.forEach((item: any) => {
       Object.keys(item).forEach(colKey => {
         if (colKey !== key && typeof item[colKey] === 'number') {
-          const values = items.map(i => i[colKey]).filter(v => !isNaN(v));
+          const values = items.map((i: any) => i[colKey]).filter((v: any) => !isNaN(v));
           if (values.length > 0) {
             switch (aggregation) {
               case 'sum':
-                aggregatedItem[colKey] = values.reduce((a, b) => a + b, 0);
+                aggregatedItem[colKey] = values.reduce((a: number, b: number) => a + b, 0);
                 break;
               case 'count':
                 aggregatedItem[colKey] = values.length;
                 break;
               case 'avg':
-                aggregatedItem[colKey] = values.reduce((a, b) => a + b, 0) / values.length;
+                aggregatedItem[colKey] = values.reduce((a: number, b: number) => a + b, 0) / values.length;
                 break;
               case 'min':
                 aggregatedItem[colKey] = Math.min(...values);
@@ -49,15 +49,15 @@ const applyAggregation = (data: any[], key: string, aggregation?: string): any[]
                 aggregatedItem[colKey] = Math.max(...values);
                 break;
               case 'median':
-                const sorted = values.sort((a, b) => a - b);
+                const sorted = values.sort((a: number, b: number) => a - b);
                 const mid = Math.floor(sorted.length / 2);
                 aggregatedItem[colKey] = sorted.length % 2 === 0 
                   ? (sorted[mid - 1] + sorted[mid]) / 2 
                   : sorted[mid];
                 break;
               case 'stddev':
-                const mean = values.reduce((a, b) => a + b, 0) / values.length;
-                const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+                const mean = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+                const variance = values.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / values.length;
                 aggregatedItem[colKey] = Math.sqrt(variance);
                 break;
               default:

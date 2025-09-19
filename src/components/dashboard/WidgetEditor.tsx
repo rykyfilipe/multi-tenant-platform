@@ -1308,12 +1308,12 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         <div>
                           <Label htmlFor="xAxisAggregation">X-Axis Aggregation</Label>
                           <Select
-                            value={config.dataSource?.xAxis?.aggregation || 'none'}
+                            value={(config.dataSource as any)?.xAxis?.aggregation || 'none'}
                             onValueChange={(value) => updateConfig({
                               dataSource: {
                                 ...config.dataSource,
                                 xAxis: {
-                                  ...config.dataSource?.xAxis,
+                                  ...(config.dataSource as any)?.xAxis,
                                   aggregation: value === 'none' ? undefined : value
                                 }
                               }
@@ -1332,12 +1332,12 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         <div>
                           <Label htmlFor="yAxisAggregation">Y-Axis Aggregation</Label>
                           <Select
-                            value={config.dataSource?.yAxis?.aggregation || 'sum'}
+                            value={(config.dataSource as any)?.yAxis?.aggregation || 'sum'}
                             onValueChange={(value) => updateConfig({
                               dataSource: {
                                 ...config.dataSource,
                                 yAxis: {
-                                  ...config.dataSource?.yAxis,
+                                  ...(config.dataSource as any)?.yAxis,
                                   aggregation: value === 'none' ? undefined : value
                                 }
                               }
@@ -1361,7 +1361,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       <div>
                         <Label htmlFor="groupBy">Group By</Label>
                         <Select
-                          value={config.dataSource?.groupBy || 'none'}
+                          value={(config.dataSource as any)?.groupBy || 'none'}
                           onValueChange={(value) => updateConfig({
                             dataSource: {
                               ...config.dataSource,

@@ -54,6 +54,7 @@ export interface ChartAxisConfig {
 	label: string;
 	type: 'text' | 'number' | 'date' | 'boolean';
 	columns: string[]; // Support multiple columns for this axis
+	aggregation?: string; // Aggregation function for this axis
 }
 
 export interface EnhancedDataSource {
@@ -71,6 +72,8 @@ export interface EnhancedDataSource {
 	columns?: string[];
 	// Filters
 	filters?: FilterConfig[];
+	// Aggregation
+	groupBy?: string;
 }
 
 interface EnhancedTableSelectorProps {
