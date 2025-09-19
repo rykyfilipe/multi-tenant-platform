@@ -148,9 +148,19 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
     }
 
     const { columns } = dataSource;
-    const sampleItem = data[0];
+    
+    // Check if data is in complex format (with cell objects)
+    const isComplexFormat = data.some(item => 
+      item && typeof item === 'object' && 
+      'column' in item && 'value' in item
+    );
 
-    // Generate columns from data or use specified columns
+    if (isComplexFormat) {
+      return this.mapComplexData(data, columns);
+    }
+
+    // Simple format - direct mapping
+    const sampleItem = data[0];
     const tableColumns = columns && columns.length > 0 
       ? columns.map(col => ({
           key: col,
@@ -168,6 +178,74 @@ export class TableDataMapper implements WidgetDataMapper<TableMappedData> {
       rows: data,
       totalCount: data.length
     };
+  }
+
+  private mapComplexData(data: any[], columns?: string[]): TableMappedData {
+    // Group data by rowId
+    const rowMap = new Map<number, any>();
+    
+    data.forEach(cell => {
+      if (!cell.rowId) return;
+      
+      if (!rowMap.has(cell.rowId)) {
+        rowMap.set(cell.rowId, { id: cell.rowId });
+      }
+      
+      const row = rowMap.get(cell.rowId);
+      const columnName = cell.column?.name;
+      if (columnName) {
+        // Extract the actual value based on column type
+        row[columnName] = this.extractValue(cell);
+      }
+    });
+
+    const rows = Array.from(rowMap.values());
+    
+    if (rows.length === 0) {
+      return {
+        columns: [],
+        rows: [],
+        totalCount: 0
+      };
+    }
+
+    // Generate columns from the first row or specified columns
+    const sampleRow = rows[0];
+    const tableColumns = columns && columns.length > 0 
+      ? columns.map(col => ({
+          key: col,
+          label: col.charAt(0).toUpperCase() + col.slice(1),
+          type: this.inferType(sampleRow[col])
+        }))
+      : Object.keys(sampleRow).filter(key => key !== 'id').map(key => ({
+          key,
+          label: key.charAt(0).toUpperCase() + key.slice(1),
+          type: this.inferType(sampleRow[key])
+        }));
+
+    return {
+      columns: tableColumns,
+      rows: rows,
+      totalCount: rows.length
+    };
+  }
+
+  private extractValue(cell: any): any {
+    // Extract the actual value based on the column type
+    if (cell.stringValue !== null && cell.stringValue !== undefined) {
+      return cell.stringValue;
+    }
+    if (cell.numberValue !== null && cell.numberValue !== undefined) {
+      return cell.numberValue;
+    }
+    if (cell.dateValue !== null && cell.dateValue !== undefined) {
+      return cell.dateValue;
+    }
+    if (cell.booleanValue !== null && cell.booleanValue !== undefined) {
+      return cell.booleanValue;
+    }
+    // Fallback to the generic value
+    return cell.value;
   }
 
   private inferType(value: any): string {
