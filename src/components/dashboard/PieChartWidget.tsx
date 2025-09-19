@@ -70,7 +70,13 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			return options.colors;
 		}
 		const colorPalette = (options.colorPalette as ColorPalette) || 'business';
-		return generateChartColors(processedData.length, colorPalette);
+		const generatedColors = generateChartColors(processedData.length, colorPalette);
+		console.log('[PieChart] Generated colors:', {
+			dataLength: processedData.length,
+			colors: generatedColors,
+			colorPalette
+		});
+		return generatedColors;
 	}, [options.colors, options.colorPalette, processedData.length]);
 
 	// Enhanced styling configuration
@@ -113,7 +119,15 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								<Legend 
 									wrapperStyle={{
 										fontSize: '12px',
-										paddingTop: '10px'
+										paddingTop: '10px',
+										maxHeight: '100px',
+										overflow: 'hidden'
+									}}
+									verticalAlign="bottom"
+									height={36}
+									formatter={(value, entry) => {
+										// Truncate long names and show full on hover
+										return value.length > 15 ? value.substring(0, 15) + '...' : value;
 									}}
 								/>
 							)}

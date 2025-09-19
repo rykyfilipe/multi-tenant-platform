@@ -331,14 +331,22 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     loadData();
   }, [dataSource]);
 
-  // Generate automatic colors based on data length
+  // Generate automatic colors based on number of Y columns
   const colors = useMemo(() => {
     if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
       return options.colors;
     }
     const colorPalette = options.colorPalette || 'business';
-    return generateChartColors(processedData.length > 0 ? 1 : 4, colorPalette);
-  }, [options.colors, options.colorPalette, processedData.length]);
+    const yColumnsCount = enhancedDataSource.yAxis?.columns?.length || 1;
+    const colorsNeeded = Math.max(yColumnsCount, 4);
+    const generatedColors = generateChartColors(colorsNeeded, colorPalette);
+    console.log('[LineChart] Generated colors:', {
+      yColumnsCount,
+      colorsNeeded,
+      colors: generatedColors
+    });
+    return generatedColors;
+  }, [options.colors, options.colorPalette, enhancedDataSource.yAxis?.columns?.length]);
 
   const strokeWidth = options.strokeWidth || 2;
   const dotSize = options.dotSize || 4;
@@ -448,7 +456,15 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
                 <Legend 
                   wrapperStyle={{
                     fontSize: '12px',
-                    paddingTop: '10px'
+                    paddingTop: '10px',
+                    maxHeight: '100px',
+                    overflow: 'hidden'
+                  }}
+                  verticalAlign="bottom"
+                  height={36}
+                  formatter={(value, entry) => {
+                    // Truncate long names and show full on hover
+                    return value.length > 15 ? value.substring(0, 15) + '...' : value;
                   }}
                 />
               )}

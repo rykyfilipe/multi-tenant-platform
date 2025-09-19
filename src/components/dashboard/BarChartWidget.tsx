@@ -78,14 +78,22 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		});
 	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
-	// Generate automatic colors based on data length
+	// Generate automatic colors based on number of X columns
 	const colors = useMemo(() => {
 		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
 			return options.colors;
 		}
 		const colorPalette = (options.colorPalette as ColorPalette) || 'business';
-		return generateChartColors(processedData.length > 0 ? 1 : 4, colorPalette);
-	}, [options.colors, options.colorPalette, processedData.length]);
+		const xColumnsCount = enhancedDataSource.xAxis?.columns?.length || 1;
+		const colorsNeeded = Math.max(xColumnsCount, 4);
+		const generatedColors = generateChartColors(colorsNeeded, colorPalette);
+		console.log('[BarChart] Generated colors:', {
+			xColumnsCount,
+			colorsNeeded,
+			colors: generatedColors
+		});
+		return generatedColors;
+	}, [options.colors, options.colorPalette, enhancedDataSource.xAxis?.columns?.length]);
 
 	// Enhanced styling configuration
 	const widgetStyle = {
@@ -170,7 +178,15 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								<Legend 
 									wrapperStyle={{
 										fontSize: '12px',
-										paddingTop: '10px'
+										paddingTop: '10px',
+										maxHeight: '100px',
+										overflow: 'hidden'
+									}}
+									verticalAlign="bottom"
+									height={36}
+									formatter={(value, entry) => {
+										// Truncate long names and show full on hover
+										return value.length > 15 ? value.substring(0, 15) + '...' : value;
 									}}
 								/>
 							)}
