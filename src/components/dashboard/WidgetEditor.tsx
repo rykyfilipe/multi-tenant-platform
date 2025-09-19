@@ -175,11 +175,9 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   };
 
   const updateConfig = (configUpdates: any) => {
-    console.log('[WidgetEditor] updateConfig called with:', configUpdates);
     setEditedWidget(prev => {
       const currentConfig = prev.config || {};
       const newConfig = { ...currentConfig, ...configUpdates };
-      console.log('[WidgetEditor] Config updated:', { configUpdates, currentConfig, newConfig });
       return {
         ...prev,
         config: newConfig

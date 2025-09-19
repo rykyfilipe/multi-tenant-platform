@@ -163,7 +163,8 @@ export default function DashboardsPage() {
       });
     },
     onDiscard: () => {
-      // Refresh dashboard data to remove locally created widgets
+      console.log('Discarding changes, reloading dashboard data');
+      // Reload dashboard data to reset local state
       if (selectedDashboard) {
         fetchDashboards();
       }
@@ -336,9 +337,6 @@ export default function DashboardsPage() {
     
     // Clear pending changes and reload dashboard data
     discardPendingChanges();
-    if (selectedDashboard) {
-      fetchDashboards();
-    }
     
     toast({
       title: "Changes reverted",
@@ -374,29 +372,41 @@ export default function DashboardsPage() {
   };
 
   const handleWidgetUpdate = (updatedWidget: Widget) => {
-    console.log('[Dashboard] handleWidgetUpdate called with:', updatedWidget);
     // Get original widget data for comparison (fără modificările pending)
     const originalWidget = selectedDashboard?.widgets.find(w => w.id === updatedWidget.id);
-    console.log('[Dashboard] Original widget:', originalWidget);
     
-    // Folosește logica inteligentă - dacă este widget nou, modifică direct în pendingChanges
-    // Dacă este widget existent, adaugă modificarea cu comparație inteligentă
+    // Update local state immediately for live preview
+    if (selectedDashboard) {
+      setSelectedDashboard(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          widgets: prev.widgets.map(w => w.id === updatedWidget.id ? updatedWidget : w)
+        };
+      });
+    }
+    
+    // Also add to pending changes for save functionality
     addPendingChange('update', updatedWidget.id, updatedWidget, originalWidget);
-
-    // Nu mai actualizez local state aici - getFinalWidget se ocupă de afișare
-    // Logica inteligentă va gestiona dacă este widget nou sau existent
   };
 
   const handleWidgetDelete = (widgetId: number) => {
     // Get original widget data for comparison
     const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
     
-    // Folosește logica inteligentă - dacă este widget nou, elimină din pendingChanges
-    // Dacă este widget existent, adaugă operațiunea de ștergere
+    // Update local state immediately for live preview
+    if (selectedDashboard) {
+      setSelectedDashboard(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          widgets: prev.widgets.filter(w => w.id !== widgetId)
+        };
+      });
+    }
+    
+    // Also add to pending changes for save functionality
     addPendingChange('delete', widgetId, null, originalWidget);
-
-    // Nu mai actualizez local state aici - getFinalWidget se ocupă de afișare
-    // Logica inteligentă va gestiona dacă este widget nou sau existent
 
     toast({
       title: 'Widget Deleted',
@@ -658,14 +668,13 @@ export default function DashboardsPage() {
   const renderWidget = (widget: Widget) => {
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate
     const displayWidget = getFinalWidget(widget);
-    console.log('[Dashboard] renderWidget:', { originalWidget: widget, displayWidget });
     
     // Dacă widget-ul a fost șters, nu-l afișa
     if (!displayWidget) {
       return null;
     }
 
-    switch (widget.type) {
+    switch (displayWidget.type) {
       case 'chart': {
         const subType = (displayWidget?.config?.chartType) || (displayWidget as any).subType || 'line';
         if (subType === 'bar') {

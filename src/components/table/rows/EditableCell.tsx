@@ -747,10 +747,7 @@ export function EditableCell({
 						onValueChange={(val) => {
 							setValue(val);
 							currentValueRef.current = val; // Update ref immediately
-							// Auto-save for reference values
-							const normalizedValue = normalizeReferenceValue(val, true);
-							onSave(normalizedValue);
-							onCancel();
+							// Don't auto-save - let user confirm with Enter or click outside
 						}}
 						options={options}
 						placeholder={`${t("table.select")} ${
@@ -794,10 +791,7 @@ export function EditableCell({
 						onCheckedChange={(checked) => {
 							setValue(checked);
 							currentValueRef.current = checked; // Update ref immediately
-							// Auto-save for boolean values
-							const normalizedValue = normalizeReferenceValue(checked, column?.type === USER_FRIENDLY_COLUMN_TYPES.link);
-							onSave(normalizedValue);
-							onCancel();
+							// Don't auto-save - let user confirm with Enter or click outside
 						}}>
 						<span className='sr-only'>{t("table.toggleBoolean")}</span>
 					</Switch>
