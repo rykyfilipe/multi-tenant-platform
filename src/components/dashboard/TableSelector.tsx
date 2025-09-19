@@ -128,13 +128,7 @@ export function TableSelector({
 
 	
 
-	// Auto-load columns when a table is selected (only if columns are not already loaded)
-	useEffect(() => {
-		if (selectedTableId && allTables.length > 0 && !isLoadingColumns && !columnsError && columns.length === 0) {
-			console.log('[TableSelector] Auto-loading columns for selected table:', selectedTableId);
-			loadColumns(selectedTableId);
-		}
-	}, [selectedTableId, allTables.length, columns.length]);
+	// No auto-loading - columns will be loaded only when user explicitly clicks on a table
 
   // Load columns only when explicitly requested by user
   const loadColumns = async (tableId: number) => {
@@ -189,6 +183,10 @@ export function TableSelector({
 		// Reset columns state when table changes
 		setColumns([]);
 		setColumnsError(null);
+		
+		// Load columns when user selects a table
+		console.log('[TableSelector] Loading columns for selected table:', id);
+		await loadColumns(id);
 	};
 
 	return (

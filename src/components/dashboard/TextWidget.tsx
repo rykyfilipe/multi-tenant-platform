@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import BaseWidget from './BaseWidget';
+import { WidgetProps, BaseWidget as BaseWidgetType } from '@/types/widgets';
 
 export interface TextConfig {
   title?: string;
@@ -22,19 +23,8 @@ export interface TextConfig {
   };
 }
 
-export interface Widget {
-  id: number | string;
-  type: string;
-  title: string | null;
-  position: { x: number; y: number; width: number; height: number };
-  config: TextConfig;
-}
-
-interface TextWidgetProps {
-  widget: Widget;
-  isEditMode: boolean;
-  onEdit: () => void;
-  onDelete?: () => void;
+interface TextWidgetProps extends WidgetProps {
+  widget: BaseWidgetType;
 }
 
 // Simple markdown parser for basic formatting
@@ -50,12 +40,16 @@ const parseMarkdown = (text: string): string => {
     .replace(/\n/gim, '<br>');
 };
 
-export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetProps) {
+export function TextWidget({ widget, isEditMode, onEdit, onDelete, data }: TextWidgetProps) {
   const [error, setError] = useState<string | null>(null);
 
   const config = (widget.config || {}) as TextConfig;
   const options = config.options || {};
-  const content = config.dataSource?.content || '';
+  
+  // For text widgets, data should be in format: { content: string, type: string }
+  const textData = data && typeof data === 'object' && 'content' in data ? data as unknown as { content: string; type: string } : null;
+  const content = textData?.content || config.dataSource?.content || '';
+  const type = textData?.type || config.type || 'plain';
 
   useEffect(() => {
     // Validate content based on type
@@ -64,7 +58,7 @@ export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetP
         // Basic HTML validation - check for potentially dangerous tags
         const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form'];
         const hasDangerousTags = dangerousTags.some(tag => 
-          content.toLowerCase().includes(`<${tag}`)
+          (content as string).toLowerCase().includes(`<${tag}`)
         );
         
         if (hasDangerousTags) {
@@ -140,7 +134,7 @@ export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetP
           <div 
             className={baseClasses}
             style={style}
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={{ __html: content as string }}
           />
         );
       
@@ -149,7 +143,7 @@ export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetP
           <div 
             className={baseClasses}
             style={style}
-            dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }}
+            dangerouslySetInnerHTML={{ __html: parseMarkdown(content as string) }}
           />
         );
       
@@ -159,7 +153,7 @@ export function TextWidget({ widget, isEditMode, onEdit, onDelete }: TextWidgetP
             className={`${baseClasses} whitespace-pre-wrap`}
             style={style}
           >
-            {content}
+            {content as string}
           </div>
         );
     }

@@ -2,18 +2,14 @@
 
 import { useMemo } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Legend, Cell } from 'recharts';
+import { WidgetProps } from '@/types/widgets';
 import BaseWidget from './BaseWidget';
-import type { Widget, LineChartConfig } from './LineChartWidget';
+import type { LineChartConfig } from './LineChartWidget';
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
-interface PieChartWidgetProps {
-	widget: Widget;
-	isEditMode?: boolean;
-	onEdit?: () => void;
-	onDelete?: () => void;
-	tenantId?: number;
-	databaseId?: number;
+interface PieChartWidgetProps extends WidgetProps {
+	widget: import('@/types/widgets').BaseWidget;
 }
 
 export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: PieChartWidgetProps) {
@@ -34,10 +30,26 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		if (dataSource.type === 'manual') {
 			rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
 		} else {
+			// Data is already mapped by useWidgetData hook
 			rawData = Array.isArray(data) ? data : [];
 		}
 		
-		// Validate and clean data to prevent property errors
+		// For pie chart, data should be in format: [{ name: string, value: number }]
+		// If it's mapped data with labels/datasets, convert to pie format
+		if (rawData.length > 0 && rawData[0].labels && rawData[0].datasets) {
+			const chartData = rawData[0];
+			const labels = chartData.labels || [];
+			const datasets = chartData.datasets || [];
+			
+			if (datasets.length > 0) {
+				return labels.map((label: string, index: number) => ({
+					name: label,
+					value: datasets[0].data[index] || 0
+				}));
+			}
+		}
+		
+		// Fallback to original data processing
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
@@ -112,7 +124,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								stroke={(options as any).stroke || '#ffffff'}
 								strokeWidth={options.strokeWidth || 2}
 							>
-								{(processedData ?? []).map((_, index) => (
+								{(processedData ?? []).map((_ : any, index : any) => (
 									<Cell 
 										key={`cell-${index}`} 
 										fill={colors[index % colors.length]}
@@ -130,7 +142,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 							<div className="text-sm font-medium text-muted-foreground mb-2">Summary</div>
 							<div className="grid grid-cols-2 gap-2 text-xs">
 								<div>Total Items: {processedData.length}</div>
-								<div>Total Value: {processedData.reduce((sum, item) => sum + Number(item[safeYAxis.key] || 0), 0)}</div>
+								<div>Total Value: {processedData.reduce((sum : any, item : any) => sum + Number(item[safeYAxis.key] || 0), 0)}</div>
 							</div>
 						</div>
 					)}

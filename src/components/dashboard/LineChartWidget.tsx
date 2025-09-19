@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
+import { WidgetProps, BaseWidget as BaseWidgetType } from '@/types/widgets';
 import { FilterConfig } from '@/types/filtering-enhanced';
 
 export interface ChartDataPoint {
@@ -65,21 +66,8 @@ export interface LineChartConfig {
   };
 }
 
-export interface Widget {
-  id: number | string;
-  type: string;
-  title: string | null;
-  position: { x: number; y: number; width: number; height: number };
-  config: LineChartConfig;
-  isVisible: boolean;
-  order: number;
-}
-
-interface LineChartWidgetProps {
-  widget: Widget;
-  isEditMode?: boolean;
-  onEdit?: () => void;
-  onDelete?: () => void;
+interface LineChartWidgetProps extends WidgetProps {
+  widget: BaseWidgetType;
 }
 
 // Mock data generator for demonstration
@@ -231,14 +219,29 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
     if (dataSource.type === 'manual' && dataSource.manualData) {
       rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
     } else {
+      // Data is already mapped by useWidgetData hook
       rawData = Array.isArray(data) ? data : [];
     }
     
-    // Validate and clean data to prevent 'x' property errors
+    // For chart widgets, data should already be in the correct format
+    // If it's mapped data with labels/datasets, extract the data points
+    if (rawData.length > 0 && rawData[0].labels && rawData[0].datasets) {
+      const chartData = rawData[0];
+      const labels = chartData.labels || [];
+      const datasets = chartData.datasets || [];
+      
+      if (datasets.length > 0) {
+        return labels.map((label: string, index: number) => ({
+          [safeXAxis.key]: label,
+          [safeYAxis.key]: datasets[0].data[index] || 0
+        }));
+      }
+    }
+    
+    // Fallback to original data processing
     return rawData.filter(item => {
       if (!item || typeof item !== 'object') return false;
       
-      // Ensure the item has the required properties
       const xValue = item?.[safeXAxis.key];
       const yValue = item?.[safeYAxis.key];
       
@@ -421,9 +424,9 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
               <div className="text-sm font-medium text-muted-foreground mb-2">Summary</div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>Data Points: {processedData.length}</div>
-                <div>Max Value: {Math.max(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-                <div>Min Value: {Math.min(...processedData.map(d => Number(d[safeYAxis.key] || 0)))}</div>
-                <div>Avg Value: {(processedData.reduce((sum, d) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(2)}</div>
+                <div>Max Value: {Math.max(...processedData.map((d : any)=> Number(d[safeYAxis.key] || 0)))}</div>
+                <div>Min Value: {Math.min(...processedData.map((d : any)=> Number(d[safeYAxis.key] || 0)))}</div>
+                <div>Avg Value: {(processedData.reduce((sum : any, d : any) => sum + Number(d[safeYAxis.key] || 0), 0) / processedData.length).toFixed(2)}</div>
               </div>
             </div>
           )}

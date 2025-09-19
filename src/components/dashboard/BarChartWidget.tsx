@@ -2,18 +2,14 @@
 
 import { useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { WidgetProps } from '@/types/widgets';
 import BaseWidget from './BaseWidget';
-import type { Widget, LineChartConfig } from './LineChartWidget';
+import type { LineChartConfig } from './LineChartWidget';
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
-interface BarChartWidgetProps {
-	widget: Widget;
-	isEditMode?: boolean;
-	onEdit?: () => void;
-	onDelete?: () => void;
-	tenantId?: number;
-	databaseId?: number;
+interface BarChartWidgetProps extends WidgetProps {
+	widget: import('@/types/widgets').BaseWidget;
 }
 
 export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: BarChartWidgetProps) {
@@ -34,10 +30,26 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		if (dataSource.type === 'manual') {
 			rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
 		} else {
+			// Data is already mapped by useWidgetData hook
 			rawData = Array.isArray(data) ? data : [];
 		}
 		
-		// Validate and clean data to prevent property errors
+		// For chart widgets, data should already be in the correct format
+		// If it's mapped data with labels/datasets, extract the data points
+		if (rawData.length > 0 && rawData[0].labels && rawData[0].datasets) {
+			const chartData = rawData[0];
+			const labels = chartData.labels || [];
+			const datasets = chartData.datasets || [];
+			
+			if (datasets.length > 0) {
+				return labels.map((label: string, index: number) => ({
+					[safeXAxis.key]: label,
+					[safeYAxis.key]: datasets[0].data[index] || 0
+				}));
+			}
+		}
+		
+		// Fallback to original data processing
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			

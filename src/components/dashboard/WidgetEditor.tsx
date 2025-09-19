@@ -18,27 +18,10 @@ import { LineChartConfig, DataSource, ChartDataPoint } from './LineChartWidget';
 import { FilterConfig } from '@/types/filtering-enhanced';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
-
-interface Widget {
-  id: number | string;
-  type: string;
-  title: string | null;
-  position: { x: number; y: number; width: number; height: number };
-  config: LineChartConfig | any;
-  isVisible: boolean;
-  order: number;
-}
-
-interface WidgetEditorProps {
-  widget: Widget;
-  onClose: () => void;
-  onSave: (widget: Widget) => void;
-  tenantId: number;
-  databaseId: number;
-}
+import { BaseWidget, WidgetEditorProps, WidgetType, WidgetConfig } from '@/types/widgets';
 
 export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: WidgetEditorProps) {
-  const [editedWidget, setEditedWidget] = useState<Widget>({ ...widget });
+  const [editedWidget, setEditedWidget] = useState<BaseWidget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
   
   // Use schema cache for tables and columns
@@ -73,13 +56,13 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   };
 
   // Default configurations for each widget type
-  const getDefaultConfig = (type: string) => {
+  const getDefaultConfig = (type: WidgetType) => {
     switch (type) {
       case 'chart':
         return {
           title: '',
           dataSource: {
-            type: 'manual',
+            type: 'manual' as const,
             manualData: [
               { x: 'Jan', y: 100 },
               { x: 'Feb', y: 150 },
@@ -102,8 +85,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       case 'table':
         return {
           dataSource: {
-            type: 'table',
-            tableId: undefined,
+            type: 'table' as const,
+            tableId: null,
             columns: []
           },
           options: {
@@ -116,8 +99,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       case 'metric':
         return {
           dataSource: {
-            type: 'table',
-            tableId: undefined,
+            type: 'table' as const,
+            tableId: null,
             column: '',
             aggregation: 'sum'
           },
@@ -130,7 +113,10 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
         };
       case 'text':
         return {
-          content: 'Enter your text here...',
+          dataSource: {
+            type: 'manual' as const,
+            content: 'Enter your text here...'
+          },
           options: {
             fontSize: 16,
             fontWeight: 'normal',
@@ -138,21 +124,12 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
             textAlign: 'left'
           }
         };
-      case 'filter':
-        return {
-          filters: [],
-          options: {
-            showLabels: true,
-            showOperators: true,
-            allowMultiple: true
-          }
-        };
       default:
         return {};
     }
   };
 
-  const updateWidget = (updates: Partial<Widget>) => {
+  const updateWidget = (updates: Partial<BaseWidget>) => {
     setEditedWidget(prev => {
       const newWidget = { ...prev, ...updates };
       
@@ -161,7 +138,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
         console.log('[WidgetEditor] Type changed from', prev.type, 'to', updates.type);
         return {
           ...newWidget,
-          config: getDefaultConfig(updates.type as string),
+          config: getDefaultConfig(updates.type as WidgetType),
           title: `New ${updates.type} Widget`
         };
       }
@@ -325,7 +302,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     <Label htmlFor="type">Widget Type</Label>
                     <Select
                       value={editedWidget.type}
-                      onValueChange={(value) => updateWidget({ type: value })}
+                      onValueChange={(value) => updateWidget({ type: value as WidgetType })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -424,8 +401,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                 <div className="space-y-4">
                   {/* Table Configuration with integrated TableSelector */}
                   <TableSelector
-                    tenantId={tenantId}
-                    selectedTableId={editedWidget.config?.dataSource?.tableId}
+                    tenantId={tenantId || 1}
+                    selectedTableId={editedWidget.config?.dataSource?.tableId || undefined}
                     selectedColumns={editedWidget.config?.dataSource?.columns || []}
                     onColumnsChange={(columns) => updateConfig({
                       dataSource: {
@@ -588,8 +565,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                 <div className="space-y-4">
                   {/* KPI Configuration with integrated TableSelector */}
                   <TableSelector
-                    tenantId={tenantId}
-                    selectedTableId={editedWidget.config?.dataSource?.tableId}
+                    tenantId={tenantId || 1}
+                    selectedTableId={editedWidget.config?.dataSource?.tableId || undefined}
                     selectedColumnY={editedWidget.config?.dataSource?.column || ''}
                     onColumnYChange={(column) => updateConfig({
                       dataSource: {
@@ -1030,8 +1007,8 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* Table Data Selector */}
                   {config.dataSource?.type === 'table' && (
                     <TableSelector
-                      tenantId={tenantId}
-                      selectedTableId={config.dataSource.tableId}
+                      tenantId={tenantId || 1}
+                      selectedTableId={config.dataSource.tableId || undefined}
                       selectedColumnX={config.dataSource.columnX}
                       selectedColumnY={config.dataSource.columnY}
                       filters={config.dataSource?.filters || []}

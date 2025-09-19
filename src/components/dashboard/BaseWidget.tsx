@@ -4,6 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, RefreshCw, Edit3, Trash2, Settings, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WidgetStyleConfig, WidgetPreset, BaseWidget as BaseWidgetType } from '@/types/widgets';
+import { WidgetErrorBoundary } from './composition/WidgetErrorBoundary';
+import { WidgetLoading } from './composition/WidgetLoading';
+import { getMinimalistStyles } from './design/MinimalistDesignSystem';
 
 // Common widget style presets
 export const WIDGET_PRESETS = {
@@ -107,101 +111,8 @@ export const WIDGET_PRESETS = {
   },
 } as const;
 
-export type WidgetPreset = keyof typeof WIDGET_PRESETS;
-
-export interface WidgetStyleConfig {
-  // Background styling
-  backgroundColor?: string;
-  backgroundGradient?: string;
-  backgroundImage?: string;
-  backgroundPattern?: 'none' | 'dots' | 'grid' | 'lines' | 'diagonal' | 'waves';
-  backgroundOpacity?: number;
-  
-  // Border styling
-  borderColor?: string;
-  borderWidth?: number;
-  borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
-  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
-  borderPosition?: 'all' | 'top' | 'bottom' | 'left' | 'right' | 'horizontal' | 'vertical';
-  
-  // Shadow styling
-  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'inner' | 'outline';
-  shadowColor?: string;
-  shadowBlur?: number;
-  shadowSpread?: number;
-  
-  // Padding and spacing
-  padding?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
-  margin?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
-  gap?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  
-  // Typography
-  titleColor?: string;
-  titleSize?: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
-  titleWeight?: 'thin' | 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold' | 'black';
-  titleAlign?: 'left' | 'center' | 'right' | 'justify';
-  titleTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  titleDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
-  
-  // Content styling
-  contentColor?: string;
-  contentSize?: 'xs' | 'sm' | 'base' | 'lg' | 'xl';
-  contentWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
-  contentAlign?: 'left' | 'center' | 'right' | 'justify';
-  
-  // Animation and effects
-  animation?: 'none' | 'fade' | 'slide' | 'bounce' | 'pulse' | 'spin' | 'ping' | 'wiggle';
-  hoverEffect?: 'none' | 'lift' | 'glow' | 'scale' | 'rotate' | 'tilt' | 'shimmer' | 'gradient';
-  transition?: 'none' | 'fast' | 'normal' | 'slow' | 'custom';
-  
-  // Layout and positioning
-  height?: 'auto' | 'fit' | 'full' | 'min' | 'max' | 'screen';
-  width?: 'auto' | 'fit' | 'full' | 'min' | 'max' | 'screen';
-  minHeight?: string;
-  maxHeight?: string;
-  minWidth?: string;
-  maxWidth?: string;
-  overflow?: 'visible' | 'hidden' | 'scroll' | 'auto' | 'clip';
-  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
-  
-  // Responsive design
-  responsive?: {
-    mobile?: Partial<WidgetStyleConfig>;
-    tablet?: Partial<WidgetStyleConfig>;
-    desktop?: Partial<WidgetStyleConfig>;
-    large?: Partial<WidgetStyleConfig>;
-  };
-  
-  // Grid and flexbox
-  display?: 'block' | 'inline' | 'flex' | 'grid' | 'inline-flex' | 'inline-grid';
-  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
-  flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
-  justifyContent?: 'start' | 'end' | 'center' | 'between' | 'around' | 'evenly';
-  alignItems?: 'start' | 'end' | 'center' | 'baseline' | 'stretch';
-  gridTemplateColumns?: string;
-  gridTemplateRows?: string;
-  gridGap?: string;
-  
-  // Visual effects
-  backdropBlur?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
-  backdropSaturate?: number;
-  filter?: 'none' | 'blur' | 'brightness' | 'contrast' | 'grayscale' | 'hue-rotate' | 'invert' | 'saturate' | 'sepia';
-  opacity?: number;
-  transform?: string;
-  
-  // Custom CSS
-  customCSS?: string;
-  customClasses?: string[];
-}
-
 export interface BaseWidgetProps {
-  widget: {
-    id: number | string;
-    title?: string | null;
-    type: string;
-    config?: any;
-    style?: WidgetStyleConfig;
-  };
+  widget: BaseWidgetType;
   isEditMode?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -685,38 +596,30 @@ export default function BaseWidget({
   );
 
   return (
-    <Card 
-      className={cn(
-        'h-full transition-all duration-200 group',
-        // Responsive base classes
-        'w-full min-h-[200px] sm:min-h-[250px] md:min-h-[300px] lg:min-h-[350px]',
-        // Responsive padding
-        'p-3 sm:p-4 md:p-5 lg:p-6',
-        // Responsive text sizes
-        'text-xs sm:text-sm md:text-base lg:text-lg',
-        // Responsive spacing
-        'space-y-2 sm:space-y-3 md:space-y-4',
-        getStyleClasses(),
-        className
-      )}
-      style={{
-        ...getDynamicStyles(),
-        ...(widgetStyle.titleColor && { '--title-color': widgetStyle.titleColor } as React.CSSProperties)
-      }}
-    >
-      <CardHeader className="pb-2 sm:pb-3 md:pb-4">
-        <div className="flex items-center justify-between gap-2 sm:gap-3">
+    <WidgetErrorBoundary widget={widget}>
+      <Card 
+        className={cn(
+          getMinimalistStyles.cardStyle(),
+          'h-full transition-all duration-200 group',
+          className
+        )}
+        style={{
+          ...getDynamicStyles(),
+          ...(widgetStyle.titleColor && { '--title-color': widgetStyle.titleColor } as React.CSSProperties)
+        }}
+      >
+      <CardHeader className={getMinimalistStyles.headerStyle()}>
+        <div className={getMinimalistStyles.layout.between}>
           <CardTitle 
             className={cn(
-              titleClasses,
-              'truncate flex-1 min-w-0',
-              'text-sm sm:text-base md:text-lg lg:text-xl'
+              getMinimalistStyles.titleStyle('md'),
+              'truncate flex-1 min-w-0'
             )}
             style={{ color: widgetStyle.titleColor }}
           >
             {title}
           </CardTitle>
-          <div className="flex items-center space-x-1 sm:space-x-2 widget-header-buttons opacity-100 transition-opacity duration-200 flex-shrink-0">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             {showRefresh && onRefresh && (
               <Button 
                 variant="ghost" 
@@ -735,7 +638,7 @@ export default function BaseWidget({
                   e.stopPropagation();
                 }}
                 disabled={isLoading}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50"
+                className={getMinimalistStyles.button.icon}
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
@@ -757,7 +660,7 @@ export default function BaseWidget({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50"
+                className={getMinimalistStyles.button.icon}
               >
                 <Palette className="h-4 w-4" />
               </Button>
@@ -780,7 +683,7 @@ export default function BaseWidget({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50"
+                className={getMinimalistStyles.button.icon}
               >
                 <Edit3 className="h-4 w-4" />
               </Button>
@@ -811,25 +714,10 @@ export default function BaseWidget({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 h-full p-3 sm:p-4 md:p-5 lg:p-6">
-        <div className={cn(
-          'h-full w-full',
-          'min-h-[150px] sm:min-h-[200px] md:min-h-[250px] lg:min-h-[300px]',
-          widgetStyle.height === 'min' ? 'min-h-[200px] sm:min-h-[250px] md:min-h-[300px] lg:min-h-[350px]' : '',
-          widgetStyle.overflow ? `overflow-${widgetStyle.overflow}` : 'overflow-hidden',
-          // Responsive content styling
-          widgetStyle.contentColor ? '' : 'text-foreground',
-          widgetStyle.contentSize ? `text-${widgetStyle.contentSize}` : 'text-sm sm:text-base',
-          widgetStyle.contentWeight ? `font-${widgetStyle.contentWeight}` : 'font-normal',
-          widgetStyle.contentAlign ? `text-${widgetStyle.contentAlign}` : 'text-left'
-        )}>
+      <CardContent className={getMinimalistStyles.contentStyle('h-full')}>
+        <div className="h-full w-full overflow-hidden">
           {isLoading ? (
-            <div className="space-y-2 sm:space-y-3 md:space-y-4">
-              <Skeleton className="h-3 sm:h-4 w-full" />
-              <Skeleton className="h-3 sm:h-4 w-3/4" />
-              <Skeleton className="h-3 sm:h-4 w-1/2" />
-              <Skeleton className="h-24 sm:h-32 md:h-40 w-full" />
-            </div>
+            <WidgetLoading type="skeleton" size="md" />
           ) : error ? (
             <div className="flex items-center justify-center h-full min-h-[120px] sm:min-h-[150px]">
               <div className="text-center text-muted-foreground p-4">
@@ -845,5 +733,6 @@ export default function BaseWidget({
         </div>
       </CardContent>
     </Card>
+    </WidgetErrorBoundary>
   );
 }

@@ -9,16 +9,17 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import BaseWidget from './BaseWidget';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
-import { FilterConfig } from '@/types/filtering-enhanced';
+import { WidgetProps, BaseWidget as BaseWidgetType } from '@/types/widgets';
+import { WidgetDataProvider } from './WidgetDataProvider';
 
 export interface TableWidgetConfig {
   title?: string;
   dataSource: {
     type: 'table';
-    tableId: number;
+    tableId: number | null;
     columns: string[];
-    filters?: FilterConfig[];
-    sortBy?: string;
+    filters?: any[];
+    sortBy?: string | null;
     sortOrder?: 'asc' | 'desc';
   };
   options?: {
@@ -28,21 +29,8 @@ export interface TableWidgetConfig {
   };
 }
 
-
-export interface Widget {
-  id: number | string;
-  title?: string | null;
-  type: string;
-  config?: TableWidgetConfig;
-}
-
-interface TableWidgetProps {
-  widget: Widget;
-  isEditMode?: boolean;
-  onEdit?: () => void;
-  onDelete?: () => void;
-  tenantId?: number;
-  databaseId?: number;
+interface TableWidgetProps extends WidgetProps {
+  widget: BaseWidgetType;
 }
 
 export default function TableWidget({ 
@@ -54,7 +42,7 @@ export default function TableWidget({
   databaseId 
 }: TableWidgetProps) {
   const config = (widget.config || {}) as TableWidgetConfig;
-  const dataSource = config.dataSource || { tableId: 1, columns: [] };
+  const dataSource = config.dataSource || { tableId: null, columns: [] };
   const options = config.options || {};
   
   const [data, setData] = useState<any[]>([]);
@@ -70,9 +58,6 @@ export default function TableWidget({
   const availableColumns = (columns ?? []).filter((c: any) => c?.tableId === dataSource.tableId) || [];
 
   const pageSize = options.pageSize || 10;
-  const totalPages = Math.ceil(data.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
 
   // Fetch data when table or columns change
   useEffect(() => {
@@ -111,7 +96,7 @@ export default function TableWidget({
         };
       }) || [];
 
-      const response = await api.tables.rows(tenantId, databaseId, dataSource.tableId, {
+      const response = await api.tables.rows(tenantId || 1, databaseId || 1, dataSource.tableId || 1, {
         page: currentPage,
         limit: pageSize,
         search: searchTerm || undefined,
@@ -167,9 +152,6 @@ export default function TableWidget({
   };
 
 
-  const paginatedData = useMemo(() => {
-    return data.slice(startIndex, endIndex);
-  }, [data, startIndex, endIndex]);
 
   const renderCellValue = (value: any) => {
     if (value === null || value === undefined) {
@@ -188,16 +170,30 @@ export default function TableWidget({
   };
 
   return (
-    <BaseWidget
-      widget={widget}
-      isEditMode={isEditMode}
-      onEdit={onEdit}
-      onDelete={onDelete}
-      isLoading={isLoading}
-      error={error}
-      onRefresh={handleRefresh}
-      showRefresh={true}
-    >
+    <WidgetDataProvider widget={widget}>
+      {({ data, isLoading, error, refetch }) => {
+        // For table widgets, data should be in format: { columns: [], rows: [], totalCount: number }
+        const tableData = data && typeof data === 'object' && 'columns' in data ? data as unknown as { columns: any[]; rows: any[]; totalCount: number } : { columns: [], rows: [], totalCount: 0 };
+        const tableRows = tableData.rows || [];
+        const tableColumns = tableData.columns || [];
+        
+        const totalPages = Math.ceil(tableRows.length / pageSize);
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        
+        const paginatedData = tableRows.slice(startIndex, endIndex);
+        
+        return (
+        <BaseWidget
+          widget={widget}
+          isEditMode={isEditMode}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          isLoading={isLoading}
+          error={error}
+          onRefresh={refetch}
+          showRefresh={true}
+        >
       <div className="space-y-4">
         {/* Search and Controls */}
         {options.showSearch !== false && (
@@ -247,16 +243,16 @@ export default function TableWidget({
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={tableColumns.length} className="text-center py-8 text-muted-foreground">
                     {isLoading ? 'Loading...' : 'No data available'}
                   </TableCell>
                 </TableRow>
               ) : (
                 paginatedData.map((row, index) => (
                   <TableRow key={row?.id || index}>
-                    {(dataSource.columns ?? []).map((columnName) => (
-                      <TableCell key={columnName}>
-                        {renderCellValue(row?.[columnName])}
+                    {tableColumns.map((column: any) => (
+                      <TableCell key={column.key}>
+                        {renderCellValue(row?.[column.key])}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -270,7 +266,7 @@ export default function TableWidget({
         {options.showPagination !== false && totalPages > 1 && (
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} entries
+              Showing {startIndex + 1} to {Math.min(endIndex, tableRows.length)} of {tableRows.length} entries
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -313,5 +309,8 @@ export default function TableWidget({
         )}
       </div>
     </BaseWidget>
+        );
+      }}
+    </WidgetDataProvider>
   );
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, CheckSquare, Clock, Calendar, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,19 +13,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { LineChartWidget } from '@/components/dashboard/LineChartWidget';
-import BarChartWidget from '@/components/dashboard/BarChartWidget';
-import PieChartWidget from '@/components/dashboard/PieChartWidget';
-import TableWidget from '@/components/dashboard/TableWidget';
-import KPIWidget from '@/components/dashboard/KPIWidget';
-import TextWidget from '@/components/dashboard/TextWidget';
+import { WidgetRegistry, WidgetFactory } from '@/components/dashboard';
 import { WidgetEditor } from '@/components/dashboard/WidgetEditor';
+import { WidgetLazyLoading } from '@/components/dashboard/WidgetLazyLoading';
 import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { DashboardDetailsEditor } from '@/components/dashboard/DashboardDetailsEditor';
 import { useDashboardStore } from '@/hooks/useDashboardStore';
 import { useWidgetPendingChanges } from '@/hooks/useWidgetPendingChanges';
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
+import { BaseWidget, WidgetType, Position, WidgetConfig } from '@/types/widgets';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,15 +47,8 @@ interface Dashboard {
   _count: { widgets: number };
 }
 
-interface Widget {
-  id: number | string;
-  type: string;
-  title: string | null;
-  position: { x: number; y: number; width: number; height: number };
-  config: any;
-  isVisible: boolean;
-  order: number;
-}
+// Using BaseWidget from centralized types
+type Widget = BaseWidget;
 
 // Removed PendingChange interface - now using the one from useWidgetPendingChanges hook
 
@@ -458,119 +448,32 @@ export default function DashboardsPage() {
   };
 
   const handleAddWidget = (type: string) => {
-    // Create default config based on widget type
-    let defaultConfig = {};
-    
-    if (type === 'chart') {
-      defaultConfig = {
-        chartType: 'line',
-        dataSource: {
-          tableId: 1, // Default table ID - will be updated when user selects a table
-          columnX: 'id', // Default column - will be updated when user selects columns
-          columnY: 'id', // Default column - will be updated when user selects columns
-          filters: []
-        },
-        options: {
-          title: '',
-          xAxisLabel: 'X Axis',
-          yAxisLabel: 'Y Axis',
-          colors: ['#3B82F6'],
-          showLegend: true,
-          showGrid: true
-        },
-        // Additional fields for LineChartWidget compatibility
-        xAxis: { key: 'id', label: 'X Axis', type: 'category' },
-        yAxis: { key: 'id', label: 'Y Axis', type: 'number' }
-      };
-    } else if (type === 'table') {
-      defaultConfig = {
-        dataSource: {
-          tableId: 1, // Default table ID - will be updated when user selects a table
-          columns: ['id'], // Default columns - will be updated when user selects columns
-          filters: [],
-          sortBy: 'id',
-          sortOrder: 'asc'
-        },
-        options: {
-          pageSize: 10,
-          showPagination: true,
-          showSearch: true,
-          showExport: true,
-          showColumnSelector: true
-        }
-      };
-    } else if (type === 'metric') {
-      defaultConfig = {
-        dataSource: {
-          type: 'table',
-          tableId: 1, // Default table ID - will be updated when user selects a table
-          column: 'id', // Default column - will be updated when user selects column
-          aggregation: 'sum',
-          filters: []
-        },
-        options: {
-          format: 'number',
-          decimals: 0,
-          prefix: '',
-          suffix: '',
-          showChange: true,
-          showTrend: true
-        }
-      };
-    } else if (type === 'text') {
-      defaultConfig = {
-        dataSource: {
-          type: 'manual',
-          content: 'Enter your text content here...'
-        },
-        type: 'plain',
-        options: {
-          fontSize: 'base',
-          textAlign: 'left',
-          backgroundColor: '',
-          textColor: '',
-          padding: 'md',
-          showBorder: true,
-          borderRadius: 'md'
-        }
-      };
-    }
-
-    // Find a free position for the new widget, considering both existing widgets and pending changes
+    // Get all existing widgets for smart positioning
     const allWidgets = [
       ...(selectedDashboard?.widgets ?? []),
       ...pendingChanges
         .filter(change => change.type === 'create' && change.data)
         .map(change => change.data as Widget)
     ];
-    const freePosition = findFreePosition(allWidgets);
 
-    const newWidget: Partial<Widget> = {
-      type,
-      title: `New ${type} Widget`,
-      position: freePosition,
-      config: defaultConfig,
-      isVisible: true,
-      order: (selectedDashboard?.widgets ?? []).length || 0,
-    };
+    // Create widget using factory with smart positioning
+    const newWidget = WidgetFactory.createWithSmartPosition(
+      type as WidgetType,
+      allWidgets,
+      {
+        order: (selectedDashboard?.widgets ?? []).length || 0
+      }
+    );
 
-    // Generate temporary ID for the new widget
-    const tempId = Date.now();
-    
     // Add to pending changes
-    addPendingChange('create', tempId, newWidget);
+    addPendingChange('create', newWidget.id, newWidget);
 
     // Add to local state immediately
-    const tempWidget: Widget = {
-      id: tempId, // Temporary ID
-      ...newWidget,
-    } as Widget;
-
     setSelectedDashboard(prev => {
       if (!prev) return prev;
       return {
         ...prev,
-        widgets: [...(prev.widgets ?? []), tempWidget],
+        widgets: [...(prev.widgets ?? []), newWidget as Widget],
       };
     });
   };
@@ -583,119 +486,27 @@ export default function DashboardsPage() {
       ? { ...widget, ...pendingChange.data }
       : widget;
 
-    switch (widget.type) {
-      case 'chart': {
-        const subType = (displayWidget?.config?.chartType) || (displayWidget as any).subType || 'line';
-        if (subType === 'bar') {
-          return (
-            <BarChartWidget 
-              widget={displayWidget} 
-              isEditMode={isEditMode}
-              onEdit={() => {
-                console.log('Bar chart edit clicked:', widget.id);
-                handleWidgetClick(widget);
-              }}
-              onDelete={() => {
-                console.log('Bar chart delete clicked:', widget.id);
-                handleWidgetDelete(Number(widget.id));
-              }}
-              tenantId={tenant?.id}
-              databaseId={1}
-            />
-          );
-        }
-        if (subType === 'pie') {
-          return (
-            <PieChartWidget 
-              widget={displayWidget} 
-              isEditMode={isEditMode}
-              onEdit={() => {
-                console.log('Pie chart edit clicked:', widget.id);
-                handleWidgetClick(widget);
-              }}
-              onDelete={() => {
-                console.log('Pie chart delete clicked:', widget.id);
-                handleWidgetDelete(Number(widget.id));
-              }}
-              tenantId={tenant?.id}
-              databaseId={1}
-            />
-          );
-        }
-        return (
-          <LineChartWidget 
-            widget={displayWidget} 
-            isEditMode={isEditMode}
-            onEdit={() => {
-              console.log('Line chart edit clicked:', widget.id);
-              handleWidgetClick(widget);
-            }}
-            onDelete={() => {
-              console.log('Line chart delete clicked:', widget.id);
-              handleWidgetDelete(Number(widget.id));
-            }}
-          />
-        );
-      }
-      case 'table':
-        return (
-          <TableWidget 
-            widget={displayWidget} 
-            isEditMode={isEditMode}
-            onEdit={() => {
-              console.log('Table edit clicked:', widget.id);
-              handleWidgetClick(widget);
-            }}
-            onDelete={() => {
-              console.log('Table delete clicked:', widget.id);
-              handleWidgetDelete(Number(widget.id));
-            }}
-            tenantId={tenant?.id}
-            databaseId={1}
-          />
-        );
-      case 'metric':
-        return (
-          <KPIWidget
-            widget={displayWidget}
-            isEditMode={isEditMode}
-            onEdit={() => {
-              console.log('KPI edit clicked:', widget.id);
-              handleWidgetClick(widget);
-            }}
-            onDelete={() => {
-              console.log('KPI delete clicked:', widget.id);
-              handleWidgetDelete(Number(widget.id));
-            }}
-            tenantId={tenant?.id}
-            databaseId={1}
-          />
-        );
-      case 'text':
-        return (
-          <TextWidget
-            widget={displayWidget}
-            isEditMode={isEditMode}
-            onEdit={() => {
-              console.log('Text edit clicked:', widget.id);
-              handleWidgetClick(widget);
-            }}
-            onDelete={() => {
-              console.log('Text delete clicked:', widget.id);
-              handleWidgetDelete(Number(widget.id));
-            }}
-          />
-        );
-      default:
-        return (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <Settings className="h-8 w-8 mx-auto mb-2" />
-              <p>Widget type "{widget.type}" not implemented</p>
-            </div>
-          </div>
-        );
-    }
+    // Use lazy loading for better performance
+    return (
+      <WidgetLazyLoading
+        widget={displayWidget as BaseWidget}
+        onWidgetProps={() => ({
+          isEditMode,
+          onEdit: () => {
+            console.log('Widget edit clicked:', widget.id);
+            handleWidgetClick(widget);
+          },
+          onDelete: () => {
+            console.log('Widget delete clicked:', widget.id);
+            handleWidgetDelete(Number(widget.id));
+          },
+          tenantId: tenant?.id,
+          databaseId: 1
+        })}
+        threshold={0.1}
+        rootMargin="100px"
+      />
+    );
   };
 
   if (isLoading) {
@@ -803,14 +614,14 @@ export default function DashboardsPage() {
                 </div>
                 
                 {isEditMode && (
-                  <div className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2 border">
-                    <span className="text-sm font-medium text-gray-700 mr-2">Add Widget:</span>
-                    <div className="flex space-x-1">
+                  <div className="flex items-center space-x-2 bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+                    <span className="text-sm font-medium text-gray-900 mr-3">Add Widget:</span>
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleAddWidget('chart')}
-                        className="flex items-center space-x-2 px-3 py-2 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
                         title="Add Chart Widget"
                       >
                         <BarChart3 className="h-4 w-4" />
@@ -820,7 +631,7 @@ export default function DashboardsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleAddWidget('table')}
-                        className="flex items-center space-x-2 px-3 py-2 hover:bg-green-50 hover:text-green-600 transition-colors"
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
                         title="Add Table Widget"
                       >
                         <Database className="h-4 w-4" />
@@ -830,7 +641,7 @@ export default function DashboardsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleAddWidget('metric')}
-                        className="flex items-center space-x-2 px-3 py-2 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
                         title="Add KPI/Metric Widget"
                       >
                         <TrendingUp className="h-4 w-4" />
@@ -840,11 +651,51 @@ export default function DashboardsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleAddWidget('text')}
-                        className="flex items-center space-x-2 px-3 py-2 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
                         title="Add Text Widget"
                       >
                         <FileText className="h-4 w-4" />
                         <span className="text-sm">Text</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('tasks')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
+                        title="Add Tasks Widget"
+                      >
+                        <CheckSquare className="h-4 w-4" />
+                        <span className="text-sm">Tasks</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('clock')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
+                        title="Add Clock Widget"
+                      >
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">Clock</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('calendar')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
+                        title="Add Calendar Widget"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span className="text-sm">Calendar</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('weather')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 text-gray-700 transition-colors rounded-lg"
+                        title="Add Weather Widget"
+                      >
+                        <Cloud className="h-4 w-4" />
+                        <span className="text-sm">Weather</span>
                       </Button>
                     </div>
                   </div>
