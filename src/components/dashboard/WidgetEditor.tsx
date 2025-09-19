@@ -604,12 +604,15 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                   {/* Enhanced Aggregation Options */}
                   <AggregationSelector
                     config={editedWidget.config?.dataSource?.aggregationConfig || { primary: 'sum' }}
-                    onConfigChange={(aggregationConfig) => updateConfig({
-                      dataSource: {
-                        ...editedWidget.config?.dataSource,
-                        aggregationConfig: aggregationConfig
-                      }
-                    })}
+                    onConfigChange={(aggregationConfig) => {
+                      console.log('[WidgetEditor] Aggregation config change:', aggregationConfig);
+                      updateConfig({
+                        dataSource: {
+                          ...editedWidget.config?.dataSource,
+                          aggregationConfig: aggregationConfig
+                        }
+                      });
+                    }}
                     columnType="number"
                   />
 

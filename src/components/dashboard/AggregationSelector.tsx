@@ -110,10 +110,12 @@ export function AggregationSelector({
 	const validPrimary = suitableAggregations.find(opt => opt.type === config.primary)?.type || suitableAggregations[0]?.type || 'count';
 
 	const handlePrimaryChange = (aggregation: AggregationType) => {
+		console.log('[AggregationSelector] Primary change:', { aggregation, currentConfig: config });
 		const newConfig: AggregationConfig = {
 			...config,
 			primary: aggregation
 		};
+		console.log('[AggregationSelector] New config:', newConfig);
 		onConfigChange(newConfig);
 	};
 

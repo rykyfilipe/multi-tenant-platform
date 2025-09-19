@@ -402,6 +402,12 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
 
     // Check if aggregation function is selected (support both new and legacy formats)
     const aggregation = dataSource.aggregationConfig?.primary || dataSource.aggregation;
+    console.log('[KPI] Aggregation check:', {
+      dataSource,
+      aggregationConfig: dataSource.aggregationConfig,
+      legacyAggregation: dataSource.aggregation,
+      finalAggregation: aggregation
+    });
     if (!aggregation) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
