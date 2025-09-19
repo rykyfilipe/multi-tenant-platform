@@ -6,11 +6,23 @@ import { DashboardValidators, handleValidationError } from '@/lib/dashboard-vali
 import { z } from 'zod';
 
 // Batch operation schema
-const BatchOperationSchema = z.object({
-  type: z.enum(['create', 'update', 'delete']),
-  widgetId: z.union([z.number(), z.string()]).optional(),
-  data: z.any().optional(),
-});
+const BatchOperationSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('create'),
+    widgetId: z.union([z.number(), z.string(), z.null()]).optional(),
+    data: z.any(),
+  }),
+  z.object({
+    type: z.literal('update'),
+    widgetId: z.union([z.number(), z.string()]),
+    data: z.any(),
+  }),
+  z.object({
+    type: z.literal('delete'),
+    widgetId: z.union([z.number(), z.string()]),
+    data: z.any().optional(),
+  }),
+]);
 
 const BatchRequestSchema = z.object({
   operations: z.array(BatchOperationSchema).min(1, 'At least one operation is required'),
@@ -71,8 +83,8 @@ export async function POST(
             break;
             
           case 'update':
-            if (!operation.widgetId || !operation.data) {
-              throw new Error('Widget ID and data are required for update operation');
+            if (!operation.data) {
+              throw new Error('Data is required for update operation');
             }
             
             // Validate widget update data
@@ -93,9 +105,7 @@ export async function POST(
             break;
             
           case 'delete':
-            if (!operation.widgetId) {
-              throw new Error('Widget ID is required for delete operation');
-            }
+            // widgetId is guaranteed to be present by the schema
             
             await DashboardService.deleteWidget(
               dashboardId,

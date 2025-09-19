@@ -155,14 +155,18 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       const operations = Array.from(pendingChanges.values()).map(change => {
         const operation: any = {
           type: change.type,
-          widgetId: change.widgetId,
         };
         
-        // Pentru operațiuni de create, exclude id-ul pentru a lăsa Prisma să-l genereze automat
-        if (change.type === 'create' && change.data) {
-          const { id, ...dataWithoutId } = change.data;
-          operation.data = dataWithoutId;
+        // Pentru operațiuni de create, nu include widgetId (va fi null)
+        if (change.type === 'create') {
+          operation.widgetId = null;
+          if (change.data) {
+            const { id, ...dataWithoutId } = change.data;
+            operation.data = dataWithoutId;
+          }
         } else {
+          // Pentru update și delete, include widgetId
+          operation.widgetId = change.widgetId;
           operation.data = change.data;
         }
         

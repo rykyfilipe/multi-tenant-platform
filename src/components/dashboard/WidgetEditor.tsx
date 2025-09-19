@@ -426,6 +426,12 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         }
                       });
                     }}
+                    onColumnsChange={(columns) => updateConfig({
+                      dataSource: {
+                        ...editedWidget.config?.dataSource,
+                        columns: columns
+                      }
+                    })}
                     onColumnXChange={() => {}}
                     onColumnYChange={() => {}}
                     loadTables={loadTables}
