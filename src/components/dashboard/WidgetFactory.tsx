@@ -20,7 +20,8 @@ export class WidgetFactory {
       config: this.getDefaultConfig(type, overrides.config),
       isVisible: overrides.isVisible ?? true,
       order: overrides.order ?? 0,
-      style: overrides.style
+      style: overrides.style,
+      parentId: overrides.parentId
     };
 
     return baseWidget;

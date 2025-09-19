@@ -177,6 +177,7 @@ export interface BaseWidget {
   isVisible: boolean;
   order: number;
   style?: WidgetStyleConfig;
+  parentId?: string;
 }
 
 // Widget Props Interface
@@ -244,4 +245,5 @@ export interface WidgetFactoryOptions {
   title?: string;
   isVisible?: boolean;
   order?: number;
+  parentId?: string;
 }
