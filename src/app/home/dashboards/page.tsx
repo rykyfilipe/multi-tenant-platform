@@ -816,11 +816,27 @@ export default function DashboardsPage() {
                         e.stopPropagation();
                       }
                     }}
+                    onClick={(e) => {
+                      // Prevent widget selection when clicking on buttons
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
                   >
                     <motion.div
                       className="h-full"
                       whileHover={isEditMode ? { scale: 1.02 } : {}}
                       transition={{ duration: 0.2 }}
+                      onClick={(e) => {
+                        // Prevent widget selection when clicking on buttons
+                        const target = e.target as HTMLElement;
+                        if (target.closest('button')) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
                     >
                       {renderWidget(widget)}
                     </motion.div>

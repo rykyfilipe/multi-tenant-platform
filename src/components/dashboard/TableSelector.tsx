@@ -418,6 +418,83 @@ export function TableSelector({
 					</div>
 				)}
 
+				{/* Column Selection - single selects for chart axes */}
+				{selectedTableId && (onColumnXChange || onColumnYChange) && (
+					<div className="space-y-4">
+						{/* X Axis Column Selection */}
+						{onColumnXChange && (
+							<div className="space-y-2">
+								<label className="text-xs font-medium text-gray-700 mb-2 block">
+									X Axis Column {expectedXType && `(${expectedXType})`}
+								</label>
+								{isLoadingColumns ? (
+									<Skeleton className="h-10 w-full" />
+								) : columnsError ? (
+									<div className="text-sm text-red-500">{columnsError}</div>
+								) : (
+									<Select
+										value={selectedColumnX || ''}
+										onValueChange={onColumnXChange}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder="Select X axis column" />
+										</SelectTrigger>
+										<SelectContent>
+											{columns
+												.filter(column => !expectedXType || isColumnTypeCompatible(column?.type || '', expectedXType))
+												.map((column) => (
+													<SelectItem key={column?.id || column?.name} value={column?.name || ''}>
+														<div className="flex items-center justify-between w-full">
+															<span>{column?.name}</span>
+															<span className="text-xs text-gray-500 ml-2">{column?.type}</span>
+														</div>
+													</SelectItem>
+												))
+											}
+										</SelectContent>
+									</Select>
+								)}
+							</div>
+						)}
+
+						{/* Y Axis Column Selection */}
+						{onColumnYChange && (
+							<div className="space-y-2">
+								<label className="text-xs font-medium text-gray-700 mb-2 block">
+									Y Axis Column {expectedYType && `(${expectedYType})`}
+								</label>
+								{isLoadingColumns ? (
+									<Skeleton className="h-10 w-full" />
+								) : columnsError ? (
+									<div className="text-sm text-red-500">{columnsError}</div>
+								) : (
+									<Select
+										value={selectedColumnY || ''}
+										onValueChange={onColumnYChange}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder="Select Y axis column" />
+										</SelectTrigger>
+										<SelectContent>
+											{columns
+												.filter(column => !expectedYType || isColumnTypeCompatible(column?.type || '', expectedYType))
+												.map((column) => (
+													<SelectItem key={column?.id || column?.name} value={column?.name || ''}>
+														<div className="flex items-center justify-between w-full">
+															<span>{column?.name}</span>
+															<span className="text-xs text-gray-500 ml-2">{column?.type}</span>
+														</div>
+													</SelectItem>
+												))
+											}
+										</SelectContent>
+									</Select>
+								)}
+							</div>
+						)}
+					</div>
+				)}
+
 				{/* Filters - only show if onFiltersChange is provided */}
 				{selectedTableId && onFiltersChange && (
 					<div className="space-y-2">

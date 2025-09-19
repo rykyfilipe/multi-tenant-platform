@@ -251,7 +251,7 @@ export default function TableWidget({
                     {tableColumns.map((column: any) => (
                       <TableCell key={column.key} className="text-xs sm:text-sm whitespace-nowrap">
                         <div className="truncate max-w-[150px] sm:max-w-none">
-                          {renderCellValue(row?.value)}
+                          {renderCellValue(row?.[column.key].value)}
                         </div>
                       </TableCell>
                     ))}
