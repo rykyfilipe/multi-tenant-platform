@@ -235,6 +235,7 @@ export function EnhancedTableSelector({
 	};
 
 	const handleColumnToggle = (axis: 'x' | 'y', columnName: string, isSelected: boolean) => {
+		console.log('[EnhancedTableSelector] handleColumnToggle called:', { axis, columnName, isSelected });
 		const currentAxis = axis === 'x' ? dataSource.xAxis : dataSource.yAxis;
 		if (!currentAxis) return;
 
@@ -321,7 +322,10 @@ export function EnhancedTableSelector({
 					// Single column selection
 					<Select
 						value={currentAxis?.key || ''}
-						onValueChange={(value) => handleAxisChange(axis, { key: value, label: value, columns: [value] })}
+						onValueChange={(value) => {
+							console.log('[EnhancedTableSelector] Select onValueChange called:', { axis, value, compatibleColumns });
+							handleAxisChange(axis, { key: value, label: value, columns: [value] });
+						}}
 					>
 						<SelectTrigger className="h-8">
 							<SelectValue placeholder={`Select ${label.toLowerCase()} column`} />

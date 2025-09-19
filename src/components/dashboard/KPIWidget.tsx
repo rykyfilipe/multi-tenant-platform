@@ -198,7 +198,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       const queryData = {
         filters: dataSource.filters || [],
         search: '',
-        sortBy: column,
+        sortBy: 'id', // Use valid Row property for sorting
         sortOrder: 'desc' as const,
         page: 1,
         pageSize: 1000, // Get all data for aggregation
