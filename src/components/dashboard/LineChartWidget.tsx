@@ -13,12 +13,11 @@ export interface ChartDataPoint {
 }
 
 export interface DataSource {
-  type: 'manual' | 'table';
+  type: 'table';
   tableId?: number;
   columnX?: string;
   columnY?: string;
   filters?: FilterConfig[];
-  manualData?: ChartDataPoint[];
   aggregation?: string;
   groupBy?: string;
 }
@@ -135,8 +134,21 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
     const rows = response.data;
     
     // Transform rows with cells to chart data
-    const xKey = dataSource.columnX || 'x';
-    const yKey = dataSource.columnY || 'y';
+    // Use enhanced data source format
+    const enhancedDataSource = dataSource as any;
+    const xColumns = enhancedDataSource.xAxis?.columns || enhancedDataSource.xColumns || [];
+    const yColumns = enhancedDataSource.yAxis?.columns || enhancedDataSource.yColumns || [];
+    
+    const xKey = xColumns[0] || 'x';
+    const yKey = yColumns[0] || 'y';
+    
+    console.log('[LineChart] Mapping data:', {
+      xColumns,
+      yColumns,
+      xKey,
+      yKey,
+      rowsCount: rows.length
+    });
     
     return (rows ?? []).map((row: any) => {
       const dataPoint: any = {};
@@ -172,7 +184,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
   // Safely extract config with comprehensive fallbacks
   const config = (widget.config as LineChartConfig) || {};
   const options = config.options || {};
-  const dataSource = config.dataSource || { type: 'manual', manualData: [] };
+  const dataSource = config.dataSource || { type: 'table', tableId: 0 };
   
   // Support both old and new data source formats
   const enhancedDataSource = dataSource as EnhancedDataSource;
@@ -203,13 +215,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
 
   // Process data based on data source type
   const processedData = useMemo(() => {
-    let rawData: any[] = [];
-    
-    if (dataSource.type === 'manual' && legacyDataSource.manualData) {
-      rawData = Array.isArray(legacyDataSource.manualData) ? legacyDataSource.manualData : [];
-    } else {
-      rawData = Array.isArray(data) ? data : [];
-    }
+    const rawData = Array.isArray(data) ? data : [];
     
     // For multi-column support in line charts, we create multiple lines
     if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
@@ -255,30 +261,20 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
         setIsLoading(true);
         setError(null);
 
-        if (dataSource.type === 'manual' && dataSource.manualData) {
-          // Use manual data directly
-          setData(dataSource.manualData);
-        } else if (dataSource.type === 'table' && dataSource.tableId && dataSource.tableId > 0) {
+        if (dataSource.type === 'table' && dataSource.tableId && dataSource.tableId > 0) {
           // Fetch from table
           const tableData = await fetchTableData(dataSource);
           setData(tableData);
           setLastFetchTime(new Date());
-        } else if (dataSource.type === 'table') {
+        } else {
           // No table selected
           setData([]);
           setError('Please select a table and configure columns in the widget editor');
-        } else {
-          // Fallback to mock data for manual data type
-          const mockData = generateMockData(20);
-          setData(mockData);
         }
       } catch (err) {
         console.error('Error loading chart data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load chart data');
-        
-        // Fallback to mock data on error
-        const mockData = generateMockData(20);
-        setData(mockData);
+        setData([]);
       } finally {
         setIsLoading(false);
       }

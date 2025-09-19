@@ -20,7 +20,7 @@ interface PieChartWidgetProps {
 export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, tenantId, databaseId }: PieChartWidgetProps) {
 	// Safely extract config with comprehensive fallbacks
 	const config = (widget.config || {}) as LineChartConfig;
-	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
+	const dataSource = config.dataSource || { type: 'table', tableId: 0 };
 	const options = config.options || {};
 	
 	// Support both old and new data source formats

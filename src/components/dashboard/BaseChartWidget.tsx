@@ -12,13 +12,13 @@ export interface BaseChartWidgetProps {
 export function useChartData(widget: Widget, tenantId?: number, databaseId?: number) {
 	// Safely extract config with comprehensive fallbacks
 	const config = (widget.config || {}) as LineChartConfig;
-	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
+	const dataSource = config.dataSource || { type: 'table', tableId: 0 };
 	
 	// Ensure xAxis and yAxis have proper fallbacks
 	const safeXAxis = config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const };
 	const safeYAxis = config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const };
 	
-	const [data, setData] = useState<ChartDataPoint[]>(dataSource.type === 'manual' ? (dataSource.manualData || []) : []);
+	const [data, setData] = useState<ChartDataPoint[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
