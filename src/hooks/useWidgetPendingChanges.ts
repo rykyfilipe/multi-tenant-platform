@@ -48,7 +48,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     return `${type}_${widgetId}`;
   }, []);
 
-  // Adaugă o modificare pending
+  // Adaugă o modificare pending cu logică inteligentă
   const addPendingChange = useCallback((
     type: 'create' | 'update' | 'delete',
     widgetId: number | string,
@@ -60,62 +60,123 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     setPendingChanges(prev => {
       const newMap = new Map(prev);
 
-      // Pentru operațiuni de update, verifică dacă valoarea este aceeași cu originalul
-      if (type === 'update' && data && originalData) {
-        const areEqual = (() => {
-          // Comparare mai robustă a valorilor
-          if (data == null && originalData == null) {
-            return true;
-          }
-          if (data == null || originalData == null) {
-            return false;
-          }
-          
-          // Pentru obiecte, comparăm JSON-ul
-          if (typeof data === 'object' && typeof originalData === 'object') {
-            return JSON.stringify(data) === JSON.stringify(originalData);
-          }
-          
-          // Comparație strictă pentru restul
-          return data === originalData;
-        })();
-
-        // Dacă valoarea este aceeași cu originalul, eliminăm din pending
-        if (areEqual) {
-          newMap.delete(changeKey);
-          return newMap;
-        }
-      }
-
-      // Pentru operațiuni de delete, verifică dacă există deja o operațiune de create
-      if (type === 'delete') {
-        const createKey = getChangeKey(widgetId, 'create');
-        if (newMap.has(createKey)) {
-          // Dacă există o operațiune de create, elimină complet din pending
-          newMap.delete(createKey);
-          return newMap;
-        }
-      }
-
-      // Pentru operațiuni de create, verifică dacă există deja o operațiune de delete
+      // 1. PENTRU WIDGET-URI NOI (CREATE) - Modificările se fac direct pe widget-ul din pendingChanges
       if (type === 'create') {
         const deleteKey = getChangeKey(widgetId, 'delete');
         if (newMap.has(deleteKey)) {
           // Dacă există o operațiune de delete, elimină complet din pending
           newMap.delete(deleteKey);
         }
+
+        // Adaugă sau actualizează widget-ul nou
+        const pendingChange: PendingChange = {
+          type: 'create',
+          widgetId,
+          data: data || {},
+          originalData: originalData || {},
+          timestamp: Date.now(),
+        };
+        newMap.set(changeKey, pendingChange);
+        return newMap;
       }
 
-      // Adaugă modificarea în pending changes
-      const pendingChange: PendingChange = {
-        type,
-        widgetId,
-        data,
-        originalData,
-        timestamp: Date.now(),
-      };
-      newMap.set(changeKey, pendingChange);
-      
+      // 2. PENTRU WIDGET-URI EXISTENTE (UPDATE) - Verifică dacă există deja o operațiune de create
+      if (type === 'update') {
+        const createKey = getChangeKey(widgetId, 'create');
+        const existingCreate = newMap.get(createKey);
+        
+        if (existingCreate) {
+          // Dacă există deja o operațiune de create, modifică direct widget-ul din pendingChanges
+          const updatedData = { ...existingCreate.data, ...data };
+          const updatedChange: PendingChange = {
+            ...existingCreate,
+            data: updatedData,
+            timestamp: Date.now(),
+          };
+          newMap.set(createKey, updatedChange);
+          return newMap;
+        }
+
+        // Pentru widget-uri existente, verifică dacă valoarea este diferită de original
+        if (data && originalData) {
+          const areEqual = (() => {
+            // Comparare mai robustă a valorilor
+            if (data == null && originalData == null) {
+              return true;
+            }
+            if (data == null || originalData == null) {
+              return false;
+            }
+            
+            // Pentru obiecte, comparăm JSON-ul
+            if (typeof data === 'object' && typeof originalData === 'object') {
+              return JSON.stringify(data) === JSON.stringify(originalData);
+            }
+            
+            // Comparație strictă pentru restul
+            return data === originalData;
+          })();
+
+          // Dacă valoarea este aceeași cu originalul, elimină din pending
+          if (areEqual) {
+            newMap.delete(changeKey);
+            return newMap;
+          }
+        }
+
+        // Adaugă sau actualizează modificarea
+        const existingUpdate = newMap.get(changeKey);
+        if (existingUpdate) {
+          // Merge cu modificarea existentă - păstrează doar ultima modificare
+          const mergedData = { ...existingUpdate.data, ...data };
+          const updatedChange: PendingChange = {
+            ...existingUpdate,
+            data: mergedData,
+            timestamp: Date.now(),
+          };
+          newMap.set(changeKey, updatedChange);
+        } else {
+          // Adaugă noua modificare
+          const pendingChange: PendingChange = {
+            type: 'update',
+            widgetId,
+            data,
+            originalData,
+            timestamp: Date.now(),
+          };
+          newMap.set(changeKey, pendingChange);
+        }
+        return newMap;
+      }
+
+      // 3. PENTRU ȘTERGERE (DELETE) - Logică inteligentă
+      if (type === 'delete') {
+        const createKey = getChangeKey(widgetId, 'create');
+        const updateKey = getChangeKey(widgetId, 'update');
+        
+        if (newMap.has(createKey)) {
+          // Dacă există o operațiune de create, elimină complet din pending (nu mai trebuie să-l creezi)
+          newMap.delete(createKey);
+          return newMap;
+        }
+        
+        if (newMap.has(updateKey)) {
+          // Dacă există modificări, elimină-le și păstrează doar ștergerea
+          newMap.delete(updateKey);
+        }
+
+        // Adaugă operațiunea de ștergere
+        const pendingChange: PendingChange = {
+          type: 'delete',
+          widgetId,
+          data: null,
+          originalData: originalData || {},
+          timestamp: Date.now(),
+        };
+        newMap.set(changeKey, pendingChange);
+        return newMap;
+      }
+
       return newMap;
     });
 
@@ -176,6 +237,40 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     const changeKey = getChangeKey(widgetId, type);
     return pendingChanges.get(changeKey);
   }, [pendingChanges, getChangeKey]);
+
+  // Obține widget-ul final cu toate modificările aplicate (pentru afișare)
+  const getFinalWidget = useCallback((originalWidget: Widget): Widget | null => {
+    const createKey = getChangeKey(originalWidget.id, 'create');
+    const updateKey = getChangeKey(originalWidget.id, 'update');
+    const deleteKey = getChangeKey(originalWidget.id, 'delete');
+    
+    // Dacă există o operațiune de ștergere, widget-ul nu trebuie afișat
+    if (pendingChangesMap.has(deleteKey)) {
+      return null;
+    }
+    
+    // Dacă există o operațiune de create, returnează widget-ul nou
+    if (pendingChangesMap.has(createKey)) {
+      const createChange = pendingChangesMap.get(createKey);
+      return {
+        ...originalWidget,
+        ...createChange?.data,
+        id: originalWidget.id, // Păstrează ID-ul original pentru afișare
+      } as Widget;
+    }
+    
+    // Dacă există modificări, aplică-le pe widget-ul original
+    if (pendingChangesMap.has(updateKey)) {
+      const updateChange = pendingChangesMap.get(updateKey);
+      return {
+        ...originalWidget,
+        ...updateChange?.data,
+      } as Widget;
+    }
+    
+    // Dacă nu există modificări, returnează widget-ul original
+    return originalWidget;
+  }, [pendingChangesMap, getChangeKey]);
 
   // Salvează toate modificările pending
   const savePendingChanges = useCallback(async (dashboardId: number) => {
@@ -330,5 +425,6 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     // Helpers
     hasPendingChange,
     getPendingChange,
+    getFinalWidget,
   };
 }
