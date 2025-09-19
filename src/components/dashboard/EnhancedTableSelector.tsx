@@ -215,6 +215,7 @@ export function EnhancedTableSelector({
 	};
 
 	const handleAxisChange = (axis: 'x' | 'y', updates: Partial<ChartAxisConfig>) => {
+		console.log('[EnhancedTableSelector] handleAxisChange called:', { axis, updates, currentDataSource: dataSource });
 		const currentAxis = axis === 'x' ? dataSource.xAxis : dataSource.yAxis;
 		const newAxis: ChartAxisConfig = {
 			key: '',
@@ -229,6 +230,7 @@ export function EnhancedTableSelector({
 			...dataSource,
 			[axis === 'x' ? 'xAxis' : 'yAxis']: newAxis
 		};
+		console.log('[EnhancedTableSelector] New data source:', newDataSource);
 		onDataSourceChange(newDataSource);
 	};
 
@@ -319,7 +321,7 @@ export function EnhancedTableSelector({
 					// Single column selection
 					<Select
 						value={currentAxis?.key || ''}
-						onValueChange={(value) => handleAxisChange(axis, { key: value, label: value })}
+						onValueChange={(value) => handleAxisChange(axis, { key: value, label: value, columns: [value] })}
 					>
 						<SelectTrigger className="h-8">
 							<SelectValue placeholder={`Select ${label.toLowerCase()} column`} />

@@ -55,8 +55,9 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const rows = json?.data || [];
 				
 				// Transform rows with cells to chart data
-				const xKey = dataSource.columnX || safeXAxis.key;
-				const yKey = dataSource.columnY || safeYAxis.key;
+				// Support both new and legacy data source formats
+				const xKey = (dataSource as any).xAxis?.columns?.[0] || (dataSource as any).columnX || safeXAxis.key;
+				const yKey = (dataSource as any).yAxis?.columns?.[0] || (dataSource as any).columnY || safeYAxis.key;
 				
 				const mapped: ChartDataPoint[] = (rows ?? []).map((row: any) => {
 					const dataPoint: any = {};
