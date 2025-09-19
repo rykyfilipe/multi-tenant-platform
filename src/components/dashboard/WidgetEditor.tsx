@@ -278,7 +278,12 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
   const isLineChart = widget.type === 'chart';
   const config = (editedWidget.config as LineChartConfig) || {
     title: '',
-    dataSource: { type: 'manual', manualData: [] },
+    dataSource: { 
+      type: 'manual', 
+      manualData: [],
+      xAxis: { key: 'x', label: 'X Axis', type: 'text', columns: [] },
+      yAxis: { key: 'y', label: 'Y Axis', type: 'number', columns: [] }
+    },
     xAxis: { key: 'x', label: 'X Axis', type: 'category' },
     yAxis: { key: 'y', label: 'Y Axis', type: 'number' },
     options: {}
