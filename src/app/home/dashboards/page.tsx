@@ -645,15 +645,15 @@ export default function DashboardsPage() {
     
     console.log('[Dashboard] getAllWidgets called:', {
       dbWidgetsCount: dbWidgets.length,
-      pendingChangesSize: pendingChanges.size,
-      pendingChanges: Array.from(pendingChanges.entries())
+      pendingChangesSize: pendingChangesMap.size,
+      pendingChanges: Array.from(pendingChangesMap.entries())
     });
     
     // Adaugă widget-urile locale din pending changes
-    pendingChanges.forEach((change, key) => {
+    pendingChangesMap.forEach((change, key) => {
       console.log('[Dashboard] Processing pending change:', { key, change });
       if (change.type === 'create' && change.data) {
-        // Cheia este formatată ca "create_${widgetId}" sau poate fi un number
+        // Cheia este formatată ca "create_${widgetId}"
         const keyStr = String(key);
         console.log('[Dashboard] Key string:', keyStr);
         if (keyStr.startsWith('create_')) {
@@ -676,7 +676,7 @@ export default function DashboardsPage() {
     });
     
     return allWidgets;
-  }, [selectedDashboard?.widgets, pendingChanges]);
+  }, [selectedDashboard?.widgets, pendingChangesMap]);
 
   const renderWidget = (widget: Widget) => {
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate
