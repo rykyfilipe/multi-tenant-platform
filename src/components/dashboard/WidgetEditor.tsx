@@ -1264,219 +1264,40 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                         </div>
                         <div>
                           <Label htmlFor="dataSourceType">Data Source Type</Label>
-                          <Select
-                            value={config.dataSource?.type || 'manual'}
-                            onValueChange={(value) => handleDataSourceChange({
-                              ...config.dataSource,
-                              type: value as 'manual' | 'table'
-                            })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="manual">
-                                <div className="flex items-center space-x-2">
-                                  <FileText className="h-4 w-4" />
-                                  <span>Manual Data</span>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="table">
-                                <div className="flex items-center space-x-2">
-                                  <Database className="h-4 w-4" />
-                                  <span>Table Data</span>
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center space-x-2 px-3 py-2 border rounded-md bg-muted">
+                            <Database className="h-4 w-4" />
+                            <span>Table Data</span>
+                          </div>
                         </div>
                       </div>
                       <div>
                         <Label htmlFor="dataSourceType">Data Source Type</Label>
-                        <Select
-                          value={config.dataSource?.type || 'manual'}
-                          onValueChange={(value) => handleDataSourceChange({
-                            ...config.dataSource,
-                            type: value as 'manual' | 'table'
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="manual">
-                              <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4" />
-                                <span>Manual Data</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="table">
-                              <div className="flex items-center space-x-2">
-                                <Database className="h-4 w-4" />
-                                <span>Table Data</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center space-x-2 px-3 py-2 border rounded-md bg-muted">
+                          <Database className="h-4 w-4" />
+                          <span>Table Data</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
-
-                  {/* Manual Data Editor */}
-                  {config.dataSource?.type === 'manual' && (
-                    <DataEditor
-                      data={config.dataSource.manualData || []}
-                      columns={[
-                        { name: config.xAxis?.key || 'x', type: 'string' },
-                        { name: config.yAxis?.key || 'y', type: 'number' }
-                      ]}
-                      onDataChange={handleManualDataChange}
-                      onSave={() => {}}
-                    />
-                  )}
 
                   {/* Enhanced Table Data Selector */}
-                  {config.dataSource?.type === 'table' && (
-                    <EnhancedTableSelector
-                      dataSource={config.dataSource as EnhancedDataSource || { 
-                        type: 'table',
-                        xAxis: { key: '', label: '', type: 'text', columns: [] },
-                        yAxis: { key: '', label: '', type: 'number', columns: [] }
-                      }}
-                      onDataSourceChange={(newDataSource) => {
-                        updateConfig({ dataSource: newDataSource });
-                      }}
-                      widgetType="chart"
-                      supportedAxes={['x', 'y']}
-                      allowMultiColumn={true}
-                      expectedXType="text"
-                      expectedYType="number"
-                      tenantId={tenantId}
-                    />
-                  )}
+                  <EnhancedTableSelector
+                    dataSource={config.dataSource as EnhancedDataSource || { 
+                      type: 'table',
+                      xAxis: { key: '', label: '', type: 'text', columns: [] },
+                      yAxis: { key: '', label: '', type: 'number', columns: [] }
+                    }}
+                    onDataSourceChange={(newDataSource) => {
+                      updateConfig({ dataSource: newDataSource });
+                    }}
+                    widgetType="chart"
+                    supportedAxes={['x', 'y']}
+                    allowMultiColumn={true}
+                    expectedXType="text"
+                    expectedYType="number"
+                    tenantId={tenantId}
+                  />
 
-                  {/* Chart Aggregation Options */}
-                  {config.dataSource?.type === 'table' && (
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Data Aggregation</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="xAxisAggregation">X-Axis Aggregation</Label>
-                            <Select
-                              value={config.xAxis?.aggregation || 'none'}
-                              onValueChange={(value) => handleAxisChange('xAxis', { aggregation: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">No Aggregation</SelectItem>
-                                <SelectItem value="count">Count</SelectItem>
-                                <SelectItem value="distinct">Distinct Count</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="yAxisAggregation">Y-Axis Aggregation</Label>
-                            <Select
-                              value={config.yAxis?.aggregation || 'sum'}
-                              onValueChange={(value) => handleAxisChange('yAxis', { aggregation: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sum">Sum</SelectItem>
-                                <SelectItem value="count">Count</SelectItem>
-                                <SelectItem value="avg">Average</SelectItem>
-                                <SelectItem value="min">Minimum</SelectItem>
-                                <SelectItem value="max">Maximum</SelectItem>
-                                <SelectItem value="median">Median</SelectItem>
-                                <SelectItem value="stddev">Standard Deviation</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="groupBy">Group By</Label>
-                          <Select
-                            value={config.dataSource?.groupBy || 'none'}
-                            onValueChange={(value) => updateConfig({
-                              dataSource: {
-                                ...config.dataSource,
-                                groupBy: value === 'none' ? undefined : value
-                              }
-                            })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Grouping</SelectItem>
-                              <SelectItem value="day">Day</SelectItem>
-                              <SelectItem value="week">Week</SelectItem>
-                              <SelectItem value="month">Month</SelectItem>
-                              <SelectItem value="quarter">Quarter</SelectItem>
-                              <SelectItem value="year">Year</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Axis Configuration */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">Axis Configuration</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="xAxisKey">X-Axis Key</Label>
-                          <Input
-                            id="xAxisKey"
-                            value={config.xAxis?.key || ''}
-                            onChange={(e) => handleAxisChange('xAxis', { key: e.target.value })}
-                            placeholder="X-axis data key"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="xAxisLabel">X-Axis Label</Label>
-                          <Input
-                            id="xAxisLabel"
-                            value={config.xAxis?.label || ''}
-                            onChange={(e) => handleAxisChange('xAxis', { label: e.target.value })}
-                            placeholder="X-axis label"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="yAxisKey">Y-Axis Key</Label>
-                          <Input
-                            id="yAxisKey"
-                            value={config.yAxis?.key || ''}
-                            onChange={(e) => handleAxisChange('yAxis', { key: e.target.value })}
-                            placeholder="Y-axis data key"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="yAxisLabel">Y-Axis Label</Label>
-                          <Input
-                            id="yAxisLabel"
-                            value={config.yAxis?.label || ''}
-                            onChange={(e) => handleAxisChange('yAxis', { label: e.target.value })}
-                            placeholder="Y-axis label"
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               ) : (
                 <Card>

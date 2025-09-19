@@ -34,13 +34,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
 	const processedData = useMemo(() => {
-		let rawData: any[] = [];
-		
-		if (dataSource.type === 'manual') {
-			rawData = Array.isArray(legacyDataSource.manualData) ? legacyDataSource.manualData : [];
-		} else {
-			rawData = Array.isArray(data) ? data : [];
-		}
+		const rawData = Array.isArray(data) ? data : [];
 		
 		// For multi-column support, we need to transform the data
 		if (enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1) {
@@ -216,10 +210,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 						</div>
 						<p className="text-sm font-medium">No data available</p>
 						<p className="text-xs text-muted-foreground mt-1">
-							{dataSource.type === 'manual' 
-								? 'Add some data points to see the chart' 
-								: 'Select a table and columns to load data'
-							}
+							Select a table and columns to load data
 						</p>
 					</div>
 				</div>

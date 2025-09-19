@@ -466,10 +466,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
             </div>
             <p className="text-xs sm:text-sm font-medium">No data available</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {dataSource.type === 'manual' 
-                ? 'Add some data points to see the chart' 
-                : 'Select a table and columns to load data'
-              }
+              Select a table and columns to load data
             </p>
           </div>
         </div>

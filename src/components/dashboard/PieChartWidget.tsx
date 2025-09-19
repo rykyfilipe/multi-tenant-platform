@@ -34,13 +34,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
 	const processedData = useMemo(() => {
-		let rawData: any[] = [];
-		
-		if (dataSource.type === 'manual') {
-			rawData = Array.isArray(legacyDataSource.manualData) ? legacyDataSource.manualData : [];
-		} else {
-			rawData = Array.isArray(data) ? data : [];
-		}
+		const rawData = Array.isArray(data) ? data : [];
 		
 		// For pie charts, we typically use single columns for name and value
 		// But we can support multiple value columns by creating separate pie charts
@@ -159,10 +153,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 						</div>
 						<p className="text-sm font-medium">No data available</p>
 						<p className="text-xs text-muted-foreground mt-1">
-							{dataSource.type === 'manual' 
-								? 'Add some data points to see the chart' 
-								: 'Select a table and columns to load data'
-							}
+							Select a table and columns to load data
 						</p>
 					</div>
 				</div>
