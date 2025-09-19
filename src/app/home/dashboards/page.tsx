@@ -568,6 +568,10 @@ export default function DashboardsPage() {
             console.log('Delete widget from container:', widgetId);
             handleDeleteWidget(widgetId);
           },
+          onConfigChange: (newConfig: any) => {
+            console.log('Widget config changed:', widget.id, newConfig);
+            handleWidgetUpdate(widget.id, { config: newConfig });
+          },
           tenantId: tenant?.id,
           databaseId: 1
         })}

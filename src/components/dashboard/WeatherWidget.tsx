@@ -54,6 +54,7 @@ export interface WeatherConfig {
 interface WeatherWidgetProps extends WidgetProps {
   widget: BaseWidgetType;
   data?: any;
+  onConfigChange?: (config: WeatherConfig) => void;
 }
 
 const WEATHER_ICONS = {
@@ -82,7 +83,7 @@ const MOCK_WEATHER_DATA: WeatherData = {
   ],
 };
 
-export function WeatherWidget({ widget, isEditMode, onEdit, onDelete }: WeatherWidgetProps) {
+export function WeatherWidget({ widget, isEditMode, onEdit, onDelete, onConfigChange }: WeatherWidgetProps) {
   const config = (widget.config || {}) as WeatherConfig;
   const options = config.options || {
     unit: 'celsius',
@@ -98,6 +99,19 @@ export function WeatherWidget({ widget, isEditMode, onEdit, onDelete }: WeatherW
   const [location, setLocation] = useState(
     config.dataSource?.location || 'New York, NY'
   );
+
+  // Save location to config when it changes
+  const saveLocationToConfig = (newLocation: string) => {
+    const updatedConfig = {
+      ...config,
+      dataSource: {
+        ...config.dataSource,
+        type: 'manual' as const,
+        location: newLocation
+      }
+    };
+    onConfigChange?.(updatedConfig);
+  };
   const [isLoading, setIsLoading] = useState(false);
 
   const convertTemperature = (temp: number, unit: 'celsius' | 'fahrenheit') => {
@@ -185,7 +199,10 @@ export function WeatherWidget({ widget, isEditMode, onEdit, onDelete }: WeatherW
             <form onSubmit={handleLocationSubmit} className="flex space-x-2">
               <Input
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  saveLocationToConfig(e.target.value);
+                }}
                 placeholder="Enter city name"
                 className={getMinimalistStyles.input.base}
               />

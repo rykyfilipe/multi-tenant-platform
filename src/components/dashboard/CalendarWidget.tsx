@@ -40,6 +40,7 @@ export interface CalendarConfig {
 interface CalendarWidgetProps extends WidgetProps {
   widget: BaseWidgetType;
   data?: any;
+  onConfigChange?: (config: CalendarConfig) => void;
 }
 
 const MONTHS = [
@@ -49,7 +50,7 @@ const MONTHS = [
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function CalendarWidget({ widget, isEditMode, onEdit, onDelete }: CalendarWidgetProps) {
+export function CalendarWidget({ widget, isEditMode, onEdit, onDelete, onConfigChange }: CalendarWidgetProps) {
   const config = (widget.config || {}) as CalendarConfig;
   const options = config.options || {
     view: 'month',
@@ -71,6 +72,19 @@ export function CalendarWidget({ widget, isEditMode, onEdit, onDelete }: Calenda
     location: '',
   });
 
+  // Save events to config whenever they change
+  const saveEventsToConfig = (newEvents: CalendarEvent[]) => {
+    const updatedConfig = {
+      ...config,
+      dataSource: {
+        ...config.dataSource,
+        type: 'manual' as const,
+        events: newEvents
+      }
+    };
+    onConfigChange?.(updatedConfig);
+  };
+
   const addEvent = () => {
     if (!newEvent.title.trim() || !selectedDate) return;
 
@@ -84,13 +98,17 @@ export function CalendarWidget({ widget, isEditMode, onEdit, onDelete }: Calenda
       color: '#3b82f6',
     };
 
-    setEvents(prev => [...prev, event]);
+    const updatedEvents = [...events, event];
+    setEvents(updatedEvents);
+    saveEventsToConfig(updatedEvents);
     setNewEvent({ title: '', description: '', time: '', location: '' });
     setIsAddingEvent(false);
   };
 
   const deleteEvent = (eventId: string) => {
-    setEvents(prev => prev.filter(event => event.id !== eventId));
+    const updatedEvents = events.filter(event => event.id !== eventId);
+    setEvents(updatedEvents);
+    saveEventsToConfig(updatedEvents);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {

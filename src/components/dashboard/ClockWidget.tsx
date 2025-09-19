@@ -27,6 +27,7 @@ export interface ClockConfig {
 interface ClockWidgetProps extends WidgetProps {
   widget: BaseWidgetType;
   data?: any;
+  onConfigChange?: (config: ClockConfig) => void;
 }
 
 const TIMEZONES = [
@@ -42,7 +43,7 @@ const TIMEZONES = [
   { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
 ];
 
-export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidgetProps) {
+export function ClockWidget({ widget, isEditMode, onEdit, onDelete, onConfigChange }: ClockWidgetProps) {
   const config = (widget.config || {}) as ClockConfig;
   const options = config.options || {
     format: '24h',
@@ -55,6 +56,18 @@ export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidge
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isEditing, setIsEditing] = useState(false);
+
+  // Save options to config when they change
+  const saveOptionsToConfig = (newOptions: Partial<ClockConfig['options']>) => {
+    const updatedConfig = {
+      ...config,
+      options: {
+        ...options,
+        ...newOptions
+      }
+    };
+    onConfigChange?.(updatedConfig);
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -142,7 +155,7 @@ export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidge
                     <Select
                       value={options.format}
                       onValueChange={(value: '12h' | '24h') => {
-                        // Update config logic would go here
+                        saveOptionsToConfig({ format: value });
                       }}
                     >
                       <SelectTrigger className={getMinimalistStyles.input.base}>
@@ -162,7 +175,7 @@ export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidge
                     <Select
                       value={options.timezone}
                       onValueChange={(value) => {
-                        // Update config logic would go here
+                        saveOptionsToConfig({ timezone: value });
                       }}
                     >
                       <SelectTrigger className={getMinimalistStyles.input.base}>
@@ -185,7 +198,7 @@ export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidge
                       type="checkbox"
                       checked={options.showSeconds}
                       onChange={() => {
-                        // Update config logic would go here
+                        saveOptionsToConfig({ showSeconds: !options.showSeconds });
                       }}
                       className="rounded border-gray-300"
                     />
@@ -197,7 +210,7 @@ export function ClockWidget({ widget, isEditMode, onEdit, onDelete }: ClockWidge
                       type="checkbox"
                       checked={options.showDate}
                       onChange={() => {
-                        // Update config logic would go here
+                        saveOptionsToConfig({ showDate: !options.showDate });
                       }}
                       className="rounded border-gray-300"
                     />

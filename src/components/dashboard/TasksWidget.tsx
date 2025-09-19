@@ -38,9 +38,10 @@ export interface TasksConfig {
 interface TasksWidgetProps extends WidgetProps {
   widget: BaseWidgetType;
   data?: any;
+  onConfigChange?: (config: TasksConfig) => void;
 }
 
-export function TasksWidget({ widget, isEditMode, onEdit, onDelete }: TasksWidgetProps) {
+export function TasksWidget({ widget, isEditMode, onEdit, onDelete, onConfigChange }: TasksWidgetProps) {
   const config = (widget.config || {}) as TasksConfig;
   const options = config.options || {};
   
@@ -48,6 +49,19 @@ export function TasksWidget({ widget, isEditMode, onEdit, onDelete }: TasksWidge
   const [newTaskText, setNewTaskText] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+
+  // Save tasks to config whenever they change
+  const saveTasksToConfig = (newTasks: Task[]) => {
+    const updatedConfig = {
+      ...config,
+      dataSource: {
+        ...config.dataSource,
+        type: 'manual' as const,
+        tasks: newTasks
+      }
+    };
+    onConfigChange?.(updatedConfig);
+  };
 
   const addTask = () => {
     if (!newTaskText.trim()) return;
@@ -60,22 +74,26 @@ export function TasksWidget({ widget, isEditMode, onEdit, onDelete }: TasksWidge
       priority: 'medium',
     };
     
-    setTasks(prev => [...prev, newTask]);
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+    saveTasksToConfig(updatedTasks);
     setNewTaskText('');
   };
 
   const toggleTask = (taskId: string) => {
-    setTasks(prev => 
-      prev.map(task => 
-        task.id === taskId 
-          ? { ...task, completed: !task.completed }
-          : task
-      )
+    const updatedTasks = tasks.map(task => 
+      task.id === taskId 
+        ? { ...task, completed: !task.completed }
+        : task
     );
+    setTasks(updatedTasks);
+    saveTasksToConfig(updatedTasks);
   };
 
   const deleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(updatedTasks);
+    saveTasksToConfig(updatedTasks);
   };
 
   const startEdit = (task: Task) => {
@@ -86,13 +104,13 @@ export function TasksWidget({ widget, isEditMode, onEdit, onDelete }: TasksWidge
   const saveEdit = () => {
     if (!editingText.trim()) return;
     
-    setTasks(prev => 
-      prev.map(task => 
-        task.id === editingTaskId 
-          ? { ...task, text: editingText.trim() }
-          : task
-      )
+    const updatedTasks = tasks.map(task => 
+      task.id === editingTaskId 
+        ? { ...task, text: editingText.trim() }
+        : task
     );
+    setTasks(updatedTasks);
+    saveTasksToConfig(updatedTasks);
     setEditingTaskId(null);
     setEditingText('');
   };
