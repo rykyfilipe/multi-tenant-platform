@@ -251,7 +251,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
         return values.reduce((sum, val) => sum + val, 0);
       case 'count':
         return values.length;
-      case 'avg':
+      case 'average':
         return values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
       case 'min':
         return Math.min(...values);
@@ -403,7 +403,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
 
     // Check if aggregation function is selected (support both new and legacy formats)
     const aggregation = dataSource.aggregationConfig?.primary || dataSource.aggregation;
-    if (!aggregation || aggregation === '') {
+    if (!aggregation) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
           <div className="text-center p-4 sm:p-6">

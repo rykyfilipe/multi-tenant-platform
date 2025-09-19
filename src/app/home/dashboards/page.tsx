@@ -144,6 +144,7 @@ export default function DashboardsPage() {
     hasPendingChange,
     getPendingChange,
     getFinalWidget,
+    setSaveFunction,
   } = useWidgetPendingChanges({
     autoSaveDelay: 3000, // Auto-save after 3 seconds of inactivity
     onSuccess: (results) => {
@@ -167,6 +168,13 @@ export default function DashboardsPage() {
   useEffect(() => {
     fetchDashboards();
   }, []);
+
+  // Set save function when dashboard is selected
+  useEffect(() => {
+    if (selectedDashboard?.id) {
+      setSaveFunction(selectedDashboard.id);
+    }
+  }, [selectedDashboard?.id, setSaveFunction]);
 
   const fetchDashboards = async () => {
     try {

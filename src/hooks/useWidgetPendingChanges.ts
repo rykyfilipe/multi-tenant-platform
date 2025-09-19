@@ -245,13 +245,13 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     const deleteKey = getChangeKey(originalWidget.id, 'delete');
     
     // Dacă există o operațiune de ștergere, widget-ul nu trebuie afișat
-    if (pendingChangesMap.has(deleteKey)) {
+    if (pendingChanges.has(deleteKey)) {
       return null;
     }
     
     // Dacă există o operațiune de create, returnează widget-ul nou
-    if (pendingChangesMap.has(createKey)) {
-      const createChange = pendingChangesMap.get(createKey);
+    if (pendingChanges.has(createKey)) {
+      const createChange = pendingChanges.get(createKey);
       return {
         ...originalWidget,
         ...createChange?.data,
@@ -260,8 +260,8 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     }
     
     // Dacă există modificări, aplică-le pe widget-ul original
-    if (pendingChangesMap.has(updateKey)) {
-      const updateChange = pendingChangesMap.get(updateKey);
+    if (pendingChanges.has(updateKey)) {
+      const updateChange = pendingChanges.get(updateKey);
       return {
         ...originalWidget,
         ...updateChange?.data,
@@ -270,7 +270,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     
     // Dacă nu există modificări, returnează widget-ul original
     return originalWidget;
-  }, [pendingChangesMap, getChangeKey]);
+  }, [pendingChanges, getChangeKey]);
 
   // Salvează toate modificările pending
   const savePendingChanges = useCallback(async (dashboardId: number) => {
@@ -363,8 +363,10 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     await savePendingChanges(dashboardId);
   }, [savePendingChanges]);
 
-  // Actualizează ref-ul cu funcția de save
-  saveFunctionRef.current = () => savePendingChanges(0); // Will be overridden with actual dashboardId
+  // Funcție pentru a seta saveFunctionRef cu dashboardId corect
+  const setSaveFunction = useCallback((dashboardId: number) => {
+    saveFunctionRef.current = () => savePendingChanges(dashboardId);
+  }, [savePendingChanges]);
 
   // Auto-save la beforeunload (când utilizatorul părăsește pagina)
   useEffect(() => {
@@ -421,6 +423,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     savePendingChanges,
     discardPendingChanges,
     saveNow,
+    setSaveFunction,
 
     // Helpers
     hasPendingChange,

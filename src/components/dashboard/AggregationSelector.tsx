@@ -7,8 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Calculator, TrendingUp, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-export type AggregationType = 'sum' | 'count' | 'avg' | 'min' | 'max' | 'median' | 'stddev' | 'distinct';
+import { AggregationType } from '@/lib/aggregation-utils';
 
 export interface AggregationConfig {
 	primary: AggregationType;
@@ -41,7 +40,7 @@ const AGGREGATION_OPTIONS: AggregationOption[] = [
 		suitableFor: ['number', 'text', 'date', 'boolean']
 	},
 	{
-		type: 'avg',
+		type: 'average',
 		label: 'Average',
 		description: 'Calculate the mean value',
 		icon: 'μ',
@@ -69,14 +68,14 @@ const AGGREGATION_OPTIONS: AggregationOption[] = [
 		suitableFor: ['number']
 	},
 	{
-		type: 'stddev',
+		type: 'std_dev',
 		label: 'Standard Deviation',
 		description: 'Measure of data spread',
 		icon: 'σ',
 		suitableFor: ['number']
 	},
 	{
-		type: 'distinct',
+		type: 'count_distinct',
 		label: 'Distinct Count',
 		description: 'Count unique values',
 		icon: '≠',
