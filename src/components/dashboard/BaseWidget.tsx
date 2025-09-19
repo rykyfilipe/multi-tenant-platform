@@ -734,8 +734,17 @@ export default function BaseWidget({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRefresh();
+                }}
                 disabled={isLoading}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50"
+                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50 touch-manipulation"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
@@ -757,7 +766,16 @@ export default function BaseWidget({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onStyleEdit();
+                }}
+                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50 touch-manipulation"
               >
                 <Palette className="h-4 w-4" />
               </Button>
@@ -780,7 +798,17 @@ export default function BaseWidget({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Edit button touched for widget:', widget.id);
+                  onEdit();
+                }}
+                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 hover:bg-muted/50 touch-manipulation"
               >
                 <Edit3 className="h-4 w-4" />
               </Button>
@@ -803,7 +831,17 @@ export default function BaseWidget({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Delete button touched for widget:', widget.id);
+                  onDelete();
+                }}
+                className="z-10 relative h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 touch-manipulation"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

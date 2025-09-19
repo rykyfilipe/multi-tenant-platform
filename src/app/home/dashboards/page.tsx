@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, LineChart, PieChart, BarChart, Activity, Type, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LineChartWidget } from '@/components/dashboard/LineChartWidget';
 import BarChartWidget from '@/components/dashboard/BarChartWidget';
 import PieChartWidget from '@/components/dashboard/PieChartWidget';
@@ -51,6 +52,39 @@ interface Widget {
 
 // Removed PendingChange interface - now using the one from useWidgetPendingChanges hook
 
+// Widget type definitions with icons and labels
+const WIDGET_TYPES = [
+  {
+    type: 'chart',
+    label: 'Chart',
+    icon: BarChart3,
+    description: 'Add a chart widget (line, bar, or pie)',
+    subTypes: [
+      { type: 'line', label: 'Line Chart', icon: LineChart },
+      { type: 'bar', label: 'Bar Chart', icon: BarChart },
+      { type: 'pie', label: 'Pie Chart', icon: PieChart }
+    ]
+  },
+  {
+    type: 'table',
+    label: 'Table',
+    icon: Database,
+    description: 'Add a data table widget'
+  },
+  {
+    type: 'metric',
+    label: 'KPI',
+    icon: Activity,
+    description: 'Add a KPI/metric widget'
+  },
+  {
+    type: 'text',
+    label: 'Text',
+    icon: Type,
+    description: 'Add a text widget'
+  }
+];
+
 export default function DashboardsPage() {
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(null);
@@ -59,6 +93,8 @@ export default function DashboardsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
   const [showWidgetEditor, setShowWidgetEditor] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const { toast } = useToast();
   const { tenant } = useApp();
@@ -187,6 +223,48 @@ export default function DashboardsPage() {
         description: 'Failed to create dashboard',
         variant: 'destructive',
       });
+    }
+  };
+
+  const deleteDashboard = async () => {
+    if (!selectedDashboard) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/dashboards/${selectedDashboard.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete dashboard');
+      
+      // Update local state - remove the deleted dashboard
+      setDashboards(prev => prev.filter(d => d.id !== selectedDashboard.id));
+      
+      // Select another dashboard or clear selection
+      const remainingDashboards = dashboards.filter(d => d.id !== selectedDashboard.id);
+      if (remainingDashboards.length > 0) {
+        // Select the first remaining dashboard
+        setSelectedDashboard(remainingDashboards[0]);
+      } else {
+        // No dashboards left, clear selection
+        setSelectedDashboard(null);
+      }
+      
+      setShowDeleteDialog(false);
+      
+      toast({
+        title: 'Success',
+        description: 'Dashboard deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting dashboard:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete dashboard',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -333,17 +411,18 @@ export default function DashboardsPage() {
     return { x: 0, y: lowestY, width, height };
   };
 
-  const handleAddWidget = (type: string) => {
+  const handleAddWidget = (type: string, subType?: string) => {
     // Create default config based on widget type
     let defaultConfig = {};
     
     if (type === 'chart') {
+      const chartType = subType || 'line';
       defaultConfig = {
-        chartType: 'line',
+        chartType: chartType,
         dataSource: {
-          tableId: 1, // Default table ID - will be updated when user selects a table
-          columnX: 'id', // Default column - will be updated when user selects columns
-          columnY: 'id', // Default column - will be updated when user selects columns
+          tableId: 0, // No default table - user must select one
+          columnX: '', // No default column - will be updated when user selects columns
+          columnY: '', // No default column - will be updated when user selects columns
           filters: []
         },
         options: {
@@ -361,8 +440,8 @@ export default function DashboardsPage() {
     } else if (type === 'table') {
       defaultConfig = {
         dataSource: {
-          tableId: 1, // Default table ID - will be updated when user selects a table
-          columns: ['id'], // Default columns - will be updated when user selects columns
+          tableId: 0, // No default table - user must select one
+          columns: [], // No default columns - will be updated when user selects columns
           filters: [],
           sortBy: 'id',
           sortOrder: 'asc'
@@ -379,8 +458,8 @@ export default function DashboardsPage() {
       defaultConfig = {
         dataSource: {
           type: 'table',
-          tableId: 1, // Default table ID - will be updated when user selects a table
-          column: 'id', // Default column - will be updated when user selects column
+          tableId: 0, // No default table - user must select one
+          column: '', // No default column - will be updated when user selects column
           aggregation: 'sum',
           filters: []
         },
@@ -668,39 +747,48 @@ export default function DashboardsPage() {
                   </div>
                 </div>
                 
-                {isEditMode && (
-                  <Select onValueChange={(value) => handleAddWidget(value)}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Add Widget" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="chart">
-                        <div className="flex items-center space-x-2">
-                          <BarChart3 className="h-4 w-4" />
-                          <span>Chart</span>
+                <div className="flex items-center space-x-2">
+                  {isEditMode && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700 mr-2">Add Widget:</span>
+                      <TooltipProvider>
+                        <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                          {WIDGET_TYPES.map((widgetType) => {
+                            const IconComponent = widgetType.icon;
+                            return (
+                              <Tooltip key={widgetType.type}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleAddWidget(widgetType.type)}
+                                    className="h-8 w-8 p-0 hover:bg-white hover:shadow-sm"
+                                  >
+                                    <IconComponent className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{widgetType.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
                         </div>
-                      </SelectItem>
-                      <SelectItem value="table">
-                        <div className="flex items-center space-x-2">
-                          <Database className="h-4 w-4" />
-                          <span>Table</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="metric">
-                        <div className="flex items-center space-x-2">
-                          <TrendingUp className="h-4 w-4" />
-                          <span>KPI/Metric</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="text">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="h-4 w-4" />
-                          <span>Text</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+                      </TooltipProvider>
+                    </div>
+                  )}
+                  
+                  {/* Delete Dashboard Button */}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span>Delete Dashboard</span>
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -708,13 +796,43 @@ export default function DashboardsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <ResponsiveGridLayout
                 className="layout"
-                layouts={{ lg: (selectedDashboard?.widgets ?? []).map(w => ({
-                  i: w.id.toString(),
-                  x: w.position?.x || 0,
-                  y: w.position?.y || 0,
-                  w: w.position?.width || 4,
-                  h: w.position?.height || 4,
-                })) }}
+                layouts={{ 
+                  lg: (selectedDashboard?.widgets ?? []).map(w => ({
+                    i: w.id.toString(),
+                    x: w.position?.x || 0,
+                    y: w.position?.y || 0,
+                    w: w.position?.width || 4,
+                    h: w.position?.height || 4,
+                  })),
+                  md: (selectedDashboard?.widgets ?? []).map(w => ({
+                    i: w.id.toString(),
+                    x: Math.min(w.position?.x || 0, 9),
+                    y: w.position?.y || 0,
+                    w: Math.min(w.position?.width || 4, 10),
+                    h: w.position?.height || 4,
+                  })),
+                  sm: (selectedDashboard?.widgets ?? []).map(w => ({
+                    i: w.id.toString(),
+                    x: Math.min(w.position?.x || 0, 5),
+                    y: w.position?.y || 0,
+                    w: Math.min(w.position?.width || 4, 6),
+                    h: w.position?.height || 4,
+                  })),
+                  xs: (selectedDashboard?.widgets ?? []).map(w => ({
+                    i: w.id.toString(),
+                    x: Math.min(w.position?.x || 0, 3),
+                    y: w.position?.y || 0,
+                    w: Math.min(w.position?.width || 4, 4),
+                    h: w.position?.height || 4,
+                  })),
+                  xxs: (selectedDashboard?.widgets ?? []).map(w => ({
+                    i: w.id.toString(),
+                    x: 0,
+                    y: w.position?.y || 0,
+                    w: 2,
+                    h: w.position?.height || 4,
+                  }))
+                }}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
                 rowHeight={60}
@@ -723,6 +841,10 @@ export default function DashboardsPage() {
                 onLayoutChange={handleLayoutChange}
                 margin={[16, 16]}
                 containerPadding={[0, 0]}
+                useCSSTransforms={true}
+                transformScale={1}
+                preventCollision={false}
+                compactType="vertical"
               >
                 {(selectedDashboard?.widgets ?? []).map((widget) => (
                   <div 
@@ -732,6 +854,21 @@ export default function DashboardsPage() {
                       // Allow buttons to work by checking if click is on a button
                       const target = e.target as HTMLElement;
                       if (target.closest('button')) {
+                        e.stopPropagation();
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      // Handle touch events for mobile
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button')) {
+                        e.stopPropagation();
+                      }
+                    }}
+                    onTouchEnd={(e) => {
+                      // Prevent default touch behavior for buttons
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button')) {
+                        e.preventDefault();
                         e.stopPropagation();
                       }
                     }}
@@ -766,6 +903,15 @@ export default function DashboardsPage() {
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onCreate={createDashboard}
+      />
+
+      {/* Delete Dashboard Confirmation Dialog */}
+      <DeleteDashboardDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={deleteDashboard}
+        dashboardName={selectedDashboard?.name || ''}
+        isDeleting={isDeleting}
       />
 
       {/* Widget Editor Side Panel */}
@@ -853,6 +999,58 @@ function CreateDashboardDialog({
             <Button type="submit">Create Dashboard</Button>
           </div>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Delete Dashboard Confirmation Dialog Component
+function DeleteDashboardDialog({ 
+  open, 
+  onOpenChange, 
+  onConfirm,
+  dashboardName,
+  isDeleting
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  onConfirm: () => void;
+  dashboardName: string;
+  isDeleting: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Trash2 className="h-5 w-5 text-destructive" />
+            <span>Delete Dashboard</span>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to delete the dashboard <strong>"{dashboardName}"</strong>? 
+            This action cannot be undone and will permanently remove the dashboard and all its widgets.
+          </p>
+          <div className="flex justify-end space-x-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={onConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Dashboard'}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

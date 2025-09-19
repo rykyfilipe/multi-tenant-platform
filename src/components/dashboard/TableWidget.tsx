@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Database, Search } from 'lucide-react';
 import BaseWidget from './BaseWidget';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
@@ -54,7 +54,7 @@ export default function TableWidget({
   databaseId 
 }: TableWidgetProps) {
   const config = (widget.config || {}) as TableWidgetConfig;
-  const dataSource = config.dataSource || { tableId: 1, columns: [] };
+  const dataSource = config.dataSource || { tableId: 0, columns: [] };
   const options = config.options || {};
   
   const [data, setData] = useState<any[]>([]);
@@ -76,7 +76,7 @@ export default function TableWidget({
 
   // Fetch data when table or columns change
   useEffect(() => {
-    if (dataSource.tableId && dataSource.columns.length > 0) {
+    if (dataSource.tableId && dataSource.tableId > 0 && dataSource.columns.length > 0) {
       fetchData();
     }
   }, [dataSource.tableId, dataSource.columns, currentPage, searchTerm, sortBy, sortOrder]);
@@ -220,50 +220,58 @@ export default function TableWidget({
 
         {/* Table */}
         <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {(dataSource.columns ?? []).map((columnName) => {
-                  const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
-                  return (
-                    <TableHead 
-                      key={columnName}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort(columnName)}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>{(column as any)?.name || columnName}</span>
-                        {sortBy === columnName && (
-                          <span className="text-xs">
-                            {sortOrder === 'asc' ? '↑' : '↓'}
-                          </span>
-                        )}
-                      </div>
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length === 0 ? (
+          {!dataSource.tableId || dataSource.tableId === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <Database className="h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500 mb-1">No table selected</p>
+              <p className="text-xs text-gray-400">Please select a table to view data</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-8 text-muted-foreground">
-                    {isLoading ? 'Loading...' : 'No data available'}
-                  </TableCell>
+                  {(dataSource.columns ?? []).map((columnName) => {
+                    const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
+                    return (
+                      <TableHead 
+                        key={columnName}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort(columnName)}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>{(column as any)?.name || columnName}</span>
+                          {sortBy === columnName && (
+                            <span className="text-xs">
+                              {sortOrder === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ) : (
-                paginatedData.map((row, index) => (
-                  <TableRow key={row?.id || index}>
-                    {(dataSource.columns ?? []).map((columnName) => (
-                      <TableCell key={columnName}>
-                        {renderCellValue(row?.[columnName])}
-                      </TableCell>
-                    ))}
+              </TableHeader>
+              <TableBody>
+                {paginatedData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-8 text-muted-foreground">
+                      {isLoading ? 'Loading...' : 'No data available'}
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  paginatedData.map((row, index) => (
+                    <TableRow key={row?.id || index}>
+                      {(dataSource.columns ?? []).map((columnName) => (
+                        <TableCell key={columnName}>
+                          {renderCellValue(row?.[columnName])}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
 
         {/* Pagination */}

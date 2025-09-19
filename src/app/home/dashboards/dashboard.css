@@ -121,10 +121,61 @@
   box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Mobile touch optimizations */
+.widget-container button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.widget-container button:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
 /* Responsive breakpoints */
 @media (max-width: 768px) {
   .react-grid-item {
     margin-bottom: 16px;
+  }
+  
+  .widget-container {
+    min-height: 200px;
+  }
+  
+  .widget-container button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px;
+  }
+  
+  .react-grid-layout {
+    padding: 8px;
+  }
+  
+  .react-grid-item {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .widget-container {
+    min-height: 180px;
+  }
+  
+  .widget-container button {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px;
+  }
+  
+  .react-grid-layout {
+    padding: 4px;
   }
 }
 
