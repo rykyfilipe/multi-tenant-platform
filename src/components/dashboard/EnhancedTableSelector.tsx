@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Database, Table, Columns, Check, X } from 'lucide-react';
+import { Database, Table, Columns, Check, X, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { useApp } from '@/contexts/AppContext';
 import { FilterBuilder } from './FilterBuilder';
 import { FilterConfig } from '@/types/filtering-enhanced';
@@ -97,6 +99,14 @@ export function EnhancedTableSelector({
 	expectedYType,
 	tenantId
 }: EnhancedTableSelectorProps) {
+	console.log('[EnhancedTableSelector] Component initialized with:', {
+		dataSource,
+		widgetType,
+		supportedAxes,
+		allowMultiColumn,
+		expectedXType,
+		expectedYType
+	});
 	const { tenant, token } = useApp();
 	
 	// State for all tables from all databases
@@ -275,6 +285,15 @@ export function EnhancedTableSelector({
 
 	const renderAxisSelector = (axis: 'x' | 'y', label: string, expectedType?: 'text' | 'number' | 'date' | 'boolean') => {
 		const currentAxis = axis === 'x' ? dataSource.xAxis : dataSource.yAxis;
+		console.log('[EnhancedTableSelector] renderAxisSelector:', {
+			axis,
+			label,
+			expectedType,
+			dataSource,
+			currentAxis,
+			xAxis: dataSource.xAxis,
+			yAxis: dataSource.yAxis
+		});
 		const compatibleColumns = getCompatibleColumns(expectedType);
 
 		return (
@@ -297,30 +316,44 @@ export function EnhancedTableSelector({
 						<p className="text-xs text-gray-400">No columns of type {expectedType || 'any'} found</p>
 					</div>
 				) : allowMultiColumn ? (
-					// Multi-column selection with checkboxes
-					<div className="max-h-40 overflow-auto border rounded p-2 space-y-1">
-						{compatibleColumns.map((column) => {
-							const isSelected = currentAxis?.columns.includes(column.name) || false;
-							console.log('[EnhancedTableSelector] Column checkbox:', { 
-								columnName: column.name, 
-								isSelected, 
-								currentAxisColumns: currentAxis?.columns,
-								currentAxis 
-							});
-							return (
-								<label key={column.id} className="flex items-center gap-2 text-sm">
-									<input
-										type="checkbox"
+					// Multi-column selection with dropdown checkboxes
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="outline" className="w-full justify-between h-8">
+								<span className="text-xs">
+									{currentAxis?.columns && currentAxis.columns.length > 0 
+										? `${currentAxis.columns.length} column(s) selected`
+										: 'Select columns'
+									}
+								</span>
+								<ChevronDown className="h-3 w-3" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent className="w-full min-w-[200px] max-h-60 overflow-auto">
+							{compatibleColumns.map((column) => {
+								const isSelected = currentAxis?.columns.includes(column.name) || false;
+								console.log('[EnhancedTableSelector] Column checkbox:', { 
+									columnName: column.name, 
+									isSelected, 
+									currentAxisColumns: currentAxis?.columns,
+									currentAxis 
+								});
+								return (
+									<DropdownMenuCheckboxItem
+										key={column.id}
 										checked={isSelected}
-										onChange={(e) => handleColumnToggle(axis, column.name, e.target.checked)}
-										className="h-3.5 w-3.5"
-									/>
-									<span className="flex-1 truncate">{column.name}</span>
-									<span className="text-xs text-gray-500">{column.type}</span>
-								</label>
-							);
-						})}
-					</div>
+										onCheckedChange={(checked) => handleColumnToggle(axis, column.name, checked)}
+										className="text-sm"
+									>
+										<div className="flex items-center justify-between w-full">
+											<span className="flex-1 truncate">{column.name}</span>
+											<span className="text-xs text-gray-500 ml-2">{column.type}</span>
+										</div>
+									</DropdownMenuCheckboxItem>
+								);
+							})}
+						</DropdownMenuContent>
+					</DropdownMenu>
 				) : (
 					// Single column selection
 					<Select
