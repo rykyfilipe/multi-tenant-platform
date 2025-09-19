@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import BaseWidget from './BaseWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 import { FilterConfig } from '@/types/filtering-enhanced';
+import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
 
 export interface ChartDataPoint {
   [key: string]: any;
@@ -201,9 +202,13 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
   const options = config.options || {};
   const dataSource = config.dataSource || { type: 'manual', manualData: [] };
   
-  // Ensure xAxis and yAxis have proper fallbacks
-  const safeXAxis = config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const };
-  const safeYAxis = config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const };
+  // Support both old and new data source formats
+  const enhancedDataSource = dataSource as EnhancedDataSource;
+  const legacyDataSource = dataSource as any; // For backward compatibility
+  
+  // Determine axis configuration - prefer new format, fallback to legacy
+  const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
+  const safeYAxis = enhancedDataSource.yAxis || config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const, columns: ['y'] };
 
   // Early return if widget is malformed
   if (!widget || typeof widget !== 'object') {
@@ -228,13 +233,37 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
   const processedData = useMemo(() => {
     let rawData: any[] = [];
     
-    if (dataSource.type === 'manual' && dataSource.manualData) {
-      rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
+    if (dataSource.type === 'manual' && legacyDataSource.manualData) {
+      rawData = Array.isArray(legacyDataSource.manualData) ? legacyDataSource.manualData : [];
     } else {
       rawData = Array.isArray(data) ? data : [];
     }
     
-    // Validate and clean data to prevent 'x' property errors
+    // For multi-column support in line charts, we create multiple lines
+    if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
+      const transformedData: any[] = [];
+      const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
+      
+      rawData.forEach(item => {
+        const baseItem: any = {
+          [safeXAxis.key]: item[xColumn]
+        };
+        
+        enhancedDataSource.yAxis!.columns.forEach(yCol => {
+          if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
+            baseItem[yCol] = item[yCol];
+          }
+        });
+        
+        if (Object.keys(baseItem).length > 1) { // Has at least one Y value
+          transformedData.push(baseItem);
+        }
+      });
+      
+      return transformedData;
+    }
+    
+    // Single column mode - validate and clean data
     return rawData.filter(item => {
       if (!item || typeof item !== 'object') return false;
       
@@ -245,7 +274,7 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
       return xValue !== undefined && xValue !== null && xValue !== '' &&
              yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
     });
-  }, [dataSource, data, safeXAxis.key, safeYAxis.key]);
+  }, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
   // Fetch data when dataSource changes
   useEffect(() => {
@@ -407,20 +436,42 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
                   }}
                 />
               )}
-              <Line
-                type={curveType}
-                dataKey={safeYAxis.key}
-                stroke={colors[0]}
-                strokeWidth={strokeWidth}
-                dot={{ fill: colors[0], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
-                activeDot={{ 
-                  r: dotSize + 2, 
-                  stroke: colors[0], 
-                  strokeWidth: 2,
-                  fill: '#ffffff'
-                }}
-                animationDuration={options.animation !== false ? 1000 : 0}
-              />
+              {/* Render multiple lines if multiple Y columns are selected */}
+              {enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 ? (
+                enhancedDataSource.yAxis.columns.map((yCol, index) => (
+                  <Line
+                    key={yCol}
+                    type={curveType}
+                    dataKey={yCol}
+                    stroke={colors[index % colors.length]}
+                    strokeWidth={strokeWidth}
+                    dot={{ fill: colors[index % colors.length], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
+                    activeDot={{ 
+                      r: dotSize + 2, 
+                      stroke: colors[index % colors.length], 
+                      strokeWidth: 2,
+                      fill: '#ffffff'
+                    }}
+                    animationDuration={options.animation !== false ? 1000 : 0}
+                    name={yCol}
+                  />
+                ))
+              ) : (
+                <Line
+                  type={curveType}
+                  dataKey={safeYAxis.key}
+                  stroke={colors[0]}
+                  strokeWidth={strokeWidth}
+                  dot={{ fill: colors[0], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
+                  activeDot={{ 
+                    r: dotSize + 2, 
+                    stroke: colors[0], 
+                    strokeWidth: 2,
+                    fill: '#ffffff'
+                  }}
+                  animationDuration={options.animation !== false ? 1000 : 0}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
           

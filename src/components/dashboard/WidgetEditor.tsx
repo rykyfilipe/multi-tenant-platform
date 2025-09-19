@@ -14,7 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataEditor } from './DataEditor';
 import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
+import { EnhancedTableSelector } from './EnhancedTableSelector';
+import { AggregationSelector } from './AggregationSelector';
 import { LineChartConfig, DataSource, ChartDataPoint } from './LineChartWidget';
+import type { EnhancedDataSource } from './EnhancedTableSelector';
+import type { AggregationConfig } from './AggregationSelector';
 import { FilterConfig } from '@/types/filtering-enhanced';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
@@ -426,36 +430,14 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
             <TabsContent value="data" className="space-y-4">
               {widget.type === 'table' ? (
                 <div className="space-y-4">
-                  {/* Table Configuration with integrated TableSelector */}
-                  <TableSelector
-                    tenantId={tenantId}
-                    selectedTableId={editedWidget.config?.dataSource?.tableId}
-                    selectedColumns={editedWidget.config?.dataSource?.columns || []}
-                    onColumnsChange={(columns) => updateConfig({
-                      dataSource: {
-                        ...editedWidget.config?.dataSource,
-                        columns: columns
-                      }
-                    })}
-                    filters={editedWidget.config?.dataSource?.filters || []}
-                    onFiltersChange={(filters) => updateConfig({
-                      dataSource: {
-                        ...editedWidget.config?.dataSource,
-                        filters: filters
-                      }
-                    })}
-                    onTableChange={(tableId) => {
-                      updateConfig({
-                        dataSource: {
-                          ...editedWidget.config?.dataSource,
-                          tableId: tableId,
-                          columns: []
-                        }
-                      });
+                  {/* Enhanced Table Configuration */}
+                  <EnhancedTableSelector
+                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { type: 'table' }}
+                    onDataSourceChange={(newDataSource) => {
+                      updateConfig({ dataSource: newDataSource });
                     }}
-                    onColumnXChange={() => {}}
-                    onColumnYChange={() => {}}
-                    loadTables={loadTables}
+                    widgetType="table"
+                    tenantId={tenantId}
                   />
 
                   {/* Table Aggregation Options */}
@@ -590,72 +572,28 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                 </div>
               ) : widget.type === 'metric' ? (
                 <div className="space-y-4">
-                  {/* KPI Configuration with integrated TableSelector */}
-                  <TableSelector
-                    tenantId={tenantId}
-                    selectedTableId={editedWidget.config?.dataSource?.tableId}
-                    selectedColumnY={editedWidget.config?.dataSource?.column || ''}
-                    onColumnYChange={(column) => updateConfig({
-                      dataSource: {
-                        ...editedWidget.config?.dataSource,
-                        column: column,
-                        type: 'table'
-                      }
-                    })}
-                    filters={editedWidget.config?.dataSource?.filters || []}
-                    onFiltersChange={(filters) => updateConfig({
-                      dataSource: {
-                        ...editedWidget.config?.dataSource,
-                        filters: filters
-                      }
-                    })}
-                    onTableChange={(tableId) => {
-                      updateConfig({
-                        dataSource: {
-                          ...editedWidget.config?.dataSource,
-                          tableId: tableId,
-                          type: 'table'
-                        }
-                      });
+                  {/* Enhanced KPI Configuration */}
+                  <EnhancedTableSelector
+                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { type: 'table' }}
+                    onDataSourceChange={(newDataSource) => {
+                      updateConfig({ dataSource: newDataSource });
                     }}
-                    onColumnXChange={() => {}}
+                    widgetType="kpi"
                     expectedYType="number"
-                    loadTables={loadTables}
+                    tenantId={tenantId}
                   />
 
-                  {/* Aggregation Options */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">Aggregation</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="aggregation">Aggregation Function</Label>
-                        <Select
-                          value={editedWidget.config?.dataSource?.aggregation || 'sum'}
-                          onValueChange={(value) => updateConfig({
-                            dataSource: {
-                              ...editedWidget.config?.dataSource,
-                              aggregation: value
-                            }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sum">Sum</SelectItem>
-                            <SelectItem value="count">Count</SelectItem>
-                            <SelectItem value="avg">Average</SelectItem>
-                            <SelectItem value="min">Minimum</SelectItem>
-                            <SelectItem value="max">Maximum</SelectItem>
-                            <SelectItem value="median">Median</SelectItem>
-                            <SelectItem value="stddev">Standard Deviation</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Enhanced Aggregation Options */}
+                  <AggregationSelector
+                    config={editedWidget.config?.dataSource?.aggregationConfig || { primary: 'sum' }}
+                    onConfigChange={(aggregationConfig) => updateConfig({
+                      dataSource: {
+                        ...editedWidget.config?.dataSource,
+                        aggregationConfig: aggregationConfig
+                      }
+                    })}
+                    columnType="number"
+                  />
 
                   {/* KPI Options */}
                   <Card>
@@ -1376,21 +1314,19 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     />
                   )}
 
-                  {/* Table Data Selector */}
+                  {/* Enhanced Table Data Selector */}
                   {config.dataSource?.type === 'table' && (
-                    <TableSelector
-                      tenantId={tenantId}
-                      selectedTableId={config.dataSource.tableId}
-                      selectedColumnX={config.dataSource.columnX}
-                      selectedColumnY={config.dataSource.columnY}
-                      filters={config.dataSource?.filters || []}
-                      onFiltersChange={handleFiltersChange}
-                      onTableChange={handleTableChange}
-                      onColumnXChange={handleColumnXChange}
-                      onColumnYChange={handleColumnYChange}
+                    <EnhancedTableSelector
+                      dataSource={config.dataSource as EnhancedDataSource}
+                      onDataSourceChange={(newDataSource) => {
+                        updateConfig({ dataSource: newDataSource });
+                      }}
+                      widgetType="chart"
+                      supportedAxes={['x', 'y']}
+                      allowMultiColumn={true}
                       expectedXType="text"
                       expectedYType="number"
-                      loadTables={loadTables}
+                      tenantId={tenantId}
                     />
                   )}
 

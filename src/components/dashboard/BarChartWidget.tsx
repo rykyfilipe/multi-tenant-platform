@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
 import type { Widget, LineChartConfig } from './LineChartWidget';
+import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
@@ -22,9 +23,13 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
 	const options = config.options || {};
 	
-	// Ensure xAxis and yAxis have proper fallbacks
-	const safeXAxis = config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const };
-	const safeYAxis = config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const };
+	// Support both old and new data source formats
+	const enhancedDataSource = dataSource as EnhancedDataSource;
+	const legacyDataSource = dataSource as any; // For backward compatibility
+	
+	// Determine axis configuration - prefer new format, fallback to legacy
+	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
+	const safeYAxis = enhancedDataSource.yAxis || config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const, columns: ['y'] };
 	
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
@@ -32,12 +37,32 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		let rawData: any[] = [];
 		
 		if (dataSource.type === 'manual') {
-			rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
+			rawData = Array.isArray(legacyDataSource.manualData) ? legacyDataSource.manualData : [];
 		} else {
 			rawData = Array.isArray(data) ? data : [];
 		}
 		
-		// Validate and clean data to prevent property errors
+		// For multi-column support, we need to transform the data
+		if (enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1) {
+			// If multiple X columns, we need to create multiple series
+			const transformedData: any[] = [];
+			rawData.forEach(item => {
+				enhancedDataSource.xAxis!.columns.forEach(xCol => {
+					const yCol = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
+					if (item[xCol] !== undefined && item[xCol] !== null && 
+						item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
+						transformedData.push({
+							[safeXAxis.key]: item[xCol],
+							[safeYAxis.key]: item[yCol],
+							series: xCol
+						});
+					}
+				});
+			});
+			return transformedData;
+		}
+		
+		// Single column mode - validate and clean data
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
@@ -47,7 +72,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			return xValue !== undefined && xValue !== null && xValue !== '' &&
 				   yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
 		});
-	}, [dataSource, data, safeXAxis.key, safeYAxis.key]);
+	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
 	// Generate automatic colors based on data length
 	const colors = useMemo(() => {
@@ -145,12 +170,26 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 									}}
 								/>
 							)}
-							<Bar 
-								dataKey={safeYAxis.key} 
-								fill={colors[0]}
-								radius={[4, 4, 0, 0]}
-								animationDuration={options.animation !== false ? 1000 : 0}
-							/>
+							{/* Render multiple bars if multiple X columns are selected */}
+							{enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1 ? (
+								enhancedDataSource.xAxis.columns.map((xCol, index) => (
+									<Bar 
+										key={xCol}
+										dataKey={safeYAxis.key} 
+										fill={colors[index % colors.length]}
+										radius={[4, 4, 0, 0]}
+										animationDuration={options.animation !== false ? 1000 : 0}
+										name={xCol}
+									/>
+								))
+							) : (
+								<Bar 
+									dataKey={safeYAxis.key} 
+									fill={colors[0]}
+									radius={[4, 4, 0, 0]}
+									animationDuration={options.animation !== false ? 1000 : 0}
+								/>
+							)}
 						</BarChart>
 					</ResponsiveContainer>
 					

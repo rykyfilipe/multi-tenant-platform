@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Legend, Cell } from 'recharts';
 import BaseWidget from './BaseWidget';
 import type { Widget, LineChartConfig } from './LineChartWidget';
+import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
@@ -22,9 +23,13 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const dataSource = config.dataSource || { type: 'manual', manualData: [] };
 	const options = config.options || {};
 	
-	// Ensure xAxis and yAxis have proper fallbacks
-	const safeXAxis = config.xAxis || { key: 'name', label: 'Name', type: 'category' as const };
-	const safeYAxis = config.yAxis || { key: 'value', label: 'Value', type: 'number' as const };
+	// Support both old and new data source formats
+	const enhancedDataSource = dataSource as EnhancedDataSource;
+	const legacyDataSource = dataSource as any; // For backward compatibility
+	
+	// Determine axis configuration - prefer new format, fallback to legacy
+	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'name', label: 'Name', type: 'category' as const, columns: ['name'] };
+	const safeYAxis = enhancedDataSource.yAxis || config.yAxis || { key: 'value', label: 'Value', type: 'number' as const, columns: ['value'] };
 	
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
@@ -32,22 +37,31 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		let rawData: any[] = [];
 		
 		if (dataSource.type === 'manual') {
-			rawData = Array.isArray(dataSource.manualData) ? dataSource.manualData : [];
+			rawData = Array.isArray(legacyDataSource.manualData) ? legacyDataSource.manualData : [];
 		} else {
 			rawData = Array.isArray(data) ? data : [];
 		}
+		
+		// For pie charts, we typically use single columns for name and value
+		// But we can support multiple value columns by creating separate pie charts
+		// For now, we'll use the first selected column for each axis
+		const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
+		const yColumn = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
 		
 		// Validate and clean data to prevent property errors
 		return rawData.filter(item => {
 			if (!item || typeof item !== 'object') return false;
 			
-			const nameValue = item?.[safeXAxis.key];
-			const valueValue = item?.[safeYAxis.key];
+			const nameValue = item?.[xColumn];
+			const valueValue = item?.[yColumn];
 			
 			return nameValue !== undefined && nameValue !== null && nameValue !== '' &&
 				   valueValue !== undefined && valueValue !== null && !isNaN(Number(valueValue));
-		});
-	}, [dataSource, data, safeXAxis.key, safeYAxis.key]);
+		}).map(item => ({
+			[safeXAxis.key]: item[xColumn],
+			[safeYAxis.key]: item[yColumn]
+		}));
+	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
 	// Generate automatic colors based on data length
 	const colors = useMemo(() => {

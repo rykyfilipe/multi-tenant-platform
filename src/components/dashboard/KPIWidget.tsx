@@ -17,6 +17,8 @@ import {
   type AggregationType,
   type AggregationResult
 } from '@/lib/aggregation-utils';
+import type { EnhancedDataSource } from './EnhancedTableSelector';
+import type { AggregationConfig } from './AggregationSelector';
 
 export interface KPIDataPoint {
   label: string;
@@ -26,13 +28,14 @@ export interface KPIDataPoint {
   changePercent?: number;
 }
 
-export interface KPIDataSource {
+export interface KPIDataSource extends EnhancedDataSource {
   type: 'table' | 'manual';
   tableId?: number;
-  column?: string;
-  aggregation: AggregationType; // Required aggregation function
+  column?: string; // Legacy support
+  aggregation?: AggregationType; // Legacy support
+  aggregationConfig?: AggregationConfig; // New aggregation configuration
   filters?: any[];
-  // Advanced aggregation options
+  // Advanced aggregation options (legacy)
   showMultipleAggregations?: boolean;
   selectedAggregations?: AggregationType[];
   compareWithPrevious?: boolean;
@@ -103,30 +106,72 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
 
   // Calculate aggregations using the new utility functions
   const aggregations = useMemo(() => {
-    if (!rawData.length || !dataSource.column || !dataSource.aggregation) return {};
+    if (!rawData.length) return {};
 
-    const column = dataSource.column;
-    const aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
-      ? dataSource.selectedAggregations
-      : [dataSource.aggregation];
+    // Support both new and legacy data source formats
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    const aggregationConfig = dataSource.aggregationConfig;
+    
+    if (!column) return {};
+
+    // Determine aggregation functions to calculate
+    let aggregationsToCalculate: AggregationType[];
+    
+    if (aggregationConfig) {
+      // New format: use aggregation config
+      aggregationsToCalculate = aggregationConfig.showMultiple && aggregationConfig.selected
+        ? aggregationConfig.selected
+        : [aggregationConfig.primary];
+    } else {
+      // Legacy format: use old aggregation system
+      const primaryAggregation = dataSource.aggregation || 'sum';
+      aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
+        ? dataSource.selectedAggregations
+        : [primaryAggregation];
+    }
 
     return calculateMultipleAggregations(rawData, column, aggregationsToCalculate);
-  }, [rawData, dataSource.column, dataSource.aggregation, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
+  }, [rawData, dataSource, dataSource.column, dataSource.aggregation, dataSource.aggregationConfig, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
 
   // Calculate previous period aggregations for comparison
   const previousAggregations = useMemo(() => {
-    if (!previousData.length || !dataSource.column || !dataSource.aggregation) return {};
+    if (!previousData.length) return {};
 
-    const column = dataSource.column;
-    const aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
-      ? dataSource.selectedAggregations
-      : [dataSource.aggregation];
+    // Support both new and legacy data source formats
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    const aggregationConfig = dataSource.aggregationConfig;
+    
+    if (!column) return {};
+
+    // Determine aggregation functions to calculate
+    let aggregationsToCalculate: AggregationType[];
+    
+    if (aggregationConfig) {
+      // New format: use aggregation config
+      aggregationsToCalculate = aggregationConfig.showMultiple && aggregationConfig.selected
+        ? aggregationConfig.selected
+        : [aggregationConfig.primary];
+    } else {
+      // Legacy format: use old aggregation system
+      const primaryAggregation = dataSource.aggregation || 'sum';
+      aggregationsToCalculate = dataSource.showMultipleAggregations && dataSource.selectedAggregations
+        ? dataSource.selectedAggregations
+        : [primaryAggregation];
+    }
 
     return calculateMultipleAggregations(previousData, column, aggregationsToCalculate);
-  }, [previousData, dataSource.column, dataSource.aggregation, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
+  }, [previousData, dataSource, dataSource.column, dataSource.aggregation, dataSource.aggregationConfig, dataSource.showMultipleAggregations, dataSource.selectedAggregations]);
 
   useEffect(() => {
-    if (dataSource.type === 'table' && tenantId && databaseId && dataSource.tableId && dataSource.column && dataSource.aggregation) {
+    // Support both new and legacy data source formats
+    const hasValidTableConfig = dataSource.type === 'table' && 
+      tenantId && 
+      databaseId && 
+      dataSource.tableId && 
+      (dataSource.yAxis?.columns?.[0] || dataSource.column) && 
+      (dataSource.aggregationConfig?.primary || dataSource.aggregation);
+
+    if (hasValidTableConfig) {
       fetchTableData();
     } else if (dataSource.type === 'manual') {
       // For manual data, we'll use mock data for now
@@ -140,7 +185,11 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
   }, [dataSource, tenantId, databaseId]);
 
   const fetchTableData = async () => {
-    if (!tenantId || !databaseId || !dataSource.tableId || !dataSource.column || !dataSource.aggregation) return;
+    // Support both new and legacy data source formats
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    const aggregation = dataSource.aggregationConfig?.primary || dataSource.aggregation;
+    
+    if (!tenantId || !databaseId || !dataSource.tableId || !column || !aggregation) return;
 
     setIsLoading(true);
     setError(null);
@@ -149,7 +198,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       const queryData = {
         filters: dataSource.filters || [],
         search: '',
-        sortBy: dataSource.column,
+        sortBy: column,
         sortOrder: 'desc' as const,
         page: 1,
         pageSize: 1000, // Get all data for aggregation
@@ -177,12 +226,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
         setRawData(rawData);
 
         // If we need to compare with previous period, fetch that data too
-        if (dataSource.compareWithPrevious) {
+        const shouldCompare = dataSource.aggregationConfig?.compareWithPrevious || dataSource.compareWithPrevious;
+        if (shouldCompare) {
           // For now, we'll simulate previous period data
           // In a real implementation, you'd fetch data from a previous time period
           const previousData = rawData.map((row: any) => ({
             ...row,
-            [dataSource.column!]: (parseFloat(row[dataSource.column!]) || 0) * 0.9 // Simulate 10% decrease
+            [column!]: (parseFloat(row[column!]) || 0) * 0.9 // Simulate 10% decrease
           }));
           setPreviousData(previousData);
         }
@@ -335,8 +385,9 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       );
     }
 
-    // Check if column is selected
-    if (!dataSource.column || dataSource.column === '') {
+    // Check if column is selected (support both new and legacy formats)
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    if (!column || column === '') {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
           <div className="text-center p-4 sm:p-6">
@@ -350,8 +401,9 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       );
     }
 
-    // Check if aggregation function is selected
-    if (!dataSource.aggregation || dataSource.aggregation === '') {
+    // Check if aggregation function is selected (support both new and legacy formats)
+    const aggregation = dataSource.aggregationConfig?.primary || dataSource.aggregation;
+    if (!aggregation || aggregation === '') {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
           <div className="text-center p-4 sm:p-6">
@@ -381,7 +433,8 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     }
 
     const layout = options.layout || 'single';
-    const showMultiple = options.showMultipleValues || dataSource.showMultipleAggregations;
+    const showMultiple = options.showMultipleValues || 
+      (dataSource.aggregationConfig?.showMultiple || dataSource.showMultipleAggregations);
 
     if (showMultiple && Object.keys(aggregations).length > 1) {
       // Render multiple aggregations
@@ -443,7 +496,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       );
     } else {
       // Render single aggregation
-      const primaryType = dataSource.aggregation || 'sum';
+      const primaryType = dataSource.aggregationConfig?.primary || dataSource.aggregation || 'sum';
       const result = (aggregations as any)[primaryType];
       const previousResult = (previousAggregations as any)[primaryType];
       const changePercent = previousResult 
