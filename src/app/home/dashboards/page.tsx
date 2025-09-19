@@ -570,7 +570,7 @@ export default function DashboardsPage() {
           },
           onConfigChange: (newConfig: any) => {
             console.log('Widget config changed:', widget.id, newConfig);
-            handleWidgetUpdate(widget.id, { config: newConfig });
+            handleWidgetUpdate({ ...widget, config: newConfig });
           },
           tenantId: tenant?.id,
           databaseId: 1
