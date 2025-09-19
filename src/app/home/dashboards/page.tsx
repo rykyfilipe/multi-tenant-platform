@@ -405,7 +405,7 @@ export default function DashboardsPage() {
   };
 
   // Function to find a free position for a new widget
-  const findFreePosition = (widgets: Widget[], width: number = 6, height: number = 4) => {
+  const findFreePosition = (widgets: Widget[], width: number = 8, height: number = 6) => {
     const gridWidth = 12; // Total grid width
     const maxY = 20; // Maximum Y position to search
     
@@ -450,7 +450,7 @@ export default function DashboardsPage() {
     let lowestY = 0;
     widgets.forEach(widget => {
       if (widget.position) {
-        lowestY = Math.max(lowestY, (widget.position.y || 0) + (widget.position.height || 4));
+        lowestY = Math.max(lowestY, (widget.position.y || 0) + (widget.position.height || 6));
       }
     });
     
@@ -803,37 +803,51 @@ export default function DashboardsPage() {
                 </div>
                 
                 {isEditMode && (
-                  <Select onValueChange={(value) => handleAddWidget(value)}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Add Widget" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="chart">
-                        <div className="flex items-center space-x-2">
-                          <BarChart3 className="h-4 w-4" />
-                          <span>Chart</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="table">
-                        <div className="flex items-center space-x-2">
-                          <Database className="h-4 w-4" />
-                          <span>Table</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="metric">
-                        <div className="flex items-center space-x-2">
-                          <TrendingUp className="h-4 w-4" />
-                          <span>KPI/Metric</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="text">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="h-4 w-4" />
-                          <span>Text</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2 border">
+                    <span className="text-sm font-medium text-gray-700 mr-2">Add Widget:</span>
+                    <div className="flex space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('chart')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        title="Add Chart Widget"
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        <span className="text-sm">Chart</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('table')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-green-50 hover:text-green-600 transition-colors"
+                        title="Add Table Widget"
+                      >
+                        <Database className="h-4 w-4" />
+                        <span className="text-sm">Table</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('metric')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                        title="Add KPI/Metric Widget"
+                      >
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="text-sm">KPI</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddWidget('text')}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                        title="Add Text Widget"
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm">Text</span>
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -846,8 +860,8 @@ export default function DashboardsPage() {
                   i: w.id.toString(),
                   x: w.position?.x || 0,
                   y: w.position?.y || 0,
-                  w: w.position?.width || 4,
-                  h: w.position?.height || 4,
+                  w: w.position?.width || 8,
+                  h: w.position?.height || 6,
                 })) }}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}

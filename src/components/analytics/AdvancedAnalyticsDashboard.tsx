@@ -165,8 +165,8 @@ export function AdvancedAnalyticsDashboard({ tenantId }: AdvancedAnalyticsDashbo
 					position: {
 						x: 0,
 						y: 0,
-						width: 6,
-						height: 4,
+						width: 8,
+						height: 6,
 					},
 					config: {
 						timeRange: widgetForm.timeRange,

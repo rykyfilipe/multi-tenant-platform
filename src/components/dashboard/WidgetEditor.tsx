@@ -396,7 +396,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       <Input
                         id="width"
                         type="number"
-                        value={editedWidget.position?.width || 4}
+                        value={editedWidget.position?.width || 8}
                         onChange={(e) => updatePosition({ width: parseInt(e.target.value) || 1 })}
                         min="1"
                         max="12"
@@ -407,7 +407,7 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       <Input
                         id="height"
                         type="number"
-                        value={editedWidget.position?.height || 4}
+                        value={editedWidget.position?.height || 6}
                         onChange={(e) => updatePosition({ height: parseInt(e.target.value) || 1 })}
                         min="1"
                         max="20"
