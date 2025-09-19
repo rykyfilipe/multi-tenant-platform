@@ -132,6 +132,11 @@ const fetchTableData = async (dataSource: DataSource): Promise<ChartDataPoint[]>
     }
 
     const rows = response.data;
+    console.log('[LineChart] API response:', {
+      success: response.success,
+      rowsCount: rows?.length || 0,
+      sampleRow: rows?.[0]
+    });
     
     // Transform rows with cells to chart data
     // Use enhanced data source format
@@ -289,7 +294,9 @@ export function LineChartWidget({ widget, isEditMode = false, onEdit, onDelete }
 
         if (dataSource.type === 'table' && dataSource.tableId && dataSource.tableId > 0) {
           // Fetch from table
+          console.log('[LineChart] Loading data for table:', dataSource.tableId);
           const tableData = await fetchTableData(dataSource);
+          console.log('[LineChart] Fetched table data:', tableData);
           setData(tableData);
           setLastFetchTime(new Date());
         } else {

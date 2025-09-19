@@ -234,7 +234,13 @@ export function EnhancedTableSelector({
 		console.log('[EnhancedTableSelector] Column select:', { axis, columnName });
 		const newDataSource = {
 			...dataSource,
-			[axis === 'x' ? 'columnX' : 'columnY']: columnName
+			[axis === 'x' ? 'columnX' : 'columnY']: columnName,
+			[axis === 'x' ? 'xAxis' : 'yAxis']: {
+				key: columnName,
+				label: columnName,
+				type: axis === 'x' ? 'text' : 'number',
+				columns: [columnName]
+			}
 		};
 		onDataSourceChange(newDataSource);
 	};
@@ -247,9 +253,16 @@ export function EnhancedTableSelector({
 			? [...currentColumns, columnName]
 			: currentColumns.filter((col: string) => col !== columnName);
 
+		// Update both xColumns/yColumns and xAxis/yAxis for compatibility
 		const newDataSource = {
 			...dataSource,
-			[axis === 'x' ? 'xColumns' : 'yColumns']: newColumns
+			[axis === 'x' ? 'xColumns' : 'yColumns']: newColumns,
+			[axis === 'x' ? 'xAxis' : 'yAxis']: {
+				key: newColumns[0] || '',
+				label: newColumns[0] || '',
+				type: axis === 'x' ? 'text' : 'number',
+				columns: newColumns
+			}
 		};
 		onDataSourceChange(newDataSource);
 	};
