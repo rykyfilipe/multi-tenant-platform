@@ -146,7 +146,7 @@ export default function DashboardsPage() {
     getFinalWidget,
     setSaveFunction,
   } = useWidgetPendingChanges({
-    autoSaveDelay: 3000, // Auto-save after 3 seconds of inactivity
+    autoSaveDelay: -1, // Dezactivează auto-save - se salvează doar la click
     onSuccess: (results) => {
       console.log('Widget changes saved successfully:', results);
       // Refresh dashboard data after successful save
@@ -631,6 +631,8 @@ export default function DashboardsPage() {
       isVisible: true,
       order: (selectedDashboard?.widgets ?? []).length || 0,
     };
+    
+    console.log('[Dashboard] Creating new widget:', newWidget);
 
     // Generate temporary ID for the new widget
     const tempId = Date.now();

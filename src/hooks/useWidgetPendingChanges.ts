@@ -77,6 +77,10 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
           originalData: originalData || {},
           timestamp: Date.now(),
         };
+        
+        console.log('[Hook] Adding create pending change:', pendingChange);
+        console.log('[Hook] Data received:', data);
+        console.log('[Hook] Data after || {}:', data || {});
         newMap.set(changeKey, pendingChange);
         return newMap;
       }
@@ -294,6 +298,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
           const { id, ...dataWithoutId } = change.data;
           operation.data = dataWithoutId;
           console.log('🔍 Create operation data:', operation.data);
+          console.log('🔍 Original change data:', change.data);
         } else {
           operation.data = change.data;
         }
