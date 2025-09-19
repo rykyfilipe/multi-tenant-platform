@@ -643,23 +643,39 @@ export default function DashboardsPage() {
     const dbWidgets = selectedDashboard?.widgets ?? [];
     const localWidgets: Widget[] = [];
     
+    console.log('[Dashboard] getAllWidgets called:', {
+      dbWidgetsCount: dbWidgets.length,
+      pendingChangesSize: pendingChanges.size,
+      pendingChanges: Array.from(pendingChanges.entries())
+    });
+    
     // Adaugă widget-urile locale din pending changes
     pendingChanges.forEach((change, key) => {
+      console.log('[Dashboard] Processing pending change:', { key, change });
       if (change.type === 'create' && change.data) {
         // Cheia este formatată ca "create_${widgetId}" sau poate fi un number
         const keyStr = String(key);
+        console.log('[Dashboard] Key string:', keyStr);
         if (keyStr.startsWith('create_')) {
           const widgetId = keyStr.replace('create_', '');
           const localWidget: Widget = {
             id: parseInt(widgetId), // Extrage ID-ul din cheie
             ...change.data,
           } as Widget;
+          console.log('[Dashboard] Created local widget:', localWidget);
           localWidgets.push(localWidget);
         }
       }
     });
     
-    return [...dbWidgets, ...localWidgets];
+    const allWidgets = [...dbWidgets, ...localWidgets];
+    console.log('[Dashboard] getAllWidgets result:', {
+      dbWidgetsCount: dbWidgets.length,
+      localWidgetsCount: localWidgets.length,
+      totalCount: allWidgets.length
+    });
+    
+    return allWidgets;
   }, [selectedDashboard?.widgets, pendingChanges]);
 
   const renderWidget = (widget: Widget) => {
