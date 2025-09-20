@@ -57,11 +57,11 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				// Transform rows with cells to chart data
 				// Support both new and legacy data source formats
 				const xKey = (dataSource as any).xAxis?.columns?.[0] || (dataSource as any).columnX || safeXAxis.key;
-				const yKey = (dataSource as any).yAxis?.columns?.[0] || (dataSource as any).columnY || safeYAxis.key;
+				const yKeys = (dataSource as any).yAxis?.columns || [(dataSource as any).columnY || safeYAxis.key];
 				
 				console.log('[BaseChartWidget] Mapping data:', {
 					xKey,
-					yKey,
+					yKeys,
 					rowsCount: rows.length,
 					sampleRow: rows[0],
 					dataSource: dataSource
@@ -70,21 +70,27 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const mapped: ChartDataPoint[] = (rows ?? []).map((row: any) => {
 					const dataPoint: any = {};
 					if (row?.cells && Array.isArray(row.cells)) {
-						// Find X and Y column values from cells
+						// Find X column value
 						const xCell = row.cells.find((cell: any) => cell?.column?.name === xKey);
-						const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
-						
-						// Safely assign values with fallbacks
 						dataPoint[xKey] = xCell?.value || '';
-						dataPoint[yKey] = parseFloat(yCell?.value) || 0;
+						
+						// Find ALL Y column values for multi-column support
+						yKeys.forEach((yKey: string) => {
+							const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
+							if (yCell && yCell.value !== undefined && yCell.value !== null) {
+								dataPoint[yKey] = parseFloat(yCell.value) || 0;
+							}
+						});
 					}
 					return dataPoint;
 				}).filter((point: any) => {
-					// Ensure both x and y values exist and are valid
+					// Ensure x value exists and at least one y value is valid
 					const xValue = point?.[xKey];
-					const yValue = point?.[yKey];
-					return xValue !== undefined && xValue !== null && xValue !== '' && 
-						   yValue !== undefined && yValue !== null && !isNaN(yValue);
+					const hasValidY = yKeys.some((yKey: string) => {
+						const yValue = point?.[yKey];
+						return yValue !== undefined && yValue !== null && !isNaN(yValue);
+					});
+					return xValue !== undefined && xValue !== null && xValue !== '' && hasValidY;
 				});
 				console.log('[BaseChartWidget] Mapped data result:', {
 					mappedCount: mapped.length,

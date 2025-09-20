@@ -107,37 +107,24 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 				rawDataCount: rawData.length
 			});
 			
-			const transformedData: any[] = [];
+			// Data already contains all Y columns from BaseChartWidget mapping
+			// Just filter and validate the data
 			const xColumn = enhancedDataSource.xAxis?.columns?.[0] || safeXAxis.key;
-			
-			// Group data by X column value to ensure proper multi-series structure
-			const groupedData = rawData.reduce((acc: Record<string, any>, item: any) => {
-				const xValue = item[xColumn];
-				if (xValue !== undefined && xValue !== null && xValue !== '') {
-					if (!acc[xValue]) {
-						acc[xValue] = { [xColumn]: xValue };
-					}
-					
-					// Add all Y column values for this X value
-					enhancedDataSource.yAxis!.columns.forEach(yCol => {
-						if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
-							acc[xValue][yCol] = item[yCol];
-						}
-					});
-				}
-				return acc;
-			}, {});
-			
-			// Convert grouped data to array
-			Object.values(groupedData).forEach(item => {
-				if (Object.keys(item).length > 1) { // Has at least one Y value
-					transformedData.push(item);
-				}
+			const filteredData = rawData.filter(item => {
+				if (!item || typeof item !== 'object') return false;
+				
+				const xValue = item?.[xColumn];
+				const hasValidY = enhancedDataSource.yAxis!.columns.some(yCol => {
+					const yValue = item?.[yCol];
+					return yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
+				});
+				
+				return xValue !== undefined && xValue !== null && xValue !== '' && hasValidY;
 			});
 			
 			console.log('[BarChart] Multi-column Y-axis result:', {
-				transformedDataCount: transformedData.length,
-				sampleData: transformedData.slice(0, 2),
+				filteredDataCount: filteredData.length,
+				sampleData: filteredData.slice(0, 2),
 				yColumns: enhancedDataSource.yAxis.columns
 			});
 			
@@ -145,10 +132,10 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			const yAggregation = enhancedDataSource.yAxis?.aggregation;
 			if (yAggregation && yAggregation !== 'none') {
 				console.log('[BarChart] Applying Y-axis aggregation for multi-column:', yAggregation);
-				return applyAggregation(transformedData, xColumn, yAggregation);
+				return applyAggregation(filteredData, xColumn, yAggregation);
 			}
 			
-			return transformedData;
+			return filteredData;
 		}
 		
 		// For multi-column support on X-axis (multiple series)
