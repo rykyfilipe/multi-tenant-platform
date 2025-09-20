@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDatabase } from "@/contexts/DatabaseContext";
 import { getAllModules, ModuleDefinition } from "@/lib/modules";
 import {
 	AlertDialog,
@@ -53,6 +54,7 @@ interface ModulesResponse {
 export default function ModuleManager() {
 	const { token, tenant, showAlert, setTenant } = useApp();
 	const { t } = useLanguage();
+	const { fetchTables, selectedDatabase } = useDatabase();
 	const [modules, setModules] = useState<ModuleDefinition[]>([]);
 	const [modulesStatus, setModulesStatus] = useState<ModuleStatus[]>([]);
 	const [enabledModules, setEnabledModules] = useState<string[]>([]);
@@ -176,6 +178,13 @@ export default function ModuleManager() {
 
 				// Refresh modules status to ensure consistency
 				await fetchModulesStatus();
+				
+				// Update local database context with new tables when module is enabled
+				if (action === "enable" && selectedDatabase && selectedDatabase.id === databaseId) {
+					// Refresh tables to include the new module tables
+					await fetchTables();
+				}
+				
 				if (action === "enable") {
 					showAlert(`Module enabled successfully`, "success");
 				} else {
