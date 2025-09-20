@@ -24,16 +24,23 @@ export async function GET(
 		return tenantAccessError;
 	}
 
+	// Parse query parameters
+	const url = new URL(request.url);
+	const includePredefined = url.searchParams.get('includePredefined') === 'true';
+
 	try {
 		if (role === "ADMIN") {
-			// Pentru admin, returnăm toate tabelele din tenant, dar excludem tabelele protejate
-			const tables = await withRetry(() => prisma.table.findMany({
-				where: {
-					database: {
-						tenantId: Number(tenantId),
-					},
-					isProtected: false, // Excludem tabelele protejate
+			// Pentru admin, returnăm toate tabelele din tenant
+			// Excludem tabelele protejate doar dacă nu se solicită includerea tabelelor predefinite
+			const whereCondition = {
+				database: {
+					tenantId: Number(tenantId),
 				},
+				...(includePredefined ? {} : { isProtected: false }), // Excludem tabelele protejate doar dacă nu se solicită includerea lor
+			};
+
+			const tables = await withRetry(() => prisma.table.findMany({
+				where: whereCondition,
 				include: {
 					database: true,
 					columns: {
@@ -45,7 +52,7 @@ export async function GET(
 			}));
 
 			// Serializăm datele pentru a evita probleme cu tipurile Prisma
-			const serializedTables = tables.map((table:any) => ({
+			const serializedTables = (tables as any[]).map((table:any) => ({
 				...table,
 				createdAt: table.createdAt?.toISOString(),
 				updatedAt: table.updatedAt?.toISOString(),
@@ -66,17 +73,20 @@ export async function GET(
 			return NextResponse.json(serializedTables, { status: 200 });
 		}
 
-		// Pentru utilizatorii non-admin, returnăm doar tabelele la care au acces, dar excludem tabelele protejate
-		const tablePermissions = await withRetry(() => prisma.tablePermission.findMany({
-			where: {
-				userId: userId,
-				table: {
-					database: {
-						tenantId: Number(tenantId),
-					},
-					isProtected: false, // Excludem tabelele protejate
+		// Pentru utilizatorii non-admin, returnăm doar tabelele la care au acces
+		// Excludem tabelele protejate doar dacă nu se solicită includerea tabelelor predefinite
+		const tablePermissionsWhereCondition = {
+			userId: userId,
+			table: {
+				database: {
+					tenantId: Number(tenantId),
 				},
+				...(includePredefined ? {} : { isProtected: false }), // Excludem tabelele protejate doar dacă nu se solicită includerea lor
 			},
+		};
+
+		const tablePermissions = await withRetry(() => prisma.tablePermission.findMany({
+			where: tablePermissionsWhereCondition,
 			include: {
 				table: {
 					include: {
@@ -91,7 +101,7 @@ export async function GET(
 			},
 		}));
 
-		const accessibleTables = tablePermissions
+		const accessibleTables = (tablePermissions as any[])
 			.filter((permission: { canRead: boolean }) => permission.canRead)
 			.map((permission: { table: any }) => permission.table);
 

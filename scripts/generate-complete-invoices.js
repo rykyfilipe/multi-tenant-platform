@@ -7,11 +7,10 @@ const paymentMethods = ['Cash', 'Bank Transfer', 'Credit Card', 'PayPal', 'Check
 const paymentTerms = ['Net 30', 'Net 15', 'Due on Receipt', 'Net 45', 'Net 60'];
 const currencies = ['RON', 'EUR', 'USD', 'GBP'];
 const statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
-const invoiceSeries = ['INV', 'FACT', 'BILL'];
 
-async function generateInvoices() {
+async function generateCompleteInvoices() {
   try {
-    console.log('🚀 Starting invoice generation...\n');
+    console.log('🚀 Starting complete invoice generation...\n');
 
     // Get tenant and database info
     const tenant = await prisma.tenant.findFirst({
@@ -30,7 +29,7 @@ async function generateInvoices() {
       throw new Error('Database not found for tenant');
     }
 
-    // Get existing tables
+    // Get existing tables with all necessary data
     const productsTable = await prisma.table.findFirst({
       where: { 
         databaseId: database.id,
@@ -89,24 +88,19 @@ async function generateInvoices() {
     console.log(`📋 Invoice tables ready: invoices (${invoicesTable.columns.length} cols), invoice_items (${invoiceItemsTable.columns.length} cols)\n`);
 
     // Helper function to get cell value by column name
-    function getCellValue(row, columnName) {
-      const column = productsTable.columns.find(c => c.name === columnName);
-      if (!column) return null;
+    function getCellValue(row, columnName, table) {
+      const column = table.columns.find(c => c.name === columnName);
+      if (!column) {
+        return null;
+      }
       
       const cell = row.cells.find(c => c.columnId === column.id);
-      if (!cell) return null;
+      if (!cell) {
+        return null;
+      }
       
-      return cell.stringValue || cell.numberValue || cell.dateValue || cell.booleanValue;
-    }
-
-    function getCustomerCellValue(row, columnName) {
-      const column = customersTable.columns.find(c => c.name === columnName);
-      if (!column) return null;
-      
-      const cell = row.cells.find(c => c.columnId === column.id);
-      if (!cell) return null;
-      
-      return cell.stringValue || cell.numberValue || cell.dateValue || cell.booleanValue;
+      // The value is stored in cell.value (JSON field)
+      return cell.value;
     }
 
     // Generate 100 invoices
@@ -114,14 +108,14 @@ async function generateInvoices() {
     let invoiceCount = 0;
     let itemCount = 0;
 
-    console.log(`🔄 Generating ${invoicesToCreate} invoices...`);
+    console.log(`🔄 Generating ${invoicesToCreate} complete invoices...`);
 
     for (let i = 0; i < invoicesToCreate; i++) {
       // Select random customer
       const randomCustomer = customersTable.rows[Math.floor(Math.random() * customersTable.rows.length)];
-      const customerName = getCustomerCellValue(randomCustomer, 'customer_name');
-      const customerEmail = getCustomerCellValue(randomCustomer, 'customer_email');
-      const customerAddress = getCustomerCellValue(randomCustomer, 'customer_address');
+      const customerName = getCellValue(randomCustomer, 'customer_name', customersTable);
+      const customerEmail = getCellValue(randomCustomer, 'customer_email', customersTable);
+      const customerAddress = getCellValue(randomCustomer, 'customer_address', customersTable);
 
       // Generate invoice data
       const invoiceNumber = `INV-2025-${String(i + 1).padStart(6, '0')}`;
@@ -133,8 +127,6 @@ async function generateInvoices() {
 
       const baseCurrency = currencies[Math.floor(Math.random() * currencies.length)];
       const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const paymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
-      const paymentTerm = paymentTerms[Math.floor(Math.random() * paymentTerms.length)];
 
       // Create invoice row
       const invoiceRow = await prisma.row.create({
@@ -143,13 +135,69 @@ async function generateInvoices() {
         }
       });
 
-      // Create invoice cells - using correct column names
+      // Generate 1-5 random products for this invoice
+      const numItems = Math.floor(Math.random() * 5) + 1; // 1-5 items per invoice
+      let totalAmount = 0;
+      const invoiceItems = [];
+
+      // First, create all invoice items and calculate totals
+      for (let j = 0; j < numItems; j++) {
+        // Select random product
+        const randomProduct = productsTable.rows[Math.floor(Math.random() * productsTable.rows.length)];
+        
+        // Extract product details manually
+        const productDetails = {
+          name: getCellValue(randomProduct, 'name', productsTable),
+          description: getCellValue(randomProduct, 'description', productsTable),
+          price: parseFloat(getCellValue(randomProduct, 'price', productsTable)) || 0,
+          vat: parseFloat(getCellValue(randomProduct, 'vat', productsTable)) || 19,
+          currency: getCellValue(randomProduct, 'currency', productsTable) || baseCurrency,
+          sku: getCellValue(randomProduct, 'sku', productsTable) || `SKU-${randomProduct.id}`,
+          unitOfMeasure: getCellValue(randomProduct, 'unit_of_measure', productsTable) || 'pcs'
+        };
+
+
+        const productName = productDetails.name || 'Unknown Product';
+        const productDescription = productDetails.description || productName;
+        const productPrice = productDetails.price;
+        const productVat = productDetails.vat;
+        const productCurrency = productDetails.currency;
+        const productSku = productDetails.sku;
+        const unitOfMeasure = productDetails.unitOfMeasure;
+
+        // Random quantity between 1-10
+        const quantity = Math.floor(Math.random() * 10) + 1;
+        
+        // Calculate prices
+        const unitPrice = productPrice;
+        const lineTotal = unitPrice * quantity;
+        const lineTax = (lineTotal * productVat) / 100;
+        const lineTotalWithTax = lineTotal + lineTax;
+
+        totalAmount += lineTotalWithTax;
+
+        // Store item for later creation
+        invoiceItems.push({
+          productName,
+          productDescription,
+          productSku,
+          quantity,
+          unitPrice,
+          lineTotal,
+          lineTax,
+          lineTotalWithTax,
+          unitOfMeasure,
+          currency: productCurrency
+        });
+      }
+
+      // Create invoice cells with calculated total
       const invoiceColumns = [
         { name: 'invoice_number', value: invoiceNumber },
         { name: 'date', value: issueDate.toISOString().split('T')[0] },
         { name: 'due_date', value: dueDate.toISOString().split('T')[0] },
         { name: 'customer_id', value: randomCustomer.id },
-        { name: 'total_amount', value: 0 }, // Will be calculated
+        { name: 'total_amount', value: totalAmount },
         { name: 'status', value: status }
       ];
 
@@ -170,34 +218,8 @@ async function generateInvoices() {
         }
       }
 
-      // Generate 1-5 random products for this invoice
-      const numItems = Math.floor(Math.random() * 5) + 1; // 1-5 items per invoice
-      let subtotal = 0;
-      let taxAmount = 0;
-
-      for (let j = 0; j < numItems; j++) {
-        // Select random product
-        const randomProduct = productsTable.rows[Math.floor(Math.random() * productsTable.rows.length)];
-        const productName = getCellValue(randomProduct, 'name');
-        const productPrice = parseFloat(getCellValue(randomProduct, 'price')) || 0;
-        const productVat = parseFloat(getCellValue(randomProduct, 'vat')) || 19; // Default 19% VAT
-        const productCurrency = getCellValue(randomProduct, 'currency') || baseCurrency;
-        const productSku = getCellValue(randomProduct, 'sku') || `SKU-${randomProduct.id}`;
-        const productDescription = getCellValue(randomProduct, 'description') || productName;
-
-        // Random quantity between 1-10
-        const quantity = Math.floor(Math.random() * 10) + 1;
-        
-        // Calculate prices
-        const originalPrice = productPrice;
-        const convertedPrice = originalPrice; // For now, no conversion
-        const lineTotal = convertedPrice * quantity;
-        const lineTax = (lineTotal * productVat) / 100;
-        const lineTotalWithTax = lineTotal + lineTax;
-
-        subtotal += lineTotal;
-        taxAmount += lineTax;
-
+      // Now create all invoice items
+      for (const item of invoiceItems) {
         // Create invoice item row
         const itemRow = await prisma.row.create({
           data: {
@@ -205,13 +227,13 @@ async function generateInvoices() {
           }
         });
 
-        // Create invoice item cells - using correct column names
+        // Create invoice item cells with correct column names
         const itemColumns = [
           { name: 'invoice_id', value: invoiceRow.id },
-          { name: 'description', value: `${productName} - ${productDescription}` },
-          { name: 'quantity', value: quantity },
-          { name: 'unit_price', value: convertedPrice },
-          { name: 'total_price', value: lineTotalWithTax }
+          { name: 'description', value: `${item.productName} - ${item.productDescription}` },
+          { name: 'quantity', value: item.quantity },
+          { name: 'unit_price', value: item.unitPrice },
+          { name: 'total_price', value: item.lineTotalWithTax }
         ];
 
         for (const colData of itemColumns) {
@@ -234,24 +256,6 @@ async function generateInvoices() {
         itemCount++;
       }
 
-      // Update invoice total amount
-      const totalAmount = subtotal + taxAmount;
-
-      // Update total amount
-      const totalColumn = invoicesTable.columns.find(c => c.name === 'total_amount');
-      if (totalColumn) {
-        await prisma.cell.updateMany({
-          where: {
-            rowId: invoiceRow.id,
-            columnId: totalColumn.id
-          },
-          data: {
-            value: totalAmount,
-            numberValue: totalAmount
-          }
-        });
-      }
-
       invoiceCount++;
       
       if (invoiceCount % 10 === 0) {
@@ -259,11 +263,63 @@ async function generateInvoices() {
       }
     }
 
-    console.log(`\n🎉 Successfully generated ${invoiceCount} invoices with ${itemCount} invoice items!`);
+    console.log(`\n🎉 Successfully generated ${invoiceCount} complete invoices with ${itemCount} invoice items!`);
     console.log(`📊 Summary:`);
     console.log(`   - Invoices: ${invoiceCount}`);
     console.log(`   - Invoice Items: ${itemCount}`);
     console.log(`   - Average items per invoice: ${(itemCount / invoiceCount).toFixed(2)}`);
+
+    // Verify the generated data
+    console.log('\n🔍 Verifying generated data...');
+    
+    const sampleInvoice = await prisma.row.findFirst({
+      where: { tableId: invoicesTable.id },
+      include: {
+        cells: {
+          include: {
+            column: true
+          }
+        }
+      }
+    });
+
+    if (sampleInvoice) {
+      console.log('📋 Sample Invoice:');
+      sampleInvoice.cells.forEach(cell => {
+        console.log(`   ${cell.column.name}: ${cell.value}`);
+      });
+
+      // Check invoice items for this invoice
+      const sampleItems = await prisma.row.findMany({
+        where: { 
+          tableId: invoiceItemsTable.id
+        },
+        include: {
+          cells: {
+            include: {
+              column: true
+            }
+          }
+        }
+      });
+
+      // Filter items that belong to this invoice
+      const invoiceItems = sampleItems.filter(item => {
+        const invoiceIdCell = item.cells.find(cell => 
+          cell.column.name === 'invoice_id' && 
+          cell.value == sampleInvoice.id
+        );
+        return invoiceIdCell;
+      });
+
+      console.log(`\n📦 Sample Invoice Items (${invoiceItems.length}):`);
+      invoiceItems.slice(0, 3).forEach((item, index) => {
+        console.log(`   Item ${index + 1}:`);
+        item.cells.forEach(cell => {
+          console.log(`     ${cell.column.name}: ${cell.value}`);
+        });
+      });
+    }
 
   } catch (error) {
     console.error('❌ Error generating invoices:', error);
@@ -272,4 +328,4 @@ async function generateInvoices() {
   }
 }
 
-generateInvoices();
+generateCompleteInvoices();
