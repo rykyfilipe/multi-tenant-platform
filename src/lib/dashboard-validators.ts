@@ -222,14 +222,14 @@ export const WidgetConfigValidation = {
       xAxis: z.object({
         key: z.string().optional(),
         label: z.string().optional(),
-        type: z.enum(['category', 'number', 'time']).optional(),
+        type: z.enum(['category', 'number', 'time', 'text']).optional(),
         columns: z.array(z.string()).optional(),
         aggregation: z.string().optional(),
       }).optional(),
       yAxis: z.object({
         key: z.string().optional(),
         label: z.string().optional(),
-        type: z.enum(['number']).optional(),
+        type: z.enum(['number', 'text']).optional(),
         columns: z.array(z.string()).optional(),
         aggregation: z.string().optional(),
       }).optional(),

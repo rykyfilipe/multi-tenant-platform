@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ColorPicker } from '@/components/ui/color-picker';
 import { DataEditor } from './DataEditor';
 import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
@@ -1384,6 +1385,43 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Column Colors (only for Line and Bar charts) */}
+                  {((config as any)?.chartType === 'line' || (config as any)?.chartType === 'bar') && (config.dataSource as any)?.yAxis?.columns && (config.dataSource as any).yAxis.columns.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">Column Colors</CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                          Customize colors for each Y-axis column
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {(config.dataSource as any).yAxis.columns.map((column: string, index: number) => (
+                          <div key={column} className="flex items-center justify-between">
+                            <Label htmlFor={`color-${column}`} className="text-sm font-medium">
+                              {column}
+                            </Label>
+                            <ColorPicker
+                              value={(config.options?.columnColors?.[column]) || '#3B82F6'}
+                              onChange={(color) => {
+                                const currentColumnColors = config.options?.columnColors || {};
+                                updateConfig({
+                                  options: {
+                                    ...config.options,
+                                    columnColors: {
+                                      ...currentColumnColors,
+                                      [column]: color
+                                    }
+                                  }
+                                });
+                              }}
+                              className="w-32"
+                            />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
 
                 </div>
               ) : (

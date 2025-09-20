@@ -8,6 +8,16 @@ import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelecto
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
+// PieChart configuration interface (extends LineChartConfig)
+export interface PieChartConfig extends LineChartConfig {
+  options?: LineChartConfig['options'] & {
+    innerRadius?: number;
+    outerRadius?: number;
+    showPercentage?: boolean;
+    showValue?: boolean;
+  };
+}
+
 // Aggregation functions
 const applyAggregation = (data: any[], key: string, aggregation?: string): any[] => {
   if (!aggregation || aggregation === 'none') {
@@ -142,11 +152,14 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		return filteredData;
 	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
-	// Generate automatic colors based on data length
+	// Generate automatic colors for PieChart (too many categories for manual selection)
 	const colors = useMemo(() => {
+		// PieChart always uses auto-generated colors due to potentially many categories
 		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
 			return options.colors;
 		}
+		
+		// Generate automatic colors based on data length
 		const colorPalette = (options.colorPalette as ColorPalette) || 'business';
 		const generatedColors = generateChartColors(processedData.length, colorPalette);
 		console.log('[PieChart] Generated colors:', {
@@ -155,7 +168,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 			colorPalette
 		});
 		return generatedColors;
-	}, [options.colors, options.colorPalette, processedData.length]);
+	}, [options?.colors, options?.colorPalette, processedData.length]);
 
 	// Enhanced styling configuration
 	const widgetStyle = {

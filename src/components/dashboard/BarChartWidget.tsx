@@ -8,6 +8,15 @@ import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelecto
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
+// BarChart configuration interface (extends LineChartConfig)
+export interface BarChartConfig extends LineChartConfig {
+  options?: LineChartConfig['options'] & {
+    barWidth?: number;
+    barGap?: number;
+    showValues?: boolean;
+  };
+}
+
 // Aggregation functions
 const applyAggregation = (data: any[], key: string, aggregation?: string): any[] => {
   if (!aggregation || aggregation === 'none') {
@@ -197,11 +206,29 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		return filteredData;
 	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
-	// Generate automatic colors based on number of columns
+	// Enhanced color generation with custom column colors support
 	const colors = useMemo(() => {
+		// Check if we have custom column colors defined
+		const columnColors = options?.columnColors;
+		const yColumns = enhancedDataSource.yAxis?.columns || [];
+		
+		if (columnColors && yColumns.length > 0) {
+			// Use custom colors for each column
+			const customColors = yColumns.map(column => columnColors[column] || '#3B82F6');
+			console.log('[BarChart] Using custom column colors:', {
+				yColumns,
+				columnColors,
+				customColors
+			});
+			return customColors;
+		}
+		
+		// Fallback to predefined colors
 		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
 			return options.colors;
 		}
+		
+		// Generate automatic colors based on number of columns
 		const colorPalette = (options.colorPalette as ColorPalette) || 'business';
 		// Prioritize Y columns for multi-series, fallback to X columns
 		const yColumnsCount = enhancedDataSource.yAxis?.columns?.length || 1;
@@ -228,7 +255,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		});
 		
 		return generatedColors;
-	}, [options.colors, options.colorPalette, enhancedDataSource.xAxis?.columns?.length, enhancedDataSource.yAxis?.columns?.length]);
+	}, [options?.columnColors, options?.colors, options?.colorPalette, enhancedDataSource.xAxis?.columns?.length, enhancedDataSource.yAxis?.columns?.length]);
 
 	// Enhanced styling configuration
 	const widgetStyle = {
