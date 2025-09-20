@@ -122,13 +122,15 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 	
 	// Support both old and new data source formats
 	const enhancedDataSource = dataSource as EnhancedDataSource;
-	const legacyDataSource = dataSource as any; // For backward compatibility
 	
 	// Determine axis configuration - prefer new format, fallback to legacy
 	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
 	const safeYAxis = enhancedDataSource.yAxis || config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const, columns: ['y'] };
 	
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
+
+  console.log("line chart data", data);
+
 
 	const processedData = useMemo(() => {
 		const rawData = Array.isArray(data) ? data : [];
@@ -453,24 +455,34 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
               )}
 						{/* Render multiple lines if multiple Y columns are selected */}
 						{enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 ? (
-							enhancedDataSource.yAxis.columns.map((yCol, index) => (
-								<Line
-									key={yCol}
-									type={curveType}
-									dataKey={yCol}
-									stroke={colors[index % colors.length]}
-									strokeWidth={strokeWidth}
-									dot={{ fill: colors[index % colors.length], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
-									activeDot={{ 
-										r: dotSize + 2, 
-										stroke: colors[index % colors.length], 
-										strokeWidth: 2,
-										fill: '#ffffff'
-									}}
-									animationDuration={options.animation !== false ? 1000 : 0}
-									name={yCol}
-								/>
-							))
+							(() => {
+								console.log('[LineChart] Rendering multiple Y columns:', {
+									yColumns: enhancedDataSource.yAxis.columns,
+									colors: colors,
+									processedDataLength: processedData.length
+								});
+								return enhancedDataSource.yAxis.columns.map((yCol, index) => {
+									console.log('[LineChart] Creating Line for:', { yCol, index, color: colors[index % colors.length] });
+									return (
+										<Line
+											key={yCol}
+											type={curveType}
+											dataKey={yCol}
+											stroke={colors[index % colors.length]}
+											strokeWidth={strokeWidth}
+											dot={{ fill: colors[index % colors.length], strokeWidth: 2, r: dotSize, stroke: '#ffffff' }}
+											activeDot={{ 
+												r: dotSize + 2, 
+												stroke: colors[index % colors.length], 
+												strokeWidth: 2,
+												fill: '#ffffff'
+											}}
+											animationDuration={options.animation !== false ? 1000 : 0}
+											name={yCol}
+										/>
+									);
+								});
+							})()
 						) : enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1 ? (
 							/* Render multiple lines if multiple X columns are selected */
 							enhancedDataSource.xAxis.columns.map((xCol, index) => (

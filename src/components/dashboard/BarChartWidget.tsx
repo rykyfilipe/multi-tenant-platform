@@ -89,7 +89,6 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	
 	// Support both old and new data source formats
 	const enhancedDataSource = dataSource as EnhancedDataSource;
-	const legacyDataSource = dataSource as any; // For backward compatibility
 	
 	// Determine axis configuration - prefer new format, fallback to legacy
 	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
@@ -313,16 +312,26 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 							)}
 							{/* Render multiple bars if multiple Y columns are selected */}
 							{enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 ? (
-								enhancedDataSource.yAxis.columns.map((yCol, index) => (
-									<Bar 
-										key={yCol}
-										dataKey={yCol} 
-										fill={colors[index % colors.length]}
-										radius={[4, 4, 0, 0]}
-										animationDuration={options.animation !== false ? 1000 : 0}
-										name={yCol}
-									/>
-								))
+								(() => {
+									console.log('[BarChart] Rendering multiple Y columns:', {
+										yColumns: enhancedDataSource.yAxis.columns,
+										colors: colors,
+										processedDataLength: processedData.length
+									});
+									return enhancedDataSource.yAxis.columns.map((yCol, index) => {
+										console.log('[BarChart] Creating Bar for:', { yCol, index, color: colors[index % colors.length] });
+										return (
+											<Bar 
+												key={yCol}
+												dataKey={yCol} 
+												fill={colors[index % colors.length]}
+												radius={[4, 4, 0, 0]}
+												animationDuration={options.animation !== false ? 1000 : 0}
+												name={yCol}
+											/>
+										);
+									});
+								})()
 							) : enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1 ? (
 								/* Render multiple bars if multiple X columns are selected */
 								enhancedDataSource.xAxis.columns.map((xCol, index) => (
