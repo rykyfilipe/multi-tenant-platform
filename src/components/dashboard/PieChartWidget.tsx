@@ -152,23 +152,53 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		return filteredData;
 	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
 
-	// Generate automatic colors for PieChart (too many categories for manual selection)
+	// Predefined color palette for PieChart
+	const PREDEFINED_COLORS = [
+		"#ff0000", "#ff0f00", "#ff1f00", "#ff2f00", "#ff3f00", "#ff4f00", "#ff5f00", "#ff6f00",
+		"#ff7f00", "#ff8f00", "#ff9f00", "#ffaf00", "#ffbf00", "#ffcf00", "#ffdf00", "#ffef00",
+		"#ffff00", "#efff0f", "#dfff1f", "#cfff2f", "#bfff3f", "#afff4f", "#9fff5f", "#8fff6f",
+		"#7fff7f", "#6fff8f", "#5fff9f", "#4fffaf", "#3fffbf", "#2fffcf", "#1fffdf", "#0fffeF",
+		"#00ffff", "#00efff", "#00dfff", "#00cfff", "#00bfff", "#00afff", "#009fff", "#008fff",
+		"#007fff", "#006fff", "#005fff", "#004fff", "#003fff", "#002fff", "#001fff", "#000fff",
+		"#0000ff", "#0f00ff", "#1f00ff", "#2f00ff", "#3f00ff", "#4f00ff", "#5f00ff", "#6f00ff",
+		"#7f00ff", "#8f00ff", "#9f00ff", "#af00ff", "#bf00ff", "#cf00ff", "#df00ff", "#ef00ff",
+		"#ff00ff", "#ff00ef", "#ff00df", "#ff00cf", "#ff00bf", "#ff00af", "#ff009f", "#ff008f",
+		"#ff007f", "#ff006f", "#ff005f", "#ff004f", "#ff003f", "#ff002f", "#ff001f", "#ff000f",
+		"#ff4040", "#ff5050", "#ff6060", "#ff7070", "#ff8080", "#ff9090", "#ffa0a0", "#ffb0b0",
+		"#ffc0c0", "#ffd0d0", "#ffe0e0", "#fff0f0", "#f0fff0", "#e0ffe0", "#d0ffd0", "#c0ffc0",
+		"#b0ffb0", "#a0ffa0", "#90ff90", "#80ff80", "#70ff70", "#60ff60", "#50ff50", "#40ff40",
+		"#30ff30", "#20ff20", "#10ff10", "#00ff00", "#10ff20", "#20ff30", "#30ff40", "#40ff50",
+		"#50ff60", "#60ff70", "#70ff80", "#80ff90", "#90ffa0", "#a0ffb0", "#b0ffc0", "#c0ffd0",
+		"#d0ffe0", "#e0fff0", "#f0ffff", "#e0f0ff", "#d0e0ff", "#c0d0ff", "#b0c0ff", "#a0b0ff",
+		"#90a0ff", "#8090ff", "#7080ff", "#6070ff", "#5060ff", "#4050ff", "#3040ff", "#2030ff",
+		"#1020ff", "#0010ff", "#1000ff", "#2000ff", "#3000ff", "#4000ff", "#5000ff", "#6000ff",
+		"#7000ff", "#8000ff", "#9000ff", "#a000ff", "#b000ff", "#c000ff", "#d000ff", "#e000ff",
+		"#f000ff", "#ff00f0", "#ff00e0", "#ff00d0", "#ff00c0", "#ff00b0", "#ff00a0", "#ff0090",
+		"#ff0080", "#ff0070", "#ff0060", "#ff0050", "#ff0040", "#ff0030", "#ff0020", "#ff0010",
+		"#ff1010", "#ff2020", "#ff3030", "#ff4040", "#ff5050", "#ff6060", "#ff7070", "#ff8080",
+		"#ff9090", "#ffa0a0", "#ffb0b0", "#ffc0c0", "#ffd0d0", "#ffe0e0", "#fff0f0", "#ffffff"
+	];
+
+	// Generate colors for PieChart using predefined palette
 	const colors = useMemo(() => {
-		// PieChart always uses auto-generated colors due to potentially many categories
+		// PieChart always uses predefined colors for better variety
 		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
 			return options.colors;
 		}
 		
-		// Generate automatic colors based on data length
-		const colorPalette = (options.colorPalette as ColorPalette) || 'business';
-		const generatedColors = generateChartColors(processedData.length, colorPalette);
-		console.log('[PieChart] Generated colors:', {
+		// Use predefined colors based on data length
+		const colorsNeeded = Math.max(processedData.length, 1);
+		const selectedColors = PREDEFINED_COLORS.slice(0, colorsNeeded);
+		
+		console.log('[PieChart] Using predefined colors:', {
 			dataLength: processedData.length,
-			colors: generatedColors,
-			colorPalette
+			colorsNeeded,
+			selectedColors,
+			totalColors: selectedColors.length
 		});
-		return generatedColors;
-	}, [options?.colors, options?.colorPalette, processedData.length]);
+		
+		return selectedColors;
+	}, [options?.colors, processedData.length]);
 
 	// Enhanced styling configuration
 	const widgetStyle = {
