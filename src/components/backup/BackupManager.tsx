@@ -63,7 +63,7 @@ interface BackupManagerProps {
  */
 export function BackupManager({ tenantId }: BackupManagerProps) {
 	const { t } = useLanguage();
-	const { user } = useApp();
+	const { user, token } = useApp();
 	const [backups, setBackups] = useState<BackupJob[]>([]);
 	const [restores, setRestores] = useState<RestoreJob[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -73,13 +73,23 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 	// Load backups and restores
 	useEffect(() => {
 		loadData();
-	}, [tenantId]);
+	}, [tenantId, token]);
 
 	const loadData = async () => {
+		if (!token) return;
+		
 		try {
 			const [backupsResponse, restoresResponse] = await Promise.all([
-				fetch(`/api/tenants/${tenantId}/backups`),
-				fetch(`/api/tenants/${tenantId}/restores`),
+				fetch(`/api/tenants/${tenantId}/backups`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}),
+				fetch(`/api/tenants/${tenantId}/restores`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}),
 			]);
 
 			if (backupsResponse.ok) {
@@ -101,12 +111,15 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 	};
 
 	const createBackup = async () => {
+		if (!token) return;
+		
 		setCreatingBackup(true);
 		try {
 			const response = await fetch(`/api/tenants/${tenantId}/backups`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					type: BackupType.FULL,
@@ -138,6 +151,8 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 	};
 
 	const restoreBackup = async (backupId: string) => {
+		if (!token) return;
+		
 		if (!confirm("Are you sure you want to restore from this backup? This will overwrite your current data.")) {
 			return;
 		}
@@ -147,6 +162,9 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 		try {
 			const response = await fetch(`/api/tenants/${tenantId}/backups/${backupId}/restore`, {
 				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
 			});
 
 			if (response.ok) {
