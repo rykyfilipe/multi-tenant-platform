@@ -207,7 +207,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		const yColumnsCount = enhancedDataSource.yAxis?.columns?.length || 1;
 		const xColumnsCount = enhancedDataSource.xAxis?.columns?.length || 1;
 		const columnsCount = Math.max(yColumnsCount, xColumnsCount);
-		const colorsNeeded = Math.max(columnsCount, 4);
+		const colorsNeeded = Math.max(columnsCount, 1); // Generate at least 1 color, but prefer actual column count
 		const generatedColors = generateChartColors(colorsNeeded, colorPalette);
 		console.log('[BarChart] Generated colors:', {
 			yColumnsCount,
@@ -277,7 +277,9 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								axisLine={false}
 								tick={{ fill: 'hsl(var(--muted-foreground))' }}
 								label={{ 
-									value: enhancedDataSource.yAxis?.label || safeYAxis.label, 
+									value: enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 
+										? 'Values' 
+										: (enhancedDataSource.yAxis?.label || safeYAxis.label), 
 									angle: -90, 
 									position: 'insideLeft',
 									style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }

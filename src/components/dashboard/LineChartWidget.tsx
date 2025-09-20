@@ -127,6 +127,15 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
 	const safeYAxis = enhancedDataSource.yAxis || config.yAxis || { key: 'y', label: 'Y Axis', type: 'number' as const, columns: ['y'] };
 	
+	console.log('[LineChart] Widget config:', {
+		widgetId: widget.id,
+		widgetType: widget.type,
+		config: widget.config,
+		dataSource: widget.config?.dataSource,
+		tenantId,
+		databaseId
+	});
+
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
   console.log("line chart data", data);
@@ -251,7 +260,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 		const yColumnsCount = enhancedDataSource.yAxis?.columns?.length || 1;
 		const xColumnsCount = enhancedDataSource.xAxis?.columns?.length || 1;
 		const columnsCount = Math.max(yColumnsCount, xColumnsCount);
-		const colorsNeeded = Math.max(columnsCount, 4);
+		const colorsNeeded = Math.max(columnsCount, 1); // Generate at least 1 color, but prefer actual column count
 		const generatedColors = generateChartColors(colorsNeeded, colorPalette);
 		console.log('[LineChart] Generated colors:', {
 			yColumnsCount,
@@ -420,7 +429,9 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
                 axisLine={false}
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
 							label={{ 
-								value: enhancedDataSource.yAxis?.label || safeYAxis.label, 
+								value: enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1 
+									? 'Values' 
+									: (enhancedDataSource.yAxis?.label || safeYAxis.label), 
                   angle: -90, 
                   position: 'insideLeft',
                   style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))' }
