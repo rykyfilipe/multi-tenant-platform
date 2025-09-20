@@ -915,7 +915,9 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                       updateConfig({
                         dataSource: {
                           ...editedWidget.config?.dataSource,
-                          aggregationConfig: aggregationConfig
+                          aggregationConfig: aggregationConfig,
+                          // Set legacy aggregation for compatibility
+                          aggregation: aggregationConfig.primary
                         }
                       });
                     }}
@@ -1585,43 +1587,6 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                       </div>
                     </CardContent>
                   </Card>
-
-                  {/* Table Information Display */}
-                  {selectedTable && (
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
-                          <Database className="h-4 w-4" />
-                          <span>Selected Table: {selectedTable.name}</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Columns:</span>
-                            <span className="font-medium">{selectedTableColumns.length}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Description:</span>
-                            <span className="font-medium">{selectedTable.description || 'No description'}</span>
-                          </div>
-                          {selectedTableColumns.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-xs text-muted-foreground mb-2">Available columns:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {selectedTableColumns.map((column: any) => (
-                                  <Badge key={column.id} variant="outline" className="text-xs">
-                                    {column.name}
-                                    <span className="ml-1 text-muted-foreground">({column.type})</span>
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
                   
                   {/* Enhanced Table Data Selector */}
                   <EnhancedTableSelector
@@ -1641,56 +1606,6 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                     tenantId={tenantId}
                   />
                   
-                  {/* Column Selection Status */}
-                  {(selectedXColumns.length > 0 || selectedYColumns.length > 0) && (
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
-                          <CheckSquare className="h-4 w-4" />
-                          <span>Column Selection</span>
-                          {isConfigurationComplete() ? (
-                            <Badge variant="default" className="ml-auto">Complete</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="ml-auto">Incomplete</Badge>
-                          )}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-3">
-                          {selectedXColumns.length > 0 && (
-                            <div>
-                              <p className="text-sm font-medium text-muted-foreground mb-1">X-Axis Columns:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {selectedXColumns.map((column: string) => (
-                                  <Badge key={column} variant="secondary" className="text-xs">
-                                    {column}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {selectedYColumns.length > 0 && (
-                            <div>
-                              <p className="text-sm font-medium text-muted-foreground mb-1">Y-Axis Columns:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {selectedYColumns.map((column: string) => (
-                                  <Badge key={column} variant="secondary" className="text-xs">
-                                    {column}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {!isConfigurationComplete() && (
-                            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
-                              <p className="font-medium">Configuration incomplete</p>
-                              <p>Please select X-axis and Y-axis columns to complete the chart configuration.</p>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
 
                   {/* Chart Aggregation Options */}
                   <Card>

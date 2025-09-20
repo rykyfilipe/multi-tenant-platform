@@ -505,6 +505,7 @@ export default function DashboardsPage() {
         }
         
         if (canPlace) {
+          console.log('[Dashboard] Found free position:', { x, y, width: optimizedWidth, height: optimizedHeight });
           return { x, y, width: optimizedWidth, height: optimizedHeight };
         }
       }
@@ -518,6 +519,7 @@ export default function DashboardsPage() {
       }
     });
     
+    console.log('[Dashboard] No free position found, using fallback position:', { x: 0, y: lowestY, width: optimizedWidth, height: optimizedHeight });
     return { x: 0, y: lowestY, width: optimizedWidth, height: optimizedHeight };
   };
 
@@ -670,6 +672,8 @@ export default function DashboardsPage() {
     };
     
     console.log('[Dashboard] Creating new widget:', newWidget);
+    console.log('[Dashboard] Free position found:', freePosition);
+    console.log('[Dashboard] All widgets used for position calculation:', allWidgets.length);
 
     // Generate temporary ID for the new widget
     const tempId = Date.now();
@@ -723,14 +727,23 @@ export default function DashboardsPage() {
       return shouldShow;
     });
     
+    // Sort widgets by ID to ensure consistent order for ResponsiveGridLayout
+    const sortedWidgets = filteredWidgets.sort((a, b) => {
+      // Sort by ID to maintain consistent order
+      const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+      const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+      return aId - bId;
+    });
+    
     console.log('[Dashboard] getAllWidgets result:', {
       dbWidgetsCount: dbWidgets.length,
       localWidgetsCount: localWidgets.length,
       totalBeforeFilter: allWidgets.length,
-      totalAfterFilter: filteredWidgets.length
+      totalAfterFilter: filteredWidgets.length,
+      sortedCount: sortedWidgets.length
     });
     
-    return filteredWidgets;
+    return sortedWidgets;
   };
 
   const renderWidget = (widget: Widget) => {
@@ -1129,8 +1142,8 @@ export default function DashboardsPage() {
                 containerPadding={[0, 0]}
                 useCSSTransforms={true}
                 transformScale={1}
-                preventCollision={false}
-                compactType="vertical"
+                preventCollision={true}
+                compactType={null}
               >
                 {getAllWidgets().map((widget) => (
                   <div 
