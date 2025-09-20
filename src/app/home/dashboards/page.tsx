@@ -117,6 +117,7 @@ const WIDGET_TYPES = [
 export default function DashboardsPage() {
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(null);
+  const [initialWidgets, setInitialWidgets] = useState<Widget[]>([]); // Copia inițială a widget-urilor
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -149,8 +150,8 @@ export default function DashboardsPage() {
     autoSaveDelay: -1, // Dezactivează auto-save - se salvează doar la click
     onSuccess: (results) => {
       console.log('Widget changes saved successfully:', results);
-      // Optimistic update: no need to refresh - getFinalWidget handles the display
-      // The pending changes are already cleared in the hook after successful save
+      // Optimistic update: local state is updated in saveChanges function
+      // No need to refresh - the saveChanges function handles optimistic updates
     },
     onError: (error) => {
       console.error('Failed to save widget changes:', error);
@@ -162,8 +163,8 @@ export default function DashboardsPage() {
     },
     onDiscard: () => {
       console.log('Discarding changes optimistically');
-      // Nu mai face reload - pending changes se vor curăța automat
-      // Widget-urile locale vor dispărea din UI prin getFinalWidget
+      // Optimistic discard: local state is updated in revertChanges function
+      // No need to reload - the revertChanges function handles optimistic updates
     },
   });
 
@@ -178,6 +179,14 @@ export default function DashboardsPage() {
       setSaveFunction(selectedDashboard.id);
     }
   }, [selectedDashboard?.id, setSaveFunction]);
+
+  // Create initial copy of widgets when dashboard is selected
+  useEffect(() => {
+    if (selectedDashboard?.widgets) {
+      console.log('[Dashboard] Creating initial copy of widgets:', selectedDashboard.widgets.length);
+      setInitialWidgets([...selectedDashboard.widgets]);
+    }
+  }, [selectedDashboard?.widgets]);
 
   const fetchDashboards = async () => {
     try {
@@ -319,9 +328,26 @@ export default function DashboardsPage() {
     if (pendingChangesCount === 0 || !selectedDashboard) return;
 
     try {
-      await savePendingChanges(selectedDashboard.id);
-      // Optimistic update: no need to refresh - getFinalWidget handles the display
-      // The pending changes are already cleared in the hook after successful save
+      // Save changes to server
+      const results = await savePendingChanges(selectedDashboard.id);
+      
+      // Optimistic update: Update local state with saved widgets
+      console.log('[Dashboard] Save successful, updating local state optimistically');
+      
+      // Get the current widgets after save (combining DB widgets with pending changes)
+      const currentWidgets = getAllWidgets();
+      
+      // Update selectedDashboard with current widgets (this becomes the new "saved" state)
+      setSelectedDashboard(prev => prev ? {
+        ...prev,
+        widgets: currentWidgets
+      } : null);
+      
+      // Create new initial copy from the updated widgets
+      setInitialWidgets([...currentWidgets]);
+      
+      console.log('[Dashboard] Local state updated optimistically with', currentWidgets.length, 'widgets');
+      
     } catch (error) {
       console.error('Error saving changes:', error);
       // Error handling is done in the hook's onError callback
@@ -331,8 +357,19 @@ export default function DashboardsPage() {
   const revertChanges = () => {
     if (pendingChangesCount === 0) return;
     
-    // Clear pending changes and reload dashboard data
+    console.log('[Dashboard] Discarding changes optimistically');
+    
+    // Clear pending changes
     discardPendingChanges();
+    
+    // Optimistic update: Replace local state with initial copy
+    if (selectedDashboard && initialWidgets.length > 0) {
+      console.log('[Dashboard] Replacing local state with initial copy:', initialWidgets.length, 'widgets');
+      setSelectedDashboard(prev => prev ? {
+        ...prev,
+        widgets: [...initialWidgets]
+      } : null);
+    }
     
     toast({
       title: "Changes reverted",

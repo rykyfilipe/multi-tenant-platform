@@ -295,7 +295,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
   // Salvează toate modificările pending
   const savePendingChanges = useCallback(async (dashboardId: number) => {
     if (pendingChanges.size === 0 || !tenant?.id) {
-      return;
+      return null;
     }
 
     setIsSaving(true);
@@ -355,6 +355,8 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       const totalChanges = operations.length;
       alert(`Successfully saved ${totalChanges} widget change${totalChanges !== 1 ? 's' : ''}`, 'success');
       onSuccess?.(result.results || []);
+      
+      return result.results || [];
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save changes';
