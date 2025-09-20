@@ -154,11 +154,11 @@ export function RowGrid({
 			</div>
 
 			{/* Inline Row Creator - Always show if user can edit */}
-			{canEdit && onSaveNewRow && onCancelNewRow && (
+			{canEdit && (
 				<InlineRowCreator
 					columns={columns}
-					onSave={onSaveNewRow}
-					onCancel={onCancelNewRow}
+					onSave={onSaveNewRow || (() => {})}
+					onCancel={onCancelNewRow || (() => {})}
 					isSaving={isSavingNewRow}
 				/>
 			)}

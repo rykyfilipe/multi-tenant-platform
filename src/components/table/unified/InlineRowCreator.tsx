@@ -16,8 +16,8 @@ import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 
 interface Props {
 	columns: Column[];
-	onSave: (rowData: Record<string, any>) => void;
-	onCancel: () => void;
+	onSave?: (rowData: Record<string, any>) => void;
+	onCancel?: () => void;
 	isSaving?: boolean;
 }
 
@@ -96,9 +96,13 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 		if (validateRow()) {
 			// Adaugă rândul în batch-ul de rânduri noi locale
 			console.log("✅ Calling onSave with rowData:", rowData);
-			onSave(rowData);
-			// Clear the form after successful save
-			clearForm();
+			if (onSave) {
+				onSave(rowData);
+				// Clear the form after successful save
+				clearForm();
+			} else {
+				console.warn("⚠️ onSave function not provided");
+			}
 		}
 	};
 
@@ -272,7 +276,9 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 					size="sm"
 					onClick={() => {
 						clearForm();
-						onCancel();
+						if (onCancel) {
+							onCancel();
+						}
 					}}
 					disabled={isSaving}
 					className="h-6 w-6 p-0 hover:bg-red-100 text-red-600 hover:text-red-700"
