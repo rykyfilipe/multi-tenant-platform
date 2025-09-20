@@ -300,7 +300,14 @@ export function EnhancedTableSelector({
 	};
 
 	const handleColumnToggle = (axis: 'x' | 'y', columnName: string, isSelected: boolean) => {
-		console.log('[EnhancedTableSelector] Column toggle:', { axis, columnName, isSelected });
+		console.log('[EnhancedTableSelector] Column toggle:', { 
+			axis, 
+			columnName, 
+			isSelected,
+			currentColumns: axis === 'x' ? (dataSource.xColumns || []) : (dataSource.yColumns || []),
+			widgetType,
+			allowMultiColumn
+		});
 		
 		// Find the column to validate its type
 		const column = columns.find(col => col.name === columnName);
@@ -383,6 +390,15 @@ export function EnhancedTableSelector({
 				columns: newColumns
 			}
 		};
+		
+		console.log('[EnhancedTableSelector] Updating dataSource:', {
+			axis,
+			newColumns,
+			newDataSource,
+			xAxis: newDataSource.xAxis,
+			yAxis: newDataSource.yAxis
+		});
+		
 		onDataSourceChange(newDataSource);
 	};
 
