@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
 import type { Widget, LineChartConfig } from './LineChartWidget';
@@ -105,8 +105,8 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
-	const processedData = useMemo(() => {
-		const rawData = Array.isArray(data) ? data : [];
+	const processedData = (() => {
+		const rawData = Array.isArray(data) ? data : [];	
 		
 		// For multi-column support on Y-axis (multiple series)
 		if (enhancedDataSource.yAxis?.columns && enhancedDataSource.yAxis.columns.length > 1) {
@@ -204,10 +204,10 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		}
 		
 		return filteredData;
-	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
+	})();
 
 	// Enhanced color generation with custom column colors support
-	const colors = useMemo(() => {
+	const colors = (() => {
 		// Check if we have custom column colors defined
 		const columnColors = options?.columnColors;
 		const yColumns = enhancedDataSource.yAxis?.columns || [];
@@ -255,7 +255,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		});
 		
 		return generatedColors;
-	}, [options?.columnColors, options?.colors, options?.colorPalette, enhancedDataSource.xAxis?.columns?.length, enhancedDataSource.yAxis?.columns?.length]);
+	})();
 
 	// Enhanced styling configuration
 	const widgetStyle = {

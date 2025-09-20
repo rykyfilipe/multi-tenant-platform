@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { X, Save, Settings, Palette, BarChart3, Database, FileText, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,6 @@ import { LineChartConfig, DataSource, ChartDataPoint } from './LineChartWidget';
 import type { EnhancedDataSource } from './EnhancedTableSelector';
 import type { AggregationConfig } from './AggregationSelector';
 import { FilterConfig } from '@/types/filtering-enhanced';
-import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
 
 interface Widget {
@@ -48,10 +47,9 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
   const [editedWidget, setEditedWidget] = useState<Widget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
   
-  // Use schema cache for tables and columns
-  const { tables, tablesLoading, loadTables } = useSchemaCache(tenantId, databaseId);
-  
-  // State for columns (similar to EnhancedTableSelector)
+  // State for tables and columns (direct loading without cache)
+  const [tables, setTables] = useState<any[]>([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
   const [columns, setColumns] = useState<any[]>([]);
   const [isLoadingColumns, setIsLoadingColumns] = useState(false);
   
@@ -88,13 +86,35 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
     }
   };
 
+  // Load tables when editor opens
+  const loadTables = async () => {
+    if (!tenantId || !databaseId) return;
+    
+    setTablesLoading(true);
+    try {
+      const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables`);
+      if (response.ok) {
+        const data = await response.json();
+        setTables(data.tables || []);
+      } else {
+        console.error('Failed to load tables:', response.statusText);
+        setTables([]);
+      }
+    } catch (error) {
+      console.error('Error loading tables:', error);
+      setTables([]);
+    } finally {
+      setTablesLoading(false);
+    }
+  };
+
   // Auto-load tables when editor opens
   useEffect(() => {
-    if (!tables && !tablesLoading) {
+    if (tables.length === 0 && !tablesLoading) {
       console.log('[WidgetEditor] Auto-loading tables when editor opens');
       loadTables();
     }
-  }, [tables, tablesLoading, loadTables]);
+  }, [tables.length, tablesLoading]);
 
   // Load columns when table is selected
   const loadColumns = async (tableId: number) => {
@@ -281,7 +301,7 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
   };
 
   // Debounced color update function
-  const debouncedColorUpdate = useCallback((column: string, color: string) => {
+  const debouncedColorUpdate = (column: string, color: string) => {
     // Clear previous timeout
     if (colorUpdateTimeoutRef.current) {
       clearTimeout(colorUpdateTimeoutRef.current);
@@ -300,7 +320,7 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
         }
       });
     }, 300);
-  }, [editedWidget.config?.options, updateConfig]);
+  };
 
   const updatePosition = (positionUpdates: Partial<{ x: number; y: number; width: number; height: number }>) => {
     setEditedWidget(prev => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 
 interface Widget {
@@ -45,12 +45,12 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
   const alert = customShowAlert || showAlert;
 
   // Generează cheia unică pentru o modificare
-  const getChangeKey = useCallback((widgetId: number | string, type: 'create' | 'update' | 'delete') => {
+  const getChangeKey = (widgetId: number | string, type: 'create' | 'update' | 'delete') => {
     return `${type}_${widgetId}`;
-  }, []);
+  };
 
   // Adaugă o modificare pending cu logică inteligentă
-  const addPendingChange = useCallback((
+  const addPendingChange = (
     type: 'create' | 'update' | 'delete',
     widgetId: number | string,
     data?: Partial<Widget> | null,
@@ -208,10 +208,10 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       }
     }
     // Pentru autoSaveDelay < 0, nu face nimic (dezactivează auto-save)
-  }, [getChangeKey, autoSaveDelay]);
+  };
 
   // Elimină o modificare pending
-  const removePendingChange = useCallback((widgetId: number | string, type: 'create' | 'update' | 'delete') => {
+  const removePendingChange = (widgetId: number | string, type: 'create' | 'update' | 'delete') => {
     const changeKey = getChangeKey(widgetId, type);
     
     setPendingChanges(prev => {
@@ -219,15 +219,15 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       newMap.delete(changeKey);
       return newMap;
     });
-  }, [getChangeKey]);
+  };
 
   // Curăță toate modificările pending
-  const clearPendingChanges = useCallback(() => {
+  const clearPendingChanges = () => {
     setPendingChanges(new Map());
-  }, []);
+  };
 
   // Verifică dacă un widget are modificări pending
-  const hasPendingChange = useCallback((widgetId: number | string, type?: 'create' | 'update' | 'delete') => {
+  const hasPendingChange = (widgetId: number | string, type?: 'create' | 'update' | 'delete') => {
     if (type) {
       const changeKey = getChangeKey(widgetId, type);
       return pendingChanges.has(changeKey);
@@ -235,16 +235,16 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     
     // Verifică dacă există orice modificare pentru acest widget
     return Array.from(pendingChanges.keys()).some(key => key.includes(widgetId.toString()));
-  }, [pendingChanges, getChangeKey]);
+  };
 
   // Obține modificarea pending pentru un widget
-  const getPendingChange = useCallback((widgetId: number | string, type: 'create' | 'update' | 'delete') => {
+  const getPendingChange = (widgetId: number | string, type: 'create' | 'update' | 'delete') => {
     const changeKey = getChangeKey(widgetId, type);
     return pendingChanges.get(changeKey);
-  }, [pendingChanges, getChangeKey]);
+  };
 
   // Obține widget-ul final cu toate modificările aplicate (pentru afișare)
-  const getFinalWidget = useCallback((originalWidget: Widget): Widget | null => {
+  const getFinalWidget = (originalWidget: Widget): Widget | null => {
     const createKey = getChangeKey(originalWidget.id, 'create');
     const updateKey = getChangeKey(originalWidget.id, 'update');
     const deleteKey = getChangeKey(originalWidget.id, 'delete');
@@ -290,10 +290,10 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     // Dacă nu există modificări, returnează widget-ul original
     console.log('[Hook] Widget unchanged:', originalWidget.id);
     return originalWidget;
-  }, [pendingChanges, getChangeKey]);
+  };
 
   // Salvează toate modificările pending
-  const savePendingChanges = useCallback(async (dashboardId: number) => {
+  const savePendingChanges = async (dashboardId: number) => {
     if (pendingChanges.size === 0 || !tenant?.id) {
       return null;
     }
@@ -366,10 +366,10 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     } finally {
       setIsSaving(false);
     }
-  }, [pendingChanges, tenant?.id, onSuccess, onError, alert]);
+  };
 
   // Anulează toate modificările pending
-  const discardPendingChanges = useCallback(() => {
+  const discardPendingChanges = () => {
     setPendingChanges(new Map());
     
     if (autoSaveTimeoutRef.current) {
@@ -380,20 +380,20 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     onDiscard?.();
 
     alert('Changes discarded', 'info');
-  }, [alert, onDiscard]);
+  };
 
   // Salvează manual (forțat)
-  const saveNow = useCallback(async (dashboardId: number) => {
+  const saveNow = async (dashboardId: number) => {
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
     await savePendingChanges(dashboardId);
-  }, [savePendingChanges]);
+  };
 
   // Funcție pentru a seta saveFunctionRef cu dashboardId corect
-  const setSaveFunction = useCallback((dashboardId: number) => {
+  const setSaveFunction = (dashboardId: number) => {
     saveFunctionRef.current = () => savePendingChanges(dashboardId);
-  }, [savePendingChanges]);
+  };
 
   // Auto-save la beforeunload (când utilizatorul părăsește pagina)
   useEffect(() => {

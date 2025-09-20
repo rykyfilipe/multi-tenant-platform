@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import BaseWidget from './BaseWidget';
 // Widget interface
@@ -142,7 +142,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
   console.log("line chart data", data);
 
 
-	const processedData = useMemo(() => {
+	const processedData = (() => {
 		const rawData = Array.isArray(data) ? data : [];
 		
 		console.log('[LineChart] Processing data:', {
@@ -249,10 +249,10 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 		}
 		
 		return filteredData;
-	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
+	})();
 
 	// Enhanced color generation with custom column colors support
-	const colors = useMemo(() => {
+	const colors = (() => {
 		// Check if we have custom column colors defined
 		const columnColors = options?.columnColors;
 		const yColumns = enhancedDataSource.yAxis?.columns || [];
@@ -289,7 +289,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 			colors: generatedColors
 		});
 		return generatedColors;
-	}, [options?.columnColors, options?.colors, options?.colorPalette, enhancedDataSource.xAxis?.columns?.length, enhancedDataSource.yAxis?.columns?.length]);
+	})();
 
 	// Enhanced styling configuration
 	const widgetStyle = {

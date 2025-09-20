@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Legend, Cell } from 'recharts';
 import BaseWidget from './BaseWidget';
 import type { Widget, LineChartConfig } from './LineChartWidget';
@@ -107,7 +107,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	
 	const { data, isLoading, error, handleRefresh } = useChartData(widget, tenantId, databaseId);
 
-	const processedData = useMemo(() => {
+	const processedData = (() => {
 		const rawData = Array.isArray(data) ? data : [];
 		
 		// For pie charts, we typically use single columns for name and value
@@ -150,7 +150,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		}
 		
 		return filteredData;
-	}, [dataSource, data, safeXAxis.key, safeYAxis.key, enhancedDataSource.xAxis, enhancedDataSource.yAxis]);
+	})();
 
 	// Predefined color palette for PieChart
 	const PREDEFINED_COLORS = [
@@ -180,7 +180,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	];
 
 	// Generate colors for PieChart using predefined palette
-	const colors = useMemo(() => {
+	const colors = (() => {
 		// PieChart always uses predefined colors for better variety
 		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
 			return options.colors;
@@ -198,7 +198,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		});
 		
 		return selectedColors;
-	}, [options?.colors, processedData.length]);
+	})();
 
 	// Enhanced styling configuration
 	const widgetStyle = {

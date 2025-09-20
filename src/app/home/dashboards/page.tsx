@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
@@ -675,7 +675,7 @@ export default function DashboardsPage() {
   };
 
   // Funcție helper pentru a obține toate widget-urile (din DB + locale)
-  const getAllWidgets = useCallback(() => {
+  const getAllWidgets = () => {
     const dbWidgets = selectedDashboard?.widgets ?? [];
     const localWidgets: Widget[] = [];
     
@@ -724,7 +724,7 @@ export default function DashboardsPage() {
     });
     
     return filteredWidgets;
-  }, [selectedDashboard?.widgets, pendingChangesMap, getFinalWidget]);
+  };
 
   const renderWidget = (widget: Widget) => {
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate

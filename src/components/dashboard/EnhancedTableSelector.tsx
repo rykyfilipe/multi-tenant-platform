@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Database, Table, Columns, Check, X, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -127,7 +127,7 @@ export function EnhancedTableSelector({
 	const [columnsError, setColumnsError] = useState<string | null>(null);
 
 	// Function to load all tables from all databases
-	const loadAllTables = useCallback(async () => {
+	const loadAllTables = async () => {
 		if (!tenant?.id) return;
 		
 		setAllTablesLoading(true);
@@ -153,7 +153,7 @@ export function EnhancedTableSelector({
 		} finally {
 			setAllTablesLoading(false);
 		}
-	}, [tenant?.id, token]);
+	};
 
 	// Auto-load all tables when component mounts
 	useEffect(() => {
