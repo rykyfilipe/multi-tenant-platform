@@ -59,6 +59,14 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const xKey = (dataSource as any).xAxis?.columns?.[0] || (dataSource as any).columnX || safeXAxis.key;
 				const yKey = (dataSource as any).yAxis?.columns?.[0] || (dataSource as any).columnY || safeYAxis.key;
 				
+				console.log('[BaseChartWidget] Mapping data:', {
+					xKey,
+					yKey,
+					rowsCount: rows.length,
+					sampleRow: rows[0],
+					dataSource: dataSource
+				});
+				
 				const mapped: ChartDataPoint[] = (rows ?? []).map((row: any) => {
 					const dataPoint: any = {};
 					if (row?.cells && Array.isArray(row.cells)) {
@@ -78,6 +86,11 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 					return xValue !== undefined && xValue !== null && xValue !== '' && 
 						   yValue !== undefined && yValue !== null && !isNaN(yValue);
 				});
+				console.log('[BaseChartWidget] Mapped data result:', {
+					mappedCount: mapped.length,
+					sampleMapped: mapped.slice(0, 2)
+				});
+				
 				if (active) {
 					setData(mapped);
 					setLastFetchTime(new Date());

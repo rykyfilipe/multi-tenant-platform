@@ -177,6 +177,9 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		
 		console.log('[BarChart] Processing data:', {
 			rawDataCount: rawData.length,
+			enhancedDataSource,
+			yAxisColumns: enhancedDataSource.yAxis?.columns,
+			xAxisColumns: enhancedDataSource.xAxis?.columns,
 			xKey,
 			yKey,
 			sampleData: rawData.slice(0, 2)

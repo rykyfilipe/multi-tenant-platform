@@ -19,20 +19,20 @@ import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
 // LineChart configuration interface
 export interface LineChartConfig {
-	title?: string;
+  title?: string;
 	dataSource?: EnhancedDataSource;
 	xAxis?: ChartAxisConfig;
 	yAxis?: ChartAxisConfig;
-	options?: {
-		colors?: string[];
-		colorPalette?: ColorPalette;
-		strokeWidth?: number;
-		dotSize?: number;
-		curveType?: 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
+  options?: {
+    colors?: string[];
+    colorPalette?: ColorPalette;
+    strokeWidth?: number;
+    dotSize?: number;
+    curveType?: 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
 		showGrid?: boolean;
 		showLegend?: boolean;
-		showDataSummary?: boolean;
-		animation?: boolean;
+    showDataSummary?: boolean;
+    animation?: boolean;
 		backgroundColor?: string;
 		borderRadius?: string;
 		shadow?: boolean;
@@ -135,7 +135,10 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 		
 		console.log('[LineChart] Processing data:', {
 			rawDataCount: rawData.length,
+			rawData: rawData,
 			enhancedDataSource,
+			yAxisColumns: enhancedDataSource.yAxis?.columns,
+			xAxisColumns: enhancedDataSource.xAxis?.columns,
 			safeXAxis,
 			safeYAxis,
 			sampleRawData: rawData.slice(0, 2)
@@ -154,6 +157,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 			// Group data by X column value to ensure proper multi-series structure
 			const groupedData = rawData.reduce((acc: Record<string, any>, item: any) => {
 				const xValue = item[xColumn];
+				console.log('[LineChart] Processing item for grouping:', { xValue, item, xColumn });
 				if (xValue !== undefined && xValue !== null && xValue !== '') {
 					if (!acc[xValue]) {
 						acc[xValue] = { [xColumn]: xValue };
@@ -163,11 +167,14 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 					enhancedDataSource.yAxis!.columns.forEach(yCol => {
 						if (item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
 							acc[xValue][yCol] = item[yCol];
+							console.log('[LineChart] Added Y value:', { xValue, yCol, value: item[yCol] });
 						}
 					});
 				}
 				return acc;
 			}, {});
+			
+			console.log('[LineChart] Grouped data result:', { groupedData, groupCount: Object.keys(groupedData).length });
 			
 			// Convert grouped data to array
 			Object.values(groupedData).forEach(item => {
