@@ -1187,6 +1187,7 @@ export default function DashboardsPage() {
               setEditingWidget(null);
             }}
             onSave={handleWidgetUpdate}
+            onUpdate={handleWidgetUpdate} // Real-time updates
             tenantId={tenant?.id || 1}
             databaseId={1} // Default database ID for now
           />

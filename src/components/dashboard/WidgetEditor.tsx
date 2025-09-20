@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Save, Settings, Palette, BarChart3, Database, FileText } from 'lucide-react';
+import { X, Save, Settings, Palette, BarChart3, Database, FileText, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ColorPicker } from '@/components/ui/color-picker';
+import { Badge } from '@/components/ui/badge';
 import { DataEditor } from './DataEditor';
 import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
@@ -38,16 +39,51 @@ interface WidgetEditorProps {
   widget: Widget;
   onClose: () => void;
   onSave: (widget: Widget) => void;
+  onUpdate?: (widget: Widget) => void; // New prop for real-time updates
   tenantId: number;
   databaseId: number;
 }
 
-export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: WidgetEditorProps) {
+export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, databaseId }: WidgetEditorProps) {
   const [editedWidget, setEditedWidget] = useState<Widget>({ ...widget });
   const [hasChanges, setHasChanges] = useState(false);
   
   // Use schema cache for tables and columns
   const { tables, tablesLoading, loadTables } = useSchemaCache(tenantId, databaseId);
+  
+  // State for columns (similar to EnhancedTableSelector)
+  const [columns, setColumns] = useState<any[]>([]);
+  const [isLoadingColumns, setIsLoadingColumns] = useState(false);
+  
+  // Get selected table info for display
+  const selectedTable = tables?.find(t => t.id === editedWidget.config?.dataSource?.tableId);
+  const selectedTableColumns = columns || [];
+  
+  // Get selected columns info for display
+  const selectedXColumns = editedWidget.config?.dataSource?.xAxis?.columns || [];
+  const selectedYColumns = editedWidget.config?.dataSource?.yAxis?.columns || [];
+  
+  // Function to determine if configuration is complete
+  const isConfigurationComplete = () => {
+    const dataSource = editedWidget.config?.dataSource;
+    if (!dataSource || !selectedTable) return false;
+    
+    switch (widget.type) {
+      case 'table':
+        return true; // Table widget just needs a table selected
+      case 'metric':
+        return selectedYColumns.length > 0; // KPI needs at least one Y column
+      case 'chart':
+        const chartType = editedWidget.config?.chartType || 'line';
+        if (chartType === 'pie') {
+          return selectedXColumns.length > 0 && selectedYColumns.length > 0;
+        } else {
+          return selectedXColumns.length > 0 && selectedYColumns.length > 0;
+        }
+      default:
+        return true;
+    }
+  };
 
   // Auto-load tables when editor opens
   useEffect(() => {
@@ -56,6 +92,37 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
       loadTables();
     }
   }, [tables, tablesLoading, loadTables]);
+
+  // Load columns when table is selected
+  const loadColumns = async (tableId: number) => {
+    if (!tenantId || !databaseId) return;
+    
+    setIsLoadingColumns(true);
+    try {
+      const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`);
+      if (response.ok) {
+        const data = await response.json();
+        setColumns(data.columns || []);
+      } else {
+        console.error('Failed to load columns:', response.statusText);
+        setColumns([]);
+      }
+    } catch (error) {
+      console.error('Error loading columns:', error);
+      setColumns([]);
+    } finally {
+      setIsLoadingColumns(false);
+    }
+  };
+
+  // Auto-load columns when table is selected
+  useEffect(() => {
+    const tableId = editedWidget.config?.dataSource?.tableId;
+    if (tableId && !isLoadingColumns && columns.length === 0) {
+      console.log('[WidgetEditor] Auto-loading columns for selected table:', tableId);
+      loadColumns(tableId);
+    }
+  }, [editedWidget.config?.dataSource?.tableId, isLoadingColumns, columns.length]);
 
   useEffect(() => {
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
@@ -185,18 +252,38 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
     setEditedWidget(prev => {
       const currentConfig = prev.config || {};
       const newConfig = { ...currentConfig, ...configUpdates };
-      return {
+      const updatedWidget = {
         ...prev,
         config: newConfig
       };
+      
+      // Send real-time update to parent component
+      if (onUpdate) {
+        onUpdate(updatedWidget);
+      }
+      
+      return updatedWidget;
     });
+    
+    setHasChanges(true);
   };
 
   const updatePosition = (positionUpdates: Partial<{ x: number; y: number; width: number; height: number }>) => {
-    setEditedWidget(prev => ({
-      ...prev,
-      position: { ...(prev.position || {}), ...positionUpdates }
-    }));
+    setEditedWidget(prev => {
+      const updatedWidget = {
+        ...prev,
+        position: { ...(prev.position || {}), ...positionUpdates }
+      };
+      
+      // Send real-time update to parent component
+      if (onUpdate) {
+        onUpdate(updatedWidget);
+      }
+      
+      return updatedWidget;
+    });
+    
+    setHasChanges(true);
   };
 
   // LineChart-specific handlers
@@ -441,6 +528,43 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
             <TabsContent value="data" className="space-y-4">
               {widget.type === 'table' ? (
                 <div className="space-y-4">
+                  {/* Table Information Display */}
+                  {selectedTable && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                          <Database className="h-4 w-4" />
+                          <span>Selected Table: {selectedTable.name}</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Columns:</span>
+                            <span className="font-medium">{selectedTableColumns.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Description:</span>
+                            <span className="font-medium">{selectedTable.description || 'No description'}</span>
+                          </div>
+                          {selectedTableColumns.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs text-muted-foreground mb-2">Available columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedTableColumns.map((column: any) => (
+                                  <Badge key={column.id} variant="outline" className="text-xs">
+                                    {column.name}
+                                    <span className="ml-1 text-muted-foreground">({column.type})</span>
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
                   {/* Enhanced Table Configuration */}
                   <EnhancedTableSelector
                     dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { 
@@ -454,6 +578,57 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     widgetType="table"
                     tenantId={tenantId}
                   />
+                  
+                  {/* Column Selection Status */}
+                  {(selectedXColumns.length > 0 || selectedYColumns.length > 0) && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                          <CheckSquare className="h-4 w-4" />
+                          <span>Column Selection</span>
+                          {isConfigurationComplete() ? (
+                            <Badge variant="default" className="ml-auto">Complete</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="ml-auto">Incomplete</Badge>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          {selectedXColumns.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-muted-foreground mb-1">X-Axis Columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedXColumns.map((column: string) => (
+                                  <Badge key={column} variant="secondary" className="text-xs">
+                                    {column}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {selectedYColumns.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-muted-foreground mb-1">Y-Axis Columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedYColumns.map((column: string) => (
+                                  <Badge key={column} variant="secondary" className="text-xs">
+                                    {column}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {!isConfigurationComplete() && (
+                            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                              <p className="font-medium">Configuration incomplete</p>
+                              <p>Please select the required columns to complete the widget configuration.</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Table Aggregation Options */}
                   <Card>
@@ -587,6 +762,43 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                 </div>
               ) : widget.type === 'metric' ? (
                 <div className="space-y-4">
+                  {/* Table Information Display */}
+                  {selectedTable && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                          <Database className="h-4 w-4" />
+                          <span>Selected Table: {selectedTable.name}</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Columns:</span>
+                            <span className="font-medium">{selectedTableColumns.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Description:</span>
+                            <span className="font-medium">{selectedTable.description || 'No description'}</span>
+                          </div>
+                          {selectedTableColumns.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs text-muted-foreground mb-2">Available columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedTableColumns.map((column: any) => (
+                                  <Badge key={column.id} variant="outline" className="text-xs">
+                                    {column.name}
+                                    <span className="ml-1 text-muted-foreground">({column.type})</span>
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
                   {/* Enhanced KPI Configuration */}
                   <EnhancedTableSelector
                     dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { 
@@ -601,6 +813,45 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     expectedYType="number"
                     tenantId={tenantId}
                   />
+                  
+                  {/* Column Selection Status */}
+                  {selectedYColumns.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                          <CheckSquare className="h-4 w-4" />
+                          <span>Column Selection</span>
+                          {isConfigurationComplete() ? (
+                            <Badge variant="default" className="ml-auto">Complete</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="ml-auto">Incomplete</Badge>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          {selectedYColumns.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-muted-foreground mb-1">Value Columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedYColumns.map((column: string) => (
+                                  <Badge key={column} variant="secondary" className="text-xs">
+                                    {column}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {!isConfigurationComplete() && (
+                            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                              <p className="font-medium">Configuration incomplete</p>
+                              <p>Please select at least one value column for the KPI widget.</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Enhanced Aggregation Options */}
                   <AggregationSelector
@@ -1281,6 +1532,43 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     </CardContent>
                   </Card>
 
+                  {/* Table Information Display */}
+                  {selectedTable && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                          <Database className="h-4 w-4" />
+                          <span>Selected Table: {selectedTable.name}</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Columns:</span>
+                            <span className="font-medium">{selectedTableColumns.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Description:</span>
+                            <span className="font-medium">{selectedTable.description || 'No description'}</span>
+                          </div>
+                          {selectedTableColumns.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs text-muted-foreground mb-2">Available columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedTableColumns.map((column: any) => (
+                                  <Badge key={column.id} variant="outline" className="text-xs">
+                                    {column.name}
+                                    <span className="ml-1 text-muted-foreground">({column.type})</span>
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
                   {/* Enhanced Table Data Selector */}
                   <EnhancedTableSelector
                     dataSource={config.dataSource as EnhancedDataSource || { 
@@ -1298,6 +1586,57 @@ export function WidgetEditor({ widget, onClose, onSave, tenantId, databaseId }: 
                     expectedYType="number"
                     tenantId={tenantId}
                   />
+                  
+                  {/* Column Selection Status */}
+                  {(selectedXColumns.length > 0 || selectedYColumns.length > 0) && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                          <CheckSquare className="h-4 w-4" />
+                          <span>Column Selection</span>
+                          {isConfigurationComplete() ? (
+                            <Badge variant="default" className="ml-auto">Complete</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="ml-auto">Incomplete</Badge>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          {selectedXColumns.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-muted-foreground mb-1">X-Axis Columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedXColumns.map((column: string) => (
+                                  <Badge key={column} variant="secondary" className="text-xs">
+                                    {column}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {selectedYColumns.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-muted-foreground mb-1">Y-Axis Columns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedYColumns.map((column: string) => (
+                                  <Badge key={column} variant="secondary" className="text-xs">
+                                    {column}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {!isConfigurationComplete() && (
+                            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                              <p className="font-medium">Configuration incomplete</p>
+                              <p>Please select X-axis and Y-axis columns to complete the chart configuration.</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Chart Aggregation Options */}
                   <Card>
