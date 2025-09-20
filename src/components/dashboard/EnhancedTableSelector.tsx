@@ -232,16 +232,67 @@ export function EnhancedTableSelector({
 		setColumnsError(null);
 	};
 
-	// Simplified column selection handlers
+	// Column selection handlers with strict validation
 	const handleColumnSelect = (axis: 'x' | 'y', columnName: string) => {
 		console.log('[EnhancedTableSelector] Column select:', { axis, columnName });
+		
+		// Find the column to validate its type
+		const column = columns.find(col => col.name === columnName);
+		if (!column) {
+			console.error('[EnhancedTableSelector] Column not found:', columnName);
+			return;
+		}
+		
+		const columnTypeCategory = getColumnTypeCategory(column.type);
+		
+		// Special handling for PieChart (check if this is a PieChart widget)
+		const isPieChart = widgetType === 'chart' && (dataSource as any)?.chartType === 'pie';
+		
+		// Validate column type based on axis and chart type
+		if (axis === 'x') {
+			if (isPieChart) {
+				// For PieChart, X-axis is used as nameKey and must be text/category
+				if (columnTypeCategory !== 'text') {
+					console.warn('[EnhancedTableSelector] Invalid PieChart nameKey column type:', column.type, 'Expected text/category');
+					setColumnsError(`PieChart nameKey column must be text/category type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			} else {
+				// For Line/Bar charts, X-axis must be text/category
+				if (columnTypeCategory !== 'text') {
+					console.warn('[EnhancedTableSelector] Invalid X-axis column type:', column.type, 'Expected text/category');
+					setColumnsError(`X-axis column must be text/category type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			}
+		} else if (axis === 'y') {
+			if (isPieChart) {
+				// For PieChart, Y-axis is used as dataKey and must be numeric
+				if (columnTypeCategory !== 'number') {
+					console.warn('[EnhancedTableSelector] Invalid PieChart dataKey column type:', column.type, 'Expected numeric');
+					setColumnsError(`PieChart dataKey column must be numeric type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			} else {
+				// For Line/Bar charts, Y-axis must be numeric
+				if (columnTypeCategory !== 'number') {
+					console.warn('[EnhancedTableSelector] Invalid Y-axis column type:', column.type, 'Expected numeric');
+					setColumnsError(`Y-axis column must be numeric type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			}
+		}
+		
+		// Clear any previous errors
+		setColumnsError(null);
+		
 		const newDataSource = {
 			...dataSource,
 			[axis === 'x' ? 'columnX' : 'columnY']: columnName,
 			[axis === 'x' ? 'xAxis' : 'yAxis']: {
 				key: columnName,
 				label: columnName,
-				type: axis === 'x' ? 'text' : 'number',
+				type: columnTypeCategory,
 				columns: [columnName]
 			}
 		};
@@ -250,11 +301,76 @@ export function EnhancedTableSelector({
 
 	const handleColumnToggle = (axis: 'x' | 'y', columnName: string, isSelected: boolean) => {
 		console.log('[EnhancedTableSelector] Column toggle:', { axis, columnName, isSelected });
+		
+		// Find the column to validate its type
+		const column = columns.find(col => col.name === columnName);
+		if (!column) {
+			console.error('[EnhancedTableSelector] Column not found:', columnName);
+			return;
+		}
+		
+		const columnTypeCategory = getColumnTypeCategory(column.type);
+		
+		// Special handling for PieChart
+		const isPieChart = widgetType === 'chart' && (dataSource as any)?.chartType === 'pie';
+		
+		// Validate column type based on axis and chart type
+		if (axis === 'x') {
+			if (isPieChart) {
+				// For PieChart, X-axis is used as nameKey and must be text/category
+				if (columnTypeCategory !== 'text') {
+					console.warn('[EnhancedTableSelector] Invalid PieChart nameKey column type:', column.type, 'Expected text/category');
+					setColumnsError(`PieChart nameKey column must be text/category type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			} else {
+				// For Line/Bar charts, X-axis must be text/category
+				if (columnTypeCategory !== 'text') {
+					console.warn('[EnhancedTableSelector] Invalid X-axis column type:', column.type, 'Expected text/category');
+					setColumnsError(`X-axis column must be text/category type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			}
+		} else if (axis === 'y') {
+			if (isPieChart) {
+				// For PieChart, Y-axis is used as dataKey and must be numeric
+				if (columnTypeCategory !== 'number') {
+					console.warn('[EnhancedTableSelector] Invalid PieChart dataKey column type:', column.type, 'Expected numeric');
+					setColumnsError(`PieChart dataKey column must be numeric type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			} else {
+				// For Line/Bar charts, Y-axis must be numeric
+				if (columnTypeCategory !== 'number') {
+					console.warn('[EnhancedTableSelector] Invalid Y-axis column type:', column.type, 'Expected numeric');
+					setColumnsError(`Y-axis column must be numeric type, but "${columnName}" is ${column.type}`);
+					return;
+				}
+			}
+		}
+		
 		const currentColumns = axis === 'x' ? (dataSource.xColumns || []) : (dataSource.yColumns || []);
 		
-		const newColumns = isSelected
-			? [...currentColumns, columnName]
-			: currentColumns.filter((col: string) => col !== columnName);
+		let newColumns: string[];
+		
+		if (isSelected) {
+			// Special validation for X-axis: only allow one column (except for PieChart which can have multiple dataKey columns)
+			if (axis === 'x' && currentColumns.length >= 1 && !isPieChart) {
+				console.warn('[EnhancedTableSelector] X-axis can only have one column. Replacing existing selection.');
+				setColumnsError('X-axis can only have one column. Previous selection will be replaced.');
+				// Replace the existing column instead of adding
+				newColumns = [columnName];
+			} else {
+				newColumns = [...currentColumns, columnName];
+			}
+		} else {
+			newColumns = currentColumns.filter((col: string) => col !== columnName);
+		}
+
+		// Clear any previous errors if selection is valid
+		if (isSelected) {
+			setColumnsError(null);
+		}
 
 		// Update both xColumns/yColumns and xAxis/yAxis for compatibility
 		const newDataSource = {
@@ -263,7 +379,7 @@ export function EnhancedTableSelector({
 			[axis === 'x' ? 'xAxis' : 'yAxis']: {
 				key: newColumns[0] || '',
 				label: newColumns[0] || '',
-				type: axis === 'x' ? 'text' : 'number',
+				type: columnTypeCategory,
 				columns: newColumns
 			}
 		};
@@ -298,10 +414,28 @@ export function EnhancedTableSelector({
 		const currentColumn = axis === 'x' ? dataSource.columnX : dataSource.columnY;
 		const currentColumns = axis === 'x' ? (dataSource.xColumns || []) : (dataSource.yColumns || []);
 		
+		// Special handling for PieChart labels
+		const isPieChart = widgetType === 'chart' && (dataSource as any)?.chartType === 'pie';
+		let displayLabel = label;
+		let displayExpectedType = expectedType;
+		
+		if (isPieChart) {
+			if (axis === 'x') {
+				displayLabel = 'Category Column (nameKey)';
+				displayExpectedType = 'text';
+			} else if (axis === 'y') {
+				displayLabel = 'Value Column (dataKey)';
+				displayExpectedType = 'number';
+			}
+		}
+		
 		console.log('[EnhancedTableSelector] renderAxisSelector:', {
 			axis,
 			label,
+			displayLabel,
 			expectedType,
+			displayExpectedType,
+			isPieChart,
 			dataSource,
 			currentColumn,
 			currentColumns,
@@ -311,12 +445,12 @@ export function EnhancedTableSelector({
 			yColumns: dataSource.yColumns
 		});
 		
-		const compatibleColumns = getCompatibleColumns(expectedType);
+		const compatibleColumns = getCompatibleColumns(displayExpectedType);
 
 		return (
 			<div className="space-y-2">
 				<label className="text-xs font-medium text-gray-700 block">
-					{label} {expectedType && `(${expectedType})`}
+					{displayLabel} {displayExpectedType && `(${displayExpectedType})`}
 				</label>
 				{isLoadingColumns ? (
 					<Skeleton className="h-8 w-full" />
