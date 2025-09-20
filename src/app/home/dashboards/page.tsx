@@ -389,9 +389,17 @@ export default function DashboardsPage() {
         height: item.h,
       };
 
-      // Get original widget data for comparison
-      const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
+      // Get original widget data for comparison from all widgets (DB + local)
+      const allWidgets = getAllWidgets();
+      const originalWidget = allWidgets.find(w => w.id === widgetId);
       const originalPosition = originalWidget?.position;
+
+      console.log('[Dashboard] Layout change for widget:', {
+        widgetId,
+        newPosition,
+        originalPosition,
+        foundWidget: !!originalWidget
+      });
 
       addPendingChange('update', widgetId, { position: newPosition }, { position: originalPosition });
     });
@@ -646,7 +654,7 @@ export default function DashboardsPage() {
     // Find a free position for the new widget, considering both existing widgets and pending changes
     const allWidgets = [
       ...(selectedDashboard?.widgets ?? []),
-      ...pendingChanges
+      ...Array.from(pendingChangesMap.values())
         .filter(change => change.type === 'create' && change.data)
         .map(change => change.data as Widget)
     ];
