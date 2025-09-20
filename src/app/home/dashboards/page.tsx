@@ -149,10 +149,8 @@ export default function DashboardsPage() {
     autoSaveDelay: -1, // Dezactivează auto-save - se salvează doar la click
     onSuccess: (results) => {
       console.log('Widget changes saved successfully:', results);
-      // Refresh dashboard data after successful save
-      if (selectedDashboard) {
-        fetchDashboards();
-      }
+      // Optimistic update: no need to refresh - getFinalWidget handles the display
+      // The pending changes are already cleared in the hook after successful save
     },
     onError: (error) => {
       console.error('Failed to save widget changes:', error);
@@ -322,8 +320,8 @@ export default function DashboardsPage() {
 
     try {
       await savePendingChanges(selectedDashboard.id);
-      // Refresh dashboard data after successful save
-      await fetchDashboards();
+      // Optimistic update: no need to refresh - getFinalWidget handles the display
+      // The pending changes are already cleared in the hook after successful save
     } catch (error) {
       console.error('Error saving changes:', error);
       // Error handling is done in the hook's onError callback
