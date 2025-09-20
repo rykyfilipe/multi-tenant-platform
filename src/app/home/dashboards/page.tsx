@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { LineChartWidget } from '@/components/dashboard/LineChartWidget';
+import LineChartWidget from '@/components/dashboard/LineChartWidget';
 import BarChartWidget from '@/components/dashboard/BarChartWidget';
 import PieChartWidget from '@/components/dashboard/PieChartWidget';
 import TableWidget from '@/components/dashboard/TableWidget';

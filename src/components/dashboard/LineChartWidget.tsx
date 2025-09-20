@@ -5,11 +5,13 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import BaseWidget from './BaseWidget';
 // Widget interface
 interface Widget {
-	id: number;
-	title: string;
+	id: number | string;
+	title: string | null;
 	type: string;
 	config?: any;
-	position?: { x: number; y: number; w: number; h: number };
+	position?: { x: number; y: number; width: number; height: number };
+	isVisible?: boolean;
+	order?: number;
 }
 import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
 import { useChartData } from './BaseChartWidget';
