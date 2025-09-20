@@ -328,26 +328,25 @@ export default function DashboardsPage() {
     if (pendingChangesCount === 0 || !selectedDashboard) return;
 
     try {
-      // Get the current widgets BEFORE saving (includes pending changes)
-      const currentWidgets = getAllWidgets();
-      console.log('[Dashboard] Current widgets before save:', currentWidgets.length);
+      // Save changes to server and get the saved widgets
+      const savedWidgets = await savePendingChanges(selectedDashboard.id);
       
-      // Save changes to server
-      const results = await savePendingChanges(selectedDashboard.id);
+      console.log('[Dashboard] Save successful, received saved widgets:', savedWidgets?.length || 0);
       
-      // Optimistic update: Update local state with saved widgets
-      console.log('[Dashboard] Save successful, updating local state optimistically');
-      
-      // Update selectedDashboard with current widgets (this becomes the new "saved" state)
-      setSelectedDashboard(prev => prev ? {
-        ...prev,
-        widgets: currentWidgets
-      } : null);
-      
-      // Create new initial copy from the updated widgets
-      setInitialWidgets([...currentWidgets]);
-      
-      console.log('[Dashboard] Local state updated optimistically with', currentWidgets.length, 'widgets');
+      if (savedWidgets && savedWidgets.length > 0) {
+        // Update selectedDashboard with the saved widgets from server
+        setSelectedDashboard(prev => prev ? {
+          ...prev,
+          widgets: savedWidgets
+        } : null);
+        
+        // Create new initial copy from the saved widgets
+        setInitialWidgets([...savedWidgets]);
+        
+        console.log('[Dashboard] Local state updated with', savedWidgets.length, 'saved widgets');
+      } else {
+        console.log('[Dashboard] No widgets returned from save, keeping current state');
+      }
       
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -742,13 +741,16 @@ export default function DashboardsPage() {
       return null;
     }
 
-    switch (displayWidget.type) {
+    // Use the widget directly if no pending changes (after save)
+    const finalWidget = displayWidget || widget;
+
+    switch (finalWidget.type) {
       case 'chart': {
-        const subType = (displayWidget?.config?.chartType) || (displayWidget as any).subType || 'line';
+        const subType = (finalWidget?.config?.chartType) || (finalWidget as any).subType || 'line';
         if (subType === 'bar') {
           return (
             <BarChartWidget 
-              widget={displayWidget} 
+              widget={finalWidget} 
               isEditMode={isEditMode}
               tenantId={tenant?.id}
               databaseId={1}
@@ -766,7 +768,7 @@ export default function DashboardsPage() {
         if (subType === 'pie') {
           return (
             <PieChartWidget 
-              widget={displayWidget} 
+              widget={finalWidget} 
               isEditMode={isEditMode}
               tenantId={tenant?.id}
               databaseId={1}
