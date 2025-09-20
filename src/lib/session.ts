@@ -74,6 +74,8 @@ export async function requireAuthResponse(role?: "ADMIN" | "EDITOR" | "VIEWER"):
  */
 export function hasTenantAccess(session: Session, tenantId: string): boolean {
   console.log("hasTenantAccess", session.user.tenantId, tenantId, "types:", typeof session.user.tenantId, typeof tenantId);
+  console.log("String comparison:", String(session.user.tenantId), "===", String(tenantId));
+  console.log("Result:", String(session.user.tenantId) === String(tenantId));
   return String(session.user.tenantId) === String(tenantId);
 }
 

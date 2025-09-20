@@ -114,6 +114,25 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 		if (!token) return;
 		
 		setCreatingBackup(true);
+		
+		// Optimistic update - add backup immediately to UI
+		const optimisticBackup: BackupJob = {
+			id: `temp-${Date.now()}`,
+			tenantId: tenantId,
+			type: BackupType.FULL,
+			status: BackupStatus.IN_PROGRESS,
+			description: "Full database backup",
+			startedAt: new Date().toISOString(),
+			metadata: {
+				databaseCount: 0,
+				tableCount: 0,
+				rowCount: 0,
+			},
+			createdBy: user?.id?.toString() || "unknown",
+		};
+		
+		setBackups(prev => [optimisticBackup, ...prev]);
+		
 		try {
 			const response = await fetch(`/api/tenants/${tenantId}/backups`, {
 				method: "POST",
@@ -129,19 +148,26 @@ export function BackupManager({ tenantId }: BackupManagerProps) {
 
 			if (response.ok) {
 				const data = await response.json();
-				setBackups(prev => [data.data, ...prev]);
+				// Replace optimistic backup with real backup
+				setBackups(prev => prev.map(b => b.id === optimisticBackup.id ? data.data : b));
 				
 				logger.info("Backup created successfully", {
 					component: "BackupManager",
 					backupId: data.data.id,
 				});
 			} else {
+				// Remove optimistic backup on error
+				setBackups(prev => prev.filter(b => b.id !== optimisticBackup.id));
+				
 				const errorData = await response.json();
 				logger.error("Failed to create backup", new Error(errorData.error), {
 					component: "BackupManager",
 				});
 			}
 		} catch (error) {
+			// Remove optimistic backup on error
+			setBackups(prev => prev.filter(b => b.id !== optimisticBackup.id));
+			
 			logger.error("Failed to create backup", error as Error, {
 				component: "BackupManager",
 			});
