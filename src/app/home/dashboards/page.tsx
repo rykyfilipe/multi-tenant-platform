@@ -328,14 +328,15 @@ export default function DashboardsPage() {
     if (pendingChangesCount === 0 || !selectedDashboard) return;
 
     try {
+      // Get the current widgets BEFORE saving (includes pending changes)
+      const currentWidgets = getAllWidgets();
+      console.log('[Dashboard] Current widgets before save:', currentWidgets.length);
+      
       // Save changes to server
       const results = await savePendingChanges(selectedDashboard.id);
       
       // Optimistic update: Update local state with saved widgets
       console.log('[Dashboard] Save successful, updating local state optimistically');
-      
-      // Get the current widgets after save (combining DB widgets with pending changes)
-      const currentWidgets = getAllWidgets();
       
       // Update selectedDashboard with current widgets (this becomes the new "saved" state)
       setSelectedDashboard(prev => prev ? {
@@ -704,14 +705,26 @@ export default function DashboardsPage() {
     });
     
     const allWidgets = [...dbWidgets, ...localWidgets];
+    
+    // Filtrează widget-urile care sunt marcate pentru ștergere
+    const filteredWidgets = allWidgets.filter(widget => {
+      const finalWidget = getFinalWidget(widget);
+      const shouldShow = finalWidget !== null;
+      if (!shouldShow) {
+        console.log('[Dashboard] Filtering out deleted widget:', widget.id);
+      }
+      return shouldShow;
+    });
+    
     console.log('[Dashboard] getAllWidgets result:', {
       dbWidgetsCount: dbWidgets.length,
       localWidgetsCount: localWidgets.length,
-      totalCount: allWidgets.length
+      totalBeforeFilter: allWidgets.length,
+      totalAfterFilter: filteredWidgets.length
     });
     
-    return allWidgets;
-  }, [selectedDashboard?.widgets, pendingChangesMap]);
+    return filteredWidgets;
+  }, [selectedDashboard?.widgets, pendingChangesMap, getFinalWidget]);
 
   const renderWidget = (widget: Widget) => {
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate

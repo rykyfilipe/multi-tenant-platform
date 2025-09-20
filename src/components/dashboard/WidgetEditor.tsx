@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { X, Save, Settings, Palette, BarChart3, Database, FileText, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,9 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
   // State for columns (similar to EnhancedTableSelector)
   const [columns, setColumns] = useState<any[]>([]);
   const [isLoadingColumns, setIsLoadingColumns] = useState(false);
+  
+  // Debouncing refs for color picker
+  const colorUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Get selected table info for display
   const selectedTable = tables?.find(t => t.id === editedWidget.config?.dataSource?.tableId);
@@ -123,6 +126,15 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
       loadColumns(tableId);
     }
   }, [editedWidget.config?.dataSource?.tableId, isLoadingColumns, columns.length]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (colorUpdateTimeoutRef.current) {
+        clearTimeout(colorUpdateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setHasChanges(JSON.stringify(editedWidget) !== JSON.stringify(widget));
@@ -267,6 +279,28 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
     
     setHasChanges(true);
   };
+
+  // Debounced color update function
+  const debouncedColorUpdate = useCallback((column: string, color: string) => {
+    // Clear previous timeout
+    if (colorUpdateTimeoutRef.current) {
+      clearTimeout(colorUpdateTimeoutRef.current);
+    }
+    
+    // Set new timeout for 300ms
+    colorUpdateTimeoutRef.current = setTimeout(() => {
+      const currentColumnColors = editedWidget.config?.options?.columnColors || {};
+      updateConfig({
+        options: {
+          ...editedWidget.config?.options,
+          columnColors: {
+            ...currentColumnColors,
+            [column]: color
+          }
+        }
+      });
+    }, 300);
+  }, [editedWidget.config?.options, updateConfig]);
 
   const updatePosition = (positionUpdates: Partial<{ x: number; y: number; width: number; height: number }>) => {
     setEditedWidget(prev => {
@@ -1742,18 +1776,7 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                             </Label>
                             <ColorPicker
                               value={(config.options?.columnColors?.[column]) || '#3B82F6'}
-                              onChange={(color) => {
-                                const currentColumnColors = config.options?.columnColors || {};
-                                updateConfig({
-                                  options: {
-                                    ...config.options,
-                                    columnColors: {
-                                      ...currentColumnColors,
-                                      [column]: color
-                                    }
-                                  }
-                                });
-                              }}
+                              onChange={(color) => debouncedColorUpdate(column, color)}
                               className="w-32"
                             />
                           </div>
