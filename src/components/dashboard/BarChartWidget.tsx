@@ -208,14 +208,25 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 		const xColumnsCount = enhancedDataSource.xAxis?.columns?.length || 1;
 		const columnsCount = Math.max(yColumnsCount, xColumnsCount);
 		const colorsNeeded = Math.max(columnsCount, 1); // Generate at least 1 color, but prefer actual column count
+		console.log('[BarChart] Before generating colors:', {
+			yColumnsCount,
+			xColumnsCount,
+			columnsCount,
+			colorsNeeded,
+			colorPalette
+		});
+		
 		const generatedColors = generateChartColors(colorsNeeded, colorPalette);
+		
 		console.log('[BarChart] Generated colors:', {
 			yColumnsCount,
 			xColumnsCount,
 			columnsCount,
 			colorsNeeded,
-			colors: generatedColors
+			colors: generatedColors,
+			colorsLength: generatedColors.length
 		});
+		
 		return generatedColors;
 	}, [options.colors, options.colorPalette, enhancedDataSource.xAxis?.columns?.length, enhancedDataSource.yAxis?.columns?.length]);
 

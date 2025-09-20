@@ -702,6 +702,8 @@ export default function DashboardsPage() {
             <BarChartWidget 
               widget={displayWidget} 
               isEditMode={isEditMode}
+              tenantId={tenant?.id}
+              databaseId={1}
               onEdit={() => {
                 console.log('Bar chart edit clicked:', widget.id);
                 handleWidgetClick(widget);
@@ -710,8 +712,6 @@ export default function DashboardsPage() {
                 console.log('Bar chart delete clicked:', widget.id);
                 handleWidgetDelete(Number(widget.id));
               }}
-              tenantId={tenant?.id}
-              databaseId={1}
             />
           );
         }
@@ -720,6 +720,8 @@ export default function DashboardsPage() {
             <PieChartWidget 
               widget={displayWidget} 
               isEditMode={isEditMode}
+              tenantId={tenant?.id}
+              databaseId={1}
               onEdit={() => {
                 console.log('Pie chart edit clicked:', widget.id);
                 handleWidgetClick(widget);
@@ -728,8 +730,6 @@ export default function DashboardsPage() {
                 console.log('Pie chart delete clicked:', widget.id);
                 handleWidgetDelete(Number(widget.id));
               }}
-              tenantId={tenant?.id}
-              databaseId={1}
             />
           );
         }
@@ -737,6 +737,8 @@ export default function DashboardsPage() {
           <LineChartWidget 
             widget={displayWidget} 
             isEditMode={isEditMode}
+            tenantId={tenant?.id}
+            databaseId={1}
             onEdit={() => {
               console.log('Line chart edit clicked:', widget.id);
               handleWidgetClick(widget);
