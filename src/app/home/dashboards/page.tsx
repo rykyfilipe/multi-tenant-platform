@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
@@ -380,6 +380,8 @@ export default function DashboardsPage() {
   const handleLayoutChange = (layout: any[]) => {
     if (!isEditMode) return;
 
+    console.log('[Dashboard] handleLayoutChange called with layout:', layout);
+
     layout.forEach((item) => {
       const widgetId = parseInt(item.i);
       const newPosition = {
@@ -398,10 +400,27 @@ export default function DashboardsPage() {
         widgetId,
         newPosition,
         originalPosition,
-        foundWidget: !!originalWidget
+        foundWidget: !!originalWidget,
+        isNewWidget: originalWidget === undefined
       });
 
-      addPendingChange('update', widgetId, { position: newPosition }, { position: originalPosition });
+      // Only add pending change if the widget exists and position actually changed
+      if (originalWidget && originalPosition) {
+        const positionChanged = 
+          originalPosition.x !== newPosition.x ||
+          originalPosition.y !== newPosition.y ||
+          originalPosition.width !== newPosition.width ||
+          originalPosition.height !== newPosition.height;
+
+        if (positionChanged) {
+          console.log('[Dashboard] Position changed, adding pending change');
+          addPendingChange('update', widgetId, { position: newPosition }, { position: originalPosition });
+        } else {
+          console.log('[Dashboard] Position unchanged, skipping pending change');
+        }
+      } else {
+        console.log('[Dashboard] Widget not found or no original position, skipping pending change');
+      }
     });
   };
 
@@ -744,6 +763,48 @@ export default function DashboardsPage() {
     });
     
     return sortedWidgets;
+  };
+
+  // Generate layouts directly without memoization to prevent automatic recalculation
+  const generateLayouts = () => {
+    const widgets = getAllWidgets();
+    return {
+      lg: widgets.map(w => ({
+        i: w.id.toString(),
+        x: w.position?.x || 0,
+        y: w.position?.y || 0,
+        w: w.position?.width || 4,
+        h: w.position?.height || 4,
+      })),
+      md: widgets.map(w => ({
+        i: w.id.toString(),
+        x: Math.min(w.position?.x || 0, 9),
+        y: w.position?.y || 0,
+        w: Math.min(w.position?.width || 4, 10),
+        h: w.position?.height || 4,
+      })),
+      sm: widgets.map(w => ({
+        i: w.id.toString(),
+        x: Math.min(w.position?.x || 0, 5),
+        y: w.position?.y || 0,
+        w: Math.min(w.position?.width || 4, 6),
+        h: w.position?.height || 4,
+      })),
+      xs: widgets.map(w => ({
+        i: w.id.toString(),
+        x: Math.min(w.position?.x || 0, 3),
+        y: w.position?.y || 0,
+        w: Math.min(w.position?.width || 4, 4),
+        h: w.position?.height || 4,
+      })),
+      xxs: widgets.map(w => ({
+        i: w.id.toString(),
+        x: 0,
+        y: w.position?.y || 0,
+        w: 2,
+        h: w.position?.height || 4,
+      }))
+    };
   };
 
   const renderWidget = (widget: Widget) => {
@@ -1095,43 +1156,7 @@ export default function DashboardsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <ResponsiveGridLayout
                 className="layout"
-                layouts={{ 
-                  lg: getAllWidgets().map(w => ({
-                    i: w.id.toString(),
-                    x: w.position?.x || 0,
-                    y: w.position?.y || 0,
-                    w: w.position?.width || 4,
-                    h: w.position?.height || 4,
-                  })),
-                  md: getAllWidgets().map(w => ({
-                    i: w.id.toString(),
-                    x: Math.min(w.position?.x || 0, 9),
-                    y: w.position?.y || 0,
-                    w: Math.min(w.position?.width || 4, 10),
-                    h: w.position?.height || 4,
-                  })),
-                  sm: getAllWidgets().map(w => ({
-                    i: w.id.toString(),
-                    x: Math.min(w.position?.x || 0, 5),
-                    y: w.position?.y || 0,
-                    w: Math.min(w.position?.width || 4, 6),
-                    h: w.position?.height || 4,
-                  })),
-                  xs: getAllWidgets().map(w => ({
-                    i: w.id.toString(),
-                    x: Math.min(w.position?.x || 0, 3),
-                    y: w.position?.y || 0,
-                    w: Math.min(w.position?.width || 4, 4),
-                    h: w.position?.height || 4,
-                  })),
-                  xxs: getAllWidgets().map(w => ({
-                    i: w.id.toString(),
-                    x: 0,
-                    y: w.position?.y || 0,
-                    w: 2,
-                    h: w.position?.height || 4,
-                  }))
-                }}
+                layouts={generateLayouts()}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
                 rowHeight={60}
@@ -1140,10 +1165,13 @@ export default function DashboardsPage() {
                 onLayoutChange={handleLayoutChange}
                 margin={[16, 16]}
                 containerPadding={[0, 0]}
-                useCSSTransforms={true}
+                useCSSTransforms={false}
                 transformScale={1}
-                preventCollision={true}
+                preventCollision={false}
                 compactType={null}
+                autoSize={false}
+                allowOverlap={true}
+                verticalCompact={false}
               >
                 {getAllWidgets().map((widget) => (
                   <div 
