@@ -294,8 +294,18 @@ export function EnhancedTableSelector({
 				label: columnName,
 				type: columnTypeCategory,
 				columns: [columnName]
-			}
+			},
+			// Set legacy column for KPI widget compatibility
+			...(axis === 'y' ? { column: columnName } : {})
 		};
+		
+		console.log('[EnhancedTableSelector] Column select result:', {
+			axis,
+			columnName,
+			newDataSource,
+			legacyColumn: axis === 'y' ? columnName : 'not set'
+		});
+		
 		onDataSourceChange(newDataSource);
 	};
 
@@ -388,15 +398,16 @@ export function EnhancedTableSelector({
 				label: newColumns[0] || '',
 				type: columnTypeCategory,
 				columns: newColumns
-			}
+			},
+			// Set legacy column for KPI widget compatibility
+			...(axis === 'y' ? { column: newColumns[0] || '' } : {})
 		};
 		
-		console.log('[EnhancedTableSelector] Updating dataSource:', {
+		console.log('[EnhancedTableSelector] Column toggle result:', {
 			axis,
 			newColumns,
 			newDataSource,
-			xAxis: newDataSource.xAxis,
-			yAxis: newDataSource.yAxis
+			legacyColumn: axis === 'y' ? (newColumns[0] || '') : 'not set'
 		});
 		
 		onDataSourceChange(newDataSource);
