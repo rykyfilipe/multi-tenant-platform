@@ -377,6 +377,51 @@ export default function DashboardsPage() {
     });
   };
 
+  // Function to detect if a layout change is responsive (automatic) or manual
+  const isResponsiveLayoutChange = (widgetId: number, newPosition: any, currentPosition: any) => {
+    // Get the widget to check its original position
+    const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
+    if (!originalWidget?.position) return false;
+
+    const originalPos = originalWidget.position;
+    
+    // Check if the new position matches expected responsive transformations
+    // For different breakpoints, ResponsiveGridLayout applies these transformations:
+    // md: Math.min(x, 9), Math.min(w, 10)
+    // sm: Math.min(x, 5), Math.min(w, 6)  
+    // xs: Math.min(x, 3), Math.min(w, 4)
+    // xxs: x = 0, w = 2
+    
+    // If the change only affects x position and width constraints, it's likely responsive
+    const xChanged = originalPos.x !== newPosition.x;
+    const widthChanged = originalPos.width !== newPosition.width;
+    const yUnchanged = originalPos.y === newPosition.y;
+    const heightUnchanged = originalPos.height === newPosition.height;
+    
+    // Check if new position matches expected responsive constraints
+    const isXConstrained = newPosition.x <= 9 || newPosition.x <= 5 || newPosition.x <= 3 || newPosition.x === 0;
+    const isWidthConstrained = newPosition.width <= 10 || newPosition.width <= 6 || newPosition.width <= 4 || newPosition.width === 2;
+    
+    // If only x/width changed and they're constrained, it's likely a responsive change
+    const isResponsive = (xChanged || widthChanged) && yUnchanged && heightUnchanged && (isXConstrained || isWidthConstrained);
+    
+    console.log('[Dashboard] Responsive check:', {
+      widgetId,
+      originalPos,
+      currentPosition,
+      newPosition,
+      xChanged,
+      widthChanged,
+      yUnchanged,
+      heightUnchanged,
+      isXConstrained,
+      isWidthConstrained,
+      isResponsive
+    });
+    
+    return isResponsive;
+  };
+
   const handleLayoutChange = (layout: any[]) => {
     if (!isEditMode) return;
 
@@ -391,35 +436,46 @@ export default function DashboardsPage() {
         height: item.h,
       };
 
-      // Get original widget data for comparison from all widgets (DB + local)
+      // Get current widget data (including pending changes) for comparison
       const allWidgets = getAllWidgets();
-      const originalWidget = allWidgets.find(w => w.id === widgetId);
-      const originalPosition = originalWidget?.position;
+      const currentWidget = allWidgets.find(w => w.id === widgetId);
+      const currentPosition = currentWidget?.position;
 
       console.log('[Dashboard] Layout change for widget:', {
         widgetId,
         newPosition,
-        originalPosition,
-        foundWidget: !!originalWidget,
-        isNewWidget: originalWidget === undefined
+        currentPosition,
+        foundWidget: !!currentWidget,
+        isNewWidget: currentWidget === undefined
       });
 
-      // Only add pending change if the widget exists and position actually changed
-      if (originalWidget && originalPosition) {
+      // Only add pending change if this is a manual change (not responsive)
+      if (currentWidget && currentPosition) {
+        // Check if this is a responsive change by comparing with expected responsive position
+        const isResponsiveChange = isResponsiveLayoutChange(widgetId, newPosition, currentPosition);
+        
+        if (isResponsiveChange) {
+          console.log('[Dashboard] Responsive change detected, skipping pending change');
+          return;
+        }
+
         const positionChanged = 
-          originalPosition.x !== newPosition.x ||
-          originalPosition.y !== newPosition.y ||
-          originalPosition.width !== newPosition.width ||
-          originalPosition.height !== newPosition.height;
+          currentPosition.x !== newPosition.x ||
+          currentPosition.y !== newPosition.y ||
+          currentPosition.width !== newPosition.width ||
+          currentPosition.height !== newPosition.height;
 
         if (positionChanged) {
-          console.log('[Dashboard] Position changed, adding pending change');
+          console.log('[Dashboard] Manual position change detected, adding pending change');
+          // Get original position from database for comparison
+          const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
+          const originalPosition = originalWidget?.position;
           addPendingChange('update', widgetId, { position: newPosition }, { position: originalPosition });
         } else {
           console.log('[Dashboard] Position unchanged, skipping pending change');
         }
       } else {
-        console.log('[Dashboard] Widget not found or no original position, skipping pending change');
+        console.log('[Dashboard] Widget not found or no current position, skipping pending change');
       }
     });
   };
