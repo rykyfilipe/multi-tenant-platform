@@ -77,7 +77,7 @@ export async function POST(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
-		const sessionResult = await requireAuthResponse();
+		const sessionResult = await requireAuthFlexible(request);
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}

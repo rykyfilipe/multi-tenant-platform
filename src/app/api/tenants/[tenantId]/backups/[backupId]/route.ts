@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
+import { requireAuthFlexible, requireTenantAccess, getUserId } from "@/lib/session";
 import { backupSystem } from "@/lib/backup-system";
 import { logger } from "@/lib/error-logger";
 
@@ -14,7 +14,7 @@ export async function GET(
 	{ params }: { params: { tenantId: string; backupId: string } }
 ) {
 	try {
-		const sessionResult = await requireAuthResponse();
+		const sessionResult = await requireAuthFlexible(request);
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
@@ -77,7 +77,7 @@ export async function DELETE(
 	{ params }: { params: { tenantId: string; backupId: string } }
 ) {
 	try {
-		const sessionResult = await requireAuthResponse();
+		const sessionResult = await requireAuthFlexible(request);
 		if (sessionResult instanceof NextResponse) {
 			return sessionResult;
 		}
