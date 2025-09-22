@@ -125,7 +125,7 @@ export const authOptions = {
 				return `${baseUrl}/auth-callback`;
 			}
 		},
-		async signIn({ user, account }: { user: User, account: Account }) {
+		async signIn({ user, account }: { user: User | any, account: Account | null }) {
 			if (account?.provider === "google" && user.email) {
 				try {
 					const existingUser = await prisma.user.findFirst({ where: { email: user.email } });
@@ -322,7 +322,7 @@ export const authOptions = {
 	trustHost: true,
 	adapter: undefined,
 	events: {
-		async signIn({ user, account }: { user: User, account: Account | null }) { },
+		async signIn({ user, account }: { user: User | any, account: Account | null }) { },
 		async signOut() { },
 		async createUser({ user }: { user: User }) { },
 		async session() { },
