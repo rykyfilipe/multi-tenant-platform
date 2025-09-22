@@ -332,6 +332,7 @@ export default function DashboardsPage() {
       const savedResults = await savePendingChanges(selectedDashboard.id);
       
       console.log('[Dashboard] Save successful, received results:', savedResults?.length || 0);
+      console.log('[Dashboard] Saved results details:', savedResults);
       
       if (savedResults && savedResults.length > 0) {
         // Process each result based on operation type
@@ -348,7 +349,7 @@ export default function DashboardsPage() {
             } else if (result.type === 'create' || result.type === 'update') {
               // Add or update widget
               const savedWidget = result.result;
-              if (savedWidget) {
+              if (savedWidget && savedWidget.id) {
                 const existingIndex = updatedWidgets.findIndex(w => w.id === savedWidget.id);
                 if (existingIndex >= 0) {
                   // Update existing widget
@@ -359,6 +360,8 @@ export default function DashboardsPage() {
                   updatedWidgets.push(savedWidget);
                   console.log('[Dashboard] Added new widget:', savedWidget.id);
                 }
+              } else {
+                console.warn('[Dashboard] Invalid saved widget data:', savedWidget);
               }
             }
           });
@@ -380,7 +383,7 @@ export default function DashboardsPage() {
             } else if (result.type === 'create' || result.type === 'update') {
               // Add or update widget
               const savedWidget = result.result;
-              if (savedWidget) {
+              if (savedWidget && savedWidget.id) {
                 const existingIndex = updatedWidgets.findIndex(w => w.id === savedWidget.id);
                 if (existingIndex >= 0) {
                   updatedWidgets[existingIndex] = savedWidget;
