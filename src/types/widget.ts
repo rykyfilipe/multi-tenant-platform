@@ -93,6 +93,8 @@ export interface TableConfig {
 
 export interface MetricConfig {
   valueColumn: string;
+  title?: string;
+  subtitle?: string;
   label?: string;
   prefix?: string;
   suffix?: string;
@@ -129,6 +131,9 @@ export interface TasksConfig {
   dueDateColumn?: string;
   statusOptions?: string[];
   priorityOptions?: string[];
+  showCompleted?: boolean;
+  showPriority?: boolean;
+  showAssignee?: boolean;
 }
 
 export interface ClockConfig {

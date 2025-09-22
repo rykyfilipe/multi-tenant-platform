@@ -107,7 +107,7 @@ export function TableSelector({
 	expectedYType,
 	tenantId
 }: TableSelectorProps) {
-	console.log('[EnhancedTableSelector] Component initialized with:', {
+	console.log('[TableSelector] Component initialized with:', {
 		dataSource,
 		widgetType,
 		supportedAxes,
@@ -142,7 +142,7 @@ export function TableSelector({
 			
 			if (response.ok) {
 				const tables = await response.json();
-				console.log('[EnhancedTableSelector] Loaded all tables', tables);
+				console.log('[TableSelector] Loaded all tables', tables);
 				setAllTables(tables);
 			} else {
 				throw new Error(`Failed to fetch tables: ${response.statusText}`);
@@ -158,7 +158,7 @@ export function TableSelector({
 	// Auto-load all tables when component mounts
 	useEffect(() => {
 		if (tenant?.id && token) {
-			console.log('[EnhancedTableSelector] Auto-loading all tables on mount');
+			console.log('[TableSelector] Auto-loading all tables on mount');
 			loadAllTables();
 		}
 	}, []);
@@ -166,7 +166,7 @@ export function TableSelector({
 	// Auto-load columns when a table is selected
 	useEffect(() => {
 		if (dataSource.tableId && allTables.length > 0 && !isLoadingColumns && !columnsError && columns.length === 0) {
-			console.log('[EnhancedTableSelector] Auto-loading columns for selected table:', dataSource.tableId);
+			console.log('[TableSelector] Auto-loading columns for selected table:', dataSource.tableId);
 			loadColumns(dataSource.tableId);
 		}
 	}, [dataSource.tableId, allTables.length, columns.length]);
@@ -177,7 +177,7 @@ export function TableSelector({
 		const selectedTable = allTables.find(table => table.id === tableId);
 		const tableDatabaseId = selectedTable?.databaseId;
 		
-		console.log('[EnhancedTableSelector] loadColumns called:', {
+		console.log('[TableSelector] loadColumns called:', {
 			tableId,
 			databaseId: tableDatabaseId,
 			tenantId: tenant?.id,
@@ -186,7 +186,7 @@ export function TableSelector({
 		});
 		
 		if (!tableDatabaseId) {
-			console.error('[EnhancedTableSelector] No databaseId found for selected table');
+			console.error('[TableSelector] No databaseId found for selected table');
 			setColumnsError('No database found for selected table');
 			setIsLoadingColumns(false);
 			return;
@@ -202,13 +202,13 @@ export function TableSelector({
 			});
 			if (response.ok) {
 				const cols = await response.json();
-				console.log('[EnhancedTableSelector] Loaded columns', cols);
+				console.log('[TableSelector] Loaded columns', cols);
 				setColumns(cols);
 			} else {
 				throw new Error(`Failed to fetch columns: ${response.statusText}`);
 			}
 		} catch (e) {
-			console.error('[EnhancedTableSelector] Error loading columns:', e);
+			console.error('[TableSelector] Error loading columns:', e);
 			setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
 		} finally {
 			setIsLoadingColumns(false);
@@ -234,12 +234,12 @@ export function TableSelector({
 
 	// Column selection handlers with strict validation
 	const handleColumnSelect = (axis: 'x' | 'y', columnName: string) => {
-		console.log('[EnhancedTableSelector] Column select:', { axis, columnName });
+		console.log('[TableSelector] Column select:', { axis, columnName });
 		
 		// Find the column to validate its type
 		const column = columns.find(col => col.name === columnName);
 		if (!column) {
-			console.error('[EnhancedTableSelector] Column not found:', columnName);
+			console.error('[TableSelector] Column not found:', columnName);
 			return;
 		}
 		
@@ -253,14 +253,14 @@ export function TableSelector({
 			if (isPieChart) {
 				// For PieChart, X-axis is used as nameKey and must be text/category
 				if (columnTypeCategory !== 'text') {
-					console.warn('[EnhancedTableSelector] Invalid PieChart nameKey column type:', column.type, 'Expected text/category');
+					console.warn('[TableSelector] Invalid PieChart nameKey column type:', column.type, 'Expected text/category');
 					setColumnsError(`PieChart nameKey column must be text/category type, but "${columnName}" is ${column.type}`);
 					return;
 				}
 			} else {
 				// For Line/Bar charts, X-axis must be text/category
 				if (columnTypeCategory !== 'text') {
-					console.warn('[EnhancedTableSelector] Invalid X-axis column type:', column.type, 'Expected text/category');
+					console.warn('[TableSelector] Invalid X-axis column type:', column.type, 'Expected text/category');
 					setColumnsError(`X-axis column must be text/category type, but "${columnName}" is ${column.type}`);
 					return;
 				}
@@ -269,14 +269,14 @@ export function TableSelector({
 			if (isPieChart) {
 				// For PieChart, Y-axis is used as dataKey and must be numeric
 				if (columnTypeCategory !== 'number') {
-					console.warn('[EnhancedTableSelector] Invalid PieChart dataKey column type:', column.type, 'Expected numeric');
+					console.warn('[TableSelector] Invalid PieChart dataKey column type:', column.type, 'Expected numeric');
 					setColumnsError(`PieChart dataKey column must be numeric type, but "${columnName}" is ${column.type}`);
 					return;
 				}
 			} else {
 				// For Line/Bar charts, Y-axis must be numeric
 				if (columnTypeCategory !== 'number') {
-					console.warn('[EnhancedTableSelector] Invalid Y-axis column type:', column.type, 'Expected numeric');
+					console.warn('[TableSelector] Invalid Y-axis column type:', column.type, 'Expected numeric');
 					setColumnsError(`Y-axis column must be numeric type, but "${columnName}" is ${column.type}`);
 					return;
 				}
@@ -299,7 +299,7 @@ export function TableSelector({
 			...(axis === 'y' ? { column: columnName } : {})
 		};
 		
-		console.log('[EnhancedTableSelector] Column select result:', {
+		console.log('[TableSelector] Column select result:', {
 			axis,
 			columnName,
 			newDataSource,
@@ -310,7 +310,7 @@ export function TableSelector({
 	};
 
 	const handleColumnToggle = (axis: 'x' | 'y', columnName: string, isSelected: boolean) => {
-		console.log('[EnhancedTableSelector] Column toggle:', { 
+		console.log('[TableSelector] Column toggle:', { 
 			axis, 
 			columnName, 
 			isSelected,
@@ -322,7 +322,7 @@ export function TableSelector({
 		// Find the column to validate its type
 		const column = columns.find(col => col.name === columnName);
 		if (!column) {
-			console.error('[EnhancedTableSelector] Column not found:', columnName);
+			console.error('[TableSelector] Column not found:', columnName);
 			return;
 		}
 		
@@ -336,14 +336,14 @@ export function TableSelector({
 			if (isPieChart) {
 				// For PieChart, X-axis is used as nameKey and must be text/category
 				if (columnTypeCategory !== 'text') {
-					console.warn('[EnhancedTableSelector] Invalid PieChart nameKey column type:', column.type, 'Expected text/category');
+					console.warn('[TableSelector] Invalid PieChart nameKey column type:', column.type, 'Expected text/category');
 					setColumnsError(`PieChart nameKey column must be text/category type, but "${columnName}" is ${column.type}`);
 					return;
 				}
 			} else {
 				// For Line/Bar charts, X-axis must be text/category
 				if (columnTypeCategory !== 'text') {
-					console.warn('[EnhancedTableSelector] Invalid X-axis column type:', column.type, 'Expected text/category');
+					console.warn('[TableSelector] Invalid X-axis column type:', column.type, 'Expected text/category');
 					setColumnsError(`X-axis column must be text/category type, but "${columnName}" is ${column.type}`);
 					return;
 				}
@@ -352,14 +352,14 @@ export function TableSelector({
 			if (isPieChart) {
 				// For PieChart, Y-axis is used as dataKey and must be numeric
 				if (columnTypeCategory !== 'number') {
-					console.warn('[EnhancedTableSelector] Invalid PieChart dataKey column type:', column.type, 'Expected numeric');
+					console.warn('[TableSelector] Invalid PieChart dataKey column type:', column.type, 'Expected numeric');
 					setColumnsError(`PieChart dataKey column must be numeric type, but "${columnName}" is ${column.type}`);
 					return;
 				}
 			} else {
 				// For Line/Bar charts, Y-axis must be numeric
 				if (columnTypeCategory !== 'number') {
-					console.warn('[EnhancedTableSelector] Invalid Y-axis column type:', column.type, 'Expected numeric');
+					console.warn('[TableSelector] Invalid Y-axis column type:', column.type, 'Expected numeric');
 					setColumnsError(`Y-axis column must be numeric type, but "${columnName}" is ${column.type}`);
 					return;
 				}
@@ -373,7 +373,7 @@ export function TableSelector({
 		if (isSelected) {
 			// Special validation for X-axis: only allow one column (except for PieChart which can have multiple dataKey columns)
 			if (axis === 'x' && currentColumns.length >= 1 && !isPieChart) {
-				console.warn('[EnhancedTableSelector] X-axis can only have one column. Replacing existing selection.');
+				console.warn('[TableSelector] X-axis can only have one column. Replacing existing selection.');
 				setColumnsError('X-axis can only have one column. Previous selection will be replaced.');
 				// Replace the existing column instead of adding
 				newColumns = [columnName];
@@ -403,7 +403,7 @@ export function TableSelector({
 			...(axis === 'y' ? { column: newColumns[0] || '' } : {})
 		};
 		
-		console.log('[EnhancedTableSelector] Column toggle result:', {
+		console.log('[TableSelector] Column toggle result:', {
 			axis,
 			newColumns,
 			newDataSource,
@@ -456,7 +456,7 @@ export function TableSelector({
 			}
 		}
 		
-		console.log('[EnhancedTableSelector] renderAxisSelector:', {
+		console.log('[TableSelector] renderAxisSelector:', {
 			axis,
 			label,
 			displayLabel,
@@ -510,7 +510,7 @@ export function TableSelector({
 						<DropdownMenuContent className="w-full min-w-[200px] max-h-60 overflow-auto">
 							{compatibleColumns.map((column) => {
 								const isSelected = currentColumns.includes(column.name);
-								console.log('[EnhancedTableSelector] Column checkbox:', { 
+								console.log('[TableSelector] Column checkbox:', { 
 									columnName: column.name, 
 									isSelected, 
 									currentColumns,

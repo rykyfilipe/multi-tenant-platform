@@ -98,7 +98,7 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const options = config.options || {};
 	
 	// Support both old and new data source formats
-	const enhancedDataSource = dataSource as EnhancedDataSource;
+	const enhancedDataSource = dataSource as DataSource;
 	const legacyDataSource = dataSource as any; // For backward compatibility
 	
 	// Determine axis configuration - prefer new format, fallback to legacy
