@@ -372,11 +372,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     // Check if both table and column are selected
     if (!dataSource.tableId || dataSource.tableId === 0) {
       return (
-        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
-          <div className="text-center p-4 sm:p-6">
-            <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
-            <p className="text-xs sm:text-sm font-medium">No table selected</p>
-            <p className="text-xs text-muted-foreground mt-1">
+        <div className="flex items-center justify-center h-full text-slate-500 min-h-[150px]">
+          <div className="text-center p-6">
+            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <BarChart3 className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">No table selected</p>
+            <p className="text-xs text-slate-400">
               Please select a table to configure this KPI widget
             </p>
           </div>
@@ -388,11 +390,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY || dataSource.column;
     if (!column || column === '') {
       return (
-        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
-          <div className="text-center p-4 sm:p-6">
-            <Calculator className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
-            <p className="text-xs sm:text-sm font-medium">No column selected</p>
-            <p className="text-xs text-muted-foreground mt-1">
+        <div className="flex items-center justify-center h-full text-slate-500 min-h-[150px]">
+          <div className="text-center p-6">
+            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Calculator className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">No column selected</p>
+            <p className="text-xs text-slate-400">
               Please select a column from the table to calculate KPI values
             </p>
           </div>
@@ -410,11 +414,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     });
     if (!aggregation) {
       return (
-        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
-          <div className="text-center p-4 sm:p-6">
-            <Calculator className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
-            <p className="text-xs sm:text-sm font-medium">No aggregation function selected</p>
-            <p className="text-xs text-muted-foreground mt-1">
+        <div className="flex items-center justify-center h-full text-slate-500 min-h-[150px]">
+          <div className="text-center p-6">
+            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Calculator className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">No aggregation function selected</p>
+            <p className="text-xs text-slate-400">
               Please select an aggregation function (sum, count, avg, etc.) to calculate KPI values
             </p>
           </div>
@@ -425,11 +431,13 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     // Check if we have data and aggregations
     if (Object.keys(aggregations).length === 0) {
       return (
-        <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
-          <div className="text-center p-4 sm:p-6">
-            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2" />
-            <p className="text-xs sm:text-sm font-medium">No data available</p>
-            <p className="text-xs text-muted-foreground mt-1">
+        <div className="flex items-center justify-center h-full text-slate-500 min-h-[150px]">
+          <div className="text-center p-6">
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="w-6 h-6 text-red-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">No data available</p>
+            <p className="text-xs text-slate-400">
               No data found for the selected column and aggregation function
             </p>
           </div>

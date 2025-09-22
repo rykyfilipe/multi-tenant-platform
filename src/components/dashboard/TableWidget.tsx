@@ -199,50 +199,51 @@ export default function TableWidget({
       showRefresh={true}
       className="table-widget-responsive"
     >
-      <div className="space-y-2 sm:space-y-3 md:space-y-4 h-full flex flex-col">
+      <div className="space-y-3 sm:space-y-4 h-full flex flex-col">
         {/* Search and Controls */}
         {options.showSearch !== false && (
-          <div className="flex items-center justify-between space-x-2 flex-shrink-0">
+          <div className="flex items-center justify-between space-x-3 flex-shrink-0">
             {options.showSearch && (
               <div className="relative flex-1 max-w-xs sm:max-w-sm">
-                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search..."
+                  placeholder="Search table..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-7 sm:pl-10 h-8 sm:h-9 text-xs sm:text-sm"
+                  className="pl-10 h-9 text-sm bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 transition-colors duration-200"
                 />
               </div>
             )}
           </div>
         )}
 
-
         {/* Table */}
-        <div className="border rounded-lg overflow-hidden flex-1 min-h-0">
+        <div className="border border-slate-200/60 rounded-xl overflow-hidden flex-1 min-h-0 bg-white/50">
           {!dataSource.tableId || dataSource.tableId === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 sm:py-12 px-4 text-center h-full">
-              <Database className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300 mb-2 sm:mb-3" />
-              <p className="text-xs sm:text-sm text-gray-500 mb-1">No table selected</p>
-              <p className="text-xs text-gray-400">Please select a table to view data</p>
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center h-full">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                <Database className="h-8 w-8 text-slate-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 mb-1">No table selected</p>
+              <p className="text-xs text-slate-400">Please select a table to view data</p>
             </div>
           ) : (
             <div className="h-full overflow-auto">
               <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
+                <TableHeader className="sticky top-0 bg-slate-50/80 backdrop-blur-sm z-10 border-b border-slate-200/60">
+                  <TableRow className="hover:bg-transparent">
                     {(dataSource.columns ?? []).map((columnName) => {
                       const column = (availableColumns ?? []).find((c: any) => c?.name === columnName);
                       return (
                         <TableHead 
                           key={columnName}
-                          className="cursor-pointer hover:bg-muted/50 text-xs sm:text-sm font-medium"
+                          className="cursor-pointer hover:bg-slate-100/60 text-xs sm:text-sm font-semibold text-slate-700 py-3 px-4 transition-colors duration-200"
                           onClick={() => handleSort(columnName)}
                         >
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center space-x-2">
                             <span className="truncate">{(column as any)?.name || columnName}</span>
                             {sortBy === columnName && (
-                              <span className="text-xs flex-shrink-0">
+                              <span className="text-xs flex-shrink-0 text-blue-600">
                                 {sortOrder === 'asc' ? '↑' : '↓'}
                               </span>
                             )}
@@ -255,16 +256,26 @@ export default function TableWidget({
                 <TableBody>
                   {paginatedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-6 sm:py-8 text-muted-foreground">
-                        {isLoading ? 'Loading...' : 'No data available'}
+                      <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-12 text-slate-500">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                            <Database className="h-4 w-4 text-slate-400" />
+                          </div>
+                          <p className="text-sm font-medium">
+                            {isLoading ? 'Loading...' : 'No data available'}
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     paginatedData.map((row, index) => (
-                      <TableRow key={row?.id || index} className="hover:bg-muted/50">
+                      <TableRow 
+                        key={row?.id || index} 
+                        className="hover:bg-slate-50/60 transition-colors duration-150 border-b border-slate-100/60"
+                      >
                         {(dataSource.columns ?? []).map((columnName) => (
-                          <TableCell key={columnName} className="text-xs sm:text-sm py-2 sm:py-3">
-                            <div className="truncate max-w-[200px] sm:max-w-none">
+                          <TableCell key={columnName} className="text-xs sm:text-sm py-3 px-4">
+                            <div className="truncate max-w-[200px] sm:max-w-none text-slate-700">
                               {renderCellValue(row?.[columnName])}
                             </div>
                           </TableCell>
@@ -280,8 +291,8 @@ export default function TableWidget({
 
         {/* Pagination */}
         {options.showPagination !== false && totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 flex-shrink-0">
-            <div className="text-xs sm:text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0 flex-shrink-0 bg-slate-50/50 rounded-lg p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-slate-600 font-medium">
               Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} entries
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2">
@@ -290,7 +301,7 @@ export default function TableWidget({
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
+                className="h-8 px-3 text-xs sm:text-sm border-slate-300 hover:bg-slate-50 disabled:opacity-50"
               >
                 <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline ml-1">Previous</span>
@@ -305,14 +316,18 @@ export default function TableWidget({
                       variant={currentPage === page ? "default" : "outline"}
                       size="sm"
                       onClick={() => setCurrentPage(page)}
-                      className="h-7 sm:h-8 w-7 sm:w-8 p-0 text-xs sm:text-sm"
+                      className={`h-8 w-8 p-0 text-xs sm:text-sm ${
+                        currentPage === page 
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                          : 'border-slate-300 hover:bg-slate-50'
+                      }`}
                     >
                       {page}
                     </Button>
                   );
                 })}
                 {totalPages > 3 && (
-                  <span className="text-xs text-muted-foreground px-1">...</span>
+                  <span className="text-xs text-slate-400 px-2">...</span>
                 )}
               </div>
               
@@ -321,7 +336,7 @@ export default function TableWidget({
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
+                className="h-8 px-3 text-xs sm:text-sm border-slate-300 hover:bg-slate-50 disabled:opacity-50"
               >
                 <span className="hidden sm:inline mr-1">Next</span>
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />

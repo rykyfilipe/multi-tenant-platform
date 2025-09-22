@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Save, Settings, Palette, BarChart3, Database, FileText, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -86,10 +86,15 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
     }
   };
 
+  // Cache to prevent duplicate requests
+  const loadingTablesRef = useRef(false);
+  const loadingColumnsRef = useRef<Set<number>>(new Set());
+
   // Load tables when editor opens
-  const loadTables = async () => {
-    if (!tenantId || !databaseId) return;
+  const loadTables = useCallback(async () => {
+    if (!tenantId || !databaseId || loadingTablesRef.current) return;
     
+    loadingTablesRef.current = true;
     setTablesLoading(true);
     try {
       const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables`);
@@ -105,8 +110,9 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
       setTables([]);
     } finally {
       setTablesLoading(false);
+      loadingTablesRef.current = false;
     }
-  };
+  }, [tenantId, databaseId]);
 
   // Auto-load tables when editor opens
   useEffect(() => {
@@ -114,12 +120,13 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
       console.log('[WidgetEditor] Auto-loading tables when editor opens');
       loadTables();
     }
-  }, [tables.length, tablesLoading]);
+  }, [tablesLoading]);
 
   // Load columns when table is selected
-  const loadColumns = async (tableId: number) => {
-    if (!tenantId || !databaseId) return;
+  const loadColumns = useCallback(async (tableId: number) => {
+    if (!tenantId || !databaseId || loadingColumnsRef.current.has(tableId)) return;
     
+    loadingColumnsRef.current.add(tableId);
     setIsLoadingColumns(true);
     try {
       const response = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`);
@@ -135,8 +142,9 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
       setColumns([]);
     } finally {
       setIsLoadingColumns(false);
+      loadingColumnsRef.current.delete(tableId);
     }
-  };
+  }, [tenantId, databaseId]);
 
   // Auto-load columns when table is selected
   useEffect(() => {
@@ -145,7 +153,7 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
       console.log('[WidgetEditor] Auto-loading columns for selected table:', tableId);
       loadColumns(tableId);
     }
-  }, [editedWidget.config?.dataSource?.tableId, isLoadingColumns, columns.length]);
+  }, [editedWidget.config?.dataSource?.tableId, isLoadingColumns]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

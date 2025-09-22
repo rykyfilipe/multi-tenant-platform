@@ -687,14 +687,20 @@ export default function BaseWidget({
   return (
     <Card 
       className={cn(
-        'h-full w-full transition-all duration-200 group flex flex-col',
+        'h-full w-full transition-all duration-300 group flex flex-col',
+        // Modern glass morphism effect
+        'bg-white/95 backdrop-blur-sm border border-slate-200/60',
+        // Subtle shadow with hover effect
+        'shadow-sm hover:shadow-md',
+        // Smooth rounded corners
+        'rounded-xl',
         // Remove fixed min-heights to allow proper grid sizing
         // Responsive padding
-        'p-2 sm:p-3 md:p-4 lg:p-5',
+        'p-3 sm:p-4 md:p-5',
         // Responsive text sizes
-        'text-xs sm:text-sm md:text-base lg:text-lg',
+        'text-xs sm:text-sm md:text-base',
         // Responsive spacing
-        'space-y-1 sm:space-y-2 md:space-y-3',
+        'space-y-2 sm:space-y-3',
         getStyleClasses(),
         className
       )}
@@ -703,19 +709,19 @@ export default function BaseWidget({
         ...(widgetStyle.titleColor && { '--title-color': widgetStyle.titleColor } as React.CSSProperties)
       }}
     >
-      <CardHeader className="pb-1 sm:pb-2 md:pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between gap-1 sm:gap-2">
+      <CardHeader className="pb-2 sm:pb-3 flex-shrink-0 border-b border-slate-100/60">
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
           <CardTitle 
             className={cn(
               titleClasses,
               'truncate flex-1 min-w-0',
-              'text-xs sm:text-sm md:text-base lg:text-lg'
+              'text-sm sm:text-base font-semibold text-slate-800'
             )}
             style={{ color: widgetStyle.titleColor }}
           >
             {title}
           </CardTitle>
-          <div className="flex items-center space-x-1 sm:space-x-2 widget-header-buttons opacity-100 transition-opacity duration-200 flex-shrink-0">
+          <div className="flex items-center space-x-1 sm:space-x-1.5 widget-header-buttons opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
             {showRefresh && onRefresh && (
               <Button 
                 variant="ghost" 
@@ -743,9 +749,9 @@ export default function BaseWidget({
                   onRefresh();
                 }}
                 disabled={isLoading}
-                className="z-10 relative h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-muted/50 touch-manipulation"
+                className="z-10 relative h-7 w-7 p-0 hover:bg-slate-100 rounded-lg touch-manipulation transition-colors duration-200"
               >
-                <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''} text-slate-600`} />
               </Button>
             )}
             {isEditMode && onStyleEdit && (
@@ -774,9 +780,9 @@ export default function BaseWidget({
                   e.stopPropagation();
                   onStyleEdit();
                 }}
-                className="z-10 relative h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-muted/50 touch-manipulation"
+                className="z-10 relative h-7 w-7 p-0 hover:bg-slate-100 rounded-lg touch-manipulation transition-colors duration-200"
               >
-                <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Palette className="h-3.5 w-3.5 text-slate-600" />
               </Button>
             )}
             {isEditMode && onEdit && (
@@ -807,9 +813,9 @@ export default function BaseWidget({
                   console.log('Edit button touched for widget:', widget.id);
                   onEdit();
                 }}
-                className="z-10 relative h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-muted/50 touch-manipulation"
+                className="z-10 relative h-7 w-7 p-0 hover:bg-blue-50 rounded-lg touch-manipulation transition-colors duration-200"
               >
-                <Edit3 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Edit3 className="h-3.5 w-3.5 text-blue-600" />
               </Button>
             )}
             {isEditMode && onDelete && (
@@ -840,36 +846,38 @@ export default function BaseWidget({
                   console.log('Delete button touched for widget:', widget.id);
                   onDelete();
                 }}
-                className="z-10 relative h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 touch-manipulation"
+                className="z-10 relative h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg touch-manipulation transition-colors duration-200"
               >
-                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 flex-1 flex flex-col p-2 sm:p-3 md:p-4 lg:p-5">
+      <CardContent className="pt-3 sm:pt-4 flex-1 flex flex-col p-3 sm:p-4 md:p-5">
         <div className={cn(
           'flex-1 w-full flex flex-col',
           widgetStyle.overflow ? `overflow-${widgetStyle.overflow}` : 'overflow-hidden',
           // Responsive content styling
-          widgetStyle.contentColor ? '' : 'text-foreground',
-          widgetStyle.contentSize ? `text-${widgetStyle.contentSize}` : 'text-xs sm:text-sm md:text-base',
+          widgetStyle.contentColor ? '' : 'text-slate-700',
+          widgetStyle.contentSize ? `text-${widgetStyle.contentSize}` : 'text-xs sm:text-sm',
           widgetStyle.contentWeight ? `font-${widgetStyle.contentWeight}` : 'font-normal',
           widgetStyle.contentAlign ? `text-${widgetStyle.contentAlign}` : 'text-left'
         )}>
           {isLoading ? (
-            <div className="space-y-2 sm:space-y-3 md:space-y-4">
-              <Skeleton className="h-3 sm:h-4 w-full" />
-              <Skeleton className="h-3 sm:h-4 w-3/4" />
-              <Skeleton className="h-3 sm:h-4 w-1/2" />
-              <Skeleton className="h-24 sm:h-32 md:h-40 w-full" />
+            <div className="space-y-3 sm:space-y-4">
+              <Skeleton className="h-4 w-full bg-slate-200/60" />
+              <Skeleton className="h-4 w-3/4 bg-slate-200/60" />
+              <Skeleton className="h-4 w-1/2 bg-slate-200/60" />
+              <Skeleton className="h-24 sm:h-32 md:h-40 w-full bg-slate-200/60 rounded-lg" />
             </div>
           ) : error ? (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-muted-foreground p-2 sm:p-3">
-                <AlertCircle className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 sm:mb-2 text-red-500" />
-                <p className="text-xs sm:text-sm font-medium break-words">{error}</p>
+              <div className="text-center text-slate-500 p-4 sm:p-6">
+                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <AlertCircle className="h-6 w-6 text-red-500" />
+                </div>
+                <p className="text-sm font-medium break-words">{error}</p>
               </div>
             </div>
           ) : (

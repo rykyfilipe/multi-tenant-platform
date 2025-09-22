@@ -1184,97 +1184,112 @@ export default function DashboardsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboards</h1>
-            <DashboardSelector
-              dashboards={dashboards}
-              selectedDashboard={selectedDashboard}
-              onSelect={setSelectedDashboard}
-              onCreateNew={() => setShowCreateDialog(true)}
-            />
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            {selectedDashboard && (
-              <>
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="edit-mode" className="text-sm font-medium">
-                    Edit Mode
-                  </Label>
-                  <Switch
-                    id="edit-mode"
-                    checked={isEditMode}
-                    onCheckedChange={setIsEditMode}
-                  />
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 shadow-sm">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-white" />
                 </div>
-                
-                {isEditMode && (
-                  <>
-                    <Button
-                      onClick={saveChanges}
-                      disabled={pendingChangesCount === 0 || isSaving}
-                      className="flex items-center space-x-2"
-                    >
-                      <Save className="h-4 w-4" />
-                      <span>
-                        {isSaving ? 'Saving...' : `Save (${pendingChangesCount})`}
-                      </span>
-                    </Button>
-                    
-                    <Button
-                      onClick={revertChanges}
-                      disabled={pendingChangesCount === 0}
-                      variant="outline"
-                      className="flex items-center space-x-2"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      <span>Revert</span>
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                  Dashboards
+                </h1>
+              </div>
+              <DashboardSelector
+                dashboards={dashboards}
+                selectedDashboard={selectedDashboard}
+                onSelect={setSelectedDashboard}
+                onCreateNew={() => setShowCreateDialog(true)}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              {selectedDashboard && (
+                <>
+                  <div className="flex items-center space-x-3 bg-slate-50 rounded-lg px-3 py-2">
+                    <Label htmlFor="edit-mode" className="text-sm font-medium text-slate-700">
+                      Edit Mode
+                    </Label>
+                    <Switch
+                      id="edit-mode"
+                      checked={isEditMode}
+                      onCheckedChange={setIsEditMode}
+                      className="data-[state=checked]:bg-blue-600"
+                    />
+                  </div>
+                  
+                  {isEditMode && (
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={saveChanges}
+                        disabled={pendingChangesCount === 0 || isSaving}
+                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                      >
+                        <Save className="h-4 w-4" />
+                        <span>
+                          {isSaving ? 'Saving...' : `Save (${pendingChangesCount})`}
+                        </span>
+                      </Button>
+                      
+                      <Button
+                        onClick={revertChanges}
+                        disabled={pendingChangesCount === 0}
+                        variant="outline"
+                        className="flex items-center space-x-2 border-slate-300 hover:bg-slate-50"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        <span>Revert</span>
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8">
         {selectedDashboard ? (
           <div className="space-y-6">
             {/* Dashboard Info */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-sm p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">
                     {selectedDashboard.name}
                   </h2>
                   {selectedDashboard.description && (
-                    <p className="text-gray-600 mt-1">{selectedDashboard.description}</p>
+                    <p className="text-slate-600 mb-4 text-lg">{selectedDashboard.description}</p>
                   )}
-                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                    <span>{selectedDashboard._count.widgets} widgets</span>
-                    <span>•</span>
-                    <span>{selectedDashboard.mode} mode</span>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>{selectedDashboard._count.widgets} widgets</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="capitalize">{selectedDashboard.mode} mode</span>
+                    </div>
                     {selectedDashboard.isPublic && (
-                      <>
-                        <span>•</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                         <span>Public</span>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   {isEditMode && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700 mr-2">Add Widget:</span>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                      <span className="text-sm font-medium text-slate-700">Add Widget:</span>
                       <TooltipProvider>
-                        <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                        <div className="flex items-center space-x-1 bg-slate-100 rounded-lg p-1">
                           {WIDGET_TYPES.map((widgetType) => {
                             const IconComponent = widgetType.icon;
                             return (
@@ -1284,7 +1299,7 @@ export default function DashboardsPage() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleAddWidget(widgetType.type)}
-                                    className="h-8 w-8 p-0 hover:bg-white hover:shadow-sm"
+                                    className="h-8 w-8 p-0 hover:bg-white hover:shadow-sm transition-all duration-200"
                                   >
                                     <IconComponent className="h-4 w-4" />
                                   </Button>
@@ -1300,32 +1315,34 @@ export default function DashboardsPage() {
                     </div>
                   )}
                   
-                  {/* Save Changes Button */}
-                  <SaveChangesButton
-                    pendingChanges={pendingChanges}
-                    isSaving={isSaving}
-                    onSave={() => selectedDashboard && savePendingChanges(selectedDashboard.id)}
-                    onDiscard={discardPendingChanges}
-                    size="sm"
-                    showDetails={true}
-                  />
-                  
-                  {/* Delete Dashboard Button */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="flex items-center space-x-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete Dashboard</span>
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    {/* Save Changes Button */}
+                    <SaveChangesButton
+                      pendingChanges={pendingChanges}
+                      isSaving={isSaving}
+                      onSave={() => selectedDashboard && savePendingChanges(selectedDashboard.id)}
+                      onDiscard={discardPendingChanges}
+                      size="sm"
+                      showDetails={true}
+                    />
+                    
+                    {/* Delete Dashboard Button */}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="flex items-center space-x-2 bg-red-600 hover:bg-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Grid Layout */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-sm p-6">
               <ResponsiveGridLayout
                 className="layout"
                 layouts={generateLayouts()}
@@ -1335,8 +1352,8 @@ export default function DashboardsPage() {
                 isDraggable={isEditMode}
                 isResizable={isEditMode}
                 onLayoutChange={handleLayoutChange}
-                margin={[20, 20]}
-                containerPadding={[10, 10]}
+                margin={[16, 16]}
+                containerPadding={[8, 8]}
                 useCSSTransforms={false}
                 transformScale={1}
                 preventCollision={false}
@@ -1373,11 +1390,11 @@ export default function DashboardsPage() {
                     }}
                   >
                     <motion.div
-                      className="h-full w-full p-2"
-                      whileHover={isEditMode ? { scale: 1.02 } : {}}
+                      className="h-full w-full p-1"
+                      whileHover={isEditMode ? { scale: 1.01 } : {}}
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="h-full w-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                      <div className="h-full w-full bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
                         {renderWidget(widget)}
                       </div>
                     </motion.div>
@@ -1387,12 +1404,19 @@ export default function DashboardsPage() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Dashboard Selected</h3>
-            <p className="text-gray-600 mb-6">Select a dashboard from the dropdown or create a new one.</p>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Settings className="h-8 w-8 text-blue-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">No Dashboard Selected</h3>
+            <p className="text-slate-600 mb-8 text-lg max-w-md mx-auto">
+              Select a dashboard from the dropdown or create a new one to get started.
+            </p>
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-sm"
+            >
+              <Plus className="h-5 w-5 mr-2" />
               Create Dashboard
             </Button>
           </div>

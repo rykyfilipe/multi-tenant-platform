@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Database, Table, Columns, Check, X, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -126,10 +126,15 @@ export function TableSelector({
 	const [isLoadingColumns, setIsLoadingColumns] = useState(false);
 	const [columnsError, setColumnsError] = useState<string | null>(null);
 
+	// Cache to prevent duplicate requests
+	const loadingTablesRef = useRef(false);
+	const loadingColumnsRef = useRef<Set<number>>(new Set());
+
 	// Function to load all tables from all databases
-	const loadAllTables = async () => {
-		if (!tenant?.id) return;
+	const loadAllTables = useCallback(async () => {
+		if (!tenant?.id || loadingTablesRef.current) return;
 		
+		loadingTablesRef.current = true;
 		setAllTablesLoading(true);
 		setAllTablesError(null);
 		
@@ -152,8 +157,9 @@ export function TableSelector({
 			setAllTablesError(error instanceof Error ? error.message : 'Failed to load tables');
 		} finally {
 			setAllTablesLoading(false);
+			loadingTablesRef.current = false;
 		}
-	};
+	}, [tenant?.id, token]);
 
 	// Auto-load all tables when component mounts
 	useEffect(() => {
@@ -169,10 +175,16 @@ export function TableSelector({
 			console.log('[TableSelector] Auto-loading columns for selected table:', dataSource.tableId);
 			loadColumns(dataSource.tableId);
 		}
-	}, [dataSource.tableId, allTables.length, columns.length]);
+	}, [dataSource.tableId, allTables.length, isLoadingColumns, columnsError, columns.length]);
 
 	// Load columns for selected table
-	const loadColumns = async (tableId: number) => {
+	const loadColumns = useCallback(async (tableId: number) => {
+		// Check if already loading this table
+		if (loadingColumnsRef.current.has(tableId)) {
+			console.log('[TableSelector] Already loading columns for table:', tableId);
+			return;
+		}
+
 		// Find the selected table to get its databaseId
 		const selectedTable = allTables.find(table => table.id === tableId);
 		const tableDatabaseId = selectedTable?.databaseId;
@@ -192,6 +204,7 @@ export function TableSelector({
 			return;
 		}
 		
+		loadingColumnsRef.current.add(tableId);
 		setIsLoadingColumns(true);
 		setColumnsError(null);
 		try {
@@ -212,8 +225,9 @@ export function TableSelector({
 			setColumnsError(e instanceof Error ? e.message : 'Failed to load columns');
 		} finally {
 			setIsLoadingColumns(false);
+			loadingColumnsRef.current.delete(tableId);
 		}
-	};
+	}, [allTables, tenant?.id, token]);
 
 	const handleTableChange = async (tableId: string) => {
 		const id = parseInt(tableId);
