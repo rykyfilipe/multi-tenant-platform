@@ -169,6 +169,25 @@ export interface CalendarConfig {
   defaultView?: 'month' | 'week' | 'day';
 }
 
+export interface ClockConfig {
+  title?: string;
+  timezone?: string;
+  format?: '12h' | '24h';
+  showDate?: boolean;
+  showSeconds?: boolean;
+  showTimezone?: boolean;
+  clockType?: 'digital' | 'analog' | 'flip' | 'binary' | 'world' | 'stopwatch' | 'timer' | 'countdown';
+  style?: {
+    fontSize?: 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
+    fontFamily?: 'mono' | 'sans' | 'serif';
+    color?: string;
+    backgroundColor?: string;
+    theme?: 'light' | 'dark' | 'neon' | 'vintage' | 'minimal' | 'glass';
+    size?: 'small' | 'medium' | 'large' | 'xl';
+    layout?: 'vertical' | 'horizontal' | 'compact';
+  };
+}
+
 export interface TasksConfig {
   titleColumn: string;
   statusColumn: string;
@@ -183,11 +202,22 @@ export interface TasksConfig {
 }
 
 export interface ClockConfig {
+  title?: string;
   timezone?: string;
   format?: '12h' | '24h';
   showDate?: boolean;
   showSeconds?: boolean;
-  style?: 'analog' | 'digital';
+  showTimezone?: boolean;
+  clockType?: 'digital' | 'analog' | 'flip' | 'binary' | 'world' | 'stopwatch' | 'timer' | 'countdown';
+  style?: {
+    fontSize?: 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
+    fontFamily?: 'mono' | 'sans' | 'serif';
+    color?: string;
+    backgroundColor?: string;
+    theme?: 'light' | 'dark' | 'neon' | 'vintage' | 'minimal' | 'glass';
+    size?: 'small' | 'medium' | 'large' | 'xl';
+    layout?: 'vertical' | 'horizontal' | 'compact';
+  };
 }
 
 export interface WeatherConfig {
