@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, TasksConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface TasksEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: TasksConfig };
@@ -62,6 +63,16 @@ export default function TasksEditor({
     setConfig(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
     }));
   };
 
@@ -204,6 +215,16 @@ export default function TasksEditor({
                 <Label htmlFor="showAssignee">Show Assignee</Label>
               </div>
             </div>
+          </div>
+
+          {/* Style Options */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Style Options</h3>
+            <StyleOptions
+              style={config.style || {}}
+              onStyleChange={handleStyleChange}
+              widgetType="tasks"
+            />
           </div>
         </div>
 

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { WidgetEditorProps, LineChartConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface LineChartEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: LineChartConfig };
@@ -63,6 +64,16 @@ export default function LineChartEditor({
     setConfig(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
     }));
   };
 
@@ -228,6 +239,16 @@ export default function LineChartEditor({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Style Options */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Style Options</h3>
+            <StyleOptions
+              style={config.style || {}}
+              onStyleChange={handleStyleChange}
+              widgetType="chart"
+            />
           </div>
         </div>
 

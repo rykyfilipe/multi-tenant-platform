@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, PieChartConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface PieChartEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: PieChartConfig };
@@ -46,6 +47,16 @@ export default function PieChartEditor({ widget, onSave, onCancel, isOpen }: Pie
 
   const handleConfigChange = (key: keyof PieChartConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
+    }));
   };
 
   return (
@@ -104,6 +115,16 @@ export default function PieChartEditor({ widget, onSave, onCancel, isOpen }: Pie
               />
               <Label htmlFor="showPercentage">Show Percentage</Label>
             </div>
+          </div>
+
+          {/* Style Options */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Style Options</h3>
+            <StyleOptions
+              style={config.style || {}}
+              onStyleChange={handleStyleChange}
+              widgetType="chart"
+            />
           </div>
         </div>
 

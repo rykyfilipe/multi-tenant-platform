@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, BarChartConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface BarChartEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: BarChartConfig };
@@ -59,6 +60,16 @@ export default function BarChartEditor({
     setConfig(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
     }));
   };
 
@@ -137,6 +148,16 @@ export default function BarChartEditor({
               />
               <Label htmlFor="stacked">Stacked Bars</Label>
             </div>
+          </div>
+
+          {/* Style Options */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Style Options</h3>
+            <StyleOptions
+              style={config.style || {}}
+              onStyleChange={handleStyleChange}
+              widgetType="chart"
+            />
           </div>
         </div>
 

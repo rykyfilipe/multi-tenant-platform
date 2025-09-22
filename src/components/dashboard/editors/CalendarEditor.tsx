@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { WidgetEditorProps, CalendarConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface CalendarEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: CalendarConfig };  
@@ -65,6 +66,16 @@ export default function CalendarEditor({
     setConfig(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
     }));
   };
 
@@ -188,6 +199,16 @@ export default function CalendarEditor({
                 <Label htmlFor="showWeekends">Show Weekends</Label>
               </div>
             </div>
+          </div>
+
+          {/* Style Options */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Style Options</h3>
+            <StyleOptions
+              style={config.style || {}}
+              onStyleChange={handleStyleChange}
+              widgetType="calendar"
+            />
           </div>
 
           {/* Preview */}

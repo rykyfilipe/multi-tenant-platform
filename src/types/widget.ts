@@ -61,6 +61,7 @@ export interface LineChartConfig {
   showLegend?: boolean;
   showGrid?: boolean;
   curveType?: 'linear' | 'monotone' | 'step';
+  style?: any;
 }
 
 export interface BarChartConfig {
@@ -71,6 +72,7 @@ export interface BarChartConfig {
   showLegend?: boolean;
   orientation?: 'vertical' | 'horizontal';
   stacked?: boolean;
+  style?: any;
 }
 
 export interface PieChartConfig {
@@ -80,6 +82,7 @@ export interface PieChartConfig {
   showLegend?: boolean;
   showPercentage?: boolean;
   innerRadius?: number;
+  style?: any;
 }
 
 export interface TableConfig {
@@ -167,6 +170,7 @@ export interface CalendarConfig {
   colorColumn?: string;
   showWeekends?: boolean;
   defaultView?: 'month' | 'week' | 'day';
+  style?: any;
 }
 
 export interface ClockConfig {
@@ -199,6 +203,7 @@ export interface TasksConfig {
   showCompleted?: boolean;
   showPriority?: boolean;
   showAssignee?: boolean;
+  style?: any;
 }
 
 export interface ClockConfig {
@@ -225,6 +230,7 @@ export interface WeatherConfig {
   units?: 'metric' | 'imperial';
   showForecast?: boolean;
   forecastDays?: number;
+  style?: any;
 }
 
 export type WidgetTypeSpecificConfig = 
