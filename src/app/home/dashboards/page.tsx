@@ -599,35 +599,61 @@ export default function DashboardsPage() {
     if (widgetType) {
       switch (widgetType) {
         case 'table':
-          optimizedWidth = 8; // Tables need more width for columns
-          optimizedHeight = 6; // Tables need more height for rows
+          optimizedWidth = 12; // Tables need maximum width for columns
+          optimizedHeight = 8; // Tables need more height for rows
           break;
         case 'chart':
-          optimizedWidth = 6; // Charts work well in square-ish format
-          optimizedHeight = 5; // Slightly taller for better chart visibility
+          optimizedWidth = 10; // Charts need more width for better visibility
+          optimizedHeight = 7; // Taller for better chart visibility
           break;
         case 'metric':
-          optimizedWidth = 3; // KPI widgets are compact
-          optimizedHeight = 3; // Square format for metrics
+          optimizedWidth = 4; // KPI widgets are compact but readable
+          optimizedHeight = 4; // Square format for metrics
           break;
         case 'text':
-          optimizedWidth = 4; // Text widgets are medium width
-          optimizedHeight = 3; // Compact height for text
+          optimizedWidth = 8; // Text widgets need more width for content
+          optimizedHeight = 5; // More height for text content
+          break;
+        case 'tasks':
+          optimizedWidth = 10; // Tasks need width for task lists
+          optimizedHeight = 8; // More height for task items
+          break;
+        case 'calendar':
+          optimizedWidth = 12; // Calendar needs maximum width
+          optimizedHeight = 10; // Calendar needs height for month view
+          break;
+        case 'weather':
+          optimizedWidth = 6; // Weather widgets are medium
+          optimizedHeight = 6; // Square format for weather
+          break;
+        case 'clock':
+          optimizedWidth = 4; // Clock widgets are compact
+          optimizedHeight = 4; // Square format for clock
           break;
         default:
-          optimizedWidth = 6;
-          optimizedHeight = 4;
+          optimizedWidth = 8;
+          optimizedHeight = 6;
       }
     }
+    
     const gridWidth = 12; // Total grid width
     const maxY = 20; // Maximum Y position to search
+    
+    console.log('[Dashboard] Finding free position for widget:', {
+      widgetType,
+      optimizedWidth,
+      optimizedHeight,
+      totalWidgets: widgets.length
+    });
     
     // Create a grid to track occupied positions
     const occupied = new Set<string>();
     
-    widgets.forEach(widget => {
+    widgets.forEach((widget, index) => {
       if (widget.position) {
         const { x, y, width: w, height: h } = widget.position;
+        console.log(`[Dashboard] Widget ${index} occupies:`, { x, y, w, h });
+        
         // Mark all cells occupied by this widget
         for (let dy = 0; dy < h; dy++) {
           for (let dx = 0; dx < w; dx++) {
@@ -637,17 +663,21 @@ export default function DashboardsPage() {
       }
     });
     
+    console.log('[Dashboard] Total occupied cells:', occupied.size);
+    
     // Find the first free position, prioritizing top-left positions
     for (let y = 0; y < maxY; y++) {
       for (let x = 0; x <= gridWidth - optimizedWidth; x++) {
         let canPlace = true;
+        let conflictCells: string[] = [];
         
         // Check if this position is free
         for (let dy = 0; dy < optimizedHeight; dy++) {
           for (let dx = 0; dx < optimizedWidth; dx++) {
-            if (occupied.has(`${x + dx},${y + dy}`)) {
+            const cellKey = `${x + dx},${y + dy}`;
+            if (occupied.has(cellKey)) {
               canPlace = false;
-              break;
+              conflictCells.push(cellKey);
             }
           }
           if (!canPlace) break;
@@ -656,6 +686,8 @@ export default function DashboardsPage() {
         if (canPlace) {
           console.log('[Dashboard] Found free position:', { x, y, width: optimizedWidth, height: optimizedHeight });
           return { x, y, width: optimizedWidth, height: optimizedHeight };
+        } else if (y < 3) { // Only log conflicts for first few rows to avoid spam
+          console.log(`[Dashboard] Position ${x},${y} has conflicts:`, conflictCells.slice(0, 5));
         }
       }
     }
@@ -664,11 +696,18 @@ export default function DashboardsPage() {
     let lowestY = 0;
     widgets.forEach(widget => {
       if (widget.position) {
-        lowestY = Math.max(lowestY, (widget.position.y || 0) + (widget.position.height || 4));
+        const widgetBottom = (widget.position.y || 0) + (widget.position.height || 4);
+        lowestY = Math.max(lowestY, widgetBottom);
       }
     });
     
-    console.log('[Dashboard] No free position found, using fallback position:', { x: 0, y: lowestY, width: optimizedWidth, height: optimizedHeight });
+    console.log('[Dashboard] No free position found, using fallback position:', { 
+      x: 0, 
+      y: lowestY, 
+      width: optimizedWidth, 
+      height: optimizedHeight,
+      reason: 'No free space found in grid'
+    });
     return { x: 0, y: lowestY, width: optimizedWidth, height: optimizedHeight };
   };
 
@@ -809,7 +848,7 @@ export default function DashboardsPage() {
         .filter(change => change.type === 'create' && change.data)
         .map(change => change.data as Widget)
     ];
-    const freePosition = findFreePosition(allWidgets, 6, 4, type);
+    const freePosition = findFreePosition(allWidgets, 8, 6, type);
 
     const newWidget: Partial<Widget> = {
       type,
@@ -1289,24 +1328,24 @@ export default function DashboardsPage() {
                 layouts={generateLayouts()}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                rowHeight={60}
+                rowHeight={80}
                 isDraggable={isEditMode}
                 isResizable={isEditMode}
                 onLayoutChange={handleLayoutChange}
-                margin={[16, 16]}
-                containerPadding={[0, 0]}
+                margin={[20, 20]}
+                containerPadding={[10, 10]}
                 useCSSTransforms={false}
                 transformScale={1}
                 preventCollision={false}
                 compactType={null}
-                autoSize={false}
-                allowOverlap={true}
+                autoSize={true}
+                allowOverlap={false}
                 verticalCompact={false}
               >
                 {getAllWidgets().map((widget) => (
                   <div 
                     key={widget.id} 
-                    className="widget-container"
+                    className="widget-container h-full w-full min-h-[200px]"
                     onMouseDown={(e) => {
                       // Allow buttons to work by checking if click is on a button
                       const target = e.target as HTMLElement;
@@ -1331,11 +1370,13 @@ export default function DashboardsPage() {
                     }}
                   >
                     <motion.div
-                      className="h-full"
+                      className="h-full w-full p-2"
                       whileHover={isEditMode ? { scale: 1.02 } : {}}
                       transition={{ duration: 0.2 }}
                     >
-                      {renderWidget(widget)}
+                      <div className="h-full w-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                        {renderWidget(widget)}
+                      </div>
                     </motion.div>
                   </div>
                 ))}
