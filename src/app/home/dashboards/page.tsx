@@ -325,7 +325,17 @@ export default function DashboardsPage() {
   };
 
   const saveChanges = async () => {
-    if (pendingChangesCount === 0 || !selectedDashboard) return;
+    console.log('🚀 [SAVE_DEBUG] saveChanges called', {
+      pendingChangesCount,
+      hasSelectedDashboard: !!selectedDashboard,
+      selectedDashboardId: selectedDashboard?.id,
+      currentWidgetsCount: selectedDashboard?.widgets?.length || 0
+    });
+
+    if (pendingChangesCount === 0 || !selectedDashboard) {
+      console.log('⚠️ [SAVE_DEBUG] Early return - no pending changes or no dashboard');
+      return;
+    }
 
     console.log('🔄 [SAVE_DEBUG] Starting save process', {
       pendingChangesCount,
