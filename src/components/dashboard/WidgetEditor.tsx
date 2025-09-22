@@ -18,7 +18,7 @@ import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
 // import { EnhancedTableSelector } from './EnhancedTableSelector'; // Removed - using TableSelector now
 import { AggregationSelector } from './AggregationSelector';
-import { LineChartConfig, DataSource, ChartDataPoint } from './LineChartWidget';
+import { LineChartConfig, ChartDataPoint } from './LineChartWidget';
 import type { DataSource } from './TableSelector';
 import type { AggregationConfig } from './AggregationSelector';
 import { FilterConfig } from '@/types/filtering';
@@ -620,13 +620,13 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                   )}
                   
                   {/* Enhanced Table Configuration */}
-                  <EnhancedTableSelector
+                  <TableSelector
                     dataSource={editedWidget.config?.dataSource as DataSource || { 
                       type: 'table',
                       xAxis: { key: '', label: '', type: 'text', columns: [] },
                       yAxis: { key: '', label: '', type: 'number', columns: [] }
                     }}
-                    onDataSourceChange={(newDataSource) => {
+                    onDataSourceChange={(newDataSource: DataSource) => {
                       updateConfig({ dataSource: newDataSource });
                     }}
                     widgetType="table"
@@ -854,13 +854,13 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                   )}
                   
                   {/* Enhanced KPI Configuration */}
-                  <EnhancedTableSelector
+                  <TableSelector
                     dataSource={editedWidget.config?.dataSource as DataSource || { 
                       type: 'table',
                       xAxis: { key: '', label: '', type: 'text', columns: [] },
                       yAxis: { key: '', label: '', type: 'number', columns: [] }
                     }}
-                    onDataSourceChange={(newDataSource) => {
+                    onDataSourceChange={(newDataSource: DataSource  ) => {
                       updateConfig({ dataSource: newDataSource });
                     }}
                     widgetType="kpi"
@@ -1589,13 +1589,13 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                   </Card>
                   
                   {/* Enhanced Table Data Selector */}
-                  <EnhancedTableSelector
-                    dataSource={config.dataSource as EnhancedDataSource || { 
+                  <TableSelector  
+                    dataSource={config.dataSource as DataSource || { 
                       type: 'table',
                       xAxis: { key: '', label: '', type: 'text', columns: [] },
                       yAxis: { key: '', label: '', type: 'number', columns: [] }
                     }}
-                    onDataSourceChange={(newDataSource) => {
+                    onDataSourceChange={(newDataSource: DataSource) => {
                       updateConfig({ dataSource: newDataSource });
                     }}
                     widgetType="chart"

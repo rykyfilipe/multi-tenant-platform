@@ -89,6 +89,10 @@ export interface TableConfig {
   pageSize?: number;
   showSearch?: boolean;
   showPagination?: boolean;
+  showHeader?: boolean;
+  showFooter?: boolean;
+  sortable?: boolean;
+  filterable?: boolean;
 }
 
 export interface MetricConfig {

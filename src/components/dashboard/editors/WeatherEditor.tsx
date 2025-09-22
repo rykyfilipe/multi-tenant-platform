@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { WidgetEditorProps, WeatherConfig } from '@/types/widget';
+import { WidgetEditorProps, WeatherConfig, WidgetEntity } from '@/types/widget';
 
 interface WeatherEditorProps extends WidgetEditorProps {
-  widget: Partial<WidgetEntity> & { config?: WeatherConfig };
-}
+  widget: Partial<WidgetEntity  > & { config?: WeatherConfig };
+} 
 
 export default function WeatherEditor({ widget, onSave, onCancel, isOpen }: WeatherEditorProps) {
   const [config, setConfig] = useState<WeatherConfig>({

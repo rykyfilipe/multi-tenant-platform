@@ -29,7 +29,7 @@ export interface KPIDataPoint {
   changePercent?: number;
 }
 
-export interface KPIDataSource extends EnhancedDataSource {
+export interface KPIDataSource extends DataSource {
   type: 'table' | 'manual';
   tableId?: number;
   column?: string; // Legacy support

@@ -97,7 +97,7 @@ export default function BarChartWidget({ widget, isEditMode, onEdit, onDelete, t
 	const options = config.options || {};
 	
 	// Support both old and new data source formats
-	const enhancedDataSource = dataSource as EnhancedDataSource;
+	const enhancedDataSource = dataSource as DataSource;
 	
 	// Determine axis configuration - prefer new format, fallback to legacy
 	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
