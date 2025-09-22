@@ -143,7 +143,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                         Column
                       </Label>
                       <Select
-                        value={filter.columnId?.toString() || ''}
+                        value={filter.columnId ? filter.columnId.toString() : ''}
                         onValueChange={(value) => {
                           const column = availableColumns.find(col => col.id.toString() === value);
                           if (column) {

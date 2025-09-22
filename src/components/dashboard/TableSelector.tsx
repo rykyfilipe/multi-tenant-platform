@@ -614,7 +614,7 @@ export function TableSelector({
 						</div>
 					) : (
 						<Select
-							value={dataSource.tableId?.toString() || ''}
+							value={dataSource.tableId ? dataSource.tableId.toString() : ''}
 							onValueChange={handleTableChange}
 						>
 							<SelectTrigger className="h-8">

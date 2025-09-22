@@ -74,7 +74,7 @@ export const authOptions = {
 						email: user.email,
 						name: `${user.firstName} ${user.lastName}`,
 						role: user.role,
-						tenantId: user.tenantId?.toString() ?? null,
+						tenantId: user.tenantId ? user.tenantId.toString() : null,
 						image: user.profileImage || undefined,
 					};
 				} catch (error) {
@@ -183,7 +183,7 @@ export const authOptions = {
 							firstName: dbUser.firstName,
 							lastName: dbUser.lastName,
 							role: dbUser.role,
-							tenantId: dbUser.tenantId?.toString() ?? null,
+							tenantId: dbUser.tenantId ? dbUser.tenantId.toString() : null,
 							profileImage: dbUser.profileImage || undefined,
 							customJWT: generateToken({ userId: dbUser.id, role: dbUser.role.toString() }, "7d"),
 						});

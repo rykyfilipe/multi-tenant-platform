@@ -199,7 +199,7 @@ const OptimizedDatabaseSelector = memo(function OptimizedDatabaseSelector({
 
 	return (
 		<Select
-			value={selectedDatabase?.id?.toString() || ""}
+			value={selectedDatabase?.id ? selectedDatabase.id.toString() : ""}
 			onValueChange={(value) => {
 				const database = databases.find(
 					(db) => db.id.toString() === value,

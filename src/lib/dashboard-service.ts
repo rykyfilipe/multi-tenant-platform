@@ -66,7 +66,10 @@ export class DashboardService {
     if (typeof obj === 'object') {
       const result: any = {};
       for (const [key, value] of Object.entries(obj)) {
-        result[key] = this.serializeBigInt(value);
+        // Skip undefined values to avoid serialization issues
+        if (value !== undefined) {
+          result[key] = this.serializeBigInt(value);
+        }
       }
       return result;
     }

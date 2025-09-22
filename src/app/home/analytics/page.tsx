@@ -11,6 +11,7 @@ import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { useApp } from "@/contexts/AppContext";
 import { TourManager } from "@/components/tours/TourManager";
 import { allTours } from "@/tours";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Main Analytics Page Component
 

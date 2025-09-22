@@ -68,7 +68,7 @@ export default function WeatherEditor({ widget, onSave, onCancel, isOpen }: Weat
 
             <div>
               <Label htmlFor="forecastDays">Forecast Days</Label>
-              <Select value={config.forecastDays?.toString()} onValueChange={(value) => handleConfigChange('forecastDays', parseInt(value))}>
+              <Select value={config.forecastDays ? config.forecastDays.toString() : ''} onValueChange={(value) => handleConfigChange('forecastDays', parseInt(value))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

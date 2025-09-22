@@ -329,23 +329,74 @@ export default function DashboardsPage() {
 
     try {
       // Save changes to server and get the saved widgets
-      const savedWidgets = await savePendingChanges(selectedDashboard.id);
+      const savedResults = await savePendingChanges(selectedDashboard.id);
       
-      console.log('[Dashboard] Save successful, received saved widgets:', savedWidgets?.length || 0);
+      console.log('[Dashboard] Save successful, received results:', savedResults?.length || 0);
       
-      if (savedWidgets && savedWidgets.length > 0) {
-        // Update selectedDashboard with the saved widgets from server
-        setSelectedDashboard(prev => prev ? {
-          ...prev,
-          widgets: savedWidgets
-        } : null);
+      if (savedResults && savedResults.length > 0) {
+        // Process each result based on operation type
+        setSelectedDashboard(prev => {
+          if (!prev) return null;
+          
+          let updatedWidgets = [...prev.widgets];
+          
+          savedResults.forEach(result => {
+            if (result.type === 'delete' && result.result?.widgetId) {
+              // Remove deleted widget
+              updatedWidgets = updatedWidgets.filter(w => w.id !== result.result.widgetId);
+              console.log('[Dashboard] Removed deleted widget:', result.result.widgetId);
+            } else if (result.type === 'create' || result.type === 'update') {
+              // Add or update widget
+              const savedWidget = result.result;
+              if (savedWidget) {
+                const existingIndex = updatedWidgets.findIndex(w => w.id === savedWidget.id);
+                if (existingIndex >= 0) {
+                  // Update existing widget
+                  updatedWidgets[existingIndex] = savedWidget;
+                  console.log('[Dashboard] Updated widget:', savedWidget.id);
+                } else {
+                  // Add new widget
+                  updatedWidgets.push(savedWidget);
+                  console.log('[Dashboard] Added new widget:', savedWidget.id);
+                }
+              }
+            }
+          });
+          
+          return {
+            ...prev,
+            widgets: updatedWidgets
+          };
+        });
         
-        // Create new initial copy from the saved widgets
-        setInitialWidgets([...savedWidgets]);
+        // Update initial widgets as well
+        setInitialWidgets(prev => {
+          let updatedWidgets = [...prev];
+          
+          savedResults.forEach(result => {
+            if (result.type === 'delete' && result.result?.widgetId) {
+              // Remove deleted widget
+              updatedWidgets = updatedWidgets.filter(w => w.id !== result.result.widgetId);
+            } else if (result.type === 'create' || result.type === 'update') {
+              // Add or update widget
+              const savedWidget = result.result;
+              if (savedWidget) {
+                const existingIndex = updatedWidgets.findIndex(w => w.id === savedWidget.id);
+                if (existingIndex >= 0) {
+                  updatedWidgets[existingIndex] = savedWidget;
+                } else {
+                  updatedWidgets.push(savedWidget);
+                }
+              }
+            }
+          });
+          
+          return updatedWidgets;
+        });
         
-        console.log('[Dashboard] Local state updated with', savedWidgets.length, 'saved widgets');
+        console.log('[Dashboard] Local state updated with', savedResults.length, 'operations');
       } else {
-        console.log('[Dashboard] No widgets returned from save, keeping current state');
+        console.log('[Dashboard] No results returned from save, keeping current state');
       }
       
     } catch (error) {
