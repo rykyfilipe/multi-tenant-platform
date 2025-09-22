@@ -1371,7 +1371,7 @@ export default function DashboardsPage() {
                     <SaveChangesButton
                       pendingChanges={pendingChanges}
                       isSaving={isSaving}
-                      onSave={() => selectedDashboard && savePendingChanges(selectedDashboard.id)}
+                      onSave={saveChanges}
                       onDiscard={discardPendingChanges}
                       size="sm"
                       showDetails={true}
