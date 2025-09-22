@@ -298,6 +298,18 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       return null;
     }
 
+    console.log('🚀 [HOOK_DEBUG] Starting savePendingChanges', {
+      dashboardId,
+      pendingChangesCount: pendingChanges.size,
+      tenantId: tenant?.id,
+      pendingChangesList: Array.from(pendingChanges.entries()).map(([key, change]) => ({
+        key,
+        type: change.type,
+        widgetId: change.widgetId,
+        hasData: !!change.data
+      }))
+    });
+
     setIsSaving(true);
 
     try {
@@ -321,6 +333,16 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         return operation;
       });
 
+      console.log('📤 [HOOK_DEBUG] Sending batch request to API', {
+        url: `/api/dashboards/${dashboardId}/widgets/batch`,
+        operationsCount: operations.length,
+        operations: operations.map(op => ({
+          type: op.type,
+          widgetId: op.widgetId,
+          hasData: !!op.data
+        }))
+      });
+
       // Trimite batch request
       const response = await fetch(`/api/dashboards/${dashboardId}/widgets/batch`, {
         method: 'POST',
@@ -328,8 +350,15 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         body: JSON.stringify({ operations }),
       });
 
+      console.log('📥 [HOOK_DEBUG] API response received', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('❌ [HOOK_DEBUG] API error response', { errorData });
         throw new Error(
           errorData.error || 
           errorData.message || 
@@ -338,6 +367,13 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       }
 
       const result = await response.json();
+
+      console.log('✅ [HOOK_DEBUG] API response parsed', {
+        success: result.success,
+        resultsCount: result.results?.length || 0,
+        errorsCount: result.errors?.length || 0,
+        fullResult: result
+      });
       
       if (!result.success) {
         // Gestionează eșecurile parțiale
@@ -349,10 +385,17 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       }
 
       // Curăță modificările pending după succes
+      console.log('🧹 [HOOK_DEBUG] Clearing pending changes', {
+        beforeClearCount: pendingChanges.size
+      });
       setPendingChanges(new Map());
       
       // Notifică succesul
       const totalChanges = operations.length;
+      console.log('🎉 [HOOK_DEBUG] Save process completed successfully', {
+        totalChanges,
+        resultData: result.results || []
+      });
       alert(`Successfully saved ${totalChanges} widget change${totalChanges !== 1 ? 's' : ''}`, 'success');
       onSuccess?.(result.results || []);
       
@@ -360,10 +403,16 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save changes';
+      console.error('💥 [HOOK_DEBUG] Save process failed', {
+        error,
+        errorMessage,
+        pendingChangesCount: pendingChanges.size
+      });
       alert(errorMessage, 'error');
       onError?.(errorMessage);
       throw error;
     } finally {
+      console.log('🔚 [HOOK_DEBUG] Save process finished, setting isSaving to false');
       setIsSaving(false);
     }
   };

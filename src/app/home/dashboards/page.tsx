@@ -327,25 +327,50 @@ export default function DashboardsPage() {
   const saveChanges = async () => {
     if (pendingChangesCount === 0 || !selectedDashboard) return;
 
+    console.log('🔄 [SAVE_DEBUG] Starting save process', {
+      pendingChangesCount,
+      dashboardId: selectedDashboard.id,
+      currentWidgetsCount: selectedDashboard.widgets.length
+    });
+
     try {
       // Save changes to server and get the saved widgets
       const savedResults = await savePendingChanges(selectedDashboard.id);
       
-      console.log('[Dashboard] Save successful, received results:', savedResults?.length || 0);
-      console.log('[Dashboard] Saved results details:', savedResults);
+      console.log('✅ [SAVE_DEBUG] Server response received', {
+        hasResults: !!savedResults,
+        resultsCount: savedResults?.length || 0,
+        results: savedResults
+      });
       
       if (savedResults && savedResults.length > 0) {
         // Process each result based on operation type
         setSelectedDashboard(prev => {
           if (!prev) return null;
           
+          console.log('🔄 [STATE_DEBUG] Processing local state update', {
+            currentWidgetsCount: prev.widgets.length,
+            operationsToProcess: savedResults.length
+          });
+
           let updatedWidgets = [...prev.widgets];
           
-          savedResults.forEach((result: any) => {
+          savedResults.forEach((result: any, index: number) => {
+            console.log(`🔄 [STATE_DEBUG] Processing operation ${index + 1}/${savedResults.length}`, {
+              type: result.type,
+              success: result.success,
+              hasResult: !!result.result,
+              resultData: result.result
+            });
             if (result.type === 'delete' && result.result?.widgetId) {
               // Remove deleted widget
+              const beforeCount = updatedWidgets.length;
               updatedWidgets = updatedWidgets.filter(w => w.id !== result.result.widgetId);
-              console.log('[Dashboard] Removed deleted widget:', result.result.widgetId);
+              console.log('❌ [STATE_DEBUG] Widget deleted', {
+                widgetId: result.result.widgetId,
+                beforeCount,
+                afterCount: updatedWidgets.length
+              });
             } else if (result.type === 'create' || result.type === 'update') {
               // Add or update widget
               const savedWidget = result.result;
@@ -354,16 +379,30 @@ export default function DashboardsPage() {
                 if (existingIndex >= 0) {
                   // Update existing widget
                   updatedWidgets[existingIndex] = savedWidget;
-                  console.log('[Dashboard] Updated widget:', savedWidget.id);
+                  console.log('✏️ [STATE_DEBUG] Widget updated', {
+                    widgetId: savedWidget.id,
+                    index: existingIndex,
+                    title: savedWidget.title
+                  });
                 } else {
                   // Add new widget
                   updatedWidgets.push(savedWidget);
-                  console.log('[Dashboard] Added new widget:', savedWidget.id);
+                  console.log('➕ [STATE_DEBUG] Widget added', {
+                    widgetId: savedWidget.id,
+                    newCount: updatedWidgets.length,
+                    title: savedWidget.title
+                  });
                 }
               } else {
-                console.warn('[Dashboard] Invalid saved widget data:', savedWidget);
+                console.warn('⚠️ [STATE_DEBUG] Invalid saved widget data:', savedWidget);
               }
             }
+          });
+
+          console.log('✅ [STATE_DEBUG] Local state update complete', {
+            beforeCount: prev.widgets.length,
+            afterCount: updatedWidgets.length,
+            finalWidgetIds: updatedWidgets.map(w => w.id)
           });
           
           return {
@@ -397,13 +436,13 @@ export default function DashboardsPage() {
           return updatedWidgets;
         });
         
-        console.log('[Dashboard] Local state updated with', savedResults.length, 'operations');
+        console.log('✅ [STATE_DEBUG] All state updates complete', { operationsProcessed: savedResults.length });
       } else {
-        console.log('[Dashboard] No results returned from save, keeping current state');
+        console.log('⚠️ [SAVE_DEBUG] No results from server - keeping current state');
       }
       
     } catch (error) {
-      console.error('Error saving changes:', error);
+      console.error('❌ [SAVE_DEBUG] Error saving changes:', error);
       // Error handling is done in the hook's onError callback
     }
   };
