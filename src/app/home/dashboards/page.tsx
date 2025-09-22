@@ -340,7 +340,7 @@ export default function DashboardsPage() {
           
           let updatedWidgets = [...prev.widgets];
           
-          savedResults.forEach(result => {
+          savedResults.forEach((result: any) => {
             if (result.type === 'delete' && result.result?.widgetId) {
               // Remove deleted widget
               updatedWidgets = updatedWidgets.filter(w => w.id !== result.result.widgetId);
@@ -373,7 +373,7 @@ export default function DashboardsPage() {
         setInitialWidgets(prev => {
           let updatedWidgets = [...prev];
           
-          savedResults.forEach(result => {
+          savedResults.forEach((result: any) => {
             if (result.type === 'delete' && result.result?.widgetId) {
               // Remove deleted widget
               updatedWidgets = updatedWidgets.filter(w => w.id !== result.result.widgetId);
@@ -436,41 +436,54 @@ export default function DashboardsPage() {
 
     const originalPos = originalWidget.position;
     
-    // Check if the new position matches expected responsive transformations
-    // For different breakpoints, ResponsiveGridLayout applies these transformations:
-    // md: Math.min(x, 9), Math.min(w, 10)
-    // sm: Math.min(x, 5), Math.min(w, 6)  
-    // xs: Math.min(x, 3), Math.min(w, 4)
-    // xxs: x = 0, w = 2
+    // Only consider it responsive if ALL of these conditions are met:
+    // 1. Only x position changed (not y, width, or height)
+    // 2. The change is exactly what responsive layout would do
+    // 3. The widget is being moved to a constrained position
     
-    // If the change only affects x position and width constraints, it's likely responsive
     const xChanged = originalPos.x !== newPosition.x;
     const widthChanged = originalPos.width !== newPosition.width;
-    const yUnchanged = originalPos.y === newPosition.y;
-    const heightUnchanged = originalPos.height === newPosition.height;
+    const yChanged = originalPos.y !== newPosition.y;
+    const heightChanged = originalPos.height !== newPosition.height;
     
-    // Check if new position matches expected responsive constraints
-    const isXConstrained = newPosition.x <= 9 || newPosition.x <= 5 || newPosition.x <= 3 || newPosition.x === 0;
-    const isWidthConstrained = newPosition.width <= 10 || newPosition.width <= 6 || newPosition.width <= 4 || newPosition.width === 2;
+    // If Y or height changed, it's definitely manual (not responsive)
+    if (yChanged || heightChanged) {
+      console.log('[Dashboard] Y or height changed - manual change detected');
+      return false;
+    }
     
-    // If only x/width changed and they're constrained, it's likely a responsive change
-    const isResponsive = (xChanged || widthChanged) && yUnchanged && heightUnchanged && (isXConstrained || isWidthConstrained);
+    // If both x and width changed, it's likely manual
+    if (xChanged && widthChanged) {
+      console.log('[Dashboard] Both x and width changed - manual change detected');
+      return false;
+    }
     
-    console.log('[Dashboard] Responsive check:', {
-      widgetId,
-      originalPos,
-      currentPosition,
-      newPosition,
-      xChanged,
-      widthChanged,
-      yUnchanged,
-      heightUnchanged,
-      isXConstrained,
-      isWidthConstrained,
-      isResponsive
-    });
+    // Only consider it responsive if only x changed and it's a constraint change
+    if (xChanged && !widthChanged && !yChanged && !heightChanged) {
+      // Check if this is a typical responsive constraint (moving to left edge)
+      const isMovingToLeft = newPosition.x === 0;
+      const isMovingToConstraint = newPosition.x < originalPos.x;
+      
+      if (isMovingToLeft || isMovingToConstraint) {
+        console.log('[Dashboard] X-only constraint change - likely responsive');
+        return true;
+      }
+    }
     
-    return isResponsive;
+    // Only consider it responsive if only width changed and it's a constraint change
+    if (widthChanged && !xChanged && !yChanged && !heightChanged) {
+      // Check if this is a typical responsive constraint (reducing width)
+      const isReducingWidth = newPosition.width < originalPos.width;
+      const isAtConstraint = newPosition.width <= 2 || newPosition.width <= 4 || newPosition.width <= 6 || newPosition.width <= 10;
+      
+      if (isReducingWidth && isAtConstraint) {
+        console.log('[Dashboard] Width-only constraint change - likely responsive');
+        return true;
+      }
+    }
+    
+    console.log('[Dashboard] Manual change detected - not responsive');
+    return false;
   };
 
   const handleLayoutChange = (layout: any[]) => {
@@ -521,7 +534,17 @@ export default function DashboardsPage() {
           // Get original position from database for comparison
           const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
           const originalPosition = originalWidget?.position;
+          
+          console.log('[Dashboard] Adding pending change with data:', {
+            widgetId,
+            newPosition,
+            originalPosition,
+            type: 'update'
+          });
+          
           addPendingChange('update', widgetId, { position: newPosition }, { position: originalPosition });
+          
+          console.log('[Dashboard] Pending change added successfully');
         } else {
           console.log('[Dashboard] Position unchanged, skipping pending change');
         }

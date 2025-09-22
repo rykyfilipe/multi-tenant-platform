@@ -24,7 +24,9 @@ function AnalyticsPage() {
 
 	return (
 		<PerformanceOptimizer preloadFonts={true} preloadCriticalCSS={true}>
-			<AnalyticsDashboard />
+			<ErrorBoundary component="AnalyticsPage">
+				<AnalyticsDashboard />
+			</ErrorBoundary>
 			<TourManager
 				tours={allTours}
 				currentPage="analytics"

@@ -58,6 +58,7 @@ import {
 } from "./index";
 import { RealSizeInfo } from "./RealSizeInfo";
 import { useProcessedAnalyticsData } from "@/hooks/useProcessedAnalyticsData";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 type TimeFilter = "7d" | "30d" | "90d" | "1y";
 
@@ -229,7 +230,8 @@ export const AnalyticsDashboard: React.FC = () => {
 			</div>
 
 			{/* Main Content */}
-			<div className='p-3 sm:p-4 md:p-6 max-w-[1400px] mx-auto space-y-4 sm:space-y-6 md:space-y-8'>
+			<ErrorBoundary component="AnalyticsDashboard">
+				<div className='p-3 sm:p-4 md:p-6 max-w-[1400px] mx-auto space-y-4 sm:space-y-6 md:space-y-8'>
 				{/* KPI Cards */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -912,7 +914,8 @@ export const AnalyticsDashboard: React.FC = () => {
 						</div>
 					</TabsContent>
 				</Tabs>
-			</div>
+				</div>
+			</ErrorBoundary>
 		</motion.div>
 	);
 };

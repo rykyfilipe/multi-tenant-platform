@@ -179,7 +179,7 @@ export function mapWidgetData(
   }
 }
 
-// Get widget editor component
+// Get widget editor component with safe fallback
 export function getWidgetEditor(widgetType: WidgetType): React.ComponentType<WidgetEditorProps> {
   const editor = WIDGET_EDITORS[widgetType];
   
@@ -188,7 +188,18 @@ export function getWidgetEditor(widgetType: WidgetType): React.ComponentType<Wid
     return FallbackEditor;
   }
 
-  return editor;
+  // Wrap the editor with error boundary for additional safety
+  const SafeEditor: React.FC<WidgetEditorProps> = (props) => {
+    try {
+      const EditorComponent = editor;
+      return <EditorComponent {...props} />;
+    } catch (error) {
+      console.error(`Error rendering editor for widget type ${widgetType}:`, error);
+      return <FallbackEditor {...props} />;
+    }
+  };
+
+  return SafeEditor;
 }
 
 // Validate widget type
