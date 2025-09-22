@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { ColorPicker } from '@/components/ui/color-picker';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Palette, Type, Layout, Sparkles } from 'lucide-react';
 
 interface StyleOptionsProps {
   style: any;
   onStyleChange: (key: string, value: any) => void;
-  widgetType: 'table' | 'metric' | 'text' | 'chart' | 'tasks' | 'calendar' | 'weather' | 'clock';
+  widgetType: 'table' | 'metric' | 'text' | 'chart' | 'tasks' | 'calendar' | 'weather' | 'clock' | 'filter' | 'image' | 'iframe' | 'map' | 'gauge' | 'progress' | 'list' | 'form' | 'button' | 'divider';
 }
 
 export default function StyleOptions({ style, onStyleChange, widgetType }: StyleOptionsProps) {
@@ -24,30 +27,38 @@ export default function StyleOptions({ style, onStyleChange, widgetType }: Style
   const renderLayoutOptions = () => {
     const layouts = {
       table: [
-        { value: 'default', label: 'Default' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'striped', label: 'Striped' },
-        { value: 'dark', label: 'Dark' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'gradient', label: 'Gradient' },
-        { value: 'neon', label: 'Neon' }
+        { value: 'default', label: 'Default', description: 'Clean table layout' },
+        { value: 'minimal', label: 'Minimal', description: 'Minimal borders and spacing' },
+        { value: 'bordered', label: 'Bordered', description: 'Strong borders and contrast' },
+        { value: 'striped', label: 'Striped', description: 'Alternating row colors' },
+        { value: 'dark', label: 'Dark', description: 'Dark theme with white text' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' }
       ],
       metric: [
-        { value: 'card', label: 'Card' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'gradient', label: 'Gradient' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'neon', label: 'Neon' },
-        { value: 'vintage', label: 'Vintage' },
-        { value: 'cyber', label: 'Cyber' }
+        { value: 'card', label: 'Card', description: 'Card-based layout' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
       ],
       text: [
-        { value: 'card', label: 'Card' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'gradient', label: 'Gradient' },
+        { value: 'card', label: 'Card', description: 'Card-based layout' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
         { value: 'glass', label: 'Glass' },
         { value: 'quote', label: 'Quote' },
         { value: 'neon', label: 'Neon' },

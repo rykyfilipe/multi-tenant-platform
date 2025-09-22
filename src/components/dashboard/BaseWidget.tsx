@@ -7,27 +7,27 @@ import { cn } from '@/lib/utils';
 
 // Common widget style presets
 export const WIDGET_PRESETS = {
-  // Modern minimal
+  // Modern minimal - black and white
   modern: {
     borderRadius: 'lg' as const,
     shadow: 'md' as const,
     padding: 'lg' as const,
     backgroundColor: '#ffffff',
-    borderColor: '#e5e7eb',
+    borderColor: '#000000',
     titleSize: 'lg' as const,
     titleWeight: 'semibold' as const,
     hoverEffect: 'lift' as const,
     transition: 'normal' as const,
   },
   
-  // Glass morphism
+  // Glass morphism - black and white
   glass: {
     borderRadius: 'xl' as const,
     shadow: 'lg' as const,
     padding: 'lg' as const,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     backdropBlur: 'md' as const,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
     borderWidth: 1,
     titleSize: 'lg' as const,
     titleWeight: 'semibold' as const,
@@ -35,42 +35,42 @@ export const WIDGET_PRESETS = {
     transition: 'normal' as const,
   },
   
-  // Dark theme
+  // Dark theme - black and white
   dark: {
     borderRadius: 'lg' as const,
     shadow: 'xl' as const,
     padding: 'lg' as const,
-    backgroundColor: '#1f2937',
-    borderColor: '#374151',
+    backgroundColor: '#000000',
+    borderColor: '#ffffff',
     titleColor: '#ffffff',
-    contentColor: '#d1d5db',
+    contentColor: '#ffffff',
     titleSize: 'lg' as const,
     titleWeight: 'semibold' as const,
     hoverEffect: 'glow' as const,
     transition: 'normal' as const,
   },
   
-  // Gradient
+  // Gradient - black and white
   gradient: {
     borderRadius: 'xl' as const,
     shadow: 'lg' as const,
     padding: 'lg' as const,
-    backgroundGradient: '135deg, #667eea 0%, #764ba2 100%',
-    titleColor: '#ffffff',
-    contentColor: '#ffffff',
+    backgroundGradient: '135deg, #000000 0%, #ffffff 100%',
+    titleColor: '#000000',
+    contentColor: '#000000',
     titleSize: 'lg' as const,
     titleWeight: 'bold' as const,
     hoverEffect: 'scale' as const,
     transition: 'normal' as const,
   },
   
-  // Card style
+  // Card style - black and white
   card: {
     borderRadius: 'md' as const,
     shadow: 'sm' as const,
     padding: 'md' as const,
     backgroundColor: '#ffffff',
-    borderColor: '#e5e7eb',
+    borderColor: '#000000',
     borderWidth: 1,
     titleSize: 'base' as const,
     titleWeight: 'medium' as const,
@@ -78,7 +78,7 @@ export const WIDGET_PRESETS = {
     transition: 'fast' as const,
   },
   
-  // Compact
+  // Compact - black and white
   compact: {
     borderRadius: 'sm' as const,
     shadow: 'sm' as const,
@@ -90,15 +90,15 @@ export const WIDGET_PRESETS = {
     transition: 'fast' as const,
   },
   
-  // Luxury
+  // Luxury - black and white
   luxury: {
     borderRadius: '2xl' as const,
     shadow: '2xl' as const,
     padding: 'xl' as const,
     backgroundColor: '#ffffff',
-    borderColor: '#d4af37',
+    borderColor: '#000000',
     borderWidth: 2,
-    titleColor: '#1a1a1a',
+    titleColor: '#000000',
     titleSize: 'xl' as const,
     titleWeight: 'bold' as const,
     titleTransform: 'uppercase' as const,
@@ -749,9 +749,9 @@ export default function BaseWidget({
                   onRefresh();
                 }}
                 disabled={isLoading}
-                className="z-10 relative h-7 w-7 p-0 hover:bg-slate-100 rounded-lg touch-manipulation transition-colors duration-200"
+                className="z-10 relative h-7 w-7 p-0 hover:bg-black/10 rounded-lg touch-manipulation transition-colors duration-200"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''} text-slate-600`} />
+                <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''} text-black/70`} />
               </Button>
             )}
             {isEditMode && onStyleEdit && (
@@ -780,9 +780,9 @@ export default function BaseWidget({
                   e.stopPropagation();
                   onStyleEdit();
                 }}
-                className="z-10 relative h-7 w-7 p-0 hover:bg-slate-100 rounded-lg touch-manipulation transition-colors duration-200"
+                className="z-10 relative h-7 w-7 p-0 hover:bg-black/10 rounded-lg touch-manipulation transition-colors duration-200"
               >
-                <Palette className="h-3.5 w-3.5 text-slate-600" />
+                <Palette className="h-3.5 w-3.5 text-black/70" />
               </Button>
             )}
             {isEditMode && onEdit && (
@@ -813,9 +813,9 @@ export default function BaseWidget({
                   console.log('Edit button touched for widget:', widget.id);
                   onEdit();
                 }}
-                className="z-10 relative h-7 w-7 p-0 hover:bg-blue-50 rounded-lg touch-manipulation transition-colors duration-200"
+                className="z-10 relative h-7 w-7 p-0 hover:bg-black/10 rounded-lg touch-manipulation transition-colors duration-200"
               >
-                <Edit3 className="h-3.5 w-3.5 text-blue-600" />
+                <Edit3 className="h-3.5 w-3.5 text-black/70" />
               </Button>
             )}
             {isEditMode && onDelete && (
@@ -846,7 +846,7 @@ export default function BaseWidget({
                   console.log('Delete button touched for widget:', widget.id);
                   onDelete();
                 }}
-                className="z-10 relative h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg touch-manipulation transition-colors duration-200"
+                className="z-10 relative h-7 w-7 p-0 text-black/70 hover:text-black hover:bg-black/10 rounded-lg touch-manipulation transition-colors duration-200"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -859,23 +859,23 @@ export default function BaseWidget({
           'flex-1 w-full flex flex-col',
           widgetStyle.overflow ? `overflow-${widgetStyle.overflow}` : 'overflow-hidden',
           // Responsive content styling
-          widgetStyle.contentColor ? '' : 'text-slate-700',
+          widgetStyle.contentColor ? '' : 'text-black/80',
           widgetStyle.contentSize ? `text-${widgetStyle.contentSize}` : 'text-xs sm:text-sm',
           widgetStyle.contentWeight ? `font-${widgetStyle.contentWeight}` : 'font-normal',
           widgetStyle.contentAlign ? `text-${widgetStyle.contentAlign}` : 'text-left'
         )}>
           {isLoading ? (
             <div className="space-y-3 sm:space-y-4">
-              <Skeleton className="h-4 w-full bg-slate-200/60" />
-              <Skeleton className="h-4 w-3/4 bg-slate-200/60" />
-              <Skeleton className="h-4 w-1/2 bg-slate-200/60" />
-              <Skeleton className="h-24 sm:h-32 md:h-40 w-full bg-slate-200/60 rounded-lg" />
+              <Skeleton className="h-4 w-full bg-black/10" />
+              <Skeleton className="h-4 w-3/4 bg-black/10" />
+              <Skeleton className="h-4 w-1/2 bg-black/10" />
+              <Skeleton className="h-24 sm:h-32 md:h-40 w-full bg-black/10 rounded-lg" />
             </div>
           ) : error ? (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-slate-500 p-4 sm:p-6">
-                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <AlertCircle className="h-6 w-6 text-red-500" />
+              <div className="text-center text-black/60 p-4 sm:p-6">
+                <div className="w-12 h-12 bg-black/5 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <AlertCircle className="h-6 w-6 text-black/70" />
                 </div>
                 <p className="text-sm font-medium break-words">{error}</p>
               </div>

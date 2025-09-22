@@ -173,7 +173,7 @@ export default function TableWidget({
 
   const renderCellValue = (value: any) => {
     if (value === null || value === undefined) {
-      return <span className="text-muted-foreground">-</span>;
+      return <span className="text-black/40">-</span>;
     }
     
     if (typeof value === 'boolean') {
@@ -205,12 +205,12 @@ export default function TableWidget({
           <div className="flex items-center justify-between space-x-3 flex-shrink-0">
             {options.showSearch && (
               <div className="relative flex-1 max-w-xs sm:max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-black/40" />
                 <Input
                   placeholder="Search table..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10 h-9 text-sm bg-slate-50/50 border-slate-200 focus:bg-white focus:border-blue-300 transition-colors duration-200"
+                  className="pl-10 h-9 text-sm bg-black/5 border-black/20 focus:bg-white focus:border-black/40 transition-colors duration-200"
                 />
               </div>
             )}
@@ -218,14 +218,14 @@ export default function TableWidget({
         )}
 
         {/* Table */}
-        <div className="border border-slate-200/60 rounded-xl overflow-hidden flex-1 min-h-0 bg-white/50">
+        <div className="border border-black/10 rounded-xl overflow-hidden flex-1 min-h-0 bg-white">
           {!dataSource.tableId || dataSource.tableId === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center h-full">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                <Database className="h-8 w-8 text-slate-400" />
+              <div className="w-16 h-16 bg-black/5 rounded-2xl flex items-center justify-center mb-4">
+                <Database className="h-8 w-8 text-black/40" />
               </div>
-              <p className="text-sm font-medium text-slate-600 mb-1">No table selected</p>
-              <p className="text-xs text-slate-400">Please select a table to view data</p>
+              <p className="text-sm font-medium text-black/70 mb-1">No table selected</p>
+              <p className="text-xs text-black/50">Please select a table to view data</p>
             </div>
           ) : (
             <div className="h-full overflow-auto">
