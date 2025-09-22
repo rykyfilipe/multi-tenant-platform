@@ -166,3 +166,89 @@ export async function requireTenantAccessAPI(tenantId: string): Promise<Session 
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+/**
+ * Require authentication with support for both NextAuth cookies and Bearer tokens
+ * @param request - NextRequest object
+ * @returns Session object or NextResponse error
+ */
+export async function requireAuthFlexible(request: NextRequest): Promise<Session | NextResponse> {
+  try {
+    // First try NextAuth session (cookie-based)
+    const sessionResult = await requireAuthResponse();
+    if (sessionResult instanceof Session) {
+      return sessionResult;
+    }
+    
+    // If NextAuth fails, try Bearer token authentication
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      
+      try {
+        // Import JWT verification from auth.ts
+        const { verifyToken, getUserFromRequest } = await import('@/lib/auth');
+        
+        if (verifyToken(token)) {
+          const userResult = await getUserFromRequest(request);
+          if (userResult instanceof Response) {
+            return userResult;
+          }
+          
+          // Convert to Session format
+          const session: Session = {
+            user: {
+              id: userResult.userId.toString(),
+              email: '', // Will be filled from database
+              firstName: '',
+              lastName: '',
+              role: userResult.role as any,
+              name: '',
+              tenantId: null, // Will be filled from database
+            },
+            customJWT: token,
+          };
+          
+          // Get full user data from database
+          const { default: prisma } = await import('@/lib/prisma');
+          const dbUser = await prisma.user.findUnique({
+            where: { id: userResult.userId },
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              tenantId: true,
+              profileImage: true,
+            }
+          });
+          
+          if (dbUser) {
+            session.user = {
+              id: userResult.userId.toString(),
+              email: dbUser.email,
+              firstName: dbUser.firstName,
+              lastName: dbUser.lastName,
+              role: dbUser.role as any,
+              name: `${dbUser.firstName} ${dbUser.lastName}`,
+              tenantId: dbUser.tenantId?.toString() || null,
+              image: dbUser.profileImage || undefined,
+              profileImage: dbUser.profileImage || undefined,
+            };
+          }
+          
+          return session;
+        }
+      } catch (tokenError) {
+        console.error('Bearer token verification failed:', tokenError);
+      }
+    }
+    
+    // If both methods fail, return unauthorized
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
