@@ -111,7 +111,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     if (!rawData.length) return {};
 
     // Support both new and legacy data source formats
-    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY || dataSource.column;
     const aggregationConfig = dataSource.aggregationConfig;
     
     if (!column) return {};
@@ -140,7 +140,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     if (!previousData.length) return {};
 
     // Support both new and legacy data source formats
-    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY || dataSource.column;
     const aggregationConfig = dataSource.aggregationConfig;
     
     if (!column) return {};
@@ -170,7 +170,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
       tenantId && 
       databaseId && 
       dataSource.tableId && 
-      (dataSource.yAxis?.columns?.[0] || dataSource.column) && 
+      (dataSource.yAxis?.columns?.[0] || dataSource.columnY || dataSource.column) && 
       (dataSource.aggregationConfig?.primary || dataSource.aggregation);
 
     if (hasValidTableConfig) {
@@ -188,7 +188,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
 
   const fetchTableData = async () => {
     // Support both new and legacy data source formats
-    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY || dataSource.column;
     const aggregation = dataSource.aggregationConfig?.primary || dataSource.aggregation;
     
     if (!tenantId || !databaseId || !dataSource.tableId || !column || !aggregation) return;
@@ -385,7 +385,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
     }
 
     // Check if column is selected (support both new and legacy formats)
-    const column = dataSource.yAxis?.columns?.[0] || dataSource.column;
+    const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY || dataSource.column;
     if (!column || column === '') {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground min-h-[150px]">
@@ -554,7 +554,7 @@ export function KPIWidget({ widget, isEditMode, onEdit, onDelete, tenantId, data
                       // Găsește rândul cu valoarea maximă/minimă
                       const targetValue = result.value;
                       const targetRow = rawData.find(row => {
-                        const rowValue = parseFloat(row[dataSource.yAxis?.columns?.[0] || dataSource.column || '']);
+                        const rowValue = parseFloat(row[dataSource.yAxis?.columns?.[0] || dataSource.columnY || dataSource.column || '']);
                         return !isNaN(rowValue) && rowValue === targetValue;
                       });
                       
