@@ -49,6 +49,41 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     return `${type}_${widgetId}`;
   };
 
+  // Clean widget data by converting empty strings to undefined for optional fields
+  const cleanWidgetData = (data: any): any => {
+    if (!data || typeof data !== 'object') {
+      return data;
+    }
+
+    const cleaned = { ...data };
+    
+    // Clean config object if it exists
+    if (cleaned.config && typeof cleaned.config === 'object') {
+      cleaned.config = { ...cleaned.config };
+      
+      // Clean dataSource if it exists
+      if (cleaned.config.dataSource && typeof cleaned.config.dataSource === 'object') {
+        cleaned.config.dataSource = { ...cleaned.config.dataSource };
+        
+        // Convert empty strings to undefined for optional fields
+        if (cleaned.config.dataSource.tableId === '') {
+          cleaned.config.dataSource.tableId = undefined;
+        }
+        if (cleaned.config.dataSource.aggregation === '') {
+          cleaned.config.dataSource.aggregation = undefined;
+        }
+        if (cleaned.config.dataSource.column === '') {
+          cleaned.config.dataSource.column = undefined;
+        }
+        if (cleaned.config.dataSource.columns && Array.isArray(cleaned.config.dataSource.columns)) {
+          cleaned.config.dataSource.columns = cleaned.config.dataSource.columns.filter((col: any) => col !== '');
+        }
+      }
+    }
+    
+    return cleaned;
+  };
+
   // Adaugă o modificare pending cu logică inteligentă
   const addPendingChange = (
     type: 'create' | 'update' | 'delete',
@@ -70,10 +105,11 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         }
 
         // Adaugă sau actualizează widget-ul nou
+        const cleanedData = cleanWidgetData(data);
         const pendingChange: PendingChange = {
           type: 'create',
           widgetId,
-          data: data || {},
+          data: cleanedData || {},
           originalData: originalData || {},
           timestamp: Date.now(),
         };
@@ -92,7 +128,8 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         
         if (existingCreate) {
           // Dacă există deja o operațiune de create, modifică direct widget-ul din pendingChanges
-          const updatedData = { ...existingCreate.data, ...data };
+          const cleanedData = cleanWidgetData(data);
+          const updatedData = { ...existingCreate.data, ...cleanedData };
           const updatedChange: PendingChange = {
             ...existingCreate,
             data: updatedData,
@@ -130,10 +167,11 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
         }
 
         // Adaugă sau actualizează modificarea
+        const cleanedData = cleanWidgetData(data);
         const existingUpdate = newMap.get(changeKey);
         if (existingUpdate) {
           // Merge cu modificarea existentă - păstrează doar ultima modificare
-          const mergedData = { ...existingUpdate.data, ...data };
+          const mergedData = { ...existingUpdate.data, ...cleanedData };
           const updatedChange: PendingChange = {
             ...existingUpdate,
             data: mergedData,
@@ -145,7 +183,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
           const pendingChange: PendingChange = {
             type: 'update',
             widgetId,
-            data,
+            data: cleanedData,
             originalData,
             timestamp: Date.now(),
           };

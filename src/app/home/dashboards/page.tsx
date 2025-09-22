@@ -608,19 +608,22 @@ export default function DashboardsPage() {
       // Get current widget data (including pending changes) for comparison
       const allWidgets = getAllWidgets();
       const currentWidget = allWidgets.find(w => w.id === widgetId);
-      const currentPosition = currentWidget?.position;
+      // Apply pending changes to get the final widget state
+      const finalWidget = currentWidget ? getFinalWidget(currentWidget) : null;
+      const currentPosition = finalWidget?.position;
 
       console.log('🔍 [LAYOUT_DEBUG] Widget analysis', {
         widgetId,
         newPosition,
         currentPosition,
         foundWidget: !!currentWidget,
+        foundFinalWidget: !!finalWidget,
         isNewWidget: currentWidget === undefined,
         allWidgetsCount: allWidgets.length
       });
 
       // Only add pending change if this is a manual change (not responsive)
-      if (currentWidget && currentPosition) {
+      if (finalWidget && currentPosition) {
         console.log('✅ [LAYOUT_DEBUG] Widget found with current position, checking if responsive');
         
         // Check if this is a responsive change by comparing with expected responsive position
@@ -679,6 +682,7 @@ export default function DashboardsPage() {
         console.log('❌ [LAYOUT_DEBUG] Widget not found or no current position, skipping pending change', {
           widgetId,
           hasCurrentWidget: !!currentWidget,
+          hasFinalWidget: !!finalWidget,
           hasCurrentPosition: !!currentPosition,
           allWidgetsCount: allWidgets.length
         });
