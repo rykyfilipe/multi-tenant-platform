@@ -176,8 +176,13 @@ export async function requireAuthFlexible(request: NextRequest): Promise<Session
   try {
     // First try NextAuth session (cookie-based)
     const sessionResult = await requireAuthResponse();
-    if (sessionResult instanceof Session) {
+    if (sessionResult instanceof NextResponse) {
       return sessionResult;
+    }
+    
+    // If it's a Session object, return it
+    if (sessionResult && typeof sessionResult === 'object' && 'user' in sessionResult) {
+      return sessionResult as Session;
     }
     
     // If NextAuth fails, try Bearer token authentication

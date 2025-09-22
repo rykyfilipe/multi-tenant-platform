@@ -59,58 +59,225 @@ export default function StyleOptions({ style, onStyleChange, widgetType }: Style
         { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
         { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
         { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'quote', label: 'Quote' },
-        { value: 'neon', label: 'Neon' },
-        { value: 'vintage', label: 'Vintage' }
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'quote', label: 'Quote', description: 'Quote-style formatting' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
       ],
       chart: [
-        { value: 'default', label: 'Default' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'gradient', label: 'Gradient' },
-        { value: 'dark', label: 'Dark' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'neon', label: 'Neon' },
-        { value: 'cyber', label: 'Cyber' }
+        { value: 'default', label: 'Default', description: 'Standard chart styling' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'dark', label: 'Dark', description: 'Dark theme with white text' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
       ],
       tasks: [
-        { value: 'default', label: 'Default' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'card', label: 'Card' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'gradient', label: 'Gradient' },
-        { value: 'neon', label: 'Neon' }
+        { value: 'default', label: 'Default', description: 'Standard task list' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'card', label: 'Card', description: 'Card-based layout' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' }
       ],
       calendar: [
-        { value: 'default', label: 'Default' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'modern', label: 'Modern' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'gradient', label: 'Gradient' },
-        { value: 'vintage', label: 'Vintage' }
+        { value: 'default', label: 'Default', description: 'Standard calendar' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' }
       ],
       weather: [
-        { value: 'card', label: 'Card' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'gradient', label: 'Gradient' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'neon', label: 'Neon' },
-        { value: 'vintage', label: 'Vintage' }
+        { value: 'card', label: 'Card', description: 'Card-based layout' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
       ],
       clock: [
-        { value: 'default', label: 'Default' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'bordered', label: 'Bordered' },
-        { value: 'digital', label: 'Digital' },
-        { value: 'glass', label: 'Glass' },
-        { value: 'gradient', label: 'Gradient' },
-        { value: 'neon', label: 'Neon' },
-        { value: 'vintage', label: 'Vintage' },
-        { value: 'cyber', label: 'Cyber' }
+        { value: 'default', label: 'Default', description: 'Standard clock widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'digital', label: 'Digital', description: 'Digital display style' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' }
+      ],
+      filter: [
+        { value: 'default', label: 'Default', description: 'Standard filter widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      image: [
+        { value: 'default', label: 'Default', description: 'Standard image widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      iframe: [
+        { value: 'default', label: 'Default', description: 'Standard iframe widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      map: [
+        { value: 'default', label: 'Default', description: 'Standard map widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      gauge: [
+        { value: 'default', label: 'Default', description: 'Standard gauge widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      progress: [
+        { value: 'default', label: 'Default', description: 'Standard progress widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      list: [
+        { value: 'default', label: 'Default', description: 'Standard list widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      form: [
+        { value: 'default', label: 'Default', description: 'Standard form widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      button: [
+        { value: 'default', label: 'Default', description: 'Standard button widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
+      ],
+      divider: [
+        { value: 'default', label: 'Default', description: 'Standard divider widget' },
+        { value: 'minimal', label: 'Minimal', description: 'Clean minimal design' },
+        { value: 'bordered', label: 'Bordered', description: 'Bordered container' },
+        { value: 'gradient', label: 'Gradient', description: 'Gradient background' },
+        { value: 'glass', label: 'Glass', description: 'Glass morphism effect' },
+        { value: 'neon', label: 'Neon', description: 'Neon glow effects' },
+        { value: 'vintage', label: 'Vintage', description: 'Retro styling' },
+        { value: 'cyber', label: 'Cyber', description: 'Futuristic design' },
+        { value: 'luxury', label: 'Luxury', description: 'Premium styling' },
+        { value: 'monochrome', label: 'Monochrome', description: 'Black and white only' },
+        { value: 'elegant', label: 'Elegant', description: 'Sophisticated design' },
+        { value: 'modern', label: 'Modern', description: 'Contemporary styling' }
       ]
     };
 
@@ -181,313 +348,391 @@ export default function StyleOptions({ style, onStyleChange, widgetType }: Style
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Style Options</h3>
+        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+          <Palette className="h-5 w-5" />
+          <span>Style Options</span>
+        </h3>
         <Separator />
       </div>
 
-      {/* Layout */}
-      <div className="space-y-2">
-        <Label htmlFor="layout">Layout Style</Label>
-        <Select
-          value={style?.layout || 'default'}
-          onValueChange={(value) => handleStyleChange('layout', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select layout" />
-          </SelectTrigger>
-          <SelectContent>
+      {/* Layout Presets */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center space-x-2">
+            <Layout className="h-4 w-4" />
+            <span>Layout Presets</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             {renderLayoutOptions().map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
+              <div
+                key={option.value}
+                className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                  style?.layout === option.value
+                    ? 'border-black bg-black/5'
+                    : 'border-black/20 hover:border-black/40'
+                }`}
+                onClick={() => handleStyleChange('layout', option.value)}
+              >
+                <div className="font-medium text-sm">{option.label}</div>
+                <div className="text-xs text-black/60 mt-1">{option.description}</div>
+              </div>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Size */}
-      <div className="space-y-2">
-        <Label htmlFor="size">Size</Label>
-        <Select
-          value={style?.size || 'medium'}
-          onValueChange={(value) => handleStyleChange('size', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select size" />
-          </SelectTrigger>
-          <SelectContent>
-            {renderSizeOptions().map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Alignment */}
-      <div className="space-y-2">
-        <Label htmlFor="alignment">Alignment</Label>
-        <Select
-          value={style?.alignment || 'left'}
-          onValueChange={(value) => handleStyleChange('alignment', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select alignment" />
-          </SelectTrigger>
-          <SelectContent>
-            {renderAlignmentOptions().map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Border Radius */}
-      <div className="space-y-2">
-        <Label htmlFor="borderRadius">Border Radius</Label>
-        <Select
-          value={style?.borderRadius || 'medium'}
-          onValueChange={(value) => handleStyleChange('borderRadius', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select border radius" />
-          </SelectTrigger>
-          <SelectContent>
-            {renderBorderRadiusOptions().map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Shadow */}
-      <div className="space-y-2">
-        <Label htmlFor="shadow">Shadow</Label>
-        <Select
-          value={style?.shadow || 'small'}
-          onValueChange={(value) => handleStyleChange('shadow', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select shadow" />
-          </SelectTrigger>
-          <SelectContent>
-            {renderShadowOptions().map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Padding */}
-      <div className="space-y-2">
-        <Label htmlFor="padding">Padding</Label>
-        <Select
-          value={style?.padding || 'comfortable'}
-          onValueChange={(value) => handleStyleChange('padding', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select padding" />
-          </SelectTrigger>
-          <SelectContent>
-            {renderPaddingOptions().map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Background Options */}
-      <div className="space-y-4">
-        <h4 className="text-md font-medium">Background</h4>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="backgroundColor">Background Color</Label>
-            <Input
-              type="color"
-              value={style?.backgroundColor || '#ffffff'}
-              onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-              className="h-10"
-            />
           </div>
-          
+        </CardContent>
+      </Card>
+
+      {/* Color Customization */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center space-x-2">
+            <Palette className="h-4 w-4" />
+            <span>Colors</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="backgroundColor">Background Color</Label>
+              <ColorPicker
+                value={style?.backgroundColor || '#ffffff'}
+                onChange={(color) => handleStyleChange('backgroundColor', color)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="textColor">Text Color</Label>
+              <ColorPicker
+                value={style?.textColor || '#000000'}
+                onChange={(color) => handleStyleChange('textColor', color)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="borderColor">Border Color</Label>
+              <ColorPicker
+                value={style?.borderColor || '#000000'}
+                onChange={(color) => handleStyleChange('borderColor', color)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="accentColor">Accent Color</Label>
+              <ColorPicker
+                value={style?.accentColor || '#000000'}
+                onChange={(color) => handleStyleChange('accentColor', color)}
+                className="mt-2"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Layout Settings */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center space-x-2">
+            <Type className="h-4 w-4" />
+            <span>Layout Settings</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+
+          {/* Size */}
           <div className="space-y-2">
-            <Label htmlFor="backgroundOpacity">Background Opacity</Label>
+            <Label htmlFor="size">Size</Label>
             <Select
-              value={style?.backgroundOpacity || '100'}
-              onValueChange={(value) => handleStyleChange('backgroundOpacity', value)}
+              value={style?.size || 'medium'}
+              onValueChange={(value) => handleStyleChange('size', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select opacity" />
+                <SelectValue placeholder="Select size" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">Transparent (0%)</SelectItem>
-                <SelectItem value="10">10%</SelectItem>
-                <SelectItem value="25">25%</SelectItem>
-                <SelectItem value="50">50%</SelectItem>
-                <SelectItem value="75">75%</SelectItem>
-                <SelectItem value="90">90%</SelectItem>
-                <SelectItem value="100">Opaque (100%)</SelectItem>
+                {renderSizeOptions().map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="backgroundType">Background Type</Label>
-          <Select
-            value={style?.backgroundType || 'solid'}
-            onValueChange={(value) => handleStyleChange('backgroundType', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select background type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="solid">Solid Color</SelectItem>
-              <SelectItem value="gradient">Gradient</SelectItem>
-              <SelectItem value="glass">Glass Effect</SelectItem>
-              <SelectItem value="blur">Blur Effect</SelectItem>
-              <SelectItem value="pattern">Pattern</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          {/* Alignment */}
+          <div className="space-y-2">
+            <Label htmlFor="alignment">Alignment</Label>
+            <Select
+              value={style?.alignment || 'left'}
+              onValueChange={(value) => handleStyleChange('alignment', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select alignment" />
+              </SelectTrigger>
+              <SelectContent>
+                {renderAlignmentOptions().map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {style?.backgroundType === 'gradient' && (
+          {/* Border Radius */}
+          <div className="space-y-2">
+            <Label htmlFor="borderRadius">Border Radius</Label>
+            <Select
+              value={style?.borderRadius || 'medium'}
+              onValueChange={(value) => handleStyleChange('borderRadius', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select border radius" />
+              </SelectTrigger>
+              <SelectContent>
+                {renderBorderRadiusOptions().map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Shadow */}
+          <div className="space-y-2">
+            <Label htmlFor="shadow">Shadow</Label>
+            <Select
+              value={style?.shadow || 'small'}
+              onValueChange={(value) => handleStyleChange('shadow', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select shadow" />
+              </SelectTrigger>
+              <SelectContent>
+                {renderShadowOptions().map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Spacing & Effects */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center space-x-2">
+            <Sparkles className="h-4 w-4" />
+            <span>Spacing & Effects</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Padding */}
+          <div className="space-y-2">
+            <Label htmlFor="padding">Padding</Label>
+            <Select
+              value={style?.padding || 'comfortable'}
+              onValueChange={(value) => handleStyleChange('padding', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select padding" />
+              </SelectTrigger>
+              <SelectContent>
+                {renderPaddingOptions().map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Background Options */}
           <div className="space-y-4">
+            <h4 className="text-md font-medium">Background</h4>
+        
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="gradientFrom">Gradient From</Label>
-                <Input
-                  type="color"
-                  value={style?.gradientFrom || '#3b82f6'}
-                  onChange={(e) => handleStyleChange('gradientFrom', e.target.value)}
-                  className="h-10"
-                />
+                <Label htmlFor="backgroundOpacity">Background Opacity</Label>
+                <Select
+                  value={style?.backgroundOpacity || '100'}
+                  onValueChange={(value) => handleStyleChange('backgroundOpacity', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select opacity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Transparent (0%)</SelectItem>
+                    <SelectItem value="10">10%</SelectItem>
+                    <SelectItem value="25">25%</SelectItem>
+                    <SelectItem value="50">50%</SelectItem>
+                    <SelectItem value="75">75%</SelectItem>
+                    <SelectItem value="90">90%</SelectItem>
+                    <SelectItem value="100">Opaque (100%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+          
+              <div className="space-y-2">
+                <Label htmlFor="backgroundType">Background Type</Label>
+                <Select
+                  value={style?.backgroundType || 'solid'}
+                  onValueChange={(value) => handleStyleChange('backgroundType', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select background type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="solid">Solid Color</SelectItem>
+                    <SelectItem value="gradient">Gradient</SelectItem>
+                    <SelectItem value="glass">Glass Effect</SelectItem>
+                    <SelectItem value="blur">Blur Effect</SelectItem>
+                    <SelectItem value="pattern">Pattern</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Advanced Effects */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center space-x-2">
+            <Sparkles className="h-4 w-4" />
+            <span>Advanced Effects</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="backgroundType">Background Type</Label>
+            <Select
+              value={style?.backgroundType || 'solid'}
+              onValueChange={(value) => handleStyleChange('backgroundType', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select background type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="solid">Solid Color</SelectItem>
+                <SelectItem value="gradient">Gradient</SelectItem>
+                <SelectItem value="glass">Glass Effect</SelectItem>
+                <SelectItem value="blur">Blur Effect</SelectItem>
+                <SelectItem value="pattern">Pattern</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {style?.backgroundType === 'gradient' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gradientFrom">Gradient From</Label>
+                  <ColorPicker
+                    value={style?.gradientFrom || '#3b82f6'}
+                    onChange={(color) => handleStyleChange('gradientFrom', color)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="gradientTo">Gradient To</Label>
+                  <ColorPicker
+                    value={style?.gradientTo || '#8b5cf6'}
+                    onChange={(color) => handleStyleChange('gradientTo', color)}
+                  />
+                </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="gradientTo">Gradient To</Label>
-                <Input
-                  type="color"
-                  value={style?.gradientTo || '#8b5cf6'}
-                  onChange={(e) => handleStyleChange('gradientTo', e.target.value)}
-                  className="h-10"
-                />
+                <Label htmlFor="gradientDirection">Gradient Direction</Label>
+                <Select
+                  value={style?.gradientDirection || 'to-r'}
+                  onValueChange={(value) => handleStyleChange('gradientDirection', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select direction" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="to-r">Left to Right</SelectItem>
+                    <SelectItem value="to-l">Right to Left</SelectItem>
+                    <SelectItem value="to-t">Bottom to Top</SelectItem>
+                    <SelectItem value="to-b">Top to Bottom</SelectItem>
+                    <SelectItem value="to-br">Top Left to Bottom Right</SelectItem>
+                    <SelectItem value="to-bl">Top Right to Bottom Left</SelectItem>
+                    <SelectItem value="to-tr">Bottom Left to Top Right</SelectItem>
+                    <SelectItem value="to-tl">Bottom Right to Top Left</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Border Options */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center space-x-2">
+            <Layout className="h-4 w-4" />
+            <span>Borders</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="gradientDirection">Gradient Direction</Label>
+              <Label htmlFor="borderColor">Border Color</Label>
+              <ColorPicker
+                value={style?.borderColor || '#e5e7eb'}
+                onChange={(color) => handleStyleChange('borderColor', color)}
+              />
+            </div>
+          
+            <div className="space-y-2">
+              <Label htmlFor="borderWidth">Border Width</Label>
               <Select
-                value={style?.gradientDirection || 'to-r'}
-                onValueChange={(value) => handleStyleChange('gradientDirection', value)}
+                value={style?.borderWidth || '1'}
+                onValueChange={(value) => handleStyleChange('borderWidth', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select direction" />
+                  <SelectValue placeholder="Select width" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="to-r">Left to Right</SelectItem>
-                  <SelectItem value="to-l">Right to Left</SelectItem>
-                  <SelectItem value="to-t">Bottom to Top</SelectItem>
-                  <SelectItem value="to-b">Top to Bottom</SelectItem>
-                  <SelectItem value="to-br">Top Left to Bottom Right</SelectItem>
-                  <SelectItem value="to-bl">Top Right to Bottom Left</SelectItem>
-                  <SelectItem value="to-tr">Bottom Left to Top Right</SelectItem>
-                  <SelectItem value="to-tl">Bottom Right to Top Left</SelectItem>
+                  <SelectItem value="0">No Border</SelectItem>
+                  <SelectItem value="1">Thin (1px)</SelectItem>
+                  <SelectItem value="2">Medium (2px)</SelectItem>
+                  <SelectItem value="4">Thick (4px)</SelectItem>
+                  <SelectItem value="8">Extra Thick (8px)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-        )}
 
-        {style?.backgroundType === 'blur' && (
-          <div className="space-y-2">
-            <Label htmlFor="blurAmount">Blur Amount</Label>
-            <Select
-              value={style?.blurAmount || 'sm'}
-              onValueChange={(value) => handleStyleChange('blurAmount', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select blur amount" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Blur</SelectItem>
-                <SelectItem value="sm">Small Blur</SelectItem>
-                <SelectItem value="md">Medium Blur</SelectItem>
-                <SelectItem value="lg">Large Blur</SelectItem>
-                <SelectItem value="xl">Extra Large Blur</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
-
-      {/* Border Options */}
-      <div className="space-y-4">
-        <h4 className="text-md font-medium">Borders</h4>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="borderColor">Border Color</Label>
-            <Input
-              type="color"
-              value={style?.borderColor || '#e5e7eb'}
-              onChange={(e) => handleStyleChange('borderColor', e.target.value)}
-              className="h-10"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="borderWidth">Border Width</Label>
-            <Select
-              value={style?.borderWidth || '1'}
-              onValueChange={(value) => handleStyleChange('borderWidth', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select width" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">No Border</SelectItem>
-                <SelectItem value="1">Thin (1px)</SelectItem>
-                <SelectItem value="2">Medium (2px)</SelectItem>
-                <SelectItem value="4">Thick (4px)</SelectItem>
-                <SelectItem value="8">Extra Thick (8px)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="borderStyle">Border Style</Label>
-            <Select
-              value={style?.borderStyle || 'solid'}
-              onValueChange={(value) => handleStyleChange('borderStyle', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="solid">Solid</SelectItem>
-                <SelectItem value="dashed">Dashed</SelectItem>
-                <SelectItem value="dotted">Dotted</SelectItem>
-                <SelectItem value="double">Double</SelectItem>
-                <SelectItem value="groove">Groove</SelectItem>
-                <SelectItem value="ridge">Ridge</SelectItem>
-                <SelectItem value="inset">Inset</SelectItem>
-                <SelectItem value="outset">Outset</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="borderStyle">Border Style</Label>
+              <Select
+                value={style?.borderStyle || 'solid'}
+                onValueChange={(value) => handleStyleChange('borderStyle', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select style" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="solid">Solid</SelectItem>
+                  <SelectItem value="dashed">Dashed</SelectItem>
+                  <SelectItem value="dotted">Dotted</SelectItem>
+                  <SelectItem value="double">Double</SelectItem>
+                  <SelectItem value="groove">Groove</SelectItem>
+                  <SelectItem value="ridge">Ridge</SelectItem>
+                  <SelectItem value="inset">Inset</SelectItem>
+                  <SelectItem value="outset">Outset</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           
           <div className="space-y-2">
             <Label htmlFor="borderOpacity">Border Opacity</Label>
@@ -508,11 +753,18 @@ export default function StyleOptions({ style, onStyleChange, widgetType }: Style
             </Select>
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Padding & Spacing */}
-      <div className="space-y-4">
-        <h4 className="text-md font-medium">Padding & Spacing</h4>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center space-x-2">
+            <Sparkles className="h-4 w-4" />
+            <span>Padding & Spacing</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
         
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -574,7 +826,8 @@ export default function StyleOptions({ style, onStyleChange, widgetType }: Style
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </CardContent>
+    </Card>
 
       {/* Text Styling */}
       <div className="space-y-4">
