@@ -3,7 +3,7 @@
  */
 
 import { ValueCoercion } from '../value-coercion';
-import { ColumnType } from '@/types/filtering-enhanced';
+import { ColumnType } from '@/types/filtering';
 
 describe('ValueCoercion', () => {
   describe('coerceValue', () => {

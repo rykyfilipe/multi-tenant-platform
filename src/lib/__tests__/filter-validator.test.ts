@@ -3,7 +3,7 @@
  */
 
 import { FilterValidator } from '../filter-validator';
-import { FilterConfig, ColumnType } from '@/types/filtering-enhanced';
+import { FilterConfig, ColumnType } from '@/types/filtering';
 
 describe('FilterValidator', () => {
   const mockColumns = [

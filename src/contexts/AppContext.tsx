@@ -11,11 +11,12 @@ import {
 	useState,
 	useEffect,
 	useCallback,
+	useMemo,
+	ReactNode,
 } from "react";
 
-interface AppContextType {
-	token: string | null;
-	setToken: (token: string | null) => void;
+// Split contexts to avoid unnecessary re-renders
+interface AlertContextType {
 	showAlert: (
 		message: string,
 		type?: "success" | "error" | "warning" | "info",
@@ -24,43 +25,85 @@ interface AppContextType {
 	alertMessage: string;
 	alertType: "success" | "error" | "warning" | "info";
 	isAlertVisible: boolean;
-	user: User | null;
-	setUser: (user: User | null) => void;
-	setLoading: (x: boolean) => void;
-	loading: boolean;
-	tenant: Tenant | null;
-	setTenant: (tenant: Tenant) => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+interface AuthContextType {
+	token: string | null;
+	user: User | null;
+	loading: boolean;
+}
 
-export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-	const { data: session } = useSession();
+interface TenantContextType {
+	tenant: Tenant | null;
+	setTenant: (tenant: Tenant | null) => void;
+}
 
-	const [user, setUser] = useState<User | null>(null);
-	const [tenant, setTenant] = useState<Tenant | null>(null);
-	const [token, setToken] = useState<string | null>(null);
+const AlertContext = createContext<AlertContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const TenantContext = createContext<TenantContextType | undefined>(undefined);
+
+// Alert Provider - Isolated to prevent unnecessary re-renders
+export const AlertProvider = ({ children }: { children: ReactNode }) => {
 	const [alertMessage, setAlertMessage] = useState("");
 	const [alertType, setAlertType] = useState<
 		"success" | "error" | "warning" | "info"
 	>("success");
 	const [isAlertVisible, setIsAlertVisible] = useState(false);
 
+	const showAlert = useCallback(
+		(
+			message: string,
+			type: "success" | "error" | "warning" | "info" = "success",
+		) => {
+			setAlertMessage(message);
+			setAlertType(type);
+			setIsAlertVisible(true);
+			setTimeout(() => setIsAlertVisible(false), 5000);
+		},
+		[],
+	);
+
+	const hideAlert = useCallback(() => {
+		setIsAlertVisible(false);
+	}, []);
+
+	const value = useMemo(
+		() => ({
+			showAlert,
+			hideAlert,
+			alertMessage,
+			alertType,
+			isAlertVisible,
+		}),
+		[showAlert, hideAlert, alertMessage, alertType, isAlertVisible],
+	);
+
+	return (
+		<AlertContext.Provider value={value}>{children}</AlertContext.Provider>
+	);
+};
+
+// Auth Provider - Handles session and user data
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+	const { data: session } = useSession();
+	const [user, setUser] = useState<User | null>(null);
+	const [token, setToken] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		if (session?.user) {
+		if (session) {
 			try {
-				// Only update if user data has actually changed
 				const newUserId = Number(session.user.id);
 				const newToken = session.customJWT || "";
 
+				// Only update if data has changed
 				if (user?.id !== newUserId || token !== newToken) {
 					const updatedUser = {
 						...session.user,
 						id: newUserId,
+						role: session.user.role as import("@/types/user").Role,
 					};
-					setUser(updatedUser);
+					setUser(updatedUser as User);
 					setToken(newToken);
 				}
 			} catch (error) {
@@ -74,119 +117,107 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 		}
 
 		setLoading(false);
-	}, [session?.user?.id, session?.customJWT, user?.id, token]); // Add user and token to prevent stale closures
+	}, [session?.user?.id, session?.customJWT, user?.id, token]);
 
-	// Configuration validation
-	useEffect(() => {
-		const requiredEnvVars = [
-			"NEXTAUTH_SECRET",
-			"JWT_SECRET",
-			"PUBLIC_JWT_SECRET",
-		];
+	const value = useMemo(
+		() => ({
+			token,
+			user,
+			loading,
+		}),
+		[token, user, loading],
+	);
 
-		const missingVars = requiredEnvVars.filter(
-			(varName) => !process.env[varName],
-		);
+	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
 
-		if (missingVars.length > 0) {
-			// Missing required environment variables
-		}
-	}, []);
+// Tenant Provider - Handles tenant data with optimized fetching
+export const TenantProvider = ({ children }: { children: ReactNode }) => {
+	const { token } = useAuth();
+	const [tenant, setTenant] = useState<Tenant | null>(null);
 
 	const fetchTenant = useCallback(async () => {
-		if (!token) {
-			setLoading(false);
-			return;
-		}
-
-		// Prevent duplicate requests
-		if (tenant && tenant.adminId) {
-			setLoading(false);
-			return;
-		}
+		if (!token || tenant) return;
 
 		try {
 			const response = await fetch("/api/tenants", {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
-			if (!response.ok) {
-				setLoading(false);
-				return;
-			}
+			if (!response.ok) return;
 
 			const data = await response.json();
-			// Only update if data has actually changed
-			if (!tenant || tenant.id !== data.id) {
-				setTenant(data);
-			}
+			setTenant(data);
 		} catch (error) {
 			console.error("Error fetching tenant:", error);
-		} finally {
-			setLoading(false);
 		}
-	}, [token]); // Remove tenant?.id dependency to prevent infinite loops
+	}, [token, tenant]);
 
 	useEffect(() => {
 		if (token && !tenant) {
 			fetchTenant();
 		} else if (!token && tenant) {
 			setTenant(null);
-			setLoading(false);
-		} else if (!token) {
-			setLoading(false);
 		}
 	}, [token, tenant, fetchTenant]);
 
-	const showAlert = (
-		message: string,
-		type: "success" | "error" | "warning" | "info" = "success",
-	) => {
-		console.log("=== SHOW ALERT DEBUG ===");
-		console.log("Message:", message);
-		console.log("Type:", type);
-		console.log("Current alert state:", { alertMessage, alertType, isAlertVisible });
-		
-		setAlertMessage(message);
-		setAlertType(type);
-		setIsAlertVisible(true);
-		
-		console.log("Alert state after setting:", { message, type, visible: true });
-		
-		setTimeout(() => {
-			console.log("Auto-hiding alert after 5 seconds");
-			setIsAlertVisible(false);
-		}, 5000);
-	};
-
-	const hideAlert = () => {
-		setIsAlertVisible(false);
-	};
+	const value = useMemo(
+		() => ({
+			tenant,
+			setTenant,
+		}),
+		[tenant],
+	);
 
 	return (
-		<AppContext.Provider
-			value={{
-				token,
-				setToken,
-				showAlert,
-				hideAlert,
-				alertMessage,
-				alertType,
-				isAlertVisible,
-				user,
-				setLoading,
-				loading,
-				setUser,
-				tenant,
-				setTenant,
-			}}>
-			{children}
-		</AppContext.Provider>
+		<TenantContext.Provider value={value}>{children}</TenantContext.Provider>
 	);
 };
 
-export const useApp = () => {
-	const context = useContext(AppContext);
-	if (!context) throw new Error("useApp must be used within AppProvider");
+// Combined Provider
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+	return (
+		<AlertProvider>
+			<AuthProvider>
+				<TenantProvider>{children}</TenantProvider>
+			</AuthProvider>
+		</AlertProvider>
+	);
+};
+
+// Hooks
+export const useAlert = () => {
+	const context = useContext(AlertContext);
+	if (!context) throw new Error("useAlert must be used within AlertProvider");
 	return context;
 };
+
+export const useAuth = () => {
+	const context = useContext(AuthContext);
+	if (!context) throw new Error("useAuth must be used within AuthProvider");
+	return context;
+};
+
+export const useTenant = () => {
+	const context = useContext(TenantContext);
+	if (!context) throw new Error("useTenant must be used within TenantProvider");
+	return context;
+};
+
+// Combined hook for backwards compatibility
+export const useOptimizedApp = () => {
+	const alert = useAlert();
+	const auth = useAuth();
+	const tenant = useTenant();
+
+	return {
+		...alert,
+		...auth,
+		...tenant,
+		// Legacy compatibility
+		setLoading: () => {}, // No-op since loading is handled internally
+	};
+};
+
+// Alias for backward compatibility
+export const useApp = useOptimizedApp;

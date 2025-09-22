@@ -13,14 +13,14 @@ interface Widget {
 	isVisible?: boolean;
 	order?: number;
 }
-import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
+import type { DataSource as DataSourceType, ChartAxisConfig } from './TableSelector';
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 
 // LineChart configuration interface
 export interface LineChartConfig {
   title?: string;
-	dataSource?: EnhancedDataSource;
+	dataSource?: DataSourceType;
 	xAxis?: ChartAxisConfig;
 	yAxis?: ChartAxisConfig;
   options?: {
@@ -122,7 +122,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 	const options = config.options || {};
 	
 	// Support both old and new data source formats
-	const enhancedDataSource = dataSource as EnhancedDataSource;
+	const enhancedDataSource = dataSource as DataSourceType;
 	
 	// Determine axis configuration - prefer new format, fallback to legacy
 	const safeXAxis = enhancedDataSource.xAxis || config.xAxis || { key: 'x', label: 'X Axis', type: 'category' as const, columns: ['x'] };
@@ -170,7 +170,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 				if (!item || typeof item !== 'object') return false;
 				
 				const xValue = item?.[xColumn];
-				const hasValidY = enhancedDataSource.yAxis!.columns.some(yCol => {
+				const hasValidY = enhancedDataSource.yAxis!.columns.some((yCol: string) => {
 					const yValue = item?.[yCol];
 					return yValue !== undefined && yValue !== null && !isNaN(Number(yValue));
 				});
@@ -199,7 +199,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 			// If multiple X columns, we need to create multiple series
 			const transformedData: any[] = [];
 			rawData.forEach(item => {
-				enhancedDataSource.xAxis!.columns.forEach(xCol => {
+				enhancedDataSource.xAxis!.columns.forEach((xCol: string) => {
 					const yCol = enhancedDataSource.yAxis?.columns?.[0] || safeYAxis.key;
 					if (item[xCol] !== undefined && item[xCol] !== null && 
 						item[yCol] !== undefined && item[yCol] !== null && !isNaN(Number(item[yCol]))) {
@@ -259,7 +259,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 		
 		if (columnColors && yColumns.length > 0) {
 			// Use custom colors for each column
-			const customColors = yColumns.map(column => columnColors[column] || '#3B82F6');
+			const customColors = yColumns.map((column: string) => columnColors[column] || '#3B82F6');
 			console.log('[LineChart] Using custom column colors:', {
 				yColumns,
 				columnColors,
@@ -491,7 +491,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 									colors: colors,
 									processedDataLength: processedData.length
 								});
-								return enhancedDataSource.yAxis.columns.map((yCol, index) => {
+								return enhancedDataSource.yAxis.columns.map((yCol: string, index: number) => {
 									console.log('[LineChart] Creating Line for:', { yCol, index, color: colors[index % colors.length] });
 									return (
 										<Line
@@ -515,7 +515,7 @@ export default function LineChartWidget({ widget, isEditMode, onEdit, onDelete, 
 							})()
 						) : enhancedDataSource.xAxis?.columns && enhancedDataSource.xAxis.columns.length > 1 ? (
 							/* Render multiple lines if multiple X columns are selected */
-							enhancedDataSource.xAxis.columns.map((xCol, index) => (
+							enhancedDataSource.xAxis.columns.map((xCol: string, index: number) => (
 								<Line
 									key={xCol}
 									type={curveType}

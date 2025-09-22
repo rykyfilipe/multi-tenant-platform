@@ -10,7 +10,7 @@ import {
   FilterOperator, 
   OPERATOR_COMPATIBILITY,
   VALUE_TYPE_MAPPING 
-} from '@/types/filtering-enhanced';
+} from '@/types/filtering';
 import { ValueCoercion } from './value-coercion';
 import { any } from 'zod';
 

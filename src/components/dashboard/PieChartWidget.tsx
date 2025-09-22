@@ -4,7 +4,7 @@ import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Legend, Cell } from 'recharts';
 import BaseWidget from './BaseWidget';
 import type { Widget, LineChartConfig } from './LineChartWidget';
-import type { EnhancedDataSource, ChartAxisConfig } from './EnhancedTableSelector';
+import type { DataSource, ChartAxisConfig } from './TableSelector';
 import { useChartData } from './BaseChartWidget';
 import { generateChartColors, type ColorPalette } from '@/lib/chart-colors';
 

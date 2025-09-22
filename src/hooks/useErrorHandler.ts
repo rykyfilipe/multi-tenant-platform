@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { logger } from "@/lib/error-logger";
-import { EnhancedError, ErrorMessageGenerator } from "@/components/errors/EnhancedErrorDisplay";
+import { EnhancedError, ErrorMessageGenerator } from "@/components/errors/ErrorDisplay";
 
 interface ErrorHandlerOptions {
 	autoRetry?: boolean;

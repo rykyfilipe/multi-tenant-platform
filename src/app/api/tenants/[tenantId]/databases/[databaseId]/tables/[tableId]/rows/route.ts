@@ -22,10 +22,9 @@ import {
 	trackUserAction,
 	trackDatabaseOperationFromResponse,
 } from "@/lib/api-tracker";
-import { FilterConfig } from "@/types/filtering-enhanced";
+import { FilterConfig } from "@/types/filtering";
 import { FilterValidator } from "@/lib/filter-validator";
 import { PrismaFilterBuilder } from "@/lib/prisma-filter-builder";
-import { PrismaFilterBuilderV2 } from "@/lib/prisma-filter-builder-v2";
 import { logger } from "@/lib/error-logger";
 
 const RowSchema = z.object({

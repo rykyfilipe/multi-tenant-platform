@@ -3,7 +3,7 @@
  * Handles conversion from JSON cell values to proper types for filtering
  */
 
-import { ColumnType } from '@/types/filtering-enhanced';
+import { ColumnType } from '@/types/filtering';
 
 export interface CoercionResult {
   value: any;

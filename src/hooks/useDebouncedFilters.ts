@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FilterConfig } from '@/types/filtering-enhanced';
+import { FilterConfig } from '@/types/filtering';
 
 interface UseDebouncedFiltersOptions {
   debounceMs?: number;

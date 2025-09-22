@@ -1,228 +1,209 @@
 /**
- * Type definitions for the new POST-based filtering system
- * Provides clear structure for filter payloads and responses
+ * Enhanced filtering system with strict type safety and validation
+ * Replaces the old filtering types with a more robust implementation
  */
 
-// Base filter configuration interface
+// Base filter configuration with strict typing
 export interface FilterConfig {
-	id: string; // Unique identifier for each filter
-	columnId: number;
-	columnName: string;
-	columnType: string;
-	operator: string;
-	value: any;
-	secondValue?: any; // For range filters (between, not_between)
+  id: string;
+  columnId: number;
+  columnName: string;
+  columnType: ColumnType;
+  operator: FilterOperator;
+  value: FilterValue | null | undefined;
+  secondValue?: FilterValue | null | undefined; // For range filters
 }
 
-// Filter operators by column type
-export type TextFilterOperator = 
-	| 'contains'
-	| 'not_contains'
-	| 'equals'
-	| 'not_equals'
-	| 'starts_with'
-	| 'ends_with'
-	| 'regex'
-	| 'is_empty'
-	| 'is_not_empty';
+// Strict column types
+export type ColumnType = 
+  | 'text' 
+  | 'string' 
+  | 'email' 
+  | 'url' 
+  | 'number' 
+  | 'integer' 
+  | 'decimal' 
+  | 'boolean' 
+  | 'date' 
+  | 'datetime' 
+  | 'time' 
+  | 'json' 
+  | 'reference'
+  | 'customArray';
 
-export type NumericFilterOperator = 
-	| 'equals'
-	| 'not_equals'
-	| 'greater_than'
-	| 'greater_than_or_equal'
-	| 'less_than'
-	| 'less_than_or_equal'
-	| 'between'
-	| 'not_between'
-	| 'is_empty'
-	| 'is_not_empty';
+// Strict filter values based on column type
+export type FilterValue = 
+  | string 
+  | number 
+  | boolean 
+  | Date 
+  | null 
+  | undefined;
 
-export type BooleanFilterOperator = 
-	| 'equals'
-	| 'not_equals'
-	| 'is_empty'
-	| 'is_not_empty';
+// Operator mapping by column type
+export interface OperatorMapping {
+  text: TextOperator[];
+  string: TextOperator[];
+  email: TextOperator[];
+  url: TextOperator[];
+  number: NumberOperator[];
+  integer: NumberOperator[];
+  decimal: NumberOperator[];
+  boolean: BooleanOperator[];
+  date: DateOperator[];
+  datetime: DateOperator[];
+  time: DateOperator[];
+  json: TextOperator[];
+  reference: ReferenceOperator[];
+  customArray: ReferenceOperator[];
+}
 
-export type DateFilterOperator = 
-	| 'equals'
-	| 'not_equals'
-	| 'before'
-	| 'after'
-	| 'between'
-	| 'not_between'
-	| 'today'
-	| 'yesterday'
-	| 'this_week'
-	| 'this_month'
-	| 'this_year'
-	| 'is_empty'
-	| 'is_not_empty';
+// Text operators
+export type TextOperator = 
+  | 'contains'
+  | 'not_contains'
+  | 'equals'
+  | 'not_equals'
+  | 'starts_with'
+  | 'ends_with'
+  | 'regex'
+  | 'is_empty'
+  | 'is_not_empty';
 
-export type ReferenceFilterOperator = 
-	| 'equals'
-	| 'not_equals'
-	| 'is_empty'
-	| 'is_not_empty';
+// Number operators
+export type NumberOperator = 
+  | 'equals'
+  | 'not_equals'
+  | 'greater_than'
+  | 'greater_than_or_equal'
+  | 'less_than'
+  | 'less_than_or_equal'
+  | 'between'
+  | 'not_between'
+  | 'is_empty'
+  | 'is_not_empty';
 
+// Boolean operators
+export type BooleanOperator = 
+  | 'equals'
+  | 'not_equals'
+  | 'is_empty'
+  | 'is_not_empty';
+
+// Date operators
+export type DateOperator = 
+  | 'equals'
+  | 'not_equals'
+  | 'before'
+  | 'after'
+  | 'between'
+  | 'not_between'
+  | 'today'
+  | 'yesterday'
+  | 'this_week'
+  | 'last_week'
+  | 'this_month'
+  | 'last_month'
+  | 'this_year'
+  | 'last_year'
+  | 'is_empty'
+  | 'is_not_empty';
+
+// Reference operators
+export type ReferenceOperator = 
+  | 'equals'
+  | 'not_equals'
+  | 'is_empty'
+  | 'is_not_empty';
+
+// Union of all operators
 export type FilterOperator = 
-	| TextFilterOperator
-	| NumericFilterOperator
-	| BooleanFilterOperator
-	| DateFilterOperator
-	| ReferenceFilterOperator;
+  | TextOperator 
+  | NumberOperator 
+  | BooleanOperator 
+  | DateOperator 
+  | ReferenceOperator;
 
-// Main filter payload interface
-export interface FilterPayload {
-	page: number;
-	pageSize: number;
-	includeCells?: boolean;
-	globalSearch?: string;
-	filters?: FilterConfig[];
-	sortBy?: string;
-	sortOrder?: 'asc' | 'desc';
-}
-
-// Pagination information
-export interface PaginationInfo {
-	page: number;
-	pageSize: number;
-	totalRows: number;
-	totalPages: number;
-	hasNext: boolean;
-	hasPrev: boolean;
-}
-
-// Filter information in response
-export interface FilterInfo {
-	applied: boolean;
-	globalSearch: string;
-	columnFilters: FilterConfig[];
-	validFiltersCount: number;
-}
-
-// Performance metrics
-export interface PerformanceMetrics {
-	queryTime: number;
-	filteredRows: number;
-	originalTableSize: number;
-}
-
-// Main API response interface
-export interface FilteredRowsResponse {
-	data: any[]; // Array of rows
-	pagination: PaginationInfo;
-	filters: FilterInfo;
-	performance?: PerformanceMetrics; // Optional, only in /filtered endpoint
-}
-
-// Validation schemas for different filter types
-export interface TextFilterValidation {
-	columnType: 'text' | 'string' | 'email' | 'url';
-	operator: TextFilterOperator;
-	value: string;
-	secondValue?: never;
-}
-
-export interface NumericFilterValidation {
-	columnType: 'number' | 'integer' | 'decimal';
-	operator: NumericFilterOperator;
-	value: number;
-	secondValue?: number; // Required for 'between' and 'not_between'
-}
-
-export interface BooleanFilterValidation {
-	columnType: 'boolean';
-	operator: BooleanFilterOperator;
-	value: boolean;
-	secondValue?: never;
-}
-
-export interface DateFilterValidation {
-	columnType: 'date' | 'datetime';
-	operator: DateFilterOperator;
-	value: string | Date; // ISO string or Date object
-	secondValue?: string | Date; // Required for 'between' and 'not_between'
-}
-
-export interface ReferenceFilterValidation {
-	columnType: 'reference';
-	operator: ReferenceFilterOperator;
-	value: string | number;
-	secondValue?: never;
-}
-
-export type ValidatedFilter = 
-	| TextFilterValidation
-	| NumericFilterValidation
-	| BooleanFilterValidation
-	| DateFilterValidation
-	| ReferenceFilterValidation;
-
-// Error response interface
-export interface FilterErrorResponse {
-	error: string;
-	code?: string;
-	details?: any;
-}
-
-// API endpoint configuration
-export interface FilterEndpointConfig {
-	baseUrl: string;
-	tenantId: string;
-	databaseId: string;
-	tableId: string;
-	authToken: string;
-}
-
-// Helper type for creating filter configurations
-export interface CreateFilterConfig {
-	columnId: number;
-	columnName: string;
-	columnType: string;
-	operator: FilterOperator;
-	value: any;
-	secondValue?: any;
-}
-
-// Utility type for filter validation results
+// Filter validation result
 export interface FilterValidationResult {
-	isValid: boolean;
-	errors: string[];
-	warnings: string[];
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 
-// Constants for filter operators by column type
-export const FILTER_OPERATORS_BY_TYPE = {
-	text: [
-		'contains', 'not_contains', 'equals', 'not_equals',
-		'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'
-	] as const,
-	number: [
-		'equals', 'not_equals', 'greater_than', 'greater_than_or_equal',
-		'less_than', 'less_than_or_equal', 'between', 'not_between',
-		'is_empty', 'is_not_empty'
-	] as const,
-	boolean: [
-		'equals', 'not_equals', 'is_empty', 'is_not_empty'
-	] as const,
-	date: [
-		'equals', 'not_equals', 'before', 'after', 'between', 'not_between',
-		'today', 'yesterday', 'this_week', 'this_month', 'this_year',
-		'is_empty', 'is_not_empty'
-	] as const,
-	reference: [
-		'equals', 'not_equals', 'is_empty', 'is_not_empty'
-	] as const
-} as const;
+// Enhanced filter payload
+export interface FilterPayload {
+  filters: FilterConfig[];
+  globalSearch: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+  page: number;
+  pageSize: number;
+}
 
-// Default filter payload values
-export const DEFAULT_FILTER_PAYLOAD: Partial<FilterPayload> = {
-	page: 1,
-	pageSize: 25,
-	includeCells: true,
-	globalSearch: '',
-	filters: [],
-	sortBy: 'id',
-	sortOrder: 'asc'
-} as const;
+// Filter response
+export interface FilteredRowsResponse {
+  data: any[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalRows: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  filters: FilterConfig[];
+  appliedFilters: FilterConfig[];
+  globalSearch: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+  executionTime: number;
+  cacheHit: boolean;
+}
+
+// Cache key structure
+export interface CacheKey {
+  tableId: number;
+  filters: string; // JSON stringified filters
+  globalSearch: string;
+  sortBy: string;
+  sortOrder: string;
+  page: number;
+  pageSize: number;
+}
+
+// Operator compatibility matrix
+export const OPERATOR_COMPATIBILITY: OperatorMapping = {
+  text: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  string: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  email: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  url: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  number: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+  integer: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+  decimal: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+  boolean: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
+  date: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+  datetime: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+  time: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+  json: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+  reference: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
+  customArray: ['equals', 'not_equals', 'is_empty', 'is_not_empty']
+};
+
+// Value type mapping
+export const VALUE_TYPE_MAPPING: Record<ColumnType, string> = {
+  text: 'string',
+  string: 'string',
+  email: 'string',
+  url: 'string',
+  number: 'number',
+  integer: 'number',
+  decimal: 'number',
+  boolean: 'boolean',
+  date: 'string',
+  datetime: 'string',
+  time: 'string',
+  json: 'object',
+  reference: 'number',
+  customArray: 'string'
+};

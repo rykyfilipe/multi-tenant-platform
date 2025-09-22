@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Filter as FilterType } from './LineChartWidget';
-import { FilterConfig } from '@/types/filtering-enhanced';
+import { Filter as FilterIcon } from 'lucide-react';
+import { FilterConfig } from '@/types/filtering';
 
 interface ColumnMeta {
   id: number;

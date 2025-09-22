@@ -3,7 +3,7 @@
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import { Row } from "@/types/database";
-import { FilterConfig, FilterPayload, FilteredRowsResponse } from "@/types/filtering-enhanced";
+import { FilterConfig, FilterPayload, FilteredRowsResponse } from "@/types/filtering";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useAbortController } from "./useAbortController";
 

@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EnhancedTableSelector } from './EnhancedTableSelector';
+import { TableSelector } from './TableSelector';
 import { AggregationSelector } from './AggregationSelector';
-import type { EnhancedDataSource } from './EnhancedTableSelector';
+import type { DataSource } from './TableSelector';
 import type { AggregationConfig } from './AggregationSelector';
 
 /**
@@ -15,7 +15,7 @@ import type { AggregationConfig } from './AggregationSelector';
  * 3. Type validation for different widget types
  */
 export function EnhancedDataSourceTest() {
-  const [chartDataSource, setChartDataSource] = React.useState<EnhancedDataSource>({
+  const [chartDataSource, setChartDataSource] = React.useState<DataSource>({
     type: 'table',
     tableId: undefined,
     xAxis: undefined,
@@ -24,14 +24,14 @@ export function EnhancedDataSourceTest() {
     filters: []
   });
 
-  const [tableDataSource, setTableDataSource] = React.useState<EnhancedDataSource>({
+  const [tableDataSource, setTableDataSource] = React.useState<DataSource>({
     type: 'table',
     tableId: undefined,
     columns: [],
     filters: []
   });
 
-  const [kpiDataSource, setKpiDataSource] = React.useState<EnhancedDataSource>({
+  const [kpiDataSource, setKpiDataSource] = React.useState<DataSource>({
     type: 'table',
     tableId: undefined,
     yAxis: undefined,
@@ -59,7 +59,7 @@ export function EnhancedDataSourceTest() {
           <CardTitle>Chart Widget (Multi-Column Support)</CardTitle>
         </CardHeader>
         <CardContent>
-          <EnhancedTableSelector
+          <TableSelector
             dataSource={chartDataSource}
             onDataSourceChange={setChartDataSource}
             widgetType="chart"
@@ -86,7 +86,7 @@ export function EnhancedDataSourceTest() {
           <CardTitle>Table Widget (Multi-Column Selection)</CardTitle>
         </CardHeader>
         <CardContent>
-          <EnhancedTableSelector
+          <TableSelector
             dataSource={tableDataSource}
             onDataSourceChange={setTableDataSource}
             widgetType="table"
@@ -110,7 +110,7 @@ export function EnhancedDataSourceTest() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <EnhancedTableSelector
+            <TableSelector
               dataSource={kpiDataSource}
               onDataSourceChange={(newDataSource) => {
                 setKpiDataSource({ ...newDataSource, aggregationConfig });

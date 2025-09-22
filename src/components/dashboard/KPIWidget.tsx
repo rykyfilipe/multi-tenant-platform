@@ -18,7 +18,7 @@ import {
   type AggregationType,
   type AggregationResult
 } from '@/lib/aggregation-utils';
-import type { EnhancedDataSource } from './EnhancedTableSelector';
+import type { DataSource } from './TableSelector';
 import type { AggregationConfig } from './AggregationSelector';
 
 export interface KPIDataPoint {

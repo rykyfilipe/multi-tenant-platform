@@ -2,11 +2,11 @@
  * Unit tests for PrismaFilterBuilderV2
  */
 
-import { PrismaFilterBuilderV2 } from '../prisma-filter-builder-v2';
-import { FilterConfig } from '@/types/filtering-enhanced';
+import { PrismaFilterBuilder } from '../prisma-filter-builder';
+import { FilterConfig } from '@/types/filtering';
 
-describe('PrismaFilterBuilderV2', () => {
-  let filterBuilder: PrismaFilterBuilderV2;
+describe('PrismaFilterBuilder', () => {
+  let filterBuilder: PrismaFilterBuilder;
   const mockTableColumns = [
     { id: 1, name: 'text_column', type: 'text' },
     { id: 2, name: 'number_column', type: 'number' },
@@ -15,7 +15,7 @@ describe('PrismaFilterBuilderV2', () => {
   ];
 
   beforeEach(() => {
-    filterBuilder = new PrismaFilterBuilderV2(1, mockTableColumns);
+    filterBuilder = new PrismaFilterBuilder(1, mockTableColumns);
   });
 
   describe('addGlobalSearch', () => {

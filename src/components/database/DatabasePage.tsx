@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useOptimizedDatabase } from "@/hooks/useOptimizedDatabase";
-import { useAuth, useAlert } from "@/contexts/OptimizedAppContext";
+import { useAuth, useAlert } from "@/contexts/AppContext";
 import { TableGrid } from "./TableGrid";
 import DatabaseSelector from "./DatabaseSelector";
 import AddTableModal from "./AddTableModal";

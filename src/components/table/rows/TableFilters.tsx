@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Row, Column, Table } from "@/types/database";
-import { FilterConfig, ColumnType, FilterOperator } from "@/types/filtering-enhanced";
+import { FilterConfig, ColumnType, FilterOperator } from "@/types/filtering";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

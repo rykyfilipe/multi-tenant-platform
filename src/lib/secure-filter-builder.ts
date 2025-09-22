@@ -3,7 +3,7 @@
  * Uses Prisma's built-in filtering instead of raw SQL
  */
 
-import { FilterConfig, ColumnType } from '@/types/filtering-enhanced';
+import { FilterConfig, ColumnType } from '@/types/filtering';
 import { FilterValidator } from './filter-validator';
 import { ValueCoercion } from './value-coercion';
 import { Prisma } from '@/generated/prisma';

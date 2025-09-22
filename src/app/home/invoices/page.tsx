@@ -5,7 +5,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { InvoiceForm } from "@/components/invoice/InvoiceForm";
-import { EnhancedInvoiceList } from "@/components/invoice/EnhancedInvoiceList";
+import { EnhancedInvoiceList } from "@/components/invoice/InvoiceList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

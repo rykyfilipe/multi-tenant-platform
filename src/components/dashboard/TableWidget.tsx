@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, Database, Search } from 'lucide-react';
 import BaseWidget from './BaseWidget';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
-import { FilterConfig } from '@/types/filtering-enhanced';
+import { FilterConfig } from '@/types/filtering';
 
 export interface TableWidgetConfig {
   title?: string;

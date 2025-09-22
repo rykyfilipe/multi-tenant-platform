@@ -16,12 +16,12 @@ import { Badge } from '@/components/ui/badge';
 import { DataEditor } from './DataEditor';
 import { FilterBuilder } from './FilterBuilder';
 import { TableSelector } from './TableSelector';
-import { EnhancedTableSelector } from './EnhancedTableSelector';
+// import { EnhancedTableSelector } from './EnhancedTableSelector'; // Removed - using TableSelector now
 import { AggregationSelector } from './AggregationSelector';
 import { LineChartConfig, DataSource, ChartDataPoint } from './LineChartWidget';
-import type { EnhancedDataSource } from './EnhancedTableSelector';
+import type { DataSource } from './TableSelector';
 import type { AggregationConfig } from './AggregationSelector';
-import { FilterConfig } from '@/types/filtering-enhanced';
+import { FilterConfig } from '@/types/filtering';
 import { api } from '@/lib/api-client';
 
 interface Widget {
@@ -621,7 +621,7 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                   
                   {/* Enhanced Table Configuration */}
                   <EnhancedTableSelector
-                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { 
+                    dataSource={editedWidget.config?.dataSource as DataSource || { 
                       type: 'table',
                       xAxis: { key: '', label: '', type: 'text', columns: [] },
                       yAxis: { key: '', label: '', type: 'number', columns: [] }
@@ -855,7 +855,7 @@ export function WidgetEditor({ widget, onClose, onSave, onUpdate, tenantId, data
                   
                   {/* Enhanced KPI Configuration */}
                   <EnhancedTableSelector
-                    dataSource={editedWidget.config?.dataSource as EnhancedDataSource || { 
+                    dataSource={editedWidget.config?.dataSource as DataSource || { 
                       type: 'table',
                       xAxis: { key: '', label: '', type: 'text', columns: [] },
                       yAxis: { key: '', label: '', type: 'number', columns: [] }
