@@ -335,7 +335,9 @@ export default function DashboardsPage() {
 
     try {
       // Save changes to server and get the saved widgets
+      console.log('📞 [SAVE_DEBUG] Calling savePendingChanges hook...');
       const savedResults = await savePendingChanges(selectedDashboard.id);
+      console.log('📞 [SAVE_DEBUG] savePendingChanges returned:', savedResults);
       
       console.log('✅ [SAVE_DEBUG] Server response received', {
         hasResults: !!savedResults,

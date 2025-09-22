@@ -399,7 +399,9 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
       alert(`Successfully saved ${totalChanges} widget change${totalChanges !== 1 ? 's' : ''}`, 'success');
       onSuccess?.(result.results || []);
       
-      return result.results || [];
+      const returnValue = result.results || [];
+      console.log('🔄 [HOOK_DEBUG] Returning from savePendingChanges:', returnValue);
+      return returnValue;
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save changes';
