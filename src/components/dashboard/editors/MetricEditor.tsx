@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, MetricConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface MetricEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: MetricConfig };
@@ -29,6 +30,20 @@ export default function MetricEditor({
     title: '',
     subtitle: '',
     showTrend: false,
+    style: {
+      layout: 'card',
+      size: 'medium',
+      alignment: 'center',
+      valueStyle: 'default',
+      titleStyle: 'default',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      accentColor: '#3b82f6',
+      borderColor: '#e5e7eb',
+      borderRadius: 'medium',
+      shadow: 'small',
+      padding: 'comfortable'
+    },
     ...widget.config
   });
 
@@ -60,6 +75,16 @@ export default function MetricEditor({
     setConfig(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
     }));
   };
 
@@ -163,6 +188,15 @@ export default function MetricEditor({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Style Options */}
+        <div className="space-y-4">
+          <StyleOptions
+            style={config.style || {}}
+            onStyleChange={handleStyleChange}
+            widgetType="metric"
+          />
         </div>
 
         <DialogFooter>

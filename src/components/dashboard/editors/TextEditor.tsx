@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WidgetEditorProps, TextConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface TextEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: TextConfig };
@@ -20,6 +21,21 @@ export default function TextEditor({ widget, onSave, onCancel, isOpen }: TextEdi
     backgroundColor: 'transparent',
     textAlign: 'left',
     fontWeight: 'normal',
+    style: {
+      layout: 'card',
+      size: 'medium',
+      fontStyle: 'normal',
+      textTransform: 'none',
+      lineHeight: 'normal',
+      letterSpacing: 'normal',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      borderColor: '#e5e7eb',
+      borderRadius: 'medium',
+      shadow: 'small',
+      padding: 'comfortable',
+      alignment: 'left'
+    },
     ...widget.config
   });
 
@@ -33,6 +49,16 @@ export default function TextEditor({ widget, onSave, onCancel, isOpen }: TextEdi
 
   const handleConfigChange = (key: keyof TextConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
+    }));
   };
 
   return (
@@ -147,6 +173,15 @@ export default function TextEditor({ widget, onSave, onCancel, isOpen }: TextEdi
               {config.content || 'Enter text content above'}
             </div>
           </div>
+        </div>
+
+        {/* Style Options */}
+        <div className="space-y-4">
+          <StyleOptions
+            style={config.style || {}}
+            onStyleChange={handleStyleChange}
+            widgetType="text"
+          />
         </div>
 
         <DialogFooter>

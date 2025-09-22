@@ -93,6 +93,19 @@ export interface TableConfig {
   showFooter?: boolean;
   sortable?: boolean;
   filterable?: boolean;
+  style?: {
+    theme?: 'default' | 'minimal' | 'bordered' | 'striped' | 'dark';
+    headerStyle?: 'default' | 'bold' | 'colored' | 'gradient';
+    rowHover?: boolean;
+    cellPadding?: 'compact' | 'comfortable' | 'spacious';
+    fontSize?: 'small' | 'medium' | 'large';
+    borderStyle?: 'none' | 'thin' | 'thick' | 'dashed';
+    headerBackground?: string;
+    headerTextColor?: string;
+    rowBackground?: string;
+    alternateRowColor?: string;
+    borderColor?: string;
+  };
 }
 
 export interface MetricConfig {
@@ -106,6 +119,20 @@ export interface MetricConfig {
   format?: 'number' | 'currency' | 'percentage' | 'duration';
   comparisonColumn?: string;
   showTrend?: boolean;
+  style?: {
+    layout?: 'card' | 'minimal' | 'bordered' | 'gradient' | 'glass';
+    size?: 'small' | 'medium' | 'large' | 'xl';
+    alignment?: 'left' | 'center' | 'right';
+    valueStyle?: 'default' | 'bold' | 'outlined' | 'gradient';
+    titleStyle?: 'default' | 'bold' | 'italic' | 'uppercase';
+    backgroundColor?: string;
+    textColor?: string;
+    accentColor?: string;
+    borderColor?: string;
+    borderRadius?: 'none' | 'small' | 'medium' | 'large' | 'full';
+    shadow?: 'none' | 'small' | 'medium' | 'large';
+    padding?: 'compact' | 'comfortable' | 'spacious';
+  };
 }
 
 export interface TextConfig {
@@ -116,6 +143,21 @@ export interface TextConfig {
   backgroundColor?: string;
   textAlign?: 'left' | 'center' | 'right';
   fontWeight?: 'normal' | 'bold';
+  style?: {
+    layout?: 'card' | 'minimal' | 'bordered' | 'gradient' | 'glass' | 'quote';
+    size?: 'small' | 'medium' | 'large' | 'xl';
+    fontStyle?: 'normal' | 'italic' | 'bold' | 'bold-italic';
+    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    lineHeight?: 'tight' | 'normal' | 'relaxed' | 'loose';
+    letterSpacing?: 'tight' | 'normal' | 'wide';
+    backgroundColor?: string;
+    textColor?: string;
+    borderColor?: string;
+    borderRadius?: 'none' | 'small' | 'medium' | 'large' | 'full';
+    shadow?: 'none' | 'small' | 'medium' | 'large';
+    padding?: 'compact' | 'comfortable' | 'spacious';
+    alignment?: 'left' | 'center' | 'right';
+  };
 }
 
 export interface CalendarConfig {

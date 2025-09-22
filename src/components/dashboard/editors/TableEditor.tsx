@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, TableConfig, WidgetEntity } from '@/types/widget';
+import StyleOptions from './StyleOptions';
 
 interface TableEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: TableConfig };
@@ -29,6 +30,19 @@ export default function TableEditor({
     pageSize: 10,
     sortable: true,
     filterable: true,
+    style: {
+      theme: 'default',
+      headerStyle: 'default',
+      rowHover: false,
+      cellPadding: 'comfortable',
+      fontSize: 'medium',
+      borderStyle: 'thin',
+      headerBackground: '#f8fafc',
+      headerTextColor: '#1f2937',
+      rowBackground: '#ffffff',
+      alternateRowColor: '#f9fafb',
+      borderColor: '#e5e7eb'
+    },
     ...widget.config
   });
 
@@ -61,6 +75,16 @@ export default function TableEditor({
     setConfig(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  const handleStyleChange = (key: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      style: {
+        ...prev.style,
+        [key]: value
+      }
     }));
   };
 
@@ -190,6 +214,15 @@ export default function TableEditor({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Style Options */}
+        <div className="space-y-4">
+          <StyleOptions
+            style={config.style || {}}
+            onStyleChange={handleStyleChange}
+            widgetType="table"
+          />
         </div>
 
         <DialogFooter>
