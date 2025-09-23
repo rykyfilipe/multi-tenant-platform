@@ -23,14 +23,31 @@ import {
 
 const execAsync = promisify(exec);
 
+// Global storage for backups in serverless environment
+declare global {
+	var __backupStorage: Map<string, BackupJob> | undefined;
+	var __restoreStorage: Map<string, RestoreJob> | undefined;
+}
+
 class BackupSystem {
-	private backups: Map<string, BackupJob> = new Map();
-	private restores: Map<string, RestoreJob> = new Map();
+	private backups: Map<string, BackupJob>;
+	private restores: Map<string, RestoreJob>;
 	private backupDir: string | null = null;
 	private directoryEnsured: boolean = false;
 
 	constructor() {
-		// Don't create directory immediately - do it lazily when needed
+		// Use global storage for persistence across serverless requests
+		if (!global.__backupStorage) {
+			global.__backupStorage = new Map();
+		}
+		if (!global.__restoreStorage) {
+			global.__restoreStorage = new Map();
+		}
+		
+		this.backups = global.__backupStorage;
+		this.restores = global.__restoreStorage;
+		
+		console.log('🏗️ [BACKUP_SYSTEM_DEBUG] BackupSystem initialized with global storage');
 	}
 
 	/**
