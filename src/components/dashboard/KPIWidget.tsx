@@ -61,7 +61,12 @@ export default function KPIWidget({
   const [error, setError] = useState<string | null>(null);
 
   const config = (widget.config || {}) as KPIConfig;
-  const { dataSource, aggregation, formatting, display } = config;
+  const { 
+    dataSource = { type: 'table', tableId: 0, yAxis: { key: 'value', label: 'Value', type: 'number', columns: [] } }, 
+    aggregation = 'sum', 
+    formatting = { type: 'number', decimals: 0, prefix: '', suffix: '' }, 
+    display = { showTrend: false, showComparison: false, customLabel: '', secondaryMetric: '' }
+  } = config;
 
   // Calculate the main KPI value
   const kpiValue = useMemo(() => {
