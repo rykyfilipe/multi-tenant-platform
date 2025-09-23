@@ -459,14 +459,15 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
 
   // Anulează toate modificările pending
   const discardPendingChanges = () => {
+    console.log('🧹 [HOOK_DEBUG] discardPendingChanges called');
     setPendingChanges(new Map());
     
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Apelează callback-ul pentru a actualiza local state-ul
-    onDiscard?.();
+    // Nu mai apelează onDiscard pentru a evita bucla infinită
+    // onDiscard?.();
 
     alert('Changes discarded', 'info');
   };

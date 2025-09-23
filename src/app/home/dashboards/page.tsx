@@ -464,8 +464,8 @@ export default function DashboardsPage() {
     
     console.log('[Dashboard] Discarding changes optimistically');
     
-    // Clear pending changes
-    discardPendingChanges();
+    // Clear pending changes directly without calling discardPendingChanges
+    clearPendingChanges();
     
     // Optimistic update: Replace local state with initial copy
     if (selectedDashboard && initialWidgets.length > 0) {
