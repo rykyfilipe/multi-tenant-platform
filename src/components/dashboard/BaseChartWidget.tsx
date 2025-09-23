@@ -46,8 +46,10 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				params.set('page', '1');
 				params.set('pageSize', '500');
 				params.set('includeCells', 'true');
-				if (dataSource.filters && dataSource.filters.length > 0) {
-					params.set('filters', encodeURIComponent(JSON.stringify(dataSource.filters)));
+				// Check both config.filters and dataSource.filters for compatibility
+				const filters = (config as any).filters || dataSource.filters || [];
+				if (filters && filters.length > 0) {
+					params.set('filters', encodeURIComponent(JSON.stringify(filters)));
 				}
 				const res = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${dataSource.tableId}/rows?` + params.toString());
 				if (!res.ok) throw new Error('Failed to fetch data');

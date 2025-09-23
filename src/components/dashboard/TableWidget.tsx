@@ -105,7 +105,9 @@ export default function TableWidget({
     
     try {
       // Convert filters to the format expected by the API
-      const apiFilters = dataSource.filters?.map(filter => {
+      // Check both config.filters and dataSource.filters for compatibility
+      const filters = (config as any).filters || dataSource.filters || [];
+      const apiFilters = filters.map((filter: any) => {
         // Map FilterOperator to backend operator format
         const operatorMap: Record<string, string> = {
           'equals': 'equals',

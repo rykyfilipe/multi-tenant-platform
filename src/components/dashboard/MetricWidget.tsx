@@ -237,8 +237,11 @@ export default function MetricWidget({
     setError(null);
 
     try {
+      // Check both config.filters and dataSource.filters for compatibility
+      const filters = (config as any).filters || dataSource.filters || [];
+      
       const allRows = await api.tables.getAllRows(tenantId, databaseId, dataSource.tableId, {
-        filters: [], // Simplified for now - filters can be added later
+        filters: filters,
         search: '',
         sortBy: 'id',
         sortOrder: 'desc' as const,
