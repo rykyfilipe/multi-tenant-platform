@@ -48,6 +48,7 @@ export interface WidgetBase {
 // Widget type definitions
 export type WidgetType = 
   | 'line' | 'bar' | 'pie' | 'area' | 'scatter'
+  | 'composed' | 'radar' | 'interactive-pie'
   | 'table' | 'metric' | 'text' | 'image'
   | 'calendar' | 'tasks' | 'clock' | 'weather'
   | 'gauge' | 'funnel' | 'heatmap' | 'treemap';
@@ -79,6 +80,7 @@ export interface PieChartConfig {
   labelColumn: string;
   valueColumn: string;
   colors?: string[];
+  colorPalette?: 'business' | 'monochrome' | 'vibrant' | 'luxury' | 'pastel' | 'highContrast' | 'elegant';
   showLegend?: boolean;
   showPercentage?: boolean;
   innerRadius?: number;

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import './dashboard.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, LineChart, PieChart, BarChart, Activity, Type, Trash2, Clock, CheckSquare, Cloud, Calendar } from 'lucide-react';
+import { Plus, Save, Edit3, Eye, Settings, X, RotateCcw, BarChart3, Database, TrendingUp, FileText, LineChart, PieChart, BarChart, Activity, Type, Trash2, Clock, CheckSquare, Cloud, Calendar, AreaChart, Target, Zap, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -69,6 +69,36 @@ const WIDGET_TYPES = [
       { type: 'bar', label: 'Bar Chart', icon: BarChart },
       { type: 'pie', label: 'Pie Chart', icon: PieChart }
     ]
+  },
+  {
+    type: 'area',
+    label: 'Area Chart',
+    icon: AreaChart,
+    description: 'Add an area chart with gradient fill'
+  },
+  {
+    type: 'scatter',
+    label: 'Scatter Chart',
+    icon: Target,
+    description: 'Add a scatter plot with trend line'
+  },
+  {
+    type: 'composed',
+    label: 'Composed Chart',
+    icon: Layers,
+    description: 'Add a combined bar and line chart'
+  },
+  {
+    type: 'radar',
+    label: 'Radar Chart',
+    icon: Zap,
+    description: 'Add a radar chart for multi-dimensional data'
+  },
+  {
+    type: 'interactive-pie',
+    label: 'Interactive Pie',
+    icon: PieChart,
+    description: 'Add an interactive pie chart with animations'
   },
   {
     type: 'table',
@@ -878,6 +908,121 @@ export default function DashboardsPage() {
           compactMode: false,
           showTime: true,
           showLocation: true
+        }
+      };
+    } else if (type === 'area') {
+      defaultConfig = {
+        dataSource: {
+          type: 'table',
+          tableId: 0,
+          columns: []
+        },
+        xAxis: { key: 'x', label: 'X Axis', type: 'text', columns: [] },
+        yAxis: { key: 'y', label: 'Y Axis', type: 'number', columns: [] },
+        options: {
+          colors: ['#3B82F6', '#EF4444', '#10B981'],
+          colorPalette: 'luxury',
+          strokeWidth: 2,
+          showGradient: true,
+          gradientOpacity: 0.6,
+          smoothCurves: true,
+          showLegend: true,
+          showDataSummary: false,
+          animation: true
+        }
+      };
+    } else if (type === 'scatter') {
+      defaultConfig = {
+        dataSource: {
+          type: 'table',
+          tableId: 0,
+          columns: []
+        },
+        xAxis: { key: 'x', label: 'X Axis', type: 'number', columns: [] },
+        yAxis: { key: 'y', label: 'Y Axis', type: 'number', columns: [] },
+        options: {
+          colors: ['#3B82F6'],
+          colorPalette: 'luxury',
+          dotSize: 6,
+          dotOpacity: 0.8,
+          strokeWidth: 1,
+          showTrendLine: false,
+          showLegend: true,
+          showDataSummary: false,
+          animation: true
+        }
+      };
+    } else if (type === 'composed') {
+      defaultConfig = {
+        dataSource: {
+          type: 'table',
+          tableId: 0,
+          columns: []
+        },
+        xAxis: { key: 'x', label: 'X Axis', type: 'text', columns: [] },
+        yAxis: { key: 'y', label: 'Y Axis', type: 'number', columns: [] },
+        options: {
+          colors: ['#3B82F6', '#EF4444', '#10B981'],
+          colorPalette: 'luxury',
+          strokeWidth: 2,
+          dotSize: 4,
+          curveType: 'monotone',
+          barColumns: [],
+          lineColumns: [],
+          barOpacity: 0.8,
+          showLegend: true,
+          showDataSummary: false,
+          animation: true
+        }
+      };
+    } else if (type === 'radar') {
+      defaultConfig = {
+        dataSource: {
+          type: 'table',
+          tableId: 0,
+          columns: []
+        },
+        xAxis: { key: 'x', label: 'X Axis', type: 'text', columns: [] },
+        yAxis: { key: 'y', label: 'Y Axis', type: 'number', columns: [] },
+        options: {
+          colors: ['#3B82F6', '#EF4444', '#10B981'],
+          colorPalette: 'luxury',
+          strokeWidth: 2,
+          dotSize: 4,
+          domain: [0, 100],
+          fillOpacity: 0.3,
+          strokeOpacity: 0.8,
+          showLegend: true,
+          showDataSummary: false,
+          animation: true
+        }
+      };
+    } else if (type === 'interactive-pie') {
+      defaultConfig = {
+        dataSource: {
+          type: 'table',
+          tableId: 0,
+          columns: []
+        },
+        xAxis: { key: 'x', label: 'X Axis', type: 'text', columns: [] },
+        yAxis: { key: 'y', label: 'Y Axis', type: 'number', columns: [] },
+        options: {
+          colors: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B'],
+          colorPalette: 'luxury',
+          strokeWidth: 2,
+          innerRadius: 0,
+          outerRadius: 80,
+          paddingAngle: 2,
+          stroke: '#ffffff',
+          showActiveShape: true,
+          showPercentage: true,
+          showValue: true,
+          labelPosition: 'outside',
+          animationDuration: 300,
+          hoverScale: 1.1,
+          showLegend: true,
+          showDataSummary: false,
+          animation: true
         }
       };
     }

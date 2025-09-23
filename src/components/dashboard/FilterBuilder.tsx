@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Filter as FilterIcon } from 'lucide-react';
-import { FilterConfig } from '@/types/filtering';
+import { ColumnType, FilterConfig } from '@/types/filtering';
 
 interface ColumnMeta {
   id: number;
@@ -224,7 +224,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                             const newFilter = { ...filter };
                             newFilter.columnId = parseInt(value);
                             newFilter.columnName = column.name;
-                            newFilter.columnType = column.type;
+                            newFilter.columnType = column.type as ColumnType;
                             // Reset operator and value when column changes
                             newFilter.operator = 'equals';
                             newFilter.value = null;

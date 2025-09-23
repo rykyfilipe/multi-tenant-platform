@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, PieChartConfig, WidgetEntity } from '@/types/widget';
 import { TableSelector } from '../TableSelector';
 import StyleOptions from './StyleOptions';
+import { generateChartColors, getColorPaletteNames, type ColorPalette } from '@/lib/chart-colors';
 
 interface PieChartEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: PieChartConfig };
@@ -17,6 +18,7 @@ export default function PieChartEditor({ widget, onSave, onCancel, isOpen }: Pie
     labelColumn: '',
     valueColumn: '',
     colors: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'],
+    colorPalette: 'luxury', // Default to luxury palette
     showLegend: true,
     showPercentage: true,
     innerRadius: 0,
@@ -123,6 +125,54 @@ export default function PieChartEditor({ widget, onSave, onCancel, isOpen }: Pie
                 </Select>
               </div>
             </div>
+          </div>
+
+          {/* Color Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Color Configuration</h3>
+            <div>
+              <Label htmlFor="colorPalette">Color Palette</Label>
+              <Select 
+                value={config.colorPalette || 'luxury'} 
+                onValueChange={(value: ColorPalette) => {
+                  handleConfigChange('colorPalette', value);
+                  // Generate preview colors
+                  const previewColors = generateChartColors(4, value);
+                  handleConfigChange('colors', previewColors);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select color palette" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getColorPaletteNames().map(palette => (
+                    <SelectItem key={palette.key} value={palette.key}>
+                      <div className="flex items-center space-x-2">
+                        <span>{palette.name}</span>
+                        <span className="text-xs text-muted-foreground">- {palette.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Color preview */}
+            {config.colors && (
+              <div className="space-y-2">
+                <Label>Color Preview</Label>
+                <div className="flex space-x-2">
+                  {config.colors.slice(0, 6).map((color, index) => (
+                    <div
+                      key={index}
+                      className="w-8 h-8 rounded border border-gray-300"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
