@@ -490,24 +490,33 @@ export default function DashboardsPage() {
       currentPosition
     });
 
-    // For now, be more permissive - only consider very specific cases as responsive
-    // Most user interactions should be treated as manual changes
+    // Be very restrictive - only consider it responsive if it's clearly a constraint adjustment
+    // Most user interactions (resize, move, drag) should be treated as manual changes
     
-    // Only consider it responsive if it's a very specific constraint case
-    // This is a simplified approach that favors manual changes
-    const isVerySmallChange = 
-      Math.abs(newPosition.x - currentPosition.x) <= 1 &&
-      Math.abs(newPosition.y - currentPosition.y) <= 1 &&
-      Math.abs(newPosition.width - currentPosition.width) <= 1 &&
-      Math.abs(newPosition.height - currentPosition.height) <= 1;
+    // Only consider it responsive if:
+    // 1. Very small change in x position only (constraint adjustment)
+    // 2. Width/height changes due to responsive breakpoint constraints
+    const isVerySmallXChange = Math.abs(newPosition.x - currentPosition.x) <= 1;
+    const isNoYChange = newPosition.y === currentPosition.y;
+    const isNoWidthChange = newPosition.width === currentPosition.width;
+    const isNoHeightChange = newPosition.height === currentPosition.height;
     
-    // If it's a very small change and only x position changed, might be responsive
-    if (isVerySmallChange && 
-        newPosition.y === currentPosition.y && 
-        newPosition.width === currentPosition.width && 
-        newPosition.height === currentPosition.height) {
-      console.log('🔍 [RESPONSIVE_DEBUG] Very small x-only change - might be responsive');
+    // Only small x-only changes might be responsive (constraint adjustments)
+    if (isVerySmallXChange && isNoYChange && isNoWidthChange && isNoHeightChange) {
+      console.log('🔍 [RESPONSIVE_DEBUG] Very small x-only change - might be responsive constraint');
       return true;
+    }
+    
+    // Any resize (width/height change) is considered manual
+    if (newPosition.width !== currentPosition.width || newPosition.height !== currentPosition.height) {
+      console.log('🔍 [RESPONSIVE_DEBUG] Size change detected - treating as manual');
+      return false;
+    }
+    
+    // Any significant move is considered manual
+    if (Math.abs(newPosition.x - currentPosition.x) > 1 || Math.abs(newPosition.y - currentPosition.y) > 0) {
+      console.log('🔍 [RESPONSIVE_DEBUG] Position change detected - treating as manual');
+      return false;
     }
     
     console.log('✅ [RESPONSIVE_DEBUG] Manual change detected - not responsive');
@@ -1007,42 +1016,64 @@ export default function DashboardsPage() {
   // Generate layouts directly without memoization to prevent automatic recalculation
   const generateLayouts = () => {
     const widgets = getAllWidgets();
+    console.log('[Dashboard] generateLayouts called with widgets:', widgets.map(w => ({
+      id: w.id,
+      position: w.position,
+      hasPendingChanges: hasPendingChange(w.id, 'update') || hasPendingChange(w.id, 'create')
+    })));
+    
     return {
-      lg: widgets.map(w => ({
-        i: w.id.toString(),
-        x: w.position?.x || 0,
-        y: w.position?.y || 0,
-        w: w.position?.width || 4,
-        h: w.position?.height || 4,
-      })),
-      md: widgets.map(w => ({
-        i: w.id.toString(),
-        x: Math.min(w.position?.x || 0, 9),
-        y: w.position?.y || 0,
-        w: Math.min(w.position?.width || 4, 10),
-        h: w.position?.height || 4,
-      })),
-      sm: widgets.map(w => ({
-        i: w.id.toString(),
-        x: Math.min(w.position?.x || 0, 5),
-        y: w.position?.y || 0,
-        w: Math.min(w.position?.width || 4, 6),
-        h: w.position?.height || 4,
-      })),
-      xs: widgets.map(w => ({
-        i: w.id.toString(),
-        x: Math.min(w.position?.x || 0, 3),
-        y: w.position?.y || 0,
-        w: Math.min(w.position?.width || 4, 4),
-        h: w.position?.height || 4,
-      })),
-      xxs: widgets.map(w => ({
-        i: w.id.toString(),
-        x: 0,
-        y: w.position?.y || 0,
-        w: 2,
-        h: w.position?.height || 4,
-      }))
+      lg: widgets.map(w => {
+        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
+        console.log(`[Dashboard] LG Layout for widget ${w.id}:`, position);
+        return {
+          i: w.id.toString(),
+          x: position.x,
+          y: position.y,
+          w: position.width,
+          h: position.height,
+        };
+      }),
+      md: widgets.map(w => {
+        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
+        return {
+          i: w.id.toString(),
+          x: Math.min(position.x, 9),
+          y: position.y,
+          w: Math.min(position.width, 10),
+          h: position.height,
+        };
+      }),
+      sm: widgets.map(w => {
+        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
+        return {
+          i: w.id.toString(),
+          x: Math.min(position.x, 5),
+          y: position.y,
+          w: Math.min(position.width, 6),
+          h: position.height,
+        };
+      }),
+      xs: widgets.map(w => {
+        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
+        return {
+          i: w.id.toString(),
+          x: Math.min(position.x, 3),
+          y: position.y,
+          w: Math.min(position.width, 4),
+          h: position.height,
+        };
+      }),
+      xxs: widgets.map(w => {
+        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
+        return {
+          i: w.id.toString(),
+          x: 0,
+          y: position.y,
+          w: 2,
+          h: position.height,
+        };
+      })
     };
   };
 
@@ -1411,7 +1442,7 @@ export default function DashboardsPage() {
             {/* Grid Layout */}
             <div className="bg-gray-50 rounded-2xl p-6">
               <ResponsiveGridLayout
-                className="layout"
+                className={`layout ${isEditMode ? 'edit-mode' : 'view-mode'}`}
                 layouts={generateLayouts()}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
@@ -1421,13 +1452,14 @@ export default function DashboardsPage() {
                 onLayoutChange={handleLayoutChange}
                 margin={[16, 16]}
                 containerPadding={[8, 8]}
-                useCSSTransforms={false}
+                useCSSTransforms={true}
                 transformScale={1}
                 preventCollision={false}
                 compactType={null}
                 autoSize={true}
                 allowOverlap={false}
                 verticalCompact={false}
+                style={{ overflow: isEditMode ? 'hidden' : 'visible' }}
               >
                 {getAllWidgets().map((widget) => (
                   <div 

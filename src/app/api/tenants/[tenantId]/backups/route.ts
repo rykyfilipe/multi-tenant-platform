@@ -36,12 +36,9 @@ export async function GET(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
-		if (!hasAccess) {
-			return NextResponse.json(
-				{ error: "Access denied" },
-				{ status: 403 }
-			);
+		const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		const backups = await backupSystem.listBackups(tenantId.toString());
@@ -92,12 +89,9 @@ export async function POST(
 		}
 
 		// Check user access to tenant
-		const hasAccess = requireTenantAccess(sessionResult, tenantId.toString());
-		if (!hasAccess) {
-			return NextResponse.json(
-				{ error: "Access denied" },
-				{ status: 403 }
-			);
+		const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		const body = await request.json();

@@ -1,6 +1,14 @@
 /* React Grid Layout Styles */
 .react-grid-layout {
   position: relative;
+  overflow: hidden; /* Prevent overflow */
+  height: auto !important; /* Allow auto height */
+}
+
+/* Fix for view mode overflow */
+.react-grid-layout.view-mode {
+  overflow: visible;
+  height: auto;
 }
 
 .react-grid-item {
@@ -75,6 +83,26 @@
 /* Widget container styles */
 .widget-container {
   height: 100%;
+  overflow: hidden; /* Prevent widget content overflow */
+}
+
+/* Fix overflow issues in view mode */
+.react-grid-layout.view-mode {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+.react-grid-layout.view-mode .react-grid-item {
+  overflow: hidden;
+}
+
+/* Prevent scrollbars from appearing unnecessarily */
+.react-grid-layout {
+  overflow-x: hidden;
+}
+
+.react-grid-layout.edit-mode {
+  overflow: hidden;
 }
 
 /* Ensure buttons in widget headers are clickable */
