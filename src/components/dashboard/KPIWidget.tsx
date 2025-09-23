@@ -60,13 +60,36 @@ export default function KPIWidget({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const config = (widget.config || {}) as KPIConfig;
-  const { 
-    dataSource, 
-    aggregation, 
-    formatting,
-    display = { showTrend: false, showComparison: false }
-  } = config;
+  const config = (widget.config || {}) as any;
+  
+  // Handle both KPI and Metric widget config structures
+  const dataSource = config.dataSource || {};
+  const aggregation = config.aggregation || dataSource.aggregation || 'sum';
+  const formatting = config.formatting || {
+    type: config.options?.format || 'number',
+    decimals: config.options?.decimals || 0,
+    prefix: config.options?.prefix || '',
+    suffix: config.options?.suffix || ''
+  };
+  const display = config.display || {
+    showTrend: config.options?.showTrend || false,
+    showComparison: config.options?.showChange || false,
+    customLabel: config.options?.customLabel || '',
+    secondaryMetric: config.options?.secondaryMetric || ''
+  };
+
+  console.log('🔧 [KPI_DEBUG] Widget Config Analysis:', {
+    widgetId: widget.id,
+    widgetType: widget.type,
+    hasConfig: !!widget.config,
+    config: widget.config,
+    extractedConfig: {
+      dataSource,
+      aggregation,
+      formatting,
+      display
+    }
+  });
 
   // Calculate the main KPI value
   const kpiValue = useMemo(() => {
@@ -258,7 +281,8 @@ export default function KPIWidget({
       console.log('📊 [KPI_DEBUG] API Response:', {
         success: allRows.success,
         dataLength: allRows.data?.length || 0,
-        rawData: allRows.data
+        rawData: allRows.data,
+        fullResponse: allRows
       });
 
       if (allRows.success && allRows.data) {
