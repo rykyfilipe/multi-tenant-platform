@@ -944,8 +944,10 @@ export default function DashboardsPage() {
     console.log('[Dashboard] Free position found:', freePosition);
     console.log('[Dashboard] All widgets used for position calculation:', allWidgets.length);
 
-    // Generate temporary ID for the new widget
-    const tempId = Date.now();
+    // Generate temporary ID for the new widget (use a simpler approach)
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log('[Dashboard] Generated tempId:', tempId);
     
     // Add to pending changes with logica inteligentă
     addPendingChange('create', tempId, newWidget);
@@ -975,7 +977,7 @@ export default function DashboardsPage() {
         if (keyStr.startsWith('create_')) {
           const widgetId = keyStr.replace('create_', '');
           const localWidget: Widget = {
-            id: parseInt(widgetId), // Extrage ID-ul din cheie
+            id: widgetId, // Păstrează ID-ul ca string pentru widget-uri temporare
             ...change.data,
           } as Widget;
           console.log('[Dashboard] Created local widget:', localWidget);
@@ -997,8 +999,9 @@ export default function DashboardsPage() {
     // Sort widgets by ID to ensure consistent order for ResponsiveGridLayout
     const sortedWidgets = filteredWidgets.sort((a, b) => {
       // Sort by ID to maintain consistent order
-      const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
-      const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+      // Handle both string and number IDs
+      const aId = typeof a.id === 'string' ? (a.id.startsWith('temp_') ? 999999 : parseInt(a.id)) : a.id;
+      const bId = typeof b.id === 'string' ? (b.id.startsWith('temp_') ? 999999 : parseInt(b.id)) : b.id;
       return aId - bId;
     });
     
