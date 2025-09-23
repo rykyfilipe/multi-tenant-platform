@@ -62,9 +62,42 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
 
   const handleFilterChange = (index: number, field: keyof FilterConfig, value: string | number | null) => {
     const newFilters = [...editingFilters];
-    newFilters[index] = { ...newFilters[index], [field]: value };
+    const filter = newFilters[index];
+    
+    // Convert value to appropriate type based on column type
+    let convertedValue = value;
+    if (field === 'value' && filter.columnType) {
+      convertedValue = convertValueToType(value, filter.columnType);
+    }
+    if (field === 'secondValue' && filter.columnType) {
+      convertedValue = convertValueToType(value, filter.columnType);
+    }
+    
+    newFilters[index] = { ...filter, [field]: convertedValue };
     setEditingFilters(newFilters);
     onFiltersChange(newFilters);
+  };
+
+  const convertValueToType = (value: string | number | null, columnType: string): any => {
+    if (value === null || value === '') return null;
+    
+    const stringValue = String(value);
+    
+    switch (columnType.toLowerCase()) {
+      case 'integer':
+      case 'number':
+      case 'decimal':
+      case 'float':
+        return isNaN(Number(stringValue)) ? null : Number(stringValue);
+      case 'boolean':
+        return stringValue.toLowerCase() === 'true' || stringValue === '1';
+      case 'date':
+      case 'datetime':
+      case 'timestamp':
+        return new Date(stringValue).toISOString();
+      default:
+        return stringValue;
+    }
   };
 
   const handleAddFilter = () => {
@@ -87,16 +120,33 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
     onFiltersChange(newFilters);
   };
 
-  const getValueInputType = (operator: string) => {
+  const getValueInputType = (operator: string, columnType?: string) => {
     if (['is_empty', 'is_not_empty', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'].includes(operator)) {
       return 'hidden';
     }
+    
+    // Use column type to determine input type
+    if (columnType) {
+      const lowerType = columnType.toLowerCase();
+      if (['integer', 'number', 'decimal', 'float'].includes(lowerType)) {
+        return 'number';
+      }
+      if (['date', 'datetime', 'timestamp'].includes(lowerType)) {
+        return 'date';
+      }
+      if (['boolean'].includes(lowerType)) {
+        return 'checkbox';
+      }
+    }
+    
+    // Fallback to operator-based logic
     if (['greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between'].includes(operator)) {
       return 'number';
     }
-    if (['before', 'after', 'equals', 'not_equals'].includes(operator)) {
+    if (['before', 'after'].includes(operator)) {
       return 'date';
     }
+    
     return 'text';
   };
 
@@ -167,13 +217,23 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                         Column
                       </Label>
                       <Select
-                        value={filter.columnId ? filter.columnId.toString() : ''}
+                        value={filter.columnId && filter.columnId > 0 ? filter.columnId.toString() : ''}
                         onValueChange={(value) => {
                           const column = availableColumns.find(col => col.id.toString() === value);
                           if (column) {
-                            handleFilterChange(index, 'columnId', parseInt(value));
-                            handleFilterChange(index, 'columnName', column.name);
-                            handleFilterChange(index, 'columnType', column.type);
+                            const newFilter = { ...filter };
+                            newFilter.columnId = parseInt(value);
+                            newFilter.columnName = column.name;
+                            newFilter.columnType = column.type;
+                            // Reset operator and value when column changes
+                            newFilter.operator = 'equals';
+                            newFilter.value = null;
+                            newFilter.secondValue = null;
+                            
+                            const newFilters = [...editingFilters];
+                            newFilters[index] = newFilter;
+                            setEditingFilters(newFilters);
+                            onFiltersChange(newFilters);
                           }
                         }}
                       >
@@ -223,7 +283,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                         </Label>
                         <Input
                           id={`value-${index}`}
-                          type={getValueInputType(filter.operator)}
+                          type={getValueInputType(filter.operator, filter.columnType)}
                           value={String(filter.value || '')}
                           onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
                           placeholder="Enter value"
@@ -240,7 +300,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                         </Label>
                         <Input
                           id={`secondValue-${index}`}
-                          type={getValueInputType(filter.operator)}
+                          type={getValueInputType(filter.operator, filter.columnType)}
                           value={String(filter.secondValue || '')}
                           onChange={(e) => handleFilterChange(index, 'secondValue', e.target.value)}
                           placeholder="Enter second value"

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { backupSystem } from "@/lib/backup-system";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { requireTenantAccess } from "@/lib/session";
 
 export async function GET(
 	request: NextRequest,
@@ -18,6 +19,12 @@ export async function GET(
 		const backup = await backupSystem.getBackup(params.id);
 		if (!backup) {
 			return NextResponse.json({ error: "Backup not found" }, { status: 404 });
+		}
+
+		// Validate tenant access to the backup
+		const tenantAccessError = requireTenantAccess(session, backup.tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		return NextResponse.json({ backup });
@@ -38,6 +45,18 @@ export async function DELETE(
 		const session = await getServerSession(authOptions);
 		if (!session?.user?.tenantId) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
+
+		// First get the backup to check tenant access
+		const backup = await backupSystem.getBackup(params.id);
+		if (!backup) {
+			return NextResponse.json({ error: "Backup not found" }, { status: 404 });
+		}
+
+		// Validate tenant access to the backup
+		const tenantAccessError = requireTenantAccess(session, backup.tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
 		}
 
 		const success = await backupSystem.deleteBackup(params.id);

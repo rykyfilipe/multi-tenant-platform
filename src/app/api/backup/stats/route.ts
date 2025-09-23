@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { backupSystem } from "@/lib/backup-system";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { requireTenantAccess } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
 	try {
@@ -14,6 +15,12 @@ export async function GET(request: NextRequest) {
 
 		const { searchParams } = new URL(request.url);
 		const tenantId = searchParams.get("tenantId") || session.user.tenantId;
+
+		// Validate tenant access
+		const tenantAccessError = requireTenantAccess(session, tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
+		}
 
 		const stats = await backupSystem.getBackupStats(tenantId);
 		return NextResponse.json({ stats });

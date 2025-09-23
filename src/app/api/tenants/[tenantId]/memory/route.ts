@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { requireTenantAccess } from "@/lib/session";
 import {
 	getTenantMemoryUsage,
 	updateTenantMemoryUsage,
@@ -17,25 +17,21 @@ export async function GET(
 ) {
 	try {
 		const session = await getServerSession(authOptions);
-		if (!session?.user?.email) {
+		if (!session?.user?.tenantId) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
 		const { tenantId } = await params;
 
+		// Validate tenant access
+		const tenantAccessError = requireTenantAccess(session, tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
+		}
+
 		const tenantIdInt = parseInt(tenantId);
 		if (isNaN(tenantIdInt)) {
 			return NextResponse.json({ error: "Invalid tenant ID" }, { status: 400 });
-		}
-
-		// Verify user belongs to this tenant
-		const user = await prisma.user.findUnique({
-			where: { email: session.user.email },
-			include: { tenant: true },
-		});
-
-		if (!user || user.tenantId !== tenantIdInt) {
-			return NextResponse.json({ error: "Access denied" }, { status: 403 });
 		}
 
 		// Get current storage usage
@@ -64,25 +60,21 @@ export async function POST(
 ) {
 	try {
 		const session = await getServerSession(authOptions);
-		if (!session?.user?.email) {
+		if (!session?.user?.tenantId) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
 		const { tenantId } = await params;
 
+		// Validate tenant access
+		const tenantAccessError = requireTenantAccess(session, tenantId);
+		if (tenantAccessError) {
+			return tenantAccessError;
+		}
+
 		const tenantIdInt = parseInt(tenantId);
 		if (isNaN(tenantIdInt)) {
 			return NextResponse.json({ error: "Invalid tenant ID" }, { status: 400 });
-		}
-
-		// Verify user belongs to this tenant
-		const user = await prisma.user.findUnique({
-			where: { email: session.user.email },
-			include: { tenant: true },
-		});
-
-		if (!user || user.tenantId !== tenantIdInt) {
-			return NextResponse.json({ error: "Access denied" }, { status: 403 });
 		}
 
 		// Update storage usage

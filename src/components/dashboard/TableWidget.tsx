@@ -58,6 +58,7 @@ export default function TableWidget({
   const options = config.options || {};
   
   const [data, setData] = useState<any[]>([]);
+  const [allData, setAllData] = useState<any[]>([]); // Store all data for local filtering
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,12 +83,19 @@ export default function TableWidget({
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
 
-  // Fetch data when table or columns change
+  // Fetch data when table or columns change (but not for search - that's handled locally)
   useEffect(() => {
     if (dataSource.tableId && dataSource.tableId > 0 && dataSource.columns.length > 0) {
       fetchData();
     }
-  }, [dataSource.tableId, dataSource.columns, currentPage, searchTerm, sortBy, sortOrder]);
+  }, [dataSource.tableId, dataSource.columns, currentPage, sortBy, sortOrder]);
+
+  // Handle local filtering when search term changes
+  useEffect(() => {
+    if (allData.length > 0) {
+      handleSearch(searchTerm);
+    }
+  }, [searchTerm, allData]);
 
   const fetchData = async () => {
     if (!tenantId || !databaseId) return;
@@ -141,7 +149,7 @@ export default function TableWidget({
       const response = await api.tables.rows(tenantId, databaseId, dataSource.tableId, {
         page: currentPage,
         limit: pageSize,
-        search: searchTerm || undefined,
+        // search: searchTerm || undefined, // Removed - search is now handled locally
         sortBy: sortBy,
         sortOrder: sortOrder,
         filters: apiFilters.length > 0 ? apiFilters : undefined,
@@ -163,6 +171,8 @@ export default function TableWidget({
           }
           return row; // Fallback if no cells structure
         });
+        // Store all data for local filtering
+        setAllData(transformedData);
         setData(transformedData);
         
         // Since getAllRows fetches all data, we need to calculate pagination locally
@@ -194,7 +204,39 @@ export default function TableWidget({
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1); // Reset to first page when searching
-    setPagination(null); // Clear pagination info when searching
+    
+    // Filter data locally
+    if (value.trim() === '') {
+      // If search is empty, show all data
+      setData(allData);
+    } else {
+      // Filter allData based on search term
+      const filteredData = allData.filter((row) => {
+        return Object.values(row).some((cellValue) => {
+          if (cellValue === null || cellValue === undefined) return false;
+          return String(cellValue).toLowerCase().includes(value.toLowerCase());
+        });
+      });
+      setData(filteredData);
+    }
+    
+    // Recalculate pagination for filtered data
+    const filteredRows = value.trim() === '' ? allData.length : data.filter((row) => {
+      return Object.values(row).some((cellValue) => {
+        if (cellValue === null || cellValue === undefined) return false;
+        return String(cellValue).toLowerCase().includes(value.toLowerCase());
+      });
+    }).length;
+    
+    const totalPages = Math.ceil(filteredRows / pageSize);
+    setPagination({
+      page: 1,
+      pageSize,
+      totalRows: filteredRows,
+      totalPages,
+      hasNext: 1 < totalPages,
+      hasPrev: false
+    });
   };
 
   const handleSort = (column: string) => {
