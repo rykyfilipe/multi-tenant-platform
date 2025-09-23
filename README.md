@@ -23,7 +23,7 @@ management, database management, and multi-language support.
 - **Deployment**: Vercel-ready configuration
 
 ## Getting Started
-
+dsdad
 1. Clone the repository
 2. Install dependencies: `npm install`
 3. Set up environment variables (see `.env.example`)
