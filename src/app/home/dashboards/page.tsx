@@ -482,45 +482,14 @@ export default function DashboardsPage() {
     });
   };
 
-  // Function to detect if a layout change is responsive (automatic) or manual
-  const isResponsiveLayoutChange = (widgetId: number, newPosition: any, currentPosition: any) => {
-    console.log('🔍 [RESPONSIVE_DEBUG] Checking if change is responsive', {
-      widgetId,
-      newPosition,
-      currentPosition
-    });
-
-    // Be very restrictive - only consider it responsive if it's clearly a constraint adjustment
-    // Most user interactions (resize, move, drag) should be treated as manual changes
-    
-    // Only consider it responsive if:
-    // 1. Very small change in x position only (constraint adjustment)
-    // 2. Width/height changes due to responsive breakpoint constraints
-    const isVerySmallXChange = Math.abs(newPosition.x - currentPosition.x) <= 1;
-    const isNoYChange = newPosition.y === currentPosition.y;
-    const isNoWidthChange = newPosition.width === currentPosition.width;
-    const isNoHeightChange = newPosition.height === currentPosition.height;
-    
-    // Only small x-only changes might be responsive (constraint adjustments)
-    if (isVerySmallXChange && isNoYChange && isNoWidthChange && isNoHeightChange) {
-      console.log('🔍 [RESPONSIVE_DEBUG] Very small x-only change - treating as manual to ensure display');
-      return false; // Changed to false to ensure widgets display
-    }
-    
-    // Any resize (width/height change) is considered manual
-    if (newPosition.width !== currentPosition.width || newPosition.height !== currentPosition.height) {
-      console.log('🔍 [RESPONSIVE_DEBUG] Size change detected - treating as manual');
-      return false;
-    }
-    
-    // Any significant move is considered manual
-    if (Math.abs(newPosition.x - currentPosition.x) > 1 || Math.abs(newPosition.y - currentPosition.y) > 0) {
-      console.log('🔍 [RESPONSIVE_DEBUG] Position change detected - treating as manual');
-      return false;
-    }
-    
-    console.log('✅ [RESPONSIVE_DEBUG] Manual change detected - not responsive');
-    return false;
+  // Simple function to check if position has changed
+  const hasPositionChanged = (newPosition: any, currentPosition: any) => {
+    return (
+      newPosition.x !== currentPosition.x ||
+      newPosition.y !== currentPosition.y ||
+      newPosition.width !== currentPosition.width ||
+      newPosition.height !== currentPosition.height
+    );
   };
 
   const handleLayoutChange = (layout: any[]) => {
@@ -567,44 +536,19 @@ export default function DashboardsPage() {
         allWidgetsCount: allWidgets.length
       });
 
-      // Only add pending change if this is a manual change (not responsive)
+      // Add pending change if position has changed
       if (finalWidget && currentPosition) {
-        console.log('✅ [LAYOUT_DEBUG] Widget found with current position, checking if responsive');
+        const positionChanged = hasPositionChanged(newPosition, currentPosition);
         
-        // Check if this is a responsive change by comparing with expected responsive position
-        const isResponsiveChange = isResponsiveLayoutChange(widgetId, newPosition, currentPosition);
-        
-        console.log('🔍 [LAYOUT_DEBUG] Responsive change check result', {
-          widgetId,
-          isResponsiveChange,
-          newPosition,
-          currentPosition
-        });
-        
-        if (isResponsiveChange) {
-          console.log('⚠️ [LAYOUT_DEBUG] Responsive change detected, skipping pending change');
-          return;
-        }
-
-        const positionChanged = 
-          currentPosition.x !== newPosition.x ||
-          currentPosition.y !== newPosition.y ||
-          currentPosition.width !== newPosition.width ||
-          currentPosition.height !== newPosition.height;
-
-        console.log('🔍 [LAYOUT_DEBUG] Position change analysis', {
+        console.log('🔍 [LAYOUT_DEBUG] Position change check', {
           widgetId,
           positionChanged,
-          xChanged: currentPosition.x !== newPosition.x,
-          yChanged: currentPosition.y !== newPosition.y,
-          widthChanged: currentPosition.width !== newPosition.width,
-          heightChanged: currentPosition.height !== newPosition.height,
           currentPosition,
           newPosition
         });
 
         if (positionChanged) {
-          console.log('✅ [LAYOUT_DEBUG] Manual position change detected, adding pending change');
+          console.log('✅ [LAYOUT_DEBUG] Position change detected, adding to pending changes');
           // Get original position from database for comparison
           const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
           const originalPosition = originalWidget?.position;

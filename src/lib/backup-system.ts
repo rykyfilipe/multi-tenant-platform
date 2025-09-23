@@ -38,25 +38,35 @@ class BackupSystem {
 	 * Uses /tmp in serverless environments, project root in development
 	 */
 	private async ensureBackupDirectory(): Promise<void> {
+		console.log('📁 [BACKUP_SYSTEM_DEBUG] ensureBackupDirectory called');
+		
 		if (this.directoryEnsured && this.backupDir) {
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] Directory already ensured:', this.backupDir);
 			return;
 		}
 
 		// Detect if we're in a serverless environment
 		const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+		console.log('🔍 [BACKUP_SYSTEM_DEBUG] Environment detection:', { isServerless, VERCEL: !!process.env.VERCEL });
 		
 		if (isServerless) {
 			// Use /tmp directory in serverless environments (read-write)
 			this.backupDir = path.join("/tmp", "backups");
+			console.log('📁 [BACKUP_SYSTEM_DEBUG] Using serverless directory:', this.backupDir);
 		} else {
 			// Use project root in development/local environments
 			this.backupDir = path.join(process.cwd(), "backups");
+			console.log('📁 [BACKUP_SYSTEM_DEBUG] Using local directory:', this.backupDir);
 		}
 
 		try {
+			console.log('🔍 [BACKUP_SYSTEM_DEBUG] Checking if directory exists...');
 			await fs.access(this.backupDir);
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] Directory already exists');
 		} catch {
+			console.log('📁 [BACKUP_SYSTEM_DEBUG] Directory does not exist, creating...');
 			await fs.mkdir(this.backupDir, { recursive: true });
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] Directory created successfully');
 		}
 
 		this.directoryEnsured = true;
@@ -77,13 +87,19 @@ class BackupSystem {
 		description?: string,
 		createdBy: string = "system"
 	): Promise<BackupJob> {
+		console.log('🏗️ [BACKUP_SYSTEM_DEBUG] createBackup called:', { tenantId, type, description, createdBy });
+		
 		// Validate DIRECT_URL is configured
 		if (!process.env.DIRECT_URL) {
+			console.log('❌ [BACKUP_SYSTEM_DEBUG] DIRECT_URL not configured');
 			throw new Error("DIRECT_URL not configured - required for backup operations");
 		}
+		console.log('✅ [BACKUP_SYSTEM_DEBUG] DIRECT_URL is configured');
 
 		// Ensure backup directory exists before using it
+		console.log('📁 [BACKUP_SYSTEM_DEBUG] Ensuring backup directory...');
 		await this.ensureBackupDirectory();
+		console.log('✅ [BACKUP_SYSTEM_DEBUG] Backup directory ensured:', this.backupDir);
 
 		const backupId = this.generateId();
 		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -117,7 +133,9 @@ class BackupSystem {
 		});
 
 		// Start backup process asynchronously
+		console.log('🚀 [BACKUP_SYSTEM_DEBUG] Starting async backup process...');
 		this.performBackup(backupJob).catch(error => {
+			console.log('💥 [BACKUP_SYSTEM_DEBUG] Backup process failed:', error);
 			logger.error("Backup process failed", error as Error, {
 				component: "BackupSystem",
 				backupId,
@@ -125,6 +143,7 @@ class BackupSystem {
 			});
 		});
 
+		console.log('✅ [BACKUP_SYSTEM_DEBUG] Backup job created and process started:', backupId);
 		return backupJob;
 	}
 
@@ -133,6 +152,8 @@ class BackupSystem {
 	 */
 	private async performBackup(backupJob: BackupJob): Promise<void> {
 		try {
+			console.log('🔄 [BACKUP_SYSTEM_DEBUG] performBackup started:', backupJob.id);
+			
 			backupJob.status = BackupStatus.IN_PROGRESS;
 			this.backups.set(backupJob.id, backupJob);
 
@@ -146,11 +167,15 @@ class BackupSystem {
 			// Use DIRECT_URL for direct database connection (recommended by Prisma)
 			const directUrl = process.env.DIRECT_URL;
 			if (!directUrl) {
+				console.log('❌ [BACKUP_SYSTEM_DEBUG] DIRECT_URL not configured in performBackup');
 				throw new Error("DIRECT_URL not configured - required for pg_dump");
 			}
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] DIRECT_URL is available');
 
 			// Create tenant-specific backup using custom SQL approach
+			console.log('🔄 [BACKUP_SYSTEM_DEBUG] Calling createTenantSpecificBackup...');
 			await this.createTenantSpecificBackup(backupJob.tenantId, backupJob.filePath!, backupJob.type);
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] createTenantSpecificBackup completed');
 
 			// Get file size
 			const stats = await fs.stat(backupJob.filePath!);
@@ -510,6 +535,7 @@ class BackupSystem {
 		relatedTables: string[];
 	}> {
 		try {
+			console.log('🔄 [BACKUP_SYSTEM_DEBUG] getTenantSpecificData started for tenant:', tenantId);
 			// Core tables that should always be included for tenant context
 			const coreTables = [
 				'Tenant',           // Tenant information
@@ -587,7 +613,15 @@ class BackupSystem {
 	 */
 	private async createTenantSpecificBackup(tenantId: string, filePath: string, type: BackupType): Promise<void> {
 		try {
+			console.log('🔄 [BACKUP_SYSTEM_DEBUG] createTenantSpecificBackup started:', { tenantId, filePath, type });
+			
+			console.log('🔄 [BACKUP_SYSTEM_DEBUG] Getting tenant specific data...');
 			const tenantData = await this.getTenantSpecificData(tenantId);
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] Tenant data retrieved:', { 
+				tablesCount: tenantData.tables.length,
+				hasTenantInfo: !!tenantData.tenantInfo,
+				relatedTablesCount: tenantData.relatedTables.length
+			});
 			
 			// Create a comprehensive tenant-specific backup
 			let sqlScript = `-- =============================================
