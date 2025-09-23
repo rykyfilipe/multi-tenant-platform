@@ -21,28 +21,43 @@ export async function GET(
 	{ params }: { params: { tenantId: string } }
 ) {
 	try {
+		console.log('🚀 [BACKUPS_LIST_DEBUG] Starting backups list process');
+		
 		const sessionResult = await requireAuthFlexible(request);
 		if (sessionResult instanceof NextResponse) {
+			console.log('❌ [BACKUPS_LIST_DEBUG] Authentication failed');
 			return sessionResult;
 		}
 		const userId = getUserId(sessionResult);
+		console.log('✅ [BACKUPS_LIST_DEBUG] User authenticated:', userId);
 
 		const tenantId = parseInt(params.tenantId);
 		if (isNaN(tenantId)) {
+			console.log('❌ [BACKUPS_LIST_DEBUG] Invalid tenant ID:', params.tenantId);
 			return NextResponse.json(
 				{ error: "Invalid tenant ID" },
 				{ status: 400 }
 			);
 		}
+		console.log('✅ [BACKUPS_LIST_DEBUG] Tenant ID parsed:', tenantId);
 
 		// Check user access to tenant
+		console.log('🔍 [BACKUPS_LIST_DEBUG] Checking tenant access...');
+		console.log('  - User tenant ID:', sessionResult.user?.tenantId);
+		console.log('  - Requested tenant ID:', tenantId.toString());
+		console.log('  - Types:', typeof sessionResult.user?.tenantId, typeof tenantId.toString());
+		
 		const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
 		if (tenantAccessError) {
+			console.log('❌ [BACKUPS_LIST_DEBUG] Tenant access denied');
 			return tenantAccessError;
 		}
+		console.log('✅ [BACKUPS_LIST_DEBUG] Tenant access granted');
 
+		console.log('🔄 [BACKUPS_LIST_DEBUG] Getting backups and stats...');
 		const backups = await backupSystem.listBackups(tenantId.toString());
 		const stats = await backupSystem.getBackupStats(tenantId.toString());
+		console.log('✅ [BACKUPS_LIST_DEBUG] Data retrieved:', { backupsCount: backups.length, stats });
 
 		return NextResponse.json({
 			success: true,
@@ -53,6 +68,9 @@ export async function GET(
 		});
 
 	} catch (error) {
+		console.log('💥 [BACKUPS_LIST_DEBUG] Error caught:', error);
+		console.log('💥 [BACKUPS_LIST_DEBUG] Error message:', error instanceof Error ? error.message : 'Unknown error');
+		
 		logger.error("Failed to list backups", error as Error, {
 			component: "BackupsAPI",
 			tenantId: params.tenantId,

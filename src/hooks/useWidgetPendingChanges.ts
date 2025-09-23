@@ -114,13 +114,9 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
           timestamp: Date.now(),
         };
         
-        console.log('🆕 [HOOK_DEBUG] Adding create pending change:', {
-          widgetId,
-          changeKey,
-          hasData: !!data,
-          dataType: data?.type,
-          newMapSize: newMap.size
-        });
+        console.log('[Hook] Adding create pending change:', pendingChange);
+        console.log('[Hook] Data received:', data);
+        console.log('[Hook] Data after || {}:', data || {});
         newMap.set(changeKey, pendingChange);
         return newMap;
       }
@@ -291,9 +287,11 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     const updateKey = getChangeKey(originalWidget.id, 'update');
     const deleteKey = getChangeKey(originalWidget.id, 'delete');
     
-    console.log('🔧 [HOOK_DEBUG] getFinalWidget called:', {
+    console.log('[Hook] getFinalWidget called:', {
       widgetId: originalWidget.id,
-      widgetType: originalWidget.type,
+      createKey,
+      updateKey,
+      deleteKey,
       hasCreate: pendingChanges.has(createKey),
       hasUpdate: pendingChanges.has(updateKey),
       hasDelete: pendingChanges.has(deleteKey),
@@ -302,18 +300,14 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     
     // Dacă există o operațiune de ștergere, widget-ul nu trebuie afișat
     if (pendingChanges.has(deleteKey)) {
-      console.log('🗑️ [HOOK_DEBUG] Widget marked for deletion:', originalWidget.id);
+      console.log('[Hook] Widget marked for deletion:', originalWidget.id);
       return null;
     }
     
     // Dacă există o operațiune de create, returnează widget-ul nou
     if (pendingChanges.has(createKey)) {
       const createChange = pendingChanges.get(createKey);
-      console.log('🆕 [HOOK_DEBUG] Widget is new (create):', {
-        widgetId: originalWidget.id,
-        hasData: !!createChange?.data,
-        dataType: createChange?.data?.type
-      });
+      console.log('[Hook] Widget is new (create):', originalWidget.id, createChange?.data);
       return {
         ...originalWidget,
         ...createChange?.data,
@@ -324,10 +318,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     // Dacă există modificări, aplică-le pe widget-ul original
     if (pendingChanges.has(updateKey)) {
       const updateChange = pendingChanges.get(updateKey);
-      console.log('✏️ [HOOK_DEBUG] Widget has updates:', {
-        widgetId: originalWidget.id,
-        hasData: !!updateChange?.data
-      });
+      console.log('[Hook] Widget has updates:', originalWidget.id, updateChange?.data);
       return {
         ...originalWidget,
         ...updateChange?.data,
@@ -335,10 +326,7 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     }
     
     // Dacă nu există modificări, returnează widget-ul original
-    console.log('✅ [HOOK_DEBUG] Widget unchanged:', {
-      widgetId: originalWidget.id,
-      widgetType: originalWidget.type
-    });
+    console.log('[Hook] Widget unchanged:', originalWidget.id);
     return originalWidget;
   };
 
@@ -471,15 +459,14 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
 
   // Anulează toate modificările pending
   const discardPendingChanges = () => {
-    console.log('🧹 [HOOK_DEBUG] discardPendingChanges called');
     setPendingChanges(new Map());
     
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Nu mai apelează onDiscard pentru a evita bucla infinită
-    // onDiscard?.();
+    // Apelează callback-ul pentru a actualiza local state-ul
+    onDiscard?.();
 
     alert('Changes discarded', 'info');
   };

@@ -240,17 +240,6 @@ export default function BaseWidget({
   style,
   preset
 }: BaseWidgetProps) {
-  console.log('🏗️ [BASEWIDGET_DEBUG] BaseWidget rendered:', {
-    widgetId: widget.id,
-    widgetType: widget.type,
-    title: widget.title,
-    isEditMode,
-    isLoading,
-    hasError: !!error,
-    hasChildren: !!children,
-    childrenType: typeof children
-  });
-
   const config = widget.config || {};
   const title = widget.title || config.title || `Widget ${widget.id}`;
   

@@ -53,7 +53,6 @@ export default function TableWidget({
   tenantId, 
   databaseId 
 }: TableWidgetProps) {
-
   const config = (widget.config || {}) as TableWidgetConfig;
   const dataSource = config.dataSource || { tableId: 0, columns: [] };
   const options = config.options || {};

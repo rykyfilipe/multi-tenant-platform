@@ -464,8 +464,8 @@ export default function DashboardsPage() {
     
     console.log('[Dashboard] Discarding changes optimistically');
     
-    // Clear pending changes directly without calling discardPendingChanges
-    clearPendingChanges();
+    // Clear pending changes
+    discardPendingChanges();
     
     // Optimistic update: Replace local state with initial copy
     if (selectedDashboard && initialWidgets.length > 0) {
@@ -482,14 +482,36 @@ export default function DashboardsPage() {
     });
   };
 
-  // Simple function to check if position has changed
-  const hasPositionChanged = (newPosition: any, currentPosition: any) => {
-    return (
-      newPosition.x !== currentPosition.x ||
-      newPosition.y !== currentPosition.y ||
-      newPosition.width !== currentPosition.width ||
-      newPosition.height !== currentPosition.height
-    );
+  // Function to detect if a layout change is responsive (automatic) or manual
+  const isResponsiveLayoutChange = (widgetId: number, newPosition: any, currentPosition: any) => {
+    console.log('🔍 [RESPONSIVE_DEBUG] Checking if change is responsive', {
+      widgetId,
+      newPosition,
+      currentPosition
+    });
+
+    // For now, be more permissive - only consider very specific cases as responsive
+    // Most user interactions should be treated as manual changes
+    
+    // Only consider it responsive if it's a very specific constraint case
+    // This is a simplified approach that favors manual changes
+    const isVerySmallChange = 
+      Math.abs(newPosition.x - currentPosition.x) <= 1 &&
+      Math.abs(newPosition.y - currentPosition.y) <= 1 &&
+      Math.abs(newPosition.width - currentPosition.width) <= 1 &&
+      Math.abs(newPosition.height - currentPosition.height) <= 1;
+    
+    // If it's a very small change and only x position changed, might be responsive
+    if (isVerySmallChange && 
+        newPosition.y === currentPosition.y && 
+        newPosition.width === currentPosition.width && 
+        newPosition.height === currentPosition.height) {
+      console.log('🔍 [RESPONSIVE_DEBUG] Very small x-only change - might be responsive');
+      return true;
+    }
+    
+    console.log('✅ [RESPONSIVE_DEBUG] Manual change detected - not responsive');
+    return false;
   };
 
   const handleLayoutChange = (layout: any[]) => {
@@ -536,19 +558,44 @@ export default function DashboardsPage() {
         allWidgetsCount: allWidgets.length
       });
 
-      // Add pending change if position has changed
+      // Only add pending change if this is a manual change (not responsive)
       if (finalWidget && currentPosition) {
-        const positionChanged = hasPositionChanged(newPosition, currentPosition);
+        console.log('✅ [LAYOUT_DEBUG] Widget found with current position, checking if responsive');
         
-        console.log('🔍 [LAYOUT_DEBUG] Position change check', {
+        // Check if this is a responsive change by comparing with expected responsive position
+        const isResponsiveChange = isResponsiveLayoutChange(widgetId, newPosition, currentPosition);
+        
+        console.log('🔍 [LAYOUT_DEBUG] Responsive change check result', {
+          widgetId,
+          isResponsiveChange,
+          newPosition,
+          currentPosition
+        });
+        
+        if (isResponsiveChange) {
+          console.log('⚠️ [LAYOUT_DEBUG] Responsive change detected, skipping pending change');
+          return;
+        }
+
+        const positionChanged = 
+          currentPosition.x !== newPosition.x ||
+          currentPosition.y !== newPosition.y ||
+          currentPosition.width !== newPosition.width ||
+          currentPosition.height !== newPosition.height;
+
+        console.log('🔍 [LAYOUT_DEBUG] Position change analysis', {
           widgetId,
           positionChanged,
+          xChanged: currentPosition.x !== newPosition.x,
+          yChanged: currentPosition.y !== newPosition.y,
+          widthChanged: currentPosition.width !== newPosition.width,
+          heightChanged: currentPosition.height !== newPosition.height,
           currentPosition,
           newPosition
         });
 
         if (positionChanged) {
-          console.log('✅ [LAYOUT_DEBUG] Position change detected, adding to pending changes');
+          console.log('✅ [LAYOUT_DEBUG] Manual position change detected, adding pending change');
           // Get original position from database for comparison
           const originalWidget = selectedDashboard?.widgets.find(w => w.id === widgetId);
           const originalPosition = originalWidget?.position;
@@ -888,10 +935,8 @@ export default function DashboardsPage() {
     console.log('[Dashboard] Free position found:', freePosition);
     console.log('[Dashboard] All widgets used for position calculation:', allWidgets.length);
 
-    // Generate temporary ID for the new widget (use a simpler approach)
-    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    console.log('[Dashboard] Generated tempId:', tempId);
+    // Generate temporary ID for the new widget
+    const tempId = Date.now();
     
     // Add to pending changes with logica inteligentă
     addPendingChange('create', tempId, newWidget);
@@ -905,17 +950,26 @@ export default function DashboardsPage() {
     const dbWidgets = selectedDashboard?.widgets ?? [];
     const localWidgets: Widget[] = [];
     
+    console.log('[Dashboard] getAllWidgets called:', {
+      dbWidgetsCount: dbWidgets.length,
+      pendingChangesSize: pendingChangesMap.size,
+      pendingChanges: Array.from(pendingChangesMap.entries())
+    });
+    
     // Adaugă widget-urile locale din pending changes
     pendingChangesMap.forEach((change, key) => {
+      console.log('[Dashboard] Processing pending change:', { key, change });
       if (change.type === 'create' && change.data) {
         // Cheia este formatată ca "create_${widgetId}"
         const keyStr = String(key);
+        console.log('[Dashboard] Key string:', keyStr);
         if (keyStr.startsWith('create_')) {
           const widgetId = keyStr.replace('create_', '');
           const localWidget: Widget = {
-            id: widgetId, // Păstrează ID-ul ca string pentru widget-uri temporare
+            id: parseInt(widgetId), // Extrage ID-ul din cheie
             ...change.data,
           } as Widget;
+          console.log('[Dashboard] Created local widget:', localWidget);
           localWidgets.push(localWidget);
         }
       }
@@ -934,10 +988,17 @@ export default function DashboardsPage() {
     // Sort widgets by ID to ensure consistent order for ResponsiveGridLayout
     const sortedWidgets = filteredWidgets.sort((a, b) => {
       // Sort by ID to maintain consistent order
-      // Handle both string and number IDs
-      const aId = typeof a.id === 'string' ? (a.id.startsWith('temp_') ? 999999 : parseInt(a.id)) : a.id;
-      const bId = typeof b.id === 'string' ? (b.id.startsWith('temp_') ? 999999 : parseInt(b.id)) : b.id;
+      const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+      const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
       return aId - bId;
+    });
+    
+    console.log('[Dashboard] getAllWidgets result:', {
+      dbWidgetsCount: dbWidgets.length,
+      localWidgetsCount: localWidgets.length,
+      totalBeforeFilter: allWidgets.length,
+      totalAfterFilter: filteredWidgets.length,
+      sortedCount: sortedWidgets.length
     });
     
     return sortedWidgets;
@@ -946,67 +1007,58 @@ export default function DashboardsPage() {
   // Generate layouts directly without memoization to prevent automatic recalculation
   const generateLayouts = () => {
     const widgets = getAllWidgets();
-    
     return {
-      lg: widgets.map(w => {
-        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
-        return {
-          i: w.id.toString(),
-          x: position.x,
-          y: position.y,
-          w: position.width,
-          h: position.height,
-        };
-      }),
-      md: widgets.map(w => {
-        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
-        return {
-          i: w.id.toString(),
-          x: Math.min(position.x, 9),
-          y: position.y,
-          w: Math.min(position.width, 10),
-          h: position.height,
-        };
-      }),
-      sm: widgets.map(w => {
-        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
-        return {
-          i: w.id.toString(),
-          x: Math.min(position.x, 5),
-          y: position.y,
-          w: Math.min(position.width, 6),
-          h: position.height,
-        };
-      }),
-      xs: widgets.map(w => {
-        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
-        return {
-          i: w.id.toString(),
-          x: Math.min(position.x, 3),
-          y: position.y,
-          w: Math.min(position.width, 4),
-          h: position.height,
-        };
-      }),
-      xxs: widgets.map(w => {
-        const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
-        return {
-          i: w.id.toString(),
-          x: 0,
-          y: position.y,
-          w: 2,
-          h: position.height,
-        };
-      })
+      lg: widgets.map(w => ({
+        i: w.id.toString(),
+        x: w.position?.x || 0,
+        y: w.position?.y || 0,
+        w: w.position?.width || 4,
+        h: w.position?.height || 4,
+      })),
+      md: widgets.map(w => ({
+        i: w.id.toString(),
+        x: Math.min(w.position?.x || 0, 9),
+        y: w.position?.y || 0,
+        w: Math.min(w.position?.width || 4, 10),
+        h: w.position?.height || 4,
+      })),
+      sm: widgets.map(w => ({
+        i: w.id.toString(),
+        x: Math.min(w.position?.x || 0, 5),
+        y: w.position?.y || 0,
+        w: Math.min(w.position?.width || 4, 6),
+        h: w.position?.height || 4,
+      })),
+      xs: widgets.map(w => ({
+        i: w.id.toString(),
+        x: Math.min(w.position?.x || 0, 3),
+        y: w.position?.y || 0,
+        w: Math.min(w.position?.width || 4, 4),
+        h: w.position?.height || 4,
+      })),
+      xxs: widgets.map(w => ({
+        i: w.id.toString(),
+        x: 0,
+        y: w.position?.y || 0,
+        w: 2,
+        h: w.position?.height || 4,
+      }))
     };
   };
 
   const renderWidget = (widget: Widget) => {
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate
     const displayWidget = getFinalWidget(widget);
+    console.log('[Dashboard] renderWidget:', { 
+      originalWidget: widget, 
+      displayWidget,
+      widgetId: widget.id,
+      hasPendingChanges: hasPendingChange(widget.id, 'update') || hasPendingChange(widget.id, 'create')
+    });
     
     // Dacă widget-ul a fost șters, nu-l afișa
     if (!displayWidget) {
+      console.log('[Dashboard] Widget deleted, not rendering:', widget.id);
       return null;
     }
 
@@ -1054,7 +1106,7 @@ export default function DashboardsPage() {
         }
         return (
           <LineChartWidget 
-            widget={finalWidget} 
+            widget={displayWidget} 
             isEditMode={isEditMode}
             tenantId={tenant?.id}
             databaseId={1}
@@ -1072,7 +1124,7 @@ export default function DashboardsPage() {
       case 'table':
         return (
           <TableWidget 
-            widget={finalWidget} 
+            widget={displayWidget} 
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Table edit clicked:', widget.id);
@@ -1089,7 +1141,7 @@ export default function DashboardsPage() {
       case 'metric':
         return (
           <KPIWidget
-            widget={finalWidget}
+            widget={displayWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('KPI edit clicked:', widget.id);
@@ -1106,7 +1158,7 @@ export default function DashboardsPage() {
       case 'text':
         return (
           <TextWidget
-            widget={finalWidget}
+            widget={displayWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Text edit clicked:', widget.id);
@@ -1121,7 +1173,7 @@ export default function DashboardsPage() {
       case 'clock':
         return (
           <ClockWidget
-            widget={finalWidget}
+            widget={displayWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Clock edit clicked:', widget.id);
@@ -1136,7 +1188,7 @@ export default function DashboardsPage() {
       case 'tasks':
         return (
           <TasksWidget
-            widget={finalWidget}
+            widget={displayWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Tasks edit clicked:', widget.id);
@@ -1151,7 +1203,7 @@ export default function DashboardsPage() {
       case 'weather':
         return (
           <WeatherWidget
-            widget={finalWidget}
+            widget={displayWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Weather edit clicked:', widget.id);
@@ -1166,7 +1218,7 @@ export default function DashboardsPage() {
       case 'calendar':
         return (
           <CalendarWidget
-            widget={finalWidget}
+            widget={displayWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Calendar edit clicked:', widget.id);
@@ -1359,7 +1411,8 @@ export default function DashboardsPage() {
             {/* Grid Layout */}
             <div className="bg-gray-50 rounded-2xl p-6">
               <ResponsiveGridLayout
-                className={`layout ${isEditMode ? 'edit-mode' : 'view-mode'}`}
+                key={`grid-${selectedDashboard?.id}-${getAllWidgets().length}-${isEditMode}`}
+                className="layout"
                 layouts={generateLayouts()}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
@@ -1369,14 +1422,13 @@ export default function DashboardsPage() {
                 onLayoutChange={handleLayoutChange}
                 margin={[16, 16]}
                 containerPadding={[8, 8]}
-                useCSSTransforms={true}
+                useCSSTransforms={false}
                 transformScale={1}
                 preventCollision={false}
                 compactType={null}
                 autoSize={true}
                 allowOverlap={false}
                 verticalCompact={false}
-                style={{ overflow: isEditMode ? 'hidden' : 'visible' }}
               >
                 {getAllWidgets().map((widget) => (
                   <div 
@@ -1386,6 +1438,21 @@ export default function DashboardsPage() {
                       // Allow buttons to work by checking if click is on a button
                       const target = e.target as HTMLElement;
                       if (target.closest('button')) {
+                        e.stopPropagation();
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      // Handle touch events for mobile
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button')) {
+                        e.stopPropagation();
+                      }
+                    }}
+                    onTouchEnd={(e) => {
+                      // Prevent default touch behavior for buttons
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button')) {
+                        e.preventDefault();
                         e.stopPropagation();
                       }
                     }}
