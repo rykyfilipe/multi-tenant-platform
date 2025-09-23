@@ -18,7 +18,7 @@ import LineChartWidget from '@/components/dashboard/LineChartWidget';
 import BarChartWidget from '@/components/dashboard/BarChartWidget';
 import PieChartWidget from '@/components/dashboard/PieChartWidget';
 import TableWidget from '@/components/dashboard/TableWidget';
-import KPIWidget from '@/components/dashboard/KPIWidget';
+import MetricWidget from '@/components/dashboard/MetricWidget';
 import TextWidget from '@/components/dashboard/TextWidget';
 import ClockWidget from '@/components/dashboard/ClockWidget';
 import TasksWidget from '@/components/dashboard/TasksWidget';
@@ -78,9 +78,9 @@ const WIDGET_TYPES = [
   },
   {
     type: 'metric',
-    label: 'KPI',
+    label: 'Metric',
     icon: Activity,
-    description: 'Add a KPI/metric widget'
+    description: 'Add a metric widget'
   },
   {
     type: 'text',
@@ -679,7 +679,7 @@ export default function DashboardsPage() {
           optimizedHeight = 7; // Taller for better chart visibility
           break;
         case 'metric':
-          optimizedWidth = 4; // KPI widgets are compact but readable
+          optimizedWidth = 4; // Metric widgets are compact but readable
           optimizedHeight = 4; // Square format for metrics
           break;
         case 'text':
@@ -1127,15 +1127,15 @@ export default function DashboardsPage() {
         );
       case 'metric':
         return (
-          <KPIWidget
+          <MetricWidget
             widget={displayWidget}
             isEditMode={isEditMode}
             onEdit={() => {
-              console.log('KPI edit clicked:', widget.id);
+              console.log('Metric edit clicked:', widget.id);
               handleWidgetClick(widget);
             }}
             onDelete={() => {
-              console.log('KPI delete clicked:', widget.id);
+              console.log('Metric delete clicked:', widget.id);
               handleWidgetDelete(Number(widget.id));
             }}
             tenantId={tenant?.id}

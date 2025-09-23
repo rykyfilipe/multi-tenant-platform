@@ -7,7 +7,7 @@ import BaseWidget from './BaseWidget';
 import { api } from '@/lib/api-client';
 import type { DataSource } from './TableSelector';
 
-export interface KPIConfig {
+export interface MetricConfig {
   title?: string;
   dataSource: DataSource;
   aggregation: 'sum' | 'avg' | 'min' | 'max' | 'count';
@@ -35,10 +35,10 @@ export interface Widget {
   type: string;
   title: string | null;
   position: { x: number; y: number; width: number; height: number };
-  config: KPIConfig;
+  config: MetricConfig;
 }
 
-interface KPIWidgetProps {
+interface MetricWidgetProps {
   widget: Widget;
   isEditMode: boolean;
   onEdit: () => void;
@@ -47,14 +47,14 @@ interface KPIWidgetProps {
   databaseId?: number;
 }
 
-export default function KPIWidget({ 
+export default function MetricWidget({ 
   widget, 
   isEditMode, 
   onEdit, 
   onDelete, 
   tenantId, 
   databaseId 
-}: KPIWidgetProps) {
+}: MetricWidgetProps) {
   const [rawData, setRawData] = useState<any[]>([]);
   const [previousData, setPreviousData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,7 +78,7 @@ export default function KPIWidget({
     secondaryMetric: config.options?.secondaryMetric || ''
   };
 
-  console.log('🔧 [KPI_DEBUG] Widget Config Analysis:', {
+  console.log('🔧 [METRIC_DEBUG] Widget Config Analysis:', {
     widgetId: widget.id,
     widgetType: widget.type,
     hasConfig: !!widget.config,
@@ -91,9 +91,9 @@ export default function KPIWidget({
     }
   });
 
-  // Calculate the main KPI value
+  // Calculate the main metric value
   const kpiValue = useMemo(() => {
-    console.log('🧮 [KPI_DEBUG] Calculating KPI value:', {
+    console.log('🧮 [METRIC_DEBUG] Calculating metric value:', {
       rawDataLength: rawData.length,
       rawData: rawData,
       dataSource,
@@ -101,15 +101,15 @@ export default function KPIWidget({
     });
 
     if (!rawData.length) {
-      console.log('❌ [KPI_DEBUG] No raw data available');
+      console.log('❌ [METRIC_DEBUG] No raw data available');
       return null;
     }
 
     const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY;
-    console.log('🎯 [KPI_DEBUG] Target column:', column);
+    console.log('🎯 [METRIC_DEBUG] Target column:', column);
 
     if (!column) {
-      console.log('❌ [KPI_DEBUG] No target column found');
+      console.log('❌ [METRIC_DEBUG] No target column found');
       return null;
     }
 
@@ -117,7 +117,7 @@ export default function KPIWidget({
       .map(row => parseFloat(row[column]))
       .filter(val => !isNaN(val));
 
-    console.log('📈 [KPI_DEBUG] Extracted values:', {
+    console.log('📈 [METRIC_DEBUG] Extracted values:', {
       column,
       values,
       valuesLength: values.length,
@@ -125,7 +125,7 @@ export default function KPIWidget({
     });
 
     if (!values.length) {
-      console.log('❌ [KPI_DEBUG] No valid numeric values found');
+      console.log('❌ [METRIC_DEBUG] No valid numeric values found');
       return null;
     }
 
@@ -150,7 +150,7 @@ export default function KPIWidget({
         result = values.reduce((sum, val) => sum + val, 0);
     }
 
-    console.log('✅ [KPI_DEBUG] Calculated result:', {
+    console.log('✅ [METRIC_DEBUG] Calculated result:', {
       aggregation,
       result,
       values,
@@ -258,7 +258,7 @@ export default function KPIWidget({
   const fetchData = async () => {
     if (!tenantId || !databaseId || !dataSource.tableId) return;
 
-    console.log('🔍 [KPI_DEBUG] Starting fetchData:', {
+    console.log('🔍 [METRIC_DEBUG] Starting fetchData:', {
       tenantId,
       databaseId,
       tableId: dataSource.tableId,
@@ -278,7 +278,7 @@ export default function KPIWidget({
         sortOrder: 'desc' as const,
       });
 
-      console.log('📊 [KPI_DEBUG] API Response:', {
+      console.log('📊 [METRIC_DEBUG] API Response:', {
         success: allRows.success,
         dataLength: allRows.data?.length || 0,
         rawData: allRows.data,
@@ -300,7 +300,7 @@ export default function KPIWidget({
           return processedRow;
         });
 
-        console.log('🔄 [KPI_DEBUG] Processed Data:', {
+        console.log('🔄 [METRIC_DEBUG] Processed Data:', {
           processedDataLength: processedData.length,
           sampleRow: processedData[0],
           allProcessedData: processedData
@@ -376,7 +376,7 @@ export default function KPIWidget({
 
     // No data available
     if (!kpiValue) {
-      console.log('❌ [KPI_DEBUG] Rendering "No data available" because kpiValue is:', kpiValue);
+      console.log('❌ [METRIC_DEBUG] Rendering "No data available" because kpiValue is:', kpiValue);
       return (
         <div className="flex items-center justify-center h-full text-gray-500 min-h-[150px]">
           <div className="text-center p-6">
@@ -398,8 +398,8 @@ export default function KPIWidget({
       );
     }
 
-    // Main KPI display
-    console.log('✅ [KPI_DEBUG] Rendering KPI with data:', {
+    // Main metric display
+    console.log('✅ [METRIC_DEBUG] Rendering metric with data:', {
       kpiValue,
       column,
       aggregation,
