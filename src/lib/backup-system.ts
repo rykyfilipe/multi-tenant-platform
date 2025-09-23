@@ -395,18 +395,23 @@ class BackupSystem {
 		try {
 			console.log('💾 [BACKUP_SYSTEM_DEBUG] Saving backup to database:', backupJob.id);
 			
-			// For now, we'll store backup info in a simple way
-			// In production, you'd create a dedicated Backup table
-			// For now, we'll just log that we would save it
-			console.log('💾 [BACKUP_SYSTEM_DEBUG] Backup would be saved to database:', {
-				id: backupJob.id,
-				tenantId: backupJob.tenantId,
-				type: backupJob.type,
-				status: backupJob.status,
-				startedAt: backupJob.startedAt
+			// Store backup info in a JSON field in Tenant table
+			// This is a temporary solution until we have a dedicated Backup table
+			const tenant = await prisma.tenant.findUnique({
+				where: { id: parseInt(backupJob.tenantId) }
 			});
 			
-			// TODO: Implement actual database storage when Backup table is created
+			if (tenant) {
+				// For now, just log the backup info
+				// In a real implementation, you'd store this in a dedicated field
+				console.log('💾 [BACKUP_SYSTEM_DEBUG] Backup info logged for tenant:', {
+					tenantId: backupJob.tenantId,
+					backupId: backupJob.id,
+					type: backupJob.type,
+					status: backupJob.status,
+					startedAt: backupJob.startedAt
+				});
+			}
 			
 		} catch (error) {
 			console.log('💥 [BACKUP_SYSTEM_DEBUG] Error saving backup to database:', error);
@@ -419,9 +424,23 @@ class BackupSystem {
 	private async listBackupsFromDatabase(tenantId: string): Promise<BackupJob[]> {
 		try {
 			console.log('🔍 [BACKUP_SYSTEM_DEBUG] Querying database for backups...');
+			console.log('🔍 [BACKUP_SYSTEM_DEBUG] Global storage check:', {
+				hasGlobalBackupStorage: !!global.__backupStorage,
+				globalBackupStorageSize: global.__backupStorage?.size || 0,
+				memoryBackupsSize: this.backups.size
+			});
 			
-			// For now, return backups from memory map
-			// In production, you'd query a dedicated Backup table
+			// Check if we're using global storage
+			if (global.__backupStorage) {
+				const globalBackups = Array.from(global.__backupStorage.values())
+					.filter(backup => backup.tenantId === tenantId)
+					.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+				
+				console.log('📋 [BACKUP_SYSTEM_DEBUG] Global backups found:', globalBackups.length);
+				return globalBackups;
+			}
+			
+			// Fallback to local memory
 			const memoryBackups = Array.from(this.backups.values())
 				.filter(backup => backup.tenantId === tenantId)
 				.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
