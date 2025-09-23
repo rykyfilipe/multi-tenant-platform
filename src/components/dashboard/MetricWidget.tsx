@@ -64,7 +64,10 @@ export default function MetricWidget({
   
   // Handle both KPI and Metric widget config structures
   const dataSource = config.dataSource || {};
-  const aggregation = config.aggregation || dataSource.aggregation || 'sum';
+  const rawAggregation = config.aggregation || dataSource.aggregation || 'sum';
+  
+  // Normalize aggregation names to match switch cases
+  const aggregation = rawAggregation === 'average' ? 'avg' : rawAggregation;
   const formatting = config.formatting || {
     type: config.options?.format || 'number',
     decimals: config.options?.decimals || 0,
@@ -86,7 +89,12 @@ export default function MetricWidget({
       return null;
     }
 
-    const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY;
+    // Try multiple ways to get the column name
+    const column = dataSource.yAxis?.columns?.[0] || 
+                  dataSource.columnY || 
+                  dataSource.column ||
+                  dataSource.currentColumn;
+    
     if (!column) {
       return null;
     }
@@ -127,7 +135,11 @@ export default function MetricWidget({
   const previousValue = useMemo(() => {
     if (!previousData.length) return null;
 
-    const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY;
+    // Try multiple ways to get the column name
+    const column = dataSource.yAxis?.columns?.[0] || 
+                  dataSource.columnY || 
+                  dataSource.column ||
+                  dataSource.currentColumn;
     if (!column) return null;
 
     const values = previousData
@@ -252,7 +264,11 @@ export default function MetricWidget({
         // Generate previous period data for trend calculation
         if (display.showTrend) {
           const previousData = processedData.map((row: any) => {
-            const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY;
+            // Try multiple ways to get the column name
+            const column = dataSource.yAxis?.columns?.[0] || 
+                          dataSource.columnY || 
+                          dataSource.column ||
+                          dataSource.currentColumn;
             if (column && row[column]) {
               return {
                 ...row,
@@ -298,7 +314,10 @@ export default function MetricWidget({
     }
 
     // No column selected
-    const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY;
+    const column = dataSource.yAxis?.columns?.[0] || 
+                  dataSource.columnY || 
+                  dataSource.column ||
+                  dataSource.currentColumn;
     if (!column) {
       return (
         <div className="flex items-center justify-center h-full text-gray-500 min-h-[150px]">
@@ -330,8 +349,9 @@ export default function MetricWidget({
             <div className="mt-4 text-xs text-gray-400 text-left">
               <p>Debug Info:</p>
               <p>• Raw data length: {rawData.length}</p>
+              <p>• Detected column: {column}</p>
+              <p>• Aggregation: {aggregation} (from: {rawAggregation})</p>
               <p>• Data source: {JSON.stringify(dataSource, null, 2)}</p>
-              <p>• Aggregation: {aggregation}</p>
             </div>
           </div>
         </div>
