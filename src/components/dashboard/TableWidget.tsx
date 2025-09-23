@@ -53,15 +53,6 @@ export default function TableWidget({
   tenantId, 
   databaseId 
 }: TableWidgetProps) {
-  console.log('🏗️ [TABLEWIDGET_DEBUG] TableWidget rendered:', {
-    widgetId: widget.id,
-    widgetType: widget.type,
-    isEditMode,
-    hasConfig: !!widget.config,
-    config: widget.config,
-    tenantId,
-    databaseId
-  });
 
   const config = (widget.config || {}) as TableWidgetConfig;
   const dataSource = config.dataSource || { tableId: 0, columns: [] };

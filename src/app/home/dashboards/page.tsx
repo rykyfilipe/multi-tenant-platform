@@ -503,8 +503,8 @@ export default function DashboardsPage() {
     
     // Only small x-only changes might be responsive (constraint adjustments)
     if (isVerySmallXChange && isNoYChange && isNoWidthChange && isNoHeightChange) {
-      console.log('🔍 [RESPONSIVE_DEBUG] Very small x-only change - might be responsive constraint');
-      return true;
+      console.log('🔍 [RESPONSIVE_DEBUG] Very small x-only change - treating as manual to ensure display');
+      return false; // Changed to false to ensure widgets display
     }
     
     // Any resize (width/height change) is considered manual
