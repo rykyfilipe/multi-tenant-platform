@@ -326,7 +326,17 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     }
     
     // Dacă nu există modificări, returnează widget-ul original
-    console.log('[Hook] Widget unchanged:', originalWidget.id);
+    console.log('[Hook] Widget unchanged:', originalWidget.id, 'position:', originalWidget.position);
+    
+    // Verifică dacă position este null sau undefined și setează valori default
+    if (!originalWidget.position) {
+      console.log('[Hook] Widget position is null/undefined, setting default position');
+      return {
+        ...originalWidget,
+        position: { x: 0, y: 0, width: 4, height: 4 }
+      } as Widget;
+    }
+    
     return originalWidget;
   };
 
