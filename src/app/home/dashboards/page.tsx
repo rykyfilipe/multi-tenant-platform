@@ -961,32 +961,40 @@ export default function DashboardsPage() {
     const dbWidgets = selectedDashboard?.widgets ?? [];
     const localWidgets: Widget[] = [];
     
-    console.log('[Dashboard] getAllWidgets called:', {
+    console.log('📋 [WIDGETS_DEBUG] getAllWidgets called:', {
+      isEditMode,
       dbWidgetsCount: dbWidgets.length,
       pendingChangesSize: pendingChangesMap.size,
-      pendingChanges: Array.from(pendingChangesMap.entries())
+      hasSelectedDashboard: !!selectedDashboard
     });
     
     // Adaugă widget-urile locale din pending changes
     pendingChangesMap.forEach((change, key) => {
-      console.log('[Dashboard] Processing pending change:', { key, change });
       if (change.type === 'create' && change.data) {
         // Cheia este formatată ca "create_${widgetId}"
         const keyStr = String(key);
-        console.log('[Dashboard] Key string:', keyStr);
         if (keyStr.startsWith('create_')) {
           const widgetId = keyStr.replace('create_', '');
           const localWidget: Widget = {
             id: widgetId, // Păstrează ID-ul ca string pentru widget-uri temporare
             ...change.data,
           } as Widget;
-          console.log('[Dashboard] Created local widget:', localWidget);
+          console.log('🆕 [WIDGETS_DEBUG] Adding local widget:', {
+            widgetId: localWidget.id,
+            type: localWidget.type,
+            hasPosition: !!localWidget.position
+          });
           localWidgets.push(localWidget);
         }
       }
     });
     
     const allWidgets = [...dbWidgets, ...localWidgets];
+    console.log('📋 [WIDGETS_DEBUG] All widgets before processing:', {
+      dbWidgets: dbWidgets.map(w => ({ id: w.id, type: w.type })),
+      localWidgets: localWidgets.map(w => ({ id: w.id, type: w.type })),
+      totalCount: allWidgets.length
+    });
     
     // Aplică pending changes la toate widget-urile și filtrează cele șterse
     const processedWidgets = allWidgets.map(widget => {
@@ -1005,12 +1013,10 @@ export default function DashboardsPage() {
       return aId - bId;
     });
     
-    console.log('[Dashboard] getAllWidgets result:', {
-      dbWidgetsCount: dbWidgets.length,
-      localWidgetsCount: localWidgets.length,
-      totalBeforeFilter: allWidgets.length,
-      totalAfterFilter: filteredWidgets.length,
-      sortedCount: sortedWidgets.length
+    console.log('📋 [WIDGETS_DEBUG] Final result:', {
+      isEditMode,
+      finalCount: sortedWidgets.length,
+      widgets: sortedWidgets.map(w => ({ id: w.id, type: w.type, hasPosition: !!w.position }))
     });
     
     return sortedWidgets;
@@ -1019,16 +1025,25 @@ export default function DashboardsPage() {
   // Generate layouts directly without memoization to prevent automatic recalculation
   const generateLayouts = () => {
     const widgets = getAllWidgets();
-    console.log('[Dashboard] generateLayouts called with widgets:', widgets.map(w => ({
-      id: w.id,
-      position: w.position,
-      hasPendingChanges: hasPendingChange(w.id, 'update') || hasPendingChange(w.id, 'create')
-    })));
+    console.log('📐 [LAYOUT_DEBUG] generateLayouts called:', {
+      isEditMode,
+      widgetCount: widgets.length,
+      widgets: widgets.map(w => ({
+        id: w.id,
+        type: w.type,
+        hasPosition: !!w.position,
+        position: w.position
+      }))
+    });
     
     return {
       lg: widgets.map(w => {
         const position = w.position || { x: 0, y: 0, width: 4, height: 4 };
-        console.log(`[Dashboard] LG Layout for widget ${w.id}:`, position);
+        console.log(`📐 [LAYOUT_DEBUG] LG Layout for widget ${w.id}:`, {
+          id: w.id,
+          type: w.type,
+          position
+        });
         return {
           i: w.id.toString(),
           x: position.x,
@@ -1081,23 +1096,36 @@ export default function DashboardsPage() {
   };
 
   const renderWidget = (widget: Widget) => {
+    console.log('🔍 [RENDER_DEBUG] renderWidget called:', {
+      widgetId: widget.id,
+      widgetType: widget.type,
+      isEditMode,
+      hasPosition: !!widget.position,
+      position: widget.position
+    });
+
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate
     const displayWidget = getFinalWidget(widget);
-    console.log('[Dashboard] renderWidget:', { 
-      originalWidget: widget, 
-      displayWidget,
+    console.log('🔍 [RENDER_DEBUG] getFinalWidget result:', {
       widgetId: widget.id,
+      displayWidget: !!displayWidget,
+      displayWidgetType: displayWidget?.type,
       hasPendingChanges: hasPendingChange(widget.id, 'update') || hasPendingChange(widget.id, 'create')
     });
     
     // Dacă widget-ul a fost șters, nu-l afișa
     if (!displayWidget) {
-      console.log('[Dashboard] Widget deleted, not rendering:', widget.id);
+      console.log('❌ [RENDER_DEBUG] Widget deleted, not rendering:', widget.id);
       return null;
     }
 
     // Use the widget directly if no pending changes (after save)
     const finalWidget = displayWidget || widget;
+    console.log('✅ [RENDER_DEBUG] Rendering widget:', {
+      widgetId: finalWidget.id,
+      widgetType: finalWidget.type,
+      isEditMode
+    });
 
     switch (finalWidget.type) {
       case 'chart': {
@@ -1464,7 +1492,14 @@ export default function DashboardsPage() {
                 verticalCompact={false}
                 style={{ overflow: isEditMode ? 'hidden' : 'visible' }}
               >
-                {getAllWidgets().map((widget) => (
+                {(() => {
+                  const widgets = getAllWidgets();
+                  console.log('🎨 [GRID_DEBUG] ResponsiveGridLayout rendering:', {
+                    isEditMode,
+                    widgetCount: widgets.length,
+                    widgets: widgets.map(w => ({ id: w.id, type: w.type }))
+                  });
+                  return widgets.map((widget) => (
                   <div 
                     key={widget.id} 
                     className="widget-container h-full w-full min-h-[200px]"
@@ -1501,7 +1536,8 @@ export default function DashboardsPage() {
                       </div>
                     </motion.div>
                   </div>
-                ))}
+                  ));
+                })()}
               </ResponsiveGridLayout>
             </div>
           </div>
