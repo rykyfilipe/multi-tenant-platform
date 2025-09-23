@@ -13,18 +13,26 @@ import { Switch } from '@/components/ui/switch';
 import { Trash2, Plus } from 'lucide-react';
 import { WidgetEditorProps, TableConfig, WidgetEntity } from '@/types/widget';
 import { FilterConfig, ColumnType, FilterOperator, OPERATOR_COMPATIBILITY } from '@/types/filtering';
+import { useSchemaCache } from '@/hooks/useSchemaCache';
+import { useApp } from '@/contexts/AppContext';
 import StyleOptions from './StyleOptions';
 
 interface TableEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: TableConfig };
+  tenantId?: number;
+  databaseId?: number;
 }
 
 export default function TableEditor({ 
   widget, 
   onSave, 
   onCancel, 
-  isOpen 
+  isOpen,
+  tenantId,
+  databaseId
 }: TableEditorProps) {
+  const { getColumns } = useSchemaCache(tenantId || 1, databaseId || 1);
+
   const [config, setConfig] = useState<TableConfig>({
     columns: [],
     showHeader: true,
@@ -48,19 +56,29 @@ export default function TableEditor({
     ...widget.config
   });
 
-  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+  const [availableColumns, setAvailableColumns] = useState<Array<{name: string, type: string}>>([]);
   const [newColumn, setNewColumn] = useState('');
   const [filters, setFilters] = useState<FilterConfig[]>(config.filters || []);
   const [showFilters, setShowFilters] = useState(false);
 
   // Load available columns from data source
   useEffect(() => {
-    if (widget.dataSource?.type === 'table') {
-      setAvailableColumns(['id', 'name', 'email', 'date', 'value', 'status', 'category']);
-    } else {
-      setAvailableColumns([]);
-    }
-  }, [widget.dataSource]);
+    const loadColumns = async () => {
+      if (widget.dataSource?.type === 'table' && widget.dataSource?.tableId && tenantId && databaseId) {
+        try {
+          const columns = await getTableColumns(tenantId, databaseId, widget.dataSource.tableId);
+          setAvailableColumns(columns || []);
+        } catch (error) {
+          console.error('Failed to load table columns:', error);
+          setAvailableColumns([]);
+        }
+      } else {
+        setAvailableColumns([]);
+      }
+    };
+
+    loadColumns();
+  }, [widget.dataSource, tenantId, databaseId, getTableColumns]);
 
   const handleSave = () => {
     if (!config.columns || config.columns.length === 0) {
@@ -140,17 +158,33 @@ export default function TableEditor({
   };
 
   const getColumnType = (columnName: string): ColumnType => {
-    // Simple mapping - in a real app, this would come from the database schema
+    // Find the column in availableColumns to get its real type
+    const column = availableColumns.find(col => col.name === columnName);
+    if (!column) return 'string';
+    
+    // Map database types to our ColumnType enum
     const typeMap: Record<string, ColumnType> = {
-      'id': 'integer',
-      'name': 'string',
+      'text': 'string',
+      'string': 'string',
+      'varchar': 'string',
+      'char': 'string',
       'email': 'email',
+      'url': 'url',
+      'integer': 'integer',
+      'int': 'integer',
+      'number': 'number',
+      'decimal': 'decimal',
+      'float': 'decimal',
+      'double': 'decimal',
+      'boolean': 'boolean',
+      'bool': 'boolean',
       'date': 'date',
-      'value': 'number',
-      'status': 'string',
-      'category': 'string'
+      'datetime': 'datetime',
+      'timestamp': 'datetime',
+      'time': 'time'
     };
-    return typeMap[columnName] || 'string';
+    
+    return typeMap[column.type.toLowerCase()] || 'string';
   };
 
   return (
@@ -174,10 +208,13 @@ export default function TableEditor({
                   </SelectTrigger>
                   <SelectContent>
                     {availableColumns
-                      .filter(col => !config.columns.includes(col))
+                      .filter(col => !config.columns.includes(col.name))
                       .map(column => (
-                        <SelectItem key={column} value={column}>
-                          {column}
+                        <SelectItem key={column.name} value={column.name}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{column.name}</span>
+                            <span className="text-xs text-gray-500 ml-2">{column.type}</span>
+                          </div>
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -191,18 +228,26 @@ export default function TableEditor({
             <div className="space-y-2">
               <Label>Selected Columns</Label>
               <div className="space-y-1">
-                {config.columns.map((column, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 border rounded">
-                    <span>{column}</span>
-                    <Button
-                      onClick={() => removeColumn(index)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
+                {config.columns.map((column, index) => {
+                  const columnInfo = availableColumns.find(col => col.name === column);
+                  return (
+                    <div key={index} className="flex items-center justify-between p-2 border rounded">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{column}</span>
+                        {columnInfo && (
+                          <span className="text-xs text-gray-500">{columnInfo.type}</span>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => removeColumn(index)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -256,8 +301,11 @@ export default function TableEditor({
                           </SelectTrigger>
                           <SelectContent>
                             {availableColumns.map(column => (
-                              <SelectItem key={column} value={column}>
-                                {column}
+                              <SelectItem key={column.name} value={column.name}>
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{column.name}</span>
+                                  <span className="text-xs text-gray-500 ml-2">{column.type}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>

@@ -78,38 +78,16 @@ export default function MetricWidget({
     secondaryMetric: config.options?.secondaryMetric || ''
   };
 
-  console.log('🔧 [METRIC_DEBUG] Widget Config Analysis:', {
-    widgetId: widget.id,
-    widgetType: widget.type,
-    hasConfig: !!widget.config,
-    config: widget.config,
-    extractedConfig: {
-      dataSource,
-      aggregation,
-      formatting,
-      display
-    }
-  });
+  // Debug logging removed to prevent infinite logs
 
   // Calculate the main metric value
   const kpiValue = useMemo(() => {
-    console.log('🧮 [METRIC_DEBUG] Calculating metric value:', {
-      rawDataLength: rawData.length,
-      rawData: rawData,
-      dataSource,
-      aggregation
-    });
-
     if (!rawData.length) {
-      console.log('❌ [METRIC_DEBUG] No raw data available');
       return null;
     }
 
     const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY;
-    console.log('🎯 [METRIC_DEBUG] Target column:', column);
-
     if (!column) {
-      console.log('❌ [METRIC_DEBUG] No target column found');
       return null;
     }
 
@@ -117,15 +95,7 @@ export default function MetricWidget({
       .map(row => parseFloat(row[column]))
       .filter(val => !isNaN(val));
 
-    console.log('📈 [METRIC_DEBUG] Extracted values:', {
-      column,
-      values,
-      valuesLength: values.length,
-      rawColumnData: rawData.map(row => ({ [column]: row[column] }))
-    });
-
     if (!values.length) {
-      console.log('❌ [METRIC_DEBUG] No valid numeric values found');
       return null;
     }
 
@@ -149,13 +119,6 @@ export default function MetricWidget({
       default:
         result = values.reduce((sum, val) => sum + val, 0);
     }
-
-    console.log('✅ [METRIC_DEBUG] Calculated result:', {
-      aggregation,
-      result,
-      values,
-      calculation: `${aggregation}(${values.join(', ')}) = ${result}`
-    });
 
     return result;
   }, [rawData, dataSource, aggregation]);
@@ -258,15 +221,6 @@ export default function MetricWidget({
   const fetchData = async () => {
     if (!tenantId || !databaseId || !dataSource.tableId) return;
 
-    console.log('🔍 [METRIC_DEBUG] Starting fetchData:', {
-      tenantId,
-      databaseId,
-      tableId: dataSource.tableId,
-      dataSource,
-      aggregation,
-      formatting
-    });
-
     setIsLoading(true);
     setError(null);
 
@@ -276,13 +230,6 @@ export default function MetricWidget({
         search: '',
         sortBy: 'id',
         sortOrder: 'desc' as const,
-      });
-
-      console.log('📊 [METRIC_DEBUG] API Response:', {
-        success: allRows.success,
-        dataLength: allRows.data?.length || 0,
-        rawData: allRows.data,
-        fullResponse: allRows
       });
 
       if (allRows.success && allRows.data) {
@@ -298,12 +245,6 @@ export default function MetricWidget({
           }
           
           return processedRow;
-        });
-
-        console.log('🔄 [METRIC_DEBUG] Processed Data:', {
-          processedDataLength: processedData.length,
-          sampleRow: processedData[0],
-          allProcessedData: processedData
         });
 
         setRawData(processedData);
@@ -376,7 +317,6 @@ export default function MetricWidget({
 
     // No data available
     if (!kpiValue) {
-      console.log('❌ [METRIC_DEBUG] Rendering "No data available" because kpiValue is:', kpiValue);
       return (
         <div className="flex items-center justify-center h-full text-gray-500 min-h-[150px]">
           <div className="text-center p-6">
@@ -399,12 +339,6 @@ export default function MetricWidget({
     }
 
     // Main metric display
-    console.log('✅ [METRIC_DEBUG] Rendering metric with data:', {
-      kpiValue,
-      column,
-      aggregation,
-      formattedValue: formatValue(kpiValue)
-    });
 
     return (
       <div className="text-center space-y-4 h-full flex flex-col justify-center">
