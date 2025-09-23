@@ -1381,10 +1381,12 @@ export default function DashboardsPage() {
                 useCSSTransforms={true}
                 transformScale={1}
                 preventCollision={true}
-                compactType="vertical"
+                compactType={isEditMode ? "vertical" : null}
                 autoSize={false}
-                allowOverlap={true}
-                verticalCompact={true}
+                allowOverlap={isEditMode}
+                verticalCompact={isEditMode}
+                resizeHandles={isEditMode ? ['se'] : []}
+                isBounded={false}
               >
                 {getAllWidgets().map((widget) => (
                   <div 
