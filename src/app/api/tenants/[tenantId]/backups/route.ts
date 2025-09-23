@@ -128,7 +128,10 @@ export async function POST(
 			);
 		}
 
-		
+		logger.error("Failed to create backup", error as Error, {
+			component: "BackupsAPI",
+			tenantId: params.tenantId,
+		});
 
 		return NextResponse.json(
 			{ error: "Failed to create backup" },
