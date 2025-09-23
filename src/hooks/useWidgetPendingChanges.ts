@@ -287,27 +287,16 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     const updateKey = getChangeKey(originalWidget.id, 'update');
     const deleteKey = getChangeKey(originalWidget.id, 'delete');
     
-    console.log('[Hook] getFinalWidget called:', {
-      widgetId: originalWidget.id,
-      createKey,
-      updateKey,
-      deleteKey,
-      hasCreate: pendingChanges.has(createKey),
-      hasUpdate: pendingChanges.has(updateKey),
-      hasDelete: pendingChanges.has(deleteKey),
-      pendingChangesSize: pendingChanges.size
-    });
+    // Debug logging removed for production
     
     // Dacă există o operațiune de ștergere, widget-ul nu trebuie afișat
     if (pendingChanges.has(deleteKey)) {
-      console.log('[Hook] Widget marked for deletion:', originalWidget.id);
       return null;
     }
     
     // Dacă există o operațiune de create, returnează widget-ul nou
     if (pendingChanges.has(createKey)) {
       const createChange = pendingChanges.get(createKey);
-      console.log('[Hook] Widget is new (create):', originalWidget.id, createChange?.data);
       return {
         ...originalWidget,
         ...createChange?.data,
@@ -318,7 +307,6 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     // Dacă există modificări, aplică-le pe widget-ul original
     if (pendingChanges.has(updateKey)) {
       const updateChange = pendingChanges.get(updateKey);
-      console.log('[Hook] Widget has updates:', originalWidget.id, updateChange?.data);
       return {
         ...originalWidget,
         ...updateChange?.data,
@@ -326,11 +314,8 @@ export function useWidgetPendingChanges(options: UseWidgetPendingChangesOptions 
     }
     
     // Dacă nu există modificări, returnează widget-ul original
-    console.log('[Hook] Widget unchanged:', originalWidget.id, 'position:', originalWidget.position);
-    
     // Verifică dacă position este null sau undefined și setează valori default
     if (!originalWidget.position) {
-      console.log('[Hook] Widget position is null/undefined, setting default position');
       return {
         ...originalWidget,
         position: { x: 0, y: 0, width: 4, height: 4 }

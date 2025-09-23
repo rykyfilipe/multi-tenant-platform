@@ -70,16 +70,41 @@ export default function KPIWidget({
 
   // Calculate the main KPI value
   const kpiValue = useMemo(() => {
-    if (!rawData.length) return null;
+    console.log('🧮 [KPI_DEBUG] Calculating KPI value:', {
+      rawDataLength: rawData.length,
+      rawData: rawData,
+      dataSource,
+      aggregation
+    });
+
+    if (!rawData.length) {
+      console.log('❌ [KPI_DEBUG] No raw data available');
+      return null;
+    }
 
     const column = dataSource.yAxis?.columns?.[0] || dataSource.columnY;
-    if (!column) return null;
+    console.log('🎯 [KPI_DEBUG] Target column:', column);
+
+    if (!column) {
+      console.log('❌ [KPI_DEBUG] No target column found');
+      return null;
+    }
 
     const values = rawData
       .map(row => parseFloat(row[column]))
       .filter(val => !isNaN(val));
 
-    if (!values.length) return null;
+    console.log('📈 [KPI_DEBUG] Extracted values:', {
+      column,
+      values,
+      valuesLength: values.length,
+      rawColumnData: rawData.map(row => ({ [column]: row[column] }))
+    });
+
+    if (!values.length) {
+      console.log('❌ [KPI_DEBUG] No valid numeric values found');
+      return null;
+    }
 
     let result: number;
     switch (aggregation) {
@@ -101,6 +126,13 @@ export default function KPIWidget({
       default:
         result = values.reduce((sum, val) => sum + val, 0);
     }
+
+    console.log('✅ [KPI_DEBUG] Calculated result:', {
+      aggregation,
+      result,
+      values,
+      calculation: `${aggregation}(${values.join(', ')}) = ${result}`
+    });
 
     return result;
   }, [rawData, dataSource, aggregation]);
@@ -203,6 +235,15 @@ export default function KPIWidget({
   const fetchData = async () => {
     if (!tenantId || !databaseId || !dataSource.tableId) return;
 
+    console.log('🔍 [KPI_DEBUG] Starting fetchData:', {
+      tenantId,
+      databaseId,
+      tableId: dataSource.tableId,
+      dataSource,
+      aggregation,
+      formatting
+    });
+
     setIsLoading(true);
     setError(null);
 
@@ -212,6 +253,12 @@ export default function KPIWidget({
         search: '',
         sortBy: 'id',
         sortOrder: 'desc' as const,
+      });
+
+      console.log('📊 [KPI_DEBUG] API Response:', {
+        success: allRows.success,
+        dataLength: allRows.data?.length || 0,
+        rawData: allRows.data
       });
 
       if (allRows.success && allRows.data) {
@@ -227,6 +274,12 @@ export default function KPIWidget({
           }
           
           return processedRow;
+        });
+
+        console.log('🔄 [KPI_DEBUG] Processed Data:', {
+          processedDataLength: processedData.length,
+          sampleRow: processedData[0],
+          allProcessedData: processedData
         });
 
         setRawData(processedData);
@@ -299,6 +352,7 @@ export default function KPIWidget({
 
     // No data available
     if (!kpiValue) {
+      console.log('❌ [KPI_DEBUG] Rendering "No data available" because kpiValue is:', kpiValue);
       return (
         <div className="flex items-center justify-center h-full text-gray-500 min-h-[150px]">
           <div className="text-center p-6">
@@ -309,12 +363,25 @@ export default function KPIWidget({
             <p className="text-xs text-gray-400">
               No data found for the selected column and aggregation
             </p>
+            <div className="mt-4 text-xs text-gray-400 text-left">
+              <p>Debug Info:</p>
+              <p>• Raw data length: {rawData.length}</p>
+              <p>• Data source: {JSON.stringify(dataSource, null, 2)}</p>
+              <p>• Aggregation: {aggregation}</p>
+            </div>
           </div>
         </div>
       );
     }
 
     // Main KPI display
+    console.log('✅ [KPI_DEBUG] Rendering KPI with data:', {
+      kpiValue,
+      column,
+      aggregation,
+      formattedValue: formatValue(kpiValue)
+    });
+
     return (
       <div className="text-center space-y-4 h-full flex flex-col justify-center">
         <motion.div
