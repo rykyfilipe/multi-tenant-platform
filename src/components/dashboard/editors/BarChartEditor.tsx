@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, BarChartConfig, WidgetEntity } from '@/types/widget';
+import { TableSelector } from '../TableSelector';
 import StyleOptions from './StyleOptions';
 
 interface BarChartEditorProps extends WidgetEditorProps {
@@ -81,37 +82,64 @@ export default function BarChartEditor({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="xAxis">X Axis Column</Label>
-              <Select value={config.xAxis} onValueChange={(value) => handleConfigChange('xAxis', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select X axis column" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableColumns.map(column => (
-                    <SelectItem key={column} value={column}>
-                      {column}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Data Source Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Data Source</h3>
+            <TableSelector
+              dataSource={widget.dataSource || { type: 'table', tableId: 0, columns: [] }}
+              onDataSourceChange={(dataSource) => {
+                // Update widget dataSource - cast to widget DataSource type
+                widget.dataSource = dataSource as any;
+                // Update config with selected columns
+                if (dataSource.xColumns && dataSource.xColumns.length > 0) {
+                  handleConfigChange('xAxis', dataSource.xColumns[0]);
+                }
+                if (dataSource.yColumns && dataSource.yColumns.length > 0) {
+                  handleConfigChange('yAxis', dataSource.yColumns[0]);
+                }
+              }}
+              widgetType="chart"
+              supportedAxes={['x', 'y']}
+              expectedXType="text"
+              expectedYType="number"
+            />
+          </div>
 
-            <div>
-              <Label htmlFor="yAxis">Y Axis Column</Label>
-              <Select value={config.yAxis} onValueChange={(value) => handleConfigChange('yAxis', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Y axis column" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableColumns.map(column => (
-                    <SelectItem key={column} value={column}>
-                      {column}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Chart Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Chart Configuration</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="xAxis">X Axis Column</Label>
+                <Select value={config.xAxis} onValueChange={(value) => handleConfigChange('xAxis', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select X axis column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableColumns.map(column => (
+                      <SelectItem key={column} value={column}>
+                        {column}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="yAxis">Y Axis Column</Label>
+                <Select value={config.yAxis} onValueChange={(value) => handleConfigChange('yAxis', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Y axis column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableColumns.map(column => (
+                      <SelectItem key={column} value={column}>
+                        {column}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

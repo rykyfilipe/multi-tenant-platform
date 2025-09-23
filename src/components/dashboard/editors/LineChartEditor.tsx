@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { WidgetEditorProps, LineChartConfig, WidgetEntity } from '@/types/widget';
+import { TableSelector } from '../TableSelector';
 import StyleOptions from './StyleOptions';
 
 interface LineChartEditorProps extends WidgetEditorProps {
@@ -22,7 +23,7 @@ export default function LineChartEditor({
   widget, 
   onSave, 
   onCancel, 
-  isOpen 
+  isOpen
 }: LineChartEditorProps) {
   const [config, setConfig] = useState<LineChartConfig>({
     xAxis: '',
@@ -106,9 +107,32 @@ export default function LineChartEditor({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Basic Configuration */}
+          {/* Data Source Configuration */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Data Configuration</h3>
+            <h3 className="text-lg font-medium">Data Source</h3>
+            <TableSelector
+              dataSource={widget.dataSource || { type: 'table', tableId: 0, columns: [] }}
+              onDataSourceChange={(dataSource) => {
+                // Update widget dataSource - cast to widget DataSource type
+                widget.dataSource = dataSource as any;
+                // Update config with selected columns
+                if (dataSource.xColumns && dataSource.xColumns.length > 0) {
+                  handleConfigChange('xAxis', dataSource.xColumns[0]);
+                }
+                if (dataSource.yColumns && dataSource.yColumns.length > 0) {
+                  handleConfigChange('yAxis', dataSource.yColumns[0]);
+                }
+              }}
+              widgetType="chart"
+              supportedAxes={['x', 'y']}
+              expectedXType="text"
+              expectedYType="number"
+            />
+          </div>
+
+          {/* Chart Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Chart Configuration</h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div>

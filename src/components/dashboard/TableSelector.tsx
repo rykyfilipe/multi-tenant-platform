@@ -73,7 +73,7 @@ export interface DataSource {
 	// Filters
 	filters?: FilterConfig[];
 	// Aggregation
-	groupBy?: string;
+	groupBy?: string | null;
 }
 
 interface TableSelectorProps {
@@ -94,7 +94,6 @@ interface TableSelectorProps {
 	expectedXType?: 'text' | 'number' | 'date' | 'boolean';
 	expectedYType?: 'text' | 'number' | 'date' | 'boolean';
 	
-	tenantId: number;
 }
 
 export function TableSelector({
@@ -104,8 +103,7 @@ export function TableSelector({
 	supportedAxes = ['x', 'y'],
 	allowMultiColumn = false,
 	expectedXType,
-	expectedYType,
-	tenantId
+	expectedYType
 }: TableSelectorProps) {
 	console.log('[TableSelector] Component initialized with:', {
 		dataSource,

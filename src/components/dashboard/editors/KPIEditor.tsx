@@ -15,17 +15,13 @@ import StyleOptions from './StyleOptions';
 
 interface KPIEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: KPIConfig };
-  tenantId?: number;
-  databaseId?: number;
 }
 
 export default function KPIEditor({ 
   widget, 
   onSave, 
   onCancel, 
-  isOpen,
-  tenantId = 1,
-  databaseId = 1
+  isOpen
 }: KPIEditorProps) {
   const [config, setConfig] = useState<KPIConfig>({
     title: '',
@@ -168,7 +164,6 @@ export default function KPIEditor({
                 widgetType="kpi"
                 supportedAxes={['y']}
                 expectedYType="number"
-                tenantId={tenantId}
               />
             </CardContent>
           </Card>

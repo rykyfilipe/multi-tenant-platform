@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { WidgetEditorProps, PieChartConfig, WidgetEntity } from '@/types/widget';
+import { TableSelector } from '../TableSelector';
 import StyleOptions from './StyleOptions';
 
 interface PieChartEditorProps extends WidgetEditorProps {
@@ -67,33 +68,60 @@ export default function PieChartEditor({ widget, onSave, onCancel, isOpen }: Pie
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="labelColumn">Label Column</Label>
-              <Select value={config.labelColumn} onValueChange={(value) => handleConfigChange('labelColumn', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select label column" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableColumns.map(column => (
-                    <SelectItem key={column} value={column}>{column}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Data Source Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Data Source</h3>
+            <TableSelector
+              dataSource={widget.dataSource || { type: 'table', tableId: 0, columns: [] }}
+              onDataSourceChange={(dataSource) => {
+                // Update widget dataSource - cast to widget DataSource type
+                widget.dataSource = dataSource as any;
+                // Update config with selected columns
+                if (dataSource.xColumns && dataSource.xColumns.length > 0) {
+                  handleConfigChange('labelColumn', dataSource.xColumns[0]);
+                }
+                if (dataSource.yColumns && dataSource.yColumns.length > 0) {
+                  handleConfigChange('valueColumn', dataSource.yColumns[0]);
+                }
+              }}
+              widgetType="chart"
+              supportedAxes={['x', 'y']}
+              expectedXType="text"
+              expectedYType="number"
+            />
+          </div>
 
-            <div>
-              <Label htmlFor="valueColumn">Value Column</Label>
-              <Select value={config.valueColumn} onValueChange={(value) => handleConfigChange('valueColumn', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select value column" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableColumns.map(column => (
-                    <SelectItem key={column} value={column}>{column}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Chart Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Chart Configuration</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="labelColumn">Label Column</Label>
+                <Select value={config.labelColumn} onValueChange={(value) => handleConfigChange('labelColumn', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select label column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableColumns.map(column => (
+                      <SelectItem key={column} value={column}>{column}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="valueColumn">Value Column</Label>
+                <Select value={config.valueColumn} onValueChange={(value) => handleConfigChange('valueColumn', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select value column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableColumns.map(column => (
+                      <SelectItem key={column} value={column}>{column}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
