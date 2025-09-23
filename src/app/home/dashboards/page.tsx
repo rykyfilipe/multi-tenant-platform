@@ -1137,7 +1137,7 @@ export default function DashboardsPage() {
         }
         return (
           <LineChartWidget 
-            widget={displayWidget} 
+            widget={finalWidget} 
             isEditMode={isEditMode}
             tenantId={tenant?.id}
             databaseId={1}
@@ -1155,7 +1155,7 @@ export default function DashboardsPage() {
       case 'table':
         return (
           <TableWidget 
-            widget={displayWidget} 
+            widget={finalWidget} 
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Table edit clicked:', widget.id);
@@ -1172,7 +1172,7 @@ export default function DashboardsPage() {
       case 'metric':
         return (
           <KPIWidget
-            widget={displayWidget}
+            widget={finalWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('KPI edit clicked:', widget.id);
@@ -1189,7 +1189,7 @@ export default function DashboardsPage() {
       case 'text':
         return (
           <TextWidget
-            widget={displayWidget}
+            widget={finalWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Text edit clicked:', widget.id);
@@ -1204,7 +1204,7 @@ export default function DashboardsPage() {
       case 'clock':
         return (
           <ClockWidget
-            widget={displayWidget}
+            widget={finalWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Clock edit clicked:', widget.id);
@@ -1219,7 +1219,7 @@ export default function DashboardsPage() {
       case 'tasks':
         return (
           <TasksWidget
-            widget={displayWidget}
+            widget={finalWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Tasks edit clicked:', widget.id);
@@ -1234,7 +1234,7 @@ export default function DashboardsPage() {
       case 'weather':
         return (
           <WeatherWidget
-            widget={displayWidget}
+            widget={finalWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Weather edit clicked:', widget.id);
@@ -1249,7 +1249,7 @@ export default function DashboardsPage() {
       case 'calendar':
         return (
           <CalendarWidget
-            widget={displayWidget}
+            widget={finalWidget}
             isEditMode={isEditMode}
             onEdit={() => {
               console.log('Calendar edit clicked:', widget.id);
