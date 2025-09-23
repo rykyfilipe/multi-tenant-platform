@@ -6,11 +6,19 @@ import { TrendingUp, TrendingDown, Minus, AlertCircle, BarChart3, Calculator } f
 import BaseWidget from './BaseWidget';
 import { api } from '@/lib/api-client';
 import type { DataSource } from './TableSelector';
+import { 
+  validateMetricWidgetConfig, 
+  applyAggregation, 
+  extractNumericValues, 
+  mapRawRowsToProcessedData,
+  type AggregationFunction,
+  type ColumnMeta 
+} from '@/lib/widget-aggregation';
 
 export interface MetricConfig {
   title?: string;
   dataSource: DataSource;
-  aggregation: 'sum' | 'avg' | 'min' | 'max' | 'count';
+  aggregation: AggregationFunction;
   formatting: {
     type: 'number' | 'currency' | 'percentage';
     decimals: number;
@@ -81,7 +89,40 @@ export default function MetricWidget({
     secondaryMetric: config.options?.secondaryMetric || ''
   };
 
-  // Debug logging removed to prevent infinite logs
+  // Validate widget configuration
+  const [validationError, setValidationError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Validate aggregation compatibility with column type
+    if (rawData.length > 0 && dataSource.tableId) {
+      const column = dataSource.yAxis?.columns?.[0] || 
+                    dataSource.columnY || 
+                    dataSource.column ||
+                    dataSource.currentColumn;
+      
+      if (column) {
+        // We need to get the actual column type from the database
+        // For now, we'll assume it's numeric if we have numeric values
+        const values = extractNumericValues(rawData, column);
+        const hasNumericData = values.length > 0;
+        
+        // Create a mock column meta for validation
+        const mockColumn: ColumnMeta = {
+          id: 0,
+          name: column,
+          type: hasNumericData ? 'number' : 'string',
+          tableId: dataSource.tableId
+        };
+        
+        const validation = validateMetricWidgetConfig(mockColumn, aggregation);
+        if (!validation.isValid) {
+          setValidationError(validation.error || 'Invalid configuration');
+        } else {
+          setValidationError(null);
+        }
+      }
+    }
+  }, [rawData, dataSource, aggregation]);
 
   // Calculate the main metric value
   const kpiValue = useMemo(() => {
@@ -99,36 +140,22 @@ export default function MetricWidget({
       return null;
     }
 
-    const values = rawData
-      .map(row => parseFloat(row[column]))
-      .filter(val => !isNaN(val));
-
+    // Extract numeric values using the common utility
+    const values = extractNumericValues(rawData, column);
+    
     if (!values.length) {
       return null;
     }
 
-    let result: number;
-    switch (aggregation) {
-      case 'sum':
-        result = values.reduce((sum, val) => sum + val, 0);
-        break;
-      case 'avg':
-        result = values.reduce((sum, val) => sum + val, 0) / values.length;
-        break;
-      case 'min':
-        result = Math.min(...values);
-        break;
-      case 'max':
-        result = Math.max(...values);
-        break;
-      case 'count':
-        result = values.length;
-        break;
-      default:
-        result = values.reduce((sum, val) => sum + val, 0);
+    // Apply aggregation using the common utility
+    const aggregationResult = applyAggregation(values, aggregation);
+    
+    if (!aggregationResult.isValid) {
+      console.error('[MetricWidget] Aggregation failed:', aggregationResult.error);
+      return null;
     }
 
-    return result;
+    return aggregationResult.value;
   }, [rawData, dataSource, aggregation]);
 
   // Calculate previous period value for trend
@@ -142,34 +169,20 @@ export default function MetricWidget({
                   dataSource.currentColumn;
     if (!column) return null;
 
-    const values = previousData
-      .map(row => parseFloat(row[column]))
-      .filter(val => !isNaN(val));
-
+    // Extract numeric values using the common utility
+    const values = extractNumericValues(previousData, column);
+    
     if (!values.length) return null;
 
-    let result: number;
-    switch (aggregation) {
-      case 'sum':
-        result = values.reduce((sum, val) => sum + val, 0);
-        break;
-      case 'avg':
-        result = values.reduce((sum, val) => sum + val, 0) / values.length;
-        break;
-      case 'min':
-        result = Math.min(...values);
-        break;
-      case 'max':
-        result = Math.max(...values);
-        break;
-      case 'count':
-        result = values.length;
-        break;
-      default:
-        result = values.reduce((sum, val) => sum + val, 0);
+    // Apply aggregation using the common utility
+    const aggregationResult = applyAggregation(values, aggregation);
+    
+    if (!aggregationResult.isValid) {
+      console.error('[MetricWidget] Previous value aggregation failed:', aggregationResult.error);
+      return null;
     }
 
-    return result;
+    return aggregationResult.value;
   }, [previousData, dataSource, aggregation]);
 
   // Calculate trend
@@ -248,20 +261,8 @@ export default function MetricWidget({
       });
 
       if (allRows.success && allRows.data) {
-        const processedData = (allRows.data ?? []).map((row: any) => {
-          const processedRow: any = { id: row.id };
-          
-          if (row.cells) {
-            row.cells.forEach((cell: any) => {
-              if (cell?.column?.name) {
-                processedRow[cell.column.name] = cell.value;
-              }
-            });
-          }
-          
-          return processedRow;
-        });
-
+        // Use the common data mapping utility
+        const processedData = mapRawRowsToProcessedData(allRows.data ?? []);
         setRawData(processedData);
 
         // Generate previous period data for trend calculation
@@ -337,6 +338,26 @@ export default function MetricWidget({
       );
     }
 
+    // Show validation error if any
+    if (validationError) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500 min-h-[150px]">
+          <div className="text-center p-6">
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="w-6 h-6 text-red-500" />
+            </div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Configuration Error</p>
+            <p className="text-xs text-gray-400 mb-2">
+              {validationError}
+            </p>
+            <p className="text-xs text-gray-500">
+              Please check your widget configuration in the edit panel.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     // No data available
     if (!kpiValue) {
       return (
@@ -354,7 +375,6 @@ export default function MetricWidget({
               <p>• Raw data length: {rawData.length}</p>
               <p>• Detected column: {column}</p>
               <p>• Aggregation: {aggregation} (from: {rawAggregation})</p>
-              <p>• Data source: {JSON.stringify(dataSource, null, 2)}</p>
             </div>
           </div>
         </div>

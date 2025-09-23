@@ -12,6 +12,12 @@ import { WidgetEditorProps, WidgetEntity } from '@/types/widget';
 import { TableSelector } from '../TableSelector';
 import { MetricConfig } from '../MetricWidget';
 import StyleOptions from './StyleOptions';
+import { 
+  getAvailableAggregationsForColumnType,
+  getDefaultAggregationForColumnType,
+  type ColumnType,
+  type AggregationFunction
+} from '@/lib/widget-aggregation';
 
 interface MetricEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: MetricConfig };

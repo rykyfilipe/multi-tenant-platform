@@ -10,6 +10,12 @@ import BaseWidget from './BaseWidget';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
 import { api } from '@/lib/api-client';
 import { FilterConfig } from '@/types/filtering';
+import { 
+  mapRawRowsToProcessedData,
+  validateTableWidgetConfig,
+  type AggregationFunction,
+  type ColumnMeta 
+} from '@/lib/widget-aggregation';
 
 export interface TableWidgetConfig {
   title?: string;
@@ -159,20 +165,9 @@ export default function TableWidget({
       });
 
       if (response.success && response.data) {
-        // Transform data from API format { id, cells: [...] } to { columnName: value }
-        const transformedData = (response.data || []).map((row: any) => {
-          if (row.cells && Array.isArray(row.cells)) {
-            // Transform cells array to object with column names as keys
-            const rowData: any = { id: row.id };
-            row.cells.forEach((cell: any) => {
-              if (cell.column && cell.column.name) {
-                rowData[cell.column.name] = cell.value;
-              }
-            });
-            return rowData;
-          }
-          return row; // Fallback if no cells structure
-        });
+        // Use common data mapping utility
+        const transformedData = mapRawRowsToProcessedData(response.data || []);
+        
         // Store all data for local filtering
         setAllData(transformedData);
         setData(transformedData);
@@ -255,7 +250,7 @@ export default function TableWidget({
     return data.slice(startIndex, endIndex);
   }, [data, startIndex, endIndex]);
 
-  const renderCellValue = (value: any) => {
+  const renderCellValue = (value: any, columnName: string) => {
     if (value === null || value === undefined) {
       return <span className="text-black/40">-</span>;
     }
@@ -266,6 +261,14 @@ export default function TableWidget({
     
     if (typeof value === 'object') {
       return JSON.stringify(value);
+    }
+    
+    // Check if this is a reference column
+    const column = availableColumns.find((c: any) => c?.name === columnName);
+    if (column?.type === 'reference' || column?.type === 'link') {
+      // For reference columns, we'll display the full row data with truncation
+      // The actual reference data will be fetched and displayed by EditableCell
+      return <span className="text-blue-600 font-medium">Reference Data</span>;
     }
     
     return String(value);
@@ -360,7 +363,7 @@ export default function TableWidget({
                         {(dataSource.columns ?? []).map((columnName) => (
                           <TableCell key={columnName} className="text-xs sm:text-sm py-3 px-4">
                             <div className="truncate max-w-[200px] sm:max-w-none text-gray-700">
-                              {renderCellValue(row?.[columnName])}
+                              {renderCellValue(row?.[columnName], columnName)}
                             </div>
                           </TableCell>
                         ))}

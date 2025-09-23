@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import type { Widget, LineChartConfig, ChartDataPoint } from './LineChartWidget';
+import { 
+  mapRawRowsToProcessedData, 
+  groupAndAggregate,
+  validateChartWidgetConfig,
+  type AggregationFunction,
+  type ColumnMeta 
+} from '@/lib/widget-aggregation';
 
 export interface BaseChartWidgetProps {
 	widget: Widget;
@@ -56,7 +63,9 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				const json = await res.json();
 				const rows = json?.data || [];
 				
-				// Transform rows with cells to chart data
+				// Use common data mapping utility
+				const processedData = mapRawRowsToProcessedData(rows ?? []);
+				
 				// Support both new and legacy data source formats
 				const xKey = (dataSource as any).xAxis?.columns?.[0] || (dataSource as any).columnX || safeXAxis.key;
 				const yKeys = (dataSource as any).yAxis?.columns || [(dataSource as any).columnY || safeYAxis.key];
@@ -64,28 +73,43 @@ export function useChartData(widget: Widget, tenantId?: number, databaseId?: num
 				console.log('[BaseChartWidget] Mapping data:', {
 					xKey,
 					yKeys,
-					rowsCount: rows.length,
-					sampleRow: rows[0],
+					rowsCount: processedData.length,
+					sampleRow: processedData[0],
 					dataSource: dataSource
 				});
 				
-				const mapped: ChartDataPoint[] = (rows ?? []).map((row: any) => {
-					const dataPoint: any = {};
-					if (row?.cells && Array.isArray(row.cells)) {
-						// Find X column value
-						const xCell = row.cells.find((cell: any) => cell?.column?.name === xKey);
-						dataPoint[xKey] = xCell?.value || '';
-						
-						// Find ALL Y column values for multi-column support
+				// Check if we need aggregation (when there are multiple rows per X value)
+				const xValues = processedData.map(row => row[xKey]);
+				const uniqueXValues = [...new Set(xValues)];
+				const needsAggregation = uniqueXValues.length < processedData.length;
+				
+				let mapped: ChartDataPoint[];
+				
+				if (needsAggregation) {
+					// Group by X-axis and aggregate Y-axis values
+					const aggregateColumns = yKeys.map((key: string) => ({ column: key, function: 'sum' as AggregationFunction }));
+					const grouped = groupAndAggregate(processedData, xKey, aggregateColumns);
+					
+					mapped = Object.entries(grouped).map(([xValue, yValues]) => {
+						const dataPoint: any = { [xKey]: xValue };
 						yKeys.forEach((yKey: string) => {
-							const yCell = row.cells.find((cell: any) => cell?.column?.name === yKey);
-							if (yCell && yCell.value !== undefined && yCell.value !== null) {
-								dataPoint[yKey] = parseFloat(yCell.value) || 0;
-							}
+							dataPoint[yKey] = yValues[yKey] || 0;
 						});
-					}
-					return dataPoint;
-				}).filter((point: any) => {
+						return dataPoint;
+					});
+				} else {
+					// Direct mapping without aggregation
+					mapped = processedData.map(row => {
+						const dataPoint: any = { [xKey]: row[xKey] || '' };
+						yKeys.forEach((yKey: string) => {
+							dataPoint[yKey] = parseFloat(row[yKey]) || 0;
+						});
+						return dataPoint;
+					});
+				}
+				
+				// Filter out invalid data points
+				mapped = mapped.filter((point: any) => {
 					// Ensure x value exists and at least one y value is valid
 					const xValue = point?.[xKey];
 					const hasValidY = yKeys.some((yKey: string) => {
