@@ -14,7 +14,6 @@ import { Trash2, Plus } from 'lucide-react';
 import { WidgetEditorProps, TableConfig, WidgetEntity } from '@/types/widget';
 import { FilterConfig, ColumnType, FilterOperator, OPERATOR_COMPATIBILITY } from '@/types/filtering';
 import { useSchemaCache } from '@/hooks/useSchemaCache';
-import { useApp } from '@/contexts/AppContext';
 import StyleOptions from './StyleOptions';
 
 interface TableEditorProps extends WidgetEditorProps {
@@ -66,7 +65,7 @@ export default function TableEditor({
     const loadColumns = async () => {
       if (widget.dataSource?.type === 'table' && widget.dataSource?.tableId && tenantId && databaseId) {
         try {
-          const columns = await getTableColumns(tenantId, databaseId, widget.dataSource.tableId);
+          const columns = await getColumns(widget.dataSource.tableId);
           setAvailableColumns(columns || []);
         } catch (error) {
           console.error('Failed to load table columns:', error);
@@ -78,7 +77,7 @@ export default function TableEditor({
     };
 
     loadColumns();
-  }, [widget.dataSource, tenantId, databaseId, getTableColumns]);
+  }, [widget.dataSource, tenantId, databaseId, getColumns]);
 
   const handleSave = () => {
     if (!config.columns || config.columns.length === 0) {

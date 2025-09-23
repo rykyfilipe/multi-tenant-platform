@@ -205,8 +205,8 @@ export default function DashboardsPage() {
         // Auto-select first dashboard if no default is set
         setSelectedDashboard(data.dashboards[0]);
       } else {
-        // Create a default dashboard if none exist
-        await createDefaultDashboard();
+        // No dashboards exist - user should create their own
+        setSelectedDashboard(null);
       }
     } catch (error) {
       console.error('Error fetching dashboards:', error);
@@ -220,38 +220,7 @@ export default function DashboardsPage() {
     }
   };
 
-  const createDefaultDashboard = async () => {
-    try {
-      const response = await fetch('/api/dashboards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'My Dashboard',
-          description: 'Default dashboard',
-          isPublic: false,
-          isDefault: true
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to create default dashboard');
-      
-      const newDashboard = await response.json();
-      setDashboards(prev => [...prev, newDashboard]);
-      setSelectedDashboard(newDashboard);
-      
-      toast({
-        title: 'Success',
-        description: 'Default dashboard created',
-      });
-    } catch (error) {
-      console.error('Error creating default dashboard:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create default dashboard',
-        variant: 'destructive',
-      });
-    }
-  };
+  // Removed createDefaultDashboard - users should create their own dashboards
 
   const createDashboard = async (data: { name: string; description?: string; isPublic?: boolean }) => {
     try {
