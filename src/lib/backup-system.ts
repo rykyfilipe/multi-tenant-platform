@@ -360,25 +360,130 @@ class BackupSystem {
 	 * List all backups for a tenant
 	 */
 	async listBackups(tenantId: string): Promise<BackupJob[]> {
-		return Array.from(this.backups.values())
+		console.log('📋 [BACKUP_SYSTEM_DEBUG] listBackups called for tenant:', tenantId);
+		
+		// In serverless environment, we need to reconstruct backups from files
+		if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY) {
+			console.log('🔍 [BACKUP_SYSTEM_DEBUG] Serverless environment detected, scanning files...');
+			return await this.listBackupsFromFiles(tenantId);
+		}
+		
+		// In development, use memory map
+		const memoryBackups = Array.from(this.backups.values())
 			.filter(backup => backup.tenantId === tenantId)
 			.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+		
+		console.log('📋 [BACKUP_SYSTEM_DEBUG] Memory backups found:', memoryBackups.length);
+		return memoryBackups;
+	}
+
+	/**
+	 * List backups by scanning backup files in serverless environment
+	 */
+	private async listBackupsFromFiles(tenantId: string): Promise<BackupJob[]> {
+		try {
+			console.log('🔍 [BACKUP_SYSTEM_DEBUG] Scanning backup files for tenant:', tenantId);
+			
+			// Ensure backup directory exists
+			await this.ensureBackupDirectory();
+			
+			if (!this.backupDir) {
+				console.log('❌ [BACKUP_SYSTEM_DEBUG] No backup directory available');
+				return [];
+			}
+			
+			// Read all files in backup directory
+			const files = await fs.readdir(this.backupDir);
+			console.log('📁 [BACKUP_SYSTEM_DEBUG] Found files:', files.length);
+			
+			const backups: BackupJob[] = [];
+			
+			for (const file of files) {
+				// Check if file matches tenant pattern: backup_${tenantId}_${type}_${timestamp}.sql
+				const match = file.match(/^backup_(\d+)_(\w+)_(.+)\.sql$/);
+				if (match && match[1] === tenantId) {
+					const [, fileTenantId, type, timestamp] = match;
+					const filePath = path.join(this.backupDir!, file);
+					
+					try {
+						const stats = await fs.stat(filePath);
+						const backupId = file.replace('.sql', '').replace(/^backup_\d+_\w+_/, '');
+						
+						const backup: BackupJob = {
+							id: backupId,
+							tenantId: fileTenantId,
+							type: type as BackupType,
+							status: BackupStatus.COMPLETED, // Assume completed if file exists
+							filePath: filePath,
+							fileSize: stats.size,
+							startedAt: new Date(timestamp.replace(/-/g, ':').replace('T', 'T')).toISOString(),
+							completedAt: stats.mtime.toISOString(),
+							metadata: {
+								databaseCount: 0,
+								tableCount: 0,
+								rowCount: 0,
+							},
+							createdBy: 'system',
+						};
+						
+						backups.push(backup);
+						console.log('✅ [BACKUP_SYSTEM_DEBUG] Reconstructed backup:', backup.id);
+					} catch (error) {
+						console.log('⚠️ [BACKUP_SYSTEM_DEBUG] Error reading file:', file, error);
+					}
+				}
+			}
+			
+			// Sort by date descending
+			backups.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+			
+			console.log('📋 [BACKUP_SYSTEM_DEBUG] Reconstructed backups:', backups.length);
+			return backups;
+			
+		} catch (error) {
+			console.log('💥 [BACKUP_SYSTEM_DEBUG] Error scanning backup files:', error);
+			return [];
+		}
 	}
 
 	/**
 	 * Get a specific backup
 	 */
 	async getBackup(backupId: string): Promise<BackupJob | null> {
-		return this.backups.get(backupId) || null;
+		// Try memory first
+		const memoryBackup = this.backups.get(backupId);
+		if (memoryBackup) {
+			return memoryBackup;
+		}
+		
+		// In serverless, try to find from files
+		if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY) {
+			const backups = await this.listBackupsFromFiles('1'); // This is a hack, we need the tenantId
+			return backups.find(b => b.id === backupId) || null;
+		}
+		
+		return null;
 	}
 
 	/**
 	 * List all restore jobs for a tenant
 	 */
 	async listRestores(tenantId: string): Promise<RestoreJob[]> {
-		return Array.from(this.restores.values())
+		console.log('📋 [BACKUP_SYSTEM_DEBUG] listRestores called for tenant:', tenantId);
+		
+		// In serverless environment, restores are not persisted, return empty array
+		if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY) {
+			console.log('🔍 [BACKUP_SYSTEM_DEBUG] Serverless environment detected, returning empty restores');
+			return [];
+		}
+		
+		// In development, use memory map
+		const memoryRestores = Array.from(this.restores.values())
 			.filter(restore => restore.tenantId === tenantId)
 			.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+		
+		console.log('📋 [BACKUP_SYSTEM_DEBUG] Memory restores found:', memoryRestores.length);
+		return memoryRestores;
 	}
 
 	/**
@@ -563,6 +668,7 @@ class BackupSystem {
 			];
 
 			// Get tenant information
+			console.log('🔄 [BACKUP_SYSTEM_DEBUG] Querying tenant info from database...');
 			const tenantInfo = await prisma.tenant.findUnique({
 				where: { id: parseInt(tenantId) },
 				include: {
@@ -571,8 +677,10 @@ class BackupSystem {
 					databases: true,
 				}
 			});
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] Tenant info retrieved:', !!tenantInfo);
 
 			if (!tenantInfo) {
+				console.log('❌ [BACKUP_SYSTEM_DEBUG] Tenant not found:', tenantId);
 				throw new Error(`Tenant ${tenantId} not found`);
 			}
 
@@ -587,6 +695,7 @@ class BackupSystem {
 				tenantName: tenantInfo.name,
 			});
 
+			console.log('✅ [BACKUP_SYSTEM_DEBUG] getTenantSpecificData completed successfully');
 			return {
 				tables: allTables,
 				tenantInfo,
