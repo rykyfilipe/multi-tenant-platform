@@ -960,8 +960,8 @@ export default function DashboardsPage() {
     return sortedWidgets;
   };
 
-  // Generate layouts directly without memoization to prevent automatic recalculation
-  const generateLayouts = () => {
+  // Generate layouts with memoization to prevent unnecessary recalculations
+  const generateLayouts = useMemo(() => {
     const widgets = getAllWidgets();
     return {
       lg: widgets.map(w => ({
@@ -1000,7 +1000,7 @@ export default function DashboardsPage() {
         h: w.position?.height || 4,
       }))
     };
-  };
+  }, [getAllWidgets]);
 
   const renderWidget = (widget: Widget) => {
     // Folosește logica inteligentă pentru a obține widget-ul final cu toate modificările aplicate
@@ -1369,7 +1369,7 @@ export default function DashboardsPage() {
               <ResponsiveGridLayout
                 key={`grid-${selectedDashboard?.id}-${getAllWidgets().length}-${isEditMode}`}
                 className="layout"
-                layouts={generateLayouts()}
+                layouts={generateLayouts}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
                 rowHeight={80}
@@ -1378,13 +1378,13 @@ export default function DashboardsPage() {
                 onLayoutChange={handleLayoutChange}
                 margin={[16, 16]}
                 containerPadding={[8, 8]}
-                useCSSTransforms={false}
+                useCSSTransforms={true}
                 transformScale={1}
                 preventCollision={false}
-                compactType={null}
-                autoSize={true}
+                compactType="vertical"
+                autoSize={false}
                 allowOverlap={false}
-                verticalCompact={false}
+                verticalCompact={true}
               >
                 {getAllWidgets().map((widget) => (
                   <div 
