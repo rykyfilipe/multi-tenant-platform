@@ -484,16 +484,16 @@ export default function DashboardsPage() {
   };
 
   const handleLayoutChange = (layout: any[]) => {
+    // Completely ignore layout changes in view mode
+    if (!isEditMode) {
+      return;
+    }
+
     console.log('🔄 [LAYOUT_DEBUG] handleLayoutChange called', {
       isEditMode,
       layoutLength: layout.length,
       layout: layout
     });
-
-    if (!isEditMode) {
-      console.log('⚠️ [LAYOUT_DEBUG] Not in edit mode, skipping layout change');
-      return;
-    }
 
     layout.forEach((item, index) => {
       const widgetId = parseInt(item.i);
@@ -1380,16 +1380,16 @@ export default function DashboardsPage() {
                 containerPadding={[8, 8]}
                 useCSSTransforms={true}
                 transformScale={1}
-                preventCollision={false}
+                preventCollision={true}
                 compactType="vertical"
                 autoSize={false}
-                allowOverlap={false}
+                allowOverlap={true}
                 verticalCompact={true}
               >
                 {getAllWidgets().map((widget) => (
                   <div 
                     key={widget.id} 
-                    className="widget-container h-full w-full min-h-[200px]"
+                    className="widget-container h-full w-full min-h-[200px] overflow-hidden"
                     onMouseDown={(e) => {
                       // Allow buttons to work by checking if click is on a button
                       const target = e.target as HTMLElement;

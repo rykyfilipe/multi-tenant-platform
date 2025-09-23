@@ -489,10 +489,8 @@ export default function BaseWidget({
       }
     }
     
-    // Overflow
-    if (widgetStyle.overflow) {
-      classes.push(`overflow-${widgetStyle.overflow}`);
-    }
+    // Always use overflow-hidden for stability
+    classes.push('overflow-hidden');
     
     // Display
     if (widgetStyle.display) {
@@ -854,7 +852,7 @@ export default function BaseWidget({
       <CardContent className="px-6 py-5 flex-1 flex flex-col">
         <div className={cn(
           'flex-1 w-full flex flex-col',
-          widgetStyle.overflow ? `overflow-${widgetStyle.overflow}` : 'overflow-hidden',
+          'overflow-hidden',
           // Banking app content styling
           widgetStyle.contentColor ? '' : 'text-gray-700',
           widgetStyle.contentSize ? `text-${widgetStyle.contentSize}` : 'text-sm',
@@ -878,7 +876,7 @@ export default function BaseWidget({
               </div>
             </div>
           ) : (
-            <div className="flex-1 w-full overflow-auto">
+            <div className="flex-1 w-full overflow-hidden">
               {children}
             </div>
           )}
