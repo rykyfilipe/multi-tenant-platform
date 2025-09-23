@@ -82,7 +82,7 @@ export default function TableWidget({
 
   const { tables, columns, tablesLoading: schemaLoading } = useSchemaCache(tenantId || 1, databaseId || 1);
   const currentTable = tables?.find(t => t.id === dataSource.tableId);
-  const availableColumns = (columns ?? []).filter((c: any) => c?.tableId === dataSource.tableId) || [];
+  const availableColumns: any[] = (columns ?? []).filter((c: any) => c?.tableId === dataSource.tableId) || [];
 
   const pageSize = options.pageSize || 10;
   const totalPages = pagination?.totalPages || Math.ceil(data.length / pageSize);
@@ -265,7 +265,7 @@ export default function TableWidget({
     
     // Check if this is a reference column
     const column = availableColumns.find((c: any) => c?.name === columnName);
-    if (column?.type === 'reference' || column?.type === 'link') {
+    if (column && (column.type === 'reference' || column.type === 'link')) {
       // For reference columns, we'll display the full row data with truncation
       // The actual reference data will be fetched and displayed by EditableCell
       return <span className="text-blue-600 font-medium">Reference Data</span>;

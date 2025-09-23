@@ -186,7 +186,7 @@ const AbsoluteSelect = ({
 	);
 };
 
-// Componenta pentru tooltip-ul cu toate referințele
+// Componenta pentru tooltip-ul cu toate referințele - versiune îmbunătățită
 const MultipleReferencesTooltip = ({
 	value,
 	referenceTable,
@@ -216,7 +216,7 @@ const MultipleReferencesTooltip = ({
 					const spaceBelow = viewportHeight - rect.bottom;
 
 					// Dacă avem mai mult spațiu jos și este suficient, afișăm tooltip-ul jos
-					if (spaceBelow > 250 && spaceBelow > spaceAbove) {
+					if (spaceBelow > 300 && spaceBelow > spaceAbove) {
 						setPosition("bottom");
 					} else {
 						setPosition("top");
@@ -271,25 +271,21 @@ const MultipleReferencesTooltip = ({
 						position === "top"
 							? "bottom-full left-0 mb-2"
 							: "top-full left-0 mt-2"
-					} p-3 bg-popover border border-border rounded-lg shadow-2xl min-w-[300px] max-w-[500px]`}>
-					<div className='mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+					} p-4 bg-white border border-gray-200 rounded-xl shadow-2xl min-w-[400px] max-w-[600px]`}>
+					<div className='mb-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-100 pb-2'>
 						{t("table.references.count", {
 							count: value.length,
 							tableName: referenceTable.name,
 						})}
 					</div>
-					<div className='space-y-2'>
+					<div className='space-y-3 max-h-[400px] overflow-y-auto'>
 						{referenceRows.map(({ refValue, referenceRow }, index) => {
 							if (!referenceRow) return null;
 
-							// Construim display value cu informații relevante
-							const displayParts: string[] = [];
-							let addedColumns = 0;
-							const maxColumns = 3;
+							// Construim display value cu TOATE coloanele pentru hover
+							const displayColumns: Array<{name: string, value: string, type: string}> = [];
 
 							referenceTable.columns?.forEach((col) => {
-								if (addedColumns >= maxColumns) return;
-
 								// Verificăm că referenceRow există și are celule
 								if (
 									referenceRow &&
@@ -305,37 +301,57 @@ const MultipleReferencesTooltip = ({
 									) {
 										let formattedValue = cell.value.toString().trim();
 
-										if (formattedValue.length > 20) {
-											formattedValue = formattedValue.substring(0, 20) + "...";
+										// Formatare specială pentru tipuri de date
+										if (col.type === "date") {
+											try {
+												formattedValue = new Date(formattedValue).toLocaleDateString("ro-RO");
+											} catch {
+												// fallback la valoarea brută
+											}
+										} else if (col.type === "boolean") {
+											formattedValue = formattedValue === "true" ? "✓" : "✗";
+										} else if (col.type === "number" || col.type === "integer") {
+											formattedValue = parseFloat(formattedValue).toLocaleString("ro-RO");
 										}
 
-										if (col.primary) {
-											displayParts.push(formattedValue);
-										} else {
-											// Pentru coloanele non-primary, afișăm numele coloanei + valoarea
-											const columnName =
-												col.name.length > 10
-													? col.name.substring(0, 10) + "..."
-													: col.name;
-											displayParts.push(`${columnName}: ${formattedValue}`);
-										}
-										addedColumns++;
+										displayColumns.push({
+											name: col.name,
+											value: formattedValue,
+											type: col.type
+										});
 									}
 								}
 							});
 
-							const displayValue = displayParts.length
-								? displayParts.join(" • ")
-								: t("table.references.rowNumber", { id: referenceRow.id });
-
 							return (
 								<div
 									key={index}
-									className='flex items-center gap-2 p-2 bg-muted/30 rounded-md'>
-									<Badge variant='outline' className='text-xs font-mono'>
-										{index + 1}
-									</Badge>
-									<span className='text-sm'>{displayValue}</span>
+									className='p-3 bg-gray-50 rounded-lg border border-gray-100'>
+									<div className='flex items-center gap-2 mb-2'>
+										<Badge variant='outline' className='text-xs font-mono bg-blue-100 text-blue-700 border-blue-200'>
+											{index + 1}
+										</Badge>
+										<span className='text-sm font-medium text-gray-700'>
+											Row #{referenceRow.id}
+										</span>
+									</div>
+									<div className='grid grid-cols-1 gap-2'>
+										{displayColumns.map((col, colIndex) => (
+											<div key={colIndex} className='flex items-start gap-2 text-sm'>
+												<span className='font-medium text-gray-600 min-w-[100px] truncate'>
+													{col.name}:
+												</span>
+												<span className={`flex-1 ${
+													col.type === 'boolean' ? 'text-green-600 font-semibold' :
+													col.type === 'number' || col.type === 'integer' ? 'text-blue-600 font-medium' :
+													col.type === 'date' ? 'text-purple-600 font-medium' :
+													'text-gray-800'
+												}`}>
+													{col.value}
+												</span>
+											</div>
+										))}
+									</div>
 								</div>
 							);
 						})}
@@ -344,8 +360,8 @@ const MultipleReferencesTooltip = ({
 					<div
 						className={`absolute ${
 							position === "top"
-								? "top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-popover"
-								: "bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-popover"
+								? "top-full left-6 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"
+								: "bottom-full left-6 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-white"
 						}`}></div>
 				</div>
 			)}
@@ -886,8 +902,8 @@ export function EditableCell({
 						return "Double-click to add values";
 					}
 					
-					// Pentru multiple references, afișăm doar cheile primare
-					const primaryKeys = referenceValues.map((refValue: any) => {
+					// Pentru multiple references, construim display value cu toate coloanele
+					const displayRows = referenceValues.map((refValue: any) => {
 						// Căutăm rândul cu cheia primară specificată
 						const referenceRow = referenceTable.rows.find((refRow: any) => {
 							// Verificăm că refRow există și are celule
@@ -901,21 +917,67 @@ export function EditableCell({
 						});
 
 						if (referenceRow) {
-							// Afișăm doar cheia primară fără #
-							const primaryKeyCell = referenceRow.cells.find(
-								(refCell: any) => refCell.columnId === refPrimaryKeyColumn.id,
-							);
-							return primaryKeyCell?.value || `⚠️ Invalid: ${refValue}`;
+							// Construim display value cu toate coloanele relevante
+							const displayParts: string[] = [];
+							let addedColumns = 0;
+							const maxColumns = 3; // Limitează la 3 coloane pentru afișare
+
+							referenceTable.columns.forEach((col: any) => {
+								if (addedColumns >= maxColumns) return;
+
+								const cell = referenceRow.cells.find(
+									(c: any) => c.columnId === col.id,
+								);
+								if (cell?.value != null && cell.value.toString().trim() !== "") {
+									let formattedValue = cell.value.toString().trim();
+
+									// Trunchiere pentru valori lungi
+									if (formattedValue.length > 15) {
+										formattedValue = formattedValue.substring(0, 15) + "...";
+									}
+
+									// Formatare specială pentru tipuri de date
+									if (col.type === "date") {
+										try {
+											formattedValue = new Date(formattedValue).toLocaleDateString("ro-RO");
+										} catch {
+											// fallback la valoarea brută
+										}
+									} else if (col.type === "boolean") {
+										formattedValue = formattedValue === "true" ? "✓" : "✗";
+									}
+
+									if (col.primary) {
+										displayParts.push(formattedValue);
+									} else {
+										// Pentru coloanele non-primary, afișăm numele coloanei + valoarea
+										const columnName = col.name.length > 8 
+											? col.name.substring(0, 8) + "..." 
+											: col.name;
+										displayParts.push(`${columnName}: ${formattedValue}`);
+									}
+									addedColumns++;
+								}
+							});
+
+							return displayParts.length 
+								? displayParts.join(" • ") 
+								: `Row #${referenceRow.id}`;
 						} else {
 							return `⚠️ Invalid: ${refValue}`;
 						}
 					});
 
-					// Pentru multiple references, afișăm doar primul și un contor
+					// Pentru multiple references, afișăm primul rând și contorul
 					if (referenceValues.length === 1) {
-						return primaryKeys[0];
+						return displayRows[0];
 					} else {
-						return `${primaryKeys[0]} +${referenceValues.length - 1} more`;
+						// Trunchiere pentru afișare compactă
+						const firstRow = displayRows[0];
+						const truncatedFirstRow = firstRow.length > 30 
+							? firstRow.substring(0, 30) + "..." 
+							: firstRow;
+						return `${truncatedFirstRow} +${referenceValues.length - 1} more`;
 					}
 				} else {
 					// Nu există cheie primară în tabelul de referință

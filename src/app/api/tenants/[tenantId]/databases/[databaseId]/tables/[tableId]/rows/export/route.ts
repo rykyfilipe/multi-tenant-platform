@@ -730,77 +730,152 @@ class ExportQueryBuilder {
 	}
 }
 
-// Funcție pentru generarea CSV-ului
+// Funcție pentru generarea CSV-ului cu export complet pentru coloanele reference
 function generateCSV(rows: any[], columns: any[], tables: any[]): string {
 	const referenceMap = new Map<string, any>();
+	const referenceTableMap = new Map<number, any>();
 
-	// Map pentru referințe
+	// Map pentru referințe și tabelele de referință
 	tables.forEach((table: any) => {
+		referenceTableMap.set(table.id, table);
 		table.rows?.forEach((row: any) => {
 			const key = `${table.id}-${row.id}`;
-			const primaryCell = row.cells?.find((cell: any) => {
-				const col = table.columns?.find((c: any) => c.id === cell.columnId);
-				return col?.primary;
-			});
-			if (primaryCell) {
-				referenceMap.set(key, primaryCell.value);
-			}
+			referenceMap.set(key, row); // Store entire row instead of just primary key
 		});
 	});
 
-	// Header
-	const headers = columns.map((col: any) => col.name);
+	// Construim header-urile - pentru coloanele reference adăugăm coloanele din tabelul de referință
+	const headers: string[] = [];
+	const referenceColumnMappings: Array<{originalCol: any, refCols: any[]}> = [];
+
+	columns.forEach((col: any) => {
+		if (col.type === "reference" && col.referenceTableId) {
+			const refTable = referenceTableMap.get(col.referenceTableId);
+			if (refTable && refTable.columns) {
+				// Pentru coloanele reference, adăugăm coloanele din tabelul de referință
+				const refCols = refTable.columns.map((refCol: any) => ({
+					...refCol,
+					originalColumnId: col.id,
+					originalColumnName: col.name
+				}));
+				
+				headers.push(...refCols.map((refCol: any) => `${col.name}_${refCol.name}`));
+				referenceColumnMappings.push({
+					originalCol: col,
+					refCols: refCols
+				});
+			} else {
+				// Fallback la numele original dacă nu găsim tabelul de referință
+				headers.push(col.name);
+			}
+		} else {
+			headers.push(col.name);
+		}
+	});
+
 	const csvRows = [headers.join(";")];
 
 	// Rânduri
 	rows.forEach((row: any) => {
-		const rowData = columns.map((col: any) => {
+		const rowData: string[] = [];
+
+		columns.forEach((col: any) => {
 			const cell = row.cells?.find((c: any) => c.columnId === col.id);
-			if (!cell) return "";
-
-			let value = cell.value;
-
-			// Tipuri speciale
+			
 			if (col.type === "reference" && col.referenceTableId) {
-				// Handle multiple reference values (arrays)
-				if (Array.isArray(value)) {
-					// Multiple references - join all values
-					if (value.length === 0) {
-						value = "";
-					} else {
-						const refValues = value
-							.filter((refValue) => refValue != null && refValue !== "")
-							.map((refValue) => {
-								const refKey = `${col.referenceTableId}-${refValue}`;
-								return referenceMap.get(refKey) || refValue;
-							});
-						value = refValues.join(", ");
-					}
+				// Pentru coloanele reference, exportăm toate coloanele din rândurile referențiate
+				const refTable = referenceTableMap.get(col.referenceTableId);
+				
+				if (refTable && refTable.columns && cell?.value) {
+					// Handle multiple reference values (arrays)
+					const referenceValues = Array.isArray(cell.value) ? cell.value : [cell.value];
+					
+					// Pentru fiecare valoare de referință, găsim rândul complet
+					const referencedRows = referenceValues
+						.filter((refValue) => refValue != null && refValue !== "")
+						.map((refValue) => {
+							const refKey = `${col.referenceTableId}-${refValue}`;
+							return referenceMap.get(refKey);
+						})
+						.filter(Boolean);
+
+					// Pentru fiecare coloană din tabelul de referință
+					refTable.columns.forEach((refCol: any) => {
+						if (referencedRows.length === 0) {
+							rowData.push("");
+						} else if (referencedRows.length === 1) {
+							// Un singur rând referențiat
+							const refRow = referencedRows[0];
+							const refCell = refRow.cells?.find((c: any) => c.columnId === refCol.id);
+							let value = refCell?.value || "";
+
+							// Formatare specială pentru tipuri de date
+							if (refCol.type === "date" || refCol.type === "datetime") {
+								try {
+									value = new Date(value).toLocaleDateString("ro-RO");
+								} catch {}
+							} else if (refCol.type === "boolean") {
+								value = value === true || value === "true" ? "✓" : "✗";
+							} else if (refCol.type === "number" || refCol.type === "integer") {
+								value = value ? parseFloat(value).toLocaleString("ro-RO") : "";
+							}
+
+							// Eliminare newline-uri interne
+							if (typeof value === "string") {
+								value = `"${value}"`;
+							}
+
+							rowData.push(value || "");
+						} else {
+							// Multiple rânduri referențiate - join cu separator
+							const values = referencedRows.map((refRow) => {
+								const refCell = refRow.cells?.find((c: any) => c.columnId === refCol.id);
+								let value = refCell?.value || "";
+
+								// Formatare specială pentru tipuri de date
+								if (refCol.type === "date" || refCol.type === "datetime") {
+									try {
+										value = new Date(value).toLocaleDateString("ro-RO");
+									} catch {}
+								} else if (refCol.type === "boolean") {
+									value = value === true || value === "true" ? "✓" : "✗";
+								} else if (refCol.type === "number" || refCol.type === "integer") {
+									value = value ? parseFloat(value).toLocaleString("ro-RO") : "";
+								}
+
+								return value;
+							}).filter(Boolean);
+
+							const joinedValue = values.join(" | ");
+							rowData.push(`"${joinedValue}"`);
+						}
+					});
 				} else {
-					// Single reference
-					if (value == null || value === "") {
-						value = "";
-					} else {
-						const refKey = `${col.referenceTableId}-${value}`;
-						value = referenceMap.get(refKey) || value;
-					}
+					// Fallback dacă nu găsim tabelul de referință
+					rowData.push("");
 				}
-			} else if (col.type === "date" || col.type === "datetime") {
-				try {
-					value = new Date(value).toLocaleDateString("ro-RO");
-				} catch {}
-			} else if (col.type === "boolean") {
-				value = value === true || value === "true" ? "✓" : "✗";
-			} else if (col.type === "customArray" && Array.isArray(value)) {
-				value = value.join(", ");
-			}
+			} else {
+				// Pentru coloanele normale
+				let value = cell?.value || "";
 
-			// Eliminare newline-uri interne
-			if (typeof value === "string") {
-				value = `"${value}"`;
-			}
+				// Tipuri speciale
+				if (col.type === "date" || col.type === "datetime") {
+					try {
+						value = new Date(value).toLocaleDateString("ro-RO");
+					} catch {}
+				} else if (col.type === "boolean") {
+					value = value === true || value === "true" ? "✓" : "✗";
+				} else if (col.type === "customArray" && Array.isArray(value)) {
+					value = value.join(", ");
+				}
 
-			return value || "";
+				// Eliminare newline-uri interne
+				if (typeof value === "string") {
+					value = `"${value}"`;
+				}
+
+				rowData.push(value || "");
+			}
 		});
 
 		csvRows.push(rowData.join(";"));
