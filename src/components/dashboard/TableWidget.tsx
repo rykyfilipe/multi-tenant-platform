@@ -64,13 +64,21 @@ export default function TableWidget({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState(dataSource.sortBy || 'id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(dataSource.sortOrder || 'asc');
+  const [pagination, setPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalRows: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  } | null>(null);
 
   const { tables, columns, tablesLoading: schemaLoading } = useSchemaCache(tenantId || 1, databaseId || 1);
   const currentTable = tables?.find(t => t.id === dataSource.tableId);
   const availableColumns = (columns ?? []).filter((c: any) => c?.tableId === dataSource.tableId) || [];
 
   const pageSize = options.pageSize || 10;
-  const totalPages = Math.ceil(data.length / pageSize);
+  const totalPages = pagination?.totalPages || Math.ceil(data.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
 
@@ -90,24 +98,43 @@ export default function TableWidget({
     try {
       // Convert filters to the format expected by the API
       const apiFilters = dataSource.filters?.map(filter => {
-        // Map FilterOperator to FilterData operator
+        // Map FilterOperator to backend operator format
         const operatorMap: Record<string, string> = {
           'equals': 'equals',
           'not_equals': 'not_equals',
           'contains': 'contains',
           'not_contains': 'not_contains',
-          'greater_than': 'gt',
-          'greater_than_or_equal': 'gte',
-          'less_than': 'lt',
-          'less_than_or_equal': 'lte',
-          'is_empty': 'equals',
-          'is_not_empty': 'not_equals'
+          'starts_with': 'starts_with',
+          'ends_with': 'ends_with',
+          'regex': 'regex',
+          'greater_than': 'greater_than',
+          'greater_than_or_equal': 'greater_than_or_equal',
+          'less_than': 'less_than',
+          'less_than_or_equal': 'less_than_or_equal',
+          'between': 'between',
+          'not_between': 'not_between',
+          'before': 'before',
+          'after': 'after',
+          'today': 'today',
+          'yesterday': 'yesterday',
+          'this_week': 'this_week',
+          'last_week': 'last_week',
+          'this_month': 'this_month',
+          'last_month': 'last_month',
+          'this_year': 'this_year',
+          'last_year': 'last_year',
+          'is_empty': 'is_empty',
+          'is_not_empty': 'is_not_empty'
         };
         
         return {
-          column: filter.columnName,
-          operator: (operatorMap[filter.operator] || 'equals') as 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in',
-          value: filter.operator === 'is_empty' ? null : filter.operator === 'is_not_empty' ? null : filter.value
+          id: filter.id || `${filter.columnId}-${filter.operator}-${Date.now()}`,
+          columnId: filter.columnId || 0,
+          columnName: filter.columnName,
+          columnType: filter.columnType,
+          operator: operatorMap[filter.operator] || filter.operator,
+          value: filter.operator === 'is_empty' ? null : filter.operator === 'is_not_empty' ? null : filter.value,
+          secondValue: filter.secondValue || null
         };
       }) || [];
 
@@ -137,6 +164,18 @@ export default function TableWidget({
           return row; // Fallback if no cells structure
         });
         setData(transformedData);
+        
+        // Since getAllRows fetches all data, we need to calculate pagination locally
+        const totalRows = transformedData.length;
+        const totalPages = Math.ceil(totalRows / pageSize);
+        setPagination({
+          page: currentPage,
+          pageSize,
+          totalRows,
+          totalPages,
+          hasNext: currentPage < totalPages,
+          hasPrev: currentPage > 1
+        });
       } else {
         setError(response.message || 'Failed to fetch data');
       }
@@ -155,6 +194,7 @@ export default function TableWidget({
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1); // Reset to first page when searching
+    setPagination(null); // Clear pagination info when searching
   };
 
   const handleSort = (column: string) => {
@@ -237,7 +277,7 @@ export default function TableWidget({
                       return (
                         <TableHead 
                           key={columnName}
-                          className="cursor-pointer hover:bg-slate-100/60 text-xs sm:text-sm font-semibold text-slate-700 py-3 px-4 transition-colors duration-200"
+                          className="cursor-pointer hover:bg-gray-100 text-xs sm:text-sm font-semibold text-gray-700 py-3 px-4 transition-colors duration-200"
                           onClick={() => handleSort(columnName)}
                         >
                           <div className="flex items-center space-x-2">
@@ -256,10 +296,10 @@ export default function TableWidget({
                 <TableBody>
                   {paginatedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-12 text-slate-500">
+                      <TableCell colSpan={(dataSource.columns ?? []).length} className="text-center py-12 text-gray-500">
                         <div className="flex flex-col items-center space-y-2">
-                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                            <Database className="h-4 w-4 text-slate-400" />
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Database className="h-4 w-4 text-gray-400" />
                           </div>
                           <p className="text-sm font-medium">
                             {isLoading ? 'Loading...' : 'No data available'}
@@ -271,11 +311,11 @@ export default function TableWidget({
                     paginatedData.map((row, index) => (
                       <TableRow 
                         key={row?.id || index} 
-                        className="hover:bg-slate-50/60 transition-colors duration-150 border-b border-slate-100/60"
+                        className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100"
                       >
                         {(dataSource.columns ?? []).map((columnName) => (
                           <TableCell key={columnName} className="text-xs sm:text-sm py-3 px-4">
-                            <div className="truncate max-w-[200px] sm:max-w-none text-slate-700">
+                            <div className="truncate max-w-[200px] sm:max-w-none text-gray-700">
                               {renderCellValue(row?.[columnName])}
                             </div>
                           </TableCell>
@@ -293,7 +333,7 @@ export default function TableWidget({
         {options.showPagination !== false && totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0 flex-shrink-0 bg-slate-50/50 rounded-lg p-3 sm:p-4">
             <div className="text-xs sm:text-sm text-slate-600 font-medium">
-              Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} entries
+              Showing {startIndex + 1} to {Math.min(endIndex, pagination?.totalRows || data.length)} of {pagination?.totalRows || data.length} entries
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2">
               <Button
@@ -327,7 +367,7 @@ export default function TableWidget({
                   );
                 })}
                 {totalPages > 3 && (
-                  <span className="text-xs text-slate-400 px-2">...</span>
+                  <span className="text-xs text-gray-400 px-2">...</span>
                 )}
               </div>
               

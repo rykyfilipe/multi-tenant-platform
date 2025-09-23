@@ -1,196 +1,113 @@
-/**
- * KPI Widget Editor
- * Configuration editor for KPI widgets with aggregation functions
- */
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart3, Settings, Palette } from 'lucide-react';
 import { WidgetEditorProps, WidgetEntity } from '@/types/widget';
+import { TableSelector } from '../TableSelector';
+import { KPIConfig } from '../KPIWidget';
 import StyleOptions from './StyleOptions';
-import { getAvailableAggregations, getAggregationLabel, getAggregationDescription } from '@/lib/aggregation-utils';
-
-interface KPIConfig {
-  title?: string;
-  subtitle?: string;
-  dataSource: {
-    type: 'table' | 'manual';
-    tableId?: number;
-    column?: string;
-    aggregation?: string;
-    showMultipleAggregations?: boolean;
-    selectedAggregations?: string[];
-    compareWithPrevious?: boolean;
-    filters?: any[];
-  };
-  options?: {
-    format?: 'number' | 'currency' | 'percentage' | 'decimal';
-    decimals?: number;
-    prefix?: string;
-    suffix?: string;
-    showChange?: boolean;
-    showTrend?: boolean;
-    showMultipleValues?: boolean;
-    showAggregationType?: boolean;
-    showDataCount?: boolean;
-    layout?: 'single' | 'grid' | 'list';
-    thresholds?: {
-      warning?: number;
-      danger?: number;
-      success?: number;
-    };
-    colors?: {
-      positive?: string;
-      negative?: string;
-      neutral?: string;
-      primary?: string;
-      secondary?: string;
-    };
-  };
-  style?: {
-    layout?: 'card' | 'minimal' | 'bordered' | 'gradient' | 'glass';
-    size?: 'small' | 'medium' | 'large' | 'xl';
-    alignment?: 'left' | 'center' | 'right';
-    valueStyle?: 'default' | 'bold' | 'outlined' | 'gradient';
-    titleStyle?: 'default' | 'bold' | 'italic' | 'uppercase';
-    backgroundColor?: string;
-    textColor?: string;
-    accentColor?: string;
-    borderColor?: string;
-    borderRadius?: 'none' | 'small' | 'medium' | 'large' | 'full';
-    shadow?: 'none' | 'small' | 'medium' | 'large';
-    padding?: 'compact' | 'comfortable' | 'spacious';
-  };
-}
 
 interface KPIEditorProps extends WidgetEditorProps {
   widget: Partial<WidgetEntity> & { config?: KPIConfig };
+  tenantId?: number;
+  databaseId?: number;
 }
 
 export default function KPIEditor({ 
   widget, 
   onSave, 
   onCancel, 
-  isOpen 
+  isOpen,
+  tenantId = 1,
+  databaseId = 1
 }: KPIEditorProps) {
   const [config, setConfig] = useState<KPIConfig>({
     title: '',
-    subtitle: '',
     dataSource: {
       type: 'table',
-      tableId: undefined,
-      column: '',
-      aggregation: 'sum',
-      showMultipleAggregations: false,
-      selectedAggregations: [],
-      compareWithPrevious: false,
-      filters: []
-    },
-    options: {
-      format: 'number',
-      decimals: 0,
-      prefix: '',
-      suffix: '',
-      showChange: true,
-      showTrend: true,
-      showMultipleValues: false,
-      showAggregationType: true,
-      showDataCount: true,
-      layout: 'single',
-      thresholds: {
-        warning: 0,
-        danger: 0,
-        success: 0
-      },
-      colors: {
-        positive: '#10b981',
-        negative: '#ef4444',
-        neutral: '#6b7280',
-        primary: '#3b82f6',
-        secondary: '#8b5cf6'
+      tableId: 0,
+      yAxis: {
+        key: 'value',
+        label: 'Value',
+        type: 'number',
+        columns: []
       }
     },
+    aggregation: 'sum',
+    formatting: {
+      type: 'number',
+      decimals: 0,
+      prefix: '',
+      suffix: ''
+    },
+    display: {
+      showTrend: true,
+      showComparison: false,
+      customLabel: '',
+      secondaryMetric: ''
+    },
     style: {
-      layout: 'card',
-      size: 'medium',
-      alignment: 'center',
-      valueStyle: 'default',
-      titleStyle: 'default',
       backgroundColor: '#ffffff',
       textColor: '#1f2937',
-      accentColor: '#3b82f6',
-      borderColor: '#e5e7eb',
-      borderRadius: 'medium',
-      shadow: 'small',
-      padding: 'comfortable'
+      accentColor: '#3b82f6'
     },
     ...widget.config
   });
 
-  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
-  const [availableTables, setAvailableTables] = useState<Array<{id: number, name: string}>>([]);
-
-  // Load available columns and tables
-  useEffect(() => {
-    // Mock data - in real implementation, fetch from API
-    setAvailableColumns(['revenue', 'sales', 'profit', 'users', 'orders', 'conversion_rate', 'cost', 'margin']);
-    setAvailableTables([
-      { id: 1, name: 'Sales Data' },
-      { id: 2, name: 'User Analytics' },
-      { id: 3, name: 'Financial Metrics' }
-    ]);
-  }, []);
-
   const handleSave = () => {
-    if (!config.dataSource.column) {
-      alert('Please select a column');
-      return;
-    }
-    if (!config.dataSource.aggregation) {
-      alert('Please select an aggregation function');
+    if (!config.dataSource.tableId || !config.dataSource.yAxis?.columns?.length) {
+      alert('Please select a table and column for the KPI widget');
       return;
     }
 
     onSave({
       ...widget,
       config,
-      type: 'kpi'
+      type: 'metric'
     });
   };
 
-  const handleConfigChange = (key: string, value: any) => {
+  const handleConfigChange = (key: keyof KPIConfig, value: any) => {
     setConfig(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const handleDataSourceChange = (key: string, value: any) => {
+  const handleDataSourceChange = (dataSource: any) => {
     setConfig(prev => ({
       ...prev,
-      dataSource: {
-        ...prev.dataSource,
+      dataSource
+    }));
+  };
+
+  const handleFormattingChange = (key: keyof KPIConfig['formatting'], value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      formatting: {
+        ...prev.formatting,
         [key]: value
       }
     }));
   };
 
-  const handleOptionsChange = (key: string, value: any) => {
+  const handleDisplayChange = (key: keyof KPIConfig['display'], value: any) => {
     setConfig(prev => ({
       ...prev,
-      options: {
-        ...prev.options,
+      display: {
+        ...prev.display,
         [key]: value
       }
     }));
   };
 
-  const handleStyleChange = (key: string, value: any) => {
+  const handleStyleChange = (key: keyof KPIConfig['style'], value: any) => {
     setConfig(prev => ({
       ...prev,
       style: {
@@ -200,293 +117,324 @@ export default function KPIEditor({
     }));
   };
 
-  const availableAggregations = getAvailableAggregations();
-
   return (
     <Dialog open={isOpen} onOpenChange={onCancel}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configure KPI Widget</DialogTitle>
+          <DialogTitle className="flex items-center space-x-2 text-gray-900">
+            <BarChart3 className="h-5 w-5 text-gray-600" />
+            <span>Configure KPI Widget</span>
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6">
           {/* Basic Configuration */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Basic Configuration</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={config.title || ''}
-                  onChange={(e) => handleConfigChange('title', e.target.value)}
-                  placeholder="Enter KPI title"
-                />
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center space-x-2 text-gray-900">
+                <Settings className="h-4 w-4 text-gray-600" />
+                <span>Basic Configuration</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                    Widget Title
+                  </Label>
+                  <Input
+                    id="title"
+                    value={config.title || ''}
+                    onChange={(e) => handleConfigChange('title', e.target.value)}
+                    placeholder="Enter widget title"
+                    className="mt-1 border-gray-200 focus:border-gray-400"
+                  />
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="subtitle">Subtitle</Label>
-                <Input
-                  id="subtitle"
-                  value={config.subtitle || ''}
-                  onChange={(e) => handleConfigChange('subtitle', e.target.value)}
-                  placeholder="Enter KPI subtitle"
-                />
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Data Source Configuration */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Data Source</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dataSourceType">Data Source Type</Label>
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">
+                Data Source
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TableSelector
+                dataSource={config.dataSource}
+                onDataSourceChange={handleDataSourceChange}
+                widgetType="kpi"
+                supportedAxes={['y']}
+                expectedYType="number"
+                tenantId={tenantId}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Aggregation Configuration */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">
+                Aggregation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="aggregation" className="text-sm font-medium text-gray-700">
+                  Aggregation Function
+                </Label>
                 <Select
-                  value={config.dataSource.type}
-                  onValueChange={(value) => handleDataSourceChange('type', value)}
+                  value={config.aggregation}
+                  onValueChange={(value: any) => handleConfigChange('aggregation', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select data source type" />
+                  <SelectTrigger className="mt-1 border-gray-200 focus:border-gray-400">
+                    <SelectValue placeholder="Select aggregation function" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="table">Database Table</SelectItem>
-                    <SelectItem value="manual">Manual Data</SelectItem>
+                    <SelectItem value="sum">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Sum</span>
+                        <span className="text-xs text-gray-500">Total of all values</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="avg">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Average</span>
+                        <span className="text-xs text-gray-500">Mean of all values</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="min">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Minimum</span>
+                        <span className="text-xs text-gray-500">Smallest value</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="max">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Maximum</span>
+                        <span className="text-xs text-gray-500">Largest value</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="count">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Count</span>
+                        <span className="text-xs text-gray-500">Number of records</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            </CardContent>
+          </Card>
 
-              {config.dataSource.type === 'table' && (
-                <div className="space-y-2">
-                  <Label htmlFor="tableId">Table</Label>
+          {/* Formatting Configuration */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">
+                Value Formatting
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="formatType" className="text-sm font-medium text-gray-700">
+                    Format Type
+                  </Label>
                   <Select
-                    value={config.dataSource.tableId?.toString() || ''}
-                    onValueChange={(value) => handleDataSourceChange('tableId', parseInt(value))}
+                    value={config.formatting.type}
+                    onValueChange={(value: any) => handleFormattingChange('type', value)}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select table" />
+                    <SelectTrigger className="mt-1 border-gray-200 focus:border-gray-400">
+                      <SelectValue placeholder="Select format type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableTables.map(table => (
-                        <SelectItem key={table.id} value={table.id.toString()}>
-                          {table.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="number">Number</SelectItem>
+                      <SelectItem value="currency">Currency</SelectItem>
+                      <SelectItem value="percentage">Percentage</SelectItem>
                     </SelectContent>
-                  </Select>
+                  </SelectTrigger>
                 </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="column">Column *</Label>
-                <Select
-                  value={config.dataSource.column || ''}
-                  onValueChange={(value) => handleDataSourceChange('column', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select column" />
+                
+                <div>
+                  <Label htmlFor="decimals" className="text-sm font-medium text-gray-700">
+                    Decimal Places
+                  </Label>
+                  <Select
+                    value={config.formatting.decimals.toString()}
+                    onValueChange={(value) => handleFormattingChange('decimals', parseInt(value))}
+                  >
+                    <SelectTrigger className="mt-1 border-gray-200 focus:border-gray-400">
+                      <SelectValue placeholder="Select decimal places" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0</SelectItem>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="4">4</SelectItem>
+                    </SelectContent>
                   </SelectTrigger>
-                  <SelectContent>
-                    {availableColumns.map(column => (
-                      <SelectItem key={column} value={column}>
-                        {column}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="aggregation">Aggregation Function *</Label>
-                <Select
-                  value={config.dataSource.aggregation || ''}
-                  onValueChange={(value) => handleDataSourceChange('aggregation', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select aggregation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableAggregations.map(agg => (
-                      <SelectItem key={agg} value={agg}>
-                        <div>
-                          <div className="font-medium">{getAggregationLabel(agg as any)}</div>
-                          <div className="text-sm text-muted-foreground">{getAggregationDescription(agg as any)}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Aggregation Options */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Aggregation Options</h3>
-            
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="showMultipleAggregations"
-                  checked={config.dataSource.showMultipleAggregations || false}
-                  onCheckedChange={(checked) => handleDataSourceChange('showMultipleAggregations', checked)}
-                />
-                <Label htmlFor="showMultipleAggregations">Show Multiple Aggregations</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="compareWithPrevious"
-                  checked={config.dataSource.compareWithPrevious || false}
-                  onCheckedChange={(checked) => handleDataSourceChange('compareWithPrevious', checked)}
-                />
-                <Label htmlFor="compareWithPrevious">Compare with Previous Period</Label>
-              </div>
-            </div>
-
-            {config.dataSource.showMultipleAggregations && (
-              <div className="space-y-2">
-                <Label>Select Multiple Aggregations</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {availableAggregations.map(agg => (
-                    <div key={agg} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`agg-${agg}`}
-                        checked={config.dataSource.selectedAggregations?.includes(agg) || false}
-                        onChange={(e) => {
-                          const current = config.dataSource.selectedAggregations || [];
-                          const updated = e.target.checked
-                            ? [...current, agg]
-                            : current.filter(a => a !== agg);
-                          handleDataSourceChange('selectedAggregations', updated);
-                        }}
-                        className="rounded"
-                      />
-                      <Label htmlFor={`agg-${agg}`} className="text-sm">
-                        {getAggregationLabel(agg as any)}
-                      </Label>
-                    </div>
-                  ))}
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="prefix" className="text-sm font-medium text-gray-700">
+                    Prefix (optional)
+                  </Label>
+                  <Input
+                    id="prefix"
+                    value={config.formatting.prefix || ''}
+                    onChange={(e) => handleFormattingChange('prefix', e.target.value)}
+                    placeholder="e.g., $, €"
+                    className="mt-1 border-gray-200 focus:border-gray-400"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="suffix" className="text-sm font-medium text-gray-700">
+                    Suffix (optional)
+                  </Label>
+                  <Input
+                    id="suffix"
+                    value={config.formatting.suffix || ''}
+                    onChange={(e) => handleFormattingChange('suffix', e.target.value)}
+                    placeholder="e.g., %, units"
+                    className="mt-1 border-gray-200 focus:border-gray-400"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Display Options */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Display Options</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="format">Number Format</Label>
-                <Select
-                  value={config.options?.format || 'number'}
-                  onValueChange={(value) => handleOptionsChange('format', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="number">Number</SelectItem>
-                    <SelectItem value="currency">Currency</SelectItem>
-                    <SelectItem value="percentage">Percentage</SelectItem>
-                    <SelectItem value="decimal">Decimal</SelectItem>
-                  </SelectContent>
-                </Select>
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">
+                Display Options
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="showTrend" className="text-sm font-medium text-gray-700">
+                      Show Trend Indicator
+                    </Label>
+                    <p className="text-xs text-gray-500">Display trend arrow and percentage change</p>
+                  </div>
+                  <Switch
+                    id="showTrend"
+                    checked={config.display.showTrend}
+                    onCheckedChange={(checked) => handleDisplayChange('showTrend', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="showComparison" className="text-sm font-medium text-gray-700">
+                      Show Comparison
+                    </Label>
+                    <p className="text-xs text-gray-500">Display comparison with previous period</p>
+                  </div>
+                  <Switch
+                    id="showComparison"
+                    checked={config.display.showComparison}
+                    onCheckedChange={(checked) => handleDisplayChange('showComparison', checked)}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="decimals">Decimal Places</Label>
+              <div>
+                <Label htmlFor="customLabel" className="text-sm font-medium text-gray-700">
+                  Custom Label (optional)
+                </Label>
                 <Input
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={config.options?.decimals || 0}
-                  onChange={(e) => handleOptionsChange('decimals', parseInt(e.target.value) || 0)}
+                  id="customLabel"
+                  value={config.display.customLabel || ''}
+                  onChange={(e) => handleDisplayChange('customLabel', e.target.value)}
+                  placeholder="e.g., Total Revenue, Active Users"
+                  className="mt-1 border-gray-200 focus:border-gray-400"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="prefix">Prefix</Label>
-                <Input
-                  value={config.options?.prefix || ''}
-                  onChange={(e) => handleOptionsChange('prefix', e.target.value)}
-                  placeholder="e.g., $, €, #"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="suffix">Suffix</Label>
-                <Input
-                  value={config.options?.suffix || ''}
-                  onChange={(e) => handleOptionsChange('suffix', e.target.value)}
-                  placeholder="e.g., %, units, items"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="showChange"
-                  checked={config.options?.showChange || false}
-                  onCheckedChange={(checked) => handleOptionsChange('showChange', checked)}
-                />
-                <Label htmlFor="showChange">Show Change Percentage</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="showTrend"
-                  checked={config.options?.showTrend || false}
-                  onCheckedChange={(checked) => handleOptionsChange('showTrend', checked)}
-                />
-                <Label htmlFor="showTrend">Show Trend Indicator</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="showAggregationType"
-                  checked={config.options?.showAggregationType || false}
-                  onCheckedChange={(checked) => handleOptionsChange('showAggregationType', checked)}
-                />
-                <Label htmlFor="showAggregationType">Show Aggregation Type</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="showDataCount"
-                  checked={config.options?.showDataCount || false}
-                  onCheckedChange={(checked) => handleOptionsChange('showDataCount', checked)}
-                />
-                <Label htmlFor="showDataCount">Show Data Count</Label>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Style Options */}
-          <div className="space-y-4">
-            <StyleOptions
-              style={config.style || {}}
-              onStyleChange={handleStyleChange}
-              widgetType="metric"
-            />
-          </div>
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center space-x-2 text-gray-900">
+                <Palette className="h-4 w-4 text-gray-600" />
+                <span>Style Options</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="textColor" className="text-sm font-medium text-gray-700">
+                    Text Color
+                  </Label>
+                  <Input
+                    id="textColor"
+                    type="color"
+                    value={config.style?.textColor || '#1f2937'}
+                    onChange={(e) => handleStyleChange('textColor', e.target.value)}
+                    className="mt-1 h-10 border-gray-200 focus:border-gray-400"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="accentColor" className="text-sm font-medium text-gray-700">
+                    Accent Color
+                  </Label>
+                  <Input
+                    id="accentColor"
+                    type="color"
+                    value={config.style?.accentColor || '#3b82f6'}
+                    onChange={(e) => handleStyleChange('accentColor', e.target.value)}
+                    className="mt-1 h-10 border-gray-200 focus:border-gray-400"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="backgroundColor" className="text-sm font-medium text-gray-700">
+                    Background Color
+                  </Label>
+                  <Input
+                    id="backgroundColor"
+                    type="color"
+                    value={config.style?.backgroundColor || '#ffffff'}
+                    onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
+                    className="mt-1 h-10 border-gray-200 focus:border-gray-400"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Advanced Style Options */}
+          <StyleOptions
+            style={config.style || {}}
+            onStyleChange={(key, value) => handleStyleChange(key as any, value)}
+            widgetType="metric"
+          />
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+        <DialogFooter className="flex justify-end space-x-2 pt-6">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="border-gray-200 text-gray-700 hover:bg-gray-50"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            Save Configuration
+          <Button
+            onClick={handleSave}
+            className="bg-gray-900 hover:bg-gray-800 text-white"
+          >
+            Save Widget
           </Button>
         </DialogFooter>
       </DialogContent>

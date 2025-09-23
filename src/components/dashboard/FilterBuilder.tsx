@@ -31,7 +31,24 @@ const OPERATORS = [
   { value: 'contains', label: 'Contains' },
   { value: 'not_contains', label: 'Not Contains' },
   { value: 'greater_than', label: 'Greater Than' },
+  { value: 'greater_than_or_equal', label: 'Greater Than or Equal' },
   { value: 'less_than', label: 'Less Than' },
+  { value: 'less_than_or_equal', label: 'Less Than or Equal' },
+  { value: 'between', label: 'Between' },
+  { value: 'not_between', label: 'Not Between' },
+  { value: 'starts_with', label: 'Starts With' },
+  { value: 'ends_with', label: 'Ends With' },
+  { value: 'regex', label: 'Regex' },
+  { value: 'before', label: 'Before' },
+  { value: 'after', label: 'After' },
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'this_week', label: 'This Week' },
+  { value: 'last_week', label: 'Last Week' },
+  { value: 'this_month', label: 'This Month' },
+  { value: 'last_month', label: 'Last Month' },
+  { value: 'this_year', label: 'This Year' },
+  { value: 'last_year', label: 'Last Year' },
   { value: 'is_empty', label: 'Is Empty' },
   { value: 'is_not_empty', label: 'Is Not Empty' },
 ];
@@ -43,7 +60,7 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
     setEditingFilters(filters);
   }, [filters]);
 
-  const handleFilterChange = (index: number, field: keyof FilterConfig, value: string | number) => {
+  const handleFilterChange = (index: number, field: keyof FilterConfig, value: string | number | null) => {
     const newFilters = [...editingFilters];
     newFilters[index] = { ...newFilters[index], [field]: value };
     setEditingFilters(newFilters);
@@ -71,13 +88,20 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
   };
 
   const getValueInputType = (operator: string) => {
-    if (['is_empty', 'is_not_empty'].includes(operator)) {
+    if (['is_empty', 'is_not_empty', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'].includes(operator)) {
       return 'hidden';
     }
-    if (['greater_than', 'less_than'].includes(operator)) {
+    if (['greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between'].includes(operator)) {
       return 'number';
     }
+    if (['before', 'after', 'equals', 'not_equals'].includes(operator)) {
+      return 'date';
+    }
     return 'text';
+  };
+
+  const needsSecondValue = (operator: string) => {
+    return ['between', 'not_between'].includes(operator);
   };
 
   const isValueRequired = (operator: string) => {
@@ -203,6 +227,23 @@ export function FilterBuilder({ filters, availableColumns, onFiltersChange }: Fi
                           value={String(filter.value || '')}
                           onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
                           placeholder="Enter value"
+                          className="h-8"
+                        />
+                      </div>
+                    )}
+
+                    {/* Second Value Input for range operators */}
+                    {needsSecondValue(filter.operator) && (
+                      <div>
+                        <Label htmlFor={`secondValue-${index}`} className="text-xs">
+                          To Value
+                        </Label>
+                        <Input
+                          id={`secondValue-${index}`}
+                          type={getValueInputType(filter.operator)}
+                          value={String(filter.secondValue || '')}
+                          onChange={(e) => handleFilterChange(index, 'secondValue', e.target.value)}
+                          placeholder="Enter second value"
                           className="h-8"
                         />
                       </div>

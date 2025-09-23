@@ -348,18 +348,18 @@ export default function StyleOptions({ style, onStyleChange, widgetType }: Style
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
-          <Palette className="h-5 w-5" />
+        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2 text-gray-900">
+          <Palette className="h-5 w-5 text-gray-600" />
           <span>Style Options</span>
         </h3>
         <Separator />
       </div>
 
       {/* Layout Presets */}
-      <Card>
+      <Card className="border-gray-200">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium flex items-center space-x-2">
-            <Layout className="h-4 w-4" />
+          <CardTitle className="text-sm font-semibold flex items-center space-x-2 text-gray-900">
+            <Layout className="h-4 w-4 text-gray-600" />
             <span>Layout Presets</span>
           </CardTitle>
         </CardHeader>
@@ -368,15 +368,15 @@ export default function StyleOptions({ style, onStyleChange, widgetType }: Style
             {renderLayoutOptions().map((option) => (
               <div
                 key={option.value}
-                className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                className={`p-3 rounded-xl border cursor-pointer transition-all hover:shadow-md ${
                   style?.layout === option.value
-                    ? 'border-black bg-black/5'
-                    : 'border-black/20 hover:border-black/40'
+                    ? 'border-gray-400 bg-gray-50'
+                    : 'border-gray-200 hover:border-gray-300'
                 }`}
                 onClick={() => handleStyleChange('layout', option.value)}
               >
-                <div className="font-medium text-sm">{option.label}</div>
-                <div className="text-xs text-black/60 mt-1">{option.description}</div>
+                <div className="font-medium text-sm text-gray-900">{option.label}</div>
+                <div className="text-xs text-gray-500 mt-1">{option.description}</div>
               </div>
             ))}
           </div>

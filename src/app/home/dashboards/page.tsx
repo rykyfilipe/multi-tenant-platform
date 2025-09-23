@@ -1409,7 +1409,7 @@ export default function DashboardsPage() {
             </div>
 
             {/* Grid Layout */}
-            <div className="bg-white rounded-xl border border-black/10 shadow-sm p-6">
+            <div className="bg-gray-50 rounded-2xl p-6">
               <ResponsiveGridLayout
                 className="layout"
                 layouts={generateLayouts()}
@@ -1461,7 +1461,7 @@ export default function DashboardsPage() {
                       whileHover={isEditMode ? { scale: 1.01 } : {}}
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="h-full w-full bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+                      <div className="h-full w-full overflow-hidden">
                         {renderWidget(widget)}
                       </div>
                     </motion.div>

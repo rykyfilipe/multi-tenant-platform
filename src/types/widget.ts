@@ -96,6 +96,7 @@ export interface TableConfig {
   showFooter?: boolean;
   sortable?: boolean;
   filterable?: boolean;
+  filters?: import('@/types/filtering').FilterConfig[];
   style?: {
     theme?: 'default' | 'minimal' | 'bordered' | 'striped' | 'dark';
     headerStyle?: 'default' | 'bold' | 'colored' | 'gradient';

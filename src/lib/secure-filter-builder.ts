@@ -58,16 +58,52 @@ export class SecureFilterBuilder {
    * Build global search condition using Prisma's text search
    */
   private buildGlobalSearchCondition(searchTerm: string): any {
-    const conditions: any[] = [
-      { stringValue: { contains: searchTerm, mode: 'insensitive' } }
-    ];
+    const conditions: any[] = [];
 
-    // Add numeric search if search term is a number
+    // String value search (case-insensitive)
+    conditions.push({ 
+      stringValue: { 
+        contains: searchTerm, 
+        mode: 'insensitive' 
+      } 
+    });
+
+    // Numeric search if search term is a number
     if (!isNaN(Number(searchTerm))) {
-      conditions.push({ numberValue: { equals: Number(searchTerm) } });
+      conditions.push({ 
+        numberValue: { 
+          equals: Number(searchTerm) 
+        } 
+      });
     }
 
-    // Add JSON value search for generic value field
+    // Date search if search term looks like a date
+    const dateValue = new Date(searchTerm);
+    if (!isNaN(dateValue.getTime())) {
+      // Search for dates that contain the search term in their string representation
+      conditions.push({
+        dateValue: {
+          gte: new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()),
+          lt: new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate() + 1)
+        }
+      });
+    }
+
+    // Boolean search
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    if (['true', 'false', 'yes', 'no', '1', '0'].includes(lowerSearchTerm)) {
+      let booleanValue = false;
+      if (['true', 'yes', '1'].includes(lowerSearchTerm)) {
+        booleanValue = true;
+      }
+      conditions.push({ 
+        booleanValue: { 
+          equals: booleanValue 
+        } 
+      });
+    }
+
+    // JSON value search for generic value field (case-insensitive)
     conditions.push({
       value: {
         path: [],
@@ -120,46 +156,57 @@ export class SecureFilterBuilder {
     secondValue: any, 
     columnType: string
   ): any | null {
-    // Handle empty value filters
-    if (['is_empty', 'is_not_empty'].includes(operator)) {
-      return this.buildEmptyValueCondition(operator);
-    }
+    try {
+      // Validate operator compatibility with column type
+      if (!this.isOperatorValid(operator, columnType)) {
+        console.warn(`Invalid operator '${operator}' for column type '${columnType}'`);
+        return null;
+      }
 
-    // Handle range filters
-    if (['between', 'not_between'].includes(operator)) {
-      return this.buildRangeCondition(operator, value, secondValue, columnType);
-    }
+      // Handle empty value filters
+      if (['is_empty', 'is_not_empty'].includes(operator)) {
+        return this.buildEmptyValueCondition(operator);
+      }
 
-    // Handle different column types
-    switch (columnType) {
-      case 'string':
-      case 'text':
-      case 'email':
-      case 'url':
-        return this.buildTextCondition(operator, value);
-      
-      case 'number':
-      case 'integer':
-      case 'decimal':
-        return this.buildNumericCondition(operator, value);
-      
-      case 'boolean':
-        return this.buildBooleanCondition(operator, value);
-      
-      case 'date':
-      case 'datetime':
-      case 'time':
-        return this.buildDateCondition(operator, value);
-      
-      case 'reference':
-        return this.buildReferenceCondition(operator, value);
-      
-      case 'customArray':
-        return this.buildCustomArrayCondition(operator, value);
-      
-      default:
-        // Fallback to JSON value search
-        return this.buildJsonCondition(operator, value);
+      // Handle range filters
+      if (['between', 'not_between'].includes(operator)) {
+        return this.buildRangeCondition(operator, value, secondValue, columnType);
+      }
+
+      // Handle different column types
+      switch (columnType) {
+        case 'string':
+        case 'text':
+        case 'email':
+        case 'url':
+          return this.buildTextCondition(operator, value);
+        
+        case 'number':
+        case 'integer':
+        case 'decimal':
+          return this.buildNumericCondition(operator, value);
+        
+        case 'boolean':
+          return this.buildBooleanCondition(operator, value);
+        
+        case 'date':
+        case 'datetime':
+        case 'time':
+          return this.buildDateCondition(operator, value);
+        
+        case 'reference':
+          return this.buildReferenceCondition(operator, value);
+        
+        case 'customArray':
+          return this.buildCustomArrayCondition(operator, value);
+        
+        default:
+          // Fallback to JSON value search
+          return this.buildJsonCondition(operator, value);
+      }
+    } catch (error) {
+      console.error(`Error building cell condition for operator '${operator}' and column type '${columnType}':`, error);
+      return null;
     }
   }
 
@@ -518,5 +565,31 @@ export class SecureFilterBuilder {
 
   private isDateColumn(columnType: string): boolean {
     return ['date', 'datetime', 'time'].includes(columnType);
+  }
+
+  /**
+   * Check if operator is valid for column type
+   */
+  private isOperatorValid(operator: string, columnType: string): boolean {
+    // Import OPERATOR_COMPATIBILITY from types
+    const OPERATOR_COMPATIBILITY: any = {
+      text: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+      string: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+      email: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+      url: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+      number: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+      integer: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+      decimal: ['equals', 'not_equals', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'between', 'not_between', 'is_empty', 'is_not_empty'],
+      boolean: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
+      date: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+      datetime: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+      time: ['equals', 'not_equals', 'before', 'after', 'between', 'not_between', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year', 'is_empty', 'is_not_empty'],
+      json: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'regex', 'is_empty', 'is_not_empty'],
+      reference: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
+      customArray: ['equals', 'not_equals', 'is_empty', 'is_not_empty']
+    };
+
+    const validOperators = OPERATOR_COMPATIBILITY[columnType];
+    return validOperators ? validOperators.includes(operator) : false;
   }
 }

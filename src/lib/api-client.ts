@@ -40,9 +40,13 @@ export interface UpdateWidgetData {
 }
 
 export interface FilterData {
-	column: string;
-	operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in';
+	id: string;
+	columnId: number;
+	columnName: string;
+	columnType: string;
+	operator: string;
 	value: any;
+	secondValue?: any;
 }
 
 export interface QueryData {
