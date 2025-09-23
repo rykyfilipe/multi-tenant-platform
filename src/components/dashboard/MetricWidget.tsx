@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, AlertCircle, BarChart3, Calculator } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle, BarChart3, Calculator, RefreshCw } from 'lucide-react';
 import BaseWidget from './BaseWidget';
 import { api } from '@/lib/api-client';
 import type { DataSource } from './TableSelector';
@@ -12,9 +12,14 @@ import {
   extractNumericValues, 
   mapRawRowsToProcessedData,
   type AggregationFunction,
-  type ColumnMeta 
+  type ColumnMeta
 } from '@/lib/widget-aggregation';
+import { FilterConfig } from '@/types/filtering';
 
+/**
+ * Configuration interface for the new Metric Widget
+ * Supports flexible data mapping and comprehensive aggregation options
+ */
 export interface MetricConfig {
   title?: string;
   dataSource: DataSource;
@@ -36,6 +41,7 @@ export interface MetricConfig {
     textColor?: string;
     accentColor?: string;
   };
+  filters?: FilterConfig[];
 }
 
 export interface Widget {
@@ -55,6 +61,18 @@ interface MetricWidgetProps {
   databaseId?: number;
 }
 
+/**
+ * New Metric Widget Implementation
+ * 
+ * Features:
+ * - Flexible data mapping for any custom table
+ * - Support for SUM, COUNT, AVG, MAX, MIN aggregation functions
+ * - Comprehensive filtering before aggregation
+ * - Strict validation for numeric columns
+ * - Dynamic updates on filter/table changes
+ * - Trend indicators and comparison metrics
+ * - Professional styling with premium colors
+ */
 export default function MetricWidget({ 
   widget, 
   isEditMode, 
@@ -67,81 +85,55 @@ export default function MetricWidget({
   const [previousData, setPreviousData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [columnMeta, setColumnMeta] = useState<ColumnMeta | null>(null);
 
-  const config = (widget.config || {}) as any;
+  const config = (widget.config || {}) as MetricConfig;
   
-  // Handle both KPI and Metric widget config structures
+  // Extract configuration with proper defaults
   const dataSource = config.dataSource || {};
-  const rawAggregation = config.aggregation || dataSource.aggregation || 'sum';
-  
-  // Normalize aggregation names to match switch cases
-  const aggregation = rawAggregation === 'average' ? 'avg' : rawAggregation;
+  const aggregation = config.aggregation || 'sum';
   const formatting = config.formatting || {
-    type: config.options?.format || 'number',
-    decimals: config.options?.decimals || 0,
-    prefix: config.options?.prefix || '',
-    suffix: config.options?.suffix || ''
+    type: 'number',
+    decimals: 0,
+    prefix: '',
+    suffix: ''
   };
   const display = config.display || {
-    showTrend: config.options?.showTrend || false,
-    showComparison: config.options?.showChange || false,
-    customLabel: config.options?.customLabel || '',
-    secondaryMetric: config.options?.secondaryMetric || ''
+    showTrend: false,
+    showComparison: false,
+    customLabel: '',
+    secondaryMetric: ''
   };
+  const filters = config.filters || [];
+
+  // Get the target column for aggregation
+  const targetColumn = useMemo(() => {
+    return dataSource.yAxis?.columns?.[0] || 
+           dataSource.columnY;
+  }, [dataSource]);
 
   // Validate widget configuration
   const [validationError, setValidationError] = useState<string | null>(null);
   
   useEffect(() => {
-    // Validate aggregation compatibility with column type
-    if (rawData.length > 0 && dataSource.tableId) {
-      const column = dataSource.yAxis?.columns?.[0] || 
-                    dataSource.columnY || 
-                    dataSource.column ||
-                    dataSource.currentColumn;
-      
-      if (column) {
-        // We need to get the actual column type from the database
-        // For now, we'll assume it's numeric if we have numeric values
-        const values = extractNumericValues(rawData, column);
-        const hasNumericData = values.length > 0;
-        
-        // Create a mock column meta for validation
-        const mockColumn: ColumnMeta = {
-          id: 0,
-          name: column,
-          type: hasNumericData ? 'number' : 'string',
-          tableId: dataSource.tableId
-        };
-        
-        const validation = validateMetricWidgetConfig(mockColumn, aggregation);
-        if (!validation.isValid) {
-          setValidationError(validation.error || 'Invalid configuration');
-        } else {
-          setValidationError(null);
-        }
+    if (rawData.length > 0 && targetColumn && columnMeta) {
+      const validation = validateMetricWidgetConfig(columnMeta, aggregation);
+      if (!validation.isValid) {
+        setValidationError(validation.error || 'Invalid configuration');
+      } else {
+        setValidationError(null);
       }
     }
-  }, [rawData, dataSource, aggregation]);
+  }, [rawData, targetColumn, aggregation, columnMeta]);
 
-  // Calculate the main metric value
-  const kpiValue = useMemo(() => {
-    if (!rawData.length) {
-      return null;
-    }
-
-    // Try multiple ways to get the column name
-    const column = dataSource.yAxis?.columns?.[0] || 
-                  dataSource.columnY || 
-                  dataSource.column ||
-                  dataSource.currentColumn;
-    
-    if (!column) {
+  // Calculate the main metric value with proper aggregation
+  const metricValue = useMemo(() => {
+    if (!rawData.length || !targetColumn) {
       return null;
     }
 
     // Extract numeric values using the common utility
-    const values = extractNumericValues(rawData, column);
+    const values = extractNumericValues(rawData, targetColumn);
     
     if (!values.length) {
       return null;
@@ -156,25 +148,16 @@ export default function MetricWidget({
     }
 
     return aggregationResult.value;
-  }, [rawData, dataSource, aggregation]);
+  }, [rawData, targetColumn, aggregation]);
 
-  // Calculate previous period value for trend
+  // Calculate previous period value for trend calculation
   const previousValue = useMemo(() => {
-    if (!previousData.length) return null;
+    if (!previousData.length || !targetColumn) return null;
 
-    // Try multiple ways to get the column name
-    const column = dataSource.yAxis?.columns?.[0] || 
-                  dataSource.columnY || 
-                  dataSource.column ||
-                  dataSource.currentColumn;
-    if (!column) return null;
-
-    // Extract numeric values using the common utility
-    const values = extractNumericValues(previousData, column);
+    const values = extractNumericValues(previousData, targetColumn);
     
     if (!values.length) return null;
 
-    // Apply aggregation using the common utility
     const aggregationResult = applyAggregation(values, aggregation);
     
     if (!aggregationResult.isValid) {
@@ -183,23 +166,23 @@ export default function MetricWidget({
     }
 
     return aggregationResult.value;
-  }, [previousData, dataSource, aggregation]);
+  }, [previousData, targetColumn, aggregation]);
 
-  // Calculate trend
+  // Calculate trend information
   const trend = useMemo(() => {
-    if (!kpiValue || !previousValue) return null;
+    if (!metricValue || !previousValue) return null;
     
-    const change = kpiValue - previousValue;
-    const changePercent = (change / previousValue) * 100;
+    const change = metricValue - previousValue;
+    const changePercent = previousValue !== 0 ? (change / previousValue) * 100 : 0;
     
     return {
       change,
       changePercent,
       direction: change > 0 ? 'up' : change < 0 ? 'down' : 'stable'
     };
-  }, [kpiValue, previousValue]);
+  }, [metricValue, previousValue]);
 
-  // Format the KPI value
+  // Format the metric value with proper styling
   const formatValue = (value: number): string => {
     const { type, decimals, prefix = '', suffix = '' } = formatting;
 
@@ -219,7 +202,7 @@ export default function MetricWidget({
     }
   };
 
-  // Fetch data from table
+  // Fetch data from table with filters applied
   useEffect(() => {
     if (dataSource.type === 'table' && dataSource.tableId && tenantId && databaseId) {
       fetchData();
@@ -233,15 +216,17 @@ export default function MetricWidget({
       setRawData(mockData);
       
       // Mock previous data for trend
-      const mockPreviousData = mockData.map(row => ({
-        ...row,
-        revenue: row.revenue * 0.9,
-        users: Math.floor(row.users * 0.95),
-        conversion: row.conversion * 0.98
-      }));
-      setPreviousData(mockPreviousData);
+      if (display.showTrend) {
+        const mockPreviousData = mockData.map(row => ({
+          ...row,
+          revenue: row.revenue * 0.9,
+          users: Math.floor(row.users * 0.95),
+          conversion: row.conversion * 0.98
+        }));
+        setPreviousData(mockPreviousData);
+      }
     }
-  }, [dataSource, tenantId, databaseId]);
+  }, [dataSource, tenantId, databaseId, filters]);
 
   const fetchData = async () => {
     if (!tenantId || !databaseId || !dataSource.tableId) return;
@@ -250,9 +235,7 @@ export default function MetricWidget({
     setError(null);
 
     try {
-      // Check both config.filters and dataSource.filters for compatibility
-      const filters = (config as any).filters || dataSource.filters || [];
-      
+      // Apply filters before fetching data
       const allRows = await api.tables.getAllRows(tenantId, databaseId, dataSource.tableId, {
         filters: filters,
         search: '',
@@ -265,18 +248,33 @@ export default function MetricWidget({
         const processedData = mapRawRowsToProcessedData(allRows.data ?? []);
         setRawData(processedData);
 
+        // Get column metadata for validation
+        if (targetColumn && allRows.data.length > 0) {
+          // Try to infer column type from the first row
+          const firstRow = allRows.data[0];
+          const cell = firstRow.cells?.find((c: any) => c.column?.name === targetColumn);
+          
+          if (cell) {
+            const columnType = cell.numberValue !== null ? 'number' : 
+                              cell.stringValue !== null ? 'string' : 
+                              cell.dateValue !== null ? 'date' : 'string';
+            
+            setColumnMeta({
+              id: cell.column?.id || 0,
+              name: targetColumn,
+              type: columnType as any,
+              tableId: dataSource.tableId
+            });
+          }
+        }
+
         // Generate previous period data for trend calculation
         if (display.showTrend) {
           const previousData = processedData.map((row: any) => {
-            // Try multiple ways to get the column name
-            const column = dataSource.yAxis?.columns?.[0] || 
-                          dataSource.columnY || 
-                          dataSource.column ||
-                          dataSource.currentColumn;
-            if (column && row[column]) {
+            if (targetColumn && row[targetColumn]) {
               return {
                 ...row,
-                [column]: parseFloat(row[column]) * 0.9 // Simulate 10% decrease
+                [targetColumn]: parseFloat(row[targetColumn]) * 0.9 // Simulate 10% decrease
               };
             }
             return row;
@@ -285,7 +283,7 @@ export default function MetricWidget({
         }
       }
     } catch (err) {
-      console.error('Error fetching KPI data:', err);
+      console.error('Error fetching metric data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setIsLoading(false);
@@ -298,8 +296,8 @@ export default function MetricWidget({
     }
   };
 
-  // Render KPI content
-  const renderKPIContent = () => {
+  // Render metric content with comprehensive error handling
+  const renderMetricContent = () => {
     // No data source configured
     if (!dataSource.tableId && dataSource.type !== 'manual') {
       return (
@@ -310,7 +308,7 @@ export default function MetricWidget({
             </div>
             <p className="text-sm font-medium text-gray-600 mb-1">No data source configured</p>
             <p className="text-xs text-gray-400">
-              Please configure a data source to display KPI metrics
+              Please configure a data source to display metric values
             </p>
           </div>
         </div>
@@ -318,11 +316,7 @@ export default function MetricWidget({
     }
 
     // No column selected
-    const column = dataSource.yAxis?.columns?.[0] || 
-                  dataSource.columnY || 
-                  dataSource.column ||
-                  dataSource.currentColumn;
-    if (!column) {
+    if (!targetColumn) {
       return (
         <div className="flex items-center justify-center h-full text-gray-500 min-h-[150px]">
           <div className="text-center p-6">
@@ -331,7 +325,7 @@ export default function MetricWidget({
             </div>
             <p className="text-sm font-medium text-gray-600 mb-1">No column selected</p>
             <p className="text-xs text-gray-400">
-              Please select a column to calculate KPI values
+              Please select a column to calculate metric values
             </p>
           </div>
         </div>
@@ -359,7 +353,7 @@ export default function MetricWidget({
     }
 
     // No data available
-    if (!kpiValue) {
+    if (!metricValue) {
       return (
         <div className="flex items-center justify-center h-full text-gray-500 min-h-[150px]">
           <div className="text-center p-6">
@@ -373,16 +367,16 @@ export default function MetricWidget({
             <div className="mt-4 text-xs text-gray-400 text-left">
               <p>Debug Info:</p>
               <p>• Raw data length: {rawData.length}</p>
-              <p>• Detected column: {column}</p>
-              <p>• Aggregation: {aggregation} (from: {rawAggregation})</p>
+              <p>• Detected column: {targetColumn}</p>
+              <p>• Aggregation: {aggregation}</p>
+              <p>• Filters applied: {filters.length}</p>
             </div>
           </div>
         </div>
       );
     }
 
-    // Main metric display
-
+    // Main metric display with premium styling
     return (
       <div className="text-center space-y-4 h-full flex flex-col justify-center">
         <motion.div
@@ -395,11 +389,11 @@ export default function MetricWidget({
           <div className="flex items-center justify-center space-x-2">
             <BarChart3 className="h-4 w-4 text-gray-500" />
             <span className="text-sm text-gray-500 uppercase tracking-wide">
-              {aggregation} of {column}
+              {aggregation.toUpperCase()} of {targetColumn}
             </span>
           </div>
           
-          {/* Main KPI value */}
+          {/* Main metric value */}
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
@@ -407,7 +401,7 @@ export default function MetricWidget({
             className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900"
             style={{ color: config.style?.textColor }}
           >
-            {formatValue(kpiValue)}
+            {formatValue(metricValue)}
           </motion.div>
           
           {/* Custom label */}
@@ -441,9 +435,12 @@ export default function MetricWidget({
             </motion.div>
           )}
           
-          {/* Data count */}
-          <div className="text-xs text-gray-400">
-            Based on {rawData.length} data points
+          {/* Data count and filters info */}
+          <div className="text-xs text-gray-400 space-y-1">
+            <div>Based on {rawData.length} data points</div>
+            {filters.length > 0 && (
+              <div>With {filters.length} filter{filters.length !== 1 ? 's' : ''} applied</div>
+            )}
           </div>
         </motion.div>
       </div>
@@ -461,7 +458,7 @@ export default function MetricWidget({
       onRefresh={dataSource.type === 'table' ? handleRefresh : undefined}
       showRefresh={dataSource.type === 'table'}
     >
-      {renderKPIContent()}
+      {renderMetricContent()}
     </BaseWidget>
   );
 }

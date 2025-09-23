@@ -98,14 +98,58 @@ export function RowGrid({
 
 	if (rows.length === 0) {
 		return (
-			<div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-				<div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mb-4">
-					<FileText className="w-8 h-8 text-muted-foreground" />
+			<div>
+				{/* Modern Select All Header - Mobile Optimized */}
+				<div className="flex border-b border-neutral-200 bg-neutral-50 min-w-max">
+					<div 
+						className="w-12 sm:w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-100 flex items-center justify-center px-2 sm:px-4 py-2"
+					>
+						<Checkbox
+							checked={false}
+							disabled={true}
+							className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 pointer-events-none w-4 h-4"
+						/>
+					</div>
+					
+					{/* Data columns header - Mobile Optimized */}
+					<div className="flex-1 flex items-center justify-between px-2 sm:px-4 py-2 min-w-0">
+						<span className="text-xs sm:text-sm font-semibold text-neutral-700 truncate">
+							No rows yet
+						</span>
+					</div>
+					
+					{/* Empty space for add column button */}
+					<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100" />
 				</div>
-				<h3 className="text-lg font-semibold text-foreground mb-2">No Data</h3>
-				<p className="text-muted-foreground">
-					This table doesn't have any rows yet. Add your first row to get started.
-				</p>
+
+				{/* Inline Row Creator - Always show if user can edit */}
+				{canEdit && (
+					<InlineRowCreator
+						columns={columns}
+						onSave={onSaveNewRow || (() => {})}
+						onCancel={onCancelNewRow || (() => {})}
+						isSaving={isSavingNewRow}
+					/>
+				)}
+				
+				{/* Debug info - remove after fixing */}
+				{process.env.NODE_ENV === 'development' && (
+					<div className="text-xs text-gray-500 p-2 bg-yellow-50 border border-yellow-200">
+						Debug: showInlineRowCreator={showInlineRowCreator.toString()}, canEdit={canEdit.toString()}, 
+						onSaveNewRow={!!onSaveNewRow}, onCancelNewRow={!!onCancelNewRow}
+					</div>
+				)}
+
+				{/* Empty state message */}
+				<div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+					<div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mb-4">
+						<FileText className="w-8 h-8 text-muted-foreground" />
+					</div>
+					<h3 className="text-lg font-semibold text-foreground mb-2">No Data</h3>
+					<p className="text-muted-foreground">
+						This table doesn't have any rows yet. Use the form above to add your first row.
+					</p>
+				</div>
 			</div>
 		);
 	}

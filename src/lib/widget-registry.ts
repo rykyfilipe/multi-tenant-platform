@@ -13,26 +13,21 @@ import {
 
 // Fallback editor component
 const FallbackEditor: React.FC<WidgetEditorProps> = ({ widget, onCancel }) => {
-  return (
-    <div className="p-6 text-center">
-      <div className="text-red-500 text-lg font-semibold mb-2">
-        No Editor Available
-      </div>
-      <p className="text-gray-600 mb-4">
-        No editor is available for widget type: <code className="bg-gray-100 px-2 py-1 rounded">{widget.type}</code>
-      </p>
-      <button
-        onClick={onCancel}
-        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-      >
-        Close
-      </button>
-    </div>
+  return React.createElement('div', { className: 'p-6 text-center' },
+    React.createElement('div', { className: 'text-red-500 text-lg font-semibold mb-2' }, 'No Editor Available'),
+    React.createElement('p', { className: 'text-gray-600 mb-4' }, 
+      'No editor is available for widget type: ',
+      React.createElement('code', { className: 'bg-gray-100 px-2 py-1 rounded' }, widget.type)
+    ),
+    React.createElement('button', {
+      onClick: onCancel,
+      className: 'px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600'
+    }, 'Close')
   );
 };
 
-// Widget Editors Registry - simplified approach
-export const WIDGET_EDITORS: Record<string, React.ComponentType<WidgetEditorProps>> = {
+// Widget Editors Registry - simplified approach with any type to avoid complex type issues
+export const WIDGET_EDITORS: Record<string, React.ComponentType<any>> = {
   line: React.lazy(() => import('@/components/dashboard/editors/LineChartEditor')),
   bar: React.lazy(() => import('@/components/dashboard/editors/BarChartEditor')),
   pie: React.lazy(() => import('@/components/dashboard/editors/PieChartEditor')),
@@ -100,11 +95,44 @@ export function mapWidgetData(
         break;
 
       case 'metric':
-        // Metric data transformation
-        if (config && 'valueColumn' in config) {
-          const values = rawData.map(row => row[config.valueColumn]).filter(val => val != null);
-          const sum = values.reduce((acc, val) => acc + Number(val), 0);
-          mappedData = { value: sum, count: values.length };
+        // Metric data transformation with flexible aggregation
+        if (config && 'dataSource' in config) {
+          const dataSource = config.dataSource as any;
+          const targetColumn = dataSource.yAxis?.columns?.[0] || 
+                              dataSource.columnY;
+          
+          if (targetColumn) {
+            const values = rawData.map(row => row[targetColumn]).filter(val => val != null);
+            const aggregation = (config as any).aggregation || 'sum';
+            
+            let result: number;
+            switch (aggregation) {
+              case 'sum':
+                result = values.reduce((acc, val) => acc + Number(val), 0);
+                break;
+              case 'avg':
+                result = values.length > 0 ? values.reduce((acc, val) => acc + Number(val), 0) / values.length : 0;
+                break;
+              case 'min':
+                result = values.length > 0 ? Math.min(...values.map(val => Number(val))) : 0;
+                break;
+              case 'max':
+                result = values.length > 0 ? Math.max(...values.map(val => Number(val))) : 0;
+                break;
+              case 'count':
+                result = values.length;
+                break;
+              default:
+                result = values.reduce((acc, val) => acc + Number(val), 0);
+            }
+            
+            mappedData = { 
+              value: result, 
+              count: values.length,
+              aggregation,
+              column: targetColumn
+            };
+          }
         }
         break;
 
@@ -180,7 +208,7 @@ export function mapWidgetData(
 }
 
 // Get widget editor component with safe fallback
-export function getWidgetEditor(widgetType: WidgetType): React.ComponentType<WidgetEditorProps> {
+export function getWidgetEditor(widgetType: WidgetType): React.ComponentType<any> {
   const editor = WIDGET_EDITORS[widgetType];
   
   if (!editor) {
@@ -189,13 +217,13 @@ export function getWidgetEditor(widgetType: WidgetType): React.ComponentType<Wid
   }
 
   // Wrap the editor with error boundary for additional safety
-  const SafeEditor: React.FC<WidgetEditorProps> = (props) => {
+  const SafeEditor: React.FC<any> = (props) => {
     try {
       const EditorComponent = editor;
-      return <EditorComponent {...props} />;
+      return React.createElement(EditorComponent, props);
     } catch (error) {
       console.error(`Error rendering editor for widget type ${widgetType}:`, error);
-      return <FallbackEditor {...props} />;
+      return React.createElement(FallbackEditor, props);
     }
   };
 

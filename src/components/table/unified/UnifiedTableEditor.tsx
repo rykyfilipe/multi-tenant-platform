@@ -170,6 +170,61 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					const filteredRows = currentRows.filter(row => !row.id.toString().startsWith('temp_'));
 					return [...newRows, ...filteredRows];
 				});
+
+				// Update context with new rows
+				if (setTables && tables) {
+					setTables((prevTables: Table[] | null) => 
+						prevTables ? prevTables.map((t: Table) => 
+							t.id === table.id 
+								? { 
+									...t, 
+									rows: [...(t.rows || []), ...newRows],
+									rowsCount: (t.rowsCount || 0) + newRows.length
+								}
+								: t
+						) : []
+					);
+				}
+
+				// Update selectedDatabase if it contains this table
+				if (selectedDatabase && selectedDatabase.tables) {
+					const updatedTables = selectedDatabase.tables.map((t: Table) => 
+						t.id === table.id 
+							? { 
+								...t, 
+								rows: [...(t.rows || []), ...newRows],
+								rowsCount: (t.rowsCount || 0) + newRows.length
+							}
+							: t
+					);
+					setSelectedDatabase({
+						...selectedDatabase,
+						tables: updatedTables
+					});
+				}
+
+				// Update databases array if it contains this table
+				if (databases) {
+					setDatabases((prevDatabases) =>
+						prevDatabases?.map((db) => {
+							if (db.id === table.databaseId && db.tables) {
+								return {
+									...db,
+									tables: db.tables.map((t: Table) => 
+										t.id === table.id 
+											? { 
+												...t, 
+												rows: [...(t.rows || []), ...newRows],
+												rowsCount: (t.rowsCount || 0) + newRows.length
+											}
+											: t
+									)
+								};
+							}
+							return db;
+						}) || null
+					);
+				}
 			}
 			
 			// Gestionează modificările de celule
@@ -343,9 +398,53 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					setTables((prevTables: Table[] | null) => 
 						prevTables ? prevTables.map((t: Table) => 
 							t.id === table.id 
-								? { ...t, columns: [...(t.columns || []), ...createdColumns] }
+								? { 
+									...t, 
+									columns: [...(t.columns || []), ...createdColumns],
+									columnsCount: (t.columnsCount || 0) + createdColumns.length
+								}
 								: t
 						) : []
+					);
+				}
+
+				// Update selectedDatabase if it contains this table
+				if (selectedDatabase && selectedDatabase.tables) {
+					const updatedTables = selectedDatabase.tables.map((t: Table) => 
+						t.id === table.id 
+							? { 
+								...t, 
+								columns: [...(t.columns || []), ...createdColumns],
+								columnsCount: (t.columnsCount || 0) + createdColumns.length
+							}
+							: t
+					);
+					setSelectedDatabase({
+						...selectedDatabase,
+						tables: updatedTables
+					});
+				}
+
+				// Update databases array if it contains this table
+				if (databases) {
+					setDatabases((prevDatabases) =>
+						prevDatabases?.map((db) => {
+							if (db.id === table.databaseId && db.tables) {
+								return {
+									...db,
+									tables: db.tables.map((t: Table) => 
+										t.id === table.id 
+											? { 
+												...t, 
+												columns: [...(t.columns || []), ...createdColumns],
+												columnsCount: (t.columnsCount || 0) + createdColumns.length
+											}
+											: t
+									)
+								};
+							}
+							return db;
+						}) || null
 					);
 				}
 			} else {
@@ -445,6 +544,48 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 						) : []
 					);
 				}
+
+				// Update selectedDatabase if it contains this table
+				if (selectedDatabase && selectedDatabase.tables) {
+					const updatedTables = selectedDatabase.tables.map((t: Table) => 
+						t.id === table.id 
+							? { 
+								...t, 
+								columns: (t.columns || []).map((col: any) => 
+									col.id === selectedColumn.id ? { ...col, ...updatedColumnData } : col
+								)
+							}
+							: t
+					);
+					setSelectedDatabase({
+						...selectedDatabase,
+						tables: updatedTables
+					});
+				}
+
+				// Update databases array if it contains this table
+				if (databases) {
+					setDatabases((prevDatabases) =>
+						prevDatabases?.map((db) => {
+							if (db.id === table.databaseId && db.tables) {
+								return {
+									...db,
+									tables: db.tables.map((t: Table) => 
+										t.id === table.id 
+											? { 
+												...t, 
+												columns: (t.columns || []).map((col: any) => 
+													col.id === selectedColumn.id ? { ...col, ...updatedColumnData } : col
+												)
+											}
+											: t
+									)
+								};
+							}
+							return db;
+						}) || null
+					);
+				}
 			} else {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to update column");
@@ -507,9 +648,53 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					setTables((prevTables: Table[] | null) => 
 						prevTables ? prevTables.map((t: Table) => 
 							t.id === table.id 
-								? { ...t, columns: (t.columns || []).filter((col: any) => col.id.toString() !== columnId) }
+								? { 
+									...t, 
+									columns: (t.columns || []).filter((col: any) => col.id.toString() !== columnId),
+									columnsCount: Math.max(0, (t.columnsCount || 0) - 1)
+								}
 								: t
 						) : []
+					);
+				}
+
+				// Update selectedDatabase if it contains this table
+				if (selectedDatabase && selectedDatabase.tables) {
+					const updatedTables = selectedDatabase.tables.map((t: Table) => 
+						t.id === table.id 
+							? { 
+								...t, 
+								columns: (t.columns || []).filter((col: any) => col.id.toString() !== columnId),
+								columnsCount: Math.max(0, (t.columnsCount || 0) - 1)
+							}
+							: t
+					);
+					setSelectedDatabase({
+						...selectedDatabase,
+						tables: updatedTables
+					});
+				}
+
+				// Update databases array if it contains this table
+				if (databases) {
+					setDatabases((prevDatabases) =>
+						prevDatabases?.map((db) => {
+							if (db.id === table.databaseId && db.tables) {
+								return {
+									...db,
+									tables: db.tables.map((t: Table) => 
+										t.id === table.id 
+											? { 
+												...t, 
+												columns: (t.columns || []).filter((col: any) => col.id.toString() !== columnId),
+												columnsCount: Math.max(0, (t.columnsCount || 0) - 1)
+											}
+											: t
+									)
+								};
+							}
+							return db;
+						}) || null
 					);
 				}
 			} else {
@@ -820,6 +1005,61 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 		
 		setRows((currentRows) => currentRows.filter(row => row.id.toString() !== rowId));
 		showAlert("Row deleted!", "success");
+
+		// Update context with deleted row
+		if (setTables && tables) {
+			setTables((prevTables: Table[] | null) => 
+				prevTables ? prevTables.map((t: Table) => 
+					t.id === table.id 
+						? { 
+							...t, 
+							rows: (t.rows || []).filter((row: any) => row.id.toString() !== rowId),
+							rowsCount: Math.max(0, (t.rowsCount || 0) - 1)
+						}
+						: t
+				) : []
+			);
+		}
+
+		// Update selectedDatabase if it contains this table
+		if (selectedDatabase && selectedDatabase.tables) {
+			const updatedTables = selectedDatabase.tables.map((t: Table) => 
+				t.id === table.id 
+					? { 
+						...t, 
+						rows: (t.rows || []).filter((row: any) => row.id.toString() !== rowId),
+						rowsCount: Math.max(0, (t.rowsCount || 0) - 1)
+					}
+					: t
+			);
+			setSelectedDatabase({
+				...selectedDatabase,
+				tables: updatedTables
+			});
+		}
+
+		// Update databases array if it contains this table
+		if (databases) {
+			setDatabases((prevDatabases) =>
+				prevDatabases?.map((db) => {
+					if (db.id === table.databaseId && db.tables) {
+						return {
+							...db,
+							tables: db.tables.map((t: Table) => 
+								t.id === table.id 
+									? { 
+										...t, 
+										rows: (t.rows || []).filter((row: any) => row.id.toString() !== rowId),
+										rowsCount: Math.max(0, (t.rowsCount || 0) - 1)
+									}
+									: t
+							)
+						};
+					}
+					return db;
+				}) || null
+			);
+		}
 
 		// Background API call
 		try {
