@@ -11,24 +11,6 @@ datasource db {
   relationMode = "prisma"
 }
 
-model Backup {
-  id          String   @id @default(cuid())
-  tenantId    String
-  type        String   // 'full', 'schema_only', 'data_only'
-  status      String   // 'pending', 'in_progress', 'completed', 'failed'
-  description String?
-  filePath    String?
-  fileSize    Int?
-  checksum    String?
-  startedAt   DateTime @default(now())
-  completedAt DateTime?
-  error       String?
-  metadata    Json?    // Store backup metadata as JSON
-  createdBy   String
-  
-  @@map("backups")
-}
-
 model Tenant {
   id                  Int                 @id @default(autoincrement())
   name                String              @unique

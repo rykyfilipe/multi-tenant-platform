@@ -17,6 +17,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import LineChartWidget from '@/components/dashboard/LineChartWidget';
 import BarChartWidget from '@/components/dashboard/BarChartWidget';
 import PieChartWidget from '@/components/dashboard/PieChartWidget';
+import AreaChartWidget from '@/components/dashboard/AreaChartWidget';
+import ScatterChartWidget from '@/components/dashboard/ScatterChartWidget';
+import ComposedChartWidget from '@/components/dashboard/ComposedChartWidget';
+import RadarChartWidget from '@/components/dashboard/RadarChartWidget';
+import InteractivePieChartWidget from '@/components/dashboard/InteractivePieChartWidget';
 import TableWidget from '@/components/dashboard/TableWidget';
 import TextWidget from '@/components/dashboard/TextWidget';
 import MetricWidget from '@/components/dashboard/MetricWidget';
@@ -155,6 +160,9 @@ export default function DashboardsPage() {
   const [showWidgetEditor, setShowWidgetEditor] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // State to track when layout changes come from responsive breakpoint changes
+  const [isResponsiveBreakpointChange, setIsResponsiveBreakpointChange] = useState(false);
   
   const { toast } = useToast();
   const { tenant } = useApp();
@@ -481,36 +489,25 @@ export default function DashboardsPage() {
     });
   };
 
-  // Function to detect if a layout change is responsive (automatic) or manual
-  const isResponsiveLayoutChange = (widgetId: number, newPosition: any, currentPosition: any) => {
-    console.log('🔍 [RESPONSIVE_DEBUG] Checking if change is responsive', {
-      widgetId,
-      newPosition,
-      currentPosition
+  // Handler for breakpoint changes - marks the next layout change as responsive
+  const handleBreakpointChange = (breakpoint: string, cols: number) => {
+    console.log('📱 [BREAKPOINT_DEBUG] Breakpoint changed', {
+      breakpoint,
+      cols,
+      isEditMode
     });
-
-    // For now, be more permissive - only consider very specific cases as responsive
-    // Most user interactions should be treated as manual changes
     
-    // Only consider it responsive if it's a very specific constraint case
-    // This is a simplified approach that favors manual changes
-    const isVerySmallChange = 
-      Math.abs(newPosition.x - currentPosition.x) <= 1 &&
-      Math.abs(newPosition.y - currentPosition.y) <= 1 &&
-      Math.abs(newPosition.width - currentPosition.width) <= 1 &&
-      Math.abs(newPosition.height - currentPosition.height) <= 1;
-    
-    // If it's a very small change and only x position changed, might be responsive
-    if (isVerySmallChange && 
-        newPosition.y === currentPosition.y && 
-        newPosition.width === currentPosition.width && 
-        newPosition.height === currentPosition.height) {
-      console.log('🔍 [RESPONSIVE_DEBUG] Very small x-only change - might be responsive');
-      return true;
+    // Only mark as responsive if we're in edit mode
+    if (isEditMode) {
+      console.log('📱 [BREAKPOINT_DEBUG] Marking next layout change as responsive');
+      setIsResponsiveBreakpointChange(true);
+      
+      // Reset the flag after a short delay to ensure it only affects the immediate next layout change
+      setTimeout(() => {
+        console.log('📱 [BREAKPOINT_DEBUG] Resetting responsive flag');
+        setIsResponsiveBreakpointChange(false);
+      }, 100);
     }
-    
-    console.log('✅ [RESPONSIVE_DEBUG] Manual change detected - not responsive');
-    return false;
   };
 
   const handleLayoutChange = (layout: any[]) => {
@@ -521,9 +518,16 @@ export default function DashboardsPage() {
 
     console.log('🔄 [LAYOUT_DEBUG] handleLayoutChange called', {
       isEditMode,
+      isResponsiveBreakpointChange,
       layoutLength: layout.length,
       layout: layout
     });
+
+    // If this layout change comes from a responsive breakpoint change, ignore it
+    if (isResponsiveBreakpointChange) {
+      console.log('📱 [LAYOUT_DEBUG] Layout change from responsive breakpoint - ignoring');
+      return;
+    }
 
     layout.forEach((item, index) => {
       const widgetId = parseInt(item.i);
@@ -557,25 +561,10 @@ export default function DashboardsPage() {
         allWidgetsCount: allWidgets.length
       });
 
-      // Only add pending change if this is a manual change (not responsive)
+      // Add pending change for manual layout changes
       if (finalWidget && currentPosition) {
-        console.log('✅ [LAYOUT_DEBUG] Widget found with current position, checking if responsive');
+        console.log('✅ [LAYOUT_DEBUG] Widget found with current position');
         
-        // Check if this is a responsive change by comparing with expected responsive position
-        const isResponsiveChange = isResponsiveLayoutChange(widgetId, newPosition, currentPosition);
-        
-        console.log('🔍 [LAYOUT_DEBUG] Responsive change check result', {
-          widgetId,
-          isResponsiveChange,
-          newPosition,
-          currentPosition
-        });
-        
-        if (isResponsiveChange) {
-          console.log('⚠️ [LAYOUT_DEBUG] Responsive change detected, skipping pending change');
-          return;
-        }
-
         const positionChanged = 
           currentPosition.x !== newPosition.x ||
           currentPosition.y !== newPosition.y ||
@@ -1331,6 +1320,91 @@ export default function DashboardsPage() {
             }}
           />
         );
+      case 'area':
+        return (
+          <AreaChartWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Area chart edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Area chart delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+            tenantId={tenant?.id}
+            databaseId={1}
+          />
+        );
+      case 'scatter':
+        return (
+          <ScatterChartWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Scatter chart edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Scatter chart delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+            tenantId={tenant?.id}
+            databaseId={1}
+          />
+        );
+      case 'composed':
+        return (
+          <ComposedChartWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Composed chart edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Composed chart delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+            tenantId={tenant?.id}
+            databaseId={1}
+          />
+        );
+      case 'radar':
+        return (
+          <RadarChartWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Radar chart edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Radar chart delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+            tenantId={tenant?.id}
+            databaseId={1}
+          />
+        );
+      case 'interactive-pie':
+        return (
+          <InteractivePieChartWidget
+            widget={displayWidget}
+            isEditMode={isEditMode}
+            onEdit={() => {
+              console.log('Interactive pie chart edit clicked:', widget.id);
+              handleWidgetClick(widget);
+            }}
+            onDelete={() => {
+              console.log('Interactive pie chart delete clicked:', widget.id);
+              handleWidgetDelete(Number(widget.id));
+            }}
+            tenantId={tenant?.id}
+            databaseId={1}
+          />
+        );
       default:
         return (
           <div className="h-full flex items-center justify-center">
@@ -1421,7 +1495,7 @@ export default function DashboardsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         {selectedDashboard ? (
           <div className="space-y-6">
             {/* Dashboard Info */}
@@ -1521,6 +1595,7 @@ export default function DashboardsPage() {
                 isDraggable={isEditMode}
                 isResizable={isEditMode}
                 onLayoutChange={handleLayoutChange}
+                onBreakpointChange={handleBreakpointChange}
                 margin={[16, 16]}
                 containerPadding={[8, 8]}
                 useCSSTransforms={true}

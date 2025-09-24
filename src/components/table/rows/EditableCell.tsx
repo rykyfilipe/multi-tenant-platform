@@ -561,72 +561,23 @@ export function EditableCell({
 	// State pentru referințe invalide
 	const [hasInvalidReferences, setHasInvalidReferences] = useState(false);
 
-	// State pentru tabelul de referință
-	const [referenceTable, setReferenceTable] = useState<any>(null);
-	const [loading, setLoading] = useState(false);
-
 	// Găsim coloana pentru această celulă
 	const column = useMemo(() => 
 		columns?.find((col) => col.id === cell?.columnId), 
 		[columns, cell?.columnId]
 	);
 
-	// Fetch la tabelul de referință când este necesar
-	useEffect(() => {
-		let isMounted = true;
-		
-		const fetchReferenceTable = async () => {
-			if (!column?.referenceTableId || !tables || tables.length === 0) return;
-
-			// Găsim tabelul curent pentru a obține tenant și database info
-			const currentTable = tables.find((t) => t.id === column?.tableId);
-			if (!currentTable?.databaseId) return;
-
-			if (isMounted) setLoading(true);
-			
-			try {
-				const token = localStorage.getItem("token") || "";
-				const response = await fetch(
-					`/api/tenants/${currentTable.databaseId}/databases/${currentTable.databaseId}/tables/${column.referenceTableId}/rows?limit=1000&includeCells=true`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-							"Content-Type": "application/json",
-						},
-					},
-				);
-				
-				if (!isMounted) return;
-				
-				if (response.ok) {
-					const data = await response.json();
-					setReferenceTable(data);
-				} else if (response.status === 403) {
-					// Utilizatorul nu are permisiuni pentru tabelul de referință
-					setReferenceTable({ rows: [], columns: [] });
-				}
-			} catch (error) {
-				if (isMounted) {
-					console.error("Error fetching reference table:", error);
-					setReferenceTable({ rows: [], columns: [] });
-				}
-			} finally {
-				if (isMounted) setLoading(false);
-			}
-		};
-
-		fetchReferenceTable();
-		
-		return () => {
-			isMounted = false;
-		};
-	}, [column?.referenceTableId, tables, column?.tableId]);
-
 	// Hook pentru datele de referință
 	const { referenceData } = useOptimizedReferenceData(
 		tables || [],
 		column?.referenceTableId,
 	);
+
+	// Get reference table from tables array
+	const referenceTable = useMemo(() => {
+		if (!column?.referenceTableId || !tables) return null;
+		return tables.find((t) => t.id === column.referenceTableId) || null;
+	}, [column?.referenceTableId, tables]);
 
 	// Hook pentru permisiuni
 	const { permissions: userPermissions } = useCurrentUserPermissions();
@@ -883,120 +834,48 @@ export function EditableCell({
 		}
 		
 		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
-			// Pentru coloanele de referință, folosim datele deja fetch-uite din hooks-urile de sus
-			if (loading) {
-				return "Loading references...";
+			// Pentru coloanele de referință, folosim datele din hook
+			const options = referenceData[column.referenceTableId] ?? [];
+			
+			if (options.length === 0) {
+				return "No reference data available";
 			}
 			
-			if (referenceTable && referenceTable.columns) {
-				const refPrimaryKeyColumn = referenceTable.columns.find(
-					(col: any) => col.primary,
-				);
+			// Handle reference values (always multiple)
+			// Use normalize function for consistent array handling
+			const referenceValues = normalizeReferenceValue(value, true);
 
-				if (refPrimaryKeyColumn && referenceTable.rows) {
-					// Handle reference values (always multiple)
-					// Use normalize function for consistent array handling
-					const referenceValues = normalizeReferenceValue(value, true);
+			if (referenceValues.length === 0) {
+				return "Double-click to add values";
+			}
+			
+			// Find matching options for the selected values
+			const selectedOptions = options.filter(option => 
+				referenceValues.some(refValue => 
+					option.primaryKeyValue?.toString() === refValue?.toString()
+				)
+			);
 
-					if (referenceValues.length === 0) {
-						return "Double-click to add values";
-					}
-					
-					// Pentru multiple references, construim display value cu toate coloanele
-					const displayRows = referenceValues.map((refValue: any) => {
-						// Căutăm rândul cu cheia primară specificată
-						const referenceRow = referenceTable.rows.find((refRow: any) => {
-							// Verificăm că refRow există și are celule
-							if (!refRow || !refRow.cells || !Array.isArray(refRow.cells))
-								return false;
+			if (selectedOptions.length === 0) {
+				// No matching options found - show raw values
+				return referenceValues.join(", ");
+			}
 
-							const refPrimaryKeyCell = refRow.cells.find(
-								(refCell: any) => refCell.columnId === refPrimaryKeyColumn.id,
-							);
-							return refPrimaryKeyCell && refPrimaryKeyCell.value === refValue;
-						});
-
-						if (referenceRow) {
-							// Construim display value cu toate coloanele relevante
-							const displayParts: string[] = [];
-							let addedColumns = 0;
-							const maxColumns = 3; // Limitează la 3 coloane pentru afișare
-
-							referenceTable.columns.forEach((col: any) => {
-								if (addedColumns >= maxColumns) return;
-
-								const cell = referenceRow.cells.find(
-									(c: any) => c.columnId === col.id,
-								);
-								if (cell?.value != null && cell.value.toString().trim() !== "") {
-									let formattedValue = cell.value.toString().trim();
-
-									// Trunchiere pentru valori lungi
-									if (formattedValue.length > 15) {
-										formattedValue = formattedValue.substring(0, 15) + "...";
-									}
-
-									// Formatare specială pentru tipuri de date
-									if (col.type === "date") {
-										try {
-											formattedValue = new Date(formattedValue).toLocaleDateString("ro-RO");
-										} catch {
-											// fallback la valoarea brută
-										}
-									} else if (col.type === "boolean") {
-										formattedValue = formattedValue === "true" ? "✓" : "✗";
-									}
-
-									if (col.primary) {
-										displayParts.push(formattedValue);
-									} else {
-										// Pentru coloanele non-primary, afișăm numele coloanei + valoarea
-										const columnName = col.name.length > 8 
-											? col.name.substring(0, 8) + "..." 
-											: col.name;
-										displayParts.push(`${columnName}: ${formattedValue}`);
-									}
-									addedColumns++;
-								}
-							});
-
-							return displayParts.length 
-								? displayParts.join(" • ") 
-								: `Row #${referenceRow.id}`;
-						} else {
-							return `⚠️ Invalid: ${refValue}`;
-						}
-					});
-
-					// Pentru multiple references, afișăm primul rând și contorul
-					if (referenceValues.length === 1) {
-						return displayRows[0];
-					} else {
-						// Trunchiere pentru afișare compactă
-						const firstRow = displayRows[0];
-						const truncatedFirstRow = firstRow.length > 30 
-							? firstRow.substring(0, 30) + "..." 
-							: firstRow;
-						return `${truncatedFirstRow} +${referenceValues.length - 1} more`;
-					}
-				} else {
-					// Nu există cheie primară în tabelul de referință
-					return `⚠️ No primary key in ${referenceTable.name}`;
-				}
+			// Pentru multiple references, afișăm primul rând și contorul
+			if (selectedOptions.length === 1) {
+				return selectedOptions[0].displayValue;
 			} else {
-				// Tabelul de referință nu există - afișăm valoarea normal
-				const referenceValues = normalizeReferenceValue(value, true);
-				if (referenceValues.length === 0) {
-					return "Double-click to add values";
-				} else {
-					// Afișăm doar cheile primare separate prin virgulă
-					return referenceValues.join(", ");
-				}
+				// Trunchiere pentru afișare compactă
+				const firstOption = selectedOptions[0].displayValue;
+				const truncatedFirstOption = firstOption.length > 30 
+					? firstOption.substring(0, 30) + "..." 
+					: firstOption;
+				return `${truncatedFirstOption} +${selectedOptions.length - 1} more`;
 			}
 		}
 		
 		return String(value);
-	}, [value, column?.type, column?.referenceTableId, loading, referenceTable, t]);
+	}, [value, column?.type, column?.referenceTableId, referenceData, t]);
 
 	// Determinăm stilul în funcție de tipul de afișare și starea pending
 	const displayStyle = useMemo(() => {

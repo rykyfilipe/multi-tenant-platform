@@ -154,14 +154,32 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 
 	// Generate colors for PieChart using premium color palettes
 	const colors = (() => {
+		console.log('[PieChart] Color generation debug:', {
+			hasCustomColors: !!(options.colors && Array.isArray(options.colors) && options.colors.length > 0),
+			customColors: options.colors,
+			dataLength: processedData.length,
+			processedDataSample: processedData.slice(0, 2)
+		});
+		
 		// If custom colors are provided, use them
 		if (options.colors && Array.isArray(options.colors) && options.colors.length > 0) {
+			console.log('[PieChart] Using custom colors:', options.colors);
 			return options.colors;
 		}
 		
 		// Generate colors based on data length using selected palette
 		const colorsNeeded = Math.max(processedData.length, 1);
-		const selectedPalette = (options as any).colorPalette || 'luxury';
+		
+		// Check multiple sources for colorPalette configuration
+		const selectedPalette = (options as any).colorPalette || 
+		                       (config as any).colorPalette || 
+		                       'business'; // Changed default to 'business'
+		
+		console.log('[PieChart] Palette selection:', {
+			optionsColorPalette: (options as any).colorPalette,
+			configColorPalette: (config as any).colorPalette,
+			selectedPalette
+		});
 		
 		// Generate colors using the selected palette
 		const generatedColors = generateChartColors(colorsNeeded, selectedPalette);
@@ -235,14 +253,24 @@ export default function PieChartWidget({ widget, isEditMode, onEdit, onDelete, t
 								stroke={(options as any).stroke || '#ffffff'}
 								strokeWidth={options.strokeWidth || 2}
 							>
-								{(processedData ?? []).map((_, index) => (
-									<Cell 
-										key={`cell-${index}`} 
-										fill={colors[index % colors.length]}
-										stroke={(options as any).stroke || '#ffffff'}
-										strokeWidth={options.strokeWidth || 2}
-									/>
-								))}
+								{(processedData ?? []).map((item, index) => {
+									const color = colors[index % colors.length];
+									console.log(`[PieChart] Cell ${index}:`, {
+										item,
+										color,
+										colorIndex: index % colors.length,
+										totalColors: colors.length
+									});
+									
+									return (
+										<Cell 
+											key={`cell-${index}`} 
+											fill={color}
+											stroke={(options as any).stroke || '#ffffff'}
+											strokeWidth={options.strokeWidth || 2}
+										/>
+									);
+								})}
 							</Pie>
 						</PieChart>
 					</ResponsiveContainer>

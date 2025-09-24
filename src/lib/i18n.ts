@@ -70,13 +70,6 @@ export const translations: Translations = {
 		fr: "Paramètres",
 		de: "Einstellungen",
 	},
-	"nav.backup": {
-		en: "Backup & Restore",
-		ro: "Backup și Restaurare",
-		es: "Respaldo y Restauración",
-		fr: "Sauvegarde et Restauration",
-		de: "Backup und Wiederherstellung",
-	},
 
 	// Common actions
 	"common.save": {
@@ -6359,20 +6352,6 @@ export const translations: Translations = {
 		es: "Conéctate con herramientas empresariales populares incluyendo CRM, marketing por email, procesadores de pago y proveedores de almacenamiento en la nube.",
 		fr: "Connectez-vous avec des outils d'entreprise populaires incluant CRM, marketing par email, processeurs de paiement et fournisseurs de stockage cloud.",
 		de: "Verbinden Sie sich mit beliebten Geschäftstools einschließlich CRM, E-Mail-Marketing, Zahlungsabwicklern und Cloud-Speicheranbietern.",
-	},
-	"landing.features.backup.title": {
-		en: "Automated Backup & Recovery",
-		ro: "Backup și recuperare automată",
-		es: "Respaldo y recuperación automatizada",
-		fr: "Sauvegarde et récupération automatisées",
-		de: "Automatisierte Sicherung und Wiederherstellung",
-	},
-	"landing.features.backup.description": {
-		en: "Daily automated backups with 30-day retention, point-in-time recovery, and data integrity verification.",
-		ro: "Backup-uri automate zilnice cu păstrare de 30 de zile, recuperare punctuală și verificare integrității datelor.",
-		es: "Respaldos automáticos diarios con retención de 30 días, recuperación puntual y verificación de integridad de datos.",
-		fr: "Sauvegardes automatisées quotidiennes avec rétention de 30 jours, récupération ponctuelle et vérification d'intégrité des données.",
-		de: "Tägliche automatisierte Backups mit 30-tägiger Aufbewahrung, punktgenaue Wiederherstellung und Datenintegritätsprüfung.",
 	},
 
 	// Benefits array

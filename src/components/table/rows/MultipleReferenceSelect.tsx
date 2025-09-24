@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,10 +45,20 @@ export function MultipleReferenceSelect({
 }: MultipleReferenceSelectProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
+	const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 	const [highlightedIndex, setHighlightedIndex] = useState(-1);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// Debounce search term for better performance
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearchTerm(searchTerm);
+		}, 150); // 150ms delay for responsive feel
+
+		return () => clearTimeout(timer);
+	}, [searchTerm]);
 
 	// Transform options to include primary key value
 	const transformedOptions: ReferenceOption[] = useMemo(() => {
@@ -58,17 +68,18 @@ export function MultipleReferenceSelect({
 		}));
 	}, [options]);
 
-	// Filter options based on search term
+	// Filter options based on search term - optimistic filtering with debounce
 	const filteredOptions = useMemo(() => {
-		if (!searchTerm.trim()) return transformedOptions;
+		if (!debouncedSearchTerm.trim()) return transformedOptions;
 
-		const lowerSearchTerm = searchTerm.toLowerCase();
+		const lowerSearchTerm = debouncedSearchTerm.toLowerCase();
 		return transformedOptions.filter(
 			(option) =>
 				option.displayValue.toLowerCase().includes(lowerSearchTerm) ||
-				option.id?.toString().toLowerCase().includes(lowerSearchTerm),
+				option.id?.toString().toLowerCase().includes(lowerSearchTerm) ||
+				option.primaryKeyValue?.toString().toLowerCase().includes(lowerSearchTerm),
 		);
-	}, [transformedOptions, searchTerm]);
+	}, [transformedOptions, debouncedSearchTerm]);
 
 	// Handle multiple vs single selection
 	const selectedValues = useMemo(() => {

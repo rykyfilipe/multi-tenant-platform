@@ -77,7 +77,7 @@ export const useOptimizedReferenceData = (
 			const response = await fetch(
 				`/api/tenants/${tenant!.id}/databases/${
 					selectedDatabase!.id
-				}/tables/${tableId}/rows?limit=1000`,
+				}/tables/${tableId}/rows?limit=1000&includeCells=true`,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -92,6 +92,14 @@ export const useOptimizedReferenceData = (
 
 			const responseData = await response.json();
 
+			console.log("🔍 useOptimizedReferenceData - API Response structure:", {
+				tableId,
+				isArray: Array.isArray(responseData),
+				hasRows: responseData && typeof responseData === "object" && Array.isArray(responseData.rows),
+				hasData: responseData && typeof responseData === "object" && Array.isArray(responseData.data),
+				responseData: responseData
+			});
+
 			// Verificăm structura response-ului și extragem rândurile
 			let rowsData: Row[] = [];
 			if (Array.isArray(responseData)) {
@@ -105,6 +113,12 @@ export const useOptimizedReferenceData = (
 					rowsData = responseData.data;
 				}
 			}
+
+			console.log("🔍 useOptimizedReferenceData - Extracted rows data:", {
+				tableId,
+				rowsCount: rowsData.length,
+				firstRow: rowsData[0] || null
+			});
 
 			// Verificăm că avem rânduri valide
 			if (Array.isArray(rowsData) && rowsData.length > 0) {
@@ -146,7 +160,7 @@ export const useOptimizedReferenceData = (
 						const response = await fetch(
 							`/api/tenants/${tenant!.id}/databases/${
 								selectedDatabase!.id
-							}/tables/${tableId}/rows?limit=1000`,
+							}/tables/${tableId}/rows?limit=1000&includeCells=true`,
 							{
 								headers: {
 									Authorization: `Bearer ${token}`,
@@ -157,6 +171,14 @@ export const useOptimizedReferenceData = (
 
 						if (response.ok) {
 							const responseData = await response.json();
+
+							console.log("🔍 useOptimizedReferenceData - Batch API Response structure:", {
+								tableId,
+								isArray: Array.isArray(responseData),
+								hasRows: responseData && typeof responseData === "object" && Array.isArray(responseData.rows),
+								hasData: responseData && typeof responseData === "object" && Array.isArray(responseData.data),
+								responseData: responseData
+							});
 
 							// Verificăm structura response-ului și extragem rândurile
 							let rowsData: Row[] = [];
@@ -171,6 +193,12 @@ export const useOptimizedReferenceData = (
 									rowsData = responseData.data;
 								}
 							}
+
+							console.log("🔍 useOptimizedReferenceData - Batch extracted rows data:", {
+								tableId,
+								rowsCount: rowsData.length,
+								firstRow: rowsData[0] || null
+							});
 
 							// Verificăm că avem rânduri valide
 							if (Array.isArray(rowsData) && rowsData.length > 0) {
@@ -275,7 +303,7 @@ export const useOptimizedReferenceData = (
 						: `Row #${row.id || "unknown"}`;
 
 					options.push({
-						id: row.id || 0,
+						id: typeof row.id === 'string' ? parseInt(row.id) : (row.id || 0),
 						displayValue,
 						// Pentru referințe, folosim valoarea reală a coloanei primary ca primaryKeyValue
 						primaryKeyValue: primaryKeyValue || row.id,

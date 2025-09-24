@@ -19,7 +19,6 @@ import {
 	Receipt,
 	Webhook,
 	Puzzle,
-	HardDrive,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import AuthModal from "@/components/auth/AuthModal";
@@ -142,11 +141,6 @@ const DataHubLandingPage = () => {
 			icon: <Zap className='w-6 h-6' />,
 			title: t("landing.features.realTimeData.title"),
 			description: t("landing.features.realTimeData.description"),
-		},
-		{
-			icon: <HardDrive className='w-6 h-6' />,
-			title: t("landing.features.backup.title"),
-			description: t("landing.features.backup.description"),
 		},
 		{
 			icon: <Shield className='w-6 h-6' />,

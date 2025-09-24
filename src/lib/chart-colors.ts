@@ -99,20 +99,28 @@ export function generateChartColors(
   count: number, 
   palette: ColorPalette = 'business'
 ): string[] {
+  console.log(`[generateChartColors] Requested ${count} colors from palette '${palette}'`);
+  
   const colors = CHART_COLOR_PALETTES[palette];
+  console.log(`[generateChartColors] Base palette has ${colors.length} colors:`, colors);
+  
   const result: string[] = [];
   
   for (let i = 0; i < count; i++) {
     if (i < colors.length) {
       result.push(colors[i]);
+      console.log(`[generateChartColors] Color ${i}: Using base color ${colors[i]}`);
     } else {
       // Generate additional colors by cycling through the palette
       const baseColor = colors[i % colors.length];
       const variation = Math.floor(i / colors.length);
-      result.push(generateColorVariation(baseColor, variation));
+      const variationColor = generateColorVariation(baseColor, variation);
+      result.push(variationColor);
+      console.log(`[generateChartColors] Color ${i}: Generated variation from ${baseColor} (variation ${variation}) -> ${variationColor}`);
     }
   }
   
+  console.log(`[generateChartColors] Final result:`, result);
   return result;
 }
 
@@ -124,13 +132,23 @@ function generateColorVariation(baseColor: string, variation: number): string {
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
   
-  // Apply variation (darken or lighten)
-  const factor = 0.8 + (variation * 0.2);
-  const newR = Math.round(r * factor);
-  const newG = Math.round(g * factor);
-  const newB = Math.round(b * factor);
+  // Apply variation with better contrast
+  // For variation 0: slightly lighter (factor 1.1)
+  // For variation 1: slightly darker (factor 0.7)
+  // For variation 2: much darker (factor 0.5)
+  // For variation 3: much lighter (factor 1.3)
+  const factors = [1.1, 0.7, 0.5, 1.3, 0.9, 1.2];
+  const factor = factors[variation % factors.length];
   
-  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  const newR = Math.min(255, Math.max(0, Math.round(r * factor)));
+  const newG = Math.min(255, Math.max(0, Math.round(g * factor)));
+  const newB = Math.min(255, Math.max(0, Math.round(b * factor)));
+  
+  const result = `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  
+  console.log(`[ColorVariation] Base: ${baseColor}, Variation: ${variation}, Factor: ${factor}, Result: ${result}`);
+  
+  return result;
 }
 
 // Get a single color by index

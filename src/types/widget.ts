@@ -84,6 +84,11 @@ export interface PieChartConfig {
   showLegend?: boolean;
   showPercentage?: boolean;
   innerRadius?: number;
+  outerRadius?: number;
+  stroke?: string;
+  strokeWidth?: number;
+  paddingAngle?: number;
+  showDataSummary?: boolean;
   style?: any;
 }
 

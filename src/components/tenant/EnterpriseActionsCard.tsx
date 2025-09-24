@@ -84,13 +84,6 @@ export function EnterpriseActionsCard({ onActionClick }: EnterpriseActionsCardPr
 						<Button
 							variant="outline"
 							className="w-full gap-2 justify-start"
-							onClick={() => onActionClick?.("backup")}>
-							<Database className="w-4 h-4" />
-							Data Backup & Recovery
-						</Button>
-						<Button
-							variant="outline"
-							className="w-full gap-2 justify-start"
 							onClick={() => onActionClick?.("security")}>
 							<Shield className="w-4 h-4" />
 							Security Settings
