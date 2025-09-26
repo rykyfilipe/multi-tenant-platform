@@ -864,8 +864,16 @@ export function EditableCell({
 				)
 			);
 
+			console.log("🔍 EditableCell - Matching debug:", {
+				referenceValues,
+				optionsIds: options.map(opt => opt.id),
+				selectedOptionsCount: selectedOptions.length,
+				selectedOptions: selectedOptions.map(opt => ({ id: opt.id, displayValue: opt.displayValue }))
+			});
+
 			if (selectedOptions.length === 0) {
 				// No matching options found - show raw values
+				console.log("🔍 EditableCell - No matching options found, showing raw values:", referenceValues);
 				return referenceValues.join(", ");
 			}
 
