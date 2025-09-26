@@ -10,6 +10,7 @@ import { PendingChangesBadge } from "./components/PendingChangesBadge";
 import { ConflictDialog } from "./components/ConflictDialog";
 import { ManualMergeDialog } from "./components/ManualMergeDialog";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
+import { WidgetToolbar } from "./components/WidgetToolbar";
 import {
   WidgetEntity,
   WidgetConfig,
@@ -150,6 +151,26 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     setActiveTab("drafts");
   };
 
+  const handleAddWidget = async (kind: WidgetKind) => {
+    try {
+      const definition = getWidgetDefinition(kind);
+      const defaultConfig = definition.defaultConfig;
+      
+      // Find next available position
+      const maxY = Math.max(...widgetList.map(w => w.position.y + w.position.h), 0);
+      
+      await api.createWidget({
+        kind,
+        title: `${kind} Widget`,
+        position: { x: 0, y: maxY, w: 4, h: 4 },
+        config: defaultConfig,
+        actorId,
+      });
+    } catch (error) {
+      console.error("Failed to create widget:", error);
+    }
+  };
+
   const handleApplyDraft = async (draftId: number) => {
     const response = await api.applyDraft(draftId, actorId);
     if (response.conflicts.length === 0) {
@@ -282,6 +303,8 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       </TabsList>
       <TabsContent value="canvas">
         <div className="space-y-4">
+          <WidgetToolbar onAddWidget={handleAddWidget} />
+          
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               <PendingChangesBadge />

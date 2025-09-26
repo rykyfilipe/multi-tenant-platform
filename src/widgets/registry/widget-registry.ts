@@ -1,6 +1,7 @@
 import { WidgetKind } from "@/generated/prisma";
 import { chartWidgetConfigSchema } from "../schemas/chart";
 import { tableWidgetConfigSchema } from "../schemas/table";
+import { baseWidgetConfigSchema } from "../schemas/base";
 import { z } from "zod";
 import { ChartWidgetEditor } from "../ui/editors/ChartWidgetEditor";
 import { TableWidgetEditor } from "../ui/editors/TableWidgetEditor";
@@ -207,28 +208,11 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   },
   [WidgetKind.CUSTOM]: {
     kind: WidgetKind.CUSTOM,
-    schema: chartWidgetConfigSchema,
-    defaultConfig: chartWidgetConfigSchema.parse({
-      settings: {
-        chartType: "bar",
-        xAxis: "dimension",
-        yAxis: "value",
-        refreshInterval: 60,
-        valueFormat: "number",
-      },
-      style: {
-        theme: "premium-light",
-        showLegend: true,
-        showGrid: true,
-      },
-      data: {
-        tableId: "default_custom",
-        filters: [],
-        mappings: {
-          x: "dimension",
-          y: "value",
-        },
-      },
+    schema: baseWidgetConfigSchema,
+    defaultConfig: baseWidgetConfigSchema.parse({
+      settings: {},
+      style: {},
+      data: {},
     }),
     editor: ChartWidgetEditor,
     renderer: ChartWidgetRenderer,

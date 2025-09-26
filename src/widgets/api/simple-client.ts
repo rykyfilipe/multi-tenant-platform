@@ -5,6 +5,7 @@ import type {
   CreateDraftParams,
   UpdateDraftParams,
 } from "@/widgets/domain/dto";
+import { WidgetKind } from "@/generated/prisma";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 
 export type WidgetsListResponse = {
@@ -133,6 +134,37 @@ export class WidgetsApiClient {
     if (!res.ok) throw new Error("Failed to delete draft");
   }
 
+  async createWidget(
+    payload: {
+      kind: WidgetKind;
+      title?: string;
+      description?: string;
+      position?: { x: number; y: number; w: number; h: number };
+      config?: any;
+      actorId: number;
+    }
+  ): Promise<SavePendingResponse<WidgetConfig>> {
+    const res = await fetch(
+      `/api/v1/tenants/${this.tenantId}/dashboards/${this.dashboardId}/widgets`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": payload.actorId.toString(),
+        },
+        body: JSON.stringify({
+          kind: payload.kind,
+          title: payload.title,
+          description: payload.description,
+          position: payload.position,
+          config: payload.config,
+        }),
+      }
+    );
+    if (!res.ok) throw new Error("Failed to create widget");
+    return (await res.json()) as SavePendingResponse<WidgetConfig>;
+  }
+
   async savePending(payload: Omit<SavePendingRequest, "tenantId" | "dashboardId">): Promise<SavePendingResponse> {
     const res = await fetch(
       `/api/v1/tenants/${this.tenantId}/dashboards/${this.dashboardId}/widgets/1`,
@@ -259,6 +291,31 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     }
   };
 
+  const createWidget = async (payload: {
+    kind: WidgetKind;
+    title?: string;
+    description?: string;
+    position?: { x: number; y: number; w: number; h: number };
+    config?: any;
+    actorId: number;
+  }) => {
+    try {
+      const response = await apiClient.createWidget(payload);
+      
+      if (response.conflicts.length) {
+        setConflicts(response.conflicts);
+      } else {
+        // Reload widgets after successful creation
+        await loadWidgets(true);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error("Failed to create widget:", error);
+      throw error;
+    }
+  };
+
   const savePending = async (payload: Omit<SavePendingRequest, "tenantId" | "dashboardId">) => {
     try {
       const response = await apiClient.savePending(payload);
@@ -286,6 +343,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     applyDraft,
     resolveDraftConflict,
     deleteDraft,
+    createWidget,
     savePending,
   };
 };
