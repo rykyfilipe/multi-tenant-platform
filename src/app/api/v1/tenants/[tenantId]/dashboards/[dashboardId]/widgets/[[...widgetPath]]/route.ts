@@ -42,22 +42,35 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { tenantId: string; dashboardId: string; widgetPath?: string[] } }
 ) {
-  assertWidgetsV2Enabled();
+  try {
+    console.log('🚀 [DEBUG] GET request started');
+    console.log('📋 [DEBUG] Raw params:', params);
+    
+    assertWidgetsV2Enabled();
 
-  const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
-  const pathSegments = widgetPathSchema.parse(params.widgetPath);
+    console.log('🔍 [DEBUG] Parsing tenantDashboardSchema...');
+    const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
+    console.log('✅ [DEBUG] tenantDashboardSchema parsed:', { tenantId, dashboardId });
+    
+    console.log('🔍 [DEBUG] Parsing widgetPathSchema...');
+    const pathSegments = widgetPathSchema.parse(params.widgetPath);
+    console.log('✅ [DEBUG] widgetPathSchema parsed:', pathSegments);
 
   if (isDraftRequest(pathSegments)) {
     console.log('🎯 [DEBUG] Processing drafts list request');
+    console.log('🔍 [DEBUG] Calling widgetService.listDrafts...');
     const drafts = await widgetService.listDrafts({ tenantId, dashboardId });
+    console.log('✅ [DEBUG] listDrafts result:', typeof drafts, drafts);
     return NextResponse.json(drafts);
   }
 
+  console.log('🔍 [DEBUG] Processing search params...');
   const kindsParam = request.nextUrl.searchParams
     .getAll("kind")
     .map((value) => value.toUpperCase())
     .filter((value) => value in WidgetKind) as (keyof typeof WidgetKind)[];
 
+  console.log('🔍 [DEBUG] Parsing listWidgetsParamsSchema...');
   const searchParams = listWidgetsParamsSchema.partial({ tenantId: true, dashboardId: true }).parse({
     cursor: request.nextUrl.searchParams.get("cursor")
       ? Number(request.nextUrl.searchParams.get("cursor"))
@@ -68,10 +81,17 @@ export async function GET(
     includeConfig: request.nextUrl.searchParams.get("includeConfig") === "true",
     kinds: kindsParam.map((value) => WidgetKind[value]),
   });
+  console.log('✅ [DEBUG] searchParams parsed:', searchParams);
 
   if (pathSegments && pathSegments.length === 1) {
+    console.log('🎯 [DEBUG] Processing single widget request');
+    console.log('🔍 [DEBUG] Parsing widgetId...');
     const widgetId = widgetIdSchema.parse(pathSegments[0]);
+    console.log('✅ [DEBUG] widgetId parsed:', widgetId);
+    
+    console.log('🔍 [DEBUG] Calling widgetService.get...');
     const widget = await widgetService.get({ tenantId, dashboardId, widgetId });
+    console.log('✅ [DEBUG] widget result:', typeof widget, widget);
 
     return NextResponse.json({ widget });
   }
@@ -85,6 +105,7 @@ export async function GET(
     kinds: searchParams.kinds,
   });
   
+  console.log('🔍 [DEBUG] Calling widgetService.list...');
   const widgets = await widgetService.list({
     tenantId,
     dashboardId,
@@ -94,18 +115,37 @@ export async function GET(
     kinds: searchParams.kinds,
   });
   
+  console.log('✅ [DEBUG] widgets result:', typeof widgets, widgets);
   console.log('📋 [DEBUG] Widgets loaded successfully:', widgets.items?.length || 0);
   return NextResponse.json(widgets);
+  } catch (error) {
+    console.error('❌ [ERROR] GET request failed:', error);
+    console.error('❌ [ERROR] Error details:', {
+      name: (error as Error)?.name,
+      message: (error as Error)?.message,
+      stack: (error as Error)?.stack,
+    });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { tenantId: string; dashboardId: string; widgetPath?: string[] } }
 ) {
-  assertWidgetsV2Enabled();
+  try {
+    console.log('🚀 [DEBUG] POST request started');
+    console.log('📋 [DEBUG] Raw params:', params);
+    
+    assertWidgetsV2Enabled();
 
-  const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
-  const pathSegments = widgetPathSchema.parse(params.widgetPath);
+    console.log('🔍 [DEBUG] Parsing tenantDashboardSchema...');
+    const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
+    console.log('✅ [DEBUG] tenantDashboardSchema parsed:', { tenantId, dashboardId });
+    
+    console.log('🔍 [DEBUG] Parsing widgetPathSchema...');
+    const pathSegments = widgetPathSchema.parse(params.widgetPath);
+    console.log('✅ [DEBUG] widgetPathSchema parsed:', pathSegments);
 
   if (isDraftRequest(pathSegments)) {
     console.log('🎯 [DEBUG] Processing draft creation request');
@@ -138,29 +178,48 @@ export async function POST(
   }
 
   if (isSaveEndpoint(pathSegments)) {
+    console.log('🎯 [DEBUG] Processing save endpoint request');
+    console.log('🔍 [DEBUG] Getting request body...');
     const requestBody = await request.json();
+    console.log('📦 [DEBUG] Request body received:', JSON.stringify(requestBody, null, 2));
+    
+    console.log('🔍 [DEBUG] Parsing savePendingRequestPayloadSchema...');
     const data = savePendingRequestPayloadSchema.parse(requestBody);
+    console.log('✅ [DEBUG] savePendingRequestPayloadSchema parsed:', data);
+    
+    console.log('🔍 [DEBUG] Calling widgetService.savePending...');
     const response = await widgetService.savePending({
       tenantId,
       dashboardId,
       actorId: data.actorId,
       operations: data.operations as DraftOperation[],
     });
+    console.log('✅ [DEBUG] savePending result:', typeof response, response);
 
     return NextResponse.json(response);
   }
 
+  console.log('🎯 [DEBUG] Processing widget creation request');
+  console.log('🔍 [DEBUG] Getting raw request body...');
   const rawBody = await request.json();
+  console.log('📦 [DEBUG] Raw body received:', JSON.stringify(rawBody, null, 2));
 
+  console.log('🔍 [DEBUG] Parsing createWidgetPayloadSchema...');
   const data = createWidgetPayloadSchema.parse({
     tenantId,
     dashboardId,
     ...rawBody,
   });
+  console.log('✅ [DEBUG] createWidgetPayloadSchema parsed:', data);
+  
+  console.log('🔍 [DEBUG] Getting widget definition...');
   const definition = getWidgetDefinition(data.kind || WidgetKind.CUSTOM);
+  console.log('✅ [DEBUG] Widget definition:', definition);
 
   const actorId = getActorId(request);
+  console.log('✅ [DEBUG] Actor ID:', actorId);
 
+  console.log('🔍 [DEBUG] Calling widgetService.savePending for widget creation...');
   const result = await widgetService.savePending({
     tenantId,
     dashboardId,
@@ -186,8 +245,18 @@ export async function POST(
       },
     ],
   });
+  console.log('✅ [DEBUG] savePending result:', typeof result, result);
 
   return NextResponse.json(result, { status: 201 });
+  } catch (error) {
+    console.error('❌ [ERROR] POST request failed:', error);
+    console.error('❌ [ERROR] Error details:', {
+      name: (error as Error)?.name,
+      message: (error as Error)?.message,
+      stack: (error as Error)?.stack,
+    });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 export async function PATCH(
