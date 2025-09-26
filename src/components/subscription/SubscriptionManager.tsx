@@ -539,66 +539,6 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 				</CardContent>
 			</Card>
 
-			{/* Usage Statistics */}
-			<Card className='border-border/20 bg-card/50 backdrop-blur-sm'>
-				<CardHeader>
-					<CardTitle className='flex items-center gap-2'>
-						<BarChart3 className='w-5 h-5' />
-						Usage Statistics
-					</CardTitle>
-					<CardDescription>
-						Monitor your current usage against plan limits
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-						<div className='space-y-3'>
-							<div className='flex items-center justify-between'>
-								<span className='text-sm font-medium text-muted-foreground'>
-									Databases
-								</span>
-								<span className='text-sm text-foreground'>
-									{currentCounts?.databases || 0}/{planLimits.databases}
-								</span>
-							</div>
-							<Progress 
-								value={getUsagePercentage('databases')} 
-								className='h-2' 
-							/>
-						</div>
-
-						<div className='space-y-3'>
-							<div className='flex items-center justify-between'>
-								<span className='text-sm font-medium text-muted-foreground'>
-									Tables
-								</span>
-								<span className='text-sm text-foreground'>
-									{currentCounts?.tables || 0}/{planLimits.tables}
-								</span>
-							</div>
-							<Progress 
-								value={getUsagePercentage('tables')} 
-								className='h-2' 
-							/>
-						</div>
-
-						<div className='space-y-3'>
-							<div className='flex items-center justify-between'>
-								<span className='text-sm font-medium text-muted-foreground'>
-									Users
-								</span>
-								<span className='text-sm text-foreground'>
-									{currentCounts?.users || 0}/{planLimits.users}
-								</span>
-							</div>
-							<Progress 
-								value={getUsagePercentage('users')} 
-								className='h-2' 
-							/>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
 
 			{/* Billing History */}
 			<BillingHistory customerId={subscription.stripeCustomerId} />

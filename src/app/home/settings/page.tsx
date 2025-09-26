@@ -285,12 +285,6 @@ function Page() {
 												description: t("settings.subscription.adminSubtitle"),
 											},
 											{
-												id: "usage",
-												label: t("settings.tabs.usage"),
-												icon: BarChart3,
-												description: t("settings.usage.subtitle"),
-											},
-											{
 												id: "privacy",
 												label: t("settings.tabs.privacy"),
 												icon: Shield,
@@ -483,110 +477,6 @@ function Page() {
 								</div>
 							</PremiumTabContentWrapper>
 
-							{/* Usage Tab */}
-							<PremiumTabContentWrapper isActive={activeTab === "usage"}>
-								<div className='space-y-6'>
-									<div>
-										<h2 className='text-2xl font-semibold text-foreground mb-2'>
-											{t("settings.usage.title")}
-										</h2>
-										<p className='text-muted-foreground'>
-											{t("settings.usage.subtitle")}
-										</p>
-									</div>
-
-									<Card className='border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-										<CardHeader>
-											<CardTitle className='flex items-center gap-2'>
-												<div className='p-2 bg-primary/10 rounded-xl'>
-													<BarChart3 className='w-5 h-5 text-primary' />
-												</div>
-												{t("settings.usage.resourceUsage.title")}
-											</CardTitle>
-											<CardDescription>
-												{t("settings.usage.resourceUsage.description")}
-											</CardDescription>
-										</CardHeader>
-										<CardContent>
-											<PlanLimitsDisplay />
-										</CardContent>
-									</Card>
-
-									{/* Quick Stats */}
-									<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-										<Card className='border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-											<CardContent className='p-6'>
-												<div className='flex items-center gap-3'>
-													<div className='p-2 bg-primary/10 rounded-lg'>
-														<Database className='w-5 h-5 text-primary' />
-													</div>
-													<div>
-														<p className='text-sm text-muted-foreground'>
-															{t("settings.usage.databases")}
-														</p>
-														<p className='text-2xl font-bold text-foreground'>
-															{dashboardLoading
-																? "..."
-																: `${
-																		dashboardData?.stats.totalDatabases || 0
-																  }/${
-																		dashboardData?.usageData?.databases
-																			?.total || "∞"
-																  }`}
-														</p>
-													</div>
-												</div>
-											</CardContent>
-										</Card>
-
-										<Card className='border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-											<CardContent className='p-6'>
-												<div className='flex items-center gap-3'>
-													<div className='p-2 bg-primary/10 rounded-lg'>
-														<Table className='w-5 h-5 text-primary' />
-													</div>
-													<div>
-														<p className='text-sm text-muted-foreground'>
-															{t("settings.usage.tables")}
-														</p>
-														<p className='text-2xl font-bold text-foreground'>
-															{dashboardLoading
-																? "..."
-																: `${dashboardData?.stats.totalTables || 0}/${
-																		dashboardData?.usageData?.tables?.total ||
-																		"∞"
-																  }`}
-														</p>
-													</div>
-												</div>
-											</CardContent>
-										</Card>
-
-										<Card className='border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-											<CardContent className='p-6'>
-												<div className='flex items-center gap-3'>
-													<div className='p-2 bg-primary/10 rounded-lg'>
-														<Users className='w-5 h-5 text-primary' />
-													</div>
-													<div>
-														<p className='text-sm text-muted-foreground'>
-															{t("settings.usage.users")}
-														</p>
-														<p className='text-2xl font-bold text-foreground'>
-															{dashboardLoading
-																? "..."
-																: `${dashboardData?.stats.totalUsers || 0}/${
-																		dashboardData?.usageData?.users?.total ||
-																		"∞"
-																  }`}
-														</p>
-													</div>
-												</div>
-											</CardContent>
-										</Card>
-									</div>
-								</div>
-							</PremiumTabContentWrapper>
 
 							{/* Privacy Tab */}
 							<PremiumTabContentWrapper isActive={activeTab === "privacy"}>
