@@ -19,7 +19,7 @@ import {
 } from "@/widgets/domain/dto";
 import type { DraftOperation } from "@/widgets/domain/entities";
 
-const widgetPathSchema = z.array(z.coerce.number().int().positive()).max(2).optional();
+const widgetPathSchema = z.array(z.coerce.number().int().min(0)).max(2).optional();
 
 const tenantDashboardSchema = z.object({
   tenantId: z.coerce.number().int().positive(),
