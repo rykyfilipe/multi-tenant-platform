@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import  prisma  from "@/lib/prisma";
-import { calculateMemoryUsage } from "@/lib/memory-tracking";
+import prisma from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +41,6 @@ export async function GET(request: NextRequest) {
 
     for (const database of databases) {
       // Calculate real size for each database using memory tracking
-      const memoryCalculation = await calculateMemoryUsage(user.tenant.id);
       
       // Calculate size per database based on its proportion of total data
       const totalRows = database.tables.reduce((sum:any, table:any) => sum + table.rows.length, 0);

@@ -138,8 +138,8 @@ export class DashboardService {
               select: { id: true, firstName: true, lastName: true, email: true },
             },
             widgets: {
-              select: { id: true, type: true, title: true, position: true, isVisible: true, order: true, config: true },
-              orderBy: { order: 'asc' },
+              select: { id: true, kind: true, title: true, position: true, isVisible: true, sortOrder: true, config: true },
+              orderBy: { sortOrder: 'asc' },
             },
             _count: {
               select: { widgets: true },
@@ -212,7 +212,16 @@ export class DashboardService {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
           widgets: {
-            orderBy: { order: 'asc' },
+            orderBy: { sortOrder: 'asc' },
+            select: {
+              id: true,
+              kind: true,
+              title: true,
+              position: true,
+              isVisible: true,
+              sortOrder: true,
+              config: true,
+            },
           },
           _count: {
             select: { widgets: true },
@@ -408,7 +417,7 @@ export class DashboardService {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
           widgets: {
-            orderBy: { order: 'asc' },
+            orderBy: { sortOrder: 'asc' },
           },
           _count: {
             select: { widgets: true },
@@ -541,7 +550,7 @@ export class DashboardService {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
         },
-        orderBy: { order: 'asc' },
+        orderBy: { sortOrder: 'asc' },
       });
 
       // Track usage
