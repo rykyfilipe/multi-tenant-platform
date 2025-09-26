@@ -32,14 +32,6 @@ export const useOptimizedReferenceData = (
 
 	useEffect(() => {
 		const fetchReferenceData = async () => {
-			console.log("🔍 useOptimizedReferenceData - Starting fetch:", {
-				tenantId: tenant?.id,
-				databaseId: selectedDatabase?.id,
-				hasToken: !!token,
-				referenceTableId,
-				tablesCount: tables?.length,
-				timestamp: new Date().toISOString()
-			});
 
 			setIsLoading(true);
 			setError(null);
@@ -69,11 +61,6 @@ export const useOptimizedReferenceData = (
 		};
 
 		const fetchSingleTableData = async (tableId: number) => {
-			console.log("🔍 useOptimizedReferenceData - Fetching single table data:", {
-				tableId,
-				tenantId: tenant!.id,
-				databaseId: selectedDatabase!.id
-			});
 
 			const response = await fetch(
 				`/api/tenants/${tenant!.id}/databases/${
@@ -93,33 +80,19 @@ export const useOptimizedReferenceData = (
 
 			const responseData = await response.json();
 
-			console.log("🔍 useOptimizedReferenceData - API Response structure:", {
-				tableId,
-				isArray: Array.isArray(responseData),
-				hasRows: responseData && typeof responseData === "object" && Array.isArray(responseData.rows),
-				hasData: responseData && typeof responseData === "object" && Array.isArray(responseData.data),
-				responseData: responseData
-			});
-
-			// Verificăm structura response-ului și extragem rândurile
+			// Extract rows from the API response
 			let rowsData: Row[] = [];
 			if (Array.isArray(responseData)) {
-				// Dacă response-ul este direct un array de rânduri
+				// Direct array of rows
 				rowsData = responseData;
 			} else if (responseData && typeof responseData === "object") {
-				// Dacă response-ul este un obiect cu proprietatea rows
-				if (Array.isArray(responseData.rows)) {
-					rowsData = responseData.rows;
-				} else if (Array.isArray(responseData.data)) {
+				// Object with data property (standard API format)
+				if (Array.isArray(responseData.data)) {
 					rowsData = responseData.data;
+				} else if (Array.isArray(responseData.rows)) {
+					rowsData = responseData.rows;
 				}
 			}
-
-			console.log("🔍 useOptimizedReferenceData - Extracted rows data:", {
-				tableId,
-				rowsCount: rowsData.length,
-				firstRow: rowsData[0] || null
-			});
 
 			// Verificăm că avem rânduri valide
 			if (Array.isArray(rowsData) && rowsData.length > 0) {
@@ -173,33 +146,17 @@ export const useOptimizedReferenceData = (
 						if (response.ok) {
 							const responseData = await response.json();
 
-							console.log("🔍 useOptimizedReferenceData - Batch API Response structure:", {
-								tableId,
-								isArray: Array.isArray(responseData),
-								hasRows: responseData && typeof responseData === "object" && Array.isArray(responseData.rows),
-								hasData: responseData && typeof responseData === "object" && Array.isArray(responseData.data),
-								responseData: responseData
-							});
-
-							// Verificăm structura response-ului și extragem rândurile
+							// Extract rows from the API response
 							let rowsData: Row[] = [];
 							if (Array.isArray(responseData)) {
-								// Dacă response-ul este direct un array de rânduri
 								rowsData = responseData;
 							} else if (responseData && typeof responseData === "object") {
-								// Dacă response-ul este un obiect cu proprietatea rows
-								if (Array.isArray(responseData.rows)) {
-									rowsData = responseData.rows;
-								} else if (Array.isArray(responseData.data)) {
+								if (Array.isArray(responseData.data)) {
 									rowsData = responseData.data;
+								} else if (Array.isArray(responseData.rows)) {
+									rowsData = responseData.rows;
 								}
 							}
-
-							console.log("🔍 useOptimizedReferenceData - Batch extracted rows data:", {
-								tableId,
-								rowsCount: rowsData.length,
-								firstRow: rowsData[0] || null
-							});
 
 							// Verificăm că avem rânduri valide
 							if (Array.isArray(rowsData) && rowsData.length > 0) {
@@ -225,22 +182,12 @@ export const useOptimizedReferenceData = (
 			rowsData: Row[],
 			tableId: number,
 		): ReferenceDataItem[] => {
-			console.log("🔍 useOptimizedReferenceData - Processing rows to reference data:", {
-				tableId,
-				rowsCount: rowsData.length,
-				rowsData: rowsData.slice(0, 2) // Log first 2 rows for debugging
-			});
 
 			const options: ReferenceDataItem[] = [];
 
-			// Găsim tabela pentru a accesa coloanele
+			// Find the table to access columns
 			const referenceTable = tables?.find((t) => t.id === tableId);
 			if (!referenceTable?.columns) {
-				console.warn("⚠️ useOptimizedReferenceData - No reference table or columns found:", {
-					tableId,
-					hasReferenceTable: !!referenceTable,
-					hasColumns: !!referenceTable?.columns
-				});
 				return options;
 			}
 
@@ -303,17 +250,6 @@ export const useOptimizedReferenceData = (
 				}
 			});
 
-			console.log("✅ useOptimizedReferenceData - Processed reference data:", {
-				tableId,
-				optionsCount: options.length,
-				options: options.slice(0, 3), // Log first 3 options for debugging
-				firstOptionStructure: options[0] ? {
-					id: options[0].id,
-					displayValue: options[0].displayValue,
-					hasRowData: !!options[0].rowData,
-					rowDataKeys: options[0].rowData ? Object.keys(options[0].rowData) : []
-				} : null
-			});
 
 			return options;
 		};
