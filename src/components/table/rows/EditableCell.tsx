@@ -841,6 +841,16 @@ export function EditableCell({
 			// Pentru coloanele de referință, folosim datele din hook
 			const options = referenceData[column.referenceTableId] ?? [];
 			
+			// Debug log pentru reference data
+			console.log('Reference data debug:', {
+				columnId: column.id,
+				referenceTableId: column.referenceTableId,
+				optionsCount: options.length,
+				options: options.slice(0, 3), // First 3 options
+				value,
+				referenceDataKeys: Object.keys(referenceData)
+			});
+			
 			if (options.length === 0) {
 				return "No reference data available";
 			}
@@ -849,16 +859,29 @@ export function EditableCell({
 			// Use normalize function for consistent array handling
 			const referenceValues = normalizeReferenceValue(value, true);
 
+			console.log('Reference values debug:', {
+				value,
+				referenceValues,
+				referenceValuesLength: referenceValues.length
+			});
+
 			if (referenceValues.length === 0) {
 				return "Double-click to add values";
 			}
 			
 			// Find matching options for the selected values
-			const selectedOptions = options.filter(option => 
-				referenceValues.some(refValue => 
+			const selectedOptions = options.filter((option: any) => 
+				referenceValues.some((refValue: any) => 
 					option.id?.toString() === refValue?.toString()
 				)
 			);
+
+			console.log('Selected options debug:', {
+				selectedOptionsCount: selectedOptions.length,
+				selectedOptions: selectedOptions.slice(0, 2), // First 2 selected options
+				referenceValues,
+				optionsIds: options.map(o => o.id).slice(0, 5) // First 5 option IDs
+			});
 
 			if (selectedOptions.length === 0) {
 				// No matching options found - show raw values
