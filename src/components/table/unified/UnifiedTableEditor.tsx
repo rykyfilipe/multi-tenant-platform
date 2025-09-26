@@ -69,7 +69,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 	refreshTable 
 }: Props) {
 	const { showAlert, token, user, tenant } = useApp();
-	const { selectedDatabase, tables, setTables } = useDatabase();
+	const { selectedDatabase, tables, setTables, setSelectedDatabase, databases, setDatabases } = useDatabase();
 	const [showColumnSidebar, setShowColumnSidebar] = useState(false);
 	const [showFilters, setShowFilters] = useState(false);
 	const [showAddColumnForm, setShowAddColumnForm] = useState(false);

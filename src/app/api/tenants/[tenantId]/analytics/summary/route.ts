@@ -15,14 +15,21 @@ export async function GET(
       where: { tenantId }
     });
 
-    const activeUsers = await prisma.user.count({
-      where: { 
+    // Get active users based on recent user activity (last 7 days)
+    const activeUserIds = await prisma.userActivity.findMany({
+      where: {
         tenantId,
-        lastLoginAt: {
+        createdAt: {
           gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
         }
-      }
+      },
+      select: {
+        userId: true
+      },
+      distinct: ['userId']
     });
+    
+    const activeUsers = activeUserIds.length;
 
     // Get database statistics
     const databases = await prisma.database.findMany({

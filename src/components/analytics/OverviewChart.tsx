@@ -1,6 +1,6 @@
 /**
  * Overview Chart Component
- * Line/area charts for time-series data
+ * Line/area charts for time-series data with premium luxury design
  */
 
 "use client";
@@ -8,7 +8,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend } from "recharts";
 
 interface OverviewChartProps {
 	data: any[];
@@ -20,6 +20,7 @@ interface OverviewChartProps {
 	color?: string;
 	showGrid?: boolean;
 	showTooltip?: boolean;
+	dataKeys?: Array<{ key: string; name: string; color?: string }>;
 }
 
 export const OverviewChart: React.FC<OverviewChartProps> = ({
@@ -29,11 +30,23 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
 	type = "line",
 	height = 300,
 	delay = 0,
-	color = "#3b82f6",
+	color = "#6366f1",
 	showGrid = true,
 	showTooltip = true,
+	dataKeys = [{ key: "value", name: "Value", color: "#6366f1" }],
 }) => {
 	const ChartComponent = type === "area" ? AreaChart : LineChart;
+
+	// Premium color palette inspired by luxury design
+	const premiumColors = {
+		primary: "#6366f1", // Indigo
+		secondary: "#8b5cf6", // Purple
+		accent: "#06b6d4", // Cyan
+		success: "#10b981", // Emerald
+		warning: "#f59e0b", // Amber
+		error: "#ef4444", // Red
+		neutral: "#6b7280", // Gray
+	};
 
 	return (
 		<motion.div
@@ -41,54 +54,123 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.4, delay }}
 		>
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg font-semibold">{title}</CardTitle>
+			<Card className="bg-white border-0 shadow-xl shadow-gray-100/50 rounded-2xl overflow-hidden">
+				<CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100/50 pb-4">
+					<CardTitle className="text-xl font-bold text-gray-900 tracking-tight">{title}</CardTitle>
 					{description && (
-						<p className="text-sm text-muted-foreground">{description}</p>
+						<p className="text-sm text-gray-600 font-medium">{description}</p>
 					)}
 				</CardHeader>
-				<CardContent>
-					<div style={{ height }}>
+				<CardContent className="p-6 bg-white">
+					<div style={{ height }} className="relative">
 						<ResponsiveContainer width="100%" height="100%">
-							<ChartComponent data={data}>
-								{showGrid && <CartesianGrid strokeDasharray="3 3" className="opacity-30" />}
+							<ChartComponent data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+								{showGrid && (
+									<CartesianGrid 
+										strokeDasharray="1 1" 
+										stroke="#e5e7eb" 
+										strokeOpacity={0.3}
+										vertical={false}
+									/>
+								)}
 								<XAxis 
 									dataKey="name" 
-									tick={{ fontSize: 12 }}
-									tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+									tick={{ 
+										fontSize: 12, 
+										fill: "#6b7280",
+										fontWeight: 500,
+										fontFamily: "Inter, system-ui, sans-serif"
+									}}
+									tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+									axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+									tickMargin={8}
 								/>
 								<YAxis 
-									tick={{ fontSize: 12 }}
-									tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+									tick={{ 
+										fontSize: 12, 
+										fill: "#6b7280",
+										fontWeight: 500,
+										fontFamily: "Inter, system-ui, sans-serif"
+									}}
+									tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+									axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+									tickMargin={8}
+									tickFormatter={(value) => `${value}k`}
 								/>
 								{showTooltip && (
 									<Tooltip 
 										contentStyle={{
-											backgroundColor: "hsl(var(--card))",
-											border: "1px solid hsl(var(--border))",
-											borderRadius: "6px",
+											backgroundColor: "rgba(255, 255, 255, 0.95)",
+											border: "1px solid rgba(229, 231, 235, 0.8)",
+											borderRadius: "12px",
+											boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+											backdropFilter: "blur(8px)",
+											fontFamily: "Inter, system-ui, sans-serif",
+											fontSize: "13px",
+											fontWeight: "500",
+											color: "#374151",
+											padding: "12px 16px"
+										}}
+										labelStyle={{
+											fontWeight: "600",
+											color: "#111827",
+											fontSize: "14px",
+											marginBottom: "4px"
+										}}
+									/>
+								)}
+								{dataKeys.length > 1 && (
+									<Legend 
+										wrapperStyle={{
+											paddingTop: "20px",
+											fontFamily: "Inter, system-ui, sans-serif",
+											fontSize: "13px",
+											fontWeight: "500"
 										}}
 									/>
 								)}
 								{type === "area" ? (
-									<Area
-										type="monotone"
-										dataKey="value"
-										stroke={color}
-										fill={color}
-										fillOpacity={0.1}
-										strokeWidth={2}
-									/>
+									dataKeys.map((dataKey, index) => (
+										<Area
+											key={dataKey.key}
+											type="monotone"
+											dataKey={dataKey.key}
+											stroke={dataKey.color || Object.values(premiumColors)[index % Object.values(premiumColors).length]}
+											fill={dataKey.color || Object.values(premiumColors)[index % Object.values(premiumColors).length]}
+											fillOpacity={0.15}
+											strokeWidth={3}
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											name={dataKey.name}
+										/>
+									))
 								) : (
-									<Line
-										type="monotone"
-										dataKey="value"
-										stroke={color}
-										strokeWidth={2}
-										dot={{ fill: color, strokeWidth: 2, r: 4 }}
-										activeDot={{ r: 6, stroke: color, strokeWidth: 2 }}
-									/>
+									dataKeys.map((dataKey, index) => (
+										<Line
+											key={dataKey.key}
+											type="monotone"
+											dataKey={dataKey.key}
+											stroke={dataKey.color || Object.values(premiumColors)[index % Object.values(premiumColors).length]}
+											strokeWidth={3}
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											dot={{ 
+												fill: dataKey.color || Object.values(premiumColors)[index % Object.values(premiumColors).length], 
+												strokeWidth: 0, 
+												r: 0,
+												opacity: 0
+											}}
+											activeDot={{ 
+												r: 6, 
+												stroke: dataKey.color || Object.values(premiumColors)[index % Object.values(premiumColors).length], 
+												strokeWidth: 3,
+												fill: "white",
+												strokeOpacity: 1,
+												filter: "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))"
+											}}
+											name={dataKey.name}
+										/>
+									))
 								)}
 							</ChartComponent>
 						</ResponsiveContainer>
