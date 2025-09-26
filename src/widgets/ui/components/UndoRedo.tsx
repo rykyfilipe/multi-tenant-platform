@@ -1,0 +1,166 @@
+"use client";
+
+import React, { useState, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Undo2, Redo2, History } from "lucide-react";
+import { WidgetEntity } from "@/widgets/domain/entities";
+
+interface HistoryState {
+  widgets: Record<number, WidgetEntity>;
+  timestamp: number;
+  action: string;
+}
+
+interface UndoRedoProps {
+  widgets: Record<number, WidgetEntity>;
+  onRestoreState: (widgets: Record<number, WidgetEntity>) => void;
+  onAction: (action: string) => void;
+}
+
+export const UndoRedo: React.FC<UndoRedoProps> = ({
+  widgets,
+  onRestoreState,
+  onAction,
+}) => {
+  const [history, setHistory] = useState<HistoryState[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [isUndoRedo, setIsUndoRedo] = useState(false);
+
+  // Save state to history
+  const saveToHistory = useCallback((action: string) => {
+    if (isUndoRedo) return;
+    
+    const newState: HistoryState = {
+      widgets: JSON.parse(JSON.stringify(widgets)),
+      timestamp: Date.now(),
+      action,
+    };
+
+    setHistory(prev => {
+      const newHistory = prev.slice(0, currentIndex + 1);
+      newHistory.push(newState);
+      // Keep only last 50 states
+      return newHistory.slice(-50);
+    });
+    setCurrentIndex(prev => Math.min(prev + 1, 49));
+  }, [widgets, currentIndex, isUndoRedo]);
+
+  // Undo
+  const undo = useCallback(() => {
+    if (currentIndex > 0) {
+      setIsUndoRedo(true);
+      const prevState = history[currentIndex - 1];
+      onRestoreState(prevState.widgets);
+      setCurrentIndex(prev => prev - 1);
+      onAction(`Undo: ${prevState.action}`);
+      setTimeout(() => setIsUndoRedo(false), 100);
+    }
+  }, [currentIndex, history, onRestoreState, onAction]);
+
+  // Redo
+  const redo = useCallback(() => {
+    if (currentIndex < history.length - 1) {
+      setIsUndoRedo(true);
+      const nextState = history[currentIndex + 1];
+      onRestoreState(nextState.widgets);
+      setCurrentIndex(prev => prev + 1);
+      onAction(`Redo: ${nextState.action}`);
+      setTimeout(() => setIsUndoRedo(false), 100);
+    }
+  }, [currentIndex, history, onRestoreState, onAction]);
+
+  // Auto-save to history when widgets change
+  useEffect(() => {
+    if (!isUndoRedo && Object.keys(widgets).length > 0) {
+      saveToHistory("Auto-save");
+    }
+  }, [widgets, saveToHistory, isUndoRedo]);
+
+  const canUndo = currentIndex > 0;
+  const canRedo = currentIndex < history.length - 1;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={undo}
+        disabled={!canUndo}
+        className="gap-1"
+        title={canUndo ? `Undo: ${history[currentIndex - 1]?.action || ''}` : 'Nothing to undo'}
+      >
+        <Undo2 className="h-4 w-4" />
+        Undo
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={redo}
+        disabled={!canRedo}
+        className="gap-1"
+        title={canRedo ? `Redo: ${history[currentIndex + 1]?.action || ''}` : 'Nothing to redo'}
+      >
+        <Redo2 className="h-4 w-4" />
+        Redo
+      </Button>
+
+      {history.length > 0 && (
+        <Badge variant="secondary" className="gap-1">
+          <History className="h-3 w-3" />
+          {currentIndex + 1}/{history.length}
+        </Badge>
+      )}
+    </div>
+  );
+};
+
+// Hook for easy integration
+export const useUndoRedo = (widgets: Record<number, WidgetEntity>) => {
+  const [history, setHistory] = useState<HistoryState[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+
+  const saveState = useCallback((action: string) => {
+    const newState: HistoryState = {
+      widgets: JSON.parse(JSON.stringify(widgets)),
+      timestamp: Date.now(),
+      action,
+    };
+
+    setHistory(prev => {
+      const newHistory = prev.slice(0, currentIndex + 1);
+      newHistory.push(newState);
+      return newHistory.slice(-50);
+    });
+    setCurrentIndex(prev => Math.min(prev + 1, 49));
+  }, [widgets, currentIndex]);
+
+  const undo = useCallback(() => {
+    if (currentIndex > 0) {
+      const prevState = history[currentIndex - 1];
+      setCurrentIndex(prev => prev - 1);
+      return prevState.widgets;
+    }
+    return null;
+  }, [currentIndex, history]);
+
+  const redo = useCallback(() => {
+    if (currentIndex < history.length - 1) {
+      const nextState = history[currentIndex + 1];
+      setCurrentIndex(prev => prev + 1);
+      return nextState.widgets;
+    }
+    return null;
+  }, [currentIndex, history]);
+
+  return {
+    saveState,
+    undo,
+    redo,
+    canUndo: currentIndex > 0,
+    canRedo: currentIndex < history.length - 1,
+    historyLength: history.length,
+    currentIndex: currentIndex + 1,
+  };
+};

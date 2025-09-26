@@ -11,6 +11,17 @@ import { ConflictDialog } from "./components/ConflictDialog";
 import { ManualMergeDialog } from "./components/ManualMergeDialog";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
 import { WidgetToolbar } from "./components/WidgetToolbar";
+import { KeyboardShortcutsDialog } from "./components/KeyboardShortcutsDialog";
+import { WidgetSearch } from "./components/WidgetSearch";
+import { BulkOperations } from "./components/BulkOperations";
+import { UndoRedo } from "./components/UndoRedo";
+import { WidgetTemplates } from "./components/WidgetTemplates";
+import { WidgetMarketplace } from "./components/WidgetMarketplace";
+import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
+import { AccessibilityProvider } from "./components/AccessibilityProvider";
+import { ResponsiveProvider } from "./components/ResponsiveProvider";
+import { WidgetGridSkeleton, ToolbarSkeleton, SearchSkeleton } from "./components/WidgetSkeleton";
+import { useKeyboardShortcuts } from "@/widgets/hooks/useKeyboardShortcuts";
 import {
   WidgetEntity,
   WidgetConfig,
@@ -38,7 +49,14 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const draftsRecord = useWidgetsStore((state) => state.drafts);
   const setDrafts = useWidgetsStore((state) => state.setDrafts);
   const removeDraft = useWidgetsStore((state) => state.removeDraft);
-  const widgetList = useMemo(() => Object.values(widgetsRecord), [widgetsRecord]);
+  const widgetList = useMemo(() => {
+    const widgets = Object.values(widgetsRecord);
+    console.log('🎨 [DEBUG] Widget list updated:', { 
+      count: widgets.length, 
+      widgets: widgets.map(w => ({ id: w.id, kind: w.kind, title: w.title }))
+    });
+    return widgets;
+  }, [widgetsRecord]);
   const draftsList = useMemo(() => Object.values(draftsRecord), [draftsRecord]);
   const conflicts = useWidgetsStore((state) => state.conflicts);
   const activeConflict = useWidgetsStore((state) => state.activeConflict);
@@ -54,6 +72,11 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"canvas" | "drafts">("canvas");
   const [isLoading, setIsLoading] = useState(true);
+  
+  // New UI state
+  const [selectedWidgets, setSelectedWidgets] = useState<Set<number>>(new Set());
+  const [filteredWidgets, setFilteredWidgets] = useState<WidgetEntity[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const api = useWidgetsApi(tenantId, dashboardId);
 
@@ -151,25 +174,142 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     setActiveTab("drafts");
   };
 
-  const handleAddWidget = async (kind: WidgetKind) => {
+  const handleAddWidget = (kind: WidgetKind) => {
     try {
+      console.log('🎯 [DEBUG] Adding widget locally:', kind);
       const definition = getWidgetDefinition(kind);
       const defaultConfig = definition.defaultConfig;
       
       // Find next available position
       const maxY = Math.max(...widgetList.map(w => w.position.y + w.position.h), 0);
+      console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 4, h: 4 });
       
-      await api.createWidget({
+      // Create widget locally with temporary ID
+      const tempId = Date.now();
+      const newWidget: WidgetEntity = {
+        id: tempId,
+        tenantId,
+        dashboardId,
         kind,
         title: `${kind} Widget`,
+        description: null,
         position: { x: 0, y: maxY, w: 4, h: 4 },
         config: defaultConfig,
-        actorId,
-      });
+        isVisible: true,
+        sortOrder: 0,
+        version: 1,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: actorId,
+        updatedBy: actorId,
+      };
+      
+      console.log('🆕 [DEBUG] Creating local widget:', newWidget);
+      
+      // Add to local state
+      createLocal(newWidget);
+      
+      console.log('✅ [DEBUG] Widget added to local state');
     } catch (error) {
-      console.error("Failed to create widget:", error);
+      console.error("Failed to add widget locally:", error);
     }
   };
+
+  // New UI functions
+  const handleSelectWidget = (widgetId: number, selected: boolean) => {
+    setSelectedWidgets(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(widgetId);
+      } else {
+        newSet.delete(widgetId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedWidgets(new Set(widgetList.map(w => w.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedWidgets(new Set());
+  };
+
+  const handleDeleteSelected = () => {
+    selectedWidgets.forEach(widgetId => deleteLocal(widgetId));
+    setSelectedWidgets(new Set());
+  };
+
+  const handleDuplicateSelected = () => {
+    selectedWidgets.forEach(widgetId => {
+      const widget = widgetsRecord[widgetId];
+      if (widget) {
+        const duplicatedWidget = {
+          ...widget,
+          id: Date.now() + Math.random(),
+          title: `${widget.title} (Copy)`,
+          position: { ...widget.position, x: widget.position.x + 1 },
+        };
+        createLocal(duplicatedWidget);
+      }
+    });
+    setSelectedWidgets(new Set());
+  };
+
+  const handleMoveSelected = () => {
+    // TODO: Implement move functionality
+    console.log('Move selected widgets:', selectedWidgets);
+  };
+
+  const handleConfigureSelected = () => {
+    // TODO: Implement bulk configuration
+    console.log('Configure selected widgets:', selectedWidgets);
+  };
+
+  const handleTemplateSelect = (template: any) => {
+    const newWidget: WidgetEntity = {
+      id: Date.now(),
+      tenantId,
+      dashboardId,
+      kind: template.kind,
+      title: template.name,
+      description: template.description,
+      position: { x: 0, y: 0, w: 4, h: 4 },
+      config: template.config,
+      isVisible: true,
+      sortOrder: 0,
+      version: 1,
+      schemaVersion: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: actorId,
+      updatedBy: actorId,
+    };
+    createLocal(newWidget);
+  };
+
+  const handleMarketplaceInstall = (widget: any) => {
+    handleTemplateSelect(widget);
+  };
+
+  const handleMarketplaceUninstall = (widgetId: string) => {
+    console.log('Uninstall widget:', widgetId);
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onAddWidget: handleAddWidget,
+    onSave: () => console.log('Save pending changes'),
+    onUndo: () => console.log('Undo'),
+    onRedo: () => console.log('Redo'),
+    onDelete: handleDeleteSelected,
+    onDuplicate: handleDuplicateSelected,
+    onSelectAll: handleSelectAll,
+    onEscape: handleDeselectAll,
+    onSearch: () => setSearchFocused(true),
+  });
 
   const handleApplyDraft = async (draftId: number) => {
     const response = await api.applyDraft(draftId, actorId);
@@ -295,30 +435,72 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "canvas" | "drafts")}
-      className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="canvas">Canvas</TabsTrigger>
-        <TabsTrigger value="drafts">Drafts ({draftsList.length})</TabsTrigger>
-      </TabsList>
-      <TabsContent value="canvas">
-        <div className="space-y-4">
-          <WidgetToolbar onAddWidget={handleAddWidget} />
-          
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <PendingChangesBadge />
-              <Button variant="outline" size="sm" onClick={handleSaveLocalAsDraft}>
-                Save Pending to Draft
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCreateDraft}>
-                New Empty Draft
-              </Button>
-              <SavePendingButton tenantId={tenantId} dashboardId={dashboardId} actorId={actorId} />
-            </div>
-          </div>
+    <AccessibilityProvider>
+      <ResponsiveProvider>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "canvas" | "drafts")}
+          className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="canvas">Canvas</TabsTrigger>
+            <TabsTrigger value="drafts">Drafts ({draftsList.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="canvas">
+            <div className="space-y-4">
+              {/* Enhanced Toolbar */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <WidgetToolbar onAddWidget={handleAddWidget} />
+                  <WidgetTemplates onSelectTemplate={handleTemplateSelect} />
+                  <WidgetMarketplace 
+                    onInstallWidget={handleMarketplaceInstall}
+                    onUninstallWidget={handleMarketplaceUninstall}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <KeyboardShortcutsDialog />
+                </div>
+              </div>
+
+              {/* Search and Filter */}
+              <WidgetSearch 
+                widgets={widgetList}
+                onFilteredWidgets={setFilteredWidgets}
+                onSearchFocus={() => setSearchFocused(true)}
+              />
+
+              {/* Bulk Operations */}
+              {selectedWidgets.size > 0 && (
+                <BulkOperations
+                  selectedWidgets={selectedWidgets}
+                  onSelectAll={handleSelectAll}
+                  onDeselectAll={handleDeselectAll}
+                  onDeleteSelected={handleDeleteSelected}
+                  onDuplicateSelected={handleDuplicateSelected}
+                  onMoveSelected={handleMoveSelected}
+                  onConfigureSelected={handleConfigureSelected}
+                  totalWidgets={widgetList.length}
+                />
+              )}
+
+              {/* Action Bar */}
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <PendingChangesBadge />
+                  <UndoRedo 
+                    widgets={widgetsRecord}
+                    onRestoreState={(widgets) => console.log('Restore state:', widgets)}
+                    onAction={(action) => console.log('Action:', action)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleSaveLocalAsDraft}>
+                    Save Pending to Draft
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleCreateDraft}>
+                    New Empty Draft
+                  </Button>
+                  <SavePendingButton tenantId={tenantId} dashboardId={dashboardId} actorId={actorId} />
+                </div>
+              </div>
           <ConflictDialog
             conflicts={conflicts}
             onResolve={async (strategy, conflict) => {
@@ -385,32 +567,45 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
               }}
             />
           )}
-          <GridLayout className="layout" layout={layout} cols={12} rowHeight={30} width={1200}
-            onLayoutChange={(newLayout) => {
-              newLayout.forEach((item) => {
-                const widgetId = Number(item.i);
-                updateLocal(widgetId, {
-                  position: { x: item.x, y: item.y, w: item.w, h: item.h },
-                });
-              });
-            }}
-          >
-            {widgetList.map((widget) => {
-              const definition = getWidgetDefinition(widget.kind);
-              const Renderer = definition.renderer;
+              {/* Widget Grid */}
+              <WidgetErrorBoundary>
+                <GridLayout className="layout" layout={layout} cols={12} rowHeight={30} width={1200}
+                  onLayoutChange={(newLayout) => {
+                    newLayout.forEach((item) => {
+                      const widgetId = Number(item.i);
+                      updateLocal(widgetId, {
+                        position: { x: item.x, y: item.y, w: item.w, h: item.h },
+                      });
+                    });
+                  }}
+                >
+                  {(filteredWidgets.length > 0 ? filteredWidgets : widgetList).map((widget) => {
+                    const definition = getWidgetDefinition(widget.kind);
+                    const Renderer = definition.renderer;
+                    const isSelected = selectedWidgets.has(widget.id);
 
-              return (
-                <div key={widget.id} className="border border-dashed rounded">
-                  <Renderer
-                    widget={widget}
-                    onEdit={() => openEditor(widget.id)}
-                    onDelete={() => deleteLocal(widget.id)}
-                    onDuplicate={() => handleDuplicate(widget)}
-                  />
-                </div>
-              );
-            })}
-          </GridLayout>
+                    return (
+                      <div 
+                        key={widget.id} 
+                        className={`border border-dashed rounded transition-all ${
+                          isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectWidget(widget.id, !isSelected);
+                        }}
+                      >
+                        <Renderer
+                          widget={widget}
+                          onEdit={() => openEditor(widget.id)}
+                          onDelete={() => deleteLocal(widget.id)}
+                          onDuplicate={() => handleDuplicate(widget)}
+                        />
+                      </div>
+                    );
+                  })}
+                </GridLayout>
+              </WidgetErrorBoundary>
         </div>
       </TabsContent>
       <TabsContent value="drafts">
@@ -432,7 +627,9 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
             filteredDrafts.map(renderDraftRow)
           )}
         </div>
-      </TabsContent>
-    </Tabs>
+          </TabsContent>
+        </Tabs>
+      </ResponsiveProvider>
+    </AccessibilityProvider>
   );
 };
