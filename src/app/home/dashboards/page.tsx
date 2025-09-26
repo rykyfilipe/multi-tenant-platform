@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -16,17 +16,18 @@ interface DashboardSummary {
 }
 
 export default function DashboardsPage() {
-  const { tenant } = useApp();
+  const { tenant, user } = useApp();
   const toast = useToast();
   const [selectedDashboardId, setSelectedDashboardId] = useState<number | null>(null);
-  const [actorId, setActorId] = useState<number>(0);
+  const [dashboards, setDashboards] = useState<DashboardSummary[]>([]);
+  const [actorId, setActorId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (tenant?.id) {
-      setActorId(tenant.id);
+    if (user?.id && actorId !== user.id) {
+      setActorId(user.id);
     }
-  }, [tenant?.id]);
+  }, [user?.id, actorId]);
 
   useEffect(() => {
     const loadDashboards = async () => {
@@ -34,8 +35,10 @@ export default function DashboardsPage() {
         setIsLoading(true);
         const res = await fetch('/api/dashboards');
         if (!res.ok) throw new Error('Failed to load dashboards');
-        const data = (await res.json()) as { dashboards: DashboardSummary[] };
-        const defaultDashboard = data.dashboards.find((d) => d.isDefault) ?? data.dashboards[0];
+        const data = (await res.json()) as { dashboards?: DashboardSummary[]; pagination?: unknown };
+        const dashboardList = data.dashboards ?? [];
+        setDashboards(dashboardList);
+        const defaultDashboard = dashboardList.find((d) => d.isDefault) ?? dashboardList[0];
         setSelectedDashboardId(defaultDashboard?.id ?? null);
       } catch {
         toast.toast({
@@ -50,6 +53,11 @@ export default function DashboardsPage() {
 
     loadDashboards();
   }, [toast]);
+
+  const dashboardName = useMemo(() => {
+    if (!selectedDashboardId) return null;
+    return dashboards.find((dash) => dash.id === selectedDashboardId)?.name ?? null;
+  }, [dashboards, selectedDashboardId]);
 
   if (!isWidgetsV2Enabled()) {
     return (
@@ -68,7 +76,7 @@ export default function DashboardsPage() {
     );
   }
 
-  if (isLoading || !selectedDashboardId || !actorId) {
+  if (isLoading || !selectedDashboardId || actorId === null) {
     return (
       <div className="flex h-[60vh] items-center justify-center text-sm text-muted-foreground">
         Loading dashboard…
@@ -81,7 +89,9 @@ export default function DashboardsPage() {
       <Card>
         <CardHeader className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold">Dashboard Widgets</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              {dashboardName ? `${dashboardName} Widgets` : 'Dashboard Widgets'}
+            </CardTitle>
             <p className="text-sm text-muted-foreground">
               Build, preview, and save widget layouts with conflict-aware pending changes.
             </p>
