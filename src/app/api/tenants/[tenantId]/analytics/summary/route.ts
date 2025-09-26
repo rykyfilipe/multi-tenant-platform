@@ -65,6 +65,22 @@ export async function GET(
 
     const dbSizeBytes = storageResult[0]?.database_size_bytes || 0;
     const storageUsedGB = Number(dbSizeBytes) / (1024 * 1024 * 1024); // Convert bytes to GB
+    
+    // Convert to appropriate unit based on size
+    let storageUsed: number;
+    let storageUnit: string;
+    
+    if (storageUsedGB >= 1) {
+      storageUsed = storageUsedGB;
+      storageUnit = 'GB';
+    } else if (storageUsedGB >= 0.001) {
+      storageUsed = storageUsedGB * 1024; // Convert to MB
+      storageUnit = 'MB';
+    } else {
+      storageUsed = storageUsedGB * 1024 * 1024; // Convert to KB
+      storageUnit = 'KB';
+    }
+    
     const storageUsagePercentage = Math.min((storageUsedGB / 100) * 100, 100); // Assume 100GB total
 
     // Get recent activity
@@ -93,7 +109,9 @@ export async function GET(
       totalTables,
       totalRows,
       totalCells: totalRows * 5, // Estimate 5 cells per row
-      storageUsedGB,
+      storageUsed: storageUsed,
+      storageUnit: storageUnit,
+      storageUsedGB, // Keep for backward compatibility
       storageUsagePercentage,
       userGrowth,
       databaseGrowth,

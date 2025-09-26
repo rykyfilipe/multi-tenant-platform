@@ -15,6 +15,7 @@ interface UseOptimizedReferenceDataResult {
 	referenceData: Record<number, ReferenceDataItem[]>;
 	isLoading: boolean;
 	error: string | null;
+	refresh: () => void;
 }
 
 // Hook optimizat pentru reference data
@@ -29,6 +30,11 @@ export const useOptimizedReferenceData = (
 	>({});
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	// Function to manually refresh reference data
+	const refresh = useCallback(() => {
+		fetchReferenceData();
+	}, []);
 
 	useEffect(() => {
 		const fetchReferenceData = async () => {
@@ -261,5 +267,6 @@ export const useOptimizedReferenceData = (
 		referenceData,
 		isLoading,
 		error,
+		refresh,
 	};
 };

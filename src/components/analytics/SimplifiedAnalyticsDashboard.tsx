@@ -27,7 +27,9 @@ interface AnalyticsSummary {
   totalTables: number;
   totalRows: number;
   totalCells: number;
-  storageUsedGB: number;
+  storageUsed: number;
+  storageUnit: string;
+  storageUsedGB: number; // Keep for backward compatibility
   storageUsagePercentage: number;
   userGrowth: number;
   databaseGrowth: number;
@@ -283,7 +285,7 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
         />
         <MetricCard
           title="Storage Usage"
-          value={`${summary.storageUsedGB.toFixed(1)}GB`}
+          value={`${summary.storageUsed.toFixed(1)}${summary.storageUnit}`}
           icon={HardDrive}
           color={summary.storageUsagePercentage > 80 ? 'red' : summary.storageUsagePercentage > 60 ? 'orange' : 'green'}
           progress={summary.storageUsagePercentage}

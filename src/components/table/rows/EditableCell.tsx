@@ -380,6 +380,7 @@ interface Props {
 	tables: Table[] | null;
 	hasPendingChange?: boolean;
 	pendingValue?: any;
+	onRefreshReferenceData?: () => void;
 }
 
 // Helper function to normalize reference values consistently
@@ -489,6 +490,7 @@ export function EditableCell({
 	tables,
 	hasPendingChange = false,
 	pendingValue,
+	onRefreshReferenceData,
 }: Props) {
 	// TOATE HOOKS-URILE TREBUIE SĂ FIE AICI, ÎNAINTE DE ORICE RETURN CONDIȚIONAL
 
@@ -567,10 +569,13 @@ export function EditableCell({
 	);
 
 	// Hook pentru datele de referință
-	const { referenceData } = useOptimizedReferenceData(
+	const { referenceData, refresh: refreshReferenceData } = useOptimizedReferenceData(
 		tables || [],
 		column?.referenceTableId,
 	);
+
+	// Use external refresh function if provided, otherwise use internal one
+	const refreshRef = onRefreshReferenceData || refreshReferenceData;
 
 	// Get reference table from tables array
 	const referenceTable = useMemo(() => {

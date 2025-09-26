@@ -25,6 +25,7 @@ interface Props {
 	canEdit: boolean;
 	canDelete: boolean;
 	tables?: Table[];
+	onRefreshReferenceData?: () => void;
 	// Inline row creator props
 	showInlineRowCreator?: boolean;
 	onSaveNewRow?: (rowData: Record<string, any>) => void;
@@ -47,6 +48,7 @@ export function RowGrid({
 	canEdit,
 	canDelete,
 	tables = [],
+	onRefreshReferenceData,
 	showInlineRowCreator = false,
 	onSaveNewRow,
 	onCancelNewRow,
@@ -281,6 +283,7 @@ export function RowGrid({
 											tables={tables}
 											hasPendingChange={hasPending}
 											pendingValue={pendingValue}
+											onRefreshReferenceData={onRefreshReferenceData}
 										/>
 									) : (
 										<div className="w-full h-6 sm:h-8 flex items-center">
