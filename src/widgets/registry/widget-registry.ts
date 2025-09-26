@@ -37,8 +37,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     defaultConfig: chartWidgetConfigSchema.parse({
       settings: {
         chartType: "bar",
-        xAxis: "",
-        yAxis: "",
+        xAxis: "dimension",
+        yAxis: "value",
         refreshInterval: 60,
         valueFormat: "number",
       },
@@ -48,9 +48,12 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         showGrid: true,
       },
       data: {
-        tableId: "",
+        tableId: "default_table",
         filters: [],
-        mappings: {},
+        mappings: {
+          x: "dimension",
+          y: "value",
+        },
       },
     }),
     editor: ChartWidgetEditor,
@@ -61,7 +64,13 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     schema: tableWidgetConfigSchema,
     defaultConfig: tableWidgetConfigSchema.parse({
       settings: {
-        columns: [],
+        columns: [
+          {
+            id: "column_1",
+            label: "Column 1",
+            sortable: true,
+          },
+        ],
         pageSize: 25,
         enableExport: false,
         stickyHeader: true,
@@ -73,7 +82,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         zebraStripes: true,
       },
       data: {
-        tableId: "",
+        tableId: "default_table",
         filters: [],
         sort: [],
       },
@@ -86,7 +95,13 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     schema: tableWidgetConfigSchema,
     defaultConfig: tableWidgetConfigSchema.parse({
       settings: {
-        columns: [],
+        columns: [
+          {
+            id: "task",
+            label: "Task",
+            sortable: true,
+          },
+        ],
         pageSize: 25,
         enableExport: false,
         stickyHeader: true,
@@ -98,7 +113,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         zebraStripes: true,
       },
       data: {
-        tableId: "",
+        tableId: "default_tasks",
         filters: [],
         sort: [],
       },
@@ -112,8 +127,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     defaultConfig: chartWidgetConfigSchema.parse({
       settings: {
         chartType: "pie",
-        xAxis: "",
-        yAxis: "",
+        xAxis: "category",
+        yAxis: "value",
         refreshInterval: 60,
         valueFormat: "number",
       },
@@ -123,9 +138,12 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         showGrid: false,
       },
       data: {
-        tableId: "",
+        tableId: "default_clock",
         filters: [],
-        mappings: {},
+        mappings: {
+          x: "category",
+          y: "value",
+        },
       },
     }),
     editor: ChartWidgetEditor,
@@ -148,9 +166,12 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         showGrid: true,
       },
       data: {
-        tableId: "",
+        tableId: "default_weather",
         filters: [],
-        mappings: {},
+        mappings: {
+          x: "date",
+          y: "temperature",
+        },
       },
     }),
     editor: ChartWidgetEditor,
@@ -162,8 +183,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     defaultConfig: chartWidgetConfigSchema.parse({
       settings: {
         chartType: "bar",
-        xAxis: "",
-        yAxis: "",
+        xAxis: "metric",
+        yAxis: "value",
         refreshInterval: 60,
         valueFormat: "number",
       },
@@ -173,9 +194,12 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         showGrid: false,
       },
       data: {
-        tableId: "",
+        tableId: "default_kpi",
         filters: [],
-        mappings: {},
+        mappings: {
+          x: "metric",
+          y: "value",
+        },
       },
     }),
     editor: ChartWidgetEditor,
@@ -187,8 +211,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     defaultConfig: chartWidgetConfigSchema.parse({
       settings: {
         chartType: "bar",
-        xAxis: "",
-        yAxis: "",
+        xAxis: "dimension",
+        yAxis: "value",
         refreshInterval: 60,
         valueFormat: "number",
       },
@@ -198,9 +222,12 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         showGrid: true,
       },
       data: {
-        tableId: "",
+        tableId: "default_custom",
         filters: [],
-        mappings: {},
+        mappings: {
+          x: "dimension",
+          y: "value",
+        },
       },
     }),
     editor: ChartWidgetEditor,
