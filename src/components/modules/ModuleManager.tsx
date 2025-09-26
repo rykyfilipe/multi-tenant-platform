@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useDatabase } from "@/contexts/DatabaseContext";
+// Removed useDatabase import - will use direct API calls instead
 import { getAllModules, ModuleDefinition } from "@/lib/modules";
 import {
 	AlertDialog,
@@ -54,7 +54,6 @@ interface ModulesResponse {
 export default function ModuleManager() {
 	const { token, tenant, showAlert, setTenant } = useApp();
 	const { t } = useLanguage();
-	const { fetchTables, selectedDatabase } = useDatabase();
 	const [modules, setModules] = useState<ModuleDefinition[]>([]);
 	const [modulesStatus, setModulesStatus] = useState<ModuleStatus[]>([]);
 	const [enabledModules, setEnabledModules] = useState<string[]>([]);

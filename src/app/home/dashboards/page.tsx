@@ -78,6 +78,7 @@ export default function DashboardsPage() {
         
         setSelectedDashboardId(defaultDashboard?.id ?? null);
         console.log('✅ Selected dashboard ID set to:', defaultDashboard?.id ?? null);
+        setIsLoading(false);
         
       } catch (error) {
         console.error('💥 Error loading dashboards:', error);

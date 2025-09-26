@@ -104,6 +104,15 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 
 	const tenantId = tenant?.id;
 
+	// Function to refresh all reference data
+	const refreshAllReferenceData = useCallback(() => {
+		// Force refresh of all tables to update reference data
+		if (tables && tables.length > 0) {
+			// This will trigger a re-render and refresh of reference data
+			setTables([...tables]);
+		}
+	}, [tables]);
+
 	// Use server-side pagination hook
 	const {
 		rows: paginatedRows,
@@ -995,6 +1004,9 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 					// Fallback: refresh table data if no row data returned
 					await refetchRows();
 				}
+				
+				// Refresh reference data to update display
+				refreshAllReferenceData();
 			} else {
 				throw new Error(result.error || "Failed to import data");
 			}
@@ -1718,6 +1730,7 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 								canEdit={tablePermissions.canEditTable()}
 								canDelete={tablePermissions.canDeleteTable()}
 								tables={tables || []}
+								onRefreshReferenceData={refreshAllReferenceData}
 								showInlineRowCreator={tablePermissions.canEditTable()}
 								onSaveNewRow={(rowData) => {
 									console.log("🔍 UnifiedTableEditor onSaveNewRow called", { rowData });
