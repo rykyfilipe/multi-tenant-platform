@@ -982,6 +982,8 @@ export function EditableCell({
 					/>
 				) : null;
 			})()}
+			
+			{/* Afișăm display-ul pentru toate tipurile de coloane */}
 			<p className='max-w-[250px] sm:max-w-[300px] overflow-hidden whitespace-nowrap text-ellipsis select-none leading-relaxed text-sm sm:text-base'>
 				{display}
 			</p>

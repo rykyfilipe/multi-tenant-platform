@@ -17,13 +17,8 @@ import {
   WidgetDraftEntity,
 } from "../domain/entities";
 import {
-  useWidgets,
-  useDrafts,
-  useCreateDraft,
-  useDeleteDraft,
-  useApplyDraft,
-  useResolveDraftConflict,
-} from "@/widgets/api/client";
+  useWidgetsApi,
+} from "@/widgets/api/simple-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -57,25 +52,28 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"canvas" | "drafts">("canvas");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: widgetsData } = useWidgets(tenantId, dashboardId, true);
-  const { data: draftsData } = useDrafts(tenantId, dashboardId);
-  const createDraft = useCreateDraft(tenantId, dashboardId);
-  const deleteDraftMutation = useDeleteDraft(tenantId, dashboardId);
-  const applyDraftMutation = useApplyDraft(tenantId, dashboardId);
-  const resolveDraftConflict = useResolveDraftConflict(tenantId, dashboardId);
+  const api = useWidgetsApi(tenantId, dashboardId);
 
+  // Load initial data
   useEffect(() => {
-    if (widgetsData?.items) {
-      useWidgetsStore.getState().setWidgets(widgetsData.items as WidgetEntity[]);
-    }
-  }, [widgetsData?.items]);
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        await Promise.all([
+          api.loadWidgets(true),
+          api.loadDrafts()
+        ]);
+      } catch (error) {
+        console.error("Failed to load initial data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    if (draftsData?.drafts) {
-      setDrafts(draftsData.drafts as WidgetDraftEntity[]);
-    }
-  }, [draftsData?.drafts, setDrafts]);
+    loadData();
+  }, [tenantId, dashboardId]);
 
   const layout: Layout[] = widgetList.map((widget) => ({
     i: widget.id.toString(),
@@ -88,7 +86,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const handleSaveLocalAsDraft = async () => {
     const operations = getPending();
     if (!operations.length) return;
-    await createDraft.mutateAsync({
+    await api.createDraft({
       actorId,
       kind: WidgetKind.CUSTOM,
       config: { settings: {}, style: {}, data: {} },
@@ -143,7 +141,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   };
 
   const handleCreateDraft = async () => {
-    await createDraft.mutateAsync({
+    await api.createDraft({
       actorId,
       kind: WidgetKind.CUSTOM,
       config: { settings: {}, style: {}, data: {} },
@@ -153,14 +151,14 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   };
 
   const handleApplyDraft = async (draftId: number) => {
-    const response = await applyDraftMutation.mutateAsync({ draftId, actorId });
+    const response = await api.applyDraft(draftId, actorId);
     if (response.conflicts.length === 0) {
       removeDraft(draftId);
     }
   };
 
   const handleDeleteDraft = async (draftId: number) => {
-    await deleteDraftMutation.mutateAsync({ draftId, actorId });
+    await api.deleteDraft(draftId, actorId);
     removeDraft(draftId);
   };
 
@@ -170,7 +168,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   ) => {
     const targetMerge = merge ?? draft.conflictMeta?.suggestedMerge ?? {};
     if (!Object.keys(targetMerge).length) return;
-    await resolveDraftConflict.mutateAsync({ draftId: draft.id, actorId, merge: targetMerge });
+    await api.resolveDraftConflict(draft.id, actorId, targetMerge);
   };
 
   const renderDraftRow = (draft: WidgetDraftEntity) => {
@@ -200,7 +198,6 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
               size="sm"
               variant="outline"
               onClick={() => handleApplyDraft(draft.id)}
-              disabled={applyDraftMutation.isPending}
             >
               Apply
             </Button>
@@ -267,6 +264,14 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   };
 
   const filteredDrafts = useMemo(() => draftsList, [draftsList]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-muted-foreground">Loading widgets...</div>
+      </div>
+    );
+  }
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "canvas" | "drafts")}

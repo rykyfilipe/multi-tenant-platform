@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
-import { useSavePending } from "@/widgets/api/client";
+import { useWidgetsApi } from "@/widgets/api/simple-client";
 
 interface SavePendingButtonProps {
   tenantId: number;
@@ -13,13 +13,15 @@ interface SavePendingButtonProps {
 export const SavePendingButton: React.FC<SavePendingButtonProps> = ({ tenantId, dashboardId, actorId }) => {
   const operations = useWidgetsStore((state) => state.getPending());
   const clearPending = useWidgetsStore((state) => state.clearPending);
-  const mutation = useSavePending(tenantId, dashboardId);
+  const api = useWidgetsApi(tenantId, dashboardId);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const handleSave = async () => {
     setErrorMessage(null);
+    setIsLoading(true);
     try {
-      const response = await mutation.mutateAsync({ actorId, operations });
+      const response = await api.savePending({ actorId, operations });
       if (response.conflicts.length) {
         setErrorMessage("Conflicts detected. Review and merge changes.");
       } else {
@@ -27,10 +29,12 @@ export const SavePendingButton: React.FC<SavePendingButtonProps> = ({ tenantId, 
       }
     } catch {
       setErrorMessage("Failed to save pending changes.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const disabled = !operations.length || mutation.isPending;
+  const disabled = !operations.length || isLoading;
 
   return (
     <div className="flex items-center gap-3">
@@ -39,10 +43,10 @@ export const SavePendingButton: React.FC<SavePendingButtonProps> = ({ tenantId, 
         onClick={handleSave}
         disabled={disabled}
       >
-        {mutation.isPending && (
+        {isLoading && (
           <span className="h-3 w-3 animate-spin rounded-full border-2 border-background border-t-transparent" aria-hidden />
         )}
-        {mutation.isPending ? "Saving..." : "Save Pending"}
+        {isLoading ? "Saving..." : "Save Pending"}
       </button>
       {errorMessage && <span className="text-xs text-destructive">{errorMessage}</span>}
     </div>
