@@ -94,7 +94,7 @@ export default function DashboardsPage() {
     };
 
     loadDashboards();
-  }, [toast]);
+  }, []); // Empty dependency array - load dashboards only once on mount
 
   const dashboardName = useMemo(() => {
     console.log('🏷️ Computing dashboard name:', { selectedDashboardId, dashboardsCount: dashboards.length });
