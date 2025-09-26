@@ -33,7 +33,7 @@ export default function DashboardsPage() {
   const [createForm, setCreateForm] = useState({ name: '', description: '', mode: 'PRIVATE' as 'PRIVATE' | 'PUBLIC' });
 
   useEffect(() => {
-    if (user?.id && actorId !== user.id) {
+    if (user?.id ) {
       setActorId(user.id);
     }
   }, [user?.id, actorId]);

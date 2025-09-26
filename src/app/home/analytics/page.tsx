@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import PerformanceOptimizer from "@/components/PerformanceOptimizer";
-import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
+import { SimplifiedAnalyticsDashboard } from "@/components/analytics/SimplifiedAnalyticsDashboard";
 import { useApp } from "@/contexts/AppContext";
 import { TourManager } from "@/components/tours/TourManager";
 import { allTours } from "@/tours";
@@ -25,7 +25,7 @@ function AnalyticsPage() {
 	return (
 		<PerformanceOptimizer preloadFonts={true} preloadCriticalCSS={true}>
 			<ErrorBoundary component="AnalyticsPage">
-				<AnalyticsDashboard />
+				<SimplifiedAnalyticsDashboard />
 			</ErrorBoundary>
 			<TourManager
 				tours={allTours}
