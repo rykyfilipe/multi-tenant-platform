@@ -881,12 +881,26 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				headers = firstLine.split(';').map(h => h.trim().replace(/"/g, ''));
 			}
 			
-			// Map headers to column IDs
+			// Map headers to column IDs and detect reference column groups
 			const columnMapping: Record<string, number> = {};
+			const referenceColumnGroups: Record<string, { columnId: number; referencedColumns: string[] }> = {};
+			
 			columns?.forEach(col => {
+				// Check for direct column name match
 				const matchingHeader = headers.find(h => h.toLowerCase() === col.name.toLowerCase());
 				if (matchingHeader) {
 					columnMapping[matchingHeader] = col.id;
+				}
+				
+				// Check for reference column groups (format: originalColumnName_referencedColumnName)
+				if (col.type === "reference" && col.referenceTableId) {
+					const referenceHeaders = headers.filter(h => h.toLowerCase().startsWith(col.name.toLowerCase() + "_"));
+					if (referenceHeaders.length > 0) {
+						referenceColumnGroups[col.name] = {
+							columnId: col.id,
+							referencedColumns: referenceHeaders
+						};
+					}
 				}
 			});
 
@@ -904,12 +918,38 @@ export const UnifiedTableEditor = memo(function UnifiedTableEditor({
 				
 				const cells: Array<{ columnId: number; value: any }> = [];
 				
+				// Process regular columns
 				headers.forEach((header, index) => {
 					const columnId = columnMapping[header];
 					if (columnId && values[index] !== undefined) {
 						cells.push({
 							columnId,
 							value: values[index] || null
+						});
+					}
+				});
+				
+				// Process reference column groups
+				Object.entries(referenceColumnGroups).forEach(([originalColumnName, group]) => {
+					const referencedRowData: Record<string, any> = {};
+					let hasData = false;
+					
+					// Collect data from all referenced columns
+					group.referencedColumns.forEach(refHeader => {
+						const headerIndex = headers.indexOf(refHeader);
+						if (headerIndex !== -1 && values[headerIndex] !== undefined && values[headerIndex] !== "") {
+							// Extract the referenced column name (after the underscore)
+							const referencedColumnName = refHeader.substring(originalColumnName.length + 1);
+							referencedRowData[referencedColumnName] = values[headerIndex];
+							hasData = true;
+						}
+					});
+					
+					// If we have data for the referenced row, create it
+					if (hasData) {
+						cells.push({
+							columnId: group.columnId,
+							value: referencedRowData
 						});
 					}
 				});
