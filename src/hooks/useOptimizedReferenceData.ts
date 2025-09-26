@@ -8,7 +8,7 @@ import { useDatabase } from "@/contexts/DatabaseContext";
 interface ReferenceDataItem {
 	id: number;
 	displayValue: string;
-	primaryKeyValue: any;
+	rowData: any;
 }
 
 interface UseOptimizedReferenceDataResult {
@@ -253,21 +253,10 @@ export const useOptimizedReferenceData = (
 				) {
 					const displayParts: string[] = [];
 					let addedColumns = 0;
-					const maxColumns = 3;
-					let primaryKeyValue: any = null;
+					const maxColumns = 5; // Increased to show more columns
+					const rowData: any = {};
 
-					// Mai întâi găsim coloana primară pentru acest rând
-					const primaryColumn = referenceTable.columns?.find((col) => col.primary);
-					if (primaryColumn) {
-						const primaryCell = row.cells?.find(
-							(c: any) => c && c.columnId === primaryColumn.id,
-						);
-						if (primaryCell?.value != null && primaryCell.value.toString().trim() !== "") {
-							primaryKeyValue = primaryCell.value;
-						}
-					}
-
-					// Apoi procesăm coloanele pentru display
+					// Procesăm coloanele pentru display și rowData
 					referenceTable.columns?.forEach((column) => {
 						if (!column || !column.id || addedColumns >= maxColumns) return;
 
@@ -277,8 +266,11 @@ export const useOptimizedReferenceData = (
 						if (cell?.value != null && cell.value.toString().trim() !== "") {
 							let formattedValue = cell.value.toString().trim();
 
-							if (formattedValue.length > 15) {
-								formattedValue = formattedValue.substring(0, 15) + "...";
+							// Store full row data for export/hover
+							rowData[column.name] = cell.value;
+
+							if (formattedValue.length > 20) {
+								formattedValue = formattedValue.substring(0, 20) + "...";
 							}
 
 							if (column.type === "date") {
@@ -299,14 +291,13 @@ export const useOptimizedReferenceData = (
 					});
 
 					const displayValue = displayParts.length
-						? displayParts.join(" • ").slice(0, 50)
+						? displayParts.join(" • ")
 						: `Row #${row.id || "unknown"}`;
 
 					options.push({
 						id: typeof row.id === 'string' ? parseInt(row.id) : (row.id || 0),
 						displayValue,
-						// Pentru referințe, folosim valoarea reală a coloanei primary ca primaryKeyValue
-						primaryKeyValue: primaryKeyValue || row.id,
+						rowData,
 					});
 				}
 			});

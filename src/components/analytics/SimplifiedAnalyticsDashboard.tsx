@@ -88,11 +88,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
   trend 
 }) => {
   const colorClasses = {
-    green: 'text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50',
-    blue: 'text-indigo-600 bg-gradient-to-br from-indigo-50 to-indigo-100/50 border-indigo-200/50',
-    orange: 'text-amber-600 bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50',
-    red: 'text-red-600 bg-gradient-to-br from-red-50 to-red-100/50 border-red-200/50',
-    purple: 'text-purple-600 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50'
+    green: 'text-gray-800 bg-gradient-to-br from-gray-50 to-gray-100/50 border-gray-200/50',
+    blue: 'text-gray-700 bg-gradient-to-br from-gray-50 to-gray-100/50 border-gray-200/50',
+    orange: 'text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/50 border-gray-200/50',
+    red: 'text-gray-900 bg-gradient-to-br from-gray-50 to-gray-100/50 border-gray-200/50',
+    purple: 'text-gray-800 bg-gradient-to-br from-gray-50 to-gray-100/50 border-gray-200/50'
   };
 
   return (
@@ -112,8 +112,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
             </div>
             {trend && (
               <div className="flex items-center gap-1">
-                <TrendingUp className={`h-3 w-3 ${trend.type === 'increase' ? 'text-emerald-500' : 'text-red-500'}`} />
-                <span className={`text-xs font-semibold ${trend.type === 'increase' ? 'text-emerald-600' : 'text-red-600'}`}>
+                <TrendingUp className={`h-3 w-3 ${trend.type === 'increase' ? 'text-gray-600' : 'text-gray-400'}`} />
+                <span className={`text-xs font-semibold ${trend.type === 'increase' ? 'text-gray-700' : 'text-gray-500'}`}>
                   {trend.value}%
                 </span>
               </div>
@@ -350,8 +350,8 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
                 <Area
                   type="monotone"
                   dataKey="activeUsers"
-                  stroke="#6366f1"
-                  fill="#6366f1"
+                  stroke="#1f2937"
+                  fill="#1f2937"
                   fillOpacity={0.15}
                   strokeWidth={3}
                   strokeLinecap="round"
@@ -376,7 +376,7 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
                   label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
                   {databaseActivity.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"][index % 5]} />
+                    <Cell key={`cell-${index}`} fill={["#1f2937", "#374151", "#4b5563", "#6b7280", "#9ca3af"][index % 5]} />
                   ))}
                 </Pie>
                 <Tooltip 
@@ -438,12 +438,12 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#10b981"
+                  stroke="#374151"
                   strokeWidth={3}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  dot={{ fill: "#10b981", strokeWidth: 0, r: 0, opacity: 0 }}
-                  activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 3, fill: "white", strokeOpacity: 1, filter: "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))" }}
+                  dot={{ fill: "#374151", strokeWidth: 0, r: 0, opacity: 0 }}
+                  activeDot={{ r: 6, stroke: "#374151", strokeWidth: 3, fill: "white", strokeOpacity: 1, filter: "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -489,8 +489,8 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke="#8b5cf6"
-                  fill="#8b5cf6"
+                  stroke="#4b5563"
+                  fill="#4b5563"
                   fillOpacity={0.15}
                   strokeWidth={3}
                   strokeLinecap="round"

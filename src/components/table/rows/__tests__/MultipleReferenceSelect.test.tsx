@@ -8,14 +8,14 @@ const mockOptions = [
 	{
 		id: 1,
 		displayValue: "User 1 - john@example.com",
-		primaryKeyValue: "user1",
+		rowData: { name: "User 1", email: "john@example.com" },
 	},
 	{
 		id: 2,
 		displayValue: "User 2 - jane@example.com",
-		primaryKeyValue: "user2",
+		rowData: { name: "User 2", email: "jane@example.com" },
 	},
-	{ id: 3, displayValue: "User 3 - bob@example.com", primaryKeyValue: "user3" },
+	{ id: 3, displayValue: "User 3 - bob@example.com", rowData: { name: "User 3", email: "bob@example.com" } },
 ];
 
 const defaultProps = {
@@ -39,7 +39,7 @@ describe("MultipleReferenceSelect", () => {
 
 	it("shows selected items as badges", () => {
 		render(
-			<MultipleReferenceSelect {...defaultProps} value={["user1", "user2"]} />,
+			<MultipleReferenceSelect {...defaultProps} value={["1", "2"]} />,
 		);
 		expect(screen.getByText("User 1 - john@example.com")).toBeInTheDocument();
 		expect(screen.getByText("User 2 - jane@example.com")).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("MultipleReferenceSelect", () => {
 		});
 
 		// First selection
-		expect(onValueChange).toHaveBeenCalledWith(["user1"]);
+		expect(onValueChange).toHaveBeenCalledWith(["1"]);
 
 		// Clear the mock to test the second selection
 		onValueChange.mockClear();
@@ -87,7 +87,7 @@ describe("MultipleReferenceSelect", () => {
 		});
 
 		// Second selection currently replaces the first selection (component behavior)
-		expect(onValueChange).toHaveBeenCalledWith(["user2"]);
+		expect(onValueChange).toHaveBeenCalledWith(["2"]);
 	});
 
 	it("allows removing individual items", async () => {
@@ -107,7 +107,7 @@ describe("MultipleReferenceSelect", () => {
 			fireEvent.click(removeButton);
 		}
 
-		expect(onValueChange).toHaveBeenCalledWith(["user2"]);
+		expect(onValueChange).toHaveBeenCalledWith(["2"]);
 	});
 
 	it("supports search functionality", async () => {

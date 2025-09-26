@@ -117,15 +117,24 @@ export default function DashboardsPage() {
     }
 
     try {
+      console.log('🆕 Creating dashboard with data:', createForm);
       const res = await fetch('/api/dashboards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createForm),
       });
 
-      if (!res.ok) throw new Error('Failed to create dashboard');
+      console.log('📡 Create dashboard response status:', res.status);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('❌ Failed to create dashboard:', errorData);
+        throw new Error(`Failed to create dashboard: ${res.status} ${res.statusText}`);
+      }
 
       const newDashboard = await res.json();
+      console.log('✅ Dashboard created successfully:', newDashboard);
+      
       setDashboards(prev => [...prev, newDashboard]);
       setSelectedDashboardId(newDashboard.id);
       setIsCreateModalOpen(false);
@@ -135,10 +144,55 @@ export default function DashboardsPage() {
         title: 'Success',
         description: 'Dashboard created successfully.',
       });
-    } catch {
+    } catch (error) {
+      console.error('💥 Error creating dashboard:', error);
       toast.toast({
         title: 'Error',
         description: 'Failed to create dashboard.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCreateDefaultDashboard = async () => {
+    console.log('🚀 Creating default dashboard...');
+    try {
+      const defaultForm = {
+        name: 'My Dashboard',
+        description: 'Default dashboard',
+        mode: 'PRIVATE' as 'PRIVATE' | 'PUBLIC'
+      };
+
+      console.log('🆕 Creating default dashboard with data:', defaultForm);
+      const res = await fetch('/api/dashboards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(defaultForm),
+      });
+
+      console.log('📡 Create default dashboard response status:', res.status);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('❌ Failed to create default dashboard:', errorData);
+        throw new Error(`Failed to create default dashboard: ${res.status} ${res.statusText}`);
+      }
+
+      const newDashboard = await res.json();
+      console.log('✅ Default dashboard created successfully:', newDashboard);
+      
+      setDashboards(prev => [...prev, newDashboard]);
+      setSelectedDashboardId(newDashboard.id);
+      
+      toast.toast({
+        title: 'Success',
+        description: 'Default dashboard created successfully.',
+      });
+    } catch (error) {
+      console.error('💥 Error creating default dashboard:', error);
+      toast.toast({
+        title: 'Error',
+        description: 'Failed to create default dashboard.',
         variant: 'destructive',
       });
     }
@@ -199,59 +253,81 @@ export default function DashboardsPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Dashboard
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Dashboard</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={createForm.name}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter dashboard name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={createForm.description}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Enter dashboard description"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="mode">Mode</Label>
-                    <Select value={createForm.mode} onValueChange={(value) => setCreateForm(prev => ({ ...prev, mode: value as 'PRIVATE' | 'PUBLIC' }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PRIVATE">Private</SelectItem>
-                        <SelectItem value="PUBLIC">Public</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateDashboard}>
-                      Create Dashboard
-                    </Button>
-                  </div>
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={handleCreateDefaultDashboard}
+                className="w-full"
+                variant="default"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Default Dashboard
+              </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
                 </div>
-              </DialogContent>
-            </Dialog>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or create custom
+                  </span>
+                </div>
+              </div>
+              
+              <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full" variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Custom Dashboard
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Dashboard</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={createForm.name}
+                        onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter dashboard name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={createForm.description}
+                        onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Enter dashboard description"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="mode">Mode</Label>
+                      <Select value={createForm.mode} onValueChange={(value) => setCreateForm(prev => ({ ...prev, mode: value as 'PRIVATE' | 'PUBLIC' }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PRIVATE">Private</SelectItem>
+                          <SelectItem value="PUBLIC">Public</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleCreateDashboard}>
+                        Create Dashboard
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardContent>
         </Card>
       </div>

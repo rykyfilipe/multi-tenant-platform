@@ -51,8 +51,20 @@ export async function GET(
       sum + db.tables.reduce((tableSum, table) => tableSum + table._count.rows, 0), 0
     );
 
-    // Calculate storage usage (simplified)
-    const storageUsedGB = totalRows * 0.001; // Rough estimate: 1KB per row
+    // Calculate storage usage using PostgreSQL functions
+    const storageResult = await prisma.$queryRaw`
+      SELECT 
+        pg_size_pretty(pg_database_size(current_database())) as database_size,
+        pg_database_size(current_database()) as database_size_bytes,
+        pg_size_pretty(pg_total_relation_size('"User"')) as user_table_size,
+        pg_size_pretty(pg_total_relation_size('"Database"')) as database_table_size,
+        pg_size_pretty(pg_total_relation_size('"Table"')) as table_table_size,
+        pg_size_pretty(pg_total_relation_size('"Row"')) as row_table_size,
+        pg_size_pretty(pg_total_relation_size('"Cell"')) as cell_table_size
+    ` as any[];
+
+    const dbSizeBytes = storageResult[0]?.database_size_bytes || 0;
+    const storageUsedGB = Number(dbSizeBytes) / (1024 * 1024 * 1024); // Convert bytes to GB
     const storageUsagePercentage = Math.min((storageUsedGB / 100) * 100, 100); // Assume 100GB total
 
     // Get recent activity

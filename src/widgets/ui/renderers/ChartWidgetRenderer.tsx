@@ -22,15 +22,15 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({ widget
   const showGrid = config?.showGrid !== false;
   const showTooltip = config?.showTooltip !== false;
 
-  // Premium color palette
+  // Premium black and white color palette
   const premiumColors = {
-    primary: "#6366f1", // Indigo
-    secondary: "#8b5cf6", // Purple
-    accent: "#06b6d4", // Cyan
-    success: "#10b981", // Emerald
-    warning: "#f59e0b", // Amber
-    error: "#ef4444", // Red
-    neutral: "#6b7280", // Gray
+    primary: "#1f2937", // Dark gray
+    secondary: "#374151", // Medium gray
+    accent: "#4b5563", // Light gray
+    success: "#111827", // Very dark gray
+    warning: "#6b7280", // Gray
+    error: "#000000", // Black
+    neutral: "#9ca3af", // Light gray
   };
 
   const ChartComponent = chartType === "area" ? AreaChart : LineChart;

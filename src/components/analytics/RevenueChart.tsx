@@ -37,15 +37,15 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
 }) => {
 	const ChartComponent = type === "area" ? AreaChart : LineChart;
 
-	// Premium color palette for revenue charts
+	// Premium black and white color palette for revenue charts
 	const premiumColors = {
-		primary: "#10b981", // Emerald
-		secondary: "#06b6d4", // Cyan
-		accent: "#8b5cf6", // Purple
-		success: "#059669", // Dark Emerald
-		warning: "#f59e0b", // Amber
-		error: "#ef4444", // Red
-		neutral: "#6b7280", // Gray
+		primary: "#1f2937", // Dark gray
+		secondary: "#374151", // Medium gray
+		accent: "#4b5563", // Light gray
+		success: "#111827", // Very dark gray
+		warning: "#6b7280", // Gray
+		error: "#000000", // Black
+		neutral: "#9ca3af", // Light gray
 	};
 
 	return (
