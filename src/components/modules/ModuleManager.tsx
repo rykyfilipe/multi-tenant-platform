@@ -178,12 +178,6 @@ export default function ModuleManager() {
 				// Refresh modules status to ensure consistency
 				await fetchModulesStatus();
 				
-				// Update local database context with new tables when module is enabled
-				if (action === "enable" && selectedDatabase && selectedDatabase.id === databaseId) {
-					// Refresh tables to include the new module tables
-					await fetchTables();
-				}
-				
 				if (action === "enable") {
 					showAlert(`Module enabled successfully`, "success");
 				} else {
