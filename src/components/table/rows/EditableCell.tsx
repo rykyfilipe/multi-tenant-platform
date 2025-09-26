@@ -836,6 +836,15 @@ export function EditableCell({
 			// Pentru coloanele de referință, folosim datele din hook
 			const options = referenceData[column.referenceTableId] ?? [];
 			
+			console.log("🔍 EditableCell - Reference display debug:", {
+				columnName: column.name,
+				referenceTableId: column.referenceTableId,
+				optionsCount: options.length,
+				options: options.slice(0, 2), // First 2 options
+				value: value,
+				referenceValues: normalizeReferenceValue(value, true)
+			});
+			
 			if (options.length === 0) {
 				return "No reference data available";
 			}

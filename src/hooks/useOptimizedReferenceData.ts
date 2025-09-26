@@ -305,7 +305,13 @@ export const useOptimizedReferenceData = (
 			console.log("✅ useOptimizedReferenceData - Processed reference data:", {
 				tableId,
 				optionsCount: options.length,
-				options: options.slice(0, 3) // Log first 3 options for debugging
+				options: options.slice(0, 3), // Log first 3 options for debugging
+				firstOptionStructure: options[0] ? {
+					id: options[0].id,
+					displayValue: options[0].displayValue,
+					hasRowData: !!options[0].rowData,
+					rowDataKeys: options[0].rowData ? Object.keys(options[0].rowData) : []
+				} : null
 			});
 
 			return options;
