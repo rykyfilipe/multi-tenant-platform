@@ -810,6 +810,18 @@ export function EditableCell({
 	}
 
 	const display = useMemo(() => {
+		// Debug log pentru toate celulele
+		console.log('EditableCell display useMemo called:', {
+			cellId: cell?.id,
+			columnId: column?.id,
+			columnType: column?.type,
+			columnName: column?.name,
+			referenceTableId: column?.referenceTableId,
+			value,
+			valueType: typeof value,
+			isLinkColumn: column?.type === USER_FRIENDLY_COLUMN_TYPES.link
+		});
+
 		if (value == null || value === "") {
 			return t("table.doubleClickToAddValue");
 		}

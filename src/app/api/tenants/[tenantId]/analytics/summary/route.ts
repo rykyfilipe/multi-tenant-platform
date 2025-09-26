@@ -51,26 +51,54 @@ export async function GET(
       sum + db.tables.reduce((tableSum, table) => tableSum + table._count.rows, 0), 0
     );
 
-    // Calculate storage usage using PostgreSQL functions
-    const storageResult = await prisma.$queryRaw`
-      SELECT 
-        pg_size_pretty(pg_database_size(current_database())) as database_size,
-        pg_database_size(current_database()) as database_size_bytes,
-        pg_size_pretty(pg_total_relation_size('"User"')) as user_table_size,
-        pg_size_pretty(pg_total_relation_size('"Database"')) as database_table_size,
-        pg_size_pretty(pg_total_relation_size('"Table"')) as table_table_size,
-        pg_size_pretty(pg_total_relation_size('"Row"')) as row_table_size,
-        pg_size_pretty(pg_total_relation_size('"Cell"')) as cell_table_size
-    ` as any[];
+    // Calculate real storage usage using PostgreSQL functions for tenant's tables only
+    let totalStorageBytes = 0;
+    
+    // Get all table names for this tenant
+    const tenantTables = await prisma.table.findMany({
+      where: {
+        database: {
+          tenantId: tenantId
+        }
+      },
+      select: {
+        id: true,
+        name: true
+      }
+    });
 
-    const dbSizeBytes = storageResult[0]?.database_size_bytes || 0;
-    const storageUsedGB = Number(dbSizeBytes) / (1024 * 1024 * 1024); // Convert bytes to GB
+    // Calculate storage for each table using pg_total_relation_size
+    for (const table of tenantTables) {
+      try {
+        const tableSizeResult = await prisma.$queryRaw`
+          SELECT pg_total_relation_size(${table.name}::regclass) as table_size_bytes
+        ` as any[];
+        
+        const tableSizeBytes = Number(tableSizeResult[0]?.table_size_bytes || 0);
+        totalStorageBytes += tableSizeBytes;
+        
+        console.log(`Table ${table.name} (${table.id}): ${tableSizeBytes} bytes`);
+      } catch (error) {
+        console.warn(`Could not get size for table ${table.name}:`, error);
+        // Fallback: estimate based on row count
+        const tableRowCount = await prisma.row.count({
+          where: { tableId: table.id }
+        });
+        totalStorageBytes += tableRowCount * 100; // Estimate 100 bytes per row
+      }
+    }
+
+    const storageUsedGB = totalStorageBytes / (1024 * 1024 * 1024); // Convert bytes to GB
     
     // Debug log to check calculation
     console.log('Storage calculation debug:', {
-      dbSizeBytes,
+      tenantId,
+      totalTables: tenantTables.length,
+      totalRows,
+      totalStorageBytes,
       storageUsedGB,
-      storageUsedGBFormatted: storageUsedGB.toFixed(6)
+      storageUsedGBFormatted: storageUsedGB.toFixed(6),
+      tenantTables: tenantTables.map(t => ({ id: t.id, name: t.name }))
     });
     
     // Convert to appropriate unit based on size
@@ -93,6 +121,10 @@ export async function GET(
     
     // Debug log for final result
     console.log('Storage conversion result:', {
+      tenantId,
+      totalTables: tenantTables.length,
+      totalRows,
+      totalStorageBytes,
       storageUsed,
       storageUnit,
       storageUsedFormatted: `${storageUsed.toFixed(1)}${storageUnit}`

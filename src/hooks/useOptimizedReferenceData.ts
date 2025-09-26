@@ -38,6 +38,14 @@ export const useOptimizedReferenceData = (
 
 	useEffect(() => {
 		const fetchReferenceData = async () => {
+			// Debug log pentru reference data loading
+			console.log('useOptimizedReferenceData fetchReferenceData called:', {
+				tenantId: tenant?.id,
+				selectedDatabaseId: selectedDatabase?.id,
+				referenceTableId,
+				tablesCount: tables?.length,
+				tables: tables?.map(t => ({ id: t.id, name: t.name }))
+			});
 
 			setIsLoading(true);
 			setError(null);
