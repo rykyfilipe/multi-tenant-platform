@@ -1,6 +1,6 @@
 /** @format */
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Table, Row } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
