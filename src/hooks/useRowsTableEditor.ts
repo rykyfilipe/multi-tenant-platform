@@ -45,14 +45,18 @@ function useRowsTableEditor(
 		onError: onError || ((error) => {
 			// Handle error silently or with proper error handling
 		}),
-		onNewRowsAdded: (newRows) => {
-			// Notifică callback-ul pentru actualizare optimistă a UI-ului
-			onCellsUpdated?.(newRows);
-		},
-		onNewRowsUpdated: (updatedRows) => {
-			// Notifică callback-ul pentru actualizare optimistă a UI-ului
-			onCellsUpdated?.(updatedRows);
-		},
+	onNewRowsAdded: (newRows) => {
+		// Don't call onCellsUpdated for local temporary rows
+		// They are already displayed through pendingNewRows
+		// onCellsUpdated should only be called for saved rows from server
+		console.log("🔍 New rows added to local batch:", newRows);
+	},
+	onNewRowsUpdated: (updatedRows) => {
+		// Don't call onCellsUpdated for local temporary row updates
+		// They are already displayed through pendingNewRows
+		// onCellsUpdated should only be called for saved rows from server
+		console.log("🔍 Local rows updated in batch:", updatedRows);
+	},
 	});
 
 	const handleCancelEdit = () => cancelEditing();

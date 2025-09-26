@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Column, Row } from "@/types/database";
+import { Column, Row, Table } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, FileText } from "lucide-react";
@@ -24,7 +24,7 @@ interface Props {
 	getPendingValue: (rowId: string, columnId: string) => any;
 	canEdit: boolean;
 	canDelete: boolean;
-	tables?: any[];
+	tables?: Table[];
 	// Inline row creator props
 	showInlineRowCreator?: boolean;
 	onSaveNewRow?: (rowData: Record<string, any>) => void;
@@ -129,6 +129,7 @@ export function RowGrid({
 						onSave={onSaveNewRow || (() => {})}
 						onCancel={onCancelNewRow || (() => {})}
 						isSaving={isSavingNewRow}
+						tables={tables}
 					/>
 				)}
 				
@@ -204,6 +205,7 @@ export function RowGrid({
 					onSave={onSaveNewRow || (() => {})}
 					onCancel={onCancelNewRow || (() => {})}
 					isSaving={isSavingNewRow}
+					tables={tables}
 				/>
 			)}
 			

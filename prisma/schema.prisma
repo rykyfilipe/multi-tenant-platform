@@ -47,6 +47,9 @@ model Tenant {
   invitations         Invitation[]
   tablePermissions    TablePermission[]
   dashboards          Dashboard[]
+  widgets             Widget[]
+  widgetDrafts        WidgetDraft[]
+  widgetAudits        WidgetAudit[]
   admin               User                @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   users               User[]              @relation("TenantUsers")
   userActivities      UserActivity[]
@@ -63,6 +66,7 @@ model Tenant {
   pdfTemplateConfigs  PDFTemplateConfig[]
   anafCredentials     ANAFCredentials[]
   anafSubmissionLogs  ANAFSubmissionLog[]
+  WidgetSnapshot      WidgetSnapshot[]
 
   @@index([adminId])
 }
@@ -96,6 +100,9 @@ model User {
   updatedDashboards            Dashboard[]        @relation("DashboardUpdater")
   createdWidgets               Widget[]           @relation("WidgetCreator")
   updatedWidgets               Widget[]           @relation("WidgetUpdater")
+  createdWidgetDrafts          WidgetDraft[]      @relation("WidgetDraftCreator")
+  updatedWidgetDrafts          WidgetDraft[]      @relation("WidgetDraftUpdater")
+  widgetAuditEvents            WidgetAudit[]      @relation("WidgetAuditActor")
 
   @@index([tenantId])
 }
@@ -564,21 +571,24 @@ model ANAFSubmissionLog {
 }
 
 model Dashboard {
-  id          Int      @id @default(autoincrement())
-  tenantId    Int
-  name        String
-  description String?
-  mode        String   @default("view")
-  isPublic    Boolean  @default(false)
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   Int
-  updatedBy   Int
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  widgets     Widget[]
-  creator     User     @relation("DashboardCreator", fields: [createdBy], references: [id])
-  updater     User     @relation("DashboardUpdater", fields: [updatedBy], references: [id])
+  id              Int              @id @default(autoincrement())
+  tenantId        Int
+  name            String
+  description     String?
+  mode            String           @default("view")
+  isPublic        Boolean          @default(false)
+  isDefault       Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  createdBy       Int
+  updatedBy       Int
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  widgets         Widget[]
+  widgetDrafts    WidgetDraft[]
+  widgetAudits    WidgetAudit[]
+  widgetSnapshots WidgetSnapshot[]
+  creator         User             @relation("DashboardCreator", fields: [createdBy], references: [id])
+  updater         User             @relation("DashboardUpdater", fields: [updatedBy], references: [id])
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -588,27 +598,150 @@ model Dashboard {
 }
 
 model Widget {
-  id          Int       @id @default(autoincrement())
-  dashboardId Int
-  type        String
-  title       String?
-  position    Json
-  config      Json      @default("{}")
-  isVisible   Boolean   @default(true)
-  order       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  createdBy   Int
-  updatedBy   Int
-  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  creator     User      @relation("WidgetCreator", fields: [createdBy], references: [id])
-  updater     User      @relation("WidgetUpdater", fields: [updatedBy], references: [id])
+  id            Int              @id @default(autoincrement())
+  tenantId      Int
+  dashboardId   Int
+  kind          WidgetKind
+  title         String?
+  description   String?
+  position      Json
+  config        Json             @default("{}")
+  isVisible     Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  version       Int              @default(1)
+  schemaVersion Int              @default(1)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  createdBy     Int
+  updatedBy     Int
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboard     Dashboard        @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  creator       User             @relation("WidgetCreator", fields: [createdBy], references: [id])
+  updater       User             @relation("WidgetUpdater", fields: [updatedBy], references: [id])
+  drafts        WidgetDraft[]
+  audits        WidgetAudit[]
+  snapshots     WidgetSnapshot[]
 
+  @@index([tenantId])
   @@index([dashboardId])
-  @@index([dashboardId, order])
-  @@index([type])
+  @@index([tenantId, dashboardId])
+  @@index([kind])
+  @@index([tenantId, kind])
+  @@index([sortOrder])
   @@index([createdBy])
   @@index([updatedBy])
+  @@index([config], type: Gin)
+}
+
+model WidgetSnapshot {
+  id          Int        @id @default(autoincrement())
+  widgetId    Int
+  tenantId    Int
+  dashboardId Int
+  version     Int
+  kind        WidgetKind
+  title       String?
+  description String?
+  position    Json
+  config      Json
+  createdAt   DateTime   @default(now())
+
+  widget    Widget    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([widgetId, version])
+  @@index([tenantId])
+  @@index([dashboardId])
+}
+
+model WidgetDraft {
+  id            Int               @id @default(autoincrement())
+  tenantId      Int
+  dashboardId   Int
+  widgetId      Int?
+  kind          WidgetKind
+  title         String?
+  description   String?
+  position      Json?
+  config        Json
+  version       Int               @default(1)
+  schemaVersion Int               @default(1)
+  status        WidgetDraftStatus @default(PENDING)
+  operations    Json?
+  conflictMeta  Json?
+  note          String?
+  createdBy     Int
+  updatedBy     Int
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  appliedAt     DateTime?
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboard     Dashboard         @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  widget        Widget?           @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  creator       User              @relation("WidgetDraftCreator", fields: [createdBy], references: [id])
+  updater       User              @relation("WidgetDraftUpdater", fields: [updatedBy], references: [id])
+  audits        WidgetAudit[]
+
+  @@index([tenantId])
+  @@index([dashboardId])
+  @@index([widgetId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([createdAt])
+}
+
+model WidgetAudit {
+  id          Int                  @id @default(autoincrement())
+  tenantId    Int
+  dashboardId Int
+  widgetId    Int?
+  draftId     Int?
+  actorId     Int?
+  operation   WidgetAuditOperation
+  diff        Json
+  metadata    Json?
+  createdAt   DateTime             @default(now())
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboard   Dashboard            @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  widget      Widget?              @relation(fields: [widgetId], references: [id], onDelete: SetNull)
+  draft       WidgetDraft?         @relation(fields: [draftId], references: [id], onDelete: SetNull)
+  actor       User?                @relation("WidgetAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([dashboardId])
+  @@index([widgetId])
+  @@index([draftId])
+  @@index([actorId])
+  @@index([operation])
+  @@index([createdAt])
+}
+
+enum WidgetKind {
+  CHART
+  TABLE
+  TASKS
+  CLOCK
+  WEATHER
+  KPI
+  CUSTOM
+}
+
+enum WidgetDraftStatus {
+  PENDING
+  READY
+  APPLIED
+  DISCARDED
+  CONFLICT
+}
+
+enum WidgetAuditOperation {
+  CREATE
+  UPDATE
+  DELETE
+  APPLY_PENDING
+  RESOLVE_CONFLICT
 }
 
 enum Role {

@@ -1,0 +1,74 @@
+name: Widgets CI
+
+on:
+  push:
+    branches:
+      - feat/rebuild-widgets-2025**
+      - main
+  pull_request:
+    paths:
+      - 'src/widgets/**'
+      - 'src/app/home/dashboards/page.tsx'
+      - 'src/components/dashboard/DashboardPage.tsx'
+      - 'prisma/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/ci-widgets.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/widgets_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/widgets_ci
+      NEXT_PUBLIC_WIDGETS_V2: "true"
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: widgets_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres -d widgets_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run Migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed Database
+        run: npm run db:seed
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Unit Tests
+        run: npm run test
+
+      - name: Integration Tests
+        run: npm run test:integration
+
+      - name: E2E Tests (widgets)
+        run: npm run test:e2e -- --project=widgets
+        env:
+          PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: 1

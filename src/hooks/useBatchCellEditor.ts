@@ -365,9 +365,10 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				"success",
 			);
 			
-			// 🔧 FIX: Update local state with server response data
-			// Only include cell updates, not new rows (they're already added locally via onNewRowsAdded)
-			onSuccess?.(allUpdatedCells);
+		// 🔧 FIX: Update local state with server response data
+		// Include both new rows (from server) and cell updates to properly update UI
+		const allUpdatedData = [...allNewRows, ...allUpdatedCells];
+		onSuccess?.(allUpdatedData);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to save changes";

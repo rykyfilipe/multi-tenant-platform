@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Column, Row } from "@/types/database";
+import { Column, Row, Table } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,17 +13,23 @@ import { CalendarIcon, Plus, X, Check } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
+import { MultipleReferenceSelect } from "../rows/MultipleReferenceSelect";
+import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 
 interface Props {
 	columns: Column[];
 	onSave?: (rowData: Record<string, any>) => void;
 	onCancel?: () => void;
 	isSaving?: boolean;
+	tables?: Table[];
 }
 
-export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }: Props) {
+export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false, tables = [] }: Props) {
 	const [rowData, setRowData] = useState<Record<string, any>>({});
 	const [errors, setErrors] = useState<Record<string, string>>({});
+
+	// Hook for reference data - same as EditableCell
+	const { referenceData } = useOptimizedReferenceData(tables);
 
 	// Initialize row data with default values
 	useEffect(() => {
@@ -173,19 +179,21 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false }
 				);
 
 			case USER_FRIENDLY_COLUMN_TYPES.link:
+				// Use the same MultipleReferenceSelect as EditableCell
+				const options = referenceData[column.referenceTableId ?? -1] ?? [];
+				const referencedTable = tables?.find((t) => t.id === column.referenceTableId);
+
 				return (
-					<Select
-						value={Array.isArray(value) && value.length > 0 ? value[0]?.toString() || "none" : "none"}
-						onValueChange={(val) => handleInputChange(column.id.toString(), val === "none" ? [] : [val])}
-					>
-						<SelectTrigger className={cn("h-8 w-full min-w-0", error && "border-destructive")} style={{ minWidth: '120px', maxWidth: '100%' }}>
-							<SelectValue placeholder="Select..." />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="none">None</SelectItem>
-							{/* TODO: Add reference options */}
-						</SelectContent>
-					</Select>
+					<MultipleReferenceSelect
+						value={value}
+						onValueChange={(val) => handleInputChange(column.id.toString(), val)}
+						options={options}
+						placeholder={`Select ${referencedTable?.name || "references"}`}
+						referencedTableName={referencedTable?.name}
+						isMultiple={true}
+						hasError={!!error}
+						className="w-full"
+					/>
 				);
 
 			case USER_FRIENDLY_COLUMN_TYPES.number:

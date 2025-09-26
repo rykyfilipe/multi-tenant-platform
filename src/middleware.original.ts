@@ -148,46 +148,7 @@ export default withAuth(
 			}
 		}
 
-		// Rate limiting (skip auth endpoints)
-		if (
-			!pathname.startsWith("/api/auth/") &&
-			!pathname.includes("login") &&
-			!pathname.includes("register") &&
-			!pathname.includes("forgot-password") &&
-			!pathname.includes("reset-password")
-		) {
-			let rateLimitConfig = RATE_LIMITS.public;
-			if (pathname.startsWith("/api/")) rateLimitConfig = RATE_LIMITS.api;
-			else if (pathname.includes("contact")) rateLimitConfig = RATE_LIMITS.contact;
-
-			const identifier = getClientIdentifier(request);
-			const rateLimitResult = checkRateLimit(identifier, rateLimitConfig);
-
-			if (!rateLimitResult.allowed) {
-				const headers: Record<string, string> = {
-					"X-RateLimit-Limit": rateLimitConfig.maxRequests.toString(),
-					"X-RateLimit-Remaining": "0",
-					"X-RateLimit-Reset": new Date(rateLimitResult.resetTime).toISOString(),
-				};
-				if (rateLimitResult.retryAfter) {
-					headers["Retry-After"] = rateLimitResult.retryAfter.toString();
-				}
-				return NextResponse.json(
-					{
-						error: rateLimitResult.blocked
-							? "Too many requests. Please try again later."
-							: "Rate limit exceeded. Please try again later.",
-						retryAfter: rateLimitResult.retryAfter,
-					},
-					{ status: 429, headers },
-				);
-			}
-
-			// Add headers for successful requests
-			response.headers.set("X-RateLimit-Limit", rateLimitConfig.maxRequests.toString());
-			response.headers.set("X-RateLimit-Remaining", rateLimitResult.remaining.toString());
-			response.headers.set("X-RateLimit-Reset", new Date(rateLimitResult.resetTime).toISOString());
-		}
+		
 
 		// Track API performance for API routes
 		if (pathname.startsWith("/api/")) {
