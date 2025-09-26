@@ -32,30 +32,62 @@ export default function DashboardsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', mode: 'PRIVATE' as 'PRIVATE' | 'PUBLIC' });
 
+  // Debug logging
+  console.log('🔍 DashboardsPage Debug:', {
+    tenant: tenant ? { id: tenant.id, name: tenant.name } : null,
+    user: user ? { id: user.id, email: user.email } : null,
+    actorId,
+    isLoading,
+    dashboardsCount: dashboards.length,
+    selectedDashboardId,
+    isWidgetsV2Enabled: isWidgetsV2Enabled()
+  });
+
   useEffect(() => {
-    if (user?.id ) {
+    console.log('👤 User effect triggered:', { userId: user?.id, currentActorId: actorId });
+    if (user?.id) {
+      console.log('✅ Setting actorId to:', user.id);
       setActorId(user.id);
     }
   }, [user?.id, actorId]);
 
   useEffect(() => {
     const loadDashboards = async () => {
+      console.log('📊 Starting to load dashboards...');
       try {
         setIsLoading(true);
+        console.log('🌐 Fetching from /api/dashboards');
         const res = await fetch('/api/dashboards');
-        if (!res.ok) throw new Error('Failed to load dashboards');
+        console.log('📡 Response status:', res.status, res.statusText);
+        
+        if (!res.ok) {
+          console.error('❌ Failed to load dashboards:', res.status, res.statusText);
+          throw new Error(`Failed to load dashboards: ${res.status} ${res.statusText}`);
+        }
+        
         const data = (await res.json()) as { dashboards?: DashboardSummary[]; pagination?: unknown };
+        console.log('📋 Raw API response:', data);
+        
         const dashboardList = data.dashboards ?? [];
+        console.log('📊 Dashboard list:', dashboardList);
+        
         setDashboards(dashboardList);
+        
         const defaultDashboard = dashboardList.find((d) => d.isDefault) ?? dashboardList[0];
+        console.log('🎯 Default dashboard:', defaultDashboard);
+        
         setSelectedDashboardId(defaultDashboard?.id ?? null);
-      } catch {
+        console.log('✅ Selected dashboard ID set to:', defaultDashboard?.id ?? null);
+        
+      } catch (error) {
+        console.error('💥 Error loading dashboards:', error);
         toast.toast({
           title: 'Error',
           description: 'Unable to load dashboards.',
           variant: 'destructive',
         });
       } finally {
+        console.log('🏁 Loading completed, setting isLoading to false');
         setIsLoading(false);
       }
     };
@@ -64,8 +96,14 @@ export default function DashboardsPage() {
   }, [toast]);
 
   const dashboardName = useMemo(() => {
-    if (!selectedDashboardId) return null;
-    return dashboards.find((dash) => dash.id === selectedDashboardId)?.name ?? null;
+    console.log('🏷️ Computing dashboard name:', { selectedDashboardId, dashboardsCount: dashboards.length });
+    if (!selectedDashboardId) {
+      console.log('❌ No selected dashboard ID');
+      return null;
+    }
+    const name = dashboards.find((dash) => dash.id === selectedDashboardId)?.name ?? null;
+    console.log('📝 Dashboard name:', name);
+    return name;
   }, [dashboards, selectedDashboardId]);
 
   const handleCreateDashboard = async () => {
@@ -106,7 +144,17 @@ export default function DashboardsPage() {
     }
   };
 
+  // Debug render conditions
+  console.log('🎨 Render conditions:', {
+    isWidgetsV2Enabled: isWidgetsV2Enabled(),
+    isLoading,
+    actorId,
+    dashboardsLength: dashboards.length,
+    selectedDashboardId
+  });
+
   if (!isWidgetsV2Enabled()) {
+    console.log('🚫 Widgets V2 not enabled - showing legacy message');
     return (
       <div className="space-y-4 p-6">
         <Card>
@@ -124,15 +172,20 @@ export default function DashboardsPage() {
   }
 
   if (isLoading || actorId === null) {
+    console.log('⏳ Showing loading state:', { isLoading, actorId });
     return (
       <div className="flex h-[60vh] items-center justify-center text-sm text-muted-foreground">
         Loading dashboard…
+        <div className="ml-4 text-xs text-gray-500">
+          Debug: isLoading={isLoading.toString()}, actorId={actorId?.toString() || 'null'}
+        </div>
       </div>
     );
   }
 
   // Empty state when no dashboards exist
   if (dashboards.length === 0) {
+    console.log('📭 No dashboards found - showing empty state');
     return (
       <div className="space-y-4 p-6">
         <Card>
@@ -205,6 +258,14 @@ export default function DashboardsPage() {
     );
   }
 
+  console.log('🎯 Rendering main dashboard view:', {
+    dashboardName,
+    selectedDashboardId,
+    tenantId: tenant?.id,
+    actorId,
+    dashboardsCount: dashboards.length
+  });
+
   return (
     <div className="space-y-4 p-6">
       <Card>
@@ -219,7 +280,10 @@ export default function DashboardsPage() {
               </p>
             </div>
             {dashboards.length > 1 && (
-              <Select value={selectedDashboardId?.toString()} onValueChange={(value) => setSelectedDashboardId(Number(value))}>
+              <Select value={selectedDashboardId?.toString()} onValueChange={(value) => {
+                console.log('🔄 Dashboard selection changed to:', value);
+                setSelectedDashboardId(Number(value));
+              }}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Select dashboard" />
                 </SelectTrigger>
@@ -292,7 +356,15 @@ export default function DashboardsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {selectedDashboardId && (
-            <WidgetCanvas tenantId={tenant?.id ?? 0} dashboardId={selectedDashboardId} actorId={actorId} />
+            <>
+              {console.log('🎨 Rendering WidgetCanvas with:', { tenantId: tenant?.id ?? 0, dashboardId: selectedDashboardId, actorId })}
+              <WidgetCanvas tenantId={tenant?.id ?? 0} dashboardId={selectedDashboardId} actorId={actorId} />
+            </>
+          )}
+          {!selectedDashboardId && (
+            <div className="text-center text-muted-foreground py-8">
+              No dashboard selected
+            </div>
           )}
         </CardContent>
       </Card>

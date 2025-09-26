@@ -13,13 +13,13 @@ import { AbsoluteDropdown } from "@/components/ui/absolute-dropdown";
 interface ReferenceOption {
 	id: number;
 	displayValue: string;
-	primaryKeyValue: any;
+	rowData: any;
 }
 
 interface MultipleReferenceSelectProps {
 	value: string[] | string | null;
 	onValueChange: (value: string[] | string | null) => void;
-	options: { id: number; displayValue: string; primaryKeyValue: any }[];
+	options: { id: number; displayValue: string; rowData: any }[];
 	placeholder?: string;
 	className?: string;
 	hasError?: boolean;
@@ -60,11 +60,11 @@ export function MultipleReferenceSelect({
 		return () => clearTimeout(timer);
 	}, [searchTerm]);
 
-	// Transform options to include primary key value
+	// Transform options to include row data
 	const transformedOptions: ReferenceOption[] = useMemo(() => {
 		return options.map((opt) => ({
 			...opt,
-			primaryKeyValue: opt.primaryKeyValue,
+			rowData: opt.rowData,
 		}));
 	}, [options]);
 
@@ -77,7 +77,10 @@ export function MultipleReferenceSelect({
 			(option) =>
 				option.displayValue.toLowerCase().includes(lowerSearchTerm) ||
 				option.id?.toString().toLowerCase().includes(lowerSearchTerm) ||
-				option.primaryKeyValue?.toString().toLowerCase().includes(lowerSearchTerm),
+				// Search in row data values too
+				Object.values(option.rowData || {}).some(value => 
+					value?.toString().toLowerCase().includes(lowerSearchTerm)
+				),
 		);
 	}, [transformedOptions, debouncedSearchTerm]);
 
@@ -105,11 +108,11 @@ export function MultipleReferenceSelect({
 		}
 
 		// Only return options that actually exist in the available options
-		// Use primaryKeyValue for validation, but compare as strings to handle type inconsistencies
+		// Use ID for validation, compare as strings to handle type inconsistencies
 		const filtered = transformedOptions.filter((opt) => {
-			const optPrimaryKey = opt.primaryKeyValue?.toString() || "";
+			const optId = opt.id?.toString() || "";
 			const isSelected = selectedValues.some(
-				(val) => val?.toString() === optPrimaryKey,
+				(val) => val?.toString() === optId,
 			);
 
 			return isSelected;
@@ -130,7 +133,7 @@ export function MultipleReferenceSelect({
 			const missingValues = value.filter(
 				(val) =>
 					!transformedOptions.some(
-						(opt) => opt.primaryKeyValue?.toString() === val?.toString(),
+						(opt) => opt.id?.toString() === val?.toString(),
 					),
 			);
 
@@ -140,7 +143,7 @@ export function MultipleReferenceSelect({
 					{
 						missingValues,
 						availableOptions: transformedOptions.map(
-							(opt) => opt.primaryKeyValue,
+							(opt) => opt.id,
 						),
 						selectedValues: value,
 					},
@@ -149,7 +152,7 @@ export function MultipleReferenceSelect({
 				// Auto-clean invalid values to prevent API errors
 				const validValues = value.filter((val) =>
 					transformedOptions.some(
-						(opt) => opt.primaryKeyValue?.toString() === val?.toString(),
+						(opt) => opt.id?.toString() === val?.toString(),
 					),
 				);
 
@@ -225,9 +228,9 @@ export function MultipleReferenceSelect({
 	}, [highlightedIndex]);
 
 	const toggleOption = (option: ReferenceOption) => {
-		// Pentru coloanele de tip reference, folosim ÎNTOTDEAUNA valoarea cheii primare
-		// Nu folosim ID-ul rândului ca fallback
-		const optionValue = option.primaryKeyValue?.toString();
+		// Pentru coloanele de tip reference, folosim ÎNTOTDEAUNA ID-ul rândului
+		// Nu mai folosim primaryKeyValue - folosim ID-ul rândului pentru referințe
+		const optionValue = option.id?.toString();
 
 		if (!optionValue) {
 			return;
@@ -260,7 +263,7 @@ export function MultipleReferenceSelect({
 		const invalidValues = selectedValues.filter(
 			(val) =>
 				!transformedOptions.some(
-					(opt) => opt.primaryKeyValue?.toString() === val?.toString(),
+					(opt) => opt.id?.toString() === val?.toString(),
 				),
 		);
 
@@ -273,7 +276,7 @@ export function MultipleReferenceSelect({
 
 		const validValues = selectedValues.filter((val) =>
 			transformedOptions.some(
-				(opt) => opt.primaryKeyValue?.toString() === val?.toString(),
+				(opt) => opt.id?.toString() === val?.toString(),
 			),
 		);
 
@@ -368,25 +371,25 @@ export function MultipleReferenceSelect({
 							{/* Show selected options if available, otherwise show raw values */}
 							{(selectedOptions.length > 0
 								? selectedOptions
-								: selectedValues.map((val) => ({
-										id: val,
-										displayValue: val?.toString() || "Value",
-										primaryKeyValue: val,
-								  }))
+							: selectedValues.map((val) => ({
+									id: val,
+									displayValue: val?.toString() || "Value",
+									rowData: {},
+							  }))
 							)
 								.slice(0, 3) // Show max 3 items to save space
 								.map((option) => {
 									// Check if this option is valid (exists in current options)
-									// Use primaryKeyValue for validation, compare as strings
+									// Use ID for validation, compare as strings
 									const isValid = transformedOptions.some(
 										(opt) =>
-											opt.primaryKeyValue?.toString() ===
-											option.primaryKeyValue?.toString(),
+											opt.id?.toString() ===
+											option.id?.toString(),
 									);
 
 									return (
 										<Badge
-											key={String(option.primaryKeyValue || option.id)}
+											key={String(option.id)}
 											variant={isValid ? "secondary" : "destructive"}
 											className={cn(
 												"text-xs max-w-[120px] truncate transition-colors group h-6 px-2",
@@ -396,7 +399,7 @@ export function MultipleReferenceSelect({
 											)}
 											onClick={(e) => {
 												e.stopPropagation();
-												removeOption(option.primaryKeyValue?.toString() || "");
+												removeOption(option.id?.toString() || "");
 											}}>
 											<span className='truncate text-xs'>
 												{option.displayValue}
@@ -518,7 +521,7 @@ export function MultipleReferenceSelect({
 							const isSelected = selectedValues.some(
 								(val) =>
 									val?.toString() ===
-									(option.primaryKeyValue?.toString() || ""),
+									(option.id?.toString() || ""),
 							);
 							return (
 								<div

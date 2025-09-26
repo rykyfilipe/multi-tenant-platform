@@ -244,15 +244,9 @@ const MultipleReferencesTooltip = ({
 
 	const referenceRows = value
 		.map((refValue) => {
+			// Find row by ID instead of primary key
 			const referenceRow = referenceTable.rows?.find((refRow) => {
-				// Verificăm că refRow există și are celule
-				if (!refRow || !refRow.cells || !Array.isArray(refRow.cells))
-					return false;
-
-				const refPrimaryKeyCell = refRow.cells.find(
-					(refCell) => refCell.columnId === refPrimaryKeyColumn.id,
-				);
-				return refPrimaryKeyCell && refPrimaryKeyCell.value === refValue;
+				return refRow && refRow.id && refRow.id.toString() === refValue.toString();
 			});
 			return { refValue, referenceRow };
 		})
@@ -295,10 +289,7 @@ const MultipleReferencesTooltip = ({
 									const cell = referenceRow.cells.find(
 										(c) => c.columnId === col.id,
 									);
-									if (
-										cell?.value != null &&
-										cell.value.toString().trim() !== ""
-									) {
+									if (cell?.value != null) {
 										let formattedValue = cell.value.toString().trim();
 
 										// Formatare specială pentru tipuri de date
@@ -312,11 +303,21 @@ const MultipleReferencesTooltip = ({
 											formattedValue = formattedValue === "true" ? "✓" : "✗";
 										} else if (col.type === "number" || col.type === "integer") {
 											formattedValue = parseFloat(formattedValue).toLocaleString("ro-RO");
+										} else if (col.type === "reference") {
+											// For reference columns, show the referenced row data
+											formattedValue = `[Reference: ${formattedValue}]`;
 										}
 
 										displayColumns.push({
 											name: col.name,
 											value: formattedValue,
+											type: col.type
+										});
+									} else {
+										// Show empty/null values too
+										displayColumns.push({
+											name: col.name,
+											value: "[Empty]",
 											type: col.type
 										});
 									}
@@ -392,7 +393,7 @@ const normalizeReferenceValue = (value: any, isReferenceColumn: boolean) => {
 const createReferenceDataForTable = (table: Table) => {
 	const referenceData: Record<
 		number,
-		{ id: number; displayValue: string; primaryKeyValue: any }[]
+		{ id: number; displayValue: string; rowData: any }[]
 	> = {};
 
 	if (
@@ -407,7 +408,7 @@ const createReferenceDataForTable = (table: Table) => {
 	const options: {
 		id: number;
 		displayValue: string;
-		primaryKeyValue: any;
+		rowData: any;
 	}[] = [];
 
 	// Procesăm doar rândurile care au celule
@@ -423,8 +424,8 @@ const createReferenceDataForTable = (table: Table) => {
 		) {
 			const displayParts: string[] = [];
 			let addedColumns = 0;
-			const maxColumns = 3;
-			let primaryKeyValue: any = null;
+			const maxColumns = 5; // Increased to show more columns
+			const rowData: any = {};
 
 			table.columns.forEach((column: Column) => {
 				if (!column || !column.id || addedColumns >= maxColumns) return;
@@ -437,8 +438,11 @@ const createReferenceDataForTable = (table: Table) => {
 					if (cell?.value != null && cell.value.toString().trim() !== "") {
 						let formattedValue = cell.value.toString().trim();
 
-						if (formattedValue.length > 15) {
-							formattedValue = formattedValue.substring(0, 15) + "...";
+						// Store full row data for export/hover
+						rowData[column.name] = cell.value;
+
+						if (formattedValue.length > 20) {
+							formattedValue = formattedValue.substring(0, 20) + "...";
 						}
 
 						if (column.type === "date") {
@@ -453,25 +457,20 @@ const createReferenceDataForTable = (table: Table) => {
 							formattedValue = formattedValue === "true" ? "✓" : "✗";
 						}
 
-						if (addedColumns === 0 && column.primary) {
-							displayParts.push(formattedValue);
-							primaryKeyValue = cell.value;
-						} else {
-							displayParts.push(formattedValue);
-						}
+						displayParts.push(formattedValue);
 						addedColumns++;
 					}
 				}
 			});
 
 			const displayValue = displayParts.length
-				? displayParts.join(" • ").slice(0, 50)
+				? displayParts.join(" • ")
 				: `Row #${row.id || "unknown"}`;
 
 			options.push({
 				id: typeof row.id === 'string' ? parseInt(row.id) : (row.id || 0),
 				displayValue,
-				primaryKeyValue: primaryKeyValue || row.id,
+				rowData,
 			});
 		}
 	});
@@ -852,7 +851,7 @@ export function EditableCell({
 			// Find matching options for the selected values
 			const selectedOptions = options.filter(option => 
 				referenceValues.some(refValue => 
-					option.primaryKeyValue?.toString() === refValue?.toString()
+					option.id?.toString() === refValue?.toString()
 				)
 			);
 

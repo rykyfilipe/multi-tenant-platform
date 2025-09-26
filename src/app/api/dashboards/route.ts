@@ -9,26 +9,51 @@ import { DashboardValidators, handleValidationError } from '@/lib/dashboard-vali
  * List all dashboards for the current tenant
  */
 export async function GET(request: NextRequest) {
+  console.log('🌐 GET /api/dashboards - Starting request');
+  
   try {
     const session = await getServerSession(authOptions);
+    console.log('🔐 Session check:', { 
+      hasSession: !!session, 
+      userId: session?.user?.id, 
+      tenantId: session?.user?.tenantId 
+    });
+    
     if (!session?.user?.id || !session.user.tenantId) {
+      console.log('❌ Unauthorized - missing session or tenantId');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
+    console.log('📋 Search params:', Object.fromEntries(searchParams.entries()));
+    
     const queryParams = DashboardValidators.validateQuery(searchParams);
+    console.log('✅ Validated query params:', queryParams);
+
+    console.log('📊 Calling DashboardService.getDashboards with:', {
+      tenantId: Number(session.user.tenantId),
+      userId: Number(session.user.id),
+      queryParams
+    });
 
     const result = await DashboardService.getDashboards(
-      Number(session.user.tenantId)     ,
+      Number(session.user.tenantId),
       Number(session.user.id),
       queryParams
     );
 
+    console.log('🎯 DashboardService result:', {
+      dashboardsCount: result.dashboards?.length || 0,
+      hasPagination: !!result.pagination,
+      resultKeys: Object.keys(result)
+    });
+
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error fetching dashboards:', error);
+    console.error('💥 Error fetching dashboards:', error);
     
     if (error instanceof Error && error.message.includes('validation')) {
+      console.log('⚠️ Validation error:', error.message);
       return NextResponse.json(
         { error: 'Invalid query parameters', details: error.message },
         { status: 400 }

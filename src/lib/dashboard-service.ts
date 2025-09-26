@@ -95,6 +95,8 @@ export class DashboardService {
       hasPrev: boolean;
     };
   }> {
+    console.log('📊 DashboardService.getDashboards called with:', { tenantId, userId, filters });
+    
     try {
       const {
         search = '',
@@ -105,11 +107,13 @@ export class DashboardService {
       } = filters;
 
       const skip = (page - 1) * limit;
+      console.log('📋 Query parameters:', { search, mode, isPublic, page, limit, skip });
 
       // Build where clause
       const where: any = {
         tenantId,
       };
+      console.log('🔍 Initial where clause:', where);
 
       if (search) {
         where.OR = [
@@ -126,7 +130,10 @@ export class DashboardService {
         where.isPublic = isPublic;
       }
 
+      console.log('🔍 Final where clause:', where);
+
       // Get dashboards with pagination
+      console.log('🗄️ Executing Prisma queries...');
       const [dashboards, total] = await Promise.all([
         prisma.dashboard.findMany({
           where,
@@ -155,6 +162,16 @@ export class DashboardService {
         prisma.dashboard.count({ where }),
       ]);
 
+      console.log('📊 Prisma query results:', {
+        dashboardsCount: dashboards.length,
+        totalCount: total,
+        firstDashboard: dashboards[0] ? {
+          id: dashboards[0].id,
+          name: dashboards[0].name,
+          widgetsCount: dashboards[0].widgets.length
+        } : null
+      });
+
       // Track usage
       usageAnalytics.trackApiUsage(
         userId,
@@ -168,7 +185,7 @@ export class DashboardService {
         { search, mode, isPublic, page, limit }
       );
 
-      return this.serializeBigInt({
+      const result = this.serializeBigInt({
         dashboards,
         pagination: {
           page,
@@ -179,8 +196,15 @@ export class DashboardService {
           hasPrev: page > 1,
         },
       });
+
+      console.log('✅ DashboardService.getDashboards returning:', {
+        dashboardsCount: result.dashboards.length,
+        pagination: result.pagination
+      });
+
+      return result;
     } catch (error) {
-      console.error('Error fetching dashboards:', error);
+      console.error('💥 Error fetching dashboards:', error);
       errorTracker.trackError(
         error as Error,
         { action: 'getDashboards', tenantId, userId },

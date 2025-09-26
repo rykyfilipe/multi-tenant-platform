@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,54 @@ import {
   BarChart3,
   PieChart
 } from 'lucide-react';
-import { useSimplifiedAnalytics } from '../../hooks/useSimplifiedAnalytics';
+import { OverviewChart } from './OverviewChart';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+
+interface AnalyticsSummary {
+  totalUsers: number;
+  activeUsers: number;
+  activeUserPercentage: number;
+  totalDatabases: number;
+  totalTables: number;
+  totalRows: number;
+  totalCells: number;
+  storageUsedGB: number;
+  storageUsagePercentage: number;
+  userGrowth: number;
+  databaseGrowth: number;
+  tableGrowth: number;
+  lastUpdated: string;
+}
+
+interface UserActivity {
+  date: string;
+  activeUsers: number;
+  totalUsers: number;
+  engagementRate: number;
+}
+
+interface DatabaseActivity {
+  name: string;
+  tables: number;
+  rows: number;
+  size: number;
+  lastAccessed: string;
+}
+
+interface SystemPerformance {
+  avgResponseTime: number;
+  uptime: number;
+  healthScore: number;
+  errorRate: number;
+  throughput: number;
+}
+
+interface SimplifiedAnalyticsData {
+  summary: AnalyticsSummary;
+  userActivity: UserActivity[];
+  databaseActivity: DatabaseActivity[];
+  systemPerformance: SystemPerformance;
+}
 
 interface MetricCardProps {
   title: string;
@@ -41,39 +88,43 @@ const MetricCard: React.FC<MetricCardProps> = ({
   trend 
 }) => {
   const colorClasses = {
-    green: 'text-green-600 bg-green-50 border-green-200',
-    blue: 'text-blue-600 bg-blue-50 border-blue-200',
-    orange: 'text-orange-600 bg-orange-50 border-orange-200',
-    red: 'text-red-600 bg-red-50 border-red-200',
-    purple: 'text-purple-600 bg-purple-50 border-purple-200'
+    green: 'text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50',
+    blue: 'text-indigo-600 bg-gradient-to-br from-indigo-50 to-indigo-100/50 border-indigo-200/50',
+    orange: 'text-amber-600 bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50',
+    red: 'text-red-600 bg-gradient-to-br from-red-50 to-red-100/50 border-red-200/50',
+    purple: 'text-purple-600 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50'
   };
 
   return (
-    <Card className={`border ${colorClasses[color]}`}>
+    <Card className={`bg-white border-0 shadow-lg shadow-gray-100/50 rounded-xl overflow-hidden ${colorClasses[color]}`}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="h-4 w-4" />
-              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-white/80 shadow-sm">
+                <Icon className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-semibold text-gray-700">{title}</p>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold">{value}</span>
-              {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-3xl font-bold text-gray-900">{value}</span>
+              {unit && <span className="text-sm font-medium text-gray-600">{unit}</span>}
             </div>
             {trend && (
-              <div className="flex items-center gap-1 mt-1">
-                <TrendingUp className={`h-3 w-3 ${trend.type === 'increase' ? 'text-green-500' : 'text-red-500'}`} />
-                <span className={`text-xs ${trend.type === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="flex items-center gap-1">
+                <TrendingUp className={`h-3 w-3 ${trend.type === 'increase' ? 'text-emerald-500' : 'text-red-500'}`} />
+                <span className={`text-xs font-semibold ${trend.type === 'increase' ? 'text-emerald-600' : 'text-red-600'}`}>
                   {trend.value}%
                 </span>
               </div>
             )}
           </div>
           {progress !== undefined && (
-            <div className="w-16">
-              <Progress value={progress} className="h-2" />
-              <span className="text-xs text-muted-foreground mt-1 block text-center">
+            <div className="w-20">
+              <div className="bg-white/80 rounded-full p-1 shadow-sm">
+                <Progress value={progress} className="h-2" />
+              </div>
+              <span className="text-xs font-semibold text-gray-600 mt-2 block text-center">
                 {progress}%
               </span>
             </div>
@@ -91,21 +142,54 @@ interface ChartCardProps {
 }
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, icon: Icon, children }) => (
-  <Card className="border border-gray-200">
-    <CardHeader className="pb-3">
-      <CardTitle className="flex items-center gap-2 text-lg">
+  <Card className="bg-white border-0 shadow-xl shadow-gray-100/50 rounded-2xl overflow-hidden">
+    <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100/50 pb-4">
+      <CardTitle className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
         <Icon className="h-5 w-5 text-gray-600" />
         {title}
       </CardTitle>
     </CardHeader>
-    <CardContent>
+    <CardContent className="p-6 bg-white">
       {children}
     </CardContent>
   </Card>
 );
 
 export const SimplifiedAnalyticsDashboard: React.FC = () => {
-  const { data, isLoading, error } = useSimplifiedAnalytics();
+  const [data, setData] = useState<SimplifiedAnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Get tenant ID from URL or context - for now using tenant 1
+        const tenantId = 1;
+        const response = await fetch(`/api/tenants/${tenantId}/analytics/summary`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data');
+        }
+        
+        const analyticsData = await response.json();
+        setData(analyticsData);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+
+    // Set up interval to refetch data every 30 seconds
+    const interval = setInterval(fetchAnalytics, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   if (isLoading) {
     return (
@@ -157,12 +241,12 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <p className="text-gray-600 mt-1">Real-time insights and performance metrics</p>
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Analytics Dashboard</h1>
+          <p className="text-gray-600 mt-2 font-medium">Real-time insights and performance metrics</p>
         </div>
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <Badge variant="outline" className="bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200/50 px-4 py-2 text-sm font-semibold shadow-sm">
           Live Data
         </Badge>
       </div>
@@ -232,69 +316,210 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="User Activity Over Time" icon={Activity}>
-          <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">User activity chart would be rendered here</p>
-              <p className="text-sm text-gray-500 mt-1">
-                {userActivity.length} data points available
-              </p>
-            </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={userActivity} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="1 1" stroke="#e5e7eb" strokeOpacity={0.3} vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}
+                  tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  tickMargin={8}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}
+                  tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  tickMargin={8}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    border: "1px solid rgba(229, 231, 235, 0.8)",
+                    borderRadius: "12px",
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    backdropFilter: "blur(8px)",
+                    fontFamily: "Inter, system-ui, sans-serif",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    padding: "12px 16px"
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="activeUsers"
+                  stroke="#6366f1"
+                  fill="#6366f1"
+                  fillOpacity={0.15}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </ChartCard>
 
         <ChartCard title="Database Activity" icon={Database}>
-          <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">Database activity chart would be rendered here</p>
-              <p className="text-sm text-gray-500 mt-1">
-                {databaseActivity.length} databases tracked
-              </p>
-            </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <Pie
+                  data={databaseActivity.map(db => ({ name: db.name, value: db.rows }))}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {databaseActivity.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"][index % 5]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    border: "1px solid rgba(229, 231, 235, 0.8)",
+                    borderRadius: "12px",
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    backdropFilter: "blur(8px)",
+                    fontFamily: "Inter, system-ui, sans-serif",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    padding: "12px 16px"
+                  }}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
           </div>
         </ChartCard>
 
         <ChartCard title="System Performance" icon={TrendingUp}>
-          <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <Activity className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">Performance metrics chart would be rendered here</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Avg response: {systemPerformance.avgResponseTime}ms
-              </p>
-            </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={[
+                { name: "Response Time", value: systemPerformance.avgResponseTime },
+                { name: "Health Score", value: systemPerformance.healthScore },
+                { name: "Uptime", value: systemPerformance.uptime },
+                { name: "Error Rate", value: systemPerformance.errorRate * 100 }
+              ]} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="1 1" stroke="#e5e7eb" strokeOpacity={0.3} vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}
+                  tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  tickMargin={8}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}
+                  tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  tickMargin={8}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    border: "1px solid rgba(229, 231, 235, 0.8)",
+                    borderRadius: "12px",
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    backdropFilter: "blur(8px)",
+                    fontFamily: "Inter, system-ui, sans-serif",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    padding: "12px 16px"
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  dot={{ fill: "#10b981", strokeWidth: 0, r: 0, opacity: 0 }}
+                  activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 3, fill: "white", strokeOpacity: 1, filter: "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </ChartCard>
 
         <ChartCard title="Resource Usage" icon={HardDrive}>
-          <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <Server className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">Resource usage chart would be rendered here</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Storage: {summary.storageUsagePercentage}% used
-              </p>
-            </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={[
+                { name: "Storage Used", value: summary.storageUsagePercentage },
+                { name: "Storage Free", value: 100 - summary.storageUsagePercentage }
+              ]} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="1 1" stroke="#e5e7eb" strokeOpacity={0.3} vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}
+                  tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  tickMargin={8}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}
+                  tickLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+                  tickMargin={8}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    border: "1px solid rgba(229, 231, 235, 0.8)",
+                    borderRadius: "12px",
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    backdropFilter: "blur(8px)",
+                    fontFamily: "Inter, system-ui, sans-serif",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    padding: "12px 16px"
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#8b5cf6"
+                  fill="#8b5cf6"
+                  fillOpacity={0.15}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </ChartCard>
       </div>
 
       {/* Additional Info */}
-      <Card className="border-gray-200">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Card className="bg-white border-0 shadow-xl shadow-gray-100/50 rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100/50 pb-4">
+          <CardTitle className="text-xl font-bold text-gray-900 tracking-tight">System Overview</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 bg-white">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{summary.totalRows.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Total Rows</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">{summary.totalRows.toLocaleString()}</div>
+              <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Total Rows</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{summary.totalCells.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Total Cells</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">{summary.totalCells.toLocaleString()}</div>
+              <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Total Cells</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{summary.lastUpdated}</div>
-              <div className="text-sm text-gray-600">Last Updated</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">{summary.lastUpdated}</div>
+              <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Last Updated</div>
             </div>
           </div>
         </CardContent>

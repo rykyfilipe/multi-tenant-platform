@@ -740,7 +740,7 @@ function generateCSV(rows: any[], columns: any[], tables: any[]): string {
 		referenceTableMap.set(table.id, table);
 		table.rows?.forEach((row: any) => {
 			const key = `${table.id}-${row.id}`;
-			referenceMap.set(key, row); // Store entire row instead of just primary key
+			referenceMap.set(key, row); // Store entire row by row ID
 		});
 	});
 
@@ -790,7 +790,7 @@ function generateCSV(rows: any[], columns: any[], tables: any[]): string {
 					// Handle multiple reference values (arrays)
 					const referenceValues = Array.isArray(cell.value) ? cell.value : [cell.value];
 					
-					// Pentru fiecare valoare de referință, găsim rândul complet
+					// Pentru fiecare valoare de referință (ID-ul rândului), găsim rândul complet
 					const referencedRows = referenceValues
 						.filter((refValue) => refValue != null && refValue !== "")
 						.map((refValue) => {
