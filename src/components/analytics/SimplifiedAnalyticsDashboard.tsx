@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { OverviewChart } from './OverviewChart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { PLAN_LIMITS } from '@/lib/planConstants';
 
 interface AnalyticsSummary {
   totalUsers: number;
@@ -161,6 +163,7 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
   const [data, setData] = useState<SimplifiedAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { getUsagePercentage } = usePlanLimits();
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -240,6 +243,9 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
 
   const { summary, userActivity, databaseActivity, systemPerformance } = data;
 
+  // Calculate correct storage usage percentage based on plan limits
+  const correctStorageUsagePercentage = getUsagePercentage('storage');
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -287,8 +293,8 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
           title="Storage Usage"
           value={`${summary.storageUsed.toFixed(1)}${summary.storageUnit}`}
           icon={HardDrive}
-          color={summary.storageUsagePercentage > 80 ? 'red' : summary.storageUsagePercentage > 60 ? 'orange' : 'green'}
-          progress={summary.storageUsagePercentage}
+          color={correctStorageUsagePercentage > 80 ? 'red' : correctStorageUsagePercentage > 60 ? 'orange' : 'green'}
+          progress={correctStorageUsagePercentage}
         />
         <MetricCard
           title="Response Time"
@@ -456,8 +462,8 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={[
-                { name: "Storage Used", value: summary.storageUsagePercentage },
-                { name: "Storage Free", value: 100 - summary.storageUsagePercentage }
+                { name: "Storage Used", value: correctStorageUsagePercentage },
+                { name: "Storage Free", value: 100 - correctStorageUsagePercentage }
               ]} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="1 1" stroke="#e5e7eb" strokeOpacity={0.3} vertical={false} />
                 <XAxis 

@@ -90,7 +90,7 @@ export async function getCurrentCounts(
 
 		try {
 			// Get counts directly from Prisma
-			const [databases, tables, users, rows, storage] = await Promise.all([
+			const [databases, tables, users, rows] = await Promise.all([
 				prisma.database.count({ where: { tenantId: user.tenantId } }),
 				prisma.table.count({ 
 					where: { 
@@ -107,15 +107,46 @@ export async function getCurrentCounts(
 						} 
 					} 
 				}),
-				prisma.storage.count({ where: { tenantId: user.tenantId } }),
 			]);
+
+			// Calculate storage usage in MB by getting actual table sizes
+			let storageMB = 0;
+			try {
+				const tenantTables = await prisma.table.findMany({
+					where: {
+						database: { tenantId: user.tenantId }
+					},
+					select: { name: true }
+				});
+
+				for (const table of tenantTables) {
+					try {
+						const tableSizeResult = await prisma.$queryRaw`
+							SELECT pg_total_relation_size(${table.name}::regclass) as table_size_bytes
+						` as any[];
+						
+						const tableSizeBytes = Number(tableSizeResult[0]?.table_size_bytes || 0);
+						storageMB += tableSizeBytes / (1024 * 1024); // Convert bytes to MB
+					} catch (error) {
+						// Fallback: estimate based on row count
+						const tableRowCount = await prisma.row.count({
+							where: { table: { name: table.name } }
+						});
+						storageMB += (tableRowCount * 100) / (1024 * 1024); // Estimate 100 bytes per row
+					}
+				}
+			} catch (error) {
+				console.warn('Could not calculate storage size:', error);
+				// Fallback: estimate based on total rows
+				storageMB = (rows * 100) / (1024 * 1024); // Estimate 100 bytes per row
+			}
 
 			return {
 				databases,
 				tables,
 				users,
 				rows,
-				storage,
+				storage: Math.round(storageMB),
 			};
 		} catch (error) {
 			// Return default counts on error

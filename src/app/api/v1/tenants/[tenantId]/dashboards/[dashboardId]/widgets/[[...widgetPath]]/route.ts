@@ -40,7 +40,7 @@ const isSaveEndpoint = (segments: number[] | undefined) => segments && segments[
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tenantId: string; dashboardId: string; widgetPath?: string[] } }
+  { params }: { params: Promise<{ tenantId: string; dashboardId: string; widgetPath?: string[] }> }
 ) {
   try {
     console.log('🚀 [DEBUG] GET request started');
@@ -48,12 +48,16 @@ export async function GET(
     
     assertWidgetsV2Enabled();
 
+    console.log('🔍 [DEBUG] Awaiting params...');
+    const resolvedParams = await params;
+    console.log('✅ [DEBUG] Params resolved:', resolvedParams);
+
     console.log('🔍 [DEBUG] Parsing tenantDashboardSchema...');
-    const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
+    const { tenantId, dashboardId } = tenantDashboardSchema.parse(resolvedParams);
     console.log('✅ [DEBUG] tenantDashboardSchema parsed:', { tenantId, dashboardId });
     
     console.log('🔍 [DEBUG] Parsing widgetPathSchema...');
-    const pathSegments = widgetPathSchema.parse(params.widgetPath);
+    const pathSegments = widgetPathSchema.parse(resolvedParams.widgetPath);
     console.log('✅ [DEBUG] widgetPathSchema parsed:', pathSegments);
 
   if (isDraftRequest(pathSegments)) {
@@ -131,7 +135,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { tenantId: string; dashboardId: string; widgetPath?: string[] } }
+  { params }: { params: Promise<{ tenantId: string; dashboardId: string; widgetPath?: string[] }> }
 ) {
   try {
     console.log('🚀 [DEBUG] POST request started');
@@ -139,12 +143,16 @@ export async function POST(
     
     assertWidgetsV2Enabled();
 
+    console.log('🔍 [DEBUG] Awaiting params...');
+    const resolvedParams = await params;
+    console.log('✅ [DEBUG] Params resolved:', resolvedParams);
+
     console.log('🔍 [DEBUG] Parsing tenantDashboardSchema...');
-    const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
+    const { tenantId, dashboardId } = tenantDashboardSchema.parse(resolvedParams);
     console.log('✅ [DEBUG] tenantDashboardSchema parsed:', { tenantId, dashboardId });
     
     console.log('🔍 [DEBUG] Parsing widgetPathSchema...');
-    const pathSegments = widgetPathSchema.parse(params.widgetPath);
+    const pathSegments = widgetPathSchema.parse(resolvedParams.widgetPath);
     console.log('✅ [DEBUG] widgetPathSchema parsed:', pathSegments);
 
   if (isDraftRequest(pathSegments)) {
@@ -261,12 +269,13 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { tenantId: string; dashboardId: string; widgetPath?: string[] } }
+  { params }: { params: Promise<{ tenantId: string; dashboardId: string; widgetPath?: string[] }> }
 ) {
   assertWidgetsV2Enabled();
 
-  const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
-  const pathSegments = widgetPathSchema.parse(params.widgetPath);
+  const resolvedParams = await params;
+  const { tenantId, dashboardId } = tenantDashboardSchema.parse(resolvedParams);
+  const pathSegments = widgetPathSchema.parse(resolvedParams.widgetPath);
 
   if (!pathSegments || pathSegments.length !== 1) {
     return NextResponse.json({ error: "Widget or draft ID required" }, { status: 400 });
@@ -318,12 +327,13 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { tenantId: string; dashboardId: string; widgetPath?: string[] } }
+  { params }: { params: Promise<{ tenantId: string; dashboardId: string; widgetPath?: string[] }> }
 ) {
   assertWidgetsV2Enabled();
 
-  const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
-  const pathSegments = widgetPathSchema.parse(params.widgetPath);
+  const resolvedParams = await params;
+  const { tenantId, dashboardId } = tenantDashboardSchema.parse(resolvedParams);
+  const pathSegments = widgetPathSchema.parse(resolvedParams.widgetPath);
 
   if (!pathSegments || pathSegments.length !== 1) {
     return NextResponse.json({ error: "Widget or draft ID required" }, { status: 400 });
@@ -360,12 +370,13 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { tenantId: string; dashboardId: string; widgetPath?: string[] } }
+  { params }: { params: Promise<{ tenantId: string; dashboardId: string; widgetPath?: string[] }> }
 ) {
   assertWidgetsV2Enabled();
 
-  const { tenantId, dashboardId } = tenantDashboardSchema.parse(params);
-  const pathSegments = widgetPathSchema.parse(params.widgetPath);
+  const resolvedParams = await params;
+  const { tenantId, dashboardId } = tenantDashboardSchema.parse(resolvedParams);
+  const pathSegments = widgetPathSchema.parse(resolvedParams.widgetPath);
 
   if (isDraftRequest(pathSegments)) {
     if (!pathSegments || pathSegments.length < 2) {
