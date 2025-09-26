@@ -225,8 +225,33 @@ async function processReferenceValue(
 				return value;
 			}
 		} catch {
-			// Nu este JSON valid, tratează ca ID existent
-			return value;
+			// Nu este JSON valid - verifică dacă este un ID numeric sau o valoare pentru crearea unui rând nou
+			const numericValue = Number(value);
+			if (!isNaN(numericValue) && numericValue > 0) {
+				// Este un ID numeric valid, tratează ca ID existent
+				return value;
+			} else {
+				// Este o valoare text - creează un rând nou în tabelul referențiat
+				// Folosește prima coloană non-primary ca nume pentru rândul nou
+				const firstNonPrimaryColumn = referenceColumns.find(col => !col.primary);
+				if (firstNonPrimaryColumn) {
+					const rowData = {
+						[firstNonPrimaryColumn.name]: value
+					};
+					return await createReferencedRow(rowData);
+				} else {
+					// Dacă nu există coloane non-primary, folosește prima coloană
+					const firstColumn = referenceColumns[0];
+					if (firstColumn) {
+						const rowData = {
+							[firstColumn.name]: value
+						};
+						return await createReferencedRow(rowData);
+					}
+					// Dacă nu există coloane deloc, returnează valoarea ca atare
+					return value;
+				}
+			}
 		}
 	}
 
