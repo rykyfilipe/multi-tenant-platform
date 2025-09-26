@@ -9,11 +9,18 @@ interface TableWidgetRendererProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  isEditMode?: boolean;
 }
 
-export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({ widget, onEdit, onDelete, onDuplicate }) => {
+export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({ 
+  widget, 
+  onEdit, 
+  onDelete, 
+  onDuplicate, 
+  isEditMode = false 
+}) => {
   return (
-    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate}>
+    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
       <div className="flex h-full w-full items-center justify-center text-muted-foreground">
         Table widget #{widget.id}
       </div>

@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
 import { isWidgetsV2Enabled } from '@/lib/featureFlag';
-import { WidgetCanvas } from '@/widgets/ui/WidgetCanvas';
-import { Plus, LayoutDashboard } from 'lucide-react';
+import { WidgetCanvasNew } from '@/widgets/ui/WidgetCanvasNew';
+import { Plus, LayoutDashboard, Edit3, Eye, Settings, MoreHorizontal } from 'lucide-react';
 
 interface DashboardSummary {
   id: number;
@@ -31,6 +32,7 @@ export default function DashboardsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Debug logging
   console.log('🔍 DashboardsPage Debug:', {
@@ -404,28 +406,38 @@ export default function DashboardsPage() {
     selectedDashboardId,
     tenantId: tenant?.id,
     actorId,
-    dashboardsCount: dashboards.length
+    dashboardsCount: dashboards.length,
+    isEditMode
   });
 
   return (
-    <div className="space-y-4 p-6">
-      <Card>
-        <CardHeader className="flex items-center justify-between">
+    <div className="h-screen w-full relative overflow-hidden bg-gradient-to-br from-background via-background/95 to-background/90">
+      {/* Top Header Bar - Minimal and Clean */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/20">
+        <div className="flex items-center justify-between px-6 py-3">
+          {/* Left: Dashboard Info */}
           <div className="flex items-center space-x-4">
-            <div>
-              <CardTitle className="text-lg font-semibold">
-                {dashboardName ? `${dashboardName} Widgets` : 'Dashboard Widgets'}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Build, preview, and save widget layouts with conflict-aware pending changes.
-              </p>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">
+                  {dashboardName || 'Dashboard'}
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  {isEditMode ? 'Edit Mode' : 'View Mode'}
+                </p>
+              </div>
             </div>
+            
+            {/* Dashboard Selector */}
             {dashboards.length > 1 && (
               <Select value={selectedDashboardId?.toString()} onValueChange={(value) => {
                 console.log('🔄 Dashboard selection changed to:', value);
                 setSelectedDashboardId(Number(value));
               }}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 h-8 bg-background/50 border-border/30">
                   <SelectValue placeholder="Select dashboard" />
                 </SelectTrigger>
                 <SelectContent>
@@ -438,17 +450,41 @@ export default function DashboardsPage() {
               </Select>
             )}
           </div>
-          <div className="flex items-center space-x-2">
+
+          {/* Right: Controls */}
+          <div className="flex items-center space-x-3">
+            {/* Edit/View Mode Toggle */}
+            <div className="flex items-center space-x-2 bg-muted/30 rounded-lg p-1">
+              <Button
+                variant={!isEditMode ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setIsEditMode(false)}
+                className="h-7 px-3 text-xs"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                View
+              </Button>
+              <Button
+                variant={isEditMode ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setIsEditMode(true)}
+                className="h-7 px-3 text-xs"
+              >
+                <Edit3 className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+
+            {/* Settings Menu */}
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Dashboard
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <Settings className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>Create New Dashboard</DialogTitle>
+                  <DialogTitle>Dashboard Settings</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -490,23 +526,30 @@ export default function DashboardsPage() {
                 </div>
               </DialogContent>
             </Dialog>
-            <Badge variant="outline">WIDGETS_V2 Enabled</Badge>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {selectedDashboardId && (
-            <>
-              {console.log('🎨 Rendering WidgetCanvas with:', { tenantId: tenant?.id ?? 0, dashboardId: selectedDashboardId, actorId })}
-              <WidgetCanvas tenantId={tenant?.id ?? 0} dashboardId={selectedDashboardId} actorId={actorId} />
-            </>
-          )}
-          {!selectedDashboardId && (
-            <div className="text-center text-muted-foreground py-8">
-              No dashboard selected
+        </div>
+      </div>
+
+      {/* Main Content Area - Full Screen */}
+      <div className="pt-16 h-full">
+        {selectedDashboardId && (
+          <WidgetCanvasNew 
+            tenantId={tenant?.id ?? 0} 
+            dashboardId={selectedDashboardId} 
+            actorId={actorId}
+            isEditMode={isEditMode}
+          />
+        )}
+        {!selectedDashboardId && (
+          <div className="flex h-full items-center justify-center">
+            <div className="text-center">
+              <LayoutDashboard className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">No Dashboard Selected</h3>
+              <p className="text-sm text-muted-foreground/70">Select a dashboard to view widgets</p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

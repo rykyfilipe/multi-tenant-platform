@@ -228,71 +228,7 @@ export const ResponsiveProvider: React.FC<ResponsiveProviderProps> = ({ children
         )}
       </div>
 
-      <style jsx global>{`
-        .viewport-mobile {
-          --widget-columns: 1;
-          --widget-gap: 0.5rem;
-          --widget-padding: 0.75rem;
-        }
-
-        .viewport-tablet {
-          --widget-columns: 2;
-          --widget-gap: 1rem;
-          --widget-padding: 1rem;
-        }
-
-        .viewport-desktop {
-          --widget-columns: 3;
-          --widget-gap: 1.5rem;
-          --widget-padding: 1.5rem;
-        }
-
-        .layout-grid {
-          display: grid;
-          grid-template-columns: repeat(var(--widget-columns), 1fr);
-          gap: var(--widget-gap);
-        }
-
-        .layout-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--widget-gap);
-        }
-
-        .layout-compact {
-          display: grid;
-          grid-template-columns: repeat(var(--widget-columns), 1fr);
-          gap: calc(var(--widget-gap) * 0.5);
-        }
-
-        .layout-compact .widget-card {
-          padding: calc(var(--widget-padding) * 0.5);
-        }
-
-        @media (max-width: 768px) {
-          .responsive-provider {
-            --widget-columns: 1;
-            --widget-gap: 0.5rem;
-            --widget-padding: 0.75rem;
-          }
-        }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .responsive-provider {
-            --widget-columns: 2;
-            --widget-gap: 1rem;
-            --widget-padding: 1rem;
-          }
-        }
-
-        @media (min-width: 1025px) {
-          .responsive-provider {
-            --widget-columns: 3;
-            --widget-gap: 1.5rem;
-            --widget-padding: 1.5rem;
-          }
-        }
-      `}</style>
+      {/* Removed global CSS to avoid layout conflicts */}
     </div>
   );
 };

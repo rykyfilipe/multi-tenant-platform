@@ -3,8 +3,16 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Undo2, Redo2, History } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Undo2, Redo2, History, RotateCcw, MoreHorizontal } from "lucide-react";
 import { WidgetEntity } from "@/widgets/domain/entities";
+import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 
 interface HistoryState {
   widgets: Record<number, WidgetEntity>;
@@ -26,6 +34,7 @@ export const UndoRedo: React.FC<UndoRedoProps> = ({
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [isUndoRedo, setIsUndoRedo] = useState(false);
+  const clearPending = useWidgetsStore((state) => state.clearPending);
 
   // Save state to history
   const saveToHistory = useCallback((action: string) => {
@@ -70,6 +79,19 @@ export const UndoRedo: React.FC<UndoRedoProps> = ({
     }
   }, [currentIndex, history, onRestoreState, onAction]);
 
+  // Discard all changes
+  const discard = useCallback(() => {
+    if (history.length > 0) {
+      setIsUndoRedo(true);
+      const originalState = history[0];
+      onRestoreState(originalState.widgets);
+      setCurrentIndex(0);
+      clearPending();
+      onAction("Discard all changes");
+      setTimeout(() => setIsUndoRedo(false), 100);
+    }
+  }, [history, onRestoreState, clearPending, onAction]);
+
   // Auto-save to history when widgets change
   useEffect(() => {
     if (!isUndoRedo && Object.keys(widgets).length > 0) {
@@ -79,6 +101,7 @@ export const UndoRedo: React.FC<UndoRedoProps> = ({
 
   const canUndo = currentIndex > 0;
   const canRedo = currentIndex < history.length - 1;
+  const canDiscard = history.length > 1;
 
   return (
     <div className="flex items-center gap-1">
@@ -105,6 +128,34 @@ export const UndoRedo: React.FC<UndoRedoProps> = ({
         <Redo2 className="h-4 w-4" />
         Redo
       </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!canDiscard}
+            className="gap-1"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem 
+            onClick={discard}
+            disabled={!canDiscard}
+            className="text-destructive focus:text-destructive"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Discard All Changes
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled>
+            <History className="h-4 w-4 mr-2" />
+            History: {currentIndex + 1}/{history.length}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {history.length > 0 && (
         <Badge variant="secondary" className="gap-1">

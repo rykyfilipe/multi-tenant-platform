@@ -215,52 +215,7 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
         </div>
       </div>
 
-      <style jsx global>{`
-        .high-contrast {
-          --background: #ffffff;
-          --foreground: #000000;
-          --primary: #000000;
-          --primary-foreground: #ffffff;
-          --secondary: #f0f0f0;
-          --secondary-foreground: #000000;
-          --muted: #f5f5f5;
-          --muted-foreground: #666666;
-          --border: #000000;
-          --input: #ffffff;
-          --ring: #000000;
-        }
-
-        .reduced-motion * {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-        }
-
-        .font-size-small {
-          font-size: 0.875rem;
-        }
-
-        .font-size-large {
-          font-size: 1.125rem;
-        }
-
-        .focus-visible:focus-visible {
-          outline: 2px solid #000000;
-          outline-offset: 2px;
-        }
-
-        .sr-only {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          padding: 0;
-          margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          white-space: nowrap;
-          border: 0;
-        }
-      `}</style>
+      {/* Removed global CSS to avoid layout conflicts */}
     </>
   );
 };

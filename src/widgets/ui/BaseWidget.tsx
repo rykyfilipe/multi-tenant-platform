@@ -22,17 +22,38 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
         <span className="text-sm font-medium text-foreground/80">{title}</span>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {onEdit && (
-            <button onClick={onEdit} className="hover:text-foreground">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onEdit();
+              }} 
+              className="hover:text-foreground"
+            >
               Edit
             </button>
           )}
           {onDuplicate && (
-            <button onClick={onDuplicate} className="hover:text-foreground">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onDuplicate();
+              }} 
+              className="hover:text-foreground"
+            >
               Duplicate
             </button>
           )}
           {onDelete && (
-            <button onClick={onDelete} className="text-destructive">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onDelete();
+              }} 
+              className="text-destructive"
+            >
               Delete
             </button>
           )}

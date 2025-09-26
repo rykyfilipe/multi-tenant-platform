@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { hasWidgetId } from "@/widgets/utils/pendingHelpers";
@@ -42,9 +42,10 @@ interface WidgetCanvasProps {
   tenantId: number;
   dashboardId: number;
   actorId: number;
+  isEditMode?: boolean;
 }
 
-export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardId, actorId }) => {
+export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardId, actorId, isEditMode = false }) => {
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
   const draftsRecord = useWidgetsStore((state) => state.drafts);
   const setDrafts = useWidgetsStore((state) => state.setDrafts);
@@ -68,6 +69,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
+  const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"canvas" | "drafts">("canvas");
@@ -298,6 +300,22 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     console.log('Uninstall widget:', widgetId);
   };
 
+  // Restore state function for undo/redo
+  const handleRestoreState = useCallback((restoredWidgets: Record<number, WidgetEntity>) => {
+    // Update the store with restored widgets
+    Object.values(restoredWidgets).forEach(widget => {
+      upsertWidget(widget);
+    });
+    
+    // Remove widgets that are not in the restored state
+    const restoredIds = new Set(Object.keys(restoredWidgets).map(Number));
+    Object.keys(widgetsRecord).forEach(id => {
+      if (!restoredIds.has(Number(id))) {
+        deleteLocal(Number(id));
+      }
+    });
+  }, [upsertWidget, deleteLocal, widgetsRecord]);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onAddWidget: handleAddWidget,
@@ -435,72 +453,70 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   }
 
   return (
-    <AccessibilityProvider>
-      <ResponsiveProvider>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "canvas" | "drafts")}
-          className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="canvas">Canvas</TabsTrigger>
-            <TabsTrigger value="drafts">Drafts ({draftsList.length})</TabsTrigger>
-          </TabsList>
-          <TabsContent value="canvas">
-            <div className="space-y-4">
-              {/* Enhanced Toolbar */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <WidgetToolbar onAddWidget={handleAddWidget} />
-                  <WidgetTemplates onSelectTemplate={handleTemplateSelect} />
-                  <WidgetMarketplace 
-                    onInstallWidget={handleMarketplaceInstall}
-                    onUninstallWidget={handleMarketplaceUninstall}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <KeyboardShortcutsDialog />
-                </div>
-              </div>
-
-              {/* Search and Filter */}
-              <WidgetSearch 
-                widgets={widgetList}
-                onFilteredWidgets={setFilteredWidgets}
-                onSearchFocus={() => setSearchFocused(true)}
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "canvas" | "drafts")}
+      className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="canvas">Canvas</TabsTrigger>
+        <TabsTrigger value="drafts">Drafts ({draftsList.length})</TabsTrigger>
+      </TabsList>
+      <TabsContent value="canvas">
+        <div className="space-y-4">
+          {/* Enhanced Toolbar */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <WidgetToolbar onAddWidget={handleAddWidget} />
+              <WidgetTemplates onSelectTemplate={handleTemplateSelect} />
+              <WidgetMarketplace 
+                onInstallWidget={handleMarketplaceInstall}
+                onUninstallWidget={handleMarketplaceUninstall}
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <KeyboardShortcutsDialog />
+            </div>
+          </div>
 
-              {/* Bulk Operations */}
-              {selectedWidgets.size > 0 && (
-                <BulkOperations
-                  selectedWidgets={selectedWidgets}
-                  onSelectAll={handleSelectAll}
-                  onDeselectAll={handleDeselectAll}
-                  onDeleteSelected={handleDeleteSelected}
-                  onDuplicateSelected={handleDuplicateSelected}
-                  onMoveSelected={handleMoveSelected}
-                  onConfigureSelected={handleConfigureSelected}
-                  totalWidgets={widgetList.length}
-                />
-              )}
+          {/* Search and Filter */}
+          <WidgetSearch 
+            widgets={widgetList}
+            onFilteredWidgets={setFilteredWidgets}
+            onSearchFocus={() => setSearchFocused(true)}
+          />
 
-              {/* Action Bar */}
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <PendingChangesBadge />
-                  <UndoRedo 
-                    widgets={widgetsRecord}
-                    onRestoreState={(widgets) => console.log('Restore state:', widgets)}
-                    onAction={(action) => console.log('Action:', action)}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleSaveLocalAsDraft}>
-                    Save Pending to Draft
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleCreateDraft}>
-                    New Empty Draft
-                  </Button>
-                  <SavePendingButton tenantId={tenantId} dashboardId={dashboardId} actorId={actorId} />
-                </div>
-              </div>
+          {/* Bulk Operations */}
+          {selectedWidgets.size > 0 && (
+            <BulkOperations
+              selectedWidgets={selectedWidgets}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
+              onDeleteSelected={handleDeleteSelected}
+              onDuplicateSelected={handleDuplicateSelected}
+              onMoveSelected={handleMoveSelected}
+              onConfigureSelected={handleConfigureSelected}
+              totalWidgets={widgetList.length}
+            />
+          )}
+
+          {/* Action Bar */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <PendingChangesBadge />
+              <UndoRedo 
+                widgets={widgetsRecord}
+                onRestoreState={handleRestoreState}
+                onAction={(action) => console.log('Action:', action)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleSaveLocalAsDraft}>
+                Save Pending to Draft
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCreateDraft}>
+                New Empty Draft
+              </Button>
+              <SavePendingButton tenantId={tenantId} dashboardId={dashboardId} actorId={actorId} />
+            </div>
+          </div>
           <ConflictDialog
             conflicts={conflicts}
             onResolve={async (strategy, conflict) => {
@@ -629,7 +645,5 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
         </div>
           </TabsContent>
         </Tabs>
-      </ResponsiveProvider>
-    </AccessibilityProvider>
   );
 };

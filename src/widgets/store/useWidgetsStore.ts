@@ -64,37 +64,99 @@ export const useWidgetsStore = create<PendingChangesState>()(
         const updated = { ...existing, ...patch } as WidgetEntity;
         const definition = getWidgetDefinition(updated.kind);
         definition.schema.parse(updated.config);
-        set((state) => ({
-          widgets: { ...state.widgets, [widgetId]: updated },
-          pendingOperations: [
-            ...state.pendingOperations,
-            {
-              kind: "update",
-              id: `update-${widgetId}-${Date.now()}`,
-              widgetId,
-              patch,
-              expectedVersion: updated.version,
-            },
-          ],
-          dirtyWidgetIds: new Set(state.dirtyWidgetIds).add(widgetId),
-        }));
+        
+        // Check if this is a local widget (temporary ID) or from DB
+        const isLocalWidget = widgetId > 1000000000000; // Temporary IDs are timestamps
+        
+        set((state) => {
+          const newState = {
+            widgets: { ...state.widgets, [widgetId]: updated },
+            pendingOperations: state.pendingOperations,
+            dirtyWidgetIds: new Set(state.dirtyWidgetIds),
+          };
+
+          // Only add to pending operations if it's a DB widget
+          if (!isLocalWidget) {
+            // Check if the change reverts to original state
+            const originalWidget = state.widgets[widgetId];
+            const isReverted = JSON.stringify(updated.config) === JSON.stringify(originalWidget.config) &&
+                              updated.title === originalWidget.title &&
+                              updated.description === originalWidget.description;
+            
+            if (isReverted) {
+              // Remove from pending operations if reverted
+              newState.pendingOperations = state.pendingOperations.filter(op => 
+                !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
+              );
+              newState.dirtyWidgetIds.delete(widgetId);
+            } else {
+              // Add or update pending operation
+              const existingOpIndex = state.pendingOperations.findIndex(op => 
+                op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
+              );
+              
+              const newOperation = {
+                kind: "update" as const,
+                id: `update-${widgetId}-${Date.now()}`,
+                widgetId,
+                patch,
+                expectedVersion: updated.version,
+              };
+              
+              if (existingOpIndex >= 0) {
+                // Update existing operation
+                newState.pendingOperations = [...state.pendingOperations];
+                newState.pendingOperations[existingOpIndex] = newOperation;
+              } else {
+                // Add new operation
+                newState.pendingOperations = [...state.pendingOperations, newOperation];
+              }
+              newState.dirtyWidgetIds.add(widgetId);
+            }
+          } else {
+            // For local widgets, just update the state without pending operations
+            newState.pendingOperations = state.pendingOperations;
+          }
+
+          return newState;
+        });
       },
       deleteLocal: (widgetId) => {
         const existing = get().widgets[widgetId];
         if (!existing) return;
-        set((state) => ({
-          widgets: { ...state.widgets, [widgetId]: { ...existing, isVisible: false } },
-          pendingOperations: [
-            ...state.pendingOperations,
-            {
-              kind: "delete",
-              id: `delete-${widgetId}-${Date.now()}`,
-              widgetId,
-              expectedVersion: existing.version,
-            },
-          ],
-          dirtyWidgetIds: new Set(state.dirtyWidgetIds).add(widgetId),
-        }));
+        
+        // Check if this is a local widget (temporary ID) or from DB
+        const isLocalWidget = widgetId > 1000000000000; // Temporary IDs are timestamps
+        
+        set((state) => {
+          const newState = {
+            widgets: { ...state.widgets, [widgetId]: { ...existing, isVisible: false } },
+            pendingOperations: state.pendingOperations,
+            dirtyWidgetIds: new Set(state.dirtyWidgetIds),
+          };
+
+          if (!isLocalWidget) {
+            // Only add to pending operations if it's a DB widget
+            newState.pendingOperations = [
+              ...state.pendingOperations,
+              {
+                kind: "delete",
+                id: `delete-${widgetId}-${Date.now()}`,
+                widgetId,
+                expectedVersion: existing.version,
+              },
+            ];
+            newState.dirtyWidgetIds.add(widgetId);
+          } else {
+            // For local widgets, just remove from state without pending operations
+            newState.pendingOperations = state.pendingOperations;
+            // Remove from widgets entirely for local widgets
+            const { [widgetId]: removed, ...remainingWidgets } = state.widgets;
+            newState.widgets = remainingWidgets;
+          }
+
+          return newState;
+        });
       },
       addOperation: (operation) => {
         set((state) => ({

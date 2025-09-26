@@ -11,9 +11,16 @@ interface ChartWidgetRendererProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  isEditMode?: boolean;
 }
 
-export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({ widget, onEdit, onDelete, onDuplicate }) => {
+export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({ 
+  widget, 
+  onEdit, 
+  onDelete, 
+  onDuplicate, 
+  isEditMode = false 
+}) => {
   // Extract chart configuration from widget config
   const config = widget.config as any;
   const chartType = config?.type || "line";
@@ -36,7 +43,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({ widget
   const ChartComponent = chartType === "area" ? AreaChart : LineChart;
 
   return (
-    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate}>
+    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
       <div className="h-full w-full p-4 bg-white">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
