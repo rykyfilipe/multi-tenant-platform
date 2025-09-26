@@ -385,7 +385,7 @@ interface Props {
 }
 
 // Helper function to normalize reference values consistently
-const normalizeReferenceValue = (value: any, isReferenceColumn: boolean) => {
+export const normalizeReferenceValue = (value: any, isReferenceColumn: boolean) => {
 	if (!isReferenceColumn) return value;
 	if (Array.isArray(value)) return value;
 	return value ? [value] : [];

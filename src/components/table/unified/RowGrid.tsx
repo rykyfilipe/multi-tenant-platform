@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Column, Row, Table } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +9,11 @@ import { Trash2, FileText } from "lucide-react";
 import { EditableCell } from "../rows/EditableCell";
 import { InlineRowCreator } from "./InlineRowCreator";
 import { cn } from "@/lib/utils";
+import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
+import { normalizeReferenceValue } from "../rows/EditableCell";
+import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
+import { useApp } from "@/contexts/AppContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
 	columns: Column[];
@@ -55,6 +60,15 @@ export function RowGrid({
 	isSavingNewRow = false,
 }: Props) {
 	const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+	const { tenant, user } = useApp();
+	const { t } = useLanguage();
+	
+	// Get reference data for all reference columns
+	const referenceColumns = columns.filter(col => col.type === USER_FRIENDLY_COLUMN_TYPES.link && col.referenceTableId);
+	const referenceData = useOptimizedReferenceData(
+		tables,
+		referenceColumns.length > 0 ? referenceColumns[0].referenceTableId : undefined
+	);
 
 	const handleSelectRow = (rowId: string, checked: boolean) => {
 		setSelectedRows(prev => {
@@ -93,6 +107,62 @@ export function RowGrid({
 	const getCellId = (row: Row, column: Column) => {
 		const cell = row.cells?.find(c => c.columnId === column.id);
 		return cell?.id?.toString() ?? "virtual";
+	};
+
+	// Function to format cell value for display (especially for reference columns)
+	const formatCellValue = (value: any, column: Column) => {
+		console.log('RowGrid formatCellValue called:', {
+			columnId: column.id,
+			columnType: column.type,
+			referenceTableId: column.referenceTableId,
+			value,
+			valueType: typeof value
+		});
+
+		if (column.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
+			const options = referenceData.referenceData[column.referenceTableId] ?? [];
+			console.log('RowGrid reference data debug:', {
+				columnId: column.id,
+				referenceTableId: column.referenceTableId,
+				optionsCount: options.length,
+				options: options.slice(0, 3),
+				value,
+				referenceDataKeys: Object.keys(referenceData.referenceData)
+			});
+
+			const referenceValues = normalizeReferenceValue(value, true);
+			console.log('RowGrid reference values debug:', {
+				value,
+				referenceValues,
+				referenceValuesLength: referenceValues.length
+			});
+
+			const selectedOptions = options.filter((option: any) =>
+				referenceValues.some((refValue: any) =>
+					option.id?.toString() === refValue?.toString()
+				)
+			);
+
+			console.log('RowGrid selected options debug:', {
+				selectedOptionsCount: selectedOptions.length,
+				selectedOptions: selectedOptions.slice(0, 2),
+				referenceValues,
+				optionsIds: options.map((o: any) => o.id).slice(0, 5)
+			});
+
+			if (selectedOptions.length === 0) {
+				return "No reference data available";
+			}
+
+			if (selectedOptions.length === 1) {
+				const option = selectedOptions[0];
+				return `${option.id} - ${option.displayValue || 'Unnamed'}`;
+			}
+
+			return `${selectedOptions.length} references selected`;
+		}
+
+		return String(value);
 	};
 
 	const isAllSelected = rows.length > 0 && selectedRows.size === rows.length;
@@ -291,7 +361,7 @@ export function RowGrid({
 												// Show pending value as primary value with yellow background
 												<span className="text-xs sm:text-sm text-yellow-800 font-medium bg-yellow-100 px-2 py-1 rounded truncate">
 													{pendingValue !== null && pendingValue !== undefined 
-														? String(pendingValue) 
+														? formatCellValue(pendingValue, column)
 														: <span className="text-yellow-600 italic">empty</span>
 													}
 												</span>
@@ -299,7 +369,7 @@ export function RowGrid({
 												// Show original value
 												<span className="text-xs sm:text-sm text-neutral-700 truncate">
 													{cellValue !== null && cellValue !== undefined 
-														? String(cellValue) 
+														? formatCellValue(cellValue, column)
 														: <span className="text-neutral-400 italic">empty</span>
 													}
 												</span>

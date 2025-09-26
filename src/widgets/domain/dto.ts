@@ -79,11 +79,11 @@ export const updateDraftParamsSchema = z.object({
   actorId: z.number().int().positive(),
   patch: z
     .object({
-      title: z.string().max(255).nullable().optional(),
-      description: z.string().max(1024).nullable().optional(),
+      title: z.string().max(255).optional(),
+      description: z.string().max(1024).optional(),
       position: widgetPositionSchema.optional(),
       config: baseWidgetConfigSchema.optional(),
-      note: z.string().max(1024).nullable().optional(),
+      note: z.string().max(1024).optional(),
       status: z.nativeEnum(WidgetDraftStatus).optional(),
       operations: z.array(draftOperationSchema).optional(),
     })

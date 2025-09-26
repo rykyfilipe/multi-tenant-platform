@@ -48,7 +48,9 @@ export async function GET(
   const pathSegments = widgetPathSchema.parse(params.widgetPath);
 
   if (isDraftRequest(pathSegments)) {
+    console.log('🎯 [DEBUG] Processing drafts list request');
     const drafts = await widgetService.listDrafts({ tenantId, dashboardId });
+    console.log('📋 [DEBUG] Drafts loaded successfully:', drafts.length);
     return NextResponse.json(drafts);
   }
 
@@ -75,6 +77,15 @@ export async function GET(
     return NextResponse.json({ widget });
   }
 
+  console.log('🎯 [DEBUG] Processing widgets list request with params:', {
+    tenantId,
+    dashboardId,
+    cursor: searchParams.cursor,
+    limit: searchParams.limit,
+    includeConfig: searchParams.includeConfig,
+    kinds: searchParams.kinds,
+  });
+  
   const widgets = await widgetService.list({
     tenantId,
     dashboardId,
@@ -83,6 +94,8 @@ export async function GET(
     includeConfig: searchParams.includeConfig,
     kinds: searchParams.kinds,
   });
+  
+  console.log('📋 [DEBUG] Widgets loaded successfully:', widgets.items?.length || 0);
   return NextResponse.json(widgets);
 }
 
