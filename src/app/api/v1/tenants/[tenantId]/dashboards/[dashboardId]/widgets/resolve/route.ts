@@ -15,7 +15,8 @@ export async function POST(
 ) {
   assertWidgetsV2Enabled();
   const { tenantId, dashboardId } = paramsSchema.parse(params);
-  const payload = resolveConflictSchema.parse(await request.json());
+  const requestBody = await request.json();
+  const payload = resolveConflictSchema.parse(requestBody);
 
   const service = getWidgetService();
   const result = await service.resolveConflictApi({

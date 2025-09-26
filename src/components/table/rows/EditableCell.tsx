@@ -251,6 +251,7 @@ const MultipleReferencesTooltip = ({
 			return { refValue, referenceRow };
 		})
 		.filter((item) => item.referenceRow);
+		console.log("Multireference");
 
 	return (
 		<div
@@ -838,7 +839,7 @@ export function EditableCell({
 			}
 		}
 		
-		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.customArray) {
+		if (column?.type === "customArray") {
 			// Pentru coloanele customArray, verificăm dacă valoarea există în opțiunile definite
 			if (value && column.customOptions && column.customOptions.includes(value)) {
 				return String(value);
@@ -849,7 +850,7 @@ export function EditableCell({
 			}
 		}
 		
-		if (column?.type === USER_FRIENDLY_COLUMN_TYPES.link && column.referenceTableId) {
+		if (column?.type === "reference" && column.referenceTableId) {
 			// Pentru coloanele de referință, folosim datele din hook
 			const options = referenceData[column.referenceTableId] ?? [];
 			

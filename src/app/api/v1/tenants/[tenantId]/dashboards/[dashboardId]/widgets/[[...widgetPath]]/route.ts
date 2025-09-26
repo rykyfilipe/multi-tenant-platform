@@ -96,19 +96,38 @@ export async function POST(
   const pathSegments = widgetPathSchema.parse(params.widgetPath);
 
   if (isDraftRequest(pathSegments)) {
-    const body = createDraftParamsSchema.parse({
-      ...(await request.json()),
+    console.log('🎯 [DEBUG] Processing draft creation request');
+    
+    const requestBody = await request.json();
+    console.log('📦 [DEBUG] Request body received:', JSON.stringify(requestBody, null, 2));
+    
+    console.log('🏗️ [DEBUG] Creating parse object with:', {
       tenantId,
       dashboardId,
       actorId: getActorId(request),
+      requestBodyKeys: Object.keys(requestBody)
     });
+    
+    const parseInput = {
+      ...requestBody,
+      tenantId,
+      dashboardId,
+      actorId: getActorId(request),
+    };
+    
+    console.log('✅ [DEBUG] Parse input ready:', JSON.stringify(parseInput, null, 2));
+    
+    const body = createDraftParamsSchema.parse(parseInput);
+    console.log('🎉 [DEBUG] Schema parsing successful');
 
-    const draft = await widgetService.createDraft(body);
+    const draft = await widgetService.createDraft(body as any);
+    console.log('📋 [DEBUG] Draft created successfully');
     return NextResponse.json(draft, { status: 201 });
   }
 
   if (isSaveEndpoint(pathSegments)) {
-    const data = savePendingRequestPayloadSchema.parse(await request.json());
+    const requestBody = await request.json();
+    const data = savePendingRequestPayloadSchema.parse(requestBody);
     const response = await widgetService.savePending({
       tenantId,
       dashboardId,
@@ -175,15 +194,16 @@ export async function PATCH(
   if (isDraftRequest(pathSegments)) {
     const [, draftIdSegment] = pathSegments;
     const draftId = widgetIdSchema.parse(draftIdSegment);
+    const requestBody = await request.json();
     const payload = updateDraftParamsSchema.parse({
       tenantId,
       dashboardId,
       draftId,
       actorId: getActorId(request),
-      patch: await request.json(),
+      patch: requestBody,
     });
 
-    const draft = await widgetService.updateDraft(payload);
+    const draft = await widgetService.updateDraft(payload as any);
     return NextResponse.json(draft);
   }
 
@@ -282,7 +302,8 @@ export async function PUT(
         draftId,
         actorId: getActorId(request),
       });
-      const bodyPayload = resolveDraftBodySchema.parse(await request.json());
+      const requestBody = await request.json();
+      const bodyPayload = resolveDraftBodySchema.parse(requestBody);
 
       const draft = await widgetService.resolveConflict({
         ...paramsPayload,
