@@ -2,10 +2,10 @@ import { z } from "zod";
 import { baseWidgetConfigSchema } from "./base";
 
 export const chartSettingsSchema = z.object({
-  chartType: z.enum(["line", "bar", "area", "pie", "radar", "scatter"]),
+  chartType: z.enum(["line", "bar", "area", "pie", "radar", "scatter", "kpi"]),
   xAxis: z.string().min(1, "xAxis is required"),
   yAxis: z.string().min(1, "yAxis is required"),
-  groupBy: z.string().optional(),
+  groupBy: z.string().min(1).optional(),
   valueFormat: z.enum(["number", "currency", "percentage", "duration"]).default("number"),
   refreshInterval: z.number().int().positive().max(3600).default(60),
 });
@@ -30,8 +30,8 @@ export const chartDataSchema = z.object({
     )
     .default([]),
   mappings: z
-    .record(z.enum(["x", "y", "group", "series", "color" ]), z.string().min(1))
-    .default({}),
+    .record(z.enum(["x", "y", "group", "series", "color", "size"]), z.string().min(1))
+    .optional(),
 });
 
 export const chartWidgetConfigSchema = baseWidgetConfigSchema.extend({
@@ -41,4 +41,3 @@ export const chartWidgetConfigSchema = baseWidgetConfigSchema.extend({
 });
 
 export type ChartWidgetConfig = z.infer<typeof chartWidgetConfigSchema>;
-

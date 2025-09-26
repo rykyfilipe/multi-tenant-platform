@@ -1,12 +1,79 @@
+import React from "react";
 import { WidgetKind } from "@/generated/prisma";
-import { chartWidgetConfigSchema } from "../schemas/chart";
-import { tableWidgetConfigSchema } from "../schemas/table";
+import { chartWidgetConfigSchema, type ChartWidgetConfig } from "@/widgets/schemas/chart";
+import { tableWidgetConfigSchema, type TableWidgetConfig } from "@/widgets/schemas/table";
 import { z } from "zod";
 import { ChartWidgetEditor } from "../ui/editors/ChartWidgetEditor";
 import { TableWidgetEditor } from "../ui/editors/TableWidgetEditor";
 import { ChartWidgetRenderer } from "../ui/renderers/ChartWidgetRenderer";
 import { TableWidgetRenderer } from "../ui/renderers/TableWidgetRenderer";
 import { WidgetEntity } from "../domain/entities";
+
+const chartBaseConfig: ChartWidgetConfig = {
+  settings: {
+    chartType: "bar",
+    xAxis: "category",
+    yAxis: "value",
+    groupBy: "category",
+    valueFormat: "number",
+    refreshInterval: 60,
+  },
+  style: {
+    theme: "premium-light",
+    showLegend: true,
+    showGrid: true,
+  },
+  data: {
+    tableId: "default_chart_table",
+    filters: [],
+    mappings: { x: "category", y: "value" },
+  },
+};
+
+const tableBaseConfig: TableWidgetConfig = {
+  settings: {
+    columns: [
+      {
+        id: "column_1",
+        label: "Column 1",
+        sortable: true,
+        format: "text",
+      },
+    ],
+    pageSize: 25,
+    enableExport: false,
+    stickyHeader: true,
+  },
+  style: {
+    theme: "premium-light",
+    density: "comfortable",
+    showRowBorders: false,
+    zebraStripes: true,
+  },
+  data: {
+    tableId: "default_table",
+    filters: [],
+    sort: [],
+  },
+};
+
+const chartConfig = (overrides: Partial<ChartWidgetConfig>) =>
+  chartWidgetConfigSchema.parse({
+    settings: { ...chartBaseConfig.settings, ...(overrides.settings ?? {}) },
+    style: { ...chartBaseConfig.style, ...(overrides.style ?? {}) },
+    data: { ...chartBaseConfig.data, ...(overrides.data ?? {}) },
+  });
+
+const tableConfig = (overrides: Partial<TableWidgetConfig>) =>
+  tableWidgetConfigSchema.parse({
+    settings: {
+      ...tableBaseConfig.settings,
+      ...(overrides.settings ?? {}),
+      columns: overrides.settings?.columns ?? tableBaseConfig.settings.columns,
+    },
+    style: { ...tableBaseConfig.style, ...(overrides.style ?? {}) },
+    data: { ...tableBaseConfig.data, ...(overrides.data ?? {}) },
+  });
 
 type ConfigFromSchema<T extends z.ZodTypeAny> = z.infer<T>;
 
@@ -34,98 +101,35 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   [WidgetKind.CHART]: {
     kind: WidgetKind.CHART,
     schema: chartWidgetConfigSchema,
-    defaultConfig: chartWidgetConfigSchema.parse({
-      settings: {
-        chartType: "bar",
-        xAxis: "",
-        yAxis: "",
-        refreshInterval: 60,
-        valueFormat: "number",
-      },
-      style: {
-        theme: "premium-light",
-        showLegend: true,
-        showGrid: true,
-      },
-      data: {
-        tableId: "",
-        filters: [],
-        mappings: {},
-      },
-    }),
+    defaultConfig: chartConfig({}),
     editor: ChartWidgetEditor,
     renderer: ChartWidgetRenderer,
   },
   [WidgetKind.TABLE]: {
     kind: WidgetKind.TABLE,
     schema: tableWidgetConfigSchema,
-    defaultConfig: tableWidgetConfigSchema.parse({
-      settings: {
-        columns: [],
-        pageSize: 25,
-        enableExport: false,
-        stickyHeader: true,
-      },
-      style: {
-        theme: "premium-light",
-        density: "comfortable",
-        showRowBorders: false,
-        zebraStripes: true,
-      },
-      data: {
-        tableId: "",
-        filters: [],
-        sort: [],
-      },
-    }),
+    defaultConfig: tableConfig({}),
     editor: TableWidgetEditor,
     renderer: TableWidgetRenderer,
   },
   [WidgetKind.TASKS]: {
     kind: WidgetKind.TASKS,
     schema: tableWidgetConfigSchema,
-    defaultConfig: tableWidgetConfigSchema.parse({
-      settings: {
-        columns: [],
-        pageSize: 25,
-        enableExport: false,
-        stickyHeader: true,
-      },
-      style: {
-        theme: "premium-light",
-        density: "comfortable",
-        showRowBorders: false,
-        zebraStripes: true,
-      },
-      data: {
-        tableId: "",
-        filters: [],
-        sort: [],
-      },
-    }),
+    defaultConfig: tableConfig({}),
     editor: TableWidgetEditor,
     renderer: TableWidgetRenderer,
   },
   [WidgetKind.CLOCK]: {
     kind: WidgetKind.CLOCK,
     schema: chartWidgetConfigSchema,
-    defaultConfig: chartWidgetConfigSchema.parse({
+    defaultConfig: chartConfig({
       settings: {
         chartType: "pie",
-        xAxis: "",
-        yAxis: "",
-        refreshInterval: 60,
+        xAxis: "segment",
+        yAxis: "value",
+        groupBy: "segment",
         valueFormat: "number",
-      },
-      style: {
-        theme: "premium-light",
-        showLegend: true,
-        showGrid: false,
-      },
-      data: {
-        tableId: "",
-        filters: [],
-        mappings: {},
+        refreshInterval: 60,
       },
     }),
     editor: ChartWidgetEditor,
@@ -134,24 +138,18 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   [WidgetKind.WEATHER]: {
     kind: WidgetKind.WEATHER,
     schema: chartWidgetConfigSchema,
-    defaultConfig: chartWidgetConfigSchema.parse({
+    defaultConfig: chartConfig({
       settings: {
         chartType: "line",
         xAxis: "date",
         yAxis: "temperature",
-        refreshInterval: 300,
+        groupBy: "location",
         valueFormat: "number",
+        refreshInterval: 300,
       },
-      style: {
-        theme: "premium-light",
-        showLegend: true,
-        showGrid: true,
-      },
-      data: {
-        tableId: "",
+      data: { tableId: "weather_table",
         filters: [],
-        mappings: {},
-      },
+       },
     }),
     editor: ChartWidgetEditor,
     renderer: ChartWidgetRenderer,
@@ -159,23 +157,14 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   [WidgetKind.KPI]: {
     kind: WidgetKind.KPI,
     schema: chartWidgetConfigSchema,
-    defaultConfig: chartWidgetConfigSchema.parse({
+    defaultConfig: chartConfig({
       settings: {
-        chartType: "bar",
-        xAxis: "",
-        yAxis: "",
-        refreshInterval: 60,
+        chartType: "kpi",
+        xAxis: "label",
+        yAxis: "value",
+        groupBy: "label",
         valueFormat: "number",
-      },
-      style: {
-        theme: "premium-light",
-        showLegend: false,
-        showGrid: false,
-      },
-      data: {
-        tableId: "",
-        filters: [],
-        mappings: {},
+        refreshInterval: 60,
       },
     }),
     editor: ChartWidgetEditor,
@@ -184,25 +173,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   [WidgetKind.CUSTOM]: {
     kind: WidgetKind.CUSTOM,
     schema: chartWidgetConfigSchema,
-    defaultConfig: chartWidgetConfigSchema.parse({
-      settings: {
-        chartType: "bar",
-        xAxis: "",
-        yAxis: "",
-        refreshInterval: 60,
-        valueFormat: "number",
-      },
-      style: {
-        theme: "premium-light",
-        showLegend: true,
-        showGrid: true,
-      },
-      data: {
-        tableId: "",
-        filters: [],
-        mappings: {},
-      },
-    }),
+    defaultConfig: chartConfig({}),
     editor: ChartWidgetEditor,
     renderer: ChartWidgetRenderer,
   },
