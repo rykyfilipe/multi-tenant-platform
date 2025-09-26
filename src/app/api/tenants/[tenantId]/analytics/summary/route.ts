@@ -66,20 +66,37 @@ export async function GET(
     const dbSizeBytes = storageResult[0]?.database_size_bytes || 0;
     const storageUsedGB = Number(dbSizeBytes) / (1024 * 1024 * 1024); // Convert bytes to GB
     
+    // Debug log to check calculation
+    console.log('Storage calculation debug:', {
+      dbSizeBytes,
+      storageUsedGB,
+      storageUsedGBFormatted: storageUsedGB.toFixed(6)
+    });
+    
     // Convert to appropriate unit based on size
     let storageUsed: number;
     let storageUnit: string;
     
     if (storageUsedGB >= 1) {
+      // Show in GB for values >= 1GB
       storageUsed = storageUsedGB;
       storageUnit = 'GB';
     } else if (storageUsedGB >= 0.001) {
-      storageUsed = storageUsedGB * 1024; // Convert to MB
+      // Show in MB for values >= 1MB (0.001GB = 1MB)
+      storageUsed = storageUsedGB * 1024; // Convert GB to MB
       storageUnit = 'MB';
     } else {
-      storageUsed = storageUsedGB * 1024 * 1024; // Convert to KB
+      // Show in KB for values < 1MB
+      storageUsed = storageUsedGB * 1024 * 1024; // Convert GB to KB
       storageUnit = 'KB';
     }
+    
+    // Debug log for final result
+    console.log('Storage conversion result:', {
+      storageUsed,
+      storageUnit,
+      storageUsedFormatted: `${storageUsed.toFixed(1)}${storageUnit}`
+    });
     
     const storageUsagePercentage = Math.min((storageUsedGB / 100) * 100, 100); // Assume 100GB total
 

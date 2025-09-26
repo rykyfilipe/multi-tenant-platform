@@ -45,11 +45,11 @@ export default function DashboardsPage() {
 
   useEffect(() => {
     console.log('👤 User effect triggered:', { userId: user?.id, currentActorId: actorId });
-    if (user?.id) {
+    if (user?.id && actorId !== user.id) {
       console.log('✅ Setting actorId to:', user.id);
       setActorId(user.id);
     }
-  }, [user?.id, actorId]);
+  }, [user?.id]);
 
   useEffect(() => {
     const loadDashboards = async () => {
