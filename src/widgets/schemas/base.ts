@@ -19,7 +19,7 @@ export const baseWidgetConfigSchema = z.object({
   settings: z.record(z.string(), z.unknown()),
   style: z.record(z.string(), z.unknown()).optional(),
   data: z.record(z.string(), z.unknown()).optional(),
-  metadata: widgetMetadataSchema,
+  metadata: widgetMetadataSchema.optional(),
 });
 
 export const widgetKindSchema = z.nativeEnum(WidgetKind);
@@ -44,13 +44,13 @@ export const baseWidgetSchema = z.object({
 });
 
 export const createWidgetPayloadSchema = z.object({
-  tenantId: z.number().int().positive(),
-  dashboardId: z.number().int().positive(),
-  kind: widgetKindSchema,
+  tenantId: z.number().int().positive().optional(),
+  dashboardId: z.number().int().positive().optional(),
+  kind: widgetKindSchema.optional(),
   title: z.string().max(255).nullable().optional(),
   description: z.string().max(1024).nullable().optional(),
-  position: widgetPositionSchema,
-  config: baseWidgetConfigSchema,
+  position: widgetPositionSchema.optional(),
+  config: baseWidgetConfigSchema.optional(),
   isVisible: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   schemaVersion: z.number().int().positive().optional(),

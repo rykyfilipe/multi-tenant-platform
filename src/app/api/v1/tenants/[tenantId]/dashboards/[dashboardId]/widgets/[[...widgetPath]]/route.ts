@@ -50,7 +50,6 @@ export async function GET(
   if (isDraftRequest(pathSegments)) {
     console.log('🎯 [DEBUG] Processing drafts list request');
     const drafts = await widgetService.listDrafts({ tenantId, dashboardId });
-    console.log('📋 [DEBUG] Drafts loaded successfully:', drafts.length);
     return NextResponse.json(drafts);
   }
 
@@ -158,7 +157,7 @@ export async function POST(
     dashboardId,
     ...rawBody,
   });
-  const definition = getWidgetDefinition(data.kind);
+  const definition = getWidgetDefinition(data.kind || WidgetKind.CUSTOM);
 
   const actorId = getActorId(request);
 
@@ -176,8 +175,8 @@ export async function POST(
           kind: definition.kind,
           title: data.title ?? null,
           description: data.description ?? null,
-          position: data.position,
-          config: data.config,
+          position: data.position ?? { x: 0, y: 0, w: 4, h: 4 },
+          config: data.config ?? { settings: {} },
           isVisible: data.isVisible ?? true,
           sortOrder: data.sortOrder ?? 0,
           schemaVersion: data.schemaVersion ?? 1,

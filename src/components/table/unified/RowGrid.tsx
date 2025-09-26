@@ -14,6 +14,7 @@ import { normalizeReferenceValue } from "../rows/EditableCell";
 import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
 	columns: Column[];
@@ -151,18 +152,28 @@ export function RowGrid({
 			});
 
 			if (selectedOptions.length === 0) {
-				return "No reference data available";
+				return { display: "No reference data available", tooltip: null, allOptions: [] };
 			}
 
 			if (selectedOptions.length === 1) {
 				const option = selectedOptions[0];
-				return `${option.id} - ${option.displayValue || 'Unnamed'}`;
+				return { 
+					display: `${option.id} - ${option.displayValue || 'Unnamed'}`, 
+					tooltip: null,
+					allOptions: selectedOptions
+				};
 			}
 
-			return `${selectedOptions.length} references selected`;
+			// Multiple references - show first one and indicate there are more
+			const firstOption = selectedOptions[0];
+			return { 
+				display: `${firstOption.id} - ${firstOption.displayValue || 'Unnamed'}`, 
+				tooltip: selectedOptions,
+				allOptions: selectedOptions
+			};
 		}
 
-		return String(value);
+		return { display: String(value), tooltip: null, allOptions: [] };
 	};
 
 	const isAllSelected = rows.length > 0 && selectedRows.size === rows.length;
@@ -359,20 +370,68 @@ export function RowGrid({
 										<div className="w-full h-6 sm:h-8 flex items-center">
 											{hasPending ? (
 												// Show pending value as primary value with yellow background
-												<span className="text-xs sm:text-sm text-yellow-800 font-medium bg-yellow-100 px-2 py-1 rounded truncate">
-													{pendingValue !== null && pendingValue !== undefined 
-														? formatCellValue(pendingValue, column)
-														: <span className="text-yellow-600 italic">empty</span>
-													}
-												</span>
+												<TooltipProvider>
+													<Tooltip>
+														<TooltipTrigger asChild>
+															<span className="text-xs sm:text-sm text-yellow-800 font-medium bg-yellow-100 px-2 py-1 rounded truncate cursor-help">
+																{pendingValue !== null && pendingValue !== undefined 
+																	? (() => {
+																		const formatted = formatCellValue(pendingValue, column);
+																		return typeof formatted === 'string' ? formatted : formatted.display;
+																	})()
+																	: <span className="text-yellow-600 italic">empty</span>
+																}
+															</span>
+														</TooltipTrigger>
+														{pendingValue !== null && pendingValue !== undefined && (() => {
+															const formatted = formatCellValue(pendingValue, column);
+															return typeof formatted === 'object' && formatted.tooltip ? (
+																<TooltipContent className="max-w-md">
+																	<div className="space-y-1">
+																		<div className="font-semibold text-sm">All References:</div>
+																		{formatted.tooltip.map((option: any, index: number) => (
+																			<div key={index} className="text-xs">
+																				{option.id} - {option.displayValue || 'Unnamed'}
+																			</div>
+																		))}
+																	</div>
+																</TooltipContent>
+															) : null;
+														})()}
+													</Tooltip>
+												</TooltipProvider>
 											) : (
 												// Show original value
-												<span className="text-xs sm:text-sm text-neutral-700 truncate">
-													{cellValue !== null && cellValue !== undefined 
-														? formatCellValue(cellValue, column)
-														: <span className="text-neutral-400 italic">empty</span>
-													}
-												</span>
+												<TooltipProvider>
+													<Tooltip>
+														<TooltipTrigger asChild>
+															<span className="text-xs sm:text-sm text-neutral-700 truncate cursor-help">
+																{cellValue !== null && cellValue !== undefined 
+																	? (() => {
+																		const formatted = formatCellValue(cellValue, column);
+																		return typeof formatted === 'string' ? formatted : formatted.display;
+																	})()
+																	: <span className="text-neutral-400 italic">empty</span>
+																}
+															</span>
+														</TooltipTrigger>
+														{cellValue !== null && cellValue !== undefined && (() => {
+															const formatted = formatCellValue(cellValue, column);
+															return typeof formatted === 'object' && formatted.tooltip ? (
+																<TooltipContent className="max-w-md">
+																	<div className="space-y-1">
+																		<div className="font-semibold text-sm">All References:</div>
+																		{formatted.tooltip.map((option: any, index: number) => (
+																			<div key={index} className="text-xs">
+																				{option.id} - {option.displayValue || 'Unnamed'}
+																			</div>
+																		))}
+																	</div>
+																</TooltipContent>
+															) : null;
+														})()}
+													</Tooltip>
+												</TooltipProvider>
 											)}
 										</div>
 									)}

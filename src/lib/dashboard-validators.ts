@@ -127,20 +127,30 @@ export const WidgetValidation = {
           .number()
           .int('Y position must be an integer')
           .min(0, 'Y position must be non-negative'),
-        width: z
+        w: z
           .number()
           .int('Width must be an integer')
           .min(1, 'Width must be at least 1')
           .max(12, 'Width cannot exceed 12 grid units'),
-        height: z
+        h: z
           .number()
           .int('Height must be an integer')
           .min(1, 'Height must be at least 1')
           .max(20, 'Height cannot exceed 20 grid units'),
+        minW: z.number().int().positive().optional(),
+        minH: z.number().int().positive().optional(),
+        maxW: z.number().int().positive().optional(),
+        maxH: z.number().int().positive().optional(),
+        static: z.boolean().optional(),
       }),
     config: z
-      .record(z.any())
-      .default({}),
+      .object({
+        settings: z.record(z.string(), z.unknown()),
+        style: z.record(z.string(), z.unknown()).optional(),
+        data: z.record(z.string(), z.unknown()).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      })
+      .default({ settings: {} }),
     isVisible: z
       .boolean()
       .default(true),
@@ -171,20 +181,30 @@ export const WidgetValidation = {
           .number()
           .int('Y position must be an integer')
           .min(0, 'Y position must be non-negative'),
-        width: z
+        w: z
           .number()
           .int('Width must be an integer')
           .min(1, 'Width must be at least 1')
           .max(12, 'Width cannot exceed 12 grid units'),
-        height: z
+        h: z
           .number()
           .int('Height must be an integer')
           .min(1, 'Height must be at least 1')
           .max(20, 'Height cannot exceed 20 grid units'),
+        minW: z.number().int().positive().optional(),
+        minH: z.number().int().positive().optional(),
+        maxW: z.number().int().positive().optional(),
+        maxH: z.number().int().positive().optional(),
+        static: z.boolean().optional(),
       })
       .optional(),
     config: z
-      .record(z.any())
+      .object({
+        settings: z.record(z.string(), z.unknown()).optional(),
+        style: z.record(z.string(), z.unknown()).optional(),
+        data: z.record(z.string(), z.unknown()).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      })
       .optional(),
     isVisible: z
       .boolean()
@@ -504,16 +524,16 @@ export class DashboardValidators {
   /**
    * Validate widget position
    */
-  static validateWidgetPosition(position: { x: number; y: number; width: number; height: number }) {
+  static validateWidgetPosition(position: { x: number; y: number; w: number; h: number }) {
     if (position.x < 0 || position.y < 0) {
       throw new Error('Widget position must be non-negative');
     }
 
-    if (position.width < 1 || position.width > 12) {
+    if (position.w < 1 || position.w > 12) {
       throw new Error('Widget width must be between 1 and 12 grid units');
     }
 
-    if (position.height < 1 || position.height > 20) {
+    if (position.h < 1 || position.h > 20) {
       throw new Error('Widget height must be between 1 and 20 grid units');
     }
 

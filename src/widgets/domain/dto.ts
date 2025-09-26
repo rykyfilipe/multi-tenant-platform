@@ -59,13 +59,13 @@ export const getWidgetParamsSchema = listWidgetsParamsSchema.pick({ tenantId: tr
 });
 
 export const createDraftParamsSchema = z.object({
-  tenantId: z.number().int().positive(),
-  dashboardId: z.number().int().positive(),
-  actorId: z.number().int().positive(),
+  tenantId: z.number().int().positive().optional(),
+  dashboardId: z.number().int().positive().optional(),
+  actorId: z.number().int().positive().optional(),
   widgetId: z.number().int().positive().optional(),
-  kind: z.nativeEnum(WidgetKind),
+  kind: z.nativeEnum(WidgetKind).optional(),
   position: widgetPositionSchema.optional(),
-  config: baseWidgetConfigSchema,
+  config: baseWidgetConfigSchema.optional(),
   title: z.string().max(255).optional(),
   description: z.string().max(1024).optional(),
   note: z.string().max(1024).optional(),

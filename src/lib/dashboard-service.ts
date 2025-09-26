@@ -36,8 +36,23 @@ export interface DashboardWithWidgets {
     id: number;
     type: string;
     title: string | null;
-    position: any;
-    config: any;
+    position: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      minW?: number;
+      minH?: number;
+      maxW?: number;
+      maxH?: number;
+      static?: boolean;
+    };
+    config: {
+      settings: Record<string, unknown>;
+      style?: Record<string, unknown>;
+      data?: Record<string, unknown>;
+      metadata?: Record<string, unknown>;
+    };
     isVisible: boolean;
     order: number;
   }>;
