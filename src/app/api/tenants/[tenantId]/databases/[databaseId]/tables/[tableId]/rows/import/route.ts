@@ -233,7 +233,7 @@ async function processReferenceValue(
 			} else {
 				// Este o valoare text - creează un rând nou în tabelul referențiat
 				// Folosește prima coloană non-primary ca nume pentru rândul nou
-				const firstNonPrimaryColumn = referenceColumns.find(col => !col.primary);
+				const firstNonPrimaryColumn = referenceColumns.find((col: any) => !col.primary);
 				if (firstNonPrimaryColumn) {
 					const rowData = {
 						[firstNonPrimaryColumn.name]: value
