@@ -37,7 +37,8 @@ export const useOptimizedReferenceData = (
 				databaseId: selectedDatabase?.id,
 				hasToken: !!token,
 				referenceTableId,
-				tablesCount: tables?.length
+				tablesCount: tables?.length,
+				timestamp: new Date().toISOString()
 			});
 
 			setIsLoading(true);

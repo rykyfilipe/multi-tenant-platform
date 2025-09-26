@@ -842,7 +842,9 @@ export function EditableCell({
 				optionsCount: options.length,
 				options: options.slice(0, 2), // First 2 options
 				value: value,
-				referenceValues: normalizeReferenceValue(value, true)
+				referenceValues: normalizeReferenceValue(value, true),
+				allReferenceDataKeys: Object.keys(referenceData),
+				referenceDataForTable: referenceData[column.referenceTableId]
 			});
 			
 			if (options.length === 0) {
