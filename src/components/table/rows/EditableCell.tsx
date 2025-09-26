@@ -848,6 +848,11 @@ export function EditableCell({
 			});
 			
 			if (options.length === 0) {
+				console.log("🔍 EditableCell - No reference data available, showing raw values:", {
+					referenceTableId: column.referenceTableId,
+					referenceValues: normalizeReferenceValue(value, true),
+					allReferenceDataKeys: Object.keys(referenceData)
+				});
 				return "No reference data available";
 			}
 			
