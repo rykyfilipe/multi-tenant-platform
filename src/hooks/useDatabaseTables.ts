@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 export interface Database {
   id: number;
@@ -44,34 +43,68 @@ export interface TableRow {
 
 // Hook pentru a obține toate bazele de date și tabelele
 export const useDatabaseTables = (tenantId: number) => {
-  return useQuery({
-    queryKey: ["databases", tenantId],
-    queryFn: async (): Promise<Database[]> => {
-      const response = await fetch(`/api/tenants/${tenantId}/databases`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch databases");
+  const [data, setData] = useState<Database[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/tenants/${tenantId}/databases`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch databases");
+        }
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+      } finally {
+        setIsLoading(false);
       }
-      return response.json();
-    },
-    enabled: !!tenantId,
-  });
+    };
+
+    fetchData();
+  }, [tenantId]);
+
+  return { data, isLoading, error };
 };
 
 // Hook pentru a obține coloanele unei tabele
 export const useTableColumns = (tenantId: number, databaseId: number, tableId: number) => {
-  return useQuery({
-    queryKey: ["columns", tenantId, databaseId, tableId],
-    queryFn: async (): Promise<Column[]> => {
-      const response = await fetch(
-        `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch columns");
+  const [data, setData] = useState<Column[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!tenantId || !databaseId || !tableId) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(
+          `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch columns");
+        }
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+      } finally {
+        setIsLoading(false);
       }
-      return response.json();
-    },
-    enabled: !!(tenantId && databaseId && tableId),
-  });
+    };
+
+    fetchData();
+  }, [tenantId, databaseId, tableId]);
+
+  return { data, isLoading, error };
 };
 
 // Hook pentru a obține rândurile unei tabele
@@ -88,27 +121,44 @@ export const useTableRows = (
     sortOrder?: "asc" | "desc";
   }
 ) => {
-  const queryParams = new URLSearchParams();
-  if (options?.page) queryParams.set("page", options.page.toString());
-  if (options?.pageSize) queryParams.set("pageSize", options.pageSize.toString());
-  if (options?.search) queryParams.set("search", options.search);
-  if (options?.filters) queryParams.set("filters", options.filters);
-  if (options?.sortBy) queryParams.set("sortBy", options.sortBy);
-  if (options?.sortOrder) queryParams.set("sortOrder", options.sortOrder);
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  return useQuery({
-    queryKey: ["rows", tenantId, databaseId, tableId, options],
-    queryFn: async () => {
+  const fetchData = async () => {
+    if (!tenantId || !databaseId || !tableId) return;
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      const queryParams = new URLSearchParams();
+      if (options?.page) queryParams.set("page", options.page.toString());
+      if (options?.pageSize) queryParams.set("pageSize", options.pageSize.toString());
+      if (options?.search) queryParams.set("search", options.search);
+      if (options?.filters) queryParams.set("filters", options.filters);
+      if (options?.sortBy) queryParams.set("sortBy", options.sortBy);
+      if (options?.sortOrder) queryParams.set("sortOrder", options.sortOrder);
+
       const response = await fetch(
         `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows?${queryParams}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch rows");
       }
-      return response.json();
-    },
-    enabled: !!(tenantId && databaseId && tableId),
-  });
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Unknown error"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenantId, databaseId, tableId, options?.page, options?.pageSize, options?.search, options?.filters, options?.sortBy, options?.sortOrder]);
+
+  return { data, isLoading, error, refetch: fetchData };
 };
 
 // Hook pentru a obține datele procesate pentru widget-uri
@@ -119,30 +169,46 @@ export const useWidgetData = (
   columnMappings: Record<string, string>,
   filters: Array<{ column: string; operator: string; value: any }> = []
 ) => {
-  return useQuery({
-    queryKey: ["widgetData", tenantId, databaseId, tableId, columnMappings, filters],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows?pageSize=1000`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch widget data");
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!tenantId || !databaseId || !tableId || Object.keys(columnMappings).length === 0) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(
+          `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows?pageSize=1000`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch widget data");
+        }
+        const result = await response.json();
+        
+        // Procesează datele conform mapping-ului
+        const processedData = result.data?.map((row: any) => {
+          const processedRow: any = {};
+          Object.entries(columnMappings).forEach(([widgetField, dbColumn]) => {
+            if (dbColumn && row[dbColumn] !== undefined) {
+              processedRow[widgetField] = row[dbColumn];
+            }
+          });
+          return processedRow;
+        }) || [];
+        
+        setData(processedData);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+      } finally {
+        setIsLoading(false);
       }
-      const data = await response.json();
-      
-      // Procesează datele conform mapping-ului
-      const processedData = data.data?.map((row: any) => {
-        const processedRow: any = {};
-        Object.entries(columnMappings).forEach(([widgetField, dbColumn]) => {
-          if (dbColumn && row[dbColumn] !== undefined) {
-            processedRow[widgetField] = row[dbColumn];
-          }
-        });
-        return processedRow;
-      }) || [];
-      
-      return processedData;
-    },
-    enabled: !!(tenantId && databaseId && tableId && Object.keys(columnMappings).length > 0),
-  });
+    };
+
+    fetchData();
+  }, [tenantId, databaseId, tableId, columnMappings, filters]);
+
+  return { data, isLoading, error };
 };
