@@ -318,6 +318,12 @@ export default function DashboardsPage() {
     selectedDashboardId
   });
 
+  console.log('🔍 Feature flag check:', {
+    isWidgetsV2Enabled: isWidgetsV2Enabled(),
+    envVar: process.env.NEXT_PUBLIC_WIDGETS_V2,
+    envType: typeof process.env.NEXT_PUBLIC_WIDGETS_V2
+  });
+
   if (!isWidgetsV2Enabled()) {
     console.log('🚫 Widgets V2 not enabled - showing legacy message');
     return (
@@ -336,6 +342,15 @@ export default function DashboardsPage() {
     );
   }
 
+  console.log('🔍 Loading state check:', {
+    isLoading,
+    actorId,
+    actorIdType: typeof actorId,
+    dashboardsLength: dashboards.length,
+    selectedDashboardId,
+    tenantId: tenant?.id
+  });
+
   if (isLoading || actorId === null) {
     console.log('⏳ Showing loading state:', { isLoading, actorId });
     return (
@@ -349,6 +364,11 @@ export default function DashboardsPage() {
   }
 
   // Empty state when no dashboards exist
+  console.log('🔍 Empty state check:', {
+    dashboardsLength: dashboards.length,
+    dashboards: dashboards
+  });
+
   if (dashboards.length === 0) {
     console.log('📭 No dashboards found - showing empty state');
     return (
@@ -509,4 +529,5 @@ export default function DashboardsPage() {
     );
   }
 
+  console.log('🎯 Rendering main dashboard view - all conditions passed!');
 }
