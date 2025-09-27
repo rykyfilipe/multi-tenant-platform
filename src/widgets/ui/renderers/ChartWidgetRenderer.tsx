@@ -38,6 +38,17 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const tableId = config?.data?.tableId;
   const filters = config?.data?.filters || [];
   const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
+
+  console.log('🔧 ChartWidgetRenderer - Widget config:', {
+    widgetId: widget.id,
+    config,
+    chartType,
+    mappings,
+    databaseId,
+    tableId,
+    filters,
+    refreshSettings
+  });
   
   // Fetch real data from API
   const validFilters = filters.filter((f: any) => f.column && f.operator && f.value !== undefined);
@@ -63,6 +74,14 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     }
   );
 
+  console.log('📡 ChartWidgetRenderer - API Response:', {
+    rawData,
+    isLoading,
+    error,
+    hasData: !!rawData?.data,
+    dataLength: rawData?.data?.length || 0
+  });
+
   // Auto-refresh functionality
   useAutoRefresh({
     enabled: refreshSettings.enabled,
@@ -83,8 +102,20 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Process data based on mappings
   const processedData = useMemo(() => {
-    if (!rawData?.data || !mappings.x || !mappings.y) {
-      // Return mock data if no real data or mappings
+    console.log('🔄 ChartWidgetRenderer - Processing data:', {
+      rawData,
+      hasRawData: !!rawData?.data,
+      rawDataLength: rawData?.data?.length || 0,
+      mappings,
+      hasXMappings: !!mappings.x,
+      hasYMappings: !!mappings.y,
+      isLoading,
+      error
+    });
+
+    // If no mappings or no data, return mock data
+    if (!mappings.x || !mappings.y || !rawData?.data?.length) {
+      console.log('📊 ChartWidgetRenderer - Using mock data');
       return [
         { name: "Jan", value: 400, value2: 240 },
         { name: "Feb", value: 300, value2: 139 },
@@ -95,7 +126,13 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       ];
     }
 
-    return rawData.data.map((row: any, index: number) => {
+    console.log('📊 ChartWidgetRenderer - Processing real data:', {
+      rawDataLength: rawData.data.length,
+      firstRow: rawData.data[0],
+      mappings
+    });
+
+    const processed = rawData.data.map((row: any, index: number) => {
       const processedRow: any = {};
       
       // Map X axis (usually categorical)
@@ -125,6 +162,14 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       
       return processedRow;
     });
+
+    console.log('📊 ChartWidgetRenderer - Processed data:', {
+      processedLength: processed.length,
+      firstProcessedRow: processed[0],
+      sampleProcessedRows: processed.slice(0, 3)
+    });
+
+    return processed;
   }, [rawData, mappings]);
 
   // Generate data keys based on mappings and data

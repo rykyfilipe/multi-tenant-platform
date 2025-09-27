@@ -71,6 +71,14 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     }
   );
 
+  console.log('📡 KPIWidgetRenderer - API Response:', {
+    rawData,
+    isLoading,
+    error,
+    hasData: !!rawData?.data,
+    dataLength: rawData?.data?.length || 0
+  });
+
   // Auto-refresh functionality
   useAutoRefresh({
     enabled: refreshSettings.enabled,

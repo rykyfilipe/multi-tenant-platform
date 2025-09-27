@@ -71,6 +71,14 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     }
   );
 
+  console.log('📡 TableWidgetRenderer - API Response:', {
+    rawData,
+    isLoading,
+    error,
+    hasData: !!rawData?.data,
+    dataLength: rawData?.data?.length || 0
+  });
+
   // Auto-refresh functionality
   useAutoRefresh({
     enabled: refreshSettings.enabled,
