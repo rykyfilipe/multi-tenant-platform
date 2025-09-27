@@ -4,13 +4,12 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
-import { useDraftOperations } from "@/widgets/api/simple-draft-client";
 import { useWidgetsApi } from "@/widgets/api/simple-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { WidgetKind } from "@/generated/prisma";
-import { WidgetEntity, WidgetConfig, WidgetDraftEntity } from "@/widgets/domain/entities";
+import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
 import { useUndoRedo } from "./components/UndoRedo";
@@ -27,8 +26,8 @@ import {
   Edit3,
   Copy,
   Trash2,
-  CheckSquare,
-  X
+  X,
+  CheckSquare
 } from "lucide-react";
 
 interface WidgetCanvasNewProps {
@@ -45,15 +44,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   isEditMode = false 
 }) => {
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
-  const draftsRecord = useWidgetsStore((state) => state.drafts);
   const pendingOperations = useWidgetsStore((state) => state.getPending());
   const clearPending = useWidgetsStore((state) => state.clearPending);
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
-  const removeDraft = useWidgetsStore((state) => state.removeDraft);
 
-  const { applyDraft, deleteDraft } = useDraftOperations(tenantId, dashboardId);
   const api = useWidgetsApi(tenantId, dashboardId);
   
   // Undo/Redo functionality
@@ -150,7 +146,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     return filtered;
   }, [widgetsRecord, tenantId, dashboardId]);
 
-  const draftsList = useMemo(() => Object.values(draftsRecord), [draftsRecord]);
 
   // Update container width on resize
   useEffect(() => {
@@ -250,74 +245,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     }
   };
 
-  const handleApplyDraft = async (draftId: number) => {
-    try {
-      console.log('🔄 [DEBUG] Applying draft:', draftId);
-      
-      toast({
-        title: "Applying draft...",
-        description: "Your draft changes are being applied.",
-        variant: "info",
-        duration: 3000,
-      });
-      
-      const response = await applyDraft(draftId, actorId);
-      
-      if (response.conflicts.length === 0) {
-        toast({
-          title: "Draft applied successfully!",
-          description: "Your changes have been saved.",
-          variant: "success",
-          duration: 4000,
-        });
-      } else {
-        toast({
-          title: "Draft has conflicts",
-          description: "Please resolve conflicts before applying.",
-          variant: "warning",
-          duration: 5000,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to apply draft:", error);
-      toast({
-        title: "Failed to apply draft",
-        description: error instanceof Error ? error.message : "An error occurred while applying the draft.",
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  };
-
-  const handleDeleteDraft = async (draftId: number) => {
-    try {
-      console.log('🗑️ [DEBUG] Deleting draft:', draftId);
-      
-      toast({
-        title: "Deleting draft...",
-        description: "The draft is being removed.",
-        variant: "info",
-        duration: 3000,
-      });
-      
-      await deleteDraft(draftId, actorId);
-      
-      toast({
-        title: "Draft deleted successfully!",
-        description: "The draft has been removed.",
-        variant: "success",
-        duration: 4000,
-      });
-    } catch (error) {
-      console.error("Failed to delete draft:", error);
-      toast({
-        title: "Failed to delete draft",
-        description: error instanceof Error ? error.message : "An error occurred while deleting the draft.",
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  };
 
   const handleSelectWidget = (widgetId: number) => {
     setSelectedWidgets(prev => {
@@ -817,10 +744,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     onEdit={undefined}
                     onDelete={undefined}
                     onDuplicate={undefined}
-                    isEditMode={isEditMode}
-                    isDraft={draftsRecord[widget.id] !== undefined}
-                    onApplyDraft={isEditMode && draftsRecord[widget.id] ? () => handleApplyDraft(draftsRecord[widget.id].id) : undefined}
-                    onDeleteDraft={isEditMode && draftsRecord[widget.id] ? () => handleDeleteDraft(draftsRecord[widget.id].id) : undefined}
+                     isEditMode={isEditMode}
                   />
                 </div>
               );

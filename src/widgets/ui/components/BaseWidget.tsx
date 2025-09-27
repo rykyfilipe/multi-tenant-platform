@@ -7,12 +7,8 @@ interface BaseWidgetProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
-  onOpenDraft?: () => void;
-  onApplyDraft?: () => void;
-  onDeleteDraft?: () => void;
   isDirty?: boolean;
   isEditMode?: boolean;
-  isDraft?: boolean;
 }
 
 export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
@@ -20,12 +16,8 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
   onEdit,
   onDelete,
   onDuplicate,
-  onOpenDraft,
-  onApplyDraft,
-  onDeleteDraft,
   isDirty,
   isEditMode = false,
-  isDraft = false,
   children,
 }) => {
   return (
@@ -33,9 +25,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
       flex h-full flex-col rounded-xl shadow-sm transition-all duration-300
       ${isEditMode 
         ? 'bg-card border border-border/60 hover:shadow-md' 
-        : isDraft
-          ? 'bg-gradient-to-br from-amber-50/95 to-amber-100/80 backdrop-blur-sm border border-amber-200/60 shadow-lg hover:shadow-xl hover:scale-[1.02]'
-          : 'bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:scale-[1.02]'
+        : 'bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:scale-[1.02]'
       }
     `}>
       {/* Header - Only show in edit mode or when there's a title */}
@@ -53,52 +43,12 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
             <span className={`font-medium ${isEditMode ? 'text-foreground/80' : 'text-foreground/90'}`}>
               {title ?? "Untitled widget"}
             </span>
-            {isDraft && (
-              <div className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs ${
-                isEditMode 
-                  ? 'bg-blue-50 text-blue-700' 
-                  : 'bg-amber-50 text-amber-700 border border-amber-200'
-              }`}>
-                <div className={`h-1.5 w-1.5 rounded-full ${
-                  isEditMode ? 'bg-blue-500' : 'bg-amber-500'
-                }`}></div>
-                <span className="font-medium">
-                  {isEditMode ? 'Draft' : 'Pending Changes'}
-                </span>
-              </div>
-            )}
             {isDirty && (
               <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
                 Unsaved
               </span>
             )}
           </div>
-          
-          {/* Draft action buttons - only in edit mode */}
-          {isDraft && isEditMode && onApplyDraft && onDeleteDraft && (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onApplyDraft();
-                }}
-                className="rounded bg-green-500 px-2 py-1 text-xs font-medium text-white hover:bg-green-600 transition-colors"
-                title="Apply draft"
-              >
-                Apply
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteDraft();
-                }}
-                className="rounded bg-red-500 px-2 py-1 text-xs font-medium text-white hover:bg-red-600 transition-colors"
-                title="Delete draft"
-              >
-                Delete
-              </button>
-            </div>
-          )}
         </div>
       )}
       

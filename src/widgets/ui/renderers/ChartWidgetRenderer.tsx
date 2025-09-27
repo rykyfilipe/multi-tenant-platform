@@ -15,9 +15,6 @@ interface ChartWidgetRendererProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   isEditMode?: boolean;
-  isDraft?: boolean;
-  onApplyDraft?: () => void;
-  onDeleteDraft?: () => void;
 }
 
 export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({ 
@@ -25,10 +22,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   onEdit, 
   onDelete, 
   onDuplicate, 
-  isEditMode = false,
-  isDraft = false,
-  onApplyDraft,
-  onDeleteDraft
+  isEditMode = false
 }) => {
   // Extract chart configuration from widget config
   const config = widget.config as any;
@@ -266,7 +260,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
         <div className="h-full w-full p-4">
           <div className="h-full flex items-center justify-center">
             <div className="space-y-3 w-full">
@@ -283,7 +277,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Error state
   if (error) {
     return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
         <div className="h-full w-full p-4">
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-red-500">
@@ -297,7 +291,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   }
 
   return (
-    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
+    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
       <div className="h-full w-full p-4">
         <motion.div
           initial={{ opacity: 0, y: 10 }}

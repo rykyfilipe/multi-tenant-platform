@@ -1,12 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { ConflictMetadata, DraftOperation, WidgetEntity, WidgetDraftEntity } from "../domain/entities";
+import { ConflictMetadata, DraftOperation, WidgetEntity } from "../domain/entities";
 import { getWidgetDefinition } from "../registry/widget-registry";
 import { hasWidgetId } from "../utils/pendingHelpers";
 
 export interface PendingChangesState {
   widgets: Record<number, WidgetEntity>;
-  drafts: Record<number, WidgetDraftEntity>;
   pendingOperations: DraftOperation[];
   dirtyWidgetIds: Set<number>;
   conflicts: ConflictMetadata[];
@@ -17,9 +16,6 @@ export interface PendingChangesState {
   addOperation: (operation: DraftOperation) => void;
   upsertWidget: (widget: WidgetEntity) => void;
   setWidgets: (widgets: WidgetEntity[]) => void;
-  upsertDraft: (draft: WidgetDraftEntity) => void;
-  removeDraft: (draftId: number) => void;
-  setDrafts: (drafts: WidgetDraftEntity[]) => void;
   clearPending: () => void;
   getPending: () => DraftOperation[];
   setConflicts: (conflicts: ConflictMetadata[]) => void;
@@ -41,7 +37,6 @@ export const useWidgetsStore = create<PendingChangesState>()(
   persist(
     (set, get) => ({
       widgets: {},
-      drafts: {},
       pendingOperations: [],
       dirtyWidgetIds: new Set<number>(),
       conflicts: [],
@@ -177,23 +172,6 @@ export const useWidgetsStore = create<PendingChangesState>()(
             return acc;
           }, {}),
         })),
-      upsertDraft: (draft) =>
-        set((state) => ({
-          drafts: { ...state.drafts, [draft.id]: draft },
-        })),
-      setDrafts: (drafts) =>
-        set(() => ({
-          drafts: drafts.reduce<Record<number, WidgetDraftEntity>>((acc, draft) => {
-            acc[draft.id] = draft;
-            return acc;
-          }, {}),
-        })),
-      removeDraft: (draftId) =>
-        set((state) => {
-          const drafts = { ...state.drafts };
-          delete drafts[draftId];
-          return { drafts };
-        }),
       clearPending: () => {
         set({
           pendingOperations: [],
@@ -243,7 +221,6 @@ export const useWidgetsStore = create<PendingChangesState>()(
       name: "widgets-pending-store",
       partialize: (state) => ({
         widgets: state.widgets,
-        drafts: state.drafts,
         pendingOperations: state.pendingOperations,
       }),
       version: 2,
