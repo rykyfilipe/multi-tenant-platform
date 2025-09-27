@@ -81,8 +81,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           }
         });
         
-        // Clear pending operations
+        // Clear pending operations but keep existing widgets
         clearPending();
+        
+        console.log('✅ [DEBUG] Widgets after save:', Object.keys(useWidgetsStore.getState().widgets));
         
         toast({
           title: "Changes saved successfully!",

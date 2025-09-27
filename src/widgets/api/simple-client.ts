@@ -214,8 +214,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
       if (response.conflicts.length) {
         setConflicts(response.conflicts);
       } else {
-        // Reload widgets after successful creation
-        await loadWidgets(true);
+        // Note: Don't reload widgets - let the caller handle state updates
       }
       
       return response;
@@ -233,8 +232,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
         setConflicts(response.conflicts);
       } else {
         setConflicts([]);
-        // Reload widgets after successful save
-        await loadWidgets();
+        // Note: Don't reload widgets - let the caller handle state updates
       }
       
       return response;
