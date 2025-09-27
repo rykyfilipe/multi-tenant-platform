@@ -136,7 +136,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
           <div className="space-y-3">
             {/* Columns Management */}
             <div>
-              <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
                 <Label className="text-xs font-medium uppercase tracking-wide">Columns</Label>
                 <Button size="sm" variant="outline" onClick={addColumn} className="h-6 px-2">
                   <Plus className="h-3 w-3 mr-1" />
@@ -215,18 +215,18 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                   </div>
                 ))}
               </div>
-            </div>
+      </div>
 
-            <div>
+      <div>
               <Label htmlFor="pageSize" className="text-xs font-medium uppercase tracking-wide">
                 Page Size
               </Label>
               <Input
                 id="pageSize"
-                type="number"
+          type="number"
                 min="1"
                 max="200"
-                value={value.settings.pageSize}
+          value={value.settings.pageSize}
                 onChange={(e) => updateSettings({ pageSize: Number(e.target.value) })}
                 className="mt-1"
               />
@@ -486,8 +486,8 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                 id="refreshEnabled"
                 checked={value.refresh?.enabled || false}
                 onCheckedChange={(checked) => updateRefresh({ enabled: checked })}
-              />
-            </div>
+        />
+      </div>
             
             {value.refresh?.enabled && (
               <div>

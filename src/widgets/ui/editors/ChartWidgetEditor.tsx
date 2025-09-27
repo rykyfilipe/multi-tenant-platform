@@ -95,12 +95,12 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-4">
           <div className="space-y-3">
-            <div>
+      <div>
               <Label htmlFor="chartType" className="text-xs font-medium uppercase tracking-wide">
                 Chart Type
               </Label>
               <Select
-                value={value.settings.chartType}
+          value={value.settings.chartType}
                 onValueChange={(val) => updateSettings({ chartType: val as typeof value.settings.chartType })}
               >
                 <SelectTrigger className="mt-1">
@@ -174,18 +174,18 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                   <SelectItem value="duration">Duration</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+      </div>
 
-            <div>
+      <div>
               <Label htmlFor="refreshInterval" className="text-xs font-medium uppercase tracking-wide">
                 Refresh Interval (seconds)
               </Label>
               <Input
                 id="refreshInterval"
-                type="number"
+          type="number"
                 min="1"
                 max="3600"
-                value={value.settings.refreshInterval}
+          value={value.settings.refreshInterval}
                 onChange={(e) => updateSettings({ refreshInterval: Number(e.target.value) })}
                 className="mt-1"
               />
@@ -472,8 +472,8 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                 id="refreshEnabled"
                 checked={value.refresh?.enabled || false}
                 onCheckedChange={(checked) => updateRefresh({ enabled: checked })}
-              />
-            </div>
+        />
+      </div>
             
             {value.refresh?.enabled && (
               <div>

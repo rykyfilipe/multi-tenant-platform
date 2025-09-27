@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
 import { isWidgetsV2Enabled } from '@/lib/featureFlag';
 import { WidgetCanvasNew } from '@/widgets/ui/WidgetCanvasNew';
-import { Plus, LayoutDashboard, Edit3, Eye, Settings, MoreHorizontal } from 'lucide-react';
+import { Plus, LayoutDashboard, Edit3, Eye, Settings, MoreHorizontal, Trash2, Edit } from 'lucide-react';
 
 interface DashboardSummary {
   id: number;
@@ -31,7 +32,10 @@ export default function DashboardsPage() {
   const [actorId, setActorId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
+  const [editForm, setEditForm] = useState({ name: '', description: '', isPublic: false });
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Debug logging
@@ -152,6 +156,110 @@ export default function DashboardsPage() {
       toast.toast({
         title: 'Error',
         description: 'Failed to create dashboard.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEditDashboard = () => {
+    const currentDashboard = dashboards.find(d => d.id === selectedDashboardId);
+    if (currentDashboard) {
+      setEditForm({
+        name: currentDashboard.name,
+        description: currentDashboard.description || '',
+        isPublic: false // We'll need to add this field to DashboardSummary
+      });
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleUpdateDashboard = async () => {
+    if (!editForm.name.trim() || !selectedDashboardId) {
+      toast.toast({
+        title: 'Error',
+        description: 'Dashboard name is required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      console.log('✏️ Updating dashboard with data:', editForm);
+      const res = await fetch(`/api/dashboards/${selectedDashboardId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+
+      console.log('📡 Update dashboard response status:', res.status);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('❌ Failed to update dashboard:', errorData);
+        throw new Error(`Failed to update dashboard: ${res.status} ${res.statusText}`);
+      }
+
+      const updatedDashboard = await res.json();
+      console.log('✅ Dashboard updated successfully:', updatedDashboard);
+      
+      setDashboards(prev => prev.map(d => d.id === selectedDashboardId ? updatedDashboard : d));
+      setIsEditModalOpen(false);
+      setEditForm({ name: '', description: '', isPublic: false });
+      
+      toast.toast({
+        title: 'Success',
+        description: 'Dashboard updated successfully.',
+      });
+    } catch (error) {
+      console.error('💥 Error updating dashboard:', error);
+      toast.toast({
+        title: 'Error',
+        description: 'Failed to update dashboard.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteDashboard = async () => {
+    if (!selectedDashboardId) return;
+
+    try {
+      console.log('🗑️ Deleting dashboard:', selectedDashboardId);
+      const res = await fetch(`/api/dashboards/${selectedDashboardId}`, {
+        method: 'DELETE',
+      });
+
+      console.log('📡 Delete dashboard response status:', res.status);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('❌ Failed to delete dashboard:', errorData);
+        throw new Error(`Failed to delete dashboard: ${res.status} ${res.statusText}`);
+      }
+
+      console.log('✅ Dashboard deleted successfully');
+      
+      setDashboards(prev => prev.filter(d => d.id !== selectedDashboardId));
+      
+      // Select another dashboard or create default
+      const remainingDashboards = dashboards.filter(d => d.id !== selectedDashboardId);
+      if (remainingDashboards.length > 0) {
+        setSelectedDashboardId(remainingDashboards[0].id);
+      } else {
+        setSelectedDashboardId(null);
+      }
+      
+      setIsDeleteModalOpen(false);
+      
+      toast.toast({
+        title: 'Success',
+        description: 'Dashboard deleted successfully.',
+      });
+    } catch (error) {
+      console.error('💥 Error deleting dashboard:', error);
+      toast.toast({
+        title: 'Error',
+        description: 'Failed to delete dashboard.',
         variant: 'destructive',
       });
     }
@@ -475,13 +583,30 @@ export default function DashboardsPage() {
               </Button>
             </div>
 
-            {/* Settings Menu */}
-            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
+            {/* Dashboard Settings Menu */}
+            {selectedDashboardId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleEditDashboard}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Dashboard
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Dashboard Settings</DialogTitle>
@@ -526,6 +651,68 @@ export default function DashboardsPage() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Edit Dashboard Modal */}
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Dashboard</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="editName">Name</Label>
+                    <Input
+                      id="editName"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter dashboard name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editDescription">Description</Label>
+                    <Textarea
+                      id="editDescription"
+                      value={editForm.description}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter dashboard description"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleUpdateDashboard}>
+                      Update Dashboard
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Dashboard Modal */}
+            <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Delete Dashboard</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Are you sure you want to delete this dashboard? This action cannot be undone and will remove all widgets and data associated with it.
+                  </p>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleDeleteDashboard}
+                    >
+                      Delete Dashboard
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
@@ -536,7 +723,7 @@ export default function DashboardsPage() {
           <WidgetCanvasNew 
             tenantId={tenant?.id ?? 0} 
             dashboardId={selectedDashboardId} 
-            actorId={actorId}
+            actorId={actorId ?? 0}
             isEditMode={isEditMode}
           />
         )}
