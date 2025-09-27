@@ -11,6 +11,22 @@ export interface Translations {
 // Main translations object
 export const translations: Translations = {
 	// Navigation
+	"nav.dashboards": {
+		en: "Dashboards",
+		ro: "Panouri de Control",
+		es: "Paneles",
+		fr: "Tableaux de Bord",
+		de: "Dashboards",
+		zh: "仪表板",
+	},
+	"nav.dashboards.description": {
+		en: "Manage and view your dashboards",
+		ro: "Gestionează și vezi panourile de control",
+		es: "Gestiona y visualiza tus paneles",
+		fr: "Gérez et visualisez vos tableaux de bord",
+		de: "Verwalten und anzeigen Ihrer Dashboards",
+		zh: "管理和查看您的仪表板",
+	},
 	"nav.analytics": {
 		en: "Analytics",
 		ro: "Analiză",
