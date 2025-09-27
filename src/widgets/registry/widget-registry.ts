@@ -7,6 +7,10 @@ import { ChartWidgetEditor } from "../ui/editors/ChartWidgetEditor";
 import { TableWidgetEditor } from "../ui/editors/TableWidgetEditor";
 import { ChartWidgetRenderer } from "../ui/renderers/ChartWidgetRenderer";
 import { TableWidgetRenderer } from "../ui/renderers/TableWidgetRenderer";
+import { KPIWidgetRenderer } from "../ui/renderers/KPIWidgetRenderer";
+import { ClockWidgetRenderer } from "../ui/renderers/ClockWidgetRenderer";
+import { WeatherWidgetRenderer } from "../ui/renderers/WeatherWidgetRenderer";
+import { CustomWidgetRenderer } from "../ui/renderers/CustomWidgetRenderer";
 import { WidgetEntity } from "../domain/entities";
 
 type ConfigFromSchema<T extends z.ZodTypeAny> = z.infer<T>;
@@ -120,7 +124,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
       },
     }),
     editor: TableWidgetEditor,
-    renderer: TableWidgetRenderer,
+    renderer: KPIWidgetRenderer,
   },
   [WidgetKind.CLOCK]: {
     kind: WidgetKind.CLOCK,
@@ -148,7 +152,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
       },
     }),
     editor: ChartWidgetEditor,
-    renderer: ChartWidgetRenderer,
+    renderer: ClockWidgetRenderer,
   },
   [WidgetKind.WEATHER]: {
     kind: WidgetKind.WEATHER,
@@ -204,7 +208,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
       },
     }),
     editor: ChartWidgetEditor,
-    renderer: ChartWidgetRenderer,
+    renderer: WeatherWidgetRenderer,
   },
   [WidgetKind.CUSTOM]: {
     kind: WidgetKind.CUSTOM,
@@ -215,7 +219,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
       data: {},
     }),
     editor: ChartWidgetEditor,
-    renderer: ChartWidgetRenderer,
+    renderer: CustomWidgetRenderer,
   },
 };
 

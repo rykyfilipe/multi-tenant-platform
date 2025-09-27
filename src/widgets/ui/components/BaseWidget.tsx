@@ -52,10 +52,10 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
           
           {/* Action buttons - Only in edit mode */}
           {isEditMode && (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground relative z-50">
               {onOpenDraft && (
                 <button 
-                  className="hover:text-foreground transition-colors" 
+                  className="hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent/50" 
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -67,7 +67,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
               )}
               {onDuplicate && (
                 <button 
-                  className="hover:text-foreground transition-colors" 
+                  className="hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent/50" 
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -79,7 +79,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
               )}
               {onEdit && (
                 <button 
-                  className="hover:text-foreground transition-colors" 
+                  className="hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent/50" 
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -91,7 +91,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
               )}
               {onDelete && (
                 <button 
-                  className="text-destructive hover:text-destructive/80 transition-colors" 
+                  className="text-destructive hover:text-destructive/80 transition-colors px-2 py-1 rounded hover:bg-destructive/10" 
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();

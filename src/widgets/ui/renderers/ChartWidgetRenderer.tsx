@@ -23,11 +23,24 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 }) => {
   // Extract chart configuration from widget config
   const config = widget.config as any;
-  const chartType = config?.type || "line";
-  const data = config?.data || [];
-  const dataKeys = config?.dataKeys || [{ key: "value", name: "Value", color: "#6366f1" }];
-  const showGrid = config?.showGrid !== false;
-  const showTooltip = config?.showTooltip !== false;
+  const chartType = config?.settings?.chartType || "bar";
+  
+  // Generate mock data if config.data is not an array
+  const data = Array.isArray(config?.data) ? config.data : [
+    { name: "Jan", value: 400, value2: 240 },
+    { name: "Feb", value: 300, value2: 139 },
+    { name: "Mar", value: 200, value2: 980 },
+    { name: "Apr", value: 278, value2: 390 },
+    { name: "May", value: 189, value2: 480 },
+    { name: "Jun", value: 239, value2: 380 },
+  ];
+  
+  const dataKeys = [
+    { key: "value", name: "Value", color: "#1f2937" },
+    { key: "value2", name: "Value 2", color: "#374151" },
+  ];
+  const showGrid = config?.style?.showGrid !== false;
+  const showTooltip = true;
 
   // Premium black and white color palette
   const premiumColors = {
@@ -44,7 +57,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className="h-full w-full p-4 bg-white">
+      <div className="h-full w-full p-4">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

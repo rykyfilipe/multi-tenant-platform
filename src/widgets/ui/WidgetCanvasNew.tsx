@@ -18,7 +18,12 @@ import {
   Settings, 
   Save, 
   Undo2, 
-  Redo2 
+  Redo2,
+  Edit3,
+  Copy,
+  Trash2,
+  CheckSquare,
+  X
 } from "lucide-react";
 
 interface WidgetCanvasNewProps {
@@ -44,21 +49,25 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [selectedWidgets, setSelectedWidgets] = useState<Set<number>>(new Set());
 
   const widgetList = useMemo(() => {
-    return Object.values(widgetsRecord).filter((widget) => 
+    const filtered = Object.values(widgetsRecord).filter((widget) => 
       widget.tenantId === tenantId && 
       widget.dashboardId === dashboardId && 
       widget.isVisible
     );
+    console.log('🎯 [DEBUG] WidgetList:', filtered);
+    return filtered;
   }, [widgetsRecord, tenantId, dashboardId]);
 
   const layout: Layout[] = useMemo(() => {
-    return widgetList.map((widget) => ({
+    const layoutItems = widgetList.map((widget) => ({
       i: widget.id.toString(),
       x: widget.position.x,
       y: widget.position.y,
       w: widget.position.w,
       h: widget.position.h,
     }));
+    console.log('🎯 [DEBUG] Layout:', layoutItems);
+    return layoutItems;
   }, [widgetList]);
 
   const closeEditor = () => setEditorWidgetId(null);
@@ -121,9 +130,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     setSelectedWidgets(new Set());
   };
 
+  const handleSelectAll = () => {
+    const allWidgetIds = new Set(widgetList.map(widget => widget.id));
+    setSelectedWidgets(allWidgetIds);
+  };
+
   // Simulate loading
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -206,13 +220,104 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
               {/* Separator */}
               <div className="w-px h-6 bg-border/30 mx-2" />
 
-              {/* Actions */}
+              {/* Widget Actions */}
               <div className="flex items-center space-x-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => console.log('Save')}
+                  onClick={() => {
+                    // Edit selected widget
+                    const selectedId = Array.from(selectedWidgets)[0];
+                    if (selectedId) {
+                      setEditorWidgetId(selectedId);
+                    }
+                  }}
+                  disabled={selectedWidgets.size !== 1}
                   className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Edit Selected Widget"
+                >
+                  <Edit3 className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Duplicate selected widgets
+                    selectedWidgets.forEach(widgetId => {
+                      const widget = widgetList.find(w => w.id === widgetId);
+                      if (widget) {
+                        const duplicated = { ...widget, id: Date.now() + Math.random() };
+                        createLocal(duplicated);
+                      }
+                    });
+                    handleDeselectAll();
+                  }}
+                  disabled={selectedWidgets.size === 0}
+                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Duplicate Selected Widgets"
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  Duplicate
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Delete selected widgets
+                    selectedWidgets.forEach(widgetId => {
+                      deleteLocal(widgetId);
+                    });
+                    handleDeselectAll();
+                  }}
+                  disabled={selectedWidgets.size === 0}
+                  className="h-8 px-3 text-xs hover:bg-destructive/10 text-destructive hover:text-destructive"
+                  title="Delete Selected Widgets"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Delete
+                </Button>
+              </div>
+
+              {/* Separator */}
+              <div className="w-px h-6 bg-border/30 mx-2" />
+
+              {/* Selection Actions */}
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Select All Widgets"
+                >
+                  <CheckSquare className="h-3 w-3 mr-1" />
+                  Select All
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDeselectAll}
+                  disabled={selectedWidgets.size === 0}
+                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Deselect All"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              </div>
+
+              {/* Separator */}
+              <div className="w-px h-6 bg-border/30 mx-2" />
+
+              {/* Save Actions */}
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => console.log('Save Pending Changes')}
+                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Save Pending Changes"
                 >
                   <Save className="h-3 w-3 mr-1" />
                   Save
@@ -222,6 +327,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   size="sm"
                   onClick={() => console.log('Undo')}
                   className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Undo"
                 >
                   <Undo2 className="h-3 w-3 mr-1" />
                   Undo
@@ -231,6 +337,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   size="sm"
                   onClick={() => console.log('Redo')}
                   className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Redo"
                 >
                   <Redo2 className="h-3 w-3 mr-1" />
                   Redo
@@ -268,30 +375,37 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
               const isSelected = selectedWidgets.has(widget.id);
 
               return (
-                <div 
-                  key={widget.id} 
-                  className={`border border-dashed rounded transition-all ${
-                    isEditMode 
-                      ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
-                      : 'border-transparent'
-                  }`}
-                  onClick={(e) => {
-                    if (!isEditMode) return;
-                    e.stopPropagation();
-                    if (e.ctrlKey || e.metaKey) {
-                      handleSelectWidget(widget.id);
-                    } else {
-                      handleDeselectAll();
-                      handleSelectWidget(widget.id);
-                    }
-                  }}
-                >
+                  <div 
+                    key={widget.id} 
+                    className={`border border-dashed rounded transition-all ${
+                      isEditMode 
+                        ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
+                        : 'border-transparent'
+                    }`}
+                    onClick={(e) => {
+                      if (!isEditMode) return;
+                      
+                      // Check if click was on a button (don't select widget if so)
+                      const target = e.target as HTMLElement;
+                      if (target.tagName === 'BUTTON' || target.closest('button')) {
+                        return;
+                      }
+                      
+                      e.stopPropagation();
+                      if (e.ctrlKey || e.metaKey) {
+                        handleSelectWidget(widget.id);
+                      } else {
+                        handleDeselectAll();
+                        handleSelectWidget(widget.id);
+                      }
+                    }}
+                  >
                   <Renderer
                     widget={widget}
                     onEdit={isEditMode ? () => setEditorWidgetId(widget.id) : undefined}
                     onDelete={isEditMode ? () => deleteLocal(widget.id) : undefined}
                     onDuplicate={isEditMode ? () => {
-                      const duplicated = { ...widget, id: Date.now() };
+                      const duplicated = { ...widget, id: Date.now() + Math.random() };
                       createLocal(duplicated);
                     } : undefined}
                     isEditMode={isEditMode}
