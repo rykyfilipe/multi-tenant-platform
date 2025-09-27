@@ -20,7 +20,7 @@ export const chartStyleSchema = z.object({
 
 export const chartDataSchema = z.object({
   databaseId: z.number().optional(),
-  tableId: z.string().min(1),
+  tableId: z.string().optional(),
   filters: z
     .array(
       z.object({
@@ -31,7 +31,7 @@ export const chartDataSchema = z.object({
     )
     .default([]),
   mappings: z
-    .record(z.enum(["x", "y", "group", "series", "color" ]), z.string().min(1))
+    .record(z.enum(["x", "y", "group", "series", "color" ]), z.string().optional())
     .default({}),
 });
 

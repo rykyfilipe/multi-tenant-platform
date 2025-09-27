@@ -69,7 +69,7 @@ export const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
       setSelectedDatabase(db);
       setSelectedTable(null);
       onDatabaseChange(db.id);
-      onTableChange(0); // Reset table selection
+      // Don't call onTableChange with 0, let the parent handle table reset
     }
   };
 

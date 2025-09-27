@@ -24,7 +24,7 @@ export const kpiStyleSchema = z.object({
 
 export const kpiDataSchema = z.object({
   databaseId: z.number().optional(),
-  tableId: z.string().min(1),
+  tableId: z.string().optional(),
   filters: z
     .array(
       z.object({
