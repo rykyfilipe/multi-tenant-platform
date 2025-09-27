@@ -184,7 +184,6 @@ export class WidgetsApiClient {
 export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
   const apiClient = new WidgetsApiClient(tenantId, dashboardId);
   const setWidgets = useWidgetsStore((state) => state.setWidgets);
-  const setDrafts = useWidgetsStore((state) => state.setDrafts);
   const setConflicts = useWidgetsStore((state) => state.setConflicts);
   const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
   const clearPending = useWidgetsStore((state) => state.clearPending);
@@ -200,96 +199,6 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     }
   };
 
-  const loadDrafts = async () => {
-    try {
-      const data = await apiClient.fetchDrafts();
-      setDrafts(data.drafts as WidgetDraftEntity[]);
-      return data;
-    } catch (error) {
-      console.error("Failed to load drafts:", error);
-      throw error;
-    }
-  };
-
-  const createDraft = async (
-    payload: Omit<CreateDraftParams, "tenantId" | "dashboardId"> & { actorId: number }
-  ) => {
-    try {
-      const result = await apiClient.createDraft(payload);
-      // Reload drafts after creation
-      await loadDrafts();
-      return result;
-    } catch (error) {
-      console.error("Failed to create draft:", error);
-      throw error;
-    }
-  };
-
-  const updateDraft = async (
-    payload: Omit<UpdateDraftParams, "tenantId" | "dashboardId"> & { actorId: number }
-  ) => {
-    try {
-      const result = await apiClient.updateDraft(payload);
-      // Reload drafts after update
-      await loadDrafts();
-      return result;
-    } catch (error) {
-      console.error("Failed to update draft:", error);
-      throw error;
-    }
-  };
-
-  const applyDraft = async (draftId: number, actorId: number) => {
-    try {
-      const response = await apiClient.applyDraft(draftId, actorId);
-      
-      if (response.conflicts.length) {
-        setConflicts(response.conflicts);
-      } else {
-        clearPending();
-        response.results.forEach((result) => {
-          if (result.widget) {
-            upsertWidget(result.widget);
-          }
-        });
-        setConflicts([]);
-        // Reload widgets and drafts after successful apply
-        await Promise.all([loadWidgets(), loadDrafts()]);
-      }
-      
-      return response;
-    } catch (error) {
-      console.error("Failed to apply draft:", error);
-      throw error;
-    }
-  };
-
-  const resolveDraftConflict = async (
-    draftId: number,
-    actorId: number,
-    merge: Partial<WidgetEntity>
-  ) => {
-    try {
-      const result = await apiClient.resolveDraftConflict(draftId, actorId, merge);
-      // Reload drafts after resolution
-      await loadDrafts();
-      return result;
-    } catch (error) {
-      console.error("Failed to resolve draft conflict:", error);
-      throw error;
-    }
-  };
-
-  const deleteDraft = async (draftId: number, actorId: number) => {
-    try {
-      await apiClient.deleteDraft(draftId, actorId);
-      // Reload drafts after deletion
-      await loadDrafts();
-    } catch (error) {
-      console.error("Failed to delete draft:", error);
-      throw error;
-    }
-  };
 
   const createWidget = async (payload: {
     kind: WidgetKind;
@@ -324,8 +233,8 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
         setConflicts(response.conflicts);
       } else {
         setConflicts([]);
-        // Reload widgets and drafts after successful save
-        await Promise.all([loadWidgets(), loadDrafts()]);
+        // Reload widgets after successful save
+        await loadWidgets();
       }
       
       return response;
@@ -337,12 +246,6 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
 
   return {
     loadWidgets,
-    loadDrafts,
-    createDraft,
-    updateDraft,
-    applyDraft,
-    resolveDraftConflict,
-    deleteDraft,
     createWidget,
     savePending,
   };
