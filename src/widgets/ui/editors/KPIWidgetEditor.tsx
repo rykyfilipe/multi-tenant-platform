@@ -368,69 +368,153 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
             </div>
 
             {/* Filters */}
-            <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium uppercase tracking-wide">Filters</Label>
-                <Button size="sm" variant="outline" onClick={addFilter} className="h-6 px-2">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Filter
-                </Button>
+            {availableColumns.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium uppercase tracking-wide">Filters</Label>
+                  <Button size="sm" variant="outline" onClick={addFilter} className="h-6 px-2">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Filter
+                  </Button>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {value.data.filters.map((filter, index) => {
+                    const selectedColumn = availableColumns.find(col => col.name === filter.column);
+                    const columnType = selectedColumn?.type || 'text';
+                    
+                    // Get operators based on column type
+                    const getOperatorsForType = (type: string) => {
+                      switch (type) {
+                        case 'number':
+                        case 'integer':
+                        case 'decimal':
+                          return [
+                            { value: '=', label: '=' },
+                            { value: '!=', label: '!=' },
+                            { value: '>', label: '>' },
+                            { value: '<', label: '<' },
+                            { value: '>=', label: '>=' },
+                            { value: '<=', label: '<=' },
+                            { value: 'contains', label: 'contains' }
+                          ];
+                        case 'date':
+                        case 'datetime':
+                          return [
+                            { value: '=', label: '=' },
+                            { value: '!=', label: '!=' },
+                            { value: '>', label: 'after' },
+                            { value: '<', label: 'before' },
+                            { value: '>=', label: 'after or equal' },
+                            { value: '<=', label: 'before or equal' }
+                          ];
+                        case 'boolean':
+                          return [
+                            { value: '=', label: '=' },
+                            { value: '!=', label: '!=' }
+                          ];
+                        default: // text, string, etc.
+                          return [
+                            { value: '=', label: '=' },
+                            { value: '!=', label: '!=' },
+                            { value: 'contains', label: 'contains' },
+                            { value: 'startsWith', label: 'starts with' },
+                            { value: 'endsWith', label: 'ends with' }
+                          ];
+                      }
+                    };
+
+                    const availableOperators = getOperatorsForType(columnType);
+
+                    return (
+                      <div key={index} className="flex items-center space-x-2 p-2 border rounded">
+                        {/* Column Selection */}
+                        <Select
+                          value={filter.column || ""}
+                          onValueChange={(val) => updateFilter(index, { column: val })}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableColumns.map((column) => (
+                              <SelectItem key={column.id} value={column.name}>
+                                {column.name} ({column.type})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Operator Selection */}
+                        <Select
+                          value={filter.operator || ""}
+                          onValueChange={(val) => updateFilter(index, { operator: val as any })}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Operator" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableOperators.map((op) => (
+                              <SelectItem key={op.value} value={op.value}>
+                                {op.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Value Input */}
+                        {columnType === 'boolean' ? (
+                          <Select
+                            value={String(filter.value)}
+                            onValueChange={(val) => updateFilter(index, { value: val === 'true' })}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Value" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">True</SelectItem>
+                              <SelectItem value="false">False</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : columnType === 'date' ? (
+                          <Input
+                            type="date"
+                            value={String(filter.value)}
+                            onChange={(e) => updateFilter(index, { value: e.target.value })}
+                            placeholder="Value"
+                            className="flex-1"
+                          />
+                        ) : ['number', 'integer', 'decimal'].includes(columnType) ? (
+                          <Input
+                            type="number"
+                            value={String(filter.value)}
+                            onChange={(e) => updateFilter(index, { value: parseFloat(e.target.value) || 0 })}
+                            placeholder="Value"
+                            className="flex-1"
+                          />
+                        ) : (
+                          <Input
+                            value={String(filter.value)}
+                            onChange={(e) => updateFilter(index, { value: e.target.value })}
+                            placeholder="Value"
+                            className="flex-1"
+                          />
+                        )}
+
+                        {/* Remove Button */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeFilter(index)}
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="mt-2 space-y-2">
-                {value.data.filters.map((filter, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-2 border rounded">
-                    <Select
-                      value={filter.column}
-                      onValueChange={(val) => updateFilter(index, { column: val })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Column" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableColumns.map((column) => (
-                          <SelectItem key={column.id} value={column.name}>
-                            {column.name} ({column.type})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={filter.operator}
-                      onValueChange={(val) => updateFilter(index, { operator: val as typeof filter.operator })}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="=">=</SelectItem>
-                        <SelectItem value="!=">!=</SelectItem>
-                        <SelectItem value=">">&gt;</SelectItem>
-                        <SelectItem value="<">&lt;</SelectItem>
-                        <SelectItem value=">=">&gt;=</SelectItem>
-                        <SelectItem value="<=">&lt;=</SelectItem>
-                        <SelectItem value="contains">contains</SelectItem>
-                        <SelectItem value="startsWith">starts with</SelectItem>
-                        <SelectItem value="endsWith">ends with</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      value={String(filter.value)}
-                      onChange={(e) => updateFilter(index, { value: e.target.value })}
-                      placeholder="Value"
-                      className="flex-1"
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeFilter(index)}
-                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </TabsContent>
 
