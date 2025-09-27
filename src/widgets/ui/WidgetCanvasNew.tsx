@@ -12,7 +12,6 @@ import { WidgetKind } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
-import { useUndoRedo } from "./components/UndoRedo";
 import { 
   BarChart3, 
   Table, 
@@ -50,17 +49,23 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
+  const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
 
   const api = useWidgetsApi(tenantId, dashboardId);
   
-  // Undo/Redo functionality
-  const undoRedo = useUndoRedo(widgetsRecord);
+  // Undo/Redo functionality from store
+  const undoLastChange = useWidgetsStore((state) => state.undoLastChange);
+  const redoLastChange = useWidgetsStore((state) => state.redoLastChange);
+  const discardChanges = useWidgetsStore((state) => state.discardChanges);
   const { toast } = useToast();
 
   // Save pending changes function
   const handleSavePending = useCallback(async () => {
     try {
+      console.log('🎯 [DEBUG] Saving pending operations:', pendingOperations);
       const response = await api.savePending({ actorId, operations: pendingOperations });
+      console.log('✅ [DEBUG] savePending result:', response);
+      
       if (response.conflicts.length > 0) {
         toast({
           title: "Conflicts detected",
@@ -68,7 +73,17 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           variant: "destructive",
         });
       } else {
+        // Update local state with results instead of reloading from server
+        response.results.forEach((result) => {
+          if (result.widget) {
+            console.log('🔄 [DEBUG] Updating widget in local state:', result.widget.id);
+            upsertWidget(result.widget);
+          }
+        });
+        
+        // Clear pending operations
         clearPending();
+        
         toast({
           title: "Changes saved successfully!",
           description: `${pendingOperations.length} operations saved.`,
@@ -83,54 +98,56 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         variant: "destructive",
       });
     }
-  }, [api, actorId, pendingOperations, clearPending, toast]);
+  }, [api, actorId, pendingOperations, clearPending, upsertWidget, toast]);
 
   // Undo function
   const handleUndo = useCallback(() => {
-    const restoredWidgets = undoRedo.undo();
-    if (restoredWidgets) {
-      // Restore widgets to the store
-      Object.values(restoredWidgets).forEach((widget: any) => {
-        updateLocal(widget.id, widget);
-      });
-      toast({
-        title: "Undo successful",
-        description: "Previous state restored.",
-        variant: "default",
-      });
+    // Find the most recently modified widget to undo
+    const dirtyWidgetIds = Array.from(useWidgetsStore.getState().dirtyWidgetIds);
+    if (dirtyWidgetIds.length > 0) {
+      const lastModifiedWidgetId = dirtyWidgetIds[dirtyWidgetIds.length - 1];
+      const success = undoLastChange(lastModifiedWidgetId);
+      if (success) {
+        toast({
+          title: "Undo",
+          description: "Last change has been undone.",
+          variant: "default",
+        });
+      }
     }
-  }, [undoRedo, updateLocal, toast]);
+  }, [undoLastChange, toast]);
 
   // Redo function
   const handleRedo = useCallback(() => {
-    const restoredWidgets = undoRedo.redo();
-    if (restoredWidgets) {
-      // Restore widgets to the store
-      Object.values(restoredWidgets).forEach((widget: any) => {
-        updateLocal(widget.id, widget);
-      });
-      toast({
-        title: "Redo successful",
-        description: "Next state restored.",
-        variant: "default",
-      });
+    // Find the most recently modified widget to redo
+    const dirtyWidgetIds = Array.from(useWidgetsStore.getState().dirtyWidgetIds);
+    if (dirtyWidgetIds.length > 0) {
+      const lastModifiedWidgetId = dirtyWidgetIds[dirtyWidgetIds.length - 1];
+      const success = redoLastChange(lastModifiedWidgetId);
+      if (success) {
+        toast({
+          title: "Redo",
+          description: "Last change has been redone.",
+          variant: "default",
+        });
+      }
     }
-  }, [undoRedo, updateLocal, toast]);
+  }, [redoLastChange, toast]);
 
   // Discard all changes function
   const handleDiscard = useCallback(() => {
-    if (undoRedo.historyLength > 1) {
-      // Reset to original state by clearing pending changes and reloading
-      clearPending();
-      // Reload the page to get fresh data
-      window.location.reload();
-      toast({
-        title: "All changes discarded",
-        description: "Dashboard restored to original state.",
-        variant: "default",
-      });
-    }
-  }, [undoRedo, clearPending, toast]);
+    // Discard changes for all dirty widgets
+    const dirtyWidgetIds = Array.from(useWidgetsStore.getState().dirtyWidgetIds);
+    dirtyWidgetIds.forEach(widgetId => {
+      discardChanges(widgetId);
+    });
+    clearPending();
+    toast({
+      title: "All changes discarded",
+      description: "Dashboard restored to original state.",
+      variant: "default",
+    });
+  }, [discardChanges, clearPending, toast]);
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -497,7 +514,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={handleUndo}
-                  disabled={!undoRedo.canUndo}
+                  disabled={pendingOperations.length === 0}
                   className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
                   title="Undo"
                 >
@@ -508,7 +525,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={handleRedo}
-                  disabled={!undoRedo.canRedo}
+                  disabled={pendingOperations.length === 0}
                   className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
                   title="Redo"
                 >
@@ -519,7 +536,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={handleDiscard}
-                  disabled={undoRedo.historyLength <= 1}
+                  disabled={pendingOperations.length === 0}
                   className="h-8 px-3 text-xs hover:bg-destructive/10 disabled:opacity-50 text-destructive hover:text-destructive"
                   title="Discard All Changes"
                 >
