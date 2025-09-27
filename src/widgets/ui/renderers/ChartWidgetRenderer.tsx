@@ -188,6 +188,39 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const dataKeys = useMemo(() => {
     if (!processedData.length) return [{ key: "value", name: "Value", color: "#1f2937" }];
     
+    // If we have series mapping, use it for multiple series
+    if (mappings.series) {
+      const seriesSet = new Set<string>();
+      processedData.forEach((row: any) => {
+        if (row.series) {
+          seriesSet.add(row.series);
+        }
+      });
+      
+      return Array.from(seriesSet).map((series, index) => ({
+        key: "value",
+        name: series,
+        color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
+      }));
+    }
+    
+    // If we have group mapping, use it for grouping
+    if (mappings.group) {
+      const groupSet = new Set<string>();
+      processedData.forEach((row: any) => {
+        if (row.group) {
+          groupSet.add(row.group);
+        }
+      });
+      
+      return Array.from(groupSet).map((group, index) => ({
+        key: "value",
+        name: group,
+        color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
+      }));
+    }
+    
+    // Default: use numeric columns as keys
     const keys = new Set<string>();
     processedData.forEach((row:any) => {
       Object.keys(row).forEach((key:any) => {
@@ -202,10 +235,13 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       name: key.charAt(0).toUpperCase() + key.slice(1),
       color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
     }));
-  }, [processedData, premiumColors]);
+  }, [processedData, premiumColors, mappings]);
 
   const showGrid = config?.style?.showGrid !== false;
+  const showLegend = config?.style?.showLegend !== false;
   const showTooltip = true;
+  const backgroundColor = config?.style?.backgroundColor || "#ffffff";
+  const textColor = config?.style?.textColor || "#000000";
 
   // Determine chart component based on type
   const getChartComponent = () => {
@@ -270,7 +306,11 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
           className="h-full"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <ChartComponent data={processedData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+            <ChartComponent 
+              data={processedData} 
+              margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+              style={{ backgroundColor }}
+            >
               {showGrid && (
                 <CartesianGrid 
                   strokeDasharray="1 1" 
@@ -323,14 +363,24 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                     fontFamily: "Inter, system-ui, sans-serif",
                     fontSize: "12px",
                     fontWeight: "500",
-                    color: "#374151",
+                    color: textColor,
                     padding: "8px 12px"
                   }}
                   labelStyle={{
                     fontWeight: "600",
-                    color: "#111827",
+                    color: textColor,
                     fontSize: "13px",
                     marginBottom: "2px"
+                  }}
+                />
+              )}
+              {showLegend && (
+                <Legend 
+                  wrapperStyle={{
+                    paddingTop: "20px",
+                    fontSize: "12px",
+                    fontFamily: "Inter, system-ui, sans-serif",
+                    color: textColor
                   }}
                 />
               )}
