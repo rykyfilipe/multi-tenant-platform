@@ -91,7 +91,18 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     if (!rawData?.data || !valueField) return 0;
     
     const values = rawData.data
-      .map((row : any) => parseFloat(row[valueField]) || 0)
+      .map((row : any) => {
+        // Convert cells array to object for easier access
+        const rowData: any = {};
+        if (row.cells && Array.isArray(row.cells)) {
+          row.cells.forEach((cell: any) => {
+            if (cell.column && cell.column.name) {
+              rowData[cell.column.name] = cell.value;
+            }
+          });
+        }
+        return parseFloat(rowData[valueField]) || 0;
+      })
       .filter((val : any) => !isNaN(val));
     
     if (!values.length) return 0;

@@ -94,9 +94,20 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
 
     return rawData.data.map((row: any) => {
       const processedRow: any = { id: row.id };
+      
+      // Convert cells array to object for easier access
+      const rowData: any = {};
+      if (row.cells && Array.isArray(row.cells)) {
+        row.cells.forEach((cell: any) => {
+          if (cell.column && cell.column.name) {
+            rowData[cell.column.name] = cell.value;
+          }
+        });
+      }
+      
       columns.forEach((col: any) => {
-        if (row[col.id] !== undefined) {
-          processedRow[col.id] = row[col.id];
+        if (rowData[col.id] !== undefined) {
+          processedRow[col.id] = rowData[col.id];
         }
       });
       return processedRow;

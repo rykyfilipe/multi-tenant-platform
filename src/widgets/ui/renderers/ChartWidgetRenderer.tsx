@@ -135,29 +135,41 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     const processed = rawData.data.map((row: any, index: number) => {
       const processedRow: any = {};
       
+      // Convert cells array to object for easier access
+      const rowData: any = {};
+      if (row.cells && Array.isArray(row.cells)) {
+        row.cells.forEach((cell: any) => {
+          if (cell.column && cell.column.name) {
+            rowData[cell.column.name] = cell.value;
+          }
+        });
+      }
+      
+      console.log('🔍 Processing row:', { rowIndex: index, rowData, mappings });
+      
       // Map X axis (usually categorical)
-      if (mappings.x && row[mappings.x] !== undefined) {
-        processedRow.name = String(row[mappings.x]);
+      if (mappings.x && rowData[mappings.x] !== undefined) {
+        processedRow.name = String(rowData[mappings.x]);
       }
       
       // Map Y axis (usually numeric)
-      if (mappings.y && row[mappings.y] !== undefined) {
-        processedRow.value = parseFloat(row[mappings.y]) || 0;
+      if (mappings.y && rowData[mappings.y] !== undefined) {
+        processedRow.value = parseFloat(rowData[mappings.y]) || 0;
       }
       
       // Map group/series if exists
-      if (mappings.group && row[mappings.group] !== undefined) {
-        processedRow.group = String(row[mappings.group]);
+      if (mappings.group && rowData[mappings.group] !== undefined) {
+        processedRow.group = String(rowData[mappings.group]);
       }
       
       // Map series if exists
-      if (mappings.series && row[mappings.series] !== undefined) {
-        processedRow.series = String(row[mappings.series]);
+      if (mappings.series && rowData[mappings.series] !== undefined) {
+        processedRow.series = String(rowData[mappings.series]);
       }
       
       // Map color if exists
-      if (mappings.color && row[mappings.color] !== undefined) {
-        processedRow.color = String(row[mappings.color]);
+      if (mappings.color && rowData[mappings.color] !== undefined) {
+        processedRow.color = String(rowData[mappings.color]);
       }
       
       return processedRow;
