@@ -8,8 +8,11 @@ interface BaseWidgetProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   onOpenDraft?: () => void;
+  onApplyDraft?: () => void;
+  onDeleteDraft?: () => void;
   isDirty?: boolean;
   isEditMode?: boolean;
+  isDraft?: boolean;
 }
 
 export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
@@ -18,8 +21,11 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
   onDelete,
   onDuplicate,
   onOpenDraft,
+  onApplyDraft,
+  onDeleteDraft,
   isDirty,
   isEditMode = false,
+  isDraft = false,
   children,
 }) => {
   return (
@@ -45,6 +51,12 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
             <span className={`font-medium ${isEditMode ? 'text-foreground/80' : 'text-foreground/90'}`}>
               {title ?? "Untitled widget"}
             </span>
+            {isDraft && (
+              <div className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-1 text-xs">
+                <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                <span className="text-blue-700 font-medium">Draft</span>
+              </div>
+            )}
             {isDirty && (
               <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
                 Unsaved
@@ -52,7 +64,31 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
             )}
           </div>
           
-          {/* Action buttons removed - all actions are now in the floating toolbar */}
+          {/* Draft action buttons */}
+          {isDraft && onApplyDraft && onDeleteDraft && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onApplyDraft();
+                }}
+                className="rounded bg-green-500 px-2 py-1 text-xs font-medium text-white hover:bg-green-600 transition-colors"
+                title="Apply draft"
+              >
+                Apply
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteDraft();
+                }}
+                className="rounded bg-red-500 px-2 py-1 text-xs font-medium text-white hover:bg-red-600 transition-colors"
+                title="Delete draft"
+              >
+                Delete
+              </button>
+            </div>
+          )}
         </div>
       )}
       

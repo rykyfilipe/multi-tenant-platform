@@ -13,6 +13,9 @@ interface KPIWidgetRendererProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   isEditMode?: boolean;
+  isDraft?: boolean;
+  onApplyDraft?: () => void;
+  onDeleteDraft?: () => void;
 }
 
 export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({ 
@@ -20,7 +23,10 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   onEdit, 
   onDelete, 
   onDuplicate, 
-  isEditMode = false 
+  isEditMode = false,
+  isDraft = false,
+  onApplyDraft,
+  onDeleteDraft
 }) => {
   const config = widget.config as any;
   const settings = config?.settings || {};
@@ -135,7 +141,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
         <div className="flex h-full flex-col items-center justify-center space-y-4">
           <Skeleton className="h-12 w-32" />
           <Skeleton className="h-4 w-24" />
@@ -148,7 +154,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   // Error state
   if (error) {
     return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
         <div className="flex h-full flex-col items-center justify-center space-y-4">
           <div className="text-center text-red-500">
             <p className="text-sm">Error loading KPI data</p>
@@ -160,7 +166,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   }
 
   return (
-    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
       <div className={`flex h-full flex-col items-center justify-center space-y-4 px-4 py-6 ${
         style.alignment === 'left' ? 'items-start' : 
         style.alignment === 'right' ? 'items-end' : 'items-center'

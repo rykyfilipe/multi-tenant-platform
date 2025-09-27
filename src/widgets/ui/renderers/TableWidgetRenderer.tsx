@@ -14,6 +14,9 @@ interface TableWidgetRendererProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   isEditMode?: boolean;
+  isDraft?: boolean;
+  onApplyDraft?: () => void;
+  onDeleteDraft?: () => void;
 }
 
 export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({ 
@@ -21,7 +24,10 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   onEdit, 
   onDelete, 
   onDuplicate, 
-  isEditMode = false 
+  isEditMode = false,
+  isDraft = false,
+  onApplyDraft,
+  onDeleteDraft
 }) => {
   // Extract table configuration from widget config
   const config = widget.config as any;
@@ -106,7 +112,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
         <div className="h-full w-full p-4">
           <div className="space-y-3">
             <Skeleton className="h-8 w-full" />
@@ -122,7 +128,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   // Error state
   if (error) {
     return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
         <div className="h-full w-full p-4">
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-red-500">
@@ -138,7 +144,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   // No data state
   if (!processedData.length) {
     return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
         <div className="h-full w-full p-4">
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
@@ -152,7 +158,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   }
 
   return (
-    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode} isDraft={isDraft} onApplyDraft={onApplyDraft} onDeleteDraft={onDeleteDraft}>
       <div className="h-full w-full overflow-hidden">
         <div className="h-full overflow-auto">
           <table className={`w-full ${density === 'compact' ? 'text-xs' : density === 'expanded' ? 'text-sm' : 'text-xs'} ${zebraStripes ? 'even:bg-muted/30' : ''}`}>

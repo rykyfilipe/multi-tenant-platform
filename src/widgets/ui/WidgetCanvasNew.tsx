@@ -4,8 +4,9 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
+import { useWidgets, useApplyDraft, useDeleteDraft } from "@/widgets/api/client";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { WidgetKind } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig, WidgetDraftEntity } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
@@ -45,11 +46,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
+  const removeDraft = useWidgetsStore((state) => state.removeDraft);
+
+  const applyDraftMutation = useApplyDraft(tenantId, dashboardId);
+  const deleteDraftMutation = useDeleteDraft(tenantId, dashboardId);
+  const { toast } = useToast();
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedWidgets, setSelectedWidgets] = useState<Set<number>>(new Set());
-  const [activeTab, setActiveTab] = useState<"canvas" | "drafts">("canvas");
 
   const widgetList = useMemo(() => {
     const filtered = Object.values(widgetsRecord).filter((widget) => 
@@ -114,8 +119,116 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       createLocal(newWidget);
 
       console.log('✅ [DEBUG] Widget added to local state');
+      
+      toast({
+        title: "Widget added!",
+        description: `${kind} widget has been added to your dashboard.`,
+        variant: "success",
+        duration: 4000,
+      });
     } catch (error) {
       console.error("Failed to add widget locally:", error);
+      toast({
+        title: "Failed to add widget",
+        description: "An error occurred while adding the widget.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleApplyDraft = async (draftId: number) => {
+    try {
+      console.log('🔄 [DEBUG] Applying draft:', draftId);
+      
+      toast({
+        title: "Applying draft...",
+        description: "Your draft changes are being applied.",
+        variant: "info",
+        duration: 3000,
+      });
+      
+      applyDraftMutation.mutate(
+        { draftId, actorId },
+        {
+          onSuccess: (response) => {
+            if (response.conflicts.length === 0) {
+              toast({
+                title: "Draft applied successfully!",
+                description: "Your changes have been saved.",
+                variant: "success",
+                duration: 4000,
+              });
+            } else {
+              toast({
+                title: "Draft has conflicts",
+                description: "Please resolve conflicts before applying.",
+                variant: "warning",
+                duration: 5000,
+              });
+            }
+          },
+          onError: (error) => {
+            toast({
+              title: "Failed to apply draft",
+              description: error.message || "An error occurred while applying the draft.",
+              variant: "destructive",
+              duration: 5000,
+            });
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to apply draft:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleDeleteDraft = async (draftId: number) => {
+    try {
+      console.log('🗑️ [DEBUG] Deleting draft:', draftId);
+      
+      toast({
+        title: "Deleting draft...",
+        description: "The draft is being removed.",
+        variant: "info",
+        duration: 3000,
+      });
+      
+      deleteDraftMutation.mutate(
+        { draftId, actorId },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Draft deleted successfully!",
+              description: "The draft has been removed.",
+              variant: "success",
+              duration: 4000,
+            });
+          },
+          onError: (error) => {
+            toast({
+              title: "Failed to delete draft",
+              description: error.message || "An error occurred while deleting the draft.",
+              variant: "destructive",
+              duration: 5000,
+            });
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to delete draft:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+        duration: 5000,
+      });
     }
   };
 
@@ -158,13 +271,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "canvas" | "drafts")} className="h-full w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="canvas">Canvas</TabsTrigger>
-        <TabsTrigger value="drafts">Drafts ({draftsList.length})</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="canvas" className="h-full w-full relative mt-0">
+    <div className="h-full w-full relative">
         {/* Floating Toolbar - Only in Edit Mode */}
         {isEditMode && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
@@ -241,6 +348,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     const selectedId = Array.from(selectedWidgets)[0];
                     if (selectedId) {
                       setEditorWidgetId(selectedId);
+                      toast({
+                        title: "Opening editor...",
+                        description: "Widget editor is opening.",
+                        variant: "info",
+                        duration: 2000,
+                      });
                     }
                   }}
                   disabled={selectedWidgets.size !== 1}
@@ -255,6 +368,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   size="sm"
                   onClick={() => {
                     // Duplicate selected widgets
+                    const count = selectedWidgets.size;
                     selectedWidgets.forEach(widgetId => {
                       const widget = widgetList.find(w => w.id === widgetId);
                       if (widget) {
@@ -263,6 +377,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                       }
                     });
                     handleDeselectAll();
+                    
+                    toast({
+                      title: "Widgets duplicated!",
+                      description: `${count} widget${count > 1 ? 's' : ''} ${count > 1 ? 'have' : 'has'} been duplicated.`,
+                      variant: "success",
+                      duration: 4000,
+                    });
                   }}
                   disabled={selectedWidgets.size === 0}
                   className="h-8 px-3 text-xs hover:bg-primary/10"
@@ -276,10 +397,18 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   size="sm"
                   onClick={() => {
                     // Delete selected widgets
+                    const count = selectedWidgets.size;
                     selectedWidgets.forEach(widgetId => {
                       deleteLocal(widgetId);
                     });
                     handleDeselectAll();
+                    
+                    toast({
+                      title: "Widgets deleted!",
+                      description: `${count} widget${count > 1 ? 's' : ''} ${count > 1 ? 'have' : 'has'} been deleted.`,
+                      variant: "success",
+                      duration: 4000,
+                    });
                   }}
                   disabled={selectedWidgets.size === 0}
                   className="h-8 px-3 text-xs hover:bg-destructive/10 text-destructive hover:text-destructive"
@@ -367,12 +496,20 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       {/* Main Grid Area */}
       <div className="h-full w-full p-6">
         <style jsx global>{`
+          .react-grid-layout {
+            width: 100% !important;
+            height: 100% !important;
+          }
           .react-grid-item {
             transition: all 200ms ease;
-            transition-property: left, top;
+            transition-property: left, top, width, height;
+            min-width: 100px;
+            min-height: 80px;
+            max-width: none;
+            max-height: none;
           }
           .react-grid-item.cssTransforms {
-            transition-property: transform;
+            transition-property: transform, width, height;
           }
           
           /* Resize handles - visible and functional */
@@ -444,7 +581,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             top: 0;
             right: 0;
             bottom: 0;
-            width: 10px;
+            width: 15px;
             cursor: e-resize;
             background: linear-gradient(to left, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
           }
@@ -453,7 +590,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             top: 0;
             left: 0;
             bottom: 0;
-            width: 10px;
+            width: 15px;
             cursor: w-resize;
             background: linear-gradient(to right, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
           }
@@ -497,8 +634,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             className="layout h-full" 
             layout={layout} 
             cols={24} 
-            rowHeight={20} 
-            width={1200}
+            rowHeight={30} 
             isDraggable={isEditMode}
             isResizable={isEditMode}
             allowOverlap={false}
@@ -540,6 +676,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 onDelete?: () => void;
                 onDuplicate?: () => void;
                 isEditMode?: boolean;
+                isDraft?: boolean;
+                onApplyDraft?: () => void;
+                onDeleteDraft?: () => void;
               }>;
               const isSelected = selectedWidgets.has(widget.id);
 
@@ -571,6 +710,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     onDelete={undefined}
                     onDuplicate={undefined}
                     isEditMode={isEditMode}
+                    isDraft={draftsRecord[widget.id] !== undefined}
+                    onApplyDraft={draftsRecord[widget.id] ? () => handleApplyDraft(draftsRecord[widget.id].id) : undefined}
+                    onDeleteDraft={draftsRecord[widget.id] ? () => handleDeleteDraft(draftsRecord[widget.id].id) : undefined}
                   />
                 </div>
               );
@@ -578,67 +720,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           </GridLayout>
         </WidgetErrorBoundary>
       </div>
-      </TabsContent>
-
-      <TabsContent value="drafts" className="h-full w-full mt-0">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Drafts</h3>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                Save Pending to Draft
-              </Button>
-              <Button size="sm">
-                New Draft
-              </Button>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {draftsList.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-muted-foreground mb-4">No drafts yet</div>
-                <p className="text-sm text-muted-foreground">
-                  Create drafts to save your work in progress
-                </p>
-              </div>
-            ) : (
-              draftsList.map((draft) => (
-                <div key={draft.id} className="border border-dashed rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1 text-xs">
-                      <div className="flex items-center gap-3 text-sm">
-                        <h4 className="font-semibold">Draft #{draft.id}</h4>
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                          {draft.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center flex-wrap gap-3 text-muted-foreground">
-                        <span>Kind: {draft.kind}</span>
-                        <span>Widget: {draft.widgetId ?? "(new)"}</span>
-                        <span>Version: {draft.version}</span>
-                        <span>Updated: {new Date(draft.updatedAt).toLocaleString()}</span>
-                      </div>
-                      {draft.note && <div>Note: {draft.note}</div>}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        Apply
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </TabsContent>
 
       {/* Widget Editor - Only in Edit Mode */}
       {isEditMode && editorWidgetId && (
@@ -652,7 +733,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           }}
         />
       )}
-    </Tabs>
+    </div>
     
   );
   
