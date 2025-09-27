@@ -71,15 +71,26 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   // Update container width on resize
   useEffect(() => {
     const updateWidth = () => {
-      const container = document.querySelector('.layout');
+      // Use the parent container instead of .layout which might not exist yet
+      const container = document.querySelector('.h-full.w-full.p-6');
       if (container) {
-        setContainerWidth(container.clientWidth);
+        setContainerWidth(container.clientWidth - 48); // Subtract padding (24px * 2)
+      } else {
+        // Fallback to window width
+        setContainerWidth(window.innerWidth - 100);
       }
     };
 
     updateWidth();
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    
+    // Also update after a short delay to ensure DOM is ready
+    const timeoutId = setTimeout(updateWidth, 100);
+    
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const layout: Layout[] = useMemo(() => {
@@ -624,7 +635,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             layout={layout} 
             cols={24} 
             rowHeight={30} 
-            width={containerWidth}
+            width={containerWidth || 1200}
             isDraggable={isEditMode}
             isResizable={isEditMode}
             allowOverlap={false}
