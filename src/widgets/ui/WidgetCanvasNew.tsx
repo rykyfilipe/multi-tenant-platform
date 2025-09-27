@@ -508,6 +508,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             margin={[10, 10]}
             containerPadding={[10, 10]}
             resizeHandles={['se', 'sw', 'ne', 'nw', 'n', 's', 'e', 'w']}
+            draggableHandle=".widget-header"
             onLayoutChange={(newLayout) => {
               if (!isEditMode) return;
               console.log('🎯 [DEBUG] Layout changed:', newLayout);

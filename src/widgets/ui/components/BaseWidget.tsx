@@ -32,13 +32,15 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
     `}>
       {/* Header - Only show in edit mode or when there's a title */}
       {(isEditMode || title) && (
-        <div className={`
-          flex items-center justify-between px-3 py-2 text-xs
-          ${isEditMode 
-            ? 'border-b border-border/60' 
-            : 'border-b border-white/10 bg-gradient-to-r from-background/5 to-background/10'
-          }
-        `}>
+        <div 
+          className={`
+            widget-header flex items-center justify-between px-3 py-2 text-xs
+            ${isEditMode 
+              ? 'border-b border-border/60 cursor-move' 
+              : 'border-b border-white/10 bg-gradient-to-r from-background/5 to-background/10'
+            }
+          `}
+        >
           <div className="flex items-center gap-2">
             <span className={`font-medium ${isEditMode ? 'text-foreground/80' : 'text-foreground/90'}`}>
               {title ?? "Untitled widget"}
