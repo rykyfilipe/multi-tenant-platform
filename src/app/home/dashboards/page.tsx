@@ -530,4 +530,212 @@ export default function DashboardsPage() {
   }
 
   console.log('🎯 Rendering main dashboard view - all conditions passed!');
+
+  return (
+    <div className="h-screen w-full relative overflow-hidden bg-gradient-to-br from-background via-background/95 to-background/90">
+      {/* Top Header Bar - Minimal and Clean */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/20">
+        <div className="flex items-center justify-between px-6 py-3">
+          {/* Left: Dashboard Info */}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">{dashboardName}</h1>
+                <p className="text-xs text-muted-foreground">Dashboard Management</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center space-x-2">
+            {/* Create Dashboard Button */}
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="h-8 px-3 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Create
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Dashboard</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      value={createForm.name}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter dashboard name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={createForm.description}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter dashboard description"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isPublic2"
+                      checked={createForm.isPublic}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, isPublic: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="isPublic2">Make dashboard public</Label>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateDashboard}>
+                      Create Dashboard
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit/View Mode Toggle */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant={isEditMode ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setIsEditMode(!isEditMode)}
+                className="h-8 px-3"
+              >
+                {isEditMode ? (
+                  <>
+                    <Eye className="h-3 w-3 mr-1" />
+                    View
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    Edit
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Dashboard Settings Menu */}
+            {selectedDashboardId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleEditDashboard}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Dashboard
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Edit Dashboard Modal */}
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Dashboard</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="editName">Name</Label>
+                    <Input
+                      id="editName"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter dashboard name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editDescription">Description</Label>
+                    <Textarea
+                      id="editDescription"
+                      value={editForm.description}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter dashboard description"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleUpdateDashboard}>
+                      Update Dashboard
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Dashboard Modal */}
+            <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Delete Dashboard</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Are you sure you want to delete this dashboard? This action cannot be undone and will remove all widgets and data associated with it.
+                  </p>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleDeleteDashboard}
+                    >
+                      Delete Dashboard
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area - Full Screen */}
+      <div className="pt-16 h-full">
+        {selectedDashboardId && (
+          <WidgetCanvasNew 
+            tenantId={tenant?.id ?? 0} 
+            dashboardId={selectedDashboardId} 
+            actorId={actorId ?? 0}
+            isEditMode={isEditMode}
+          />
+        )}
+        {!selectedDashboardId && (
+          <div className="flex h-full items-center justify-center">
+            <div className="text-center">
+              <LayoutDashboard className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">No Dashboard Selected</h3>
+              <p className="text-sm text-muted-foreground/70">Select a dashboard to view widgets</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
