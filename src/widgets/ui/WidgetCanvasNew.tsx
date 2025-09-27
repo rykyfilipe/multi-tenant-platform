@@ -74,10 +74,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       // Use the parent container instead of .layout which might not exist yet
       const container = document.querySelector('.h-full.w-full.p-6');
       if (container) {
-        setContainerWidth(container.clientWidth - 48); // Subtract padding (24px * 2)
+        const width = container.clientWidth - 48; // Subtract padding (24px * 2)
+        console.log('🎯 [DEBUG] Container width:', container.clientWidth, 'Final width:', width);
+        setContainerWidth(width);
       } else {
         // Fallback to window width
-        setContainerWidth(window.innerWidth - 100);
+        const fallbackWidth = window.innerWidth - 100;
+        console.log('🎯 [DEBUG] Fallback width:', fallbackWidth);
+        setContainerWidth(fallbackWidth);
       }
     };
 

@@ -121,15 +121,17 @@ export const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
           </SelectTrigger>
           <SelectContent>
             {databases?.map((database) => (
-              <SelectItem key={database.id} value={database.id.toString()}>
-                <div className="flex items-center space-x-2">
-                  <DatabaseIcon className="h-4 w-4" />
-                  <span>{database.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({database.tables.length} tables)
-                  </span>
-                </div>
-              </SelectItem>
+              database.id && database.id.toString() ? (
+                <SelectItem key={database.id} value={database.id.toString()}>
+                  <div className="flex items-center space-x-2">
+                    <DatabaseIcon className="h-4 w-4" />
+                    <span>{database.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({database.tables.length} tables)
+                    </span>
+                  </div>
+                </SelectItem>
+              ) : null
             ))}
           </SelectContent>
         </Select>
@@ -155,15 +157,17 @@ export const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
             </SelectTrigger>
             <SelectContent>
               {selectedDatabase.tables.map((table) => (
-                <SelectItem key={table.id} value={table.id.toString()}>
-                  <div className="flex items-center space-x-2">
-                    <TableIcon className="h-4 w-4" />
-                    <span>{table.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({table.columnsCount} columns, {table.rowsCount} rows)
-                    </span>
-                  </div>
-                </SelectItem>
+                table.id && table.id.toString() ? (
+                  <SelectItem key={table.id} value={table.id.toString()}>
+                    <div className="flex items-center space-x-2">
+                      <TableIcon className="h-4 w-4" />
+                      <span>{table.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({table.columnsCount} columns, {table.rowsCount} rows)
+                      </span>
+                    </div>
+                  </SelectItem>
+                ) : null
               ))}
             </SelectContent>
           </Select>

@@ -197,7 +197,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                     <SelectValue placeholder="Select comparison field" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableColumns
                       .filter(col => ["number"].includes(col.type))
                       .map((column) => (
