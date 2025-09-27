@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
-import { useWidgets, useApplyDraft, useDeleteDraft } from "@/widgets/api/client";
+import { useDraftOperations } from "@/widgets/api/simple-draft-client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { WidgetKind } from "@/generated/prisma";
@@ -48,8 +48,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const createLocal = useWidgetsStore((state) => state.createLocal);
   const removeDraft = useWidgetsStore((state) => state.removeDraft);
 
-  const applyDraftMutation = useApplyDraft(tenantId, dashboardId);
-  const deleteDraftMutation = useDeleteDraft(tenantId, dashboardId);
+  const { applyDraft, deleteDraft } = useDraftOperations(tenantId, dashboardId);
   const { toast } = useToast();
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
@@ -148,41 +147,28 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         duration: 3000,
       });
       
-      applyDraftMutation.mutate(
-        { draftId, actorId },
-        {
-          onSuccess: (response) => {
-            if (response.conflicts.length === 0) {
-              toast({
-                title: "Draft applied successfully!",
-                description: "Your changes have been saved.",
-                variant: "success",
-                duration: 4000,
-              });
-            } else {
-              toast({
-                title: "Draft has conflicts",
-                description: "Please resolve conflicts before applying.",
-                variant: "warning",
-                duration: 5000,
-              });
-            }
-          },
-          onError: (error) => {
-            toast({
-              title: "Failed to apply draft",
-              description: error.message || "An error occurred while applying the draft.",
-              variant: "destructive",
-              duration: 5000,
-            });
-          },
-        }
-      );
+      const response = await applyDraft(draftId, actorId);
+      
+      if (response.conflicts.length === 0) {
+        toast({
+          title: "Draft applied successfully!",
+          description: "Your changes have been saved.",
+          variant: "success",
+          duration: 4000,
+        });
+      } else {
+        toast({
+          title: "Draft has conflicts",
+          description: "Please resolve conflicts before applying.",
+          variant: "warning",
+          duration: 5000,
+        });
+      }
     } catch (error) {
       console.error("Failed to apply draft:", error);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
+        title: "Failed to apply draft",
+        description: error instanceof Error ? error.message : "An error occurred while applying the draft.",
         variant: "destructive",
         duration: 5000,
       });
@@ -200,32 +186,19 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         duration: 3000,
       });
       
-      deleteDraftMutation.mutate(
-        { draftId, actorId },
-        {
-          onSuccess: () => {
-            toast({
-              title: "Draft deleted successfully!",
-              description: "The draft has been removed.",
-              variant: "success",
-              duration: 4000,
-            });
-          },
-          onError: (error) => {
-            toast({
-              title: "Failed to delete draft",
-              description: error.message || "An error occurred while deleting the draft.",
-              variant: "destructive",
-              duration: 5000,
-            });
-          },
-        }
-      );
+      await deleteDraft(draftId, actorId);
+      
+      toast({
+        title: "Draft deleted successfully!",
+        description: "The draft has been removed.",
+        variant: "success",
+        duration: 4000,
+      });
     } catch (error) {
       console.error("Failed to delete draft:", error);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
+        title: "Failed to delete draft",
+        description: error instanceof Error ? error.message : "An error occurred while deleting the draft.",
         variant: "destructive",
         duration: 5000,
       });
