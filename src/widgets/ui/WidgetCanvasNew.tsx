@@ -54,6 +54,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedWidgets, setSelectedWidgets] = useState<Set<number>>(new Set());
+  const [containerWidth, setContainerWidth] = useState(1200);
 
   const widgetList = useMemo(() => {
     const filtered = Object.values(widgetsRecord).filter((widget) => 
@@ -66,6 +67,20 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   }, [widgetsRecord, tenantId, dashboardId]);
 
   const draftsList = useMemo(() => Object.values(draftsRecord), [draftsRecord]);
+
+  // Update container width on resize
+  useEffect(() => {
+    const updateWidth = () => {
+      const container = document.querySelector('.layout');
+      if (container) {
+        setContainerWidth(container.clientWidth);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const layout: Layout[] = useMemo(() => {
     const layoutItems = widgetList.map((widget) => ({
@@ -472,12 +487,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           .react-grid-layout {
             width: 100% !important;
             height: 100% !important;
+            min-height: 100vh;
           }
           .react-grid-item {
             transition: all 200ms ease;
             transition-property: left, top, width, height;
-            min-width: 100px;
-            min-height: 80px;
+            min-width: 200px;
+            min-height: 120px;
             max-width: none;
             max-height: none;
           }
@@ -608,6 +624,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             layout={layout} 
             cols={24} 
             rowHeight={30} 
+            width={containerWidth}
             isDraggable={isEditMode}
             isResizable={isEditMode}
             allowOverlap={false}
