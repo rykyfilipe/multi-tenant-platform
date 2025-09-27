@@ -18,6 +18,7 @@ export interface PendingChangesState {
   setWidgets: (widgets: WidgetEntity[]) => void;
   clearPending: () => void;
   getPending: () => DraftOperation[];
+  cleanupOldIds: () => void;
   setConflicts: (conflicts: ConflictMetadata[]) => void;
   applyConflictResolution: (
     conflict: ConflictMetadata,
@@ -92,7 +93,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
               
               const newOperation = {
                 kind: "update" as const,
-                id: `update-${widgetId}-${Date.now()}`,
+                id: `update-${widgetId}-${Math.floor(Math.random() * 1000000) + 1000000}`,
                 widgetId,
                 patch,
                 expectedVersion: updated.version,
@@ -178,6 +179,61 @@ export const useWidgetsStore = create<PendingChangesState>()(
           dirtyWidgetIds: new Set<number>(),
           conflicts: [],
           activeConflict: null,
+        });
+      },
+      cleanupOldIds: () => {
+        set((state) => {
+          // Remove widgets with old Date.now() IDs (too large for INT4)
+          const cleanedWidgets: Record<number, WidgetEntity> = {};
+          const cleanedOperations: DraftOperation[] = [];
+          const cleanedDirtyIds = new Set<number>();
+          
+          // Keep only widgets with compatible IDs (local: 1M-2M, DB: < 1M)
+          Object.entries(state.widgets).forEach(([id, widget]) => {
+            const widgetId = parseInt(id);
+            if (widgetId < 1000000 || (widgetId >= 1000000 && widgetId < 2000000)) {
+              cleanedWidgets[widgetId] = widget;
+            }
+          });
+          
+          // Keep only operations for valid widgets
+          state.pendingOperations.forEach(op => {
+            let shouldKeep = false;
+            
+            if (op.kind === "create" && op.widget) {
+              const widgetId = (op.widget as WidgetEntity).id;
+              if (widgetId < 1000000 || (widgetId >= 1000000 && widgetId < 2000000)) {
+                shouldKeep = true;
+              }
+            } else if (op.kind === "update" && hasWidgetId(op)) {
+              const widgetId = op.widgetId;
+              if (widgetId < 1000000 || (widgetId >= 1000000 && widgetId < 2000000)) {
+                shouldKeep = true;
+              }
+            } else if (op.kind === "delete") {
+              const widgetId = hasWidgetId(op) ? op.widgetId : 0;
+              if (widgetId < 1000000 || (widgetId >= 1000000 && widgetId < 2000000)) {
+                shouldKeep = true;
+              }
+            }
+            
+            if (shouldKeep) {
+              cleanedOperations.push(op);
+            }
+          });
+          
+          // Keep only dirty IDs for valid widgets
+          state.dirtyWidgetIds.forEach(id => {
+            if (id < 1000000 || (id >= 1000000 && id < 2000000)) {
+              cleanedDirtyIds.add(id);
+            }
+          });
+          
+          return {
+            widgets: cleanedWidgets,
+            pendingOperations: cleanedOperations,
+            dirtyWidgetIds: cleanedDirtyIds,
+          };
         });
       },
       getPending: () => get().pendingOperations,

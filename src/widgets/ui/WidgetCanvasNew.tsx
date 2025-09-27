@@ -46,6 +46,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
   const pendingOperations = useWidgetsStore((state) => state.getPending());
   const clearPending = useWidgetsStore((state) => state.clearPending);
+  const cleanupOldIds = useWidgetsStore((state) => state.cleanupOldIds);
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
@@ -146,6 +147,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     return filtered;
   }, [widgetsRecord, tenantId, dashboardId]);
 
+
+  // Cleanup old IDs on component mount
+  useEffect(() => {
+    cleanupOldIds();
+  }, [cleanupOldIds]);
 
   // Update container width on resize
   useEffect(() => {
