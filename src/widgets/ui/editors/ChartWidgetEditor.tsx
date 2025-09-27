@@ -117,44 +117,6 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="xAxis" className="text-xs font-medium uppercase tracking-wide">
-                X Axis Column
-              </Label>
-              <Input
-                id="xAxis"
-                value={value.settings.xAxis}
-                onChange={(e) => updateSettings({ xAxis: e.target.value })}
-                placeholder="Enter column name for X axis"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="yAxis" className="text-xs font-medium uppercase tracking-wide">
-                Y Axis Column
-              </Label>
-              <Input
-                id="yAxis"
-                value={value.settings.yAxis}
-                onChange={(e) => updateSettings({ yAxis: e.target.value })}
-                placeholder="Enter column name for Y axis"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="groupBy" className="text-xs font-medium uppercase tracking-wide">
-                Group By (Optional)
-              </Label>
-              <Input
-                id="groupBy"
-                value={value.settings.groupBy || ""}
-                onChange={(e) => updateSettings({ groupBy: e.target.value || undefined })}
-                placeholder="Enter column name for grouping"
-                className="mt-1"
-              />
-            </div>
 
             <div>
               <Label htmlFor="valueFormat" className="text-xs font-medium uppercase tracking-wide">
@@ -222,7 +184,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <Input
                 id="backgroundColor"
                 type="color"
-                value={value.style.backgroundColor || "#ffffff"}
+                value={value.style.backgroundColor}
                 onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
                 className="mt-1 h-10"
               />
@@ -235,7 +197,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <Input
                 id="textColor"
                 type="color"
-                value={value.style.textColor || "#000000"}
+                value={value.style.textColor}
                 onChange={(e) => updateStyle({ textColor: e.target.value })}
                 className="mt-1 h-10"
               />

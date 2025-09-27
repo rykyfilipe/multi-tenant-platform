@@ -12,8 +12,8 @@ export const chartSettingsSchema = z.object({
 
 export const chartStyleSchema = z.object({
   theme: z.enum(["premium-light", "premium-dark", "auto"]).default("premium-light"),
-  backgroundColor: z.string().optional(),
-  textColor: z.string().optional(),
+  backgroundColor: z.string().default("#ffffff"),
+  textColor: z.string().default("#000000"),
   showLegend: z.boolean().default(true),
   showGrid: z.boolean().default(true),
 });
