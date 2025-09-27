@@ -205,8 +205,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       const maxY = Math.max(...widgetList.map(w => w.position.y + w.position.h), 0);
       console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 6, h: 8 });
 
-      // Create widget locally with temporary ID
-      const tempId = Date.now();
+      // Create widget locally with temporary ID (compatible with INT4)
+      const tempId = Math.floor(Math.random() * 1000000) + 1000000; // 7-digit random ID
       const newWidget: WidgetEntity = {
         id: tempId,
         tenantId,
@@ -459,7 +459,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     selectedWidgets.forEach(widgetId => {
                       const widget = widgetList.find(w => w.id === widgetId);
                       if (widget) {
-                        const duplicated = { ...widget, id: Date.now() + Math.random() };
+                        const duplicated = { ...widget, id: Math.floor(Math.random() * 1000000) + 1000000 };
                         createLocal(duplicated);
                       }
                     });

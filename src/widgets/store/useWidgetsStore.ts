@@ -66,7 +66,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
         definition.schema.parse(updated.config);
         
         // Check if this is a local widget (temporary ID) or from DB
-        const isLocalWidget = widgetId > 1000000000000; // Temporary IDs are timestamps
+        const isLocalWidget = widgetId >= 1000000 && widgetId < 2000000; // Temporary IDs are 7-digit random
         
         set((state) => {
           const newState = {
@@ -126,7 +126,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
         if (!existing) return;
         
         // Check if this is a local widget (temporary ID) or from DB
-        const isLocalWidget = widgetId > 1000000000000; // Temporary IDs are timestamps
+        const isLocalWidget = widgetId >= 1000000 && widgetId < 2000000; // Temporary IDs are 7-digit random
         
         set((state) => {
           const newState = {

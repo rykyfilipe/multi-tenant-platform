@@ -153,7 +153,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     const definition = getWidgetDefinition(widget.kind);
     createLocal({
       ...widget,
-      id: Date.now(),
+      id: Math.floor(Math.random() * 1000000) + 1000000,
       title: `${widget.title ?? "Widget"} Copy`,
       position: { ...widget.position, x: widget.position.x + 1 },
       config: definition.schema.parse(widget.config),
@@ -250,7 +250,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       if (widget) {
         const duplicatedWidget = {
           ...widget,
-          id: Date.now() + Math.random(),
+          id: Math.floor(Math.random() * 1000000) + 1000000,
           title: `${widget.title} (Copy)`,
           position: { ...widget.position, x: widget.position.x + 1 },
         };
@@ -272,7 +272,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
   const handleTemplateSelect = (template: any) => {
     const newWidget: WidgetEntity = {
-      id: Date.now(),
+      id: Math.floor(Math.random() * 1000000) + 1000000,
       tenantId,
       dashboardId,
       kind: template.kind,
