@@ -40,13 +40,26 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
   
   // Fetch real data from API
+  const validFilters = filters.filter((f: any) => f.column && f.operator && f.value !== undefined);
+  const filterString = validFilters.map((f: any) => `${f.column}${f.operator}${f.value}`).join(',');
+  
+  console.log('🔍 ChartWidgetRenderer - Data construction:', {
+    tenantId: widget.tenantId,
+    databaseId,
+    tableId: Number(tableId),
+    filters,
+    validFilters,
+    filterString,
+    mappings
+  });
+
   const { data: rawData, isLoading, error, refetch } = useTableRows(
     widget.tenantId,
     databaseId || 0,
     Number(tableId) || 0,
     {
       pageSize: 1000,
-      filters: filters.map((f: any)  => `${f.column}${f.operator}${f.value}`).join(',')
+      filters: filterString
     }
   );
 

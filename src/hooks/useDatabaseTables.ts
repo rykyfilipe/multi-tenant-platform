@@ -139,15 +139,33 @@ export const useTableRows = (
       if (options?.sortBy) queryParams.set("sortBy", options.sortBy);
       if (options?.sortOrder) queryParams.set("sortOrder", options.sortOrder);
 
-      const response = await fetch(
-        `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows?${queryParams}`
-      );
+      const url = `/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/rows?${queryParams}`;
+      
+      console.log('🌐 useTableRows - API Request:', {
+        url,
+        tenantId,
+        databaseId,
+        tableId,
+        options,
+        queryParams: queryParams.toString()
+      });
+
+      const response = await fetch(url);
       if (!response.ok) {
-        throw new Error("Failed to fetch rows");
+        throw new Error(`Failed to fetch rows: ${response.status} ${response.statusText}`);
       }
       const result = await response.json();
+      
+      console.log('📊 useTableRows - API Response:', {
+        status: response.status,
+        dataLength: result?.data?.length || 0,
+        totalRows: result?.pagination?.total || 0,
+        result
+      });
+      
       setData(result);
     } catch (err) {
+      console.error('❌ useTableRows - Error:', err);
       setError(err instanceof Error ? err : new Error("Unknown error"));
     } finally {
       setIsLoading(false);
