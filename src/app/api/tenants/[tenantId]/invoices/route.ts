@@ -165,8 +165,9 @@ export async function POST(
 		}
 
 		// Check if tables exist but have wrong schema
+		// We'll check for a more fundamental column that should always exist in invoice_items
 		const hasCorrectSchema = invoiceTables.invoice_items?.columns?.some(
-			(c: any) => c.name === "product_ref_table",
+			(c: any) => c.name === "quantity" && c.semanticType === "quantity",
 		);
 
 		// If tables don't exist OR have wrong schema, recreate them
@@ -176,19 +177,35 @@ export async function POST(
 			!invoiceTables.invoice_items ||
 			!hasCorrectSchema
 		) {
-			// Delete existing tables if they exist but have wrong schema
-			if (invoiceTables.invoice_items && !hasCorrectSchema) {
-				await prisma.row.deleteMany({
-					where: { tableId: invoiceTables.invoice_items.id },
-				});
-				await prisma.column.deleteMany({
-					where: { tableId: invoiceTables.invoice_items.id },
-				});
-				await prisma.table.delete({
-					where: { id: invoiceTables.invoice_items.id },
-				});
+			console.log("=== SCHEMA VALIDATION FAILED - RECREATING TABLES ===");
+			console.log("hasCorrectSchema:", hasCorrectSchema);
+			
+			// Delete ALL existing invoice tables if they exist but have wrong schema
+			const tablesToDelete = [
+				invoiceTables.customers,
+				invoiceTables.invoices,
+				invoiceTables.invoice_items
+			].filter(Boolean);
+
+			for (const table of tablesToDelete) {
+				if (table) {
+					console.log(`Deleting table: ${table.name} (ID: ${table.id})`);
+					// Delete rows first
+					await prisma.row.deleteMany({
+						where: { tableId: table.id },
+					});
+					// Delete columns
+					await prisma.column.deleteMany({
+						where: { tableId: table.id },
+					});
+					// Delete table
+					await prisma.table.delete({
+						where: { id: table.id },
+					});
+				}
 			}
 
+			console.log("=== CREATING NEW INVOICE TABLES ===");
 			invoiceTables = await InvoiceSystemService.initializeInvoiceTables(
 				Number(tenantId),
 				database.id,

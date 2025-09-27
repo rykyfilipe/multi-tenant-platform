@@ -110,7 +110,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
           const newHistory = [existing, ...currentHistory].slice(0, MAX_HISTORY_SIZE);
           
           const newState = {
-            widgets: { ...state.widgets, [widgetId]: updated },
+          widgets: { ...state.widgets, [widgetId]: updated },
             pendingOperations: [...state.pendingOperations],
             dirtyWidgetIds: new Set(state.dirtyWidgetIds),
             history: { ...state.history, [widgetId]: newHistory },
@@ -151,9 +151,9 @@ export const useWidgetsStore = create<PendingChangesState>()(
               const newOperation = {
                 kind: "update" as const,
                 id: `update-${widgetId}-${generateOperationId()}`,
-                widgetId,
-                patch,
-                expectedVersion: updated.version,
+              widgetId,
+              patch,
+              expectedVersion: updated.version,
               };
               
               if (existingOpIndex >= 0) {
@@ -205,7 +205,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
             } else {
               // Add new delete operation
               newState.pendingOperations.push({
-                kind: "delete",
+              kind: "delete",
                 id: `delete-${widgetId}-${generateOperationId()}`,
                 widgetId,
                 expectedVersion: state.widgets[widgetId]?.version || 1,

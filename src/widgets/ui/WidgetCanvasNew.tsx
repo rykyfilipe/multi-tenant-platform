@@ -26,7 +26,8 @@ import {
   Copy,
   Trash2,
   X,
-  CheckSquare
+  CheckSquare,
+  ArrowUpDown
 } from "lucide-react";
 
 interface WidgetCanvasNewProps {
@@ -215,14 +216,38 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   const closeEditor = () => setEditorWidgetId(null);
 
+  // Compact layout function
+  const compactLayout = useCallback(() => {
+    const widgets = Object.values(widgetsRecord);
+    if (widgets.length === 0) return;
+
+    // Sort widgets by current Y position
+    const sortedWidgets = [...widgets].sort((a, b) => a.position.y - b.position.y);
+    
+    // Compact widgets vertically
+    let currentY = 0;
+    sortedWidgets.forEach((widget) => {
+      updateLocal(widget.id, {
+        position: { ...widget.position, y: currentY },
+      });
+      currentY += widget.position.h + 1; // Add 1 for margin
+    });
+    
+    console.log('🎯 [DEBUG] Layout compacted');
+  }, [widgetsRecord, updateLocal]);
+
   const handleAddWidget = (kind: WidgetKind) => {
     try {
       console.log('🎯 [DEBUG] Adding widget locally:', kind);
       const definition = getWidgetDefinition(kind);
       const defaultConfig = definition.defaultConfig;
 
-      // Find next available position
-      const maxY = Math.max(...widgetList.map(w => w.position.y + w.position.h), 0);
+      // Find next available position (compact layout)
+      const widgets = Object.values(widgetsRecord);
+      const maxY = widgets.length > 0 
+        ? Math.max(...widgets.map(w => w.position.y + w.position.h + 1), 0)
+        : 0;
+      
       console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 6, h: 8 });
 
       // Create widget locally with temporary ID (compatible with INT4)
@@ -555,6 +580,16 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   <X className="h-3 w-3 mr-1" />
                   Discard
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={compactLayout}
+                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  title="Compact Layout"
+                >
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  Pack
+                </Button>
               </div>
             </div>
           </div>
@@ -562,7 +597,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       )}
 
       {/* Main Grid Area */}
-      <div className="h-full w-full p-6">
+      <div 
+        className="h-full w-full p-6"
+        onClick={handleCanvasClick}
+      >
         <style jsx global>{`
           .react-grid-layout {
             width: 100% !important;
@@ -676,7 +714,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             isDraggable={isEditMode}
             isResizable={isEditMode}
             allowOverlap={false}
-            compactType={null}
+            compactType="vertical"
             preventCollision={false}
             useCSSTransforms={true}
             margin={[10, 10]}
@@ -695,7 +733,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
             onResize={(layout, oldItem, newItem, placeholder, e, element) => {
               if (!isEditMode) return;
-              console.log('🎯 [DEBUG] Resize event:', { oldItem, newItem });
+              console.log('🎯 [DEBUG] Widget resized:', { oldItem, newItem });
+              const widgetId = Number(newItem.i);
+              updateLocal(widgetId, {
+                position: { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h },
+              });
             }}
             onResizeStop={(layout, oldItem, newItem, placeholder, e, element) => {
               if (!isEditMode) return;
