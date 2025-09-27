@@ -24,9 +24,9 @@ export const chartDataSchema = z.object({
   filters: z
     .array(
       z.object({
-        column: z.string().min(1),
-        operator: z.enum(["=", "!=", ">", "<", ">=", "<=", "contains", "startsWith", "endsWith"]),
-        value: z.union([z.string(), z.number(), z.boolean(), z.date()]),
+        column: z.string().optional(),
+        operator: z.enum(["=", "!=", ">", "<", ">=", "<=", "contains", "startsWith", "endsWith"]).optional(),
+        value: z.union([z.string(), z.number(), z.boolean(), z.date()]).optional(),
       })
     )
     .default([]),
