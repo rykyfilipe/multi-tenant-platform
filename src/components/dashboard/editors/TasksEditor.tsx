@@ -135,7 +135,7 @@ export default function TasksEditor({
                     <SelectValue placeholder="Select priority column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableColumns.map(column => (
                       <SelectItem key={column} value={column}>
                         {column}
@@ -152,7 +152,7 @@ export default function TasksEditor({
                     <SelectValue placeholder="Select assignee column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableColumns.map(column => (
                       <SelectItem key={column} value={column}>
                         {column}
@@ -171,7 +171,7 @@ export default function TasksEditor({
                     <SelectValue placeholder="Select due date column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableColumns.map(column => (
                       <SelectItem key={column} value={column}>
                         {column}

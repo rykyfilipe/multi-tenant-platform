@@ -123,7 +123,7 @@ export default function CalendarEditor({
                     <SelectValue placeholder="Select title column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableColumns.map(column => (
                       <SelectItem key={column} value={column}>
                         {column}
@@ -140,7 +140,7 @@ export default function CalendarEditor({
                     <SelectValue placeholder="Select description column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableColumns.map(column => (
                       <SelectItem key={column} value={column}>
                         {column}
@@ -157,7 +157,7 @@ export default function CalendarEditor({
                     <SelectValue placeholder="Select color column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {availableColumns.map(column => (
                       <SelectItem key={column} value={column}>
                         {column}

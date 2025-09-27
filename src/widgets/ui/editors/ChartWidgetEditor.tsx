@@ -388,7 +388,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         <SelectValue placeholder="Select color column (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {availableColumns
                           .filter(col => ["string", "text"].includes(col.type))
                           .map((column) => (
