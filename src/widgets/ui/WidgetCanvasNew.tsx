@@ -507,10 +507,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           .react-grid-item {
             transition: all 200ms ease;
             transition-property: left, top, width, height;
-            min-width: 200px;
-            min-height: 120px;
-            max-width: none;
-            max-height: none;
+            min-width: 100px;
+            min-height: 80px;
+            max-width: none !important;
+            max-height: none !important;
+            width: auto !important;
+            height: auto !important;
           }
           .react-grid-item.cssTransforms {
             transition-property: transform, width, height;
@@ -520,6 +522,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           .react-grid-item > .react-resizable-handle {
             position: absolute;
             z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+          }
+          
+          .react-grid-item:hover > .react-resizable-handle {
+            opacity: 1;
           }
           
           /* Bottom-right resize handle (SE) */
@@ -585,18 +593,28 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             top: 0;
             right: 0;
             bottom: 0;
-            width: 15px;
+            width: 20px;
             cursor: e-resize;
-            background: linear-gradient(to left, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+            background: rgba(59, 130, 246, 0.4);
+            z-index: 20;
+          }
+          
+          .react-grid-item > .react-resizable-handle-e:hover {
+            background: rgba(59, 130, 246, 0.7);
           }
           
           .react-grid-item > .react-resizable-handle-w {
             top: 0;
             left: 0;
             bottom: 0;
-            width: 15px;
+            width: 20px;
             cursor: w-resize;
-            background: linear-gradient(to right, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+            background: rgba(59, 130, 246, 0.4);
+            z-index: 20;
+          }
+          
+          .react-grid-item > .react-resizable-handle-w:hover {
+            background: rgba(59, 130, 246, 0.7);
           }
           
           /* Hide handles when not resizable */
@@ -644,12 +662,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             isResizable={isEditMode}
             allowOverlap={false}
             compactType={null}
-            preventCollision={false}
+            preventCollision={true}
             useCSSTransforms={true}
             margin={[10, 10]}
             containerPadding={[10, 10]}
             resizeHandles={['se', 'sw', 'ne', 'nw', 'n', 's', 'e', 'w']}
             draggableHandle=".widget-header"
+            onResizeStart={(layout, oldItem, newItem, placeholder, e, element) => {
+              console.log('🎯 [DEBUG] Resize started:', { oldItem, newItem });
+            }}
             onLayoutChange={(newLayout) => {
               if (!isEditMode) return;
               console.log('🎯 [DEBUG] Layout changed:', newLayout);
