@@ -287,6 +287,16 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     setSelectedWidgets(new Set());
   };
 
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (!isEditMode) return;
+    
+    // Only close editor if clicking on the canvas itself, not on widgets
+    if (e.target === e.currentTarget) {
+      setEditorWidgetId(null);
+      handleDeselectAll();
+    }
+  };
+
   const handleSelectAll = () => {
     const allWidgetIds = new Set(widgetList.map(widget => widget.id));
     setSelectedWidgets(allWidgetIds);
@@ -577,81 +587,49 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             z-index: 10;
           }
           
-          /* Bottom-right resize handle (SE) */
+          /* Bottom-right resize handle (SE) - Only resize handle */
           .react-grid-item > .react-resizable-handle-se {
             bottom: 0;
             right: 0;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             cursor: se-resize;
-            background: linear-gradient(135deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
+            background: linear-gradient(135deg, transparent 0%, transparent 30%, rgba(59, 130, 246, 0.6) 30%, rgba(59, 130, 246, 0.8) 50%, transparent 70%);
+            border-radius: 0 0 8px 0;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
           }
           
-          /* Bottom-left resize handle (SW) */
-          .react-grid-item > .react-resizable-handle-sw {
-            bottom: 0;
-            left: 0;
-            width: 20px;
-            height: 20px;
-            cursor: sw-resize;
-            background: linear-gradient(225deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
+          .react-grid-item:hover > .react-resizable-handle-se {
+            opacity: 1;
           }
           
-          /* Top-right resize handle (NE) */
-          .react-grid-item > .react-resizable-handle-ne {
-            top: 0;
-            right: 0;
-            width: 20px;
-            height: 20px;
-            cursor: ne-resize;
-            background: linear-gradient(45deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
+          /* Custom drag cursors for widgets */
+          .react-grid-item .widget-header {
+            cursor: grab !important;
           }
           
-          /* Top-left resize handle (NW) */
-          .react-grid-item > .react-resizable-handle-nw {
-            top: 0;
-            left: 0;
-            width: 20px;
-            height: 20px;
-            cursor: nw-resize;
-            background: linear-gradient(315deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
+          .react-grid-item .widget-header:active {
+            cursor: grabbing !important;
           }
           
-          /* Edge resize handles */
-          .react-grid-item > .react-resizable-handle-n {
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 10px;
-            cursor: n-resize;
-            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+          .react-grid-item .widget-content {
+            cursor: grab !important;
           }
           
-          .react-grid-item > .react-resizable-handle-s {
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 10px;
-            cursor: s-resize;
-            background: linear-gradient(to top, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+          .react-grid-item .widget-content:active {
+            cursor: grabbing !important;
           }
           
-          .react-grid-item > .react-resizable-handle-e {
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 15px;
-            cursor: e-resize;
-            background: linear-gradient(to left, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
-          }
-          
+          /* Hide all other resize handles */
+          .react-grid-item > .react-resizable-handle-sw,
+          .react-grid-item > .react-resizable-handle-ne,
+          .react-grid-item > .react-resizable-handle-nw,
+          .react-grid-item > .react-resizable-handle-n,
+          .react-grid-item > .react-resizable-handle-s,
+          .react-grid-item > .react-resizable-handle-e,
           .react-grid-item > .react-resizable-handle-w {
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: 15px;
-            cursor: w-resize;
-            background: linear-gradient(to right, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+            display: none !important;
           }
           
           /* Hide handles when not resizable */
@@ -703,7 +681,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             useCSSTransforms={true}
             margin={[10, 10]}
             containerPadding={[10, 10]}
-            resizeHandles={['se', 'sw', 'ne', 'nw', 'n', 's', 'e', 'w']}
+            resizeHandles={['se']}
             draggableHandle=".widget-header"
             onLayoutChange={(newLayout) => {
               if (!isEditMode) return;
@@ -761,6 +739,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                         // Single select: clear others and select this one
                         handleDeselectAll();
                         handleSelectWidget(widget.id);
+                        
+                        // Auto-open editor for the selected widget
+                        setEditorWidgetId(widget.id);
                       }
                     }}
                   >

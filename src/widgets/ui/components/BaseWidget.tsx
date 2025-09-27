@@ -34,7 +34,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
           className={`
             widget-header flex items-center justify-between px-3 py-2 text-xs
             ${isEditMode 
-              ? 'border-b border-border/60 cursor-move' 
+              ? 'border-b border-border/60 cursor-grab active:cursor-grabbing' 
               : 'border-b border-white/10 bg-gradient-to-r from-background/5 to-background/10'
             }
           `}
@@ -54,9 +54,9 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
       
       {/* Content */}
       <div className={`
-        flex-1 overflow-hidden text-sm
+        widget-content flex-1 overflow-hidden text-sm
         ${isEditMode 
-          ? 'p-3 text-muted-foreground' 
+          ? 'p-3 text-muted-foreground cursor-grab active:cursor-grabbing' 
           : 'p-4 text-foreground/90'
         }
       `}>
