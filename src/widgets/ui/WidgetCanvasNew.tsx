@@ -5,12 +5,15 @@ import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
 import { useDraftOperations } from "@/widgets/api/simple-draft-client";
+import { useWidgetsApi } from "@/widgets/api/simple-client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { WidgetKind } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig, WidgetDraftEntity } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
+import { useUndoRedo } from "./components/UndoRedo";
 import { 
   BarChart3, 
   Table, 
@@ -43,13 +46,94 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 }) => {
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
   const draftsRecord = useWidgetsStore((state) => state.drafts);
+  const pendingOperations = useWidgetsStore((state) => state.getPending());
+  const clearPending = useWidgetsStore((state) => state.clearPending);
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
   const removeDraft = useWidgetsStore((state) => state.removeDraft);
 
   const { applyDraft, deleteDraft } = useDraftOperations(tenantId, dashboardId);
+  const api = useWidgetsApi(tenantId, dashboardId);
+  
+  // Undo/Redo functionality
+  const undoRedo = useUndoRedo(widgetsRecord);
   const { toast } = useToast();
+
+  // Save pending changes function
+  const handleSavePending = useCallback(async () => {
+    try {
+      const response = await api.savePending({ actorId, operations: pendingOperations });
+      if (response.conflicts.length > 0) {
+        toast({
+          title: "Conflicts detected",
+          description: "Please review and resolve conflicts before saving.",
+          variant: "destructive",
+        });
+      } else {
+        clearPending();
+        toast({
+          title: "Changes saved successfully!",
+          description: `${pendingOperations.length} operations saved.`,
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to save pending changes:", error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save pending changes. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [api, actorId, pendingOperations, clearPending, toast]);
+
+  // Undo function
+  const handleUndo = useCallback(() => {
+    const restoredWidgets = undoRedo.undo();
+    if (restoredWidgets) {
+      // Restore widgets to the store
+      Object.values(restoredWidgets).forEach((widget: any) => {
+        updateLocal(widget.id, widget);
+      });
+      toast({
+        title: "Undo successful",
+        description: "Previous state restored.",
+        variant: "default",
+      });
+    }
+  }, [undoRedo, updateLocal, toast]);
+
+  // Redo function
+  const handleRedo = useCallback(() => {
+    const restoredWidgets = undoRedo.redo();
+    if (restoredWidgets) {
+      // Restore widgets to the store
+      Object.values(restoredWidgets).forEach((widget: any) => {
+        updateLocal(widget.id, widget);
+      });
+      toast({
+        title: "Redo successful",
+        description: "Next state restored.",
+        variant: "default",
+      });
+    }
+  }, [undoRedo, updateLocal, toast]);
+
+  // Discard all changes function
+  const handleDiscard = useCallback(() => {
+    if (undoRedo.historyLength > 1) {
+      // Reset to original state by clearing pending changes and reloading
+      clearPending();
+      // Reload the page to get fresh data
+      window.location.reload();
+      toast({
+        title: "All changes discarded",
+        description: "Dashboard restored to original state.",
+        variant: "default",
+      });
+    }
+  }, [undoRedo, clearPending, toast]);
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -463,18 +547,25 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => console.log('Save Pending Changes')}
-                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  onClick={handleSavePending}
+                  disabled={pendingOperations.length === 0}
+                  className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
                   title="Save Pending Changes"
                 >
                   <Save className="h-3 w-3 mr-1" />
                   Save
+                  {pendingOperations.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs flex items-center justify-center">
+                      {pendingOperations.length}
+                    </Badge>
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => console.log('Undo')}
-                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  onClick={handleUndo}
+                  disabled={!undoRedo.canUndo}
+                  className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
                   title="Undo"
                 >
                   <Undo2 className="h-3 w-3 mr-1" />
@@ -483,12 +574,24 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => console.log('Redo')}
-                  className="h-8 px-3 text-xs hover:bg-primary/10"
+                  onClick={handleRedo}
+                  disabled={!undoRedo.canRedo}
+                  className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
                   title="Redo"
                 >
                   <Redo2 className="h-3 w-3 mr-1" />
                   Redo
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDiscard}
+                  disabled={undoRedo.historyLength <= 1}
+                  className="h-8 px-3 text-xs hover:bg-destructive/10 disabled:opacity-50 text-destructive hover:text-destructive"
+                  title="Discard All Changes"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Discard
                 </Button>
               </div>
             </div>
