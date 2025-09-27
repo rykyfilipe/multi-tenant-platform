@@ -50,59 +50,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
             )}
           </div>
           
-          {/* Action buttons - Only in edit mode */}
-          {isEditMode && (
-            <div className="flex items-center gap-2 text-muted-foreground relative z-50">
-              {onOpenDraft && (
-                <button 
-                  className="hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent/50" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onOpenDraft();
-                  }}
-                >
-                  Drafts
-                </button>
-              )}
-              {onDuplicate && (
-                <button 
-                  className="hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent/50" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onDuplicate();
-                  }}
-                >
-                  Duplicate
-                </button>
-              )}
-              {onEdit && (
-                <button 
-                  className="hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent/50" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onEdit();
-                  }}
-                >
-                  Edit
-                </button>
-              )}
-              {onDelete && (
-                <button 
-                  className="text-destructive hover:text-destructive/80 transition-colors px-2 py-1 rounded hover:bg-destructive/10" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onDelete();
-                  }}
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          )}
+          {/* Action buttons removed - all actions are now in the floating toolbar */}
         </div>
       )}
       

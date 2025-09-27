@@ -3,22 +3,32 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { widgetRegistry } from "@/widgets/registry/widget-registry";
+import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { z } from "zod";
 
 interface WidgetEditorSheetProps {
-  widget: WidgetEntity;
+  widgetId: number;
   onSave: (config: unknown, title: string | null) => void;
   onClose: () => void;
 }
 
-export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({ widget, onSave, onClose }) => {
-  const [draftConfig, setDraftConfig] = useState(widget.config);
-  const [draftTitle, setDraftTitle] = useState(widget.title ?? "");
+export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({ widgetId, onSave, onClose }) => {
+  const widgets = useWidgetsStore((state) => state.widgets);
+  const widget = widgets[widgetId];
+  
+  const [draftConfig, setDraftConfig] = useState(widget?.config || {});
+  const [draftTitle, setDraftTitle] = useState(widget?.title ?? "");
 
   useEffect(() => {
-    setDraftConfig(widget.config);
-    setDraftTitle(widget.title ?? "");
-  }, [widget.id, widget.config, widget.title]);
+    if (widget) {
+      setDraftConfig(widget.config || {});
+      setDraftTitle(widget.title ?? "");
+    }
+  }, [widget?.id, widget?.config, widget?.title]);
+
+  if (!widget) {
+    return null;
+  }
 
   const definition = widgetRegistry[widget.kind];
 
