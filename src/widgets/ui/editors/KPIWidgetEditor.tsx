@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
@@ -100,14 +101,14 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
 
             <div>
               <Label htmlFor="valueField" className="text-xs font-medium uppercase tracking-wide">
-                Value Field
+                Numeric Column
               </Label>
               <Select
                 value={value.settings.valueField}
                 onValueChange={(val) => updateSettings({ valueField: val })}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select value field" />
+                  <SelectValue placeholder="Select numeric column" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableColumns
@@ -119,6 +120,11 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                     ))}
                 </SelectContent>
               </Select>
+              {availableColumns.filter(col => ["number"].includes(col.type)).length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  No numeric columns available. Please select a table first.
+                </p>
+              )}
             </div>
 
             <div>
@@ -142,24 +148,42 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
             </div>
 
             <div>
-              <Label htmlFor="aggregation" className="text-xs font-medium uppercase tracking-wide">
-                Aggregation
+              <Label className="text-xs font-medium uppercase tracking-wide">
+                Aggregate Functions
               </Label>
-              <Select
-                value={value.settings.aggregation}
-                onValueChange={(val) => updateSettings({ aggregation: val as typeof value.settings.aggregation })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sum">Sum</SelectItem>
-                  <SelectItem value="avg">Average</SelectItem>
-                  <SelectItem value="count">Count</SelectItem>
-                  <SelectItem value="min">Minimum</SelectItem>
-                  <SelectItem value="max">Maximum</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="mt-2 space-y-2">
+                {(["sum", "avg", "count", "min", "max"] as const).map((aggregation) => (
+                  <div key={aggregation} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={aggregation}
+                      checked={value.settings.selectedAggregations?.includes(aggregation) || false}
+                      onCheckedChange={(checked) => {
+                        const current = value.settings.selectedAggregations || [];
+                        const updated = checked
+                          ? [...current, aggregation]
+                          : current.filter(a => a !== aggregation);
+                        updateSettings({ 
+                          selectedAggregations: updated,
+                          // Keep backward compatibility
+                          aggregation: updated.length > 0 ? updated[0] : "sum"
+                        });
+                      }}
+                    />
+                    <Label htmlFor={aggregation} className="text-sm font-normal capitalize">
+                      {aggregation === "avg" ? "Average" : 
+                       aggregation === "count" ? "Count" :
+                       aggregation === "min" ? "Minimum" :
+                       aggregation === "max" ? "Maximum" :
+                       aggregation === "sum" ? "Sum" : aggregation}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {(!value.settings.selectedAggregations || value.settings.selectedAggregations.length === 0) && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Please select at least one aggregate function.
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">

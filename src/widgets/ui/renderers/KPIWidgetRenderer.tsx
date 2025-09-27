@@ -31,6 +31,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const label = settings.label || 'KPI Value';
   const format = settings.format || 'number';
   const aggregation = settings.aggregation || 'sum';
+  const selectedAggregations = settings.selectedAggregations || ['sum'];
   const showTrend = settings.showTrend !== false;
   const showComparison = settings.showComparison || false;
   const comparisonField = settings.comparisonField;
@@ -80,9 +81,9 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     onRefresh: refetch
   });
 
-  // Calculate KPI value based on aggregation
-  const kpiValue = useMemo(() => {
-    if (!rawData?.data || !valueField) return 0;
+  // Calculate KPI values based on selected aggregations
+  const kpiValues = useMemo(() => {
+    if (!rawData?.data || !valueField || !selectedAggregations.length) return {};
     
     const values = rawData.data
       .map((row : any) => {
@@ -99,27 +100,43 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       })
       .filter((val : any) => !isNaN(val));
     
-    if (!values.length) return 0;
+    if (!values.length) return {};
     
-    switch (aggregation) {
-      case 'sum':
-        return values.reduce((sum : any, val : any) => sum + val, 0);
-      case 'avg':
-        return values.reduce((sum : any, val : any) => sum + val, 0) / values.length;
-      case 'count':
-        return values.length;
-      case 'min':
-        return Math.min(...values);
-      case 'max':
-        return Math.max(...values);
-      default:
-        return values.reduce((sum : any, val : any) => sum + val, 0);
-    }
-  }, [rawData, valueField, aggregation]);
+    const results: Record<string, number> = {};
+    
+    selectedAggregations.forEach((agg: 'sum' | 'avg' | 'count' | 'min' | 'max') => {
+      switch (agg) {
+        case 'sum':
+          results.sum = values.reduce((sum : any, val : any) => sum + val, 0);
+          break;
+        case 'avg':
+          results.avg = values.reduce((sum : any, val : any) => sum + val, 0) / values.length;
+          break;
+        case 'count':
+          results.count = values.length;
+          break;
+        case 'min':
+          results.min = Math.min(...values);
+          break;
+        case 'max':
+          results.max = Math.max(...values);
+          break;
+      }
+    });
+    
+    return results;
+  }, [rawData, valueField, selectedAggregations]);
 
-  // Calculate comparison value if needed
+  // Get the primary KPI value (for backward compatibility and trend calculation)
+  const kpiValue = useMemo(() => {
+    if (selectedAggregations.length === 0) return 0;
+    const primaryAgg = selectedAggregations[0];
+    return kpiValues[primaryAgg] || 0;
+  }, [kpiValues, selectedAggregations]);
+
+  // Calculate comparison value if needed (using primary aggregation)
   const comparisonValue = useMemo(() => {
-    if (!showComparison || !comparisonField || !rawData?.data) return null;
+    if (!showComparison || !comparisonField || !rawData?.data || selectedAggregations.length === 0) return null;
     
     const values = rawData.data
       .map((row : any) => parseFloat(row[comparisonField]) || 0)
@@ -127,7 +144,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     
     if (!values.length) return null;
     
-    switch (aggregation) {
+    const primaryAgg = selectedAggregations[0];
+    switch (primaryAgg) {
       case 'sum':
         return values.reduce((sum : any, val : any) => sum + val, 0);
       case 'avg':
@@ -141,7 +159,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       default:
         return values.reduce((sum : any, val : any) => sum + val, 0);
     }
-  }, [rawData, comparisonField, aggregation, showComparison]);
+  }, [rawData, comparisonField, selectedAggregations, showComparison]);
 
   // Format value based on format type
   const formatValue = (value: number) => {
@@ -198,23 +216,64 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         style.alignment === 'left' ? 'items-start' : 
         style.alignment === 'right' ? 'items-end' : 'items-center'
       }`}>
-        <div className="text-center">
-          <div 
-            className={`font-bold text-foreground ${
-              style.size === 'small' ? 'text-2xl' : 
-              style.size === 'large' ? 'text-5xl' : 'text-4xl'
-            }`}
-            style={{ color: style.valueColor }}
-          >
-            {formatValue(kpiValue)}
+        {selectedAggregations.length === 1 ? (
+          // Single KPI display (original layout)
+          <div className="text-center">
+            <div 
+              className={`font-bold text-foreground ${
+                style.size === 'small' ? 'text-2xl' : 
+                style.size === 'large' ? 'text-5xl' : 'text-4xl'
+              }`}
+              style={{ color: style.valueColor }}
+            >
+              {formatValue(kpiValue)}
+            </div>
+            <div 
+              className="text-sm mt-1"
+              style={{ color: style.labelColor }}
+            >
+              {label}
+            </div>
           </div>
-          <div 
-            className="text-sm mt-1"
-            style={{ color: style.labelColor }}
-          >
-            {label}
+        ) : (
+          // Multiple KPIs display
+          <div className="w-full space-y-3">
+            <div 
+              className="text-sm text-center"
+              style={{ color: style.labelColor }}
+            >
+              {label}
+            </div>
+            <div className={`grid gap-3 ${
+              selectedAggregations.length <= 2 ? 'grid-cols-1' :
+              selectedAggregations.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+            }`}>
+              {selectedAggregations.map((agg: 'sum' | 'avg' | 'count' | 'min' | 'max') => (
+                <div key={agg} className="text-center p-2 bg-muted/30 rounded-lg">
+                  <div 
+                    className={`font-bold text-foreground ${
+                      style.size === 'small' ? 'text-lg' : 
+                      style.size === 'large' ? 'text-2xl' : 'text-xl'
+                    }`}
+                    style={{ color: style.valueColor }}
+                  >
+                    {formatValue(kpiValues[agg] || 0)}
+                  </div>
+                  <div 
+                    className="text-xs mt-1 capitalize"
+                    style={{ color: style.labelColor }}
+                  >
+                    {agg === 'avg' ? 'Average' : 
+                     agg === 'count' ? 'Count' :
+                     agg === 'min' ? 'Minimum' :
+                     agg === 'max' ? 'Maximum' :
+                     agg === 'sum' ? 'Sum' : agg}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         
         {showTrend && trendPercentage !== null && (
           <div 
