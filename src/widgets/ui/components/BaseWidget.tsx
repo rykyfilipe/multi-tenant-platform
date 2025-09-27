@@ -33,7 +33,9 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
       flex h-full flex-col rounded-xl shadow-sm transition-all duration-300
       ${isEditMode 
         ? 'bg-card border border-border/60 hover:shadow-md' 
-        : 'bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:scale-[1.02]'
+        : isDraft
+          ? 'bg-gradient-to-br from-amber-50/95 to-amber-100/80 backdrop-blur-sm border border-amber-200/60 shadow-lg hover:shadow-xl hover:scale-[1.02]'
+          : 'bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:scale-[1.02]'
       }
     `}>
       {/* Header - Only show in edit mode or when there's a title */}
@@ -52,9 +54,17 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
               {title ?? "Untitled widget"}
             </span>
             {isDraft && (
-              <div className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-1 text-xs">
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                <span className="text-blue-700 font-medium">Draft</span>
+              <div className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs ${
+                isEditMode 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+              }`}>
+                <div className={`h-1.5 w-1.5 rounded-full ${
+                  isEditMode ? 'bg-blue-500' : 'bg-amber-500'
+                }`}></div>
+                <span className="font-medium">
+                  {isEditMode ? 'Draft' : 'Pending Changes'}
+                </span>
               </div>
             )}
             {isDirty && (
@@ -64,8 +74,8 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
             )}
           </div>
           
-          {/* Draft action buttons */}
-          {isDraft && onApplyDraft && onDeleteDraft && (
+          {/* Draft action buttons - only in edit mode */}
+          {isDraft && isEditMode && onApplyDraft && onDeleteDraft && (
             <div className="flex items-center gap-1">
               <button
                 onClick={(e) => {

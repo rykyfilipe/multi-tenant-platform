@@ -711,8 +711,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     onDuplicate={undefined}
                     isEditMode={isEditMode}
                     isDraft={draftsRecord[widget.id] !== undefined}
-                    onApplyDraft={draftsRecord[widget.id] ? () => handleApplyDraft(draftsRecord[widget.id].id) : undefined}
-                    onDeleteDraft={draftsRecord[widget.id] ? () => handleDeleteDraft(draftsRecord[widget.id].id) : undefined}
+                    onApplyDraft={isEditMode && draftsRecord[widget.id] ? () => handleApplyDraft(draftsRecord[widget.id].id) : undefined}
+                    onDeleteDraft={isEditMode && draftsRecord[widget.id] ? () => handleDeleteDraft(draftsRecord[widget.id].id) : undefined}
                   />
                 </div>
               );
