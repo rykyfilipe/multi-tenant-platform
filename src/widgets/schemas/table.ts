@@ -24,6 +24,7 @@ export const tableStyleSchema = z.object({
 });
 
 export const tableDataSchema = z.object({
+  databaseId: z.number().optional(),
   tableId: z.string().min(1),
   filters: z
     .array(

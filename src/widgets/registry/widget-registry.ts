@@ -1,10 +1,12 @@
 import { WidgetKind } from "@/generated/prisma";
 import { chartWidgetConfigSchema } from "../schemas/chart";
 import { tableWidgetConfigSchema } from "../schemas/table";
+import { kpiWidgetConfigSchema } from "../schemas/kpi";
 import { baseWidgetConfigSchema } from "../schemas/base";
 import { z } from "zod";
 import { ChartWidgetEditor } from "../ui/editors/ChartWidgetEditor";
 import { TableWidgetEditor } from "../ui/editors/TableWidgetEditor";
+import { KPIWidgetEditor } from "../ui/editors/KPIWidgetEditor";
 import { ChartWidgetRenderer } from "../ui/renderers/ChartWidgetRenderer";
 import { TableWidgetRenderer } from "../ui/renderers/TableWidgetRenderer";
 import { KPIWidgetRenderer } from "../ui/renderers/KPIWidgetRenderer";
@@ -18,6 +20,7 @@ type ConfigFromSchema<T extends z.ZodTypeAny> = z.infer<T>;
 type EditorComponent<T extends z.ZodTypeAny> = React.ComponentType<{
   value: ConfigFromSchema<T>;
   onChange: (value: ConfigFromSchema<T>) => void;
+  tenantId: number;
 }>;
 
 type RendererComponent = React.ComponentType<{
@@ -184,31 +187,33 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   },
   [WidgetKind.KPI]: {
     kind: WidgetKind.KPI,
-    schema: chartWidgetConfigSchema,
-    defaultConfig: chartWidgetConfigSchema.parse({
+    schema: kpiWidgetConfigSchema,
+    defaultConfig: kpiWidgetConfigSchema.parse({
       settings: {
-        chartType: "bar",
-        xAxis: "metric",
-        yAxis: "value",
-        refreshInterval: 60,
-        valueFormat: "number",
+        valueField: "value",
+        label: "KPI Value",
+        format: "number",
+        showTrend: true,
+        showComparison: false,
+        aggregation: "sum",
       },
       style: {
         theme: "premium-light",
-        showLegend: false,
-        showGrid: false,
+        backgroundColor: "#ffffff",
+        textColor: "#000000",
+        valueColor: "#2563eb",
+        labelColor: "#666666",
+        trendColor: "#22c55e",
+        size: "medium",
+        alignment: "center",
       },
       data: {
         tableId: "default_kpi",
         filters: [],
-        mappings: {
-          x: "metric",
-          y: "value",
-        },
       },
     }),
-    editor: ChartWidgetEditor,
-    renderer: WeatherWidgetRenderer,
+    editor: KPIWidgetEditor,
+    renderer: KPIWidgetRenderer,
   },
   [WidgetKind.CUSTOM]: {
     kind: WidgetKind.CUSTOM,

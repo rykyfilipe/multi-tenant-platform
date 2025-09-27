@@ -167,7 +167,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       <TabsContent value="canvas" className="h-full w-full relative mt-0">
         {/* Floating Toolbar - Only in Edit Mode */}
         {isEditMode && (
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-background/90 backdrop-blur-xl border border-border/30 rounded-2xl shadow-2xl px-4 py-2">
             <div className="flex items-center space-x-2">
               {/* Widget Types */}
@@ -374,38 +374,112 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           .react-grid-item.cssTransforms {
             transition-property: transform;
           }
+          
+          /* Resize handles - visible and functional */
           .react-grid-item > .react-resizable-handle {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            z-index: 10;
+          }
+          
+          /* Bottom-right resize handle (SE) */
+          .react-grid-item > .react-resizable-handle-se {
             bottom: 0;
             right: 0;
-            background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNiIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgNiA2IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZG90cyBmaWxsPSIjNjY2IiBkPSJtNiAwaDJ2LTJIOHYydjJoLTJ2MmgtMnYtMmgtMnYtMmgydi0yaDJ6Ii8+Cjwvc3ZnPgo=');
-            background-position: bottom right;
-            padding: 0 3px 3px 0;
-            background-repeat: no-repeat;
-            background-origin: content-box;
-            box-sizing: border-box;
+            width: 20px;
+            height: 20px;
             cursor: se-resize;
+            background: linear-gradient(135deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
           }
+          
+          /* Bottom-left resize handle (SW) */
+          .react-grid-item > .react-resizable-handle-sw {
+            bottom: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            cursor: sw-resize;
+            background: linear-gradient(225deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
+          }
+          
+          /* Top-right resize handle (NE) */
+          .react-grid-item > .react-resizable-handle-ne {
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            cursor: ne-resize;
+            background: linear-gradient(45deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
+          }
+          
+          /* Top-left resize handle (NW) */
+          .react-grid-item > .react-resizable-handle-nw {
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nw-resize;
+            background: linear-gradient(315deg, transparent 0%, transparent 40%, rgba(59, 130, 246, 0.3) 40%, rgba(59, 130, 246, 0.3) 50%, transparent 50%);
+          }
+          
+          /* Edge resize handles */
+          .react-grid-item > .react-resizable-handle-n {
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            cursor: n-resize;
+            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+          }
+          
+          .react-grid-item > .react-resizable-handle-s {
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            cursor: s-resize;
+            background: linear-gradient(to top, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+          }
+          
+          .react-grid-item > .react-resizable-handle-e {
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 10px;
+            cursor: e-resize;
+            background: linear-gradient(to left, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+          }
+          
+          .react-grid-item > .react-resizable-handle-w {
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 10px;
+            cursor: w-resize;
+            background: linear-gradient(to right, rgba(59, 130, 246, 0.3) 0%, transparent 100%);
+          }
+          
+          /* Hide handles when not resizable */
           .react-grid-item.react-resizable-hide > .react-resizable-handle {
             display: none;
           }
-          .react-grid-item > .react-resizable-handle::after {
-            content: '';
-            position: absolute;
-            right: 3px;
-            bottom: 3px;
-            width: 5px;
-            height: 5px;
-            border-right: 2px solid rgba(0, 0, 0, 0.4);
-            border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+          
+          /* Show handles on hover */
+          .react-grid-item:hover > .react-resizable-handle {
+            opacity: 1;
           }
+          
+          .react-grid-item > .react-resizable-handle {
+            opacity: 0.7;
+            transition: opacity 200ms ease;
+          }
+          
+          /* Dragging states */
           .react-grid-item.react-draggable-dragging {
             transition: none;
             z-index: 3;
             will-change: transform;
           }
+          
           .react-grid-item.react-grid-placeholder {
             background: rgb(59, 130, 246) !important;
             opacity: 0.2;
@@ -416,16 +490,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             -ms-user-select: none;
             -o-user-select: none;
             user-select: none;
-          }
-          .react-grid-item > .react-resizable-handle {
-            filter: invert(1);
-          }
-          .react-grid-item:hover > .react-resizable-handle {
-            opacity: 1;
-          }
-          .react-grid-item > .react-resizable-handle {
-            opacity: 0;
-            transition: opacity 200ms ease;
           }
         `}</style>
         <WidgetErrorBoundary>
@@ -446,11 +510,24 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             resizeHandles={['se', 'sw', 'ne', 'nw', 'n', 's', 'e', 'w']}
             onLayoutChange={(newLayout) => {
               if (!isEditMode) return;
+              console.log('🎯 [DEBUG] Layout changed:', newLayout);
               newLayout.forEach((item) => {
                 const widgetId = Number(item.i);
                 updateLocal(widgetId, {
                   position: { x: item.x, y: item.y, w: item.w, h: item.h },
                 });
+              });
+            }}
+            onResize={(layout, oldItem, newItem, placeholder, e, element) => {
+              if (!isEditMode) return;
+              console.log('🎯 [DEBUG] Resize event:', { oldItem, newItem });
+            }}
+            onResizeStop={(layout, oldItem, newItem, placeholder, e, element) => {
+              if (!isEditMode) return;
+              console.log('🎯 [DEBUG] Resize stopped:', { oldItem, newItem });
+              const widgetId = Number(newItem.i);
+              updateLocal(widgetId, {
+                position: { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h },
               });
             }}
           >
@@ -566,6 +643,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       {isEditMode && editorWidgetId && (
         <WidgetEditorSheet
           widgetId={editorWidgetId}
+          tenantId={tenantId}
           onClose={closeEditor}
           onSave={(config, title) => {
             updateLocal(editorWidgetId, { config: config as WidgetConfig, title });

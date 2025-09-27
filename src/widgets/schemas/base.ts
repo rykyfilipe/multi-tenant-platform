@@ -15,10 +15,17 @@ export const widgetPositionSchema = z.object({
 
 export const widgetMetadataSchema = z.record(z.string(), z.unknown()).optional();
 
+export const refreshSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  interval: z.number().int().positive().default(30000), // 30 seconds
+  lastRefresh: z.date().optional(),
+});
+
 export const baseWidgetConfigSchema = z.object({
   settings: z.record(z.string(), z.unknown()),
   style: z.record(z.string(), z.unknown()).optional(),
   data: z.record(z.string(), z.unknown()).optional(),
+  refresh: refreshSettingsSchema.optional(),
   metadata: widgetMetadataSchema.optional(),
 });
 

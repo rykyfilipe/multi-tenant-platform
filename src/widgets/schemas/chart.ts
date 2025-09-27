@@ -19,6 +19,7 @@ export const chartStyleSchema = z.object({
 });
 
 export const chartDataSchema = z.object({
+  databaseId: z.number().optional(),
   tableId: z.string().min(1),
   filters: z
     .array(
