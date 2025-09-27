@@ -575,7 +575,8 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
           />
           {editorWidgetId !== null && widgetsRecord[editorWidgetId] && (
             <WidgetEditorSheet
-              widget={widgetsRecord[editorWidgetId]}
+              widgetId={editorWidgetId}
+              tenantId={tenantId}
               onClose={closeEditor}
               onSave={(config, title) => {
                 updateLocal(editorWidgetId, { config: config as WidgetConfig, title });
