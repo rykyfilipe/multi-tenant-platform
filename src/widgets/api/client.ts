@@ -136,6 +136,30 @@ export const useApplyDraft = (tenantId: number, dashboardId: number) => {
       if (response.conflicts.length) {
         setConflicts(response.conflicts);
       } else {
+        // Get pending operations before clearing them
+        const pendingOps = useWidgetsStore.getState().getPending();
+        
+        // First, collect all local widget IDs that were created (have temp IDs >= 1000000)
+        const localWidgetIdsToRemove = new Set<number>();
+        pendingOps.forEach(op => {
+          if (op.kind === "create" && op.widget && (op.widget as WidgetEntity).id >= 1000000) {
+            localWidgetIdsToRemove.add((op.widget as WidgetEntity).id);
+          }
+        });
+        
+        // Remove all local widgets that were created
+        if (localWidgetIdsToRemove.size > 0) {
+          const currentState = useWidgetsStore.getState();
+          const updatedWidgets = { ...currentState.widgets };
+          
+          localWidgetIdsToRemove.forEach(localId => {
+            delete updatedWidgets[localId];
+          });
+          
+          // Update the store with the cleaned widgets
+          useWidgetsStore.setState({ widgets: updatedWidgets });
+        }
+        
         clearPending();
         response.results.forEach((result) => {
           if (result.widget) {

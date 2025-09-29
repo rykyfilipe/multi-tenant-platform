@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 import { useTableRows } from "@/hooks/useDatabaseTables";

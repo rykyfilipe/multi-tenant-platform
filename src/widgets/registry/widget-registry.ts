@@ -16,6 +16,7 @@ import { TableWidgetRenderer } from "../ui/renderers/TableWidgetRenderer";
 import { KPIWidgetRenderer } from "../ui/renderers/KPIWidgetRenderer";
 import { ClockWidgetRenderer } from "../ui/renderers/ClockWidgetRenderer";
 import { WeatherWidgetRenderer } from "../ui/renderers/WeatherWidgetRenderer";
+import { TasksWidgetRenderer } from "../ui/renderers/TasksWidgetRenderer";
 import { CustomWidgetRenderer } from "../ui/renderers/CustomWidgetRenderer";
 import { WidgetEntity } from "../domain/entities";
 
@@ -67,6 +68,10 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
           y: "value",
         },
       },
+      refresh: {
+        enabled: false,
+        interval: 30000,
+      },
     }),
     editor: ChartWidgetEditor,
     renderer: ChartWidgetRenderer,
@@ -97,6 +102,10 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         tableId: "default_table",
         filters: [],
         sort: [],
+      },
+      refresh: {
+        enabled: false,
+        interval: 30000,
       },
     }),
     editor: TableWidgetEditor,
@@ -165,7 +174,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
       },
     },
     editor: TasksWidgetEditor,
-    renderer: KPIWidgetRenderer,
+    renderer: TasksWidgetRenderer,
   },
   [WidgetKind.CLOCK]: {
     kind: WidgetKind.CLOCK,
@@ -315,6 +324,10 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         tableId: "default_kpi",
         filters: [],
       },
+      refresh: {
+        enabled: false,
+        interval: 30000,
+      },
     }),
     editor: KPIWidgetEditor,
     renderer: KPIWidgetRenderer,
@@ -326,11 +339,13 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         title: z.string().default("Custom Widget"),
         description: z.string().default(""),
         customCode: z.string().default(""),
-        contentType: z.enum(["text", "html", "markdown", "json"]).default("text"),
+        contentType: z.enum(["text", "html", "markdown", "json", "javascript"]).default("text"),
         allowEdit: z.boolean().default(false),
         showBorder: z.boolean().default(true),
         enableScrolling: z.boolean().default(true),
         maxHeight: z.number().min(100).max(1000).default(300),
+        sandboxMode: z.boolean().default(true),
+        allowExternalResources: z.boolean().default(false),
       }),
       style: z.object({
         theme: z.enum(["premium-light", "premium-dark", "minimal", "luxury"]).default("premium-light"),
@@ -360,6 +375,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         showBorder: true,
         enableScrolling: true,
         maxHeight: 300,
+        sandboxMode: true,
+        allowExternalResources: false,
       },
       style: {
         theme: "premium-light",

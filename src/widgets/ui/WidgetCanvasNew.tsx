@@ -74,10 +74,34 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           variant: "destructive",
         });
       } else {
-        // Update local state with results instead of reloading from server
+        // First, collect all local widget IDs that were created (have temp IDs >= 1000000)
+        const localWidgetIdsToRemove = new Set<number>();
+        pendingOperations.forEach(op => {
+          if (op.kind === "create" && op.widget && (op.widget as WidgetEntity).id >= 1000000) {
+            localWidgetIdsToRemove.add((op.widget as WidgetEntity).id);
+          }
+        });
+        
+        console.log('🗑️ [DEBUG] Local widget IDs to remove:', Array.from(localWidgetIdsToRemove));
+        
+        // Remove all local widgets that were created
+        if (localWidgetIdsToRemove.size > 0) {
+          const currentState = useWidgetsStore.getState();
+          const updatedWidgets = { ...currentState.widgets };
+          
+          localWidgetIdsToRemove.forEach(localId => {
+            console.log('🗑️ [DEBUG] Removing local widget with ID:', localId);
+            delete updatedWidgets[localId];
+          });
+          
+          // Update the store with the cleaned widgets
+          useWidgetsStore.setState({ widgets: updatedWidgets });
+        }
+        
+        // Now add all the widgets from server results
         response.results.forEach((result) => {
           if (result.widget) {
-            console.log('🔄 [DEBUG] Updating widget in local state:', result.widget.id);
+            console.log('🔄 [DEBUG] Adding widget from server:', result.widget.id);
             upsertWidget(result.widget);
           }
         });
