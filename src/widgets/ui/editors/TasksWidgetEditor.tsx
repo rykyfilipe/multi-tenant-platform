@@ -72,7 +72,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
   const updateRefresh = (updates: Partial<TasksConfig["refresh"]>) => {
     onChange({
       ...value,
-      refresh: { enabled: false, interval: 300000, ...value.refresh, ...updates },
+      refresh: { ...value.refresh, ...updates },
     });
   };
 
@@ -106,7 +106,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                   <Label htmlFor="layout">Layout Style</Label>
                   <Select
                     value={value.style.layout}
-                    onValueChange={(layout) => updateStyle({ layout })}
+                    onValueChange={(layout: "list" | "card" | "kanban") => updateStyle({ layout })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -232,7 +232,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                 <Label htmlFor="theme">Theme</Label>
                 <Select
                   value={value.style.theme}
-                  onValueChange={(theme) => updateStyle({ theme })}
+                  onValueChange={(theme: "premium-light" | "premium-dark" | "minimal" | "luxury") => updateStyle({ theme })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -250,7 +250,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                 <Label htmlFor="density">Density</Label>
                 <Select
                   value={value.style.density}
-                  onValueChange={(density) => updateStyle({ density })}
+                  onValueChange={(density: "compact" | "comfortable" | "spacious") => updateStyle({ density })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -328,7 +328,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                   <Label htmlFor="borderRadius">Border Radius</Label>
                   <Select
                     value={value.style.borderRadius}
-                    onValueChange={(borderRadius) => updateStyle({ borderRadius })}
+                    onValueChange={(borderRadius: "none" | "sm" | "md" | "lg" | "full") => updateStyle({ borderRadius })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -347,7 +347,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                   <Label htmlFor="shadow">Shadow</Label>
                   <Select
                     value={value.style.shadow}
-                    onValueChange={(shadow) => updateStyle({ shadow })}
+                    onValueChange={(shadow: "none" | "sm" | "md" | "lg") => updateStyle({ shadow })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -366,7 +366,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                 <Label htmlFor="padding">Padding</Label>
                 <Select
                   value={value.style.padding}
-                  onValueChange={(padding) => updateStyle({ padding })}
+                  onValueChange={(padding: "tight" | "comfortable" | "spacious") => updateStyle({ padding })}
                 >
                   <SelectTrigger>
                     <SelectValue />

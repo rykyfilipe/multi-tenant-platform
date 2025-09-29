@@ -69,7 +69,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
   const updateRefresh = (updates: Partial<ClockConfig["refresh"]>) => {
     onChange({
       ...value,
-      refresh: { enabled: true, interval: 1000, ...value.refresh, ...updates },
+      refresh: { ...value.refresh, ...updates },
     });
   };
 
@@ -113,7 +113,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                 <Label htmlFor="format">Time Format</Label>
                 <Select
                   value={value.settings.format}
-                  onValueChange={(format) => updateSettings({ format })}
+                  onValueChange={(format: "12h" | "24h") => updateSettings({ format })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -130,7 +130,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
               <Label htmlFor="clockType">Clock Type</Label>
               <Select
                 value={value.settings.clockType}
-                onValueChange={(clockType) => updateSettings({ clockType })}
+                onValueChange={(clockType: "digital" | "analog") => updateSettings({ clockType })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -146,7 +146,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
               <Label htmlFor="dateFormat">Date Format</Label>
               <Select
                 value={value.settings.dateFormat}
-                onValueChange={(dateFormat) => updateSettings({ dateFormat })}
+                onValueChange={(dateFormat: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD") => updateSettings({ dateFormat })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -204,7 +204,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                 <Label htmlFor="theme">Theme</Label>
                 <Select
                   value={value.style.theme}
-                  onValueChange={(theme) => updateStyle({ theme })}
+                  onValueChange={(theme: "premium-light" | "premium-dark" | "minimal" | "luxury") => updateStyle({ theme })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -222,7 +222,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                 <Label htmlFor="fontSize">Font Size</Label>
                 <Select
                   value={value.style.fontSize}
-                  onValueChange={(fontSize) => updateStyle({ fontSize })}
+                  onValueChange={(fontSize: "sm" | "md" | "lg" | "xl" | "2xl") => updateStyle({ fontSize })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -243,7 +243,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                 <Label htmlFor="fontFamily">Font Family</Label>
                 <Select
                   value={value.style.fontFamily}
-                  onValueChange={(fontFamily) => updateStyle({ fontFamily })}
+                  onValueChange={(fontFamily: "sans" | "serif" | "mono") => updateStyle({ fontFamily })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -260,7 +260,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                 <Label htmlFor="alignment">Alignment</Label>
                 <Select
                   value={value.style.alignment}
-                  onValueChange={(alignment) => updateStyle({ alignment })}
+                  onValueChange={(alignment: "left" | "center" | "right") => updateStyle({ alignment })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -325,7 +325,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                   <Label htmlFor="borderRadius">Border Radius</Label>
                   <Select
                     value={value.style.borderRadius}
-                    onValueChange={(borderRadius) => updateStyle({ borderRadius })}
+                    onValueChange={(borderRadius: "none" | "sm" | "md" | "lg" | "full") => updateStyle({ borderRadius })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -344,7 +344,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                   <Label htmlFor="shadow">Shadow</Label>
                   <Select
                     value={value.style.shadow}
-                    onValueChange={(shadow) => updateStyle({ shadow })}
+                    onValueChange={(shadow: "none" | "sm" | "md" | "lg") => updateStyle({ shadow })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -363,7 +363,7 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                 <Label htmlFor="padding">Padding</Label>
                 <Select
                   value={value.style.padding}
-                  onValueChange={(padding) => updateStyle({ padding })}
+                  onValueChange={(padding: "tight" | "comfortable" | "spacious") => updateStyle({ padding })}
                 >
                   <SelectTrigger>
                     <SelectValue />

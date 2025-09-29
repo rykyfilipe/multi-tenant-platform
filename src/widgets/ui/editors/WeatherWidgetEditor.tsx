@@ -71,7 +71,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
   const updateRefresh = (updates: Partial<WeatherConfig["refresh"]>) => {
     onChange({
       ...value,
-      refresh: { enabled: true, interval: 300000, ...value.refresh, ...updates },
+      refresh: { ...value.refresh, ...updates },
     });
   };
 
@@ -108,7 +108,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                   <Label htmlFor="units">Temperature Units</Label>
                   <Select
                     value={value.settings.units}
-                    onValueChange={(units) => updateSettings({ units })}
+                    onValueChange={(units: "metric" | "imperial") => updateSettings({ units })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -143,7 +143,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                 <Label htmlFor="layout">Widget Layout</Label>
                 <Select
                   value={value.style.layout}
-                  onValueChange={(layout) => updateStyle({ layout })}
+                  onValueChange={(layout: "compact" | "detailed" | "forecast-focused") => updateStyle({ layout })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -231,7 +231,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                 <Label htmlFor="theme">Theme</Label>
                 <Select
                   value={value.style.theme}
-                  onValueChange={(theme) => updateStyle({ theme })}
+                  onValueChange={(theme: "premium-light" | "premium-dark" | "minimal" | "luxury") => updateStyle({ theme })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -249,7 +249,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                 <Label htmlFor="alignment">Alignment</Label>
                 <Select
                   value={value.style.alignment}
-                  onValueChange={(alignment) => updateStyle({ alignment })}
+                  onValueChange={(alignment: "left" | "center" | "right") => updateStyle({ alignment })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -327,7 +327,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                   <Label htmlFor="borderRadius">Border Radius</Label>
                   <Select
                     value={value.style.borderRadius}
-                    onValueChange={(borderRadius) => updateStyle({ borderRadius })}
+                    onValueChange={(borderRadius: "none" | "sm" | "md" | "lg" | "full") => updateStyle({ borderRadius })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -346,7 +346,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                   <Label htmlFor="shadow">Shadow</Label>
                   <Select
                     value={value.style.shadow}
-                    onValueChange={(shadow) => updateStyle({ shadow })}
+                    onValueChange={(shadow: "none" | "sm" | "md" | "lg") => updateStyle({ shadow })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -365,7 +365,7 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                 <Label htmlFor="padding">Padding</Label>
                 <Select
                   value={value.style.padding}
-                  onValueChange={(padding) => updateStyle({ padding })}
+                  onValueChange={(padding: "tight" | "comfortable" | "spacious") => updateStyle({ padding })}
                 >
                   <SelectTrigger>
                     <SelectValue />

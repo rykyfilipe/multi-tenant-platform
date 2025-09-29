@@ -72,7 +72,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
   const updateRefresh = (updates: Partial<CustomConfig["refresh"]>) => {
     onChange({
       ...value,
-      refresh: { enabled: false, interval: 300000, ...value.refresh, ...updates },
+      refresh: { ...value.refresh, ...updates },
     });
   };
 
@@ -207,7 +207,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
                 <Label htmlFor="theme">Theme</Label>
                 <Select
                   value={value.style.theme}
-                  onValueChange={(theme) => updateStyle({ theme })}
+                  onValueChange={(theme: "premium-light" | "premium-dark" | "minimal" | "luxury") => updateStyle({ theme })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -225,7 +225,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
                 <Label htmlFor="alignment">Text Alignment</Label>
                 <Select
                   value={value.style.alignment}
-                  onValueChange={(alignment) => updateStyle({ alignment })}
+                  onValueChange={(alignment: "left" | "center" | "right") => updateStyle({ alignment })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -244,7 +244,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
                 <Label htmlFor="fontSize">Font Size</Label>
                 <Select
                   value={value.style.fontSize}
-                  onValueChange={(fontSize) => updateStyle({ fontSize })}
+                  onValueChange={(fontSize: "xs" | "sm" | "md" | "lg" | "xl") => updateStyle({ fontSize })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -263,7 +263,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
                 <Label htmlFor="fontFamily">Font Family</Label>
                 <Select
                   value={value.style.fontFamily}
-                  onValueChange={(fontFamily) => updateStyle({ fontFamily })}
+                  onValueChange={(fontFamily: "sans" | "serif" | "mono") => updateStyle({ fontFamily })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -281,7 +281,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
               <Label htmlFor="lineHeight">Line Height</Label>
               <Select
                 value={value.style.lineHeight}
-                onValueChange={(lineHeight) => updateStyle({ lineHeight })}
+                onValueChange={(lineHeight: "tight" | "normal" | "relaxed") => updateStyle({ lineHeight })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -345,7 +345,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
                   <Label htmlFor="borderRadius">Border Radius</Label>
                   <Select
                     value={value.style.borderRadius}
-                    onValueChange={(borderRadius) => updateStyle({ borderRadius })}
+                    onValueChange={(borderRadius: "none" | "sm" | "md" | "lg" | "full") => updateStyle({ borderRadius })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -364,7 +364,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
                   <Label htmlFor="shadow">Shadow</Label>
                   <Select
                     value={value.style.shadow}
-                    onValueChange={(shadow) => updateStyle({ shadow })}
+                    onValueChange={(shadow: "none" | "sm" | "md" | "lg") => updateStyle({ shadow })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -383,7 +383,7 @@ export const CustomWidgetEditor: React.FC<CustomWidgetEditorProps> = ({
                 <Label htmlFor="padding">Padding</Label>
                 <Select
                   value={value.style.padding}
-                  onValueChange={(padding) => updateStyle({ padding })}
+                  onValueChange={(padding: "tight" | "comfortable" | "spacious") => updateStyle({ padding })}
                 >
                   <SelectTrigger>
                     <SelectValue />
