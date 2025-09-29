@@ -641,7 +641,7 @@ export class InvoiceSystemService {
 			{
 				name: "invoice_id",
 				type: "reference",
-				semanticType: SemanticColumnType.INVOICE_NUMBER,
+				semanticType: SemanticColumnType.REFERENCE,
 				required: true,
 				primary: false,
 				order: 1,
@@ -1796,7 +1796,7 @@ export class InvoiceSystemService {
 		const existingColumns = invoiceItemsTable.columns || [];
 		const requiredColumns = [
 			// Core fields (obligatorii)
-			{ name: "invoice_id", type: "reference", semanticType: SemanticColumnType.INVOICE_NUMBER, order: 1, required: true },
+			{ name: "invoice_id", type: "reference", semanticType: SemanticColumnType.REFERENCE, order: 1, required: true },
 			{ name: "product_ref_table", type: "string", semanticType: SemanticColumnType.REFERENCE, order: 2, required: true },
 			{ name: "product_ref_id", type: "number", semanticType: SemanticColumnType.ID, order: 3, required: true },
 			{ name: "quantity", type: "number", semanticType: SemanticColumnType.QUANTITY, order: 4, required: true },

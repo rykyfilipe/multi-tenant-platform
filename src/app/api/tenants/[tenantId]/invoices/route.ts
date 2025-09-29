@@ -277,7 +277,6 @@ export async function POST(
 
 		// Check if required columns exist using semantic types
 		const requiredSemanticTypes = [
-			"invoice_number", // invoice_id
 			"reference", // product_ref_table
 			"id", // product_ref_id
 			"quantity",
@@ -582,7 +581,7 @@ export async function POST(
 			// Find all columns safely using semantic types
 			const columns = {
 				invoice_id: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "invoice_number",
+					(c: any) => c.semanticType === "reference",
 				),
 				product_ref_table: invoiceTables.invoice_items!.columns!.find(
 					(c: any) => c.semanticType === "reference",
