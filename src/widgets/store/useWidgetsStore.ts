@@ -81,14 +81,31 @@ export const useWidgetsStore = create<PendingChangesState>()(
 
       // Widget operations
       createLocal: (widget) => {
+        // Ensure config has refresh field for backward compatibility
+        const widgetWithRefresh = {
+          ...widget,
+          config: widget.config ? {
+            ...widget.config,
+            refresh: widget.config.refresh || {
+              enabled: false,
+              interval: 30000,
+            }
+          } : {
+            refresh: {
+              enabled: false,
+              interval: 30000,
+            }
+          }
+        };
+
         const definition = getWidgetDefinition(widget.kind);
-        definition.schema.parse(widget.config);
+        definition.schema.parse(widgetWithRefresh.config);
         
         set((state) => ({
-          widgets: { ...state.widgets, [widget.id]: widget },
+          widgets: { ...state.widgets, [widget.id]: widgetWithRefresh },
           pendingOperations: [
             ...state.pendingOperations,
-            { kind: "create", id: `create-${widget.id}`, widget },
+            { kind: "create", id: `create-${widget.id}`, widget: widgetWithRefresh },
           ],
           dirtyWidgetIds: new Set(state.dirtyWidgetIds).add(widget.id),
           history: { ...state.history, [widget.id]: [] },
@@ -99,8 +116,20 @@ export const useWidgetsStore = create<PendingChangesState>()(
       updateLocal: (widgetId, patch) => {
         const existing = get().widgets[widgetId];
         if (!existing) return;
-        
+
         const updated = { ...existing, ...patch } as WidgetEntity;
+
+        // Ensure config has refresh field for backward compatibility
+        if (updated.config && !updated.config.refresh) {
+          updated.config = {
+            ...updated.config,
+            refresh: {
+              enabled: false,
+              interval: 30000,
+            }
+          };
+        }
+
         const definition = getWidgetDefinition(updated.kind);
         definition.schema.parse(updated.config);
         
