@@ -98,11 +98,29 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           useWidgetsStore.setState({ widgets: updatedWidgets });
         }
         
-        // Now add all the widgets from server results
-        response.results.forEach((result) => {
-          if (result.widget) {
-            console.log('🔄 [DEBUG] Adding widget from server:', result.widget.id);
+        // Process all the widgets from server results
+        response.results.forEach((result, index) => {
+          const operation = pendingOperations[index];
+          if (operation?.kind === "create" && result.widget && result.widget.id) {
+            console.log('🔄 [DEBUG] Adding created widget from server:', result.widget.id);
             upsertWidget(result.widget);
+          } else if (operation?.kind === "update" && result.widget && result.widget.id) {
+            console.log('🔄 [DEBUG] Updating widget from server:', result.widget.id);
+            upsertWidget(result.widget);
+          } else if (operation?.kind === "delete") {
+            if (result.widget === null) {
+              console.log('🗑️ [DEBUG] Widget was successfully deleted:', operation.widgetId);
+              // Remove the widget from local state if it exists
+              const currentState = useWidgetsStore.getState();
+              if (currentState.widgets[operation.widgetId]) {
+                const updatedWidgets = { ...currentState.widgets };
+                delete updatedWidgets[operation.widgetId];
+                useWidgetsStore.setState({ widgets: updatedWidgets });
+              }
+            } else if (result.widget && result.widget.id) {
+              console.log('🔄 [DEBUG] Widget still exists after delete operation:', result.widget.id);
+              upsertWidget(result.widget);
+            }
           }
         });
         

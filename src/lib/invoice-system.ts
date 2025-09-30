@@ -1796,13 +1796,14 @@ export class InvoiceSystemService {
 		const existingColumns = invoiceItemsTable.columns || [];
 		const requiredColumns = [
 			// Core fields (obligatorii)
-			{ name: "invoice_id", type: "reference", semanticType: SemanticColumnType.REFERENCE, order: 1, required: true },
-			{ name: "product_ref_table", type: "string", semanticType: SemanticColumnType.REFERENCE, order: 2, required: true },
+			{ name: "invoice_id", type: "reference", semanticType: SemanticColumnType.INVOICE_ID, order: 1, required: true },
+			{ name: "product_ref_table", type: "string", semanticType: SemanticColumnType.PRODUCT_REF_TABLE, order: 2, required: true },
 			{ name: "product_ref_id", type: "number", semanticType: SemanticColumnType.ID, order: 3, required: true },
 			{ name: "quantity", type: "number", semanticType: SemanticColumnType.QUANTITY, order: 4, required: true },
 			{ name: "unit_of_measure", type: "string", semanticType: SemanticColumnType.UNIT_OF_MEASURE, order: 5, required: true },
 			{ name: "price", type: "number", semanticType: SemanticColumnType.UNIT_PRICE, order: 6, required: true },
-			{ name: "currency", type: "string", semanticType: SemanticColumnType.CURRENCY, order: 7, required: true },
+			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 7, required: true },
+			{ name: "currency", type: "string", semanticType: SemanticColumnType.CURRENCY, order: 8, required: true },
 			{ name: "tax_rate", type: "number", semanticType: SemanticColumnType.TAX_RATE, order: 8, required: true },
 			{ name: "tax_amount", type: "number", semanticType: SemanticColumnType.TAX_AMOUNT, order: 9, required: true },
 			

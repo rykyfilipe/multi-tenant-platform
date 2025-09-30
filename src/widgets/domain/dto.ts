@@ -113,7 +113,7 @@ export interface DeleteWidgetParams {
 export const savePendingRequestPayloadSchema = savePendingRequestSchema;
 
 export interface SavePendingOperationResult<TConfig extends WidgetConfig = WidgetConfig> {
-  widget: WidgetEntity<TConfig>;
+  widget: WidgetEntity<TConfig> | null;
   conflict?: ConflictMetadata<TConfig>;
 }
 

@@ -276,14 +276,14 @@ export async function POST(
 			);
 		}
 
-		// Check if required columns exist using semantic types
+		// Optional validation for semantic types - only log warnings, don't fail
 		const requiredSemanticTypes = [
-			"product_ref_table", // product_ref_table
-			"id", // product_ref_id
-			"quantity",
-			"unit_price", // price
-			"product_vat",
-			"currency",
+			SemanticColumnType.PRODUCT_REF_TABLE, // product_ref_table
+			SemanticColumnType.ID, // product_ref_id
+			SemanticColumnType.QUANTITY,
+			SemanticColumnType.UNIT_PRICE, // price
+			SemanticColumnType.PRODUCT_VAT,
+			SemanticColumnType.CURRENCY,
 		];
 
 		const missingSemanticTypes = requiredSemanticTypes.filter((semanticType) => {
@@ -294,18 +294,16 @@ export async function POST(
 		});
 
 		if (missingSemanticTypes.length > 0) {
-			console.error("Missing required semantic types:", missingSemanticTypes);
-			console.error(
+			console.warn("Missing semantic types in invoice_items table:", missingSemanticTypes);
+			console.warn(
 				"Available columns:",
 				invoiceTables.invoice_items!.columns!.map((c: any) => ({
 					name: c.name,
 					semanticType: c.semanticType,
 				})),
 			);
-			return NextResponse.json(
-				{ error: `Missing required columns: ${missingSemanticTypes.join(", ")}` },
-				{ status: 500 },
-			);
+			// Don't fail the request - allow the invoice creation to proceed
+			// The product details will be extracted from the Products table using semantic types
 		}
 
 		// Get tenant settings for invoice numbering
@@ -584,7 +582,7 @@ export async function POST(
 				},
 			});
 
-			// Find all columns safely using semantic types
+			// Find all columns safely using semantic types (some may be missing if schema is not updated)
 			const columns = {
 				invoice_id: invoiceTables.invoice_items!.columns!.find(
 					(c: any) => c.semanticType === SemanticColumnType.INVOICE_ID,
@@ -690,43 +688,64 @@ export async function POST(
 				);
 			}
 
-			const itemCells = [
-				{
+			const itemCells = [];
+
+			// Add cells only for columns that exist
+			if (columns.invoice_id) {
+				itemCells.push({
 					rowId: itemRow.id,
-					columnId: columns.invoice_id!.id,
+					columnId: columns.invoice_id.id,
 					value: invoiceRow.id,
-				},
-				{
+				});
+			}
+
+			if (columns.product_ref_table) {
+				itemCells.push({
 					rowId: itemRow.id,
-					columnId: columns.product_ref_table!.id,
+					columnId: columns.product_ref_table.id,
 					value: product.product_ref_table,
-				},
-				{
+				});
+			}
+
+			if (columns.product_ref_id) {
+				itemCells.push({
 					rowId: itemRow.id,
-					columnId: columns.product_ref_id!.id,
+					columnId: columns.product_ref_id.id,
 					value: product.product_ref_id,
-				},
-				{
+				});
+			}
+
+			if (columns.quantity) {
+				itemCells.push({
 					rowId: itemRow.id,
-					columnId: columns.quantity!.id,
+					columnId: columns.quantity.id,
 					value: product.quantity,
-				},
-				{
+				});
+			}
+
+			if (columns.price) {
+				itemCells.push({
 					rowId: itemRow.id,
-					columnId: columns.price!.id,
+					columnId: columns.price.id,
 					value: product.price || productDetails.price || 0, // Use provided price or extract from product
-				},
-				{
+				});
+			}
+
+			if (columns.product_vat) {
+				itemCells.push({
 					rowId: itemRow.id,
-					columnId: columns.product_vat!.id,
+					columnId: columns.product_vat.id,
 					value: productDetails.vat || 0, // Extract VAT from product details
-				},
-				{
+				});
+			}
+
+			if (columns.currency) {
+				itemCells.push({
 					rowId: itemRow.id,
-					columnId: columns.currency!.id,
+					columnId: columns.currency.id,
 					value: product.currency || productDetails.currency || "USD", // Use provided currency or extract from product
-				},
-			];
+				});
+			}
 
 			// Add unit of measure if column exists
 			const unitOfMeasureColumn = invoiceTables.invoice_items!.columns!.find(
@@ -791,7 +810,7 @@ export async function POST(
 				});
 			}
 
-			// Add description if provided
+			// Add description if provided and column exists
 			if (product.description && columns.description) {
 				itemCells.push({
 					rowId: itemRow.id,

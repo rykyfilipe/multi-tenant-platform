@@ -741,27 +741,8 @@ export class WidgetService {
 
     if (!widget) {
       // Widget doesn't exist - this is actually a successful outcome for delete operation
-      // Return a minimal widget object to satisfy the return type
-      return {
-        widget: {
-          id: op.widgetId,
-          tenantId: request.tenantId,
-          dashboardId: request.dashboardId,
-          kind: WidgetKind.CHART,
-          title: null,
-          description: null,
-          position: { x: 0, y: 0, w: 4, h: 4 },
-          config: getWidgetDefinition(WidgetKind.CHART).defaultConfig as TConfig,
-          isVisible: true,
-          sortOrder: 0,
-          version: 1,
-          schemaVersion: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: request.actorId,
-          updatedBy: request.actorId,
-        } as unknown as WidgetEntity<TConfig>,
-      };
+      // Return null widget to indicate successful deletion of non-existent widget
+      return { widget: null as unknown as WidgetEntity<TConfig> };
     }
 
     if (op.expectedVersion !== undefined && widget.version !== op.expectedVersion) {
