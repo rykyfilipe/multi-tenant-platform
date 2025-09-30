@@ -10,14 +10,12 @@ import { KPIWidgetEditor } from "../ui/editors/KPIWidgetEditor";
 import { ClockWidgetEditor } from "../ui/editors/ClockWidgetEditor";
 import { WeatherWidgetEditor } from "../ui/editors/WeatherWidgetEditor";
 import { TasksWidgetEditor } from "../ui/editors/TasksWidgetEditor";
-import { CustomWidgetEditor } from "../ui/editors/CustomWidgetEditor";
 import { ChartWidgetRenderer } from "../ui/renderers/ChartWidgetRenderer";
 import { TableWidgetRenderer } from "../ui/renderers/TableWidgetRenderer";
 import { KPIWidgetRenderer } from "../ui/renderers/KPIWidgetRenderer";
 import { ClockWidgetRenderer } from "../ui/renderers/ClockWidgetRenderer";
 import { WeatherWidgetRenderer } from "../ui/renderers/WeatherWidgetRenderer";
 import { TasksWidgetRenderer } from "../ui/renderers/TasksWidgetRenderer";
-import { CustomWidgetRenderer } from "../ui/renderers/CustomWidgetRenderer";
 import { WidgetEntity } from "../domain/entities";
 
 type ConfigFromSchema<T extends z.ZodTypeAny> = z.infer<T>;
@@ -331,73 +329,6 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     }),
     editor: KPIWidgetEditor,
     renderer: KPIWidgetRenderer,
-  },
-  [WidgetKind.CUSTOM]: {
-    kind: WidgetKind.CUSTOM,
-    schema: z.object({
-      settings: z.object({
-        title: z.string().default("Custom Widget"),
-        description: z.string().default(""),
-        customCode: z.string().default(""),
-        contentType: z.enum(["text", "html", "markdown", "json", "javascript"]).default("text"),
-        allowEdit: z.boolean().default(false),
-        showBorder: z.boolean().default(true),
-        enableScrolling: z.boolean().default(true),
-        maxHeight: z.number().min(100).max(1000).default(300),
-        sandboxMode: z.boolean().default(true),
-        allowExternalResources: z.boolean().default(false),
-      }),
-      style: z.object({
-        theme: z.enum(["premium-light", "premium-dark", "minimal", "luxury"]).default("premium-light"),
-        backgroundColor: z.string().default("#ffffff"),
-        textColor: z.string().default("#000000"),
-        borderColor: z.string().default("#e5e7eb"),
-        borderRadius: z.enum(["none", "sm", "md", "lg", "full"]).default("md"),
-        shadow: z.enum(["none", "sm", "md", "lg"]).default("sm"),
-        padding: z.enum(["tight", "comfortable", "spacious"]).default("comfortable"),
-        alignment: z.enum(["left", "center", "right"]).default("left"),
-        fontSize: z.enum(["xs", "sm", "md", "lg", "xl"]).default("md"),
-        fontFamily: z.enum(["sans", "serif", "mono"]).default("sans"),
-        lineHeight: z.enum(["tight", "normal", "relaxed"]).default("normal"),
-      }),
-      refresh: z.object({
-        enabled: z.boolean().default(false),
-        interval: z.number().default(300000),
-      }),
-    }),
-    defaultConfig: {
-      settings: {
-        title: "Custom Widget",
-        description: "",
-        customCode: "",
-        contentType: "text",
-        allowEdit: false,
-        showBorder: true,
-        enableScrolling: true,
-        maxHeight: 300,
-        sandboxMode: true,
-        allowExternalResources: false,
-      },
-      style: {
-        theme: "premium-light",
-        backgroundColor: "#ffffff",
-        textColor: "#000000",
-        borderColor: "#e5e7eb",
-        borderRadius: "md",
-        shadow: "sm",
-        padding: "comfortable",
-        alignment: "left",
-        fontSize: "md",
-        fontFamily: "sans",
-        lineHeight: "normal",
-      },
-      refresh: {
-        enabled: false,
-        interval: 300000,
-      },
-    },
-    editor: CustomWidgetEditor,
-    renderer: CustomWidgetRenderer,
   },
 };
 

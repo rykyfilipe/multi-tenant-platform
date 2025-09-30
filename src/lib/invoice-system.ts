@@ -641,7 +641,7 @@ export class InvoiceSystemService {
 			{
 				name: "invoice_id",
 				type: "reference",
-				semanticType: SemanticColumnType.REFERENCE,
+				semanticType: SemanticColumnType.INVOICE_ID,
 				required: true,
 				primary: false,
 				order: 1,
@@ -651,7 +651,7 @@ export class InvoiceSystemService {
 			{
 				name: "product_ref_table",
 				type: "string",
-				semanticType: SemanticColumnType.REFERENCE,
+				semanticType: SemanticColumnType.PRODUCT_REF_TABLE,
 				required: true,
 				primary: false,
 				order: 2,

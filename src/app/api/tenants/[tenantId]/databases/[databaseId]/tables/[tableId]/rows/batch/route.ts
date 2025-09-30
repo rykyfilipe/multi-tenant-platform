@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { updateTenantMemoryUsage } from "@/lib/memory-tracking";
+import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 
 interface BatchRowData {
 	cells: Array<{
@@ -195,12 +196,56 @@ export async function POST(
 				},
 			});
 
-			// Create cells for this row
-			const cellsData = rowData.cells.map((cell) => ({
-				rowId: newRow.id,
-				columnId: cell.columnId,
-				value: cell.value,
-			}));
+			// Create cells for this row with typed fields
+			const cellsData = rowData.cells.map((cell) => {
+				const column = tableColumns.find((col) => col.id === cell.columnId);
+				if (!column) {
+					throw new Error(`Column with ID ${cell.columnId} not found`);
+				}
+
+				let value: string;
+				const cellData: any = {
+					rowId: newRow.id,
+					columnId: cell.columnId,
+					value: cell.value,
+				};
+
+				// Populate typed fields based on column type
+				switch (column.type) {
+					case USER_FRIENDLY_COLUMN_TYPES.number:
+						value = String(cell.value || "");
+						cellData.value = value;
+						if (value !== "" && !isNaN(Number(value))) {
+							cellData.numberValue = Number(value);
+							cellData.stringValue = value;
+						}
+						break;
+
+					case USER_FRIENDLY_COLUMN_TYPES.yesNo:
+						value = String(cell.value || "");
+						cellData.value = value;
+						cellData.booleanValue = value === "true";
+						cellData.stringValue = value;
+						break;
+
+					case USER_FRIENDLY_COLUMN_TYPES.date:
+						value = String(cell.value || "");
+						cellData.value = value;
+						if (value !== "") {
+							cellData.dateValue = new Date(value);
+							cellData.stringValue = value;
+						}
+						break;
+
+					default:
+						value = String(cell.value || "");
+						cellData.value = value;
+						cellData.stringValue = value;
+						break;
+				}
+
+				return cellData;
+			});
 
 			await prisma.cell.createMany({
 				data: cellsData,

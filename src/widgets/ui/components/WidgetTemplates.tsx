@@ -152,7 +152,7 @@ export const WidgetTemplates: React.FC<WidgetTemplatesProps> = ({ onSelectTempla
       case WidgetKind.KPI: return Target;
       case WidgetKind.CLOCK: return Clock;
       case WidgetKind.WEATHER: return CloudSun;
-      case WidgetKind.CUSTOM: return Settings;
+      case WidgetKind.CHART: return BarChart3;
       default: return Settings;
     }
   };

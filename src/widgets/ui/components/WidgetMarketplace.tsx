@@ -74,7 +74,7 @@ const marketplaceWidgets: MarketplaceWidget[] = [
     name: "Social Media Feed",
     description: "Display social media posts from multiple platforms in one widget",
     author: "SocialWidgets",
-    kind: WidgetKind.CUSTOM,
+    kind: WidgetKind.CHART,
     version: "1.5.2",
     downloads: 8930,
     rating: 4.6,
@@ -196,7 +196,7 @@ export const WidgetMarketplace: React.FC<WidgetMarketplaceProps> = ({
       case WidgetKind.KPI: return TrendingUp;
       case WidgetKind.CLOCK: return Clock;
       case WidgetKind.WEATHER: return TrendingUp;
-      case WidgetKind.CUSTOM: return TrendingUp;
+      case WidgetKind.CHART: return BarChart3;
       default: return TrendingUp;
     }
   };

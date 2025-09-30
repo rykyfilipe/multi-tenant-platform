@@ -105,7 +105,13 @@ export const useWidgetsStore = create<PendingChangesState>()(
         };
 
         const definition = getWidgetDefinition(widget.kind);
-        definition.schema.parse(widgetWithRefresh.config);
+        try {
+          definition.schema.parse(widgetWithRefresh.config);
+        } catch (error) {
+          console.warn(`Widget ${widget.id} config validation failed:`, error);
+          // Use default config if validation fails
+          widgetWithRefresh.config = definition.defaultConfig;
+        }
         
         set((state) => ({
           widgets: { ...state.widgets, [widget.id]: widgetWithRefresh },
@@ -137,7 +143,13 @@ export const useWidgetsStore = create<PendingChangesState>()(
         }
 
         const definition = getWidgetDefinition(updated.kind);
-        definition.schema.parse(updated.config);
+        try {
+          definition.schema.parse(updated.config);
+        } catch (error) {
+          console.warn(`Widget ${widgetId} config validation failed:`, error);
+          // Use default config if validation fails
+          updated.config = definition.defaultConfig;
+        }
         
         set((state) => {
           // Save current version to history before updating

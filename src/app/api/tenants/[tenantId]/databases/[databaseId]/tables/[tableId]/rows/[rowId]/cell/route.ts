@@ -135,13 +135,47 @@ export async function POST(
 			);
 		}
 
-		// Creează celula nouă
+		// Creează celula nouă cu câmpuri tipizate
+		const cellData: any = {
+			rowId: Number(rowId),
+			columnId: Number(columnId),
+			value: value,
+		};
+
+		// Populează câmpurile tipizate în funcție de tipul coloanei
+		switch (column.type) {
+			case 'number':
+				cellData.value = String(value || "");
+				if (cellData.value !== "" && !isNaN(Number(cellData.value))) {
+					cellData.numberValue = Number(cellData.value);
+					cellData.stringValue = cellData.value;
+				}
+				break;
+
+			case 'boolean':
+			case 'yesNo':
+				cellData.value = String(value || "");
+				cellData.booleanValue = cellData.value === "true";
+				cellData.stringValue = cellData.value;
+				break;
+
+			case 'date':
+			case 'datetime':
+				cellData.value = String(value || "");
+				if (cellData.value !== "") {
+					cellData.dateValue = new Date(cellData.value);
+					cellData.stringValue = cellData.value;
+				}
+				break;
+
+			default:
+				cellData.value = String(value || "");
+				cellData.stringValue = cellData.value;
+				break;
+		}
+
 		const newCell = await prisma.cell.create({
-			data: {
-				rowId: Number(rowId),
-				columnId: Number(columnId),
-				value: value,
-			},
+			data: cellData,
 			select: {
 				id: true,
 				value: true,

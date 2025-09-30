@@ -573,14 +573,14 @@ export class WidgetService {
       updatedBy: request.actorId,
     });
 
-    const definition = getWidgetDefinition(validated.kind || WidgetKind.CUSTOM);
+    const definition = getWidgetDefinition(validated.kind || WidgetKind.CHART);
     definition.schema.parse(validated.config as TConfig);
 
     const widget = await tx.widget.create({
       data: {
         tenantId: validated.tenantId!,
         dashboardId: validated.dashboardId!,
-        kind: validated.kind || WidgetKind.CUSTOM,
+        kind: validated.kind || WidgetKind.CHART,
         title: validated.title ?? null,
         description: validated.description ?? null,
         position: validated.position as unknown as Prisma.InputJsonValue,
@@ -626,11 +626,11 @@ export class WidgetService {
           id: op.widgetId,
           tenantId: request.tenantId,
           dashboardId: request.dashboardId,
-          kind: WidgetKind.CUSTOM,
+          kind: WidgetKind.CHART,
           title: null,
           description: null,
           position: { x: 0, y: 0, w: 4, h: 4 },
-          config: {} as TConfig,
+          config: getWidgetDefinition(WidgetKind.CHART).defaultConfig as TConfig,
           isVisible: true,
           sortOrder: 0,
           version: 1,
@@ -648,11 +648,11 @@ export class WidgetService {
             id: op.widgetId,
             tenantId: request.tenantId,
             dashboardId: request.dashboardId,
-            kind: WidgetKind.CUSTOM,
+            kind: WidgetKind.CHART,
             title: null,
             description: null,
             position: { x: 0, y: 0, w: 4, h: 4 },
-            config: {} as TConfig,
+            config: getWidgetDefinition(WidgetKind.CHART).defaultConfig as TConfig,
             isVisible: true,
             sortOrder: 0,
             version: 1,
@@ -734,11 +734,11 @@ export class WidgetService {
           id: op.widgetId,
           tenantId: request.tenantId,
           dashboardId: request.dashboardId,
-          kind: WidgetKind.CUSTOM,
+          kind: WidgetKind.CHART,
           title: null,
           description: null,
           position: { x: 0, y: 0, w: 4, h: 4 },
-          config: {} as TConfig,
+          config: getWidgetDefinition(WidgetKind.CHART).defaultConfig as TConfig,
           isVisible: true,
           sortOrder: 0,
           version: 1,

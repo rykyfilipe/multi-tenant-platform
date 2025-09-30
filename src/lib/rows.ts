@@ -125,10 +125,42 @@ export async function createRowWithCells(
 				break;
 		}
 
-		return {
+		// Prepare cell data with appropriate typed fields
+		const cellData: any = {
 			columnId: col.id,
 			value,
 		};
+
+		// Populate typed fields based on column type for better filtering
+		switch (col.type) {
+			case USER_FRIENDLY_COLUMN_TYPES.number:
+				if (value !== "" && !isNaN(Number(value))) {
+					cellData.numberValue = Number(value);
+					cellData.stringValue = value;
+				}
+				break;
+
+			case USER_FRIENDLY_COLUMN_TYPES.yesNo:
+				cellData.booleanValue = value === "true";
+				cellData.stringValue = value;
+				break;
+
+			case USER_FRIENDLY_COLUMN_TYPES.date:
+				if (value !== "") {
+					cellData.dateValue = new Date(value);
+					cellData.stringValue = value;
+				}
+				break;
+
+			case USER_FRIENDLY_COLUMN_TYPES.text:
+			case USER_FRIENDLY_COLUMN_TYPES.link:
+			case USER_FRIENDLY_COLUMN_TYPES.customArray:
+			default:
+				cellData.stringValue = value;
+				break;
+		}
+
+		return cellData;
 	});
 
 	// Adăugăm coloanele care NU sunt în cells, dar NU sunt required (valori goale)
@@ -137,10 +169,34 @@ export async function createRowWithCells(
 			!cellsToCreateWithoutRowId.some((c) => c.columnId === col.id) &&
 			!col.required
 		) {
-			cellsToCreateWithoutRowId.push({
+			const emptyCellData: any = {
 				columnId: col.id,
 				value: "",
-			});
+			};
+
+			// Populate typed fields for empty cells
+			switch (col.type) {
+				case USER_FRIENDLY_COLUMN_TYPES.number:
+					emptyCellData.numberValue = null;
+					emptyCellData.stringValue = "";
+					break;
+
+				case USER_FRIENDLY_COLUMN_TYPES.yesNo:
+					emptyCellData.booleanValue = null;
+					emptyCellData.stringValue = "";
+					break;
+
+				case USER_FRIENDLY_COLUMN_TYPES.date:
+					emptyCellData.dateValue = null;
+					emptyCellData.stringValue = "";
+					break;
+
+				default:
+					emptyCellData.stringValue = "";
+					break;
+			}
+
+			cellsToCreateWithoutRowId.push(emptyCellData);
 		}
 	}
 

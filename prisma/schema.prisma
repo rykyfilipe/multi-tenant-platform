@@ -725,7 +725,6 @@ enum WidgetKind {
   CLOCK
   WEATHER
   KPI
-  CUSTOM
 }
 
 enum WidgetDraftStatus {

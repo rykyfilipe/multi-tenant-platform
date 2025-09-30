@@ -1,6 +1,6 @@
 /** @format */
 
-import { NextRequest, NextResponse } from "next/server";	
+import { NextRequest, NextResponse } from "next/server";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 import { InvoiceSystemService, CreateInvoiceRequest } from "@/lib/invoice-system";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import {
 	extractProductDetails,
 	getValidationMessage,
 } from "@/lib/semantic-helpers";
+import { SemanticColumnType } from "@/lib/semantic-types";
 
 const CreateInvoiceSchema = z.object({
 	customer_id: z.number().min(1, "Customer is required"),
@@ -586,10 +587,10 @@ export async function POST(
 			// Find all columns safely using semantic types
 			const columns = {
 				invoice_id: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "reference",
+					(c: any) => c.semanticType === SemanticColumnType.INVOICE_ID,
 				),
 				product_ref_table: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "reference",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_REF_TABLE,
 				),
 				product_ref_id: invoiceTables.invoice_items!.columns!.find(
 					(c: any) => c.semanticType === "id",

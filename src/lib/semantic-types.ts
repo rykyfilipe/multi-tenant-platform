@@ -61,6 +61,8 @@ export enum SemanticColumnType {
 	INVOICE_SWIFT_CODE = "invoice_swift_code",
 	INVOICE_IBAN = "invoice_iban",
 	INVOICE_CURRENCY = "invoice_currency",
+	INVOICE_ID = "invoice_id",
+	PRODUCT_REF_TABLE = "product_ref_table",
 
 	// Order/Quantity related
 	QUANTITY = "quantity",

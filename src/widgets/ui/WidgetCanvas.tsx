@@ -114,7 +114,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     if (!operations.length) return;
     await api.createDraft({
       actorId,
-      kind: WidgetKind.CUSTOM,
+      kind: WidgetKind.CHART,
       config: { settings: {}, style: {}, data: {} },
       title: "Draft from pending",
       operations,
@@ -169,7 +169,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const handleCreateDraft = async () => {
     await api.createDraft({
       actorId,
-      kind: WidgetKind.CUSTOM,
+      kind: WidgetKind.CHART,
       config: { settings: {}, style: {}, data: {} },
       title: "New Draft",
     });

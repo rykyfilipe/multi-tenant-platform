@@ -69,7 +69,7 @@ export const useKeyboardShortcuts = (config: KeyboardShortcutsConfig) => {
       case 'u':
         if (isModifierPressed && shiftKey) {
           preventDefault();
-          config.onAddWidget?.(WidgetKind.CUSTOM);
+          config.onAddWidget?.(WidgetKind.CHART);
         }
         break;
 

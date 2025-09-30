@@ -2,7 +2,7 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "public"."WidgetKind" AS ENUM ('CHART', 'TABLE', 'TASKS', 'CLOCK', 'WEATHER', 'KPI', 'CUSTOM');
+CREATE TYPE "public"."WidgetKind" AS ENUM ('CHART', 'TABLE', 'TASKS', 'CLOCK', 'WEATHER', 'KPI');
 
 -- CreateEnum
 CREATE TYPE "public"."WidgetDraftStatus" AS ENUM ('PENDING', 'READY', 'APPLIED', 'DISCARDED', 'CONFLICT');

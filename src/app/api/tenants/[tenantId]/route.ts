@@ -126,6 +126,11 @@ export async function PATCH(
 			]),
 		);
 
+		// Get current tenant data for comparison
+		const currentTenant = await prisma.tenant.findUnique({
+			where: { id: tenant_id },
+		});
+
 		const updatedTenant = await prisma.tenant.update({
 			where: { id: tenant_id },
 			data: cleanUpdateData,
@@ -133,6 +138,62 @@ export async function PATCH(
 				users: true,
 			},
 		});
+
+		// If invoiceSeriesPrefix was updated, manage default invoice series
+		if (cleanUpdateData.invoiceSeriesPrefix && cleanUpdateData.invoiceSeriesPrefix !== currentTenant?.invoiceSeriesPrefix) {
+			try {
+				// Find the default database for this tenant
+				const defaultDatabase = await prisma.database.findFirst({
+					where: {
+						tenantId: tenant_id,
+						isDefault: true,
+					},
+				});
+
+				if (defaultDatabase) {
+					// Check if a series with this prefix already exists
+					const existingSeries = await prisma.invoiceSeries.findFirst({
+						where: {
+							tenantId: tenant_id,
+							databaseId: defaultDatabase.id,
+							series: cleanUpdateData.invoiceSeriesPrefix,
+						},
+					});
+
+					if (existingSeries) {
+						// Update existing series with new settings
+						await prisma.invoiceSeries.update({
+							where: { id: existingSeries.id },
+							data: {
+								currentNumber: cleanUpdateData.invoiceStartNumber ? cleanUpdateData.invoiceStartNumber - 1 : existingSeries.currentNumber,
+								includeYear: cleanUpdateData.invoiceIncludeYear ?? existingSeries.includeYear,
+							},
+						});
+					} else {
+						// Check if any series exist for this tenant, if not, create a default one
+						const allSeries = await prisma.invoiceSeries.findMany({
+							where: { tenantId: tenant_id },
+						});
+
+						if (allSeries.length === 0) {
+							await prisma.invoiceSeries.create({
+								data: {
+									tenantId: tenant_id,
+									databaseId: defaultDatabase.id,
+									series: cleanUpdateData.invoiceSeriesPrefix,
+									prefix: cleanUpdateData.invoiceSeriesPrefix,
+									currentNumber: cleanUpdateData.invoiceStartNumber ? cleanUpdateData.invoiceStartNumber - 1 : 0,
+									includeYear: cleanUpdateData.invoiceIncludeYear ?? true,
+								},
+							});
+						}
+					}
+				}
+			} catch (seriesError) {
+				console.error("Error managing invoice series:", seriesError);
+				// Don't fail the tenant update if series management fails
+			}
+		}
 
 		return NextResponse.json(updatedTenant);
 	} catch (error) {

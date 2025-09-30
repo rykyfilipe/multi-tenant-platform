@@ -97,7 +97,7 @@ export const WidgetSearch: React.FC<WidgetSearchProps> = ({
     { value: WidgetKind.KPI, label: "KPI" },
     { value: WidgetKind.WEATHER, label: "Weather" },
     { value: WidgetKind.CLOCK, label: "Clock" },
-    { value: WidgetKind.CUSTOM, label: "Custom" },
+    { value: WidgetKind.CHART, label: "Chart" },
   ];
 
   return (

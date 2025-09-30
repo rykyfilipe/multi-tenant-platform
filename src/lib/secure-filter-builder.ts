@@ -314,20 +314,65 @@ export class SecureFilterBuilder {
    */
   private buildNumericCondition(operator: string, value: any): any {
     const numericValue = Number(value);
-    
+
+    // Try numberValue first, then fallback to value field for backward compatibility
+    return {
+      OR: [
+        // Primary: use numberValue if it exists and is not null
+        {
+          AND: [
+            { numberValue: { not: null } },
+            this.buildSimpleNumericCondition('numberValue', operator, numericValue)
+          ]
+        },
+        // Fallback: parse value field as string and compare
+        {
+          AND: [
+            { numberValue: null },
+            { value: { not: null } },
+            this.buildJsonNumericCondition(operator, numericValue)
+          ]
+        }
+      ]
+    };
+  }
+
+  private buildSimpleNumericCondition(fieldName: string, operator: string, numericValue: number): any {
     switch (operator) {
       case 'equals':
-        return { numberValue: { equals: numericValue } };
+        return { [fieldName]: { equals: numericValue } };
       case 'not_equals':
-        return { numberValue: { not: { equals: numericValue } } };
+        return { [fieldName]: { not: { equals: numericValue } } };
       case 'greater_than':
-        return { numberValue: { gt: numericValue } };
+        return { [fieldName]: { gt: numericValue } };
       case 'greater_than_or_equal':
-        return { numberValue: { gte: numericValue } };
+        return { [fieldName]: { gte: numericValue } };
       case 'less_than':
-        return { numberValue: { lt: numericValue } };
+        return { [fieldName]: { lt: numericValue } };
       case 'less_than_or_equal':
-        return { numberValue: { lte: numericValue } };
+        return { [fieldName]: { lte: numericValue } };
+      default:
+        return null;
+    }
+  }
+
+  private buildJsonNumericCondition(operator: string, numericValue: number): any {
+    // For JSON value field, convert to string and use string comparison
+    // This is an approximation since JSON doesn't support numeric operators directly
+    switch (operator) {
+      case 'equals':
+        return { value: { equals: numericValue.toString() } };
+      case 'not_equals':
+        return { value: { not: { equals: numericValue.toString() } } };
+      case 'greater_than':
+        // Use string comparison - this is approximate
+        return { value: { gt: numericValue.toString() } };
+      case 'greater_than_or_equal':
+        return { value: { gte: numericValue.toString() } };
+      case 'less_than':
+        return { value: { lt: numericValue.toString() } };
+      case 'less_than_or_equal':
+        return { value: { lte: numericValue.toString() } };
       default:
         return null;
     }
@@ -338,15 +383,26 @@ export class SecureFilterBuilder {
    */
   private buildBooleanCondition(operator: string, value: any): any {
     const booleanValue = Boolean(value);
-    
-    switch (operator) {
-      case 'equals':
-        return { booleanValue: { equals: booleanValue } };
-      case 'not_equals':
-        return { booleanValue: { not: { equals: booleanValue } } };
-      default:
-        return null;
-    }
+
+    return {
+      OR: [
+        // Primary: use booleanValue if it exists and is not null
+        {
+          AND: [
+            { booleanValue: { not: null } },
+            { booleanValue: { [operator === 'equals' ? 'equals' : 'not']: booleanValue } }
+          ]
+        },
+        // Fallback: parse value field as string
+        {
+          AND: [
+            { booleanValue: null },
+            { value: { not: null } },
+            { value: { [operator === 'equals' ? 'equals' : 'not']: booleanValue.toString() } }
+          ]
+        }
+      ]
+    };
   }
 
   /**

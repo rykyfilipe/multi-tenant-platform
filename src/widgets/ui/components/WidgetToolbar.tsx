@@ -64,9 +64,9 @@ const widgetTypes = [
     color: "bg-yellow-500",
   },
   {
-    kind: WidgetKind.CUSTOM,
-    label: "Custom",
-    description: "Custom widget",
+    kind: WidgetKind.CHART,
+    label: "Chart",
+    description: "Chart widget",
     icon: Settings,
     color: "bg-gray-500",
   },

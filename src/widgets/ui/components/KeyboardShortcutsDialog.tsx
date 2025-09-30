@@ -25,7 +25,7 @@ const shortcuts: KeyboardShortcut[] = [
   { keys: ["Ctrl", "Shift", "K"], description: "Add KPI Widget", category: "Widget Creation" },
   { keys: ["Ctrl", "Shift", "W"], description: "Add Weather Widget", category: "Widget Creation" },
   { keys: ["Ctrl", "Shift", "L"], description: "Add Clock Widget", category: "Widget Creation" },
-  { keys: ["Ctrl", "Shift", "U"], description: "Add Custom Widget", category: "Widget Creation" },
+  { keys: ["Ctrl", "Shift", "U"], description: "Add Chart Widget", category: "Widget Creation" },
   
   // General Operations
   { keys: ["Ctrl", "S"], description: "Save Pending Changes", category: "General" },

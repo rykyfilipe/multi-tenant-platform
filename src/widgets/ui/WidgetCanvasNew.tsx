@@ -425,9 +425,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.CUSTOM)}
+                  onClick={() => handleAddWidget(WidgetKind.CHART)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
-                  title="Add Custom Widget"
+                  title="Add Chart Widget"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>

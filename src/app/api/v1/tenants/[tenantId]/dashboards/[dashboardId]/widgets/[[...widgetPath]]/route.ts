@@ -221,7 +221,7 @@ export async function POST(
   console.log('✅ [DEBUG] createWidgetPayloadSchema parsed:', data);
   
   console.log('🔍 [DEBUG] Getting widget definition...');
-  const definition = getWidgetDefinition(data.kind || WidgetKind.CUSTOM);
+  const definition = getWidgetDefinition(data.kind || WidgetKind.CHART);
   console.log('✅ [DEBUG] Widget definition:', definition);
 
   const actorId = getActorId(request);
