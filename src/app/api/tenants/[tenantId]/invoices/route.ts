@@ -564,9 +564,14 @@ export async function POST(
 			}
 		}
 
+		// Remove duplicate cells before creating
+		const uniqueInvoiceCells = invoiceCells.filter((cell, index, self) => 
+			index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
+		);
+
 		// Create all invoice cells
 		await prisma.cell.createMany({
-			data: invoiceCells,
+			data: uniqueInvoiceCells,
 		});
 
 		// Create invoice items with full product details
@@ -794,8 +799,13 @@ export async function POST(
 				});
 			}
 
+			// Remove duplicate cells before creating
+			const uniqueItemCells = itemCells.filter((cell, index, self) => 
+				index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
+			);
+
 			await prisma.cell.createMany({
-				data: itemCells,
+				data: uniqueItemCells,
 			});
 
 			invoiceItemRows.push(itemRow);
