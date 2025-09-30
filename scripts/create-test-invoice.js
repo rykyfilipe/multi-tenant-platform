@@ -5,7 +5,7 @@
  * that can be used for ANAF e-Factura testing
  */
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../src/generated/prisma');
 require('dotenv').config();
 
 const prisma = new PrismaClient();
@@ -15,9 +15,7 @@ async function createTestInvoice() {
   
   try {
     // Get the first tenant
-    const tenant = await prisma.tenant.findFirst({
-      where: { name: { not: null } }
-    });
+    const tenant = await prisma.tenant.findFirst();
     
     if (!tenant) {
       throw new Error('No tenant found. Please create a tenant first.');

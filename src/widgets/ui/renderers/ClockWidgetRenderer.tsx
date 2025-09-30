@@ -34,7 +34,9 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
   const style = config?.style || {};
   const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
 
-  const timezone = settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezone = settings.timezone && settings.timezone !== "local"
+    ? settings.timezone
+    : Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const format24h = settings.format === "12h" ? false : true;
   const showDate = settings.showDate !== false;
   const showSeconds = settings.showSeconds !== false;

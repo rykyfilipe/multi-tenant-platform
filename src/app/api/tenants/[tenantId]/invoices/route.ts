@@ -278,7 +278,7 @@ export async function POST(
 
 		// Check if required columns exist using semantic types
 		const requiredSemanticTypes = [
-			"reference", // product_ref_table
+			"product_ref_table", // product_ref_table
 			"id", // product_ref_id
 			"quantity",
 			"unit_price", // price
@@ -593,43 +593,43 @@ export async function POST(
 					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_REF_TABLE,
 				),
 				product_ref_id: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "id",
+					(c: any) => c.semanticType === SemanticColumnType.ID,
 				),
 				quantity: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "quantity",
+					(c: any) => c.semanticType === SemanticColumnType.QUANTITY,
 				),
 				price: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "unit_price",
+					(c: any) => c.semanticType === SemanticColumnType.UNIT_PRICE,
 				),
 				product_vat: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_vat",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_VAT,
 				),
 				currency: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "currency",
+					(c: any) => c.semanticType === SemanticColumnType.CURRENCY,
 				),
 				product_name: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_name",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_NAME,
 				),
 				product_description: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_description",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_DESCRIPTION,
 				),
 				product_category: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_category",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_CATEGORY,
 				),
 				product_sku: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_sku",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_SKU,
 				),
 				product_brand: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_brand",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_BRAND,
 				),
 				product_weight: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_weight",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_WEIGHT,
 				),
 				product_dimensions: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "product_dimensions",
+					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_DIMENSIONS,
 				),
 				description: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === "description",
+					(c: any) => c.semanticType === SemanticColumnType.DESCRIPTION,
 				),
 			};
 
@@ -730,7 +730,7 @@ export async function POST(
 
 			// Add unit of measure if column exists
 			const unitOfMeasureColumn = invoiceTables.invoice_items!.columns!.find(
-				(c: any) => c.semanticType === "unit_of_measure",
+				(c: any) => c.semanticType === SemanticColumnType.UNIT_OF_MEASURE,
 			);
 			if (unitOfMeasureColumn && product.unit_of_measure) {
 				itemCells.push({

@@ -96,7 +96,14 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
     humidity: 65,
     windSpeed: 12,
     location: location,
-    icon: 'partly-cloudy'
+    icon: 'partly-cloudy',
+    forecast: [
+      { date: 'Tomorrow', temperature: 24, condition: 'Sunny', icon: 'sunny' },
+      { date: 'Day After', temperature: 26, condition: 'Cloudy', icon: 'cloudy' },
+      { date: 'Day 3', temperature: 23, condition: 'Rainy', icon: 'rainy' },
+      { date: 'Day 4', temperature: 25, condition: 'Partly Cloudy', icon: 'partly-cloudy' },
+      { date: 'Day 5', temperature: 27, condition: 'Sunny', icon: 'sunny' }
+    ]
   };
 
   return (
@@ -141,7 +148,7 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
           <div className="w-full">
             <h4 className="text-sm font-medium mb-3 text-center">Forecast</h4>
             <div className="space-y-2">
-              {currentWeather.forecast.slice(0, forecastDays).map((day, index) => (
+              {currentWeather.forecast.slice(0, forecastDays).map((day: any, index: number) => (
                 <div key={index} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{day.date}</span>
                   <div className="flex items-center gap-2">

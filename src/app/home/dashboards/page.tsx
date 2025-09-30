@@ -25,7 +25,7 @@ interface DashboardSummary {
 }
 
 export default function DashboardsPage() {
-  const { tenant, user } = useApp();
+  const { tenant, user, token } = useApp();
   const toast = useToast();
   const [selectedDashboardId, setSelectedDashboardId] = useState<number | null>(null);
   const [dashboards, setDashboards] = useState<DashboardSummary[]>([]);
@@ -271,13 +271,18 @@ export default function DashboardsPage() {
       const defaultForm = {
         name: 'My Dashboard',
         description: 'Default dashboard',
-        isPublic: false
+        mode: 'view',
+        isPublic: false,
+        isDefault: false
       };
 
       console.log('🆕 Creating default dashboard with data:', defaultForm);
       const res = await fetch('/api/dashboards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(defaultForm),
       });
 

@@ -48,7 +48,14 @@ export const useWeather = (location: string, apiKey?: string) => {
           humidity: 65,
           windSpeed: 12,
           location: location,
-          icon: 'partly-cloudy'
+          icon: 'partly-cloudy',
+          forecast: [
+            { date: 'Tomorrow', temperature: 24, condition: 'Sunny', icon: 'sunny' },
+            { date: 'Day After', temperature: 26, condition: 'Cloudy', icon: 'cloudy' },
+            { date: 'Day 3', temperature: 23, condition: 'Rainy', icon: 'rainy' },
+            { date: 'Day 4', temperature: 25, condition: 'Partly Cloudy', icon: 'partly-cloudy' },
+            { date: 'Day 5', temperature: 27, condition: 'Sunny', icon: 'sunny' }
+          ]
         });
       } finally {
         setLoading(false);
