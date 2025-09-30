@@ -540,13 +540,33 @@ export const useWidgetsStore = create<PendingChangesState>()(
       },
 
       clearPending: () => {
-        set({
-          pendingOperations: [],
-          dirtyWidgetIds: new Set<number>(),
-          history: {},
-          redoHistory: {},
-          conflicts: [],
-          activeConflict: null,
+        set((state) => {
+          // Clean up history for non-existent widgets
+          const cleanedHistory: Record<number, WidgetEntity[]> = {};
+          Object.entries(state.history).forEach(([widgetId, history]) => {
+            if (state.widgets[Number(widgetId)]) {
+              cleanedHistory[Number(widgetId)] = history;
+            }
+          });
+
+          // Clean up redo history for non-existent widgets
+          const cleanedRedoHistory: Record<number, WidgetEntity[]> = {};
+          Object.entries(state.redoHistory).forEach(([widgetId, redoHistory]) => {
+            if (state.widgets[Number(widgetId)]) {
+              cleanedRedoHistory[Number(widgetId)] = redoHistory;
+            }
+          });
+
+          const newState = {
+            pendingOperations: [],
+            dirtyWidgetIds: new Set<number>(),
+            history: cleanedHistory,
+            redoHistory: cleanedRedoHistory,
+            conflicts: [],
+            activeConflict: null,
+          };
+
+          return newState;
         });
       },
 

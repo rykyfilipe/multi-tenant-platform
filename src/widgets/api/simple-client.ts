@@ -195,6 +195,8 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     try {
       const data = await apiClient.fetchWidgets(includeConfig);
       setWidgets(data.items as WidgetEntity[]);
+      // Clear pending operations when loading widgets for a new dashboard context
+      clearPending();
       return data;
     } catch (error) {
       console.error("Failed to load widgets:", error);

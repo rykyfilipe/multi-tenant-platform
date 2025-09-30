@@ -101,13 +101,15 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     loadData();
   }, [tenantId, dashboardId]);
 
-  const layout: Layout[] = widgetList.map((widget) => ({
-    i: widget.id.toString(),
-    x: widget.position.x,
-    y: widget.position.y,
-    w: widget.position.w,
-    h: widget.position.h,
-  }));
+  const layout: Layout[] = useMemo(() =>
+    widgetList.map((widget) => ({
+      i: widget.id.toString(),
+      x: widget.position.x,
+      y: widget.position.y,
+      w: widget.position.w,
+      h: widget.position.h,
+    })), [widgetList]
+  );
 
   const handleSaveLocalAsDraft = async () => {
     const operations = getPending();
@@ -240,7 +242,15 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   };
 
   const handleDeleteSelected = () => {
-    selectedWidgets.forEach(widgetId => deleteLocal(widgetId));
+    // Create a copy of selected widgets to avoid mutation during iteration
+    const widgetsToDelete = Array.from(selectedWidgets);
+    widgetsToDelete.forEach(widgetId => {
+      try {
+        deleteLocal(widgetId);
+      } catch (error) {
+        console.error(`Failed to delete widget ${widgetId}:`, error);
+      }
+    });
     setSelectedWidgets(new Set());
   };
 
@@ -600,12 +610,18 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
               <WidgetErrorBoundary>
                 <GridLayout className="layout" layout={layout} cols={12} rowHeight={30} width={1200}
                   onLayoutChange={(newLayout) => {
-                    newLayout.forEach((item) => {
-                      const widgetId = Number(item.i);
-                      handleWidgetUpdate(widgetId, {
-                        position: { x: item.x, y: item.y, w: item.w, h: item.h },
+                    // Use setTimeout to ensure state updates are processed before layout changes
+                    setTimeout(() => {
+                      newLayout.forEach((item) => {
+                        const widgetId = Number(item.i);
+                        // Only update if widget still exists in the store
+                        if (widgetsRecord[widgetId]) {
+                          handleWidgetUpdate(widgetId, {
+                            position: { x: item.x, y: item.y, w: item.w, h: item.h },
+                          });
+                        }
                       });
-                    });
+                    }, 0);
                   }}
                 >
                   {(filteredWidgets.length > 0 ? filteredWidgets : widgetList).map((widget) => {

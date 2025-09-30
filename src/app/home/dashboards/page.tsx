@@ -59,33 +59,47 @@ export default function DashboardsPage() {
 
   useEffect(() => {
     const loadDashboards = async () => {
-      console.log('📊 Starting to load dashboards...');
+      console.log('📊 Starting to load dashboards...', { tenantId: tenant?.id, userId: user?.id });
       try {
         setIsLoading(true);
         console.log('🌐 Fetching from /api/dashboards');
-        const res = await fetch('/api/dashboards');
+
+        // Add authentication headers if available
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+
+        console.log('🔐 Token available:', !!token);
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+          console.log('🔐 Adding Authorization header');
+        } else {
+          console.log('❌ No token available');
+        }
+
+        const res = await fetch('/api/dashboards', { headers });
         console.log('📡 Response status:', res.status, res.statusText);
-        
+
         if (!res.ok) {
           console.error('❌ Failed to load dashboards:', res.status, res.statusText);
           throw new Error(`Failed to load dashboards: ${res.status} ${res.statusText}`);
         }
-        
+
         const data = (await res.json()) as { dashboards?: DashboardSummary[]; pagination?: unknown };
         console.log('📋 Raw API response:', data);
-        
+
         const dashboardList = data.dashboards ?? [];
         console.log('📊 Dashboard list:', dashboardList);
-        
+
         setDashboards(dashboardList);
-        
+
         const defaultDashboard = dashboardList.find((d) => d.isDefault) ?? dashboardList[0];
         console.log('🎯 Default dashboard:', defaultDashboard);
-        
+
         setSelectedDashboardId(defaultDashboard?.id ?? null);
         console.log('✅ Selected dashboard ID set to:', defaultDashboard?.id ?? null);
         setIsLoading(false);
-        
+
       } catch (error) {
         console.error('💥 Error loading dashboards:', error);
         toast.toast({
@@ -99,8 +113,11 @@ export default function DashboardsPage() {
       }
     };
 
-    loadDashboards();
-  }, []); // Empty dependency array - load dashboards only once on mount
+    // Only load if we have tenant and user context
+    if (tenant?.id && user?.id && !isLoading) {
+      loadDashboards();
+    }
+  }, [tenant?.id, user?.id, token]); // Reload when authentication context changes
 
   const dashboardName = useMemo(() => {
     console.log('🏷️ Computing dashboard name:', { selectedDashboardId, dashboardsCount: dashboards.length });
@@ -146,11 +163,16 @@ export default function DashboardsPage() {
       setSelectedDashboardId(newDashboard.id);
       setIsCreateModalOpen(false);
       setCreateForm({ name: '', description: '', isPublic: false });
-      
+
       toast.toast({
         title: 'Success',
         description: 'Dashboard created successfully.',
       });
+
+      // Refresh dashboard list after a short delay to ensure consistency
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('💥 Error creating dashboard:', error);
       toast.toast({
