@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ export default function DashboardsPage() {
   const [actorId, setActorId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const loadingRef = useRef(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
@@ -60,7 +61,15 @@ export default function DashboardsPage() {
   useEffect(() => {
     const loadDashboards = async () => {
       console.log('📊 Starting to load dashboards...', { tenantId: tenant?.id, userId: user?.id });
+
+      // Prevent multiple concurrent requests
+      if (loadingRef.current) {
+        console.log('🔄 Already loading, skipping...');
+        return;
+      }
+
       try {
+        loadingRef.current = true;
         setIsLoading(true);
         console.log('🌐 Fetching from /api/dashboards');
 
@@ -110,11 +119,12 @@ export default function DashboardsPage() {
       } finally {
         console.log('🏁 Loading completed, setting isLoading to false');
         setIsLoading(false);
+        loadingRef.current = false;
       }
     };
 
-    // Only load if we have tenant and user context
-    if (tenant?.id && user?.id && !isLoading) {
+    // Only load if we have tenant and user context and not already loading
+    if (tenant?.id && user?.id && !loadingRef.current) {
       loadDashboards();
     }
   }, [tenant?.id, user?.id, token]); // Reload when authentication context changes
