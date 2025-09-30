@@ -530,6 +530,19 @@ export class WidgetService {
     conflicts.forEach(() => recordConflict());
     recordDuration(Date.now() - start);
 
+    // Invalidate cache after widget operations to ensure consistency
+    if (results.length > 0 || conflicts.length > 0) {
+      try {
+        // Access the global prisma client to invalidate cache
+        const { default: globalPrisma } = await import("@/lib/prisma");
+        if (globalPrisma?.invalidateCacheByTags) {
+          globalPrisma.invalidateCacheByTags(["widget"]);
+        }
+      } catch (error) {
+        console.warn("Failed to invalidate widget cache:", error);
+      }
+    }
+
     return { results, conflicts };
   }
 

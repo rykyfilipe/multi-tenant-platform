@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { hasWidgetId } from "@/widgets/utils/pendingHelpers";
@@ -306,7 +306,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     Object.values(restoredWidgets).forEach(widget => {
       upsertWidget(widget);
     });
-    
+
     // Remove widgets that are not in the restored state
     const restoredIds = new Set(Object.keys(restoredWidgets).map(Number));
     Object.keys(widgetsRecord).forEach(id => {
@@ -316,12 +316,22 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     });
   }, [upsertWidget, deleteLocal, widgetsRecord]);
 
+  // Enhanced widget update function that triggers undo/redo history
+  const handleWidgetUpdate = useCallback((widgetId: number, updates: Partial<WidgetEntity>) => {
+    updateLocal(widgetId, updates);
+    // The UndoRedo component will auto-save when widgets change due to the useEffect
+  }, [updateLocal]);
+
+  // Undo/Redo functions for keyboard shortcuts
+  const undoRef = useRef<{ undo: () => void } | null>(null);
+  const redoRef = useRef<{ redo: () => void } | null>(null);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onAddWidget: handleAddWidget,
     onSave: () => console.log('Save pending changes'),
-    onUndo: () => console.log('Undo'),
-    onRedo: () => console.log('Redo'),
+    onUndo: () => undoRef.current?.undo(),
+    onRedo: () => redoRef.current?.redo(),
     onDelete: handleDeleteSelected,
     onDuplicate: handleDuplicateSelected,
     onSelectAll: handleSelectAll,
@@ -501,10 +511,12 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               <PendingChangesBadge />
-              <UndoRedo 
+              <UndoRedo
                 widgets={widgetsRecord}
                 onRestoreState={handleRestoreState}
                 onAction={(action) => console.log('Action:', action)}
+                undoRef={undoRef}
+                redoRef={redoRef}
               />
             </div>
             <div className="flex gap-2">
@@ -579,7 +591,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
               tenantId={tenantId}
               onClose={closeEditor}
               onSave={(config, title) => {
-                updateLocal(editorWidgetId, { config: config as WidgetConfig, title });
+                handleWidgetUpdate(editorWidgetId, { config: config as WidgetConfig, title });
                 closeEditor();
               }}
             />
@@ -590,7 +602,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                   onLayoutChange={(newLayout) => {
                     newLayout.forEach((item) => {
                       const widgetId = Number(item.i);
-                      updateLocal(widgetId, {
+                      handleWidgetUpdate(widgetId, {
                         position: { x: item.x, y: item.y, w: item.w, h: item.h },
                       });
                     });

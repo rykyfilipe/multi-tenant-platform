@@ -79,7 +79,7 @@ export const BulkOperations: React.FC<BulkOperationsProps> = ({
         <Checkbox
           checked={isAllSelected}
           ref={(el) => {
-            if (el) el.indeterminate = isPartiallySelected;
+            if (el) (el as HTMLInputElement).indeterminate = isPartiallySelected;
           }}
           onCheckedChange={handleSelectAll}
         />

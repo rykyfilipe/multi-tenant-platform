@@ -24,12 +24,16 @@ interface UndoRedoProps {
   widgets: Record<number, WidgetEntity>;
   onRestoreState: (widgets: Record<number, WidgetEntity>) => void;
   onAction: (action: string) => void;
+  undoRef?: React.MutableRefObject<{ undo: () => void } | null>;
+  redoRef?: React.MutableRefObject<{ redo: () => void } | null>;
 }
 
 export const UndoRedo: React.FC<UndoRedoProps> = ({
   widgets,
   onRestoreState,
   onAction,
+  undoRef,
+  redoRef,
 }) => {
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -98,6 +102,16 @@ export const UndoRedo: React.FC<UndoRedoProps> = ({
       saveToHistory("Auto-save");
     }
   }, [widgets, saveToHistory, isUndoRedo]);
+
+  // Set refs for keyboard shortcuts
+  useEffect(() => {
+    if (undoRef) {
+      undoRef.current = { undo };
+    }
+    if (redoRef) {
+      redoRef.current = { redo };
+    }
+  }, [undo, redo, undoRef, redoRef]);
 
   const canUndo = currentIndex > 0;
   const canRedo = currentIndex < history.length - 1;
