@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, WidgetDraft, Widget, type WidgetKind } from "@/generated/prisma";
+import { Prisma, PrismaClient, WidgetDraft, Widget, WidgetKind } from "@/generated/prisma";
 import type {
   ConflictMetadata,
   DraftCreateOperation,
@@ -573,14 +573,14 @@ export class WidgetService {
       updatedBy: request.actorId,
     });
 
-    const definition = getWidgetDefinition(validated.kind);
+    const definition = getWidgetDefinition(validated.kind || WidgetKind.CUSTOM);
     definition.schema.parse(validated.config as TConfig);
 
     const widget = await tx.widget.create({
       data: {
-        tenantId: validated.tenantId,
-        dashboardId: validated.dashboardId,
-        kind: validated.kind,
+        tenantId: validated.tenantId!,
+        dashboardId: validated.dashboardId!,
+        kind: validated.kind || WidgetKind.CUSTOM,
         title: validated.title ?? null,
         description: validated.description ?? null,
         position: validated.position as unknown as Prisma.InputJsonValue,
@@ -626,10 +626,10 @@ export class WidgetService {
           id: op.widgetId,
           tenantId: request.tenantId,
           dashboardId: request.dashboardId,
-          kind: "CUSTOM" as WidgetKind,
+          kind: WidgetKind.CUSTOM,
           title: null,
           description: null,
-          position: null,
+          position: { x: 0, y: 0, w: 4, h: 4 },
           config: {} as TConfig,
           isVisible: true,
           sortOrder: 0,
@@ -639,7 +639,7 @@ export class WidgetService {
           updatedAt: new Date(),
           createdBy: request.actorId,
           updatedBy: request.actorId,
-        } as WidgetEntity<TConfig>,
+        } as unknown as WidgetEntity<TConfig>,
         conflict: {
           widgetId: op.widgetId,
           localVersion: op.expectedVersion || 1,
@@ -648,10 +648,10 @@ export class WidgetService {
             id: op.widgetId,
             tenantId: request.tenantId,
             dashboardId: request.dashboardId,
-            kind: "CUSTOM" as WidgetKind,
+            kind: WidgetKind.CUSTOM,
             title: null,
             description: null,
-            position: null,
+            position: { x: 0, y: 0, w: 4, h: 4 },
             config: {} as TConfig,
             isVisible: true,
             sortOrder: 0,
@@ -661,7 +661,7 @@ export class WidgetService {
             updatedAt: new Date(),
             createdBy: request.actorId,
             updatedBy: request.actorId,
-          } as WidgetEntity<TConfig>,
+          } as unknown as WidgetEntity<TConfig>,
         },
       };
     }
@@ -734,10 +734,10 @@ export class WidgetService {
           id: op.widgetId,
           tenantId: request.tenantId,
           dashboardId: request.dashboardId,
-          kind: "CUSTOM" as WidgetKind,
+          kind: WidgetKind.CUSTOM,
           title: null,
           description: null,
-          position: null,
+          position: { x: 0, y: 0, w: 4, h: 4 },
           config: {} as TConfig,
           isVisible: true,
           sortOrder: 0,
@@ -747,7 +747,7 @@ export class WidgetService {
           updatedAt: new Date(),
           createdBy: request.actorId,
           updatedBy: request.actorId,
-        } as WidgetEntity<TConfig>,
+        } as unknown as WidgetEntity<TConfig>,
       };
     }
 

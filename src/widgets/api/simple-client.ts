@@ -4,6 +4,7 @@ import type {
   SavePendingResponse,
   CreateDraftParams,
   UpdateDraftParams,
+  DraftListResponse,
 } from "@/widgets/domain/dto";
 import { WidgetKind } from "@/generated/prisma";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
@@ -185,6 +186,8 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
   const apiClient = new WidgetsApiClient(tenantId, dashboardId);
   const setWidgets = useWidgetsStore((state) => state.setWidgets);
   const setConflicts = useWidgetsStore((state) => state.setConflicts);
+  const setDrafts = useWidgetsStore((state) => state.setDrafts);
+  const removeDraft = useWidgetsStore((state) => state.removeDraft);
   const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
   const clearPending = useWidgetsStore((state) => state.clearPending);
 
@@ -227,17 +230,85 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
   const savePending = async (payload: Omit<SavePendingRequest, "tenantId" | "dashboardId">) => {
     try {
       const response = await apiClient.savePending(payload);
-      
+
       if (response.conflicts.length) {
         setConflicts(response.conflicts);
       } else {
         setConflicts([]);
         // Note: Don't reload widgets - let the caller handle state updates
       }
-      
+
       return response;
     } catch (error) {
       console.error("Failed to save pending:", error);
+      throw error;
+    }
+  };
+
+  const loadDrafts = async () => {
+    try {
+      const data = await apiClient.fetchDrafts();
+      setDrafts(data.drafts as WidgetDraftEntity[]);
+      return data;
+    } catch (error) {
+      console.error("Failed to load drafts:", error);
+      throw error;
+    }
+  };
+
+  const createDraft = async (payload: Omit<CreateDraftParams, "tenantId" | "dashboardId"> & { actorId: number }) => {
+    try {
+      const draft = await apiClient.createDraft(payload);
+      // Update the drafts in store - get current drafts from store
+      const currentDrafts = useWidgetsStore.getState().drafts;
+      setDrafts([...Object.values(currentDrafts), draft]);
+      return draft;
+    } catch (error) {
+      console.error("Failed to create draft:", error);
+      throw error;
+    }
+  };
+
+  const applyDraft = async (draftId: number, actorId: number) => {
+    try {
+      const response = await apiClient.applyDraft(draftId, actorId);
+
+      if (response.conflicts.length) {
+        setConflicts(response.conflicts);
+      } else {
+        // Remove the applied draft from store
+        removeDraft(draftId);
+        setConflicts([]);
+        // Note: Don't reload widgets - let the caller handle state updates
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Failed to apply draft:", error);
+      throw error;
+    }
+  };
+
+  const deleteDraft = async (draftId: number, actorId: number) => {
+    try {
+      await apiClient.deleteDraft(draftId, actorId);
+      // Remove the draft from store
+      removeDraft(draftId);
+    } catch (error) {
+      console.error("Failed to delete draft:", error);
+      throw error;
+    }
+  };
+
+  const resolveDraftConflict = async (draftId: number, actorId: number, merge: Partial<WidgetEntity>) => {
+    try {
+      const draft = await apiClient.resolveDraftConflict(draftId, actorId, merge);
+      // Update the draft in store
+      const currentDrafts = useWidgetsStore.getState().drafts;
+      setDrafts([...Object.values(currentDrafts).filter(d => d.id !== draftId), draft]);
+      return draft;
+    } catch (error) {
+      console.error("Failed to resolve draft conflict:", error);
       throw error;
     }
   };
@@ -246,5 +317,10 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     loadWidgets,
     createWidget,
     savePending,
+    loadDrafts,
+    createDraft,
+    applyDraft,
+    deleteDraft,
+    resolveDraftConflict,
   };
 };

@@ -30,6 +30,10 @@ export interface ListWidgetsResponse<TConfig extends WidgetConfig = WidgetConfig
   total: number;
 }
 
+export interface DraftListResponse {
+  drafts: WidgetDraftEntity[];
+}
+
 export interface GetWidgetParams {
   tenantId: number;
   dashboardId: number;

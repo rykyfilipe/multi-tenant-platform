@@ -1,19 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { ConflictMetadata, DraftOperation, WidgetEntity } from "../domain/entities";
+import { ConflictMetadata, DraftOperation, WidgetEntity, WidgetDraftEntity } from "../domain/entities";
 import { getWidgetDefinition } from "../registry/widget-registry";
 import { hasWidgetId } from "../utils/pendingHelpers";
 
 export interface PendingChangesState {
   // Core state
   widgets: Record<number, WidgetEntity>;
+  drafts: Record<number, WidgetDraftEntity>;
   pendingOperations: DraftOperation[];
   dirtyWidgetIds: Set<number>;
-  
+
   // History management
   history: Record<number, WidgetEntity[]>;
   redoHistory: Record<number, WidgetEntity[]>;
-  
+
   // Conflict management
   conflicts: ConflictMetadata[];
   activeConflict: ConflictMetadata | null;
@@ -48,6 +49,10 @@ export interface PendingChangesState {
     updatedOperations: DraftOperation[]
   ) => void;
   finalizeConflict: (widgetId: number, widget?: WidgetEntity) => void;
+
+  // Draft operations
+  setDrafts: (drafts: WidgetDraftEntity[]) => void;
+  removeDraft: (draftId: number) => void;
   clearConflicts: () => void;
   closeActiveConflict: () => void;
 }
@@ -68,13 +73,14 @@ export const useWidgetsStore = create<PendingChangesState>()(
     (set, get) => ({
       // Core state
       widgets: {},
+      drafts: {},
       pendingOperations: [],
       dirtyWidgetIds: new Set<number>(),
-      
+
       // History management
       history: {},
       redoHistory: {},
-      
+
       // Conflict management
       conflicts: [],
       activeConflict: null,
@@ -586,11 +592,26 @@ export const useWidgetsStore = create<PendingChangesState>()(
       
       clearConflicts: () => set({ conflicts: [], activeConflict: null }),
       closeActiveConflict: () => set({ activeConflict: null }),
+
+      // Draft operations
+      setDrafts: (drafts) =>
+        set((state) => ({
+          drafts: drafts.reduce((acc, draft) => {
+            acc[draft.id] = draft;
+            return acc;
+          }, {} as Record<number, WidgetDraftEntity>),
+        })),
+      removeDraft: (draftId) =>
+        set((state) => {
+          const { [draftId]: removed, ...remainingDrafts } = state.drafts;
+          return { drafts: remainingDrafts };
+        }),
     }),
     {
       name: "widgets-pending-store",
       partialize: (state) => ({
         widgets: state.widgets,
+        drafts: state.drafts,
         pendingOperations: state.pendingOperations,
         history: state.history,
         redoHistory: state.redoHistory,
