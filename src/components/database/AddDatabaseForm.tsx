@@ -54,6 +54,7 @@ function AddDatabaseForm({ setShowForm }: Props) {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${token}`,
 				},
+				body: JSON.stringify({ name }),
 			});
 
 			if (!response.ok) {

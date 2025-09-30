@@ -90,14 +90,12 @@ export const useWidgetsStore = create<PendingChangesState>()(
         // Ensure config has refresh field for backward compatibility
         const widgetWithRefresh = {
           ...widget,
-          config: widget.config ? {
-            ...widget.config,
-            refresh: widget.config.refresh || {
-              enabled: false,
-              interval: 30000,
-            }
-          } : {
-            refresh: {
+          config: {
+            settings: (widget.config as any)?.settings || {},
+            style: (widget.config as any)?.style || {},
+            data: (widget.config as any)?.data || {},
+            metadata: (widget.config as any)?.metadata || {},
+            refresh: (widget.config as any)?.refresh || {
               enabled: false,
               interval: 30000,
             }
@@ -131,11 +129,28 @@ export const useWidgetsStore = create<PendingChangesState>()(
 
         const updated = { ...existing, ...patch } as WidgetEntity;
 
-        // Ensure config has refresh field for backward compatibility
-        if (updated.config && !updated.config.refresh) {
+        // Ensure config has all required fields for backward compatibility
+        if (updated.config) {
           updated.config = {
-            ...updated.config,
-            refresh: {
+            settings: (updated.config as any)?.settings || {},
+            style: (updated.config as any)?.style || {},
+            data: (updated.config as any)?.data || {},
+            metadata: (updated.config as any)?.metadata || {},
+            refresh: (updated.config as any)?.refresh || {
+              enabled: false,
+              interval: 30000,
+            }
+          };
+        }
+
+        // Also ensure existing widget has correct config structure for history
+        if (existing.config) {
+          existing.config = {
+            settings: (existing.config as any)?.settings || {},
+            style: (existing.config as any)?.style || {},
+            data: (existing.config as any)?.data || {},
+            metadata: (existing.config as any)?.metadata || {},
+            refresh: (existing.config as any)?.refresh || {
               enabled: false,
               interval: 30000,
             }
@@ -463,15 +478,62 @@ export const useWidgetsStore = create<PendingChangesState>()(
       },
 
       upsertWidget: (widget) => {
+        // Ensure config has all required fields for backward compatibility
+        const widgetWithCorrectConfig = {
+          ...widget,
+          config: widget.config ? {
+            settings: (widget.config as any)?.settings || {},
+            style: (widget.config as any)?.style || {},
+            data: (widget.config as any)?.data || {},
+            metadata: (widget.config as any)?.metadata || {},
+            refresh: (widget.config as any)?.refresh || {
+              enabled: false,
+              interval: 30000,
+            }
+          } : {
+            settings: {},
+            style: {},
+            data: {},
+            metadata: {},
+            refresh: {
+              enabled: false,
+              interval: 30000,
+            }
+          }
+        };
+
         set((state) => ({
-          widgets: { ...state.widgets, [widget.id]: widget },
+          widgets: { ...state.widgets, [widget.id]: widgetWithCorrectConfig },
         }));
       },
 
       setWidgets: (widgets) => {
         set(() => ({
           widgets: widgets.reduce<Record<number, WidgetEntity>>((acc, widget) => {
-            acc[widget.id] = widget;
+            // Ensure config has all required fields for backward compatibility
+            const widgetWithCorrectConfig = {
+              ...widget,
+              config: widget.config ? {
+                settings: (widget.config as any)?.settings || {},
+                style: (widget.config as any)?.style || {},
+                data: (widget.config as any)?.data || {},
+                metadata: (widget.config as any)?.metadata || {},
+                refresh: (widget.config as any)?.refresh || {
+                  enabled: false,
+                  interval: 30000,
+                }
+              } : {
+                settings: {},
+                style: {},
+                data: {},
+                metadata: {},
+                refresh: {
+                  enabled: false,
+                  interval: 30000,
+                }
+              }
+            };
+            acc[widget.id] = widgetWithCorrectConfig;
             return acc;
           }, {}),
         }));
@@ -628,7 +690,39 @@ export const useWidgetsStore = create<PendingChangesState>()(
         history: state.history,
         redoHistory: state.redoHistory,
       }),
-      version: 3, // Increment version due to new state structure
+      version: 5, // Force reset due to CUSTOM widget removal and schema changes
+      migrate: (persistedState: any, version: number) => {
+        if (version < 4) {
+          console.log('🔄 Migrating widget store from version', version, 'to version 4');
+
+          // Remove any CUSTOM widgets from persisted state
+          if (persistedState.widgets) {
+            const filteredWidgets: Record<number, any> = {};
+            Object.entries(persistedState.widgets).forEach(([id, widget]: [string, any]) => {
+              if (widget.kind !== 'CUSTOM') {
+                filteredWidgets[Number(id)] = widget;
+              } else {
+                console.log('🗑️ Removing CUSTOM widget from persisted state:', id);
+              }
+            });
+            persistedState.widgets = filteredWidgets;
+          }
+
+          // Also clean pending operations that reference CUSTOM widgets
+          if (persistedState.pendingOperations) {
+            persistedState.pendingOperations = persistedState.pendingOperations.filter((op: any) => {
+              if (op.widget && op.widget.kind === 'CUSTOM') {
+                console.log('🗑️ Removing CUSTOM widget operation from persisted state:', op.id);
+                return false;
+              }
+              return true;
+            });
+          }
+
+          console.log('✅ Widget store migration completed');
+        }
+        return persistedState;
+      },
     }
   )
 );

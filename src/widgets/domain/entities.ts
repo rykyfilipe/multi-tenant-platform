@@ -16,6 +16,11 @@ export interface WidgetConfig<TSettings = unknown, TStyle = unknown, TData = unk
   settings: TSettings;
   style?: TStyle;
   data?: TData;
+  refresh?: {
+    enabled: boolean;
+    interval: number;
+    lastRefresh?: Date;
+  };
   metadata?: Record<string, unknown>;
 }
 
