@@ -7,6 +7,9 @@ import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/sessi
 import { z } from "zod";
 import { colExists } from "@/lib/utils";
 import { Column } from "@/types/database";
+import { getServerSession } from 'next-auth';
+import { getToken } from 'next-auth/jwt';
+import { authOptions } from '@/lib/auth';
 
 // === VALIDARE ===
 const ColumnSchema = z.object({
@@ -73,29 +76,6 @@ export async function POST(
 	},
 ) {
 	const { tenantId, databaseId, tableId } = await params;
-	const sessionResult = await requireAuthResponse();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
-	}
-	const userId = getUserId(sessionResult);
-
-	// Check tenant access
-	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
-	if (tenantAccessError) {
-		return tenantAccessError;
-	}
-
-	// Check table edit permissions for column operations instead of hard-coded role check
-	const canEdit = await checkTableEditPermission(
-		userId,
-		Number(tableId),
-		Number(tenantId),
-	);
-	if (!canEdit)
-		return NextResponse.json(
-			{ error: "Insufficient permissions to edit columns in this table" },
-			{ status: 403 },
-		);
 
 	try {
 		const body = await request.json();
@@ -319,16 +299,85 @@ export async function GET(
 	},
 ) {
 	const { tenantId, databaseId, tableId } = await params;
-	const sessionResult = await requireAuthResponse();
-	if (sessionResult instanceof NextResponse) {
-		return sessionResult;
+
+	// Try multiple authentication methods
+	let userId: number | null = null;
+	let tenantIdFromAuth: number | null = null;
+	let role: string | null = null;
+
+	// Method 1: Try NextAuth session
+	const session = await getServerSession(authOptions);
+	console.log('🔐 Columns Session check:', {
+		hasSession: !!session,
+		userId: session?.user?.id,
+		tenantId: session?.user?.tenantId,
+		email: session?.user?.email
+	});
+
+	if (session?.user?.id && session.user.tenantId) {
+		userId = Number(session.user.id);
+		tenantIdFromAuth = Number(session.user.tenantId);
+		role = session.user.role || null;
+		console.log('✅ Using NextAuth session for columns:', { userId, tenantId: tenantIdFromAuth, role });
+	} else {
+		// Method 2: Try JWT token from cookies (NextAuth format)
+		console.log('🔍 Trying cookie-based authentication for columns...');
+		try {
+			const jwtToken = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
+			if (jwtToken?.id && jwtToken?.tenantId) {
+				userId = Number(jwtToken.id);
+				tenantIdFromAuth = Number(jwtToken.tenantId);
+				role = jwtToken.role || null;
+				console.log('✅ Using cookie JWT token for columns:', { userId, tenantId: tenantIdFromAuth, role });
+			}
+		} catch (error) {
+			console.log('❌ Cookie JWT token validation failed for columns:', error);
+		}
+
+		// Method 3: Try Authorization header as fallback
+		if (!userId || !tenantIdFromAuth) {
+			console.log('🔍 Trying Authorization header authentication for columns...');
+			const authHeader = request.headers.get('authorization');
+			if (authHeader?.startsWith('Bearer ')) {
+				const token = authHeader.substring(7);
+				try {
+					// For custom JWT tokens, we need to decode them manually
+					const jwt = require('jsonwebtoken');
+					const decoded = jwt.verify(token, process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET);
+					if (decoded?.userId || decoded?.id) {
+						userId = decoded.userId || decoded.id;
+						console.log('✅ Using custom JWT token for columns:', { userId });
+
+						// Look up tenantId from user if not provided in token
+						if (!tenantIdFromAuth && userId) {
+							console.log('🔍 Looking up tenantId for user in columns:', userId);
+							const user = await prisma.user.findUnique({
+								where: { id: userId },
+								select: { tenantId: true, role: true }
+							});
+							if (user?.tenantId) {
+								tenantIdFromAuth = user.tenantId;
+								role = user.role || null;
+								console.log('✅ Found tenantId for columns:', tenantIdFromAuth, 'role:', role);
+							}
+						}
+					}
+				} catch (error) {
+					console.log('❌ Custom JWT token validation failed for columns:', error);
+				}
+			}
+		}
 	}
-	const userId = getUserId(sessionResult);
+
+	if (!userId || !tenantIdFromAuth) {
+		console.log('❌ No valid authentication found for columns');
+		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
 	// Check tenant access
-	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
-	if (tenantAccessError) {
-		return tenantAccessError;
+	if (String(tenantIdFromAuth) !== tenantId) {
+		console.log('❌ Tenant access denied for columns:', { userTenantId: tenantIdFromAuth, requestedTenantId: tenantId });
+		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 	}
 
 	try {
@@ -361,11 +410,23 @@ export async function GET(
 			return NextResponse.json({ error: "Table not found" }, { status: 404 });
 		}
 
+		// Check table edit permissions for column operations instead of hard-coded role check
+		const canEdit = await checkTableEditPermission(
+			userId!,
+			Number(tableId),
+			Number(tenantId),
+		);
+		if (!canEdit)
+			return NextResponse.json(
+				{ error: "Insufficient permissions to edit columns in this table" },
+				{ status: 403 },
+			);
+
 		// Verificăm permisiunile pentru utilizatorii non-admin
-		if (sessionResult.user.role !== "ADMIN") {
+		if (role! !== "ADMIN") {
 			const permission = await prisma.tablePermission.findFirst({
 				where: {
-					userId: userId,
+					userId: userId!,
 					tableId: Number(tableId),
 					canRead: true,
 				},
@@ -381,11 +442,12 @@ export async function GET(
 			(a: { order: number }, b: { order: number }) => a.order - b.order,
 		);
 		return NextResponse.json(sortedColumns);
-	} catch (error) {
-		console.error("Error fetching columns:", error);
-		return NextResponse.json(
-			{ error: "Failed to fetch columns" },
-			{ status: 500 },
-		);
-	}
+		} catch (error) {
+			console.error("Error fetching columns:", error);
+			return NextResponse.json(
+				{ error: "Failed to fetch columns" },
+				{ status: 500 },
+			);
+		}
+	
 }

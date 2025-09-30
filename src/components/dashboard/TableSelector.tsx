@@ -137,18 +137,28 @@ export function TableSelector({
 		setAllTablesError(null);
 		
 		try {
+			console.log('[TableSelector] Fetching tables with:', {
+				tenantId: tenant.id,
+				hasToken: !!token,
+				tokenLength: token?.length || 0
+			});
+
 			const response = await fetch(`/api/tenants/${tenant.id}/databases/tables?includePredefined=true`, {
 				headers: {
 					'Authorization': `Bearer ${token}`
 				}
 			});
-			
+
+			console.log('[TableSelector] Response status:', response.status, response.statusText);
+
 			if (response.ok) {
 				const tables = await response.json();
 				console.log('[TableSelector] Loaded all tables', tables);
 				setAllTables(tables);
 			} else {
-				throw new Error(`Failed to fetch tables: ${response.statusText}`);
+				const errorText = await response.text();
+				console.error('[TableSelector] API Error response:', errorText);
+				throw new Error(`Failed to fetch tables: ${response.statusText} - ${errorText}`);
 			}
 		} catch (error) {
 			console.error('Error fetching all tables:', error);
@@ -206,17 +216,30 @@ export function TableSelector({
 		setIsLoadingColumns(true);
 		setColumnsError(null);
 		try {
+			console.log('[TableSelector] Fetching columns with:', {
+				tenantId: tenant?.id,
+				databaseId: tableDatabaseId,
+				tableId,
+				hasToken: !!token,
+				tokenLength: token?.length || 0
+			});
+
 			const response = await fetch(`/api/tenants/${tenant?.id}/databases/${tableDatabaseId}/tables/${tableId}/columns`, {
 				headers: {
 					'Authorization': `Bearer ${token}`
 				}
 			});
+
+			console.log('[TableSelector] Columns response status:', response.status, response.statusText);
+
 			if (response.ok) {
 				const cols = await response.json();
 				console.log('[TableSelector] Loaded columns', cols);
 				setColumns(cols);
 			} else {
-				throw new Error(`Failed to fetch columns: ${response.statusText}`);
+				const errorText = await response.text();
+				console.error('[TableSelector] Columns API Error response:', errorText);
+				throw new Error(`Failed to fetch columns: ${response.statusText} - ${errorText}`);
 			}
 		} catch (e) {
 			console.error('[TableSelector] Error loading columns:', e);
