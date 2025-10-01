@@ -28,8 +28,9 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const data = config?.data || {};
   
   const valueField = settings.valueField || 'value';
-  // Normalize displayField: treat "none", empty string, or undefined as no display field
-  const displayField = settings.displayField && settings.displayField !== "none" ? settings.displayField : undefined;
+  // Support both old (displayField) and new (displayFields) for backward compatibility
+  const displayFields = settings.displayFields || 
+    (settings.displayField && settings.displayField !== "none" ? [settings.displayField] : []);
   const label = settings.label || 'KPI Value';
   const format = settings.format || 'number';
   const aggregation = settings.aggregation || 'sum';
@@ -41,10 +42,11 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const extremeValueMode = settings.extremeValueMode || 'max';
   
   console.log('🔍 [KPI] Display settings:', {
-    displayField,
+    displayFields,
     showExtremeValueDetails,
     extremeValueMode,
-    rawDisplayField: settings.displayField
+    rawDisplayField: settings.displayField,
+    rawDisplayFields: settings.displayFields
   });
   
   const databaseId = data.databaseId;
@@ -92,17 +94,17 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     onRefresh: refetch
   });
 
-  // Helper function to find row with extreme value and extract display column
+  // Helper function to find row with extreme value and extract display columns
   const findExtremeValueRow = useMemo(() => {
     console.log('🔍 [KPI] findExtremeValueRow check:', {
       hasData: !!rawData?.data,
       dataLength: rawData?.data?.length,
       valueField,
-      displayField,
+      displayFields,
       showExtremeValueDetails
     });
     
-    if (!rawData?.data || !valueField || !displayField) {
+    if (!rawData?.data || !valueField || !displayFields || displayFields.length === 0) {
       console.log('🔍 [KPI] findExtremeValueRow early return - missing required data');
       return null;
     }
@@ -138,16 +140,22 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       }
     });
 
+    // Extract values for selected display fields
+    const displayValues: Record<string, any> = {};
+    displayFields.forEach((field: string) => {
+      displayValues[field] = extremeRow.rowData[field];
+    });
+
     const result = {
       calculationValue: parseFloat(extremeRow.rowData[valueField]),
-      displayValue: extremeRow.rowData[displayField],
+      displayValues,
       rowData: extremeRow.rowData
     };
     
     console.log('🔍 [KPI] findExtremeValueRow result:', result);
     
     return result;
-  }, [rawData, valueField, displayField, extremeValueMode]);
+  }, [rawData, valueField, displayFields, extremeValueMode]);
 
   // Calculate KPI values based on selected aggregations
   const kpiValues = useMemo(() => {
@@ -313,9 +321,16 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               }`}
               style={{ color: style.valueColor }}
             >
-              {showExtremeValueDetails && findExtremeValueRow && displayField ? (
-                // Show display value from extreme value row instead of calculation
-                formatDisplayValue(findExtremeValueRow.displayValue)
+              {showExtremeValueDetails && findExtremeValueRow && displayFields.length > 0 ? (
+                // Show display values from extreme value row
+                <div className="space-y-1">
+                  {Object.entries(findExtremeValueRow.displayValues).map(([field, value]) => (
+                    <div key={field} className="flex flex-col">
+                      <span className="text-xs opacity-60 font-normal">{field}:</span>
+                      <span>{formatDisplayValue(value)}</span>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 formatValue(enhancedKpiValue)
               )}
@@ -332,25 +347,25 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               )}
             </div>
 
-            {/* Show calculation value if displaying different field */}
-            {showExtremeValueDetails && findExtremeValueRow && displayField && (
+            {/* Show calculation value if displaying different fields */}
+            {showExtremeValueDetails && findExtremeValueRow && displayFields.length > 0 && (
               <div
                 className="text-xs mt-1 opacity-75"
                 style={{ color: style.labelColor }}
               >
-                Calculated: {formatValue(findExtremeValueRow.calculationValue)}
+                Calculated {valueField}: {formatValue(findExtremeValueRow.calculationValue)}
               </div>
             )}
 
             {/* Show additional row data if enabled */}
-            {showExtremeValueDetails && findExtremeValueRow && (
+            {showExtremeValueDetails && findExtremeValueRow && displayFields.length === 0 && (
               <div className="mt-2 p-2 bg-muted/30 rounded text-xs">
                 <div className="font-medium mb-1">
                   {extremeValueMode === 'max' ? 'Highest' : 'Lowest'} Value Details:
                 </div>
                 <div className="grid grid-cols-2 gap-1 text-left">
                   {Object.entries(findExtremeValueRow.rowData)
-                    .filter(([key]) => key !== displayField && key !== valueField)
+                    .filter(([key]) => !displayFields.includes(key) && key !== valueField)
                     .slice(0, 4) // Show max 4 additional fields
                     .map(([key, value]) => (
                       <div key={key} className="truncate">

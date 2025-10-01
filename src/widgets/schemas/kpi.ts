@@ -3,7 +3,8 @@ import { baseWidgetConfigSchema } from "./base";
 
 export const kpiSettingsSchema = z.object({
   valueField: z.string().min(1, "Value field is required"),
-  displayField: z.string().optional(), // New: field to display from the extreme value row
+  displayField: z.string().optional(), // Deprecated: kept for backward compatibility
+  displayFields: z.array(z.string()).optional(), // New: multiple fields to display from extreme value row
   label: z.string().min(1, "Label is required"),
   format: z.enum(["number", "currency", "percentage", "duration"]).default("number"),
   showTrend: z.boolean().default(true),

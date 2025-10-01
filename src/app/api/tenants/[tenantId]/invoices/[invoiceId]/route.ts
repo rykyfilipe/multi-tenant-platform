@@ -138,6 +138,26 @@ export async function GET(
 			},
 		});
 
+		// Debug: Log invoice items found
+		console.log(`🔍 API DEBUG: Found ${invoiceItems.length} items for invoice ${invoiceId}`);
+		if (invoiceItems.length === 0) {
+			console.log(`🔍 API DEBUG: No items found for invoice ${invoiceId}, checking all invoice IDs in invoice_items table...`);
+			
+			// Check what invoice IDs exist
+			const allInvoiceIdCells = await prisma.cell.findMany({
+				where: {
+					column: {
+						name: "invoice_id",
+						tableId: invoiceTables.invoice_items.id,
+					},
+				},
+				select: { value: true },
+				distinct: ['value'],
+			});
+			
+			console.log(`🔍 API DEBUG: Available invoice IDs in invoice_items:`, allInvoiceIdCells.map(c => c.value));
+		}
+
 		// Transform invoice data
 		const invoiceData: any = { id: invoice.id };
 		invoice.cells.forEach((cell: any) => {
@@ -273,6 +293,9 @@ export async function GET(
 			unit_of_measure: item.unit_of_measure || 'pcs',
 		}));
 
+		// Debug: Log mapped items
+		console.log("🔍 API DEBUG: Mapped items for calculation:", JSON.stringify(mappedItems, null, 2));
+
 		// Calculate totals using unified service
 		const totals = await InvoiceCalculationService.calculateInvoiceTotals(
 			mappedItems,
@@ -283,7 +306,9 @@ export async function GET(
 		);
 
 		// Debug: Log the calculated totals
-		console.log("Calculated totals:", JSON.stringify(totals, null, 2));
+		console.log("🔍 API DEBUG: Calculated totals:", JSON.stringify(totals, null, 2));
+		console.log("🔍 API DEBUG: Items count:", mappedItems.length);
+		console.log("🔍 API DEBUG: Base currency:", baseCurrency);
 
 		return NextResponse.json({
 			invoice: invoiceData,

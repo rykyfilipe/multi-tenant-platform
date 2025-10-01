@@ -330,26 +330,38 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
 
               <div>
                 <Label htmlFor="displayField" className="text-xs font-medium uppercase tracking-wide">
-                  Display Column (from extreme value row)
+                  Display Columns (from extreme value row)
                 </Label>
-                <Select
-                  value={value.settings.displayField || "none"}
-                  onValueChange={(val) => updateSettings({ displayField: val === "none" ? undefined : val })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select column to display from extreme value row" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None (show only calculation result)</SelectItem>
-                    {availableColumns.map((column) => (
-                      <SelectItem key={column.id} value={column.name}>
-                        {column.name} ({column.type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="mt-2 space-y-2 max-h-60 overflow-y-auto border rounded p-2">
+                  {availableColumns.map((column) => {
+                    const selectedFields = value.settings.displayFields || [];
+                    const isSelected = selectedFields.includes(column.name);
+                    return (
+                      <div key={column.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`display-${column.name}`}
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            const current = value.settings.displayFields || [];
+                            const updated = checked
+                              ? [...current, column.name]
+                              : current.filter(c => c !== column.name);
+                            updateSettings({ 
+                              displayFields: updated,
+                              // Auto-enable extreme value details when selecting columns
+                              showExtremeValueDetails: updated.length > 0 ? true : value.settings.showExtremeValueDetails
+                            });
+                          }}
+                        />
+                        <Label htmlFor={`display-${column.name}`} className="text-sm">
+                          {column.name} ({column.type})
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Shows the value from the row with the {value.settings.extremeValueMode === 'max' ? 'maximum' : 'minimum'} calculation value
+                  Shows values from the row with the {value.settings.extremeValueMode === 'max' ? 'maximum' : 'minimum'} calculation value
                 </p>
               </div>
 
