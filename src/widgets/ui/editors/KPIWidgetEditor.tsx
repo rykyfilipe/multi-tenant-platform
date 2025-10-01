@@ -333,14 +333,14 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                   Display Column (from extreme value row)
                 </Label>
                 <Select
-                  value={value.settings.displayField || ""}
-                  onValueChange={(val) => updateSettings({ displayField: val || undefined })}
+                  value={value.settings.displayField || "none"}
+                  onValueChange={(val) => updateSettings({ displayField: val === "none" ? undefined : val })}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select column to display from extreme value row" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (show only calculation result)</SelectItem>
+                    <SelectItem value="none">None (show only calculation result)</SelectItem>
                     {availableColumns.map((column) => (
                       <SelectItem key={column.id} value={column.name}>
                         {column.name} ({column.type})
