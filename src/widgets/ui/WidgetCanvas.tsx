@@ -28,11 +28,6 @@ import {
   DraftUpdateOperation,
   WidgetDraftEntity,
 } from "../domain/entities";
-
-// Import the helper function
-const generateLocalWidgetId = (): number => {
-  return Math.floor(Math.random() * 1000000) + 1000000;
-};
 import {
   useWidgetsApi,
 } from "@/widgets/api/simple-client";
@@ -161,7 +156,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     const definition = getWidgetDefinition(widget.kind);
     createLocal({
       ...widget,
-      id: generateLocalWidgetId(),
+      id: Math.floor(Math.random() * 1000000) + 1000000,
       title: `${widget.title ?? "Widget"} Copy`,
       position: { ...widget.position, x: widget.position.x + 1 },
       config: definition.schema.parse(widget.config),
@@ -194,8 +189,8 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       const maxY = Math.max(...widgetList.map(w => w.position.y + w.position.h), 0);
       console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 4, h: 4 });
       
-      // Create widget locally with safe temporary ID
-      const tempId = generateLocalWidgetId();
+      // Create widget locally with temporary ID
+      const tempId = Date.now();
       const newWidget: WidgetEntity = {
         id: tempId,
         tenantId,
@@ -274,7 +269,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       if (widget) {
         const duplicatedWidget = {
           ...widget,
-          id: generateLocalWidgetId(),
+          id: Math.floor(Math.random() * 1000000) + 1000000,
           title: `${widget.title} (Copy)`,
           position: { ...widget.position, x: widget.position.x + 1 },
         };
@@ -296,7 +291,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
   const handleTemplateSelect = (template: any) => {
     const newWidget: WidgetEntity = {
-      id: generateLocalWidgetId(),
+      id: Math.floor(Math.random() * 1000000) + 1000000,
       tenantId,
       dashboardId,
       kind: template.kind,
@@ -652,36 +647,17 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                     return (
                       <div
                         key={widget.id}
-                        data-grid={widget.id}
                         className={`border border-dashed rounded transition-all ${
                           isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300'
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSelectWidget(widget.id, !isSelected);
-                          
-                          // If editor is already open, switch to this widget
-                          if (editorWidgetId !== null) {
-                            setEditorWidgetId(widget.id);
-                          }
                         }}
                       >
                         <Renderer
                           widget={widget}
-                          onEdit={() => {
-                            openEditor(widget.id);
-                            // Scroll to widget when editor opens
-                            setTimeout(() => {
-                              const widgetElement = document.querySelector(`[data-grid="${widget.id}"]`);
-                              if (widgetElement) {
-                                widgetElement.scrollIntoView({ 
-                                  behavior: 'smooth', 
-                                  block: 'center',
-                                  inline: 'center'
-                                });
-                              }
-                            }, 100);
-                          }}
+                          onEdit={() => openEditor(widget.id)}
                           onDelete={() => deleteLocal(widget.id)}
                           onDuplicate={() => handleDuplicate(widget)}
                         />

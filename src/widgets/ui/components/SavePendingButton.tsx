@@ -12,7 +12,6 @@ interface SavePendingButtonProps {
 
 export const SavePendingButton: React.FC<SavePendingButtonProps> = ({ tenantId, dashboardId, actorId }) => {
   const operations = useWidgetsStore((state) => state.getPending());
-  const clearPending = useWidgetsStore((state) => state.clearPending);
   const api = useWidgetsApi(tenantId, dashboardId);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -21,14 +20,22 @@ export const SavePendingButton: React.FC<SavePendingButtonProps> = ({ tenantId, 
     setErrorMessage(null);
     setIsLoading(true);
     try {
-      console.log('[SavePendingButton] Saving operations:', operations);
+      console.log('[savePending] Starting save with operations:', operations);
+      
       const response = await api.savePending({ actorId, operations });
+      
       if (response.conflicts.length) {
         setErrorMessage("Conflicts detected. Review and merge changes.");
+      } else {
+        console.log('[savePending] Save successful, reloading widgets...');
+        
+        // Reload all widgets from server to get correct state
+        await api.loadWidgets(true);
+        
+        console.log('[savePending] Widgets reloaded successfully');
       }
-      // Note: clearPending() is now handled in api.savePending() after successful save
     } catch (error) {
-      console.error('[SavePendingButton] Save failed:', error);
+      console.error('[savePending] Error:', error);
       setErrorMessage("Failed to save pending changes.");
     } finally {
       setIsLoading(false);

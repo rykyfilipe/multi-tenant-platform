@@ -260,9 +260,22 @@ export async function GET(
 			});
 		});
 
+		// Map items to the format expected by InvoiceCalculationService
+		const mappedItems = items.map(item => ({
+			id: item.id,
+			product_ref_table: item.product_ref_table || '',
+			product_ref_id: item.product_ref_id || 0,
+			quantity: Number(item.quantity) || 0,
+			price: Number(item.unit_price || item.price) || 0, // Use unit_price as price
+			currency: item.currency || baseCurrency,
+			product_vat: Number(item.product_vat) || 0,
+			description: item.description || item.product_description || '',
+			unit_of_measure: item.unit_of_measure || 'pcs',
+		}));
+
 		// Calculate totals using unified service
 		const totals = await InvoiceCalculationService.calculateInvoiceTotals(
-			items,
+			mappedItems,
 			{
 				baseCurrency,
 				exchangeRates: {}, // Empty for now, will be populated with real rates

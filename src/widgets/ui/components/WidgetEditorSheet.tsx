@@ -51,37 +51,6 @@ export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({ widgetId, 
     [definition.editor]
   );
 
-  // Check if widget is visible in viewport
-  useEffect(() => {
-    if (!widget) return;
-    
-    const checkVisibility = () => {
-      const widgetElement = document.querySelector(`[data-grid="${widgetId}"]`);
-      if (!widgetElement) return;
-      
-      const rect = widgetElement.getBoundingClientRect();
-      const isVisible = (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-      );
-      
-      // If widget is not visible, scroll it into view
-      if (!isVisible) {
-        widgetElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center',
-          inline: 'center'
-        });
-      }
-    };
-    
-    // Check visibility after a short delay to allow editor to render
-    const timeoutId = setTimeout(checkVisibility, 150);
-    return () => clearTimeout(timeoutId);
-  }, [widgetId, widget]);
-
   return (
     <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col border-l border-border bg-background shadow-xl">
       <header className="flex items-center justify-between border-b border-border/80 px-4 py-3">

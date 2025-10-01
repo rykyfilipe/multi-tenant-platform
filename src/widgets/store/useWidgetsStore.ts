@@ -62,11 +62,6 @@ const isLocalWidget = (widgetId: number): boolean => {
   return widgetId >= 1000000 && widgetId < 2000000;
 };
 
-const generateLocalWidgetId = (): number => {
-  // Generate ID in safe range for local widgets (1M-2M)
-  return Math.floor(Math.random() * 1000000) + 1000000;
-};
-
 const generateOperationId = (): string => {
   return `op-${Math.floor(Math.random() * 1000000) + 1000000}`;
 };
@@ -92,6 +87,8 @@ export const useWidgetsStore = create<PendingChangesState>()(
 
       // Widget operations
       createLocal: (widget) => {
+        console.log('[createLocal] Creating widget:', widget.id);
+        
         // Ensure config has refresh field for backward compatibility
         const widgetWithRefresh = {
           ...widget,
@@ -116,25 +113,43 @@ export const useWidgetsStore = create<PendingChangesState>()(
           widgetWithRefresh.config = definition.defaultConfig;
         }
         
-        set((state) => ({
-          widgets: { ...state.widgets, [widget.id]: widgetWithRefresh },
-          pendingOperations: [
-            ...state.pendingOperations,
-            { kind: "create", id: `create-${widget.id}`, widget: widgetWithRefresh },
-          ],
-          dirtyWidgetIds: new Set(state.dirtyWidgetIds).add(widget.id),
-          history: { ...state.history, [widget.id]: [] },
-          redoHistory: { ...state.redoHistory, [widget.id]: [] },
-        }));
+        set((state) => {
+          // Check if widget already exists
+          if (state.widgets[widget.id]) {
+            console.warn('[createLocal] Widget already exists:', widget.id, '- updating instead');
+            return {
+              widgets: { ...state.widgets, [widget.id]: widgetWithRefresh },
+            };
+          }
+
+          // Check if create operation already exists
+          const existingCreateOp = state.pendingOperations.find(op => 
+            op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widget.id
+          );
+
+          if (existingCreateOp) {
+            console.warn('[createLocal] Create operation already exists for widget:', widget.id);
+            return state;
+          }
+
+          console.log('[createLocal] Adding new widget and create operation:', widget.id);
+          
+          return {
+            widgets: { ...state.widgets, [widget.id]: widgetWithRefresh },
+            pendingOperations: [
+              ...state.pendingOperations,
+              { kind: "create", id: `create-${widget.id}`, widget: widgetWithRefresh },
+            ],
+            dirtyWidgetIds: new Set(state.dirtyWidgetIds).add(widget.id),
+            history: { ...state.history, [widget.id]: [] },
+            redoHistory: { ...state.redoHistory, [widget.id]: [] },
+          };
+        });
       },
 
       updateLocal: (widgetId, patch) => {
-        const state = get();
-        const existing = state.widgets[widgetId];
-        if (!existing) {
-          console.warn(`[updateLocal] Widget ${widgetId} not found in state`);
-          return;
-        }
+        const existing = get().widgets[widgetId];
+        if (!existing) return;
 
         const updated = { ...existing, ...patch } as WidgetEntity;
 
@@ -152,7 +167,20 @@ export const useWidgetsStore = create<PendingChangesState>()(
           };
         }
 
-        // Validate config with widget definition
+        // Also ensure existing widget has correct config structure for history
+        if (existing.config) {
+          existing.config = {
+            settings: (existing.config as any)?.settings || {},
+            style: (existing.config as any)?.style || {},
+            data: (existing.config as any)?.data || {},
+            metadata: (existing.config as any)?.metadata || {},
+            refresh: (existing.config as any)?.refresh || {
+              enabled: false,
+              interval: 30000,
+            }
+          };
+        }
+
         const definition = getWidgetDefinition(updated.kind);
         try {
           definition.schema.parse(updated.config);
@@ -162,23 +190,22 @@ export const useWidgetsStore = create<PendingChangesState>()(
           updated.config = definition.defaultConfig;
         }
         
-        set((currentState) => {
-          // Create immutable copies
-          const newState = {
-            widgets: { ...currentState.widgets, [widgetId]: updated },
-            pendingOperations: [...currentState.pendingOperations],
-            dirtyWidgetIds: new Set(currentState.dirtyWidgetIds),
-            history: { ...currentState.history },
-            redoHistory: { ...currentState.redoHistory, [widgetId]: [] }, // Clear redo history on new change
-          };
-
+        set((state) => {
           // Save current version to history before updating
-          const currentHistory = currentState.history[widgetId] || [];
-          newState.history[widgetId] = [existing, ...currentHistory].slice(0, MAX_HISTORY_SIZE);
+          const currentHistory = state.history[widgetId] || [];
+          const newHistory = [existing, ...currentHistory].slice(0, MAX_HISTORY_SIZE);
+          
+          const newState = {
+          widgets: { ...state.widgets, [widgetId]: updated },
+            pendingOperations: [...state.pendingOperations],
+            dirtyWidgetIds: new Set(state.dirtyWidgetIds),
+            history: { ...state.history, [widgetId]: newHistory },
+            redoHistory: { ...state.redoHistory, [widgetId]: [] }, // Clear redo history on new change
+          };
 
           if (isLocalWidget(widgetId)) {
             // For local widgets, update the existing create operation
-            const createOpIndex = currentState.pendingOperations.findIndex(op => 
+            const createOpIndex = state.pendingOperations.findIndex(op => 
               op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widgetId
             );
             
@@ -187,37 +214,32 @@ export const useWidgetsStore = create<PendingChangesState>()(
                 ...newState.pendingOperations[createOpIndex],
                 widget: updated
               } as any;
-            } else {
-              console.warn(`[updateLocal] Create operation not found for local widget ${widgetId}`);
             }
           } else {
             // For DB widgets, manage update operations
-            // Find the original widget from the initial load (not from current state)
-            const originalWidget = existing; // Use the existing widget as reference
+            const originalWidget = state.widgets[widgetId];
+            const isReverted = JSON.stringify(updated.config) === JSON.stringify(originalWidget.config) &&
+                              updated.title === originalWidget.title &&
+                              updated.description === originalWidget.description;
             
-            // Check if changes revert to original state
-            const hasChanges = JSON.stringify(updated.config) !== JSON.stringify(originalWidget.config) ||
-                              updated.title !== originalWidget.title ||
-                              updated.description !== originalWidget.description;
-            
-            if (!hasChanges) {
-              // Remove update operation if no changes
-              newState.pendingOperations = currentState.pendingOperations.filter(op => 
+            if (isReverted) {
+              // Remove update operation if reverted to original
+              newState.pendingOperations = state.pendingOperations.filter(op => 
                 !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
               );
               newState.dirtyWidgetIds.delete(widgetId);
             } else {
               // Add or update pending operation
-              const existingOpIndex = currentState.pendingOperations.findIndex(op => 
+              const existingOpIndex = state.pendingOperations.findIndex(op => 
                 op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
               );
               
               const newOperation = {
                 kind: "update" as const,
                 id: `update-${widgetId}-${generateOperationId()}`,
-                widgetId,
-                patch,
-                expectedVersion: updated.version,
+              widgetId,
+              patch,
+              expectedVersion: updated.version,
               };
               
               if (existingOpIndex >= 0) {
@@ -234,15 +256,9 @@ export const useWidgetsStore = create<PendingChangesState>()(
       },
 
       deleteLocal: (widgetId) => {
-        console.log(`[deleteLocal] Deleting widget ${widgetId}`);
+        console.log('[deleteLocal] Deleting widget', widgetId);
         
         set((state) => {
-          // Check if widget exists
-          if (!state.widgets[widgetId]) {
-            console.warn(`[deleteLocal] Widget ${widgetId} not found in state`);
-            return state; // Return unchanged state if widget doesn't exist
-          }
-
           const newState = {
             widgets: { ...state.widgets },
             pendingOperations: [...state.pendingOperations],
@@ -256,26 +272,22 @@ export const useWidgetsStore = create<PendingChangesState>()(
 
           if (isLocalWidget(widgetId)) {
             // For local widgets, remove the create operation completely
+            console.log('[deleteLocal] Removing create operation for local widget', widgetId);
             newState.pendingOperations = state.pendingOperations.filter(op => 
               !(op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widgetId)
             );
             newState.dirtyWidgetIds.delete(widgetId);
-            console.log(`[deleteLocal] Removed local widget ${widgetId} and its create operation`);
           } else {
-            // For DB widgets, add delete operation
+            // For DB widgets, add delete operation ONLY if one doesn't exist
             const existingDeleteOpIndex = state.pendingOperations.findIndex(op => 
               op.kind === "delete" && hasWidgetId(op) && op.widgetId === widgetId
             );
             
             if (existingDeleteOpIndex >= 0) {
-              // Update existing delete operation
-              newState.pendingOperations[existingDeleteOpIndex] = {
-                kind: "delete",
-                id: `delete-${widgetId}-${generateOperationId()}`,
-                widgetId,
-                expectedVersion: state.widgets[widgetId]?.version || 1,
-              };
+              console.log('[deleteLocal] Delete operation already exists for widget', widgetId);
+              // Don't add duplicate - just keep the existing one
             } else {
+              console.log('[deleteLocal] Added delete operation for DB widget', widgetId);
               // Add new delete operation
               newState.pendingOperations.push({
                 kind: "delete",
@@ -283,16 +295,16 @@ export const useWidgetsStore = create<PendingChangesState>()(
                 widgetId,
                 expectedVersion: state.widgets[widgetId]?.version || 1,
               } as any);
+              newState.dirtyWidgetIds.add(widgetId);
             }
-            newState.dirtyWidgetIds.add(widgetId);
-            console.log(`[deleteLocal] Added delete operation for DB widget ${widgetId}`);
           }
 
           // Clean up history
           delete newState.history[widgetId];
           delete newState.redoHistory[widgetId];
 
-          console.log(`[deleteLocal] Widget ${widgetId} deleted successfully`);
+          console.log('[deleteLocal] Widget', widgetId, 'deleted successfully');
+          
           return newState;
         });
       },
@@ -512,6 +524,13 @@ export const useWidgetsStore = create<PendingChangesState>()(
               enabled: false,
               interval: 30000,
             }
+          },
+          // Ensure position values are valid numbers
+          position: {
+            x: Number.isFinite(widget.position.x) ? widget.position.x : 0,
+            y: Number.isFinite(widget.position.y) ? widget.position.y : 0,
+            w: Number.isFinite(widget.position.w) ? widget.position.w : 4,
+            h: Number.isFinite(widget.position.h) ? widget.position.h : 4,
           }
         };
 
@@ -544,6 +563,13 @@ export const useWidgetsStore = create<PendingChangesState>()(
                   enabled: false,
                   interval: 30000,
                 }
+              },
+              // Ensure position values are valid numbers
+              position: {
+                x: Number.isFinite(widget.position.x) ? widget.position.x : 0,
+                y: Number.isFinite(widget.position.y) ? widget.position.y : 0,
+                w: Number.isFinite(widget.position.w) ? widget.position.w : 4,
+                h: Number.isFinite(widget.position.h) ? widget.position.h : 4,
               }
             };
             acc[widget.id] = widgetWithCorrectConfig;
@@ -553,8 +579,6 @@ export const useWidgetsStore = create<PendingChangesState>()(
       },
 
       clearPending: () => {
-        console.log('[clearPending] Clearing all pending operations');
-        
         set((state) => {
           // Clean up history for non-existent widgets
           const cleanedHistory: Record<number, WidgetEntity[]> = {};
@@ -572,10 +596,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
             }
           });
 
-          console.log('[clearPending] Cleared operations:', state.pendingOperations.length);
-
-          return {
-            ...state, // Keep existing widgets and other state
+          const newState = {
             pendingOperations: [],
             dirtyWidgetIds: new Set<number>(),
             history: cleanedHistory,
@@ -583,6 +604,8 @@ export const useWidgetsStore = create<PendingChangesState>()(
             conflicts: [],
             activeConflict: null,
           };
+
+          return newState;
         });
       },
 

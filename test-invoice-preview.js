@@ -115,7 +115,7 @@ async function testInvoicePreview() {
             column: {
               name: "invoice_id",
             },
-            value: { equals: invoiceId.toString() },
+            value: { equals: invoiceId },
           },
         },
       },
@@ -193,15 +193,21 @@ async function testInvoicePreview() {
       items.push(itemData);
     }
 
-    // Calculate totals (simplified version)
+    // Calculate totals (proper calculation with VAT)
     let subtotal = 0;
+    let vatTotal = 0;
     items.forEach(item => {
       const quantity = Number(item.quantity) || 0;
       const price = Number(item.price || item.unit_price) || 0;
-      subtotal += quantity * price;
+      const vatRate = Number(item.product_vat) || 0;
+      
+      const itemTotal = quantity * price;
+      const itemVat = (itemTotal * vatRate) / 100;
+      
+      subtotal += itemTotal;
+      vatTotal += itemVat;
     });
 
-    const vatTotal = 0; // Simplified
     const grandTotal = subtotal + vatTotal;
 
     console.log("💰 Calculated totals:");

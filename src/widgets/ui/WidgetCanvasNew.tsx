@@ -12,11 +12,6 @@ import { WidgetKind } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
-
-// Helper function for generating safe local widget IDs
-const generateLocalWidgetId = (): number => {
-  return Math.floor(Math.random() * 1000000) + 1000000;
-};
 import { 
   BarChart3, 
   Table, 
@@ -79,60 +74,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           variant: "destructive",
         });
       } else {
-        // First, collect all local widget IDs that were created (have temp IDs >= 1000000)
-        const localWidgetIdsToRemove = new Set<number>();
-        pendingOperations.forEach(op => {
-          if (op.kind === "create" && op.widget && (op.widget as WidgetEntity).id >= 1000000) {
-            localWidgetIdsToRemove.add((op.widget as WidgetEntity).id);
-          }
-        });
+        console.log('[savePending] Save successful, reloading widgets from server...');
         
-        console.log('🗑️ [DEBUG] Local widget IDs to remove:', Array.from(localWidgetIdsToRemove));
+        // Simply reload all widgets from server to get the correct state
+        await api.loadWidgets(true);
         
-        // Remove all local widgets that were created
-        if (localWidgetIdsToRemove.size > 0) {
-          const currentState = useWidgetsStore.getState();
-          const updatedWidgets = { ...currentState.widgets };
-          
-          localWidgetIdsToRemove.forEach(localId => {
-            console.log('🗑️ [DEBUG] Removing local widget with ID:', localId);
-            delete updatedWidgets[localId];
-          });
-          
-          // Update the store with the cleaned widgets
-          useWidgetsStore.setState({ widgets: updatedWidgets });
-        }
-        
-        // Process all the widgets from server results
-        response.results.forEach((result, index) => {
-          const operation = pendingOperations[index];
-          if (operation?.kind === "create" && result.widget && result.widget.id) {
-            console.log('🔄 [DEBUG] Adding created widget from server:', result.widget.id);
-            upsertWidget(result.widget);
-          } else if (operation?.kind === "update" && result.widget && result.widget.id) {
-            console.log('🔄 [DEBUG] Updating widget from server:', result.widget.id);
-            upsertWidget(result.widget);
-          } else if (operation?.kind === "delete") {
-            if (result.widget === null) {
-              console.log('🗑️ [DEBUG] Widget was successfully deleted:', operation.widgetId);
-              // Remove the widget from local state if it exists
-              const currentState = useWidgetsStore.getState();
-              if (currentState.widgets[operation.widgetId]) {
-                const updatedWidgets = { ...currentState.widgets };
-                delete updatedWidgets[operation.widgetId];
-                useWidgetsStore.setState({ widgets: updatedWidgets });
-              }
-            } else if (result.widget && result.widget.id) {
-              console.log('🔄 [DEBUG] Widget still exists after delete operation:', result.widget.id);
-              upsertWidget(result.widget);
-            }
-          }
-        });
-        
-        // Clear pending operations but keep existing widgets
-        clearPending();
-        
-        console.log('✅ [DEBUG] Widgets after save:', Object.keys(useWidgetsStore.getState().widgets));
+        console.log('[savePending] Widgets reloaded successfully');
         
         toast({
           title: "Changes saved successfully!",
@@ -148,7 +95,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         variant: "destructive",
       });
     }
-  }, [api, actorId, pendingOperations, clearPending, upsertWidget, toast]);
+  }, [api, actorId, pendingOperations, toast]);
 
   // Undo function
   const handleUndo = useCallback(() => {
@@ -250,13 +197,21 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   }, []);
 
   const layout: Layout[] = useMemo(() => {
-    const layoutItems = widgetList.map((widget) => ({
-      i: widget.id.toString(),
-      x: widget.position.x,
-      y: widget.position.y,
-      w: widget.position.w,
-      h: widget.position.h,
-    }));
+    const layoutItems = widgetList.map((widget) => {
+      // Ensure position values are valid numbers, default to 0 if NaN/undefined
+      const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+      const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
+      const w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
+      const h = Number.isFinite(widget.position.h) ? widget.position.h : 4;
+      
+      return {
+        i: widget.id.toString(),
+        x,
+        y,
+        w,
+        h,
+      };
+    });
     console.log('🎯 [DEBUG] Layout:', layoutItems);
     return layoutItems;
   }, [widgetList]);
@@ -268,16 +223,26 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const widgets = Object.values(widgetsRecord);
     if (widgets.length === 0) return;
 
-    // Sort widgets by current Y position
-    const sortedWidgets = [...widgets].sort((a, b) => a.position.y - b.position.y);
+    // Filter out widgets with invalid positions and sort by current Y position
+    const validWidgets = widgets.filter(widget => 
+      Number.isFinite(widget.position.y) && Number.isFinite(widget.position.h)
+    );
+    const sortedWidgets = [...validWidgets].sort((a, b) => a.position.y - b.position.y);
     
     // Compact widgets vertically
     let currentY = 0;
     sortedWidgets.forEach((widget) => {
+      const currentPosition = {
+        x: Number.isFinite(widget.position.x) ? widget.position.x : 0,
+        y: currentY,
+        w: Number.isFinite(widget.position.w) ? widget.position.w : 4,
+        h: Number.isFinite(widget.position.h) ? widget.position.h : 4,
+      };
+      
       updateLocal(widget.id, {
-        position: { ...widget.position, y: currentY },
+        position: currentPosition,
       });
-      currentY += widget.position.h + 1; // Add 1 for margin
+      currentY += currentPosition.h + 1; // Add 1 for margin
     });
     
     console.log('🎯 [DEBUG] Layout compacted');
@@ -297,8 +262,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       
       console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 6, h: 8 });
 
-      // Create widget locally with safe temporary ID
-      const tempId = generateLocalWidgetId();
+      // Create widget locally with temporary ID (compatible with INT4)
+      const tempId = Math.floor(Math.random() * 1000000) + 1000000; // 7-digit random ID
       const newWidget: WidgetEntity = {
         id: tempId,
         tenantId,
@@ -469,19 +434,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     const selectedId = Array.from(selectedWidgets)[0];
                     if (selectedId) {
                       setEditorWidgetId(selectedId);
-                      
-                      // Scroll to widget if not in viewport
-                      setTimeout(() => {
-                        const widgetElement = document.querySelector(`[data-grid="${selectedId}"]`);
-                        if (widgetElement) {
-                          widgetElement.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'center',
-                            inline: 'nearest'
-                          });
-                        }
-                      }, 100);
-                      
                       toast({
                         title: "Opening editor...",
                         description: "Widget editor is opening.",
@@ -506,7 +458,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     selectedWidgets.forEach(widgetId => {
                       const widget = widgetList.find(w => w.id === widgetId);
                       if (widget) {
-                        const duplicated = { ...widget, id: generateLocalWidgetId() };
+                        const duplicated = { ...widget, id: Math.floor(Math.random() * 1000000) + 1000000 };
                         createLocal(duplicated);
                       }
                     });
@@ -829,9 +781,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
               const isSelected = selectedWidgets.has(widget.id);
 
               return (
-                  <div
-                    key={widget.id}
-                    data-grid={widget.id}
+                  <div 
+                    key={widget.id} 
                     className={`border border-dashed rounded transition-all cursor-pointer ${
                       isEditMode 
                         ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
@@ -849,11 +800,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                         handleDeselectAll();
                         handleSelectWidget(widget.id);
                         
-                        // If editor is already open, switch to this widget
-                        if (editorWidgetId !== null) {
-                          setEditorWidgetId(widget.id);
-                        }
-                        // Don't auto-open editor - user must click edit button
+                        // Auto-open editor for the selected widget
+                        setEditorWidgetId(widget.id);
                       }
                     }}
                   >
