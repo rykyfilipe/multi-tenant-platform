@@ -94,8 +94,9 @@ export function PDFPreviewModal({
             })),
             totals: {
               subtotal: data.totals.subtotal || 0,
-              vatTotal: data.totals.vat_total || 0,
-              grandTotal: data.totals.grand_total || 0
+              vatTotal: data.totals.vatTotal || data.totals.vat_total || 0,
+              grandTotal: data.totals.grandTotal || data.totals.grand_total || 0,
+              currency: data.totals.base_currency || data.invoice.base_currency || 'USD'
             }
           };
           setInvoiceData(transformedData);

@@ -540,6 +540,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
       },
 
       setWidgets: (widgets) => {
+        console.log('[setWidgets] Setting widgets:', widgets.length, 'widgets');
         set(() => ({
           widgets: widgets.reduce<Record<number, WidgetEntity>>((acc, widget) => {
             // Ensure config has all required fields for backward compatibility

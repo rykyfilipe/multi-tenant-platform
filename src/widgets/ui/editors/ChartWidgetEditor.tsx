@@ -323,16 +323,16 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                     )}
                   </div>
 
-                  {/* Group - For grouped charts */}
+                  {/* Category - For categorizing data points */}
                   {["bar", "line", "area"].includes(value.settings.chartType) && (
                     <div className="flex items-center space-x-2">
-                      <Label className="w-16 text-xs">Group:</Label>
+                      <Label className="w-16 text-xs">Category:</Label>
                       <Select
                         value={value.data.mappings.group || ""}
                         onValueChange={(val) => updateMapping("group", val)}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select group column (optional)" />
+                          <SelectValue placeholder="Select category column (optional)" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">None</SelectItem>
@@ -625,9 +625,15 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
         {/* Grouping Tab */}
         <TabsContent value="grouping" className="space-y-4">
           <div className="space-y-4">
+            <div className="p-3 bg-muted/50 rounded-md mb-4">
+              <p className="text-xs text-muted-foreground">
+                <strong>Data Aggregation:</strong> Group rows by a column and aggregate numeric values within each group (e.g., sum sales by region)
+              </p>
+            </div>
+            
             <div className="flex items-center justify-between">
               <Label htmlFor="enableGrouping" className="text-xs font-medium uppercase tracking-wide">
-                Enable Grouping
+                Enable Data Aggregation
               </Label>
               <Switch
                 id="enableGrouping"
@@ -640,7 +646,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <>
                 <div>
                   <Label htmlFor="groupByColumn" className="text-xs font-medium uppercase tracking-wide">
-                    Group By Column
+                    Group By Column (Aggregate by this column)
                   </Label>
                   <Select
                     value={value.settings.groupByColumn || ""}
@@ -659,6 +665,9 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Rows will be grouped by unique values in this column
+                  </p>
                 </div>
 
                 <div>

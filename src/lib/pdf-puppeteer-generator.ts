@@ -4,6 +4,7 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import { InvoiceSystemService } from './invoice-system';
 import { InvoiceTemplate, InvoiceData as TemplateInvoiceData } from './invoice-template';
+import { InvoiceCalculationService } from './invoice-calculations';
 import prisma from './prisma';
 
 export interface PDFGenerationOptions {
@@ -259,17 +260,17 @@ export class PuppeteerPDFGenerator {
 				product_sku: item.product_sku,
 				product_category: item.product_category,
 				product_brand: item.product_brand,
-				quantity: item.quantity,
-				unit_of_measure: item.unit_of_measure || item.unit || item.product_unit,
-				unit_price: item.unit_price,
-				total: item.total,
-				tax_rate: item.vat_rate || item.tax_rate,
-				tax_amount: item.tax_amount,
-				discount_rate: item.discount_rate,
-				discount_amount: item.discount_amount,
-				currency: item.currency,
-				product_weight: item.product_weight,
-				product_dimensions: item.product_dimensions,
+				quantity: Number(item.quantity) || 0,
+				unit_of_measure: item.unit_of_measure || item.unit || item.product_unit || 'pcs',
+				unit_price: Number(item.unit_price) || 0,
+				total: Number(item.unit_price) * Number(item.quantity) || 0, // Calculate total
+				tax_rate: Number(item.vat_rate || item.tax_rate || item.product_vat) || 0,
+				tax_amount: Number(item.tax_amount) || 0,
+				discount_rate: Number(item.discount_rate) || 0,
+				discount_amount: Number(item.discount_amount) || 0,
+				currency: item.currency || 'USD',
+				product_weight: Number(item.product_weight) || 0,
+				product_dimensions: item.product_dimensions || '',
 			})),
 			totals: {
 				subtotal: invoiceData.totals.subtotal,
@@ -526,15 +527,43 @@ export class PuppeteerPDFGenerator {
 				itemsCount: items.length
 			});
 
-			const totals = this.calculateTotals(items);
+			// Map items to the format expected by InvoiceCalculationService
+			const mappedItems = items.map((item: any) => ({
+				id: item.id,
+				product_ref_table: item.product_ref_table || '',
+				product_ref_id: item.product_ref_id || 0,
+				quantity: Number(item.quantity) || 0,
+				price: Number(item.unit_price || item.price) || 0, // Use unit_price as price
+				currency: item.currency || 'USD',
+				product_vat: Number(item.product_vat) || 0,
+				description: item.description || item.product_description || '',
+				unit_of_measure: item.unit_of_measure || 'pcs',
+			}));
+
+			// Get base currency from invoice
+			const baseCurrency = invoice.base_currency || 'USD';
 			
-			console.log('🔍 PDF DEBUG: Calculated totals:', totals);
+			// Calculate totals using unified service
+			const totals = await InvoiceCalculationService.calculateInvoiceTotals(
+				mappedItems,
+				{
+					baseCurrency: baseCurrency,
+					exchangeRates: {}, // Empty for now, will be populated with real rates
+				},
+			);
+			
+			// Note: totals.baseCurrency is already set by InvoiceCalculationService
+			
+			console.log('🔍 PDF DEBUG: Calculated totals using unified service:', totals);
 
 			return {
 				invoice,
 				items,
 				customer,
-				totals,
+				totals: {
+					...totals,
+					currency: baseCurrency,
+				},
 			};
 		} catch (error) {
 			console.error('Error getting invoice data:', error);

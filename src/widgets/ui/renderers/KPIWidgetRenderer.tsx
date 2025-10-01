@@ -28,7 +28,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const data = config?.data || {};
   
   const valueField = settings.valueField || 'value';
-  const displayField = settings.displayField; // New: field to display from extreme value row
+  // Normalize displayField: treat "none", empty string, or undefined as no display field
+  const displayField = settings.displayField && settings.displayField !== "none" ? settings.displayField : undefined;
   const label = settings.label || 'KPI Value';
   const format = settings.format || 'number';
   const aggregation = settings.aggregation || 'sum';
@@ -38,6 +39,13 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const comparisonField = settings.comparisonField;
   const showExtremeValueDetails = settings.showExtremeValueDetails || false;
   const extremeValueMode = settings.extremeValueMode || 'max';
+  
+  console.log('🔍 [KPI] Display settings:', {
+    displayField,
+    showExtremeValueDetails,
+    extremeValueMode,
+    rawDisplayField: settings.displayField
+  });
   
   const databaseId = data.databaseId;
   const tableId = data.tableId;
@@ -86,7 +94,18 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
 
   // Helper function to find row with extreme value and extract display column
   const findExtremeValueRow = useMemo(() => {
-    if (!rawData?.data || !valueField || !displayField) return null;
+    console.log('🔍 [KPI] findExtremeValueRow check:', {
+      hasData: !!rawData?.data,
+      dataLength: rawData?.data?.length,
+      valueField,
+      displayField,
+      showExtremeValueDetails
+    });
+    
+    if (!rawData?.data || !valueField || !displayField) {
+      console.log('🔍 [KPI] findExtremeValueRow early return - missing required data');
+      return null;
+    }
 
     const rowsWithData = rawData.data
       .map((row : any) => {
@@ -101,12 +120,14 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         }
         return { row, rowData };
       })
-      .filter(({ rowData }) => !isNaN(parseFloat(rowData[valueField])));
+      .filter(({ rowData }: { rowData: any }) => !isNaN(parseFloat(rowData[valueField])));
+
+    console.log('🔍 [KPI] Rows with valid data:', rowsWithData.length);
 
     if (!rowsWithData.length) return null;
 
     // Find row with extreme value
-    const extremeRow = rowsWithData.reduce((extreme, current) => {
+    const extremeRow = rowsWithData.reduce((extreme : any, current : any) => {
       const currentValue = parseFloat(current.rowData[valueField]);
       const extremeValue = parseFloat(extreme.rowData[valueField]);
 
@@ -117,11 +138,15 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       }
     });
 
-    return {
+    const result = {
       calculationValue: parseFloat(extremeRow.rowData[valueField]),
       displayValue: extremeRow.rowData[displayField],
       rowData: extremeRow.rowData
     };
+    
+    console.log('🔍 [KPI] findExtremeValueRow result:', result);
+    
+    return result;
   }, [rawData, valueField, displayField, extremeValueMode]);
 
   // Calculate KPI values based on selected aggregations
