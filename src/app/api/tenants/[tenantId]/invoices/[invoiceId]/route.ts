@@ -163,6 +163,12 @@ export async function GET(
 			if (itemData.quantity !== undefined) {
 				itemData.quantity = Number(itemData.quantity) || 0;
 			}
+			if (itemData.unit_price !== undefined) {
+				itemData.unit_price = Number(itemData.unit_price) || 0;
+			}
+			if (itemData.total_price !== undefined) {
+				itemData.total_price = Number(itemData.total_price) || 0;
+			}
 			if (itemData.price !== undefined) {
 				itemData.price = Number(itemData.price) || 0;
 			}

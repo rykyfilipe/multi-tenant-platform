@@ -231,13 +231,20 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
 
   const savePending = async (payload: Omit<SavePendingRequest, "tenantId" | "dashboardId">) => {
     try {
+      console.log('[savePending] Starting save with operations:', payload.operations);
       const response = await apiClient.savePending(payload);
 
       if (response.conflicts.length) {
         setConflicts(response.conflicts);
+        console.log('[savePending] Conflicts detected:', response.conflicts);
       } else {
         setConflicts([]);
-        // Note: Don't reload widgets - let the caller handle state updates
+        clearPending(); // Clear pending operations after successful save
+        
+        // Reload widgets to get the latest state from server
+        console.log('[savePending] Save successful, reloading widgets...');
+        await loadWidgets(true);
+        console.log('[savePending] Widgets reloaded successfully');
       }
 
       return response;

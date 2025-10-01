@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, X, TrendingUp, Group, Filter } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 
@@ -85,11 +86,22 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="style">Style</TabsTrigger>
           <TabsTrigger value="data">Data</TabsTrigger>
-          <TabsTrigger value="refresh">Refresh</TabsTrigger>
+          <TabsTrigger value="aggregation">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            Aggregation
+          </TabsTrigger>
+          <TabsTrigger value="grouping">
+            <Group className="h-3 w-3 mr-1" />
+            Grouping
+          </TabsTrigger>
+          <TabsTrigger value="topn">
+            <Filter className="h-3 w-3 mr-1" />
+            Top N
+          </TabsTrigger>
         </TabsList>
 
         {/* Settings Tab */}
@@ -534,6 +546,226 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                   })}
                 </div>
               </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Aggregation Tab */}
+        <TabsContent value="aggregation" className="space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="enableAggregation" className="text-xs font-medium uppercase tracking-wide">
+                Enable Aggregation
+              </Label>
+              <Switch
+                id="enableAggregation"
+                checked={value.settings.enableAggregation || false}
+                onCheckedChange={(checked) => updateSettings({ enableAggregation: checked })}
+              />
+            </div>
+
+            {value.settings.enableAggregation && (
+              <>
+                <div>
+                  <Label htmlFor="aggregationFunction" className="text-xs font-medium uppercase tracking-wide">
+                    Default Aggregation Function
+                  </Label>
+                  <Select
+                    value={value.settings.aggregationFunction || "sum"}
+                    onValueChange={(val) => updateSettings({ aggregationFunction: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sum">Sum</SelectItem>
+                      <SelectItem value="avg">Average</SelectItem>
+                      <SelectItem value="count">Count</SelectItem>
+                      <SelectItem value="min">Minimum</SelectItem>
+                      <SelectItem value="max">Maximum</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium uppercase tracking-wide">
+                    Columns to Aggregate
+                  </Label>
+                  <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                    {availableColumns
+                      .filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type))
+                      .map((column) => {
+                        const isSelected = value.settings.aggregationColumns?.includes(column.name) || false;
+                        return (
+                          <div key={column.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`agg-${column.name}`}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                const current = value.settings.aggregationColumns || [];
+                                const updated = checked
+                                  ? [...current, column.name]
+                                  : current.filter(c => c !== column.name);
+                                updateSettings({ aggregationColumns: updated });
+                              }}
+                            />
+                            <Label htmlFor={`agg-${column.name}`} className="text-sm">
+                              {column.name} ({column.type})
+                            </Label>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Grouping Tab */}
+        <TabsContent value="grouping" className="space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="enableGrouping" className="text-xs font-medium uppercase tracking-wide">
+                Enable Grouping
+              </Label>
+              <Switch
+                id="enableGrouping"
+                checked={value.settings.enableGrouping || false}
+                onCheckedChange={(checked) => updateSettings({ enableGrouping: checked })}
+              />
+            </div>
+
+            {value.settings.enableGrouping && (
+              <>
+                <div>
+                  <Label htmlFor="groupByColumn" className="text-xs font-medium uppercase tracking-wide">
+                    Group By Column
+                  </Label>
+                  <Select
+                    value={value.settings.groupByColumn || ""}
+                    onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select column to group by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableColumns
+                        .filter(col => ["string", "text"].includes(col.type))
+                        .map((column) => (
+                          <SelectItem key={column.id} value={column.name}>
+                            {column.name} ({column.type})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium uppercase tracking-wide">
+                    Aggregate Columns in Groups
+                  </Label>
+                  <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                    {availableColumns
+                      .filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type))
+                      .map((column) => {
+                        const isSelected = value.settings.aggregationColumns?.includes(column.name) || false;
+                        return (
+                          <div key={column.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`group-agg-${column.name}`}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                const current = value.settings.aggregationColumns || [];
+                                const updated = checked
+                                  ? [...current, column.name]
+                                  : current.filter(c => c !== column.name);
+                                updateSettings({ aggregationColumns: updated });
+                              }}
+                            />
+                            <Label htmlFor={`group-agg-${column.name}`} className="text-sm">
+                              {column.name} ({column.type})
+                            </Label>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Top N Tab */}
+        <TabsContent value="topn" className="space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="enableTopN" className="text-xs font-medium uppercase tracking-wide">
+                Enable Top N Results
+              </Label>
+              <Switch
+                id="enableTopN"
+                checked={value.settings.enableTopN || false}
+                onCheckedChange={(checked) => updateSettings({ enableTopN: checked })}
+              />
+            </div>
+
+            {value.settings.enableTopN && (
+              <>
+                <div>
+                  <Label htmlFor="topNCount" className="text-xs font-medium uppercase tracking-wide">
+                    Number of Results
+                  </Label>
+                  <Input
+                    id="topNCount"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={value.settings.topNCount || 10}
+                    onChange={(e) => updateSettings({ topNCount: parseInt(e.target.value) || 10 })}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="sortByColumn" className="text-xs font-medium uppercase tracking-wide">
+                    Sort By Column
+                  </Label>
+                  <Select
+                    value={value.settings.sortByColumn || ""}
+                    onValueChange={(val) => updateSettings({ sortByColumn: val || undefined })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select column to sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableColumns.map((column) => (
+                        <SelectItem key={column.id} value={column.name}>
+                          {column.name} ({column.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="sortDirection" className="text-xs font-medium uppercase tracking-wide">
+                    Sort Direction
+                  </Label>
+                  <Select
+                    value={value.settings.sortDirection || "desc"}
+                    onValueChange={(val) => updateSettings({ sortDirection: val as "asc" | "desc" })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="desc">Descending (Highest First)</SelectItem>
+                      <SelectItem value="asc">Ascending (Lowest First)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
           </div>
         </TabsContent>

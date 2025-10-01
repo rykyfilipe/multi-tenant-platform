@@ -28,6 +28,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const data = config?.data || {};
   
   const valueField = settings.valueField || 'value';
+  const displayField = settings.displayField; // New: field to display from extreme value row
   const label = settings.label || 'KPI Value';
   const format = settings.format || 'number';
   const aggregation = settings.aggregation || 'sum';
@@ -35,6 +36,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const showTrend = settings.showTrend !== false;
   const showComparison = settings.showComparison || false;
   const comparisonField = settings.comparisonField;
+  const showExtremeValueDetails = settings.showExtremeValueDetails || false;
+  const extremeValueMode = settings.extremeValueMode || 'max';
   
   const databaseId = data.databaseId;
   const tableId = data.tableId;
@@ -81,10 +84,50 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     onRefresh: refetch
   });
 
+  // Helper function to find row with extreme value and extract display column
+  const findExtremeValueRow = useMemo(() => {
+    if (!rawData?.data || !valueField || !displayField) return null;
+
+    const rowsWithData = rawData.data
+      .map((row : any) => {
+        // Convert cells array to object for easier access
+        const rowData: any = {};
+        if (row.cells && Array.isArray(row.cells)) {
+          row.cells.forEach((cell: any) => {
+            if (cell.column && cell.column.name) {
+              rowData[cell.column.name] = cell.value;
+            }
+          });
+        }
+        return { row, rowData };
+      })
+      .filter(({ rowData }) => !isNaN(parseFloat(rowData[valueField])));
+
+    if (!rowsWithData.length) return null;
+
+    // Find row with extreme value
+    const extremeRow = rowsWithData.reduce((extreme, current) => {
+      const currentValue = parseFloat(current.rowData[valueField]);
+      const extremeValue = parseFloat(extreme.rowData[valueField]);
+
+      if (extremeValueMode === 'max') {
+        return currentValue > extremeValue ? current : extreme;
+      } else {
+        return currentValue < extremeValue ? current : extreme;
+      }
+    });
+
+    return {
+      calculationValue: parseFloat(extremeRow.rowData[valueField]),
+      displayValue: extremeRow.rowData[displayField],
+      rowData: extremeRow.rowData
+    };
+  }, [rawData, valueField, displayField, extremeValueMode]);
+
   // Calculate KPI values based on selected aggregations
   const kpiValues = useMemo(() => {
     if (!rawData?.data || !valueField || !selectedAggregations.length) return {};
-    
+
     const values = rawData.data
       .map((row : any) => {
         // Convert cells array to object for easier access
@@ -99,11 +142,11 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         return parseFloat(rowData[valueField]) || 0;
       })
       .filter((val : any) => !isNaN(val));
-    
+
     if (!values.length) return {};
-    
+
     const results: Record<string, number> = {};
-    
+
     selectedAggregations.forEach((agg: 'sum' | 'avg' | 'count' | 'min' | 'max') => {
       switch (agg) {
         case 'sum':
@@ -123,9 +166,20 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
           break;
       }
     });
-    
+
     return results;
   }, [rawData, valueField, selectedAggregations]);
+
+  // Enhanced KPI value that considers extreme value display
+  const enhancedKpiValue = useMemo(() => {
+    if (showExtremeValueDetails && findExtremeValueRow) {
+      return findExtremeValueRow.calculationValue;
+    }
+
+    if (selectedAggregations.length === 0) return 0;
+    const primaryAgg = selectedAggregations[0];
+    return kpiValues[primaryAgg] || 0;
+  }, [kpiValues, selectedAggregations, showExtremeValueDetails, findExtremeValueRow]);
 
   // Get the primary KPI value (for backward compatibility and trend calculation)
   const kpiValue = useMemo(() => {
@@ -137,13 +191,13 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   // Calculate comparison value if needed (using primary aggregation)
   const comparisonValue = useMemo(() => {
     if (!showComparison || !comparisonField || !rawData?.data || selectedAggregations.length === 0) return null;
-    
+
     const values = rawData.data
       .map((row : any) => parseFloat(row[comparisonField]) || 0)
       .filter((val : any) => !isNaN(val));
-    
+
     if (!values.length) return null;
-    
+
     const primaryAgg = selectedAggregations[0];
     switch (primaryAgg) {
       case 'sum':
@@ -175,10 +229,18 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     }
   };
 
+  // Format display value for non-numeric types
+  const formatDisplayValue = (value: any) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'object' && value instanceof Date) return value.toLocaleDateString();
+    return String(value);
+  };
+
   // Calculate trend percentage
   const trendPercentage = useMemo(() => {
     if (!showTrend || !comparisonValue || kpiValue === 0) return null;
-    
+
     const percentage = ((kpiValue - comparisonValue) / comparisonValue) * 100;
     return Math.abs(percentage);
   }, [kpiValue, comparisonValue, showTrend]);
@@ -217,23 +279,62 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         style.alignment === 'right' ? 'items-end' : 'items-center'
       }`}>
         {selectedAggregations.length === 1 ? (
-          // Single KPI display (original layout)
+          // Single KPI display (original layout with enhanced features)
           <div className="text-center">
-            <div 
+            <div
               className={`font-bold text-foreground ${
-                style.size === 'small' ? 'text-2xl' : 
+                style.size === 'small' ? 'text-2xl' :
                 style.size === 'large' ? 'text-5xl' : 'text-4xl'
               }`}
               style={{ color: style.valueColor }}
             >
-              {formatValue(kpiValue)}
+              {showExtremeValueDetails && findExtremeValueRow && displayField ? (
+                // Show display value from extreme value row instead of calculation
+                formatDisplayValue(findExtremeValueRow.displayValue)
+              ) : (
+                formatValue(enhancedKpiValue)
+              )}
             </div>
-            <div 
+            <div
               className="text-sm mt-1"
               style={{ color: style.labelColor }}
             >
-              {label}
+              {showExtremeValueDetails && findExtremeValueRow ? (
+                // Show enhanced label with extreme value context
+                `${label} (${extremeValueMode === 'max' ? 'Highest' : 'Lowest'} ${valueField})`
+              ) : (
+                label
+              )}
             </div>
+
+            {/* Show calculation value if displaying different field */}
+            {showExtremeValueDetails && findExtremeValueRow && displayField && (
+              <div
+                className="text-xs mt-1 opacity-75"
+                style={{ color: style.labelColor }}
+              >
+                Calculated: {formatValue(findExtremeValueRow.calculationValue)}
+              </div>
+            )}
+
+            {/* Show additional row data if enabled */}
+            {showExtremeValueDetails && findExtremeValueRow && (
+              <div className="mt-2 p-2 bg-muted/30 rounded text-xs">
+                <div className="font-medium mb-1">
+                  {extremeValueMode === 'max' ? 'Highest' : 'Lowest'} Value Details:
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-left">
+                  {Object.entries(findExtremeValueRow.rowData)
+                    .filter(([key]) => key !== displayField && key !== valueField)
+                    .slice(0, 4) // Show max 4 additional fields
+                    .map(([key, value]) => (
+                      <div key={key} className="truncate">
+                        <span className="font-medium">{key}:</span> {formatDisplayValue(value)}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           // Multiple KPIs display

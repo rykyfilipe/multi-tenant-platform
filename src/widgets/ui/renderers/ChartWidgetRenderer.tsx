@@ -33,6 +33,17 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const filters = config?.data?.filters || [];
   const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
 
+  // Advanced features configuration
+  const enableAggregation = config?.settings?.enableAggregation || false;
+  const aggregationFunction = config?.settings?.aggregationFunction || "sum";
+  const aggregationColumns = config?.settings?.aggregationColumns || [];
+  const enableGrouping = config?.settings?.enableGrouping || false;
+  const groupByColumn = config?.settings?.groupByColumn;
+  const enableTopN = config?.settings?.enableTopN || false;
+  const topNCount = config?.settings?.topNCount || 10;
+  const sortByColumn = config?.settings?.sortByColumn;
+  const sortDirection = config?.settings?.sortDirection || "desc";
+
   console.log('🔧 ChartWidgetRenderer - Widget config:', {
     widgetId: widget.id,
     config,
@@ -94,21 +105,50 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     neutral: "#9ca3af", // Light gray
   };
 
-  // Process data based on mappings
+  // Helper function to apply aggregation
+  const applyAggregation = (values: number[], func: string) => {
+    if (!values.length) return 0;
+
+    switch (func) {
+      case 'sum': return values.reduce((sum, val) => sum + val, 0);
+      case 'avg': return values.reduce((sum, val) => sum + val, 0) / values.length;
+      case 'count': return values.length;
+      case 'min': return Math.min(...values);
+      case 'max': return Math.max(...values);
+      default: return values.reduce((sum, val) => sum + val, 0);
+    }
+  };
+
+  // Helper function to extract numeric values from column
+  const extractNumericValues = (data: any[], columnName: string) => {
+    return data
+      .map(row => {
+        const value = row[columnName];
+        if (value === null || value === undefined) return null;
+        const numericValue = typeof value === 'number' ? value : parseFloat(value);
+        return isNaN(numericValue) ? null : numericValue;
+      })
+      .filter(val => val !== null) as number[];
+  };
+
+  // Process data based on mappings and advanced features
   const processedData = useMemo(() => {
     console.log('🔄 ChartWidgetRenderer - Processing data:', {
       rawData,
       hasRawData: !!rawData?.data,
       rawDataLength: rawData?.data?.length || 0,
       mappings,
-      hasXMappings: !!mappings.x,
-      hasYMappings: !!mappings.y,
-      isLoading,
-      error
+      enableAggregation,
+      enableGrouping,
+      enableTopN,
+      aggregationColumns,
+      groupByColumn,
+      sortByColumn,
+      sortDirection
     });
 
     // If no mappings or no data, return mock data
-    if (!mappings.x || !mappings.y || !rawData?.data?.length) {
+    if (!mappings.x || !rawData?.data?.length) {
       console.log('📊 ChartWidgetRenderer - Using mock data');
       return [
         { name: "Jan", value: 400, value2: 240 },
@@ -126,9 +166,9 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       mappings
     });
 
-    const processed = rawData.data.map((row: any, index: number) => {
+    let processed = rawData.data.map((row: any, index: number) => {
       const processedRow: any = {};
-      
+
       // Convert cells array to object for easier access
       const rowData: any = {};
       if (row.cells && Array.isArray(row.cells)) {
@@ -138,36 +178,88 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
           }
         });
       }
-      
-      console.log('🔍 Processing row:', { rowIndex: index, rowData, mappings });
-      
+
       // Map X axis (usually categorical)
       if (mappings.x && rowData[mappings.x] !== undefined) {
         processedRow.name = String(rowData[mappings.x]);
       }
-      
+
       // Map Y axis (usually numeric)
       if (mappings.y && rowData[mappings.y] !== undefined) {
         processedRow.value = parseFloat(rowData[mappings.y]) || 0;
       }
-      
+
       // Map group/series if exists
       if (mappings.group && rowData[mappings.group] !== undefined) {
         processedRow.group = String(rowData[mappings.group]);
       }
-      
+
       // Map series if exists
       if (mappings.series && rowData[mappings.series] !== undefined) {
         processedRow.series = String(rowData[mappings.series]);
       }
-      
+
       // Map color if exists
       if (mappings.color && rowData[mappings.color] !== undefined) {
         processedRow.color = String(rowData[mappings.color]);
       }
-      
+
+      // Add original row data for advanced processing
+      processedRow._originalRowData = rowData;
+
       return processedRow;
     });
+
+    // Apply grouping if enabled
+    if (enableGrouping && groupByColumn) {
+      console.log('🔄 ChartWidgetRenderer - Applying grouping:', { groupByColumn, aggregationColumns });
+
+      const groupedData: Record<string, any[]> = {};
+
+      // Group data by the specified column
+      processed.forEach(row => {
+        const groupKey = String(row._originalRowData?.[groupByColumn] || 'Unknown');
+        if (!groupedData[groupKey]) {
+          groupedData[groupKey] = [];
+        }
+        groupedData[groupKey].push(row);
+      });
+
+      // Apply aggregation to each group
+      const aggregatedData: any[] = [];
+
+      Object.entries(groupedData).forEach(([groupKey, groupRows]) => {
+        const aggregatedRow: any = { name: groupKey };
+
+        // Apply aggregation for each specified column
+        aggregationColumns.forEach(columnName => {
+          const values = extractNumericValues(groupRows, columnName);
+          aggregatedRow[columnName] = applyAggregation(values, aggregationFunction);
+        });
+
+        aggregatedData.push(aggregatedRow);
+      });
+
+      processed = aggregatedData;
+    }
+
+    // Apply top N filtering if enabled
+    if (enableTopN && sortByColumn && processed.length > 0) {
+      console.log('🔄 ChartWidgetRenderer - Applying top N:', { sortByColumn, sortDirection, topNCount });
+
+      processed.sort((a, b) => {
+        const aVal = a[sortByColumn] || 0;
+        const bVal = b[sortByColumn] || 0;
+
+        if (sortDirection === 'desc') {
+          return bVal - aVal;
+        } else {
+          return aVal - bVal;
+        }
+      });
+
+      processed = processed.slice(0, topNCount);
+    }
 
     console.log('📊 ChartWidgetRenderer - Processed data:', {
       processedLength: processed.length,
@@ -176,7 +268,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     });
 
     return processed;
-  }, [rawData, mappings]);
+  }, [rawData, mappings, enableAggregation, enableGrouping, enableTopN, aggregationFunction, aggregationColumns, groupByColumn, sortByColumn, sortDirection, topNCount]);
 
   // Generate data keys based on mappings and data
   const dataKeys = useMemo(() => {

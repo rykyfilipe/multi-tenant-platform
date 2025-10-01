@@ -3,6 +3,7 @@ import { baseWidgetConfigSchema } from "./base";
 
 export const kpiSettingsSchema = z.object({
   valueField: z.string().min(1, "Value field is required"),
+  displayField: z.string().optional(), // New: field to display from the extreme value row
   label: z.string().min(1, "Label is required"),
   format: z.enum(["number", "currency", "percentage", "duration"]).default("number"),
   showTrend: z.boolean().default(true),
@@ -10,6 +11,8 @@ export const kpiSettingsSchema = z.object({
   comparisonField: z.string().optional(),
   aggregation: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
   selectedAggregations: z.array(z.enum(["sum", "avg", "count", "min", "max"])).default(["sum"]),
+  showExtremeValueDetails: z.boolean().default(false), // New: show additional details from extreme value row
+  extremeValueMode: z.enum(["max", "min"]).default("max"), // New: which extreme value to find
 });
 
 export const kpiStyleSchema = z.object({

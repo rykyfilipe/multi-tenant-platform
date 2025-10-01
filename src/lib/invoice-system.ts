@@ -685,12 +685,21 @@ export class InvoiceSystemService {
 				isLocked: true,
 			},
 			{
-				name: "price",
+				name: "unit_price",
 				type: "number",
 				semanticType: SemanticColumnType.UNIT_PRICE,
 				required: true,
 				primary: false,
 				order: 6,
+				isLocked: true,
+			},
+			{
+				name: "total_price",
+				type: "number",
+				semanticType: SemanticColumnType.TOTAL_PRICE,
+				required: true,
+				primary: false,
+				order: 7,
 				isLocked: true,
 			},
 			{
@@ -1427,7 +1436,7 @@ export class InvoiceSystemService {
 		}, {} as Record<string, any>);
 
 		// Validate required columns exist
-		const requiredColumns = ['invoice_id', 'product_ref_table', 'product_ref_id', 'quantity', 'price'];
+		const requiredColumns = ['invoice_id', 'product_ref_table', 'product_ref_id', 'quantity', 'unit_price', 'total_price'];
 		for (const colName of requiredColumns) {
 			if (!itemColumnMap[colName] || !itemColumnMap[colName].id) {
 				throw new Error(`Required column '${colName}' not found in invoice_items table`);
@@ -1486,6 +1495,11 @@ export class InvoiceSystemService {
 				data: { tableId: invoiceTables.invoice_items.id },
 			});
 
+			// Calculate total price
+			const unitPrice = product.price || productDetails.price || 0;
+			const quantity = Number(product.quantity) || 0;
+			const totalPrice = unitPrice * quantity;
+
 			// Create cells for the item
 			const itemCells = [
 				{
@@ -1510,8 +1524,18 @@ export class InvoiceSystemService {
 				},
 				{
 					rowId: itemRow.id,
-					columnId: itemColumnMap.price.id,
-					value: product.price || productDetails.price || 0,
+					columnId: itemColumnMap.unit_price.id,
+					value: unitPrice,
+				},
+				{
+					rowId: itemRow.id,
+					columnId: itemColumnMap.total_price.id,
+					value: totalPrice,
+				},
+				{
+					rowId: itemRow.id,
+					columnId: itemColumnMap.currency.id,
+					value: product.currency || "USD",
 				},
 			];
 
@@ -1801,26 +1825,26 @@ export class InvoiceSystemService {
 			{ name: "product_ref_id", type: "number", semanticType: SemanticColumnType.ID, order: 3, required: true },
 			{ name: "quantity", type: "number", semanticType: SemanticColumnType.QUANTITY, order: 4, required: true },
 			{ name: "unit_of_measure", type: "string", semanticType: SemanticColumnType.UNIT_OF_MEASURE, order: 5, required: true },
-			{ name: "price", type: "number", semanticType: SemanticColumnType.UNIT_PRICE, order: 6, required: true },
-			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 7, required: true },
+			{ name: "unit_price", type: "number", semanticType: SemanticColumnType.UNIT_PRICE, order: 6, required: true },
+			{ name: "total_price", type: "number", semanticType: SemanticColumnType.TOTAL_PRICE, order: 7, required: true },
 			{ name: "currency", type: "string", semanticType: SemanticColumnType.CURRENCY, order: 8, required: true },
-			{ name: "tax_rate", type: "number", semanticType: SemanticColumnType.TAX_RATE, order: 8, required: true },
-			{ name: "tax_amount", type: "number", semanticType: SemanticColumnType.TAX_AMOUNT, order: 9, required: true },
-			
+			{ name: "tax_rate", type: "number", semanticType: SemanticColumnType.TAX_RATE, order: 9, required: true },
+			{ name: "tax_amount", type: "number", semanticType: SemanticColumnType.TAX_AMOUNT, order: 10, required: true },
+
 			// Product details (opționale)
-			{ name: "product_name", type: "string", semanticType: SemanticColumnType.PRODUCT_NAME, order: 10, required: false },
-			{ name: "product_description", type: "string", semanticType: SemanticColumnType.PRODUCT_DESCRIPTION, order: 11, required: false },
-			{ name: "product_category", type: "string", semanticType: SemanticColumnType.PRODUCT_CATEGORY, order: 12, required: false },
-			{ name: "product_sku", type: "string", semanticType: SemanticColumnType.PRODUCT_SKU, order: 13, required: false },
-			{ name: "product_brand", type: "string", semanticType: SemanticColumnType.PRODUCT_BRAND, order: 14, required: false },
-			{ name: "product_weight", type: "number", semanticType: SemanticColumnType.PRODUCT_WEIGHT, order: 15, required: false },
-			{ name: "product_dimensions", type: "string", semanticType: SemanticColumnType.PRODUCT_DIMENSIONS, order: 16, required: false },
-			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 17, required: false },
-			{ name: "description", type: "string", semanticType: SemanticColumnType.DESCRIPTION, order: 18, required: false },
-			
+			{ name: "product_name", type: "string", semanticType: SemanticColumnType.PRODUCT_NAME, order: 11, required: false },
+			{ name: "product_description", type: "string", semanticType: SemanticColumnType.PRODUCT_DESCRIPTION, order: 12, required: false },
+			{ name: "product_category", type: "string", semanticType: SemanticColumnType.PRODUCT_CATEGORY, order: 13, required: false },
+			{ name: "product_sku", type: "string", semanticType: SemanticColumnType.PRODUCT_SKU, order: 14, required: false },
+			{ name: "product_brand", type: "string", semanticType: SemanticColumnType.PRODUCT_BRAND, order: 15, required: false },
+			{ name: "product_weight", type: "number", semanticType: SemanticColumnType.PRODUCT_WEIGHT, order: 16, required: false },
+			{ name: "product_dimensions", type: "string", semanticType: SemanticColumnType.PRODUCT_DIMENSIONS, order: 17, required: false },
+			{ name: "product_vat", type: "number", semanticType: SemanticColumnType.PRODUCT_VAT, order: 18, required: false },
+			{ name: "description", type: "string", semanticType: SemanticColumnType.DESCRIPTION, order: 19, required: false },
+
 			// Tax and discount (opționale)
-			{ name: "discount_rate", type: "number", semanticType: SemanticColumnType.DISCOUNT_RATE, order: 19, required: false },
-			{ name: "discount_amount", type: "number", semanticType: SemanticColumnType.DISCOUNT_AMOUNT, order: 20, required: false },
+			{ name: "discount_rate", type: "number", semanticType: SemanticColumnType.DISCOUNT_RATE, order: 20, required: false },
+			{ name: "discount_amount", type: "number", semanticType: SemanticColumnType.DISCOUNT_AMOUNT, order: 21, required: false },
 		];
 
 		const missingColumns = requiredColumns.filter(col => 
@@ -1857,16 +1881,16 @@ export class InvoiceSystemService {
 
 		// Update order for subsequent columns if they exist
 		const columnsToUpdate = [
-			{ name: "product_name", newOrder: 16 },
-			{ name: "product_description", newOrder: 17 },
-			{ name: "product_category", newOrder: 18 },
-			{ name: "product_brand", newOrder: 19 },
-			{ name: "product_sku", newOrder: 20 },
-			{ name: "description", newOrder: 21 },
-			{ name: "tax_rate", newOrder: 22 },
-			{ name: "tax_amount", newOrder: 23 },
-			{ name: "discount_rate", newOrder: 24 },
-			{ name: "discount_amount", newOrder: 25 },
+			{ name: "product_name", newOrder: 8 },
+			{ name: "product_description", newOrder: 9 },
+			{ name: "product_category", newOrder: 10 },
+			{ name: "product_brand", newOrder: 12 },
+			{ name: "product_sku", newOrder: 11 },
+			{ name: "description", newOrder: 16 },
+			{ name: "tax_rate", newOrder: 17 },
+			{ name: "tax_amount", newOrder: 18 },
+			{ name: "discount_rate", newOrder: 19 },
+			{ name: "discount_amount", newOrder: 20 },
 		];
 
 		for (const colUpdate of columnsToUpdate) {

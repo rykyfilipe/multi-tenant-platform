@@ -299,31 +299,89 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
             />
 
             {/* Column Selection */}
-            <div>
-              <Label htmlFor="valueField" className="text-xs font-medium uppercase tracking-wide">
-                Numeric Column
-              </Label>
-              <Select
-                value={value.settings.valueField}
-                onValueChange={(val) => updateSettings({ valueField: val })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select numeric column" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableColumns
-                    .filter(col => ["number"].includes(col.type))
-                    .map((column) => (
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="valueField" className="text-xs font-medium uppercase tracking-wide">
+                  Calculation Column (for aggregations)
+                </Label>
+                <Select
+                  value={value.settings.valueField}
+                  onValueChange={(val) => updateSettings({ valueField: val })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select numeric column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableColumns
+                      .filter(col => ["number"].includes(col.type))
+                      .map((column) => (
+                        <SelectItem key={column.id} value={column.name}>
+                          {column.name} ({column.type})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {availableColumns.filter(col => ["number"].includes(col.type)).length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    No numeric columns available. Please select a table first.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="displayField" className="text-xs font-medium uppercase tracking-wide">
+                  Display Column (from extreme value row)
+                </Label>
+                <Select
+                  value={value.settings.displayField || ""}
+                  onValueChange={(val) => updateSettings({ displayField: val || undefined })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select column to display from extreme value row" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None (show only calculation result)</SelectItem>
+                    {availableColumns.map((column) => (
                       <SelectItem key={column.id} value={column.name}>
                         {column.name} ({column.type})
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
-              {availableColumns.filter(col => ["number"].includes(col.type)).length === 0 && (
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  No numeric columns available. Please select a table first.
+                  Shows the value from the row with the {value.settings.extremeValueMode === 'max' ? 'maximum' : 'minimum'} calculation value
                 </p>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="showExtremeValueDetails" className="text-xs font-medium uppercase tracking-wide">
+                  Show Extreme Value Details
+                </Label>
+                <Switch
+                  id="showExtremeValueDetails"
+                  checked={value.settings.showExtremeValueDetails || false}
+                  onCheckedChange={(checked) => updateSettings({ showExtremeValueDetails: checked })}
+                />
+              </div>
+
+              {value.settings.showExtremeValueDetails && (
+                <div>
+                  <Label className="text-xs font-medium uppercase tracking-wide">
+                    Extreme Value Mode
+                  </Label>
+                  <Select
+                    value={value.settings.extremeValueMode || "max"}
+                    onValueChange={(val) => updateSettings({ extremeValueMode: val as "max" | "min" })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="max">Maximum Value</SelectItem>
+                      <SelectItem value="min">Minimum Value</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             </div>
 

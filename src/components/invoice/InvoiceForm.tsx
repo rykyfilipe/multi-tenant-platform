@@ -676,7 +676,9 @@ export function InvoiceForm({
 					currency: p.currency,
 					original_price: p.extractedPrice,
 					converted_price: p.convertedTotal,
-					price: p.extractedPrice, // Add price for update
+					price: p.extractedPrice, // Add price for backward compatibility
+					unit_price: p.extractedPrice, // Add unit_price for new system
+					total_price: p.calculatedTotal, // Add total_price for new system
 				})),
 			};
 	

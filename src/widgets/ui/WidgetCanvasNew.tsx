@@ -12,6 +12,11 @@ import { WidgetKind } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
+
+// Helper function for generating safe local widget IDs
+const generateLocalWidgetId = (): number => {
+  return Math.floor(Math.random() * 1000000) + 1000000;
+};
 import { 
   BarChart3, 
   Table, 
@@ -292,8 +297,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       
       console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 6, h: 8 });
 
-      // Create widget locally with temporary ID (compatible with INT4)
-      const tempId = Math.floor(Math.random() * 1000000) + 1000000; // 7-digit random ID
+      // Create widget locally with safe temporary ID
+      const tempId = generateLocalWidgetId();
       const newWidget: WidgetEntity = {
         id: tempId,
         tenantId,
@@ -464,6 +469,19 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     const selectedId = Array.from(selectedWidgets)[0];
                     if (selectedId) {
                       setEditorWidgetId(selectedId);
+                      
+                      // Scroll to widget if not in viewport
+                      setTimeout(() => {
+                        const widgetElement = document.querySelector(`[data-grid="${selectedId}"]`);
+                        if (widgetElement) {
+                          widgetElement.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center',
+                            inline: 'nearest'
+                          });
+                        }
+                      }, 100);
+                      
                       toast({
                         title: "Opening editor...",
                         description: "Widget editor is opening.",
@@ -488,7 +506,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     selectedWidgets.forEach(widgetId => {
                       const widget = widgetList.find(w => w.id === widgetId);
                       if (widget) {
-                        const duplicated = { ...widget, id: Math.floor(Math.random() * 1000000) + 1000000 };
+                        const duplicated = { ...widget, id: generateLocalWidgetId() };
                         createLocal(duplicated);
                       }
                     });
@@ -791,6 +809,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
           >
             {widgetList.map((widget) => {
+              // Add guard to ensure widget exists in current state
+              if (!widgetsRecord[widget.id]) {
+                console.warn(`⚠️ [WidgetCanvasNew] Widget ${widget.id} not found in current state, skipping render`);
+                return null;
+              }
+
               const definition = getWidgetDefinition(widget.kind);
               const Renderer = definition.renderer as React.ComponentType<{
                 widget: WidgetEntity;
@@ -805,8 +829,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
               const isSelected = selectedWidgets.has(widget.id);
 
               return (
-                  <div 
-                    key={widget.id} 
+                  <div
+                    key={widget.id}
+                    data-grid={widget.id}
                     className={`border border-dashed rounded transition-all cursor-pointer ${
                       isEditMode 
                         ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
@@ -824,8 +849,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                         handleDeselectAll();
                         handleSelectWidget(widget.id);
                         
-                        // Auto-open editor for the selected widget
-                        setEditorWidgetId(widget.id);
+                        // If editor is already open, switch to this widget
+                        if (editorWidgetId !== null) {
+                          setEditorWidgetId(widget.id);
+                        }
+                        // Don't auto-open editor - user must click edit button
                       }
                     }}
                   >
@@ -838,7 +866,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   />
                 </div>
               );
-            })}
+            }).filter(Boolean)}
           </GridLayout>
         </WidgetErrorBoundary>
       </div>

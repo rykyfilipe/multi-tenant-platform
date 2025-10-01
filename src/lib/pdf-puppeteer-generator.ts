@@ -665,8 +665,8 @@ export class PuppeteerPDFGenerator {
 			});
 
 			const quantity = parseFloat(item.quantity || '0');
-			// Fix: Use unit_price instead of price for consistency with preview
-			const price = parseFloat(item.unit_price || item.price || '0');
+			// Use unit_price for consistency with the new column naming
+			const price = parseFloat(item.unit_price || '0');
 			const itemVatRate = parseFloat(item.product_vat || item.vat_rate || '0');
 			const itemDiscountRate = parseFloat(item.discount_rate || '0');
 			const itemDiscountAmount = parseFloat(item.discount_amount || '0');

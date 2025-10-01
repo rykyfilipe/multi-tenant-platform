@@ -87,9 +87,10 @@ export function PDFPreviewModal({
               product_name: item.product_name || 'Product',
               description: item.description || item.product_description || '',
               quantity: Number(item.quantity) || 0,
-              unit_price: Number(item.price) || 0,
-              total: Number(item.quantity) * Number(item.price) || 0,
-              vat_rate: Number(item.product_vat) || 0
+              unit_price: Number(item.unit_price) || 0,
+              total: Number(item.total_price) || Number(item.unit_price) * Number(item.quantity) || 0,
+              vat_rate: Number(item.product_vat) || 0,
+              currency: item.currency || 'USD'
             })),
             totals: {
               subtotal: data.totals.subtotal || 0,

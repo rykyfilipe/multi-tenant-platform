@@ -21,13 +21,14 @@ export const SavePendingButton: React.FC<SavePendingButtonProps> = ({ tenantId, 
     setErrorMessage(null);
     setIsLoading(true);
     try {
+      console.log('[SavePendingButton] Saving operations:', operations);
       const response = await api.savePending({ actorId, operations });
       if (response.conflicts.length) {
         setErrorMessage("Conflicts detected. Review and merge changes.");
-      } else {
-        clearPending();
       }
-    } catch {
+      // Note: clearPending() is now handled in api.savePending() after successful save
+    } catch (error) {
+      console.error('[SavePendingButton] Save failed:', error);
       setErrorMessage("Failed to save pending changes.");
     } finally {
       setIsLoading(false);

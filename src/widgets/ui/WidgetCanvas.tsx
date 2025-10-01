@@ -28,6 +28,11 @@ import {
   DraftUpdateOperation,
   WidgetDraftEntity,
 } from "../domain/entities";
+
+// Import the helper function
+const generateLocalWidgetId = (): number => {
+  return Math.floor(Math.random() * 1000000) + 1000000;
+};
 import {
   useWidgetsApi,
 } from "@/widgets/api/simple-client";
@@ -52,12 +57,23 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const removeDraft = useWidgetsStore((state) => state.removeDraft);
   const widgetList = useMemo(() => {
     const widgets = Object.values(widgetsRecord);
-    console.log('🎨 [DEBUG] Widget list updated:', { 
-      count: widgets.length, 
+    console.log('🎨 [DEBUG] Widget list updated:', {
+      count: widgets.length,
       widgets: widgets.map(w => ({ id: w.id, kind: w.kind, title: w.title }))
     });
     return widgets;
   }, [widgetsRecord]);
+
+  // Create a stable layout reference to avoid unnecessary re-renders
+  const layout = useMemo(() =>
+    widgetList.map((widget) => ({
+      i: widget.id.toString(),
+      x: widget.position.x,
+      y: widget.position.y,
+      w: widget.position.w,
+      h: widget.position.h,
+    })), [widgetList]
+  );
   const draftsList = useMemo(() => Object.values(draftsRecord), [draftsRecord]);
   const conflicts = useWidgetsStore((state) => state.conflicts);
   const activeConflict = useWidgetsStore((state) => state.activeConflict);
@@ -74,7 +90,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"canvas" | "drafts">("canvas");
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // New UI state
   const [selectedWidgets, setSelectedWidgets] = useState<Set<number>>(new Set());
   const [filteredWidgets, setFilteredWidgets] = useState<WidgetEntity[]>([]);
@@ -100,16 +116,6 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
     loadData();
   }, [tenantId, dashboardId]);
-
-  const layout: Layout[] = useMemo(() =>
-    widgetList.map((widget) => ({
-      i: widget.id.toString(),
-      x: widget.position.x,
-      y: widget.position.y,
-      w: widget.position.w,
-      h: widget.position.h,
-    })), [widgetList]
-  );
 
   const handleSaveLocalAsDraft = async () => {
     const operations = getPending();
@@ -155,7 +161,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     const definition = getWidgetDefinition(widget.kind);
     createLocal({
       ...widget,
-      id: Math.floor(Math.random() * 1000000) + 1000000,
+      id: generateLocalWidgetId(),
       title: `${widget.title ?? "Widget"} Copy`,
       position: { ...widget.position, x: widget.position.x + 1 },
       config: definition.schema.parse(widget.config),
@@ -188,8 +194,8 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       const maxY = Math.max(...widgetList.map(w => w.position.y + w.position.h), 0);
       console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 4, h: 4 });
       
-      // Create widget locally with temporary ID
-      const tempId = Date.now();
+      // Create widget locally with safe temporary ID
+      const tempId = generateLocalWidgetId();
       const newWidget: WidgetEntity = {
         id: tempId,
         tenantId,
@@ -244,14 +250,22 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const handleDeleteSelected = () => {
     // Create a copy of selected widgets to avoid mutation during iteration
     const widgetsToDelete = Array.from(selectedWidgets);
-    widgetsToDelete.forEach(widgetId => {
-      try {
+
+    // Batch the deletions to avoid race conditions
+    try {
+      widgetsToDelete.forEach(widgetId => {
         deleteLocal(widgetId);
-      } catch (error) {
-        console.error(`Failed to delete widget ${widgetId}:`, error);
-      }
-    });
-    setSelectedWidgets(new Set());
+      });
+
+      // Clear selection after all deletions are processed
+      setTimeout(() => {
+        setSelectedWidgets(new Set());
+      }, 0);
+    } catch (error) {
+      console.error('Failed to delete selected widgets:', error);
+      // Still clear selection even if deletion fails
+      setSelectedWidgets(new Set());
+    }
   };
 
   const handleDuplicateSelected = () => {
@@ -260,7 +274,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       if (widget) {
         const duplicatedWidget = {
           ...widget,
-          id: Math.floor(Math.random() * 1000000) + 1000000,
+          id: generateLocalWidgetId(),
           title: `${widget.title} (Copy)`,
           position: { ...widget.position, x: widget.position.x + 1 },
         };
@@ -282,7 +296,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
   const handleTemplateSelect = (template: any) => {
     const newWidget: WidgetEntity = {
-      id: Math.floor(Math.random() * 1000000) + 1000000,
+      id: generateLocalWidgetId(),
       tenantId,
       dashboardId,
       kind: template.kind,
@@ -625,30 +639,55 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                   }}
                 >
                   {(filteredWidgets.length > 0 ? filteredWidgets : widgetList).map((widget) => {
+                    // Add guard to ensure widget exists in current state
+                    if (!widgetsRecord[widget.id]) {
+                      console.warn(`⚠️ [WidgetCanvas] Widget ${widget.id} not found in current state, skipping render`);
+                      return null;
+                    }
+
                     const definition = getWidgetDefinition(widget.kind);
                     const Renderer = definition.renderer;
                     const isSelected = selectedWidgets.has(widget.id);
 
                     return (
-                      <div 
-                        key={widget.id} 
+                      <div
+                        key={widget.id}
+                        data-grid={widget.id}
                         className={`border border-dashed rounded transition-all ${
                           isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300'
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSelectWidget(widget.id, !isSelected);
+                          
+                          // If editor is already open, switch to this widget
+                          if (editorWidgetId !== null) {
+                            setEditorWidgetId(widget.id);
+                          }
                         }}
                       >
                         <Renderer
                           widget={widget}
-                          onEdit={() => openEditor(widget.id)}
+                          onEdit={() => {
+                            openEditor(widget.id);
+                            // Scroll to widget when editor opens
+                            setTimeout(() => {
+                              const widgetElement = document.querySelector(`[data-grid="${widget.id}"]`);
+                              if (widgetElement) {
+                                widgetElement.scrollIntoView({ 
+                                  behavior: 'smooth', 
+                                  block: 'center',
+                                  inline: 'center'
+                                });
+                              }
+                            }, 100);
+                          }}
                           onDelete={() => deleteLocal(widget.id)}
                           onDuplicate={() => handleDuplicate(widget)}
                         />
                       </div>
                     );
-                  })}
+                  }).filter(Boolean)}
                 </GridLayout>
               </WidgetErrorBoundary>
         </div>
