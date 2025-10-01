@@ -27,12 +27,7 @@ export const SavePendingButton: React.FC<SavePendingButtonProps> = ({ tenantId, 
       if (response.conflicts.length) {
         setErrorMessage("Conflicts detected. Review and merge changes.");
       } else {
-        console.log('[savePending] Save successful, reloading widgets...');
-        
-        // Reload all widgets from server to get correct state
-        await api.loadWidgets(true);
-        
-        console.log('[savePending] Widgets reloaded successfully');
+        console.log('[savePending] Save successful - pending operations cleared automatically');
       }
     } catch (error) {
       console.error('[savePending] Error:', error);

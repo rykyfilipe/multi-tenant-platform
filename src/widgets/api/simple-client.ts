@@ -175,6 +175,8 @@ export class WidgetsApiClient {
   }
 
   async savePending(payload: Omit<SavePendingRequest, "tenantId" | "dashboardId">): Promise<SavePendingResponse> {
+    console.log('[savePending] Sending batch request with operations:', payload.operations.length);
+    
     const res = await fetch(
       `/api/v1/tenants/${this.tenantId}/dashboards/${this.dashboardId}/widgets/1`,
       {
@@ -184,8 +186,15 @@ export class WidgetsApiClient {
       }
     );
 
-    if (!res.ok) throw new Error("Failed to save pending widgets");
-    return (await res.json()) as SavePendingResponse;
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[savePending] Request failed:', res.status, res.statusText, errorText);
+      throw new Error(`Failed to save pending widgets: ${res.statusText}`);
+    }
+    
+    const result = await res.json() as SavePendingResponse;
+    console.log('[savePending] Batch save successful:', result);
+    return result;
   }
 }
 
@@ -204,7 +213,17 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
       console.log('[loadWidgets] Fetching widgets from API...');
       const data = await apiClient.fetchWidgets(includeConfig);
       console.log('[loadWidgets] Received widgets:', data.items);
-      setWidgets(data.items as WidgetEntity[]);
+      
+      // Ensure widgets have proper structure to prevent hydration issues
+      const normalizedWidgets = data.items.map(widget => ({
+        ...widget,
+        config: widget.config || {},
+        position: widget.position || { x: 0, y: 0, w: 4, h: 4 },
+        createdAt: new Date(widget.createdAt),
+        updatedAt: new Date(widget.updatedAt),
+      }));
+      
+      setWidgets(normalizedWidgets as WidgetEntity[]);
       // Clear pending operations when loading widgets for a new dashboard context
       clearPending();
       console.log('[loadWidgets] Widgets set in store, pending cleared');
@@ -242,13 +261,18 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
 
   const savePending = async (payload: Omit<SavePendingRequest, "tenantId" | "dashboardId">) => {
     try {
+      console.log('[savePending] Starting batch save with operations:', payload.operations.length);
       const response = await apiClient.savePending(payload);
+      console.log('[savePending] Batch save response:', response);
 
       if (response.conflicts.length) {
+        console.log('[savePending] Conflicts detected:', response.conflicts.length);
         setConflicts(response.conflicts);
       } else {
+        console.log('[savePending] No conflicts, clearing conflicts state');
         setConflicts([]);
-        // Note: Don't reload widgets - let the caller handle state updates
+        // Clear pending operations after successful save
+        clearPending();
       }
 
       return response;

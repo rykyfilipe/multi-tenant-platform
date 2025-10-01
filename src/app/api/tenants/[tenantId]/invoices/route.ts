@@ -346,23 +346,22 @@ export async function POST(
 			fullData: invoiceData
 		});
 
-		// Create invoice row
-		const invoiceRow = await prisma.row.create({
-			data: {
-				tableId: invoiceTables.invoices!.id,
-			},
-		});
+		// Use database transaction to ensure atomicity
+		const result = await prisma.$transaction(async (tx: any) => {
+			// Create invoice row
+			const invoiceRow = await tx.row.create({
+				data: {
+					tableId: invoiceTables.invoices!.id,
+				},
+			});
 
-		console.log("✅ Invoice row created with ID:", invoiceRow.id);
-		
-		// Verify the invoice row was actually created
-		if (!invoiceRow || !invoiceRow.id) {
-			console.error("❌ Failed to create invoice row - no ID returned");
-			return NextResponse.json(
-				{ error: "Failed to create invoice row" },
-				{ status: 500 }
-			);
-		}
+			console.log("✅ Invoice row created with ID:", invoiceRow.id);
+			
+			// Verify the invoice row was actually created
+			if (!invoiceRow || !invoiceRow.id) {
+				console.error("❌ Failed to create invoice row - no ID returned");
+				throw new Error("Failed to create invoice row");
+			}
 
 		// Create invoice cells
 		const invoiceCells: Array<{
@@ -579,19 +578,19 @@ export async function POST(
 			index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
 		);
 
-		// Create all invoice cells
-		await prisma.cell.createMany({
-			data: uniqueInvoiceCells,
-		});
-
-		// Create invoice items with full product details
-		const invoiceItemRows = [];
-		for (const product of parsedData.products) {
-			const itemRow = await prisma.row.create({
-				data: {
-					tableId: invoiceTables.invoice_items!.id,
-				},
+			// Create all invoice cells
+			await tx.cell.createMany({
+				data: uniqueInvoiceCells,
 			});
+
+			// Create invoice items with full product details
+			const invoiceItemRows = [];
+			for (const product of parsedData.products) {
+				const itemRow = await tx.row.create({
+					data: {
+						tableId: invoiceTables.invoice_items!.id,
+					},
+				});
 
 			// Find all columns safely using semantic types (some may be missing if schema is not updated)
 			const columns = {
@@ -644,8 +643,9 @@ export async function POST(
 
 			// Get product details from the referenced table using semantic types
 			let productDetails: any = {};
+			let productTable: any = null;
 			try {
-				const productTable = await prisma.table.findFirst({
+				productTable = await tx.table.findFirst({
 					where: {
 						name: product.product_ref_table,
 						databaseId: database.id,
@@ -673,7 +673,7 @@ export async function POST(
 						);
 					}
 
-					const productRow = await prisma.row.findUnique({
+					const productRow = await tx.row.findUnique({
 						where: { id: product.product_ref_id },
 						include: {
 							cells: {
@@ -720,11 +720,11 @@ export async function POST(
 				console.error("❌ invoice_id column not found in invoice_items table!");
 			}
 
-			if (columns.product_ref_table) {
+			if (columns.product_ref_table && productTable) {
 				itemCells.push({
 					rowId: itemRow.id,
 					columnId: columns.product_ref_table.id,
-					value: product.product_ref_table,
+					value: productTable.id, // Use table ID instead of table name
 				});
 			}
 
@@ -845,12 +845,12 @@ export async function POST(
 				index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
 			);
 
-			await prisma.cell.createMany({
-				data: uniqueItemCells,
-			});
+				await tx.cell.createMany({
+					data: uniqueItemCells,
+				});
 
-			invoiceItemRows.push(itemRow);
-		}
+				invoiceItemRows.push(itemRow);
+			}
 
 		// Calculate totals using unified service
 		const itemsForCalculation = parsedData.products.map((product) => ({
@@ -865,31 +865,31 @@ export async function POST(
 			unit_of_measure: product.unit_of_measure,
 		}));
 
-		// Get VAT rates for products
-		for (let i = 0; i < itemsForCalculation.length; i++) {
-			const product = parsedData.products[i];
-			try {
-				const productTable = await prisma.table.findFirst({
-					where: {
-						name: product.product_ref_table,
-						databaseId: database.id,
-					},
-					include: {
-						columns: true,
-					},
-				});
-
-				if (productTable) {
-					const productRow = await prisma.row.findUnique({
-						where: { id: product.product_ref_id },
+			// Get VAT rates for products
+			for (let i = 0; i < itemsForCalculation.length; i++) {
+				const product = parsedData.products[i];
+				try {
+					const productTable = await tx.table.findFirst({
+						where: {
+							name: product.product_ref_table,
+							databaseId: database.id,
+						},
 						include: {
-							cells: {
-								include: {
-									column: true,
-								},
-							},
+							columns: true,
 						},
 					});
+
+					if (productTable) {
+						const productRow = await tx.row.findUnique({
+							where: { id: product.product_ref_id },
+							include: {
+								cells: {
+									include: {
+										column: true,
+									},
+								},
+							},
+						});
 
 					if (productRow) {
 						const productDetails = extractProductDetails(
@@ -930,44 +930,54 @@ export async function POST(
 		// Debug: Log the calculated totals
 		console.log("Calculated totals:", JSON.stringify(totals, null, 2));
 
-		// Add total_amount to invoice
-		const totalAmountColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_total_amount",
-		);
+			// Add total_amount to invoice
+			const totalAmountColumn = invoiceTables.invoices!.columns!.find(
+				(c: any) => c.semanticType === "invoice_total_amount",
+			);
 
-		if (totalAmountColumn) {
-			await prisma.cell.create({
-				data: {
-					rowId: invoiceRow.id,
-					columnId: totalAmountColumn.id,
-					value: totals.grandTotal.toString(),
-				},
+			if (totalAmountColumn) {
+				await tx.cell.create({
+					data: {
+						rowId: invoiceRow.id,
+						columnId: totalAmountColumn.id,
+						value: totals.grandTotal.toString(),
+					},
+				});
+			}
+
+			console.log("✅ Invoice creation completed:");
+			console.log("   - Invoice Row ID:", invoiceRow.id);
+			console.log("   - Invoice Number:", invoiceNumber);
+			console.log("   - Invoice Items created:", invoiceItemRows.length);
+			console.log("   - Total amount:", totals.grandTotal);
+
+			// Verify invoice row still exists and has correct ID
+			const verifyInvoice = await tx.row.findUnique({
+				where: { id: invoiceRow.id },
+				select: { id: true, tableId: true }
 			});
-		}
+			
+			if (!verifyInvoice) {
+				console.error("❌ CRITICAL: Invoice row disappeared after creation!");
+			} else {
+				console.log("✅ Invoice row verified in database:", verifyInvoice);
+			}
 
-		console.log("✅ Invoice creation completed:");
-		console.log("   - Invoice Row ID:", invoiceRow.id);
-		console.log("   - Invoice Number:", invoiceNumber);
-		console.log("   - Invoice Items created:", invoiceItemRows.length);
-		console.log("   - Total amount:", totals.grandTotal);
-
-		// Verify invoice row still exists and has correct ID
-		const verifyInvoice = await prisma.row.findUnique({
-			where: { id: invoiceRow.id },
-			select: { id: true, tableId: true }
+			// Return the result from the transaction
+			return {
+				invoiceRow,
+				invoiceNumber,
+				invoiceItemRows,
+				totals
+			};
 		});
-		
-		if (!verifyInvoice) {
-			console.error("❌ CRITICAL: Invoice row disappeared after creation!");
-		} else {
-			console.log("✅ Invoice row verified in database:", verifyInvoice);
-		}
 
+		// Return the response after successful transaction
 		return NextResponse.json({
 			message: "Invoice created successfully",
 			invoice: {
-				id: invoiceRow.id,
-				invoice_number: invoiceNumber,
+				id: result.invoiceRow.id,
+				invoice_number: result.invoiceNumber,
 				customer_id: parsedData.customer_id,
 				date: new Date().toISOString(),
 				due_date: parsedData.due_date,
@@ -977,9 +987,9 @@ export async function POST(
 				payment_method: parsedData.payment_method,
 				notes: parsedData.notes,
 				items_count: parsedData.products.length,
-				subtotal: totals.subtotal,
-				vat_total: totals.vatTotal,
-				total_amount: totals.grandTotal,
+				subtotal: result.totals.subtotal,
+				vat_total: result.totals.vatTotal,
+				total_amount: result.totals.grandTotal,
 			},
 		});
 	} catch (error) {

@@ -313,7 +313,10 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
           <div className="space-y-4">
             <div className="p-3 bg-muted/50 rounded-md mb-4">
               <p className="text-xs text-muted-foreground">
-                <strong>Data Aggregation:</strong> Apply mathematical functions to numeric columns (e.g., sum, average, count, min, max)
+                <strong>Data Aggregation:</strong> Apply mathematical functions to numeric columns to create a single aggregated data point. This creates one summary value for the entire dataset.
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ <strong>Note:</strong> Aggregation is mutually exclusive with Grouping. Enabling aggregation will disable grouping.
               </p>
             </div>
             
@@ -324,9 +327,29 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <Switch
                 id="enableAggregation"
                 checked={value.settings.enableAggregation || false}
-                onCheckedChange={(checked) => updateSettings({ enableAggregation: checked })}
+                onCheckedChange={(checked) => {
+                  if (checked && value.settings.enableGrouping) {
+                    // Disable grouping when enabling aggregation
+                    updateSettings({ 
+                      enableAggregation: true, 
+                      enableGrouping: false,
+                      groupByColumn: undefined 
+                    });
+                  } else {
+                    updateSettings({ enableAggregation: checked });
+                  }
+                }}
+                disabled={value.settings.enableGrouping}
               />
             </div>
+
+            {value.settings.enableGrouping && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-xs text-amber-700">
+                  <strong>Conflict:</strong> Grouping is currently enabled. Disable grouping first to use aggregation.
+                </p>
+              </div>
+            )}
 
             {value.settings.enableAggregation && (
               <>
@@ -342,15 +365,15 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sum">Sum</SelectItem>
-                      <SelectItem value="avg">Average</SelectItem>
-                      <SelectItem value="count">Count</SelectItem>
-                      <SelectItem value="min">Minimum</SelectItem>
-                      <SelectItem value="max">Maximum</SelectItem>
+                      <SelectItem value="sum">Sum - Add all values</SelectItem>
+                      <SelectItem value="avg">Average - Calculate mean</SelectItem>
+                      <SelectItem value="count">Count - Count non-null values</SelectItem>
+                      <SelectItem value="min">Minimum - Find smallest value</SelectItem>
+                      <SelectItem value="max">Maximum - Find largest value</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    This function will be applied to all selected numeric columns
+                    This function will be applied to each selected numeric column independently
                   </p>
                 </div>
 
@@ -358,7 +381,10 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                   <Label className="text-xs font-medium uppercase tracking-wide">
                     Numeric Columns to Aggregate
                   </Label>
-                  <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Select one or more numeric columns. Each will be aggregated separately.
+                  </p>
+                  <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
                     {availableColumns
                       .filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type))
                       .map((column) => {
@@ -382,10 +408,20 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                           </div>
                         );
                       })}
+                    {availableColumns.filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type)).length === 0 && (
+                      <p className="text-xs text-muted-foreground italic">
+                        No numeric columns available in the selected table
+                      </p>
+                    )}
                   </div>
                   {(!value.settings.aggregationColumns || value.settings.aggregationColumns.length === 0) && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      Please select at least one numeric column to aggregate.
+                    <p className="text-xs text-red-600 mt-1">
+                      ⚠️ Please select at least one numeric column to aggregate.
+                    </p>
+                  )}
+                  {value.settings.aggregationColumns && value.settings.aggregationColumns.length > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✅ {value.settings.aggregationColumns.length} column(s) selected for aggregation
                     </p>
                   )}
                 </div>
@@ -399,7 +435,10 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
           <div className="space-y-4">
             <div className="p-3 bg-muted/50 rounded-md mb-4">
               <p className="text-xs text-muted-foreground">
-                <strong>Data Grouping:</strong> Group rows by categorical columns and aggregate numeric values within each group (e.g., sum sales by region, average score by department)
+                <strong>Data Grouping:</strong> Group rows by categorical columns and aggregate numeric values within each group. Each unique group value becomes a separate data point in the chart.
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ <strong>Note:</strong> Grouping is mutually exclusive with Aggregation. Enabling grouping will disable aggregation.
               </p>
             </div>
             
@@ -410,9 +449,29 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <Switch
                 id="enableGrouping"
                 checked={value.settings.enableGrouping || false}
-                onCheckedChange={(checked) => updateSettings({ enableGrouping: checked })}
+                onCheckedChange={(checked) => {
+                  if (checked && value.settings.enableAggregation) {
+                    // Disable aggregation when enabling grouping
+                    updateSettings({ 
+                      enableGrouping: true, 
+                      enableAggregation: false,
+                      aggregationColumns: []
+                    });
+                  } else {
+                    updateSettings({ enableGrouping: checked });
+                  }
+                }}
+                disabled={value.settings.enableAggregation}
               />
             </div>
+
+            {value.settings.enableAggregation && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-xs text-amber-700">
+                  <strong>Conflict:</strong> Aggregation is currently enabled. Disable aggregation first to use grouping.
+                </p>
+              </div>
+            )}
 
             {value.settings.enableGrouping && (
               <>
@@ -429,7 +488,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                     </SelectTrigger>
                     <SelectContent>
                       {availableColumns
-                        .filter(col => ["string", "text", "date", "boolean"].includes(col.type))
+                        .filter(col => ["string", "text", "date", "datetime", "boolean"].includes(col.type))
                         .map((column) => (
                           <SelectItem key={column.id} value={column.name}>
                             {column.name} ({column.type})
@@ -440,13 +499,50 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                   <p className="text-xs text-muted-foreground mt-1">
                     Rows will be grouped by unique values in this column. Each group becomes a data point in the chart.
                   </p>
+                  {!value.settings.groupByColumn && (
+                    <p className="text-xs text-red-600 mt-1">
+                      ⚠️ Please select a column to group by.
+                    </p>
+                  )}
+                  {value.settings.groupByColumn && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✅ Grouping by: {value.settings.groupByColumn}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="groupingAggregationFunction" className="text-xs font-medium uppercase tracking-wide">
+                    Aggregation Function for Groups
+                  </Label>
+                  <Select
+                    value={value.settings.aggregationFunction || "sum"}
+                    onValueChange={(val) => updateSettings({ aggregationFunction: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sum">Sum - Add all values in group</SelectItem>
+                      <SelectItem value="avg">Average - Calculate mean in group</SelectItem>
+                      <SelectItem value="count">Count - Count rows in group</SelectItem>
+                      <SelectItem value="min">Minimum - Find smallest value in group</SelectItem>
+                      <SelectItem value="max">Maximum - Find largest value in group</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This function will be applied to numeric values within each group
+                  </p>
                 </div>
 
                 <div>
                   <Label className="text-xs font-medium uppercase tracking-wide">
                     Numeric Columns to Aggregate in Groups
                   </Label>
-                  <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Select one or more numeric columns. Each will be aggregated within each group separately.
+                  </p>
+                  <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
                     {availableColumns
                       .filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type))
                       .map((column) => {
@@ -470,10 +566,20 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                           </div>
                         );
                       })}
+                    {availableColumns.filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type)).length === 0 && (
+                      <p className="text-xs text-muted-foreground italic">
+                        No numeric columns available in the selected table
+                      </p>
+                    )}
                   </div>
                   {(!value.settings.aggregationColumns || value.settings.aggregationColumns.length === 0) && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      Please select at least one numeric column to aggregate within groups.
+                    <p className="text-xs text-red-600 mt-1">
+                      ⚠️ Please select at least one numeric column to aggregate within groups.
+                    </p>
+                  )}
+                  {value.settings.aggregationColumns && value.settings.aggregationColumns.length > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✅ {value.settings.aggregationColumns.length} column(s) selected for group aggregation
                     </p>
                   )}
                 </div>

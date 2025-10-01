@@ -12,6 +12,7 @@ import { WidgetKind } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
+import { HydrationBoundary } from "./components/HydrationBoundary";
 import { 
   BarChart3, 
   Table, 
@@ -74,12 +75,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           variant: "destructive",
         });
       } else {
-        console.log('[savePending] Save successful, reloading widgets from server...');
-        
-        // Simply reload all widgets from server to get the correct state
-        await api.loadWidgets(true);
-        
-        console.log('[savePending] Widgets reloaded successfully');
+        console.log('[savePending] Save successful - pending operations cleared automatically');
         
         toast({
           title: "Changes saved successfully!",
@@ -357,7 +353,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   }
 
   return (
-    <div className="h-full w-full relative">
+    <HydrationBoundary fallback={
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="text-muted-foreground">Loading widgets...</div>
+        </div>
+      </div>
+    }>
+      <div className="h-full w-full relative">
         {/* Floating Toolbar - Only in Edit Mode */}
         {isEditMode && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
@@ -831,8 +835,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           }}
         />
       )}
-    </div>
-    
+      </div>
+    </HydrationBoundary>
   );
   
 };

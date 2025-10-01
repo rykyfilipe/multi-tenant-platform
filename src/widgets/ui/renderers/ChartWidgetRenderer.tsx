@@ -196,24 +196,41 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       return processedRow;
     });
 
+    // Validate that aggregation and grouping are not both enabled
+    if (enableAggregation && enableGrouping) {
+      console.warn('⚠️ ChartWidgetRenderer - Both aggregation and grouping are enabled. This is not allowed.');
+      // Default to grouping if both are enabled
+      processed = processed; // Keep as is, will be processed by grouping logic
+    }
+
     // Apply simple aggregation if enabled (without grouping)
     if (enableAggregation && !enableGrouping && aggregationColumns.length > 0) {
       console.log('🔄 ChartWidgetRenderer - Applying simple aggregation:', { aggregationFunction, aggregationColumns });
 
-      const aggregatedRow: any = { name: "Aggregated" };
+      const aggregatedRow: any = { name: "Total" };
 
       // Apply aggregation for each specified column
       aggregationColumns.forEach(columnName => {
         const values = extractNumericValues(processed, columnName);
-        aggregatedRow[columnName] = applyAggregation(values, aggregationFunction);
+        const aggregatedValue = applyAggregation(values, aggregationFunction);
+        aggregatedRow[columnName] = aggregatedValue;
+        
+        console.log(`📊 Aggregated ${columnName}: ${aggregatedValue} (${aggregationFunction} of ${values.length} values)`);
       });
+
+      // If no aggregation columns specified but Y mapping exists, aggregate the Y column
+      if (aggregationColumns.length === 0 && mappings.y) {
+        const values = extractNumericValues(processed, mappings.y);
+        aggregatedRow.value = applyAggregation(values, aggregationFunction);
+        console.log(`📊 Aggregated ${mappings.y}: ${aggregatedRow.value} (${aggregationFunction} of ${values.length} values)`);
+      }
 
       processed = [aggregatedRow];
     }
 
-    // Apply grouping if enabled
-    if (enableGrouping && groupByColumn) {
-      console.log('🔄 ChartWidgetRenderer - Applying grouping:', { groupByColumn, aggregationColumns });
+    // Apply grouping if enabled (and not aggregation)
+    if (enableGrouping && !enableAggregation && groupByColumn) {
+      console.log('🔄 ChartWidgetRenderer - Applying grouping:', { groupByColumn, aggregationColumns, aggregationFunction });
 
       const groupedData: Record<string, any[]> = {};
 
@@ -226,22 +243,28 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
         groupedData[groupKey].push(row);
       });
 
+      console.log(`📊 Grouped data into ${Object.keys(groupedData).length} groups:`, Object.keys(groupedData));
+
       // Apply aggregation to each group
       const aggregatedData: any[] = [];
 
       Object.entries(groupedData).forEach(([groupKey, groupRows]) => {
         const aggregatedRow: any = { name: groupKey };
 
-        // If aggregation columns are specified, use them; otherwise use the Y axis mapping
+        // If aggregation columns are specified, use them
         if (aggregationColumns.length > 0) {
           aggregationColumns.forEach(columnName => {
             const values = extractNumericValues(groupRows, columnName);
-            aggregatedRow[columnName] = applyAggregation(values, aggregationFunction);
+            const aggregatedValue = applyAggregation(values, aggregationFunction);
+            aggregatedRow[columnName] = aggregatedValue;
+            
+            console.log(`📊 Group "${groupKey}" - ${columnName}: ${aggregatedValue} (${aggregationFunction} of ${values.length} values)`);
           });
         } else if (mappings.y) {
           // Default to aggregating the Y axis column
           const values = extractNumericValues(groupRows, mappings.y);
           aggregatedRow.value = applyAggregation(values, aggregationFunction);
+          console.log(`📊 Group "${groupKey}" - ${mappings.y}: ${aggregatedRow.value} (${aggregationFunction} of ${values.length} values)`);
         }
 
         aggregatedData.push(aggregatedRow);
@@ -251,12 +274,14 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     }
 
     // Apply top N filtering if enabled
-    if (enableTopN && sortByColumn && processed.length > 0) {
-      console.log('🔄 ChartWidgetRenderer - Applying top N:', { sortByColumn, sortDirection, topNCount });
+    if (enableTopN && processed.length > 0) {
+      const sortColumn = sortByColumn || (aggregationColumns.length > 0 ? aggregationColumns[0] : 'value');
+      
+      console.log('🔄 ChartWidgetRenderer - Applying top N:', { sortColumn, sortDirection, topNCount });
 
       processed.sort((a, b) => {
-        const aVal = a[sortByColumn] || a.value || 0;
-        const bVal = b[sortByColumn] || b.value || 0;
+        const aVal = a[sortColumn] || a.value || 0;
+        const bVal = b[sortColumn] || b.value || 0;
 
         if (sortDirection === 'desc') {
           return bVal - aVal;
@@ -266,12 +291,16 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       });
 
       processed = processed.slice(0, topNCount);
+      console.log(`📊 Top N applied: showing ${processed.length} results`);
     }
 
-    console.log('📊 ChartWidgetRenderer - Processed data:', {
+    console.log('📊 ChartWidgetRenderer - Final processed data:', {
       processedLength: processed.length,
       firstProcessedRow: processed[0],
-      sampleProcessedRows: processed.slice(0, 3)
+      sampleProcessedRows: processed.slice(0, 3),
+      aggregationEnabled: enableAggregation,
+      groupingEnabled: enableGrouping,
+      topNEnabled: enableTopN
     });
 
     return processed;
@@ -281,36 +310,53 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const dataKeys = useMemo(() => {
     if (!processedData.length) return [{ key: "value", name: "Value", color: "#1f2937" }];
     
-    // If we have aggregation columns, use them as data keys
+    console.log('🔑 ChartWidgetRenderer - Generating data keys:', {
+      aggregationColumns,
+      enableAggregation,
+      enableGrouping,
+      firstRow: processedData[0]
+    });
+    
+    // If we have aggregation columns specified, use them as data keys
     if (aggregationColumns.length > 0) {
-      return aggregationColumns.map((column, index) => ({
+      const keys = aggregationColumns.map((column, index) => ({
         key: column,
-        name: column.charAt(0).toUpperCase() + column.slice(1),
+        name: column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, ' '),
         color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
       }));
+      
+      console.log('🔑 Using aggregation columns as keys:', keys);
+      return keys;
     }
     
-    // Default: use numeric columns as keys
+    // Auto-detect numeric columns from processed data
     const keys = new Set<string>();
     processedData.forEach((row: any) => {
       Object.keys(row).forEach((key: any) => {
+        // Include numeric columns but exclude metadata
         if (key !== 'name' && key !== '_originalRowData' && typeof row[key] === 'number') {
           keys.add(key);
         }
       });
     });
     
+    console.log('🔑 Auto-detected numeric keys:', Array.from(keys));
+    
     // If no numeric keys found, default to 'value'
     if (keys.size === 0) {
+      console.log('🔑 No numeric keys found, using default "value" key');
       return [{ key: "value", name: "Value", color: "#1f2937" }];
     }
     
-    return Array.from(keys).map((key, index) => ({
+    const keyArray = Array.from(keys).map((key, index) => ({
       key,
-      name: key.charAt(0).toUpperCase() + key.slice(1),
+      name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
       color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
     }));
-  }, [processedData, premiumColors, aggregationColumns]);
+    
+    console.log('🔑 Final data keys:', keyArray);
+    return keyArray;
+  }, [processedData, premiumColors, aggregationColumns, enableAggregation, enableGrouping]);
 
   const showGrid = config?.style?.showGrid !== false;
   const showLegend = config?.style?.showLegend !== false;

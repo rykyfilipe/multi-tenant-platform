@@ -199,11 +199,10 @@ export async function GET(
 			// Get complete product details from the referenced table
 			if (itemData.product_ref_table && itemData.product_ref_id) {
 				try {
-					// Find the referenced table
-					const productTable = await prisma.table.findFirst({
+					// Find the referenced table by ID (not name, since we store table ID)
+					const productTable = await prisma.table.findUnique({
 						where: {
-							name: itemData.product_ref_table,
-							databaseId: database.id,
+							id: Number(itemData.product_ref_table),
 						},
 					});
 
