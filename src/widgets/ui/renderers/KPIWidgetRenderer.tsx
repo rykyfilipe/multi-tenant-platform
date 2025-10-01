@@ -101,11 +101,17 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       dataLength: rawData?.data?.length,
       valueField,
       displayFields,
-      showExtremeValueDetails
+      showExtremeValueDetails,
+      selectedAggregations
     });
     
-    if (!rawData?.data || !valueField || !displayFields || displayFields.length === 0) {
-      console.log('🔍 [KPI] findExtremeValueRow early return - missing required data');
+    // Only use extreme value logic for min/max functions
+    const shouldUseExtremeValue = showExtremeValueDetails && 
+      selectedAggregations.length > 0 && 
+      (selectedAggregations.includes('min') || selectedAggregations.includes('max'));
+    
+    if (!rawData?.data || !valueField || !displayFields || displayFields.length === 0 || !shouldUseExtremeValue) {
+      console.log('🔍 [KPI] findExtremeValueRow early return - missing required data or not applicable for current aggregation');
       return null;
     }
 
@@ -128,12 +134,20 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
 
     if (!rowsWithData.length) return null;
 
+    // Determine which extreme value to find based on selected aggregations
+    let targetExtremeMode = extremeValueMode;
+    if (selectedAggregations.includes('max') && !selectedAggregations.includes('min')) {
+      targetExtremeMode = 'max';
+    } else if (selectedAggregations.includes('min') && !selectedAggregations.includes('max')) {
+      targetExtremeMode = 'min';
+    }
+
     // Find row with extreme value
     const extremeRow = rowsWithData.reduce((extreme : any, current : any) => {
       const currentValue = parseFloat(current.rowData[valueField]);
       const extremeValue = parseFloat(extreme.rowData[valueField]);
 
-      if (extremeValueMode === 'max') {
+      if (targetExtremeMode === 'max') {
         return currentValue > extremeValue ? current : extreme;
       } else {
         return currentValue < extremeValue ? current : extreme;
@@ -155,7 +169,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     console.log('🔍 [KPI] findExtremeValueRow result:', result);
     
     return result;
-  }, [rawData, valueField, displayFields, extremeValueMode]);
+  }, [rawData, valueField, displayFields, extremeValueMode, selectedAggregations, showExtremeValueDetails]);
 
   // Calculate KPI values based on selected aggregations
   const kpiValues = useMemo(() => {
@@ -205,14 +219,16 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
 
   // Enhanced KPI value that considers extreme value display
   const enhancedKpiValue = useMemo(() => {
-    if (showExtremeValueDetails && findExtremeValueRow) {
+    // Only use extreme value calculation for min/max functions
+    if (findExtremeValueRow && selectedAggregations.length > 0 && 
+        (selectedAggregations.includes('min') || selectedAggregations.includes('max'))) {
       return findExtremeValueRow.calculationValue;
     }
 
     if (selectedAggregations.length === 0) return 0;
     const primaryAgg = selectedAggregations[0];
     return kpiValues[primaryAgg] || 0;
-  }, [kpiValues, selectedAggregations, showExtremeValueDetails, findExtremeValueRow]);
+  }, [kpiValues, selectedAggregations, findExtremeValueRow]);
 
   // Get the primary KPI value (for backward compatibility and trend calculation)
   const kpiValue = useMemo(() => {
@@ -321,8 +337,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               }`}
               style={{ color: style.valueColor }}
             >
-              {showExtremeValueDetails && findExtremeValueRow && displayFields.length > 0 ? (
-                // Show display values from extreme value row
+              {findExtremeValueRow && displayFields.length > 0 ? (
+                // Show display values from extreme value row (only for min/max functions)
                 <div className="space-y-1">
                   {Object.entries(findExtremeValueRow.displayValues).map(([field, value]) => (
                     <div key={field} className="flex flex-col">
@@ -339,16 +355,16 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               className="text-sm mt-1"
               style={{ color: style.labelColor }}
             >
-              {showExtremeValueDetails && findExtremeValueRow ? (
-                // Show enhanced label with extreme value context
-                `${label} (${extremeValueMode === 'max' ? 'Highest' : 'Lowest'} ${valueField})`
+              {findExtremeValueRow ? (
+                // Show enhanced label with extreme value context (only for min/max functions)
+                `${label} (${selectedAggregations.includes('max') && !selectedAggregations.includes('min') ? 'Highest' : 'Lowest'} ${valueField})`
               ) : (
                 label
               )}
             </div>
 
             {/* Show calculation value if displaying different fields */}
-            {showExtremeValueDetails && findExtremeValueRow && displayFields.length > 0 && (
+            {findExtremeValueRow && displayFields.length > 0 && (
               <div
                 className="text-xs mt-1 opacity-75"
                 style={{ color: style.labelColor }}
@@ -358,10 +374,10 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
             )}
 
             {/* Show additional row data if enabled */}
-            {showExtremeValueDetails && findExtremeValueRow && displayFields.length === 0 && (
+            {findExtremeValueRow && displayFields.length === 0 && (
               <div className="mt-2 p-2 bg-muted/30 rounded text-xs">
                 <div className="font-medium mb-1">
-                  {extremeValueMode === 'max' ? 'Highest' : 'Lowest'} Value Details:
+                  {selectedAggregations.includes('max') && !selectedAggregations.includes('min') ? 'Highest' : 'Lowest'} Value Details:
                 </div>
                 <div className="grid grid-cols-2 gap-1 text-left">
                   {Object.entries(findExtremeValueRow.rowData)

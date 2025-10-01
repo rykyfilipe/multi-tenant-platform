@@ -166,6 +166,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       mappings
     });
 
+    // First, convert raw data to a more manageable format
     let processed = rawData.data.map((row: any, index: number) => {
       const processedRow: any = {};
 
@@ -189,26 +190,26 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
         processedRow.value = parseFloat(rowData[mappings.y]) || 0;
       }
 
-      // Map group/series if exists
-      if (mappings.group && rowData[mappings.group] !== undefined) {
-        processedRow.group = String(rowData[mappings.group]);
-      }
-
-      // Map series if exists
-      if (mappings.series && rowData[mappings.series] !== undefined) {
-        processedRow.series = String(rowData[mappings.series]);
-      }
-
-      // Map color if exists
-      if (mappings.color && rowData[mappings.color] !== undefined) {
-        processedRow.color = String(rowData[mappings.color]);
-      }
-
-      // Add original row data for advanced processing
+      // Add all original row data for advanced processing
       processedRow._originalRowData = rowData;
 
       return processedRow;
     });
+
+    // Apply simple aggregation if enabled (without grouping)
+    if (enableAggregation && !enableGrouping && aggregationColumns.length > 0) {
+      console.log('🔄 ChartWidgetRenderer - Applying simple aggregation:', { aggregationFunction, aggregationColumns });
+
+      const aggregatedRow: any = { name: "Aggregated" };
+
+      // Apply aggregation for each specified column
+      aggregationColumns.forEach(columnName => {
+        const values = extractNumericValues(processed, columnName);
+        aggregatedRow[columnName] = applyAggregation(values, aggregationFunction);
+      });
+
+      processed = [aggregatedRow];
+    }
 
     // Apply grouping if enabled
     if (enableGrouping && groupByColumn) {
@@ -231,11 +232,17 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       Object.entries(groupedData).forEach(([groupKey, groupRows]) => {
         const aggregatedRow: any = { name: groupKey };
 
-        // Apply aggregation for each specified column
-        aggregationColumns.forEach(columnName => {
-          const values = extractNumericValues(groupRows, columnName);
-          aggregatedRow[columnName] = applyAggregation(values, aggregationFunction);
-        });
+        // If aggregation columns are specified, use them; otherwise use the Y axis mapping
+        if (aggregationColumns.length > 0) {
+          aggregationColumns.forEach(columnName => {
+            const values = extractNumericValues(groupRows, columnName);
+            aggregatedRow[columnName] = applyAggregation(values, aggregationFunction);
+          });
+        } else if (mappings.y) {
+          // Default to aggregating the Y axis column
+          const values = extractNumericValues(groupRows, mappings.y);
+          aggregatedRow.value = applyAggregation(values, aggregationFunction);
+        }
 
         aggregatedData.push(aggregatedRow);
       });
@@ -248,8 +255,8 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       console.log('🔄 ChartWidgetRenderer - Applying top N:', { sortByColumn, sortDirection, topNCount });
 
       processed.sort((a, b) => {
-        const aVal = a[sortByColumn] || 0;
-        const bVal = b[sortByColumn] || 0;
+        const aVal = a[sortByColumn] || a.value || 0;
+        const bVal = b[sortByColumn] || b.value || 0;
 
         if (sortDirection === 'desc') {
           return bVal - aVal;
@@ -274,54 +281,36 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const dataKeys = useMemo(() => {
     if (!processedData.length) return [{ key: "value", name: "Value", color: "#1f2937" }];
     
-    // If we have series mapping, use it for multiple series
-    if (mappings.series) {
-      const seriesSet = new Set<string>();
-      processedData.forEach((row: any) => {
-        if (row.series) {
-          seriesSet.add(row.series);
-        }
-      });
-      
-      return Array.from(seriesSet).map((series, index) => ({
-        key: "value",
-        name: series,
-        color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
-      }));
-    }
-    
-    // If we have group mapping, use it for grouping
-    if (mappings.group) {
-      const groupSet = new Set<string>();
-      processedData.forEach((row: any) => {
-        if (row.group) {
-          groupSet.add(row.group);
-        }
-      });
-      
-      return Array.from(groupSet).map((group, index) => ({
-        key: "value",
-        name: group,
+    // If we have aggregation columns, use them as data keys
+    if (aggregationColumns.length > 0) {
+      return aggregationColumns.map((column, index) => ({
+        key: column,
+        name: column.charAt(0).toUpperCase() + column.slice(1),
         color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
       }));
     }
     
     // Default: use numeric columns as keys
     const keys = new Set<string>();
-    processedData.forEach((row:any) => {
-      Object.keys(row).forEach((key:any) => {
-        if (key !== 'name' && typeof row[key] === 'number') {
+    processedData.forEach((row: any) => {
+      Object.keys(row).forEach((key: any) => {
+        if (key !== 'name' && key !== '_originalRowData' && typeof row[key] === 'number') {
           keys.add(key);
         }
       });
     });
+    
+    // If no numeric keys found, default to 'value'
+    if (keys.size === 0) {
+      return [{ key: "value", name: "Value", color: "#1f2937" }];
+    }
     
     return Array.from(keys).map((key, index) => ({
       key,
       name: key.charAt(0).toUpperCase() + key.slice(1),
       color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
     }));
-  }, [processedData, premiumColors, mappings]);
+  }, [processedData, premiumColors, aggregationColumns]);
 
   const showGrid = config?.style?.showGrid !== false;
   const showLegend = config?.style?.showLegend !== false;

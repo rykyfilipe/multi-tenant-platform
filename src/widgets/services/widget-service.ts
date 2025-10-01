@@ -134,7 +134,8 @@ export class WidgetService {
     const where: Prisma.WidgetWhereInput = {
       tenantId,
       dashboardId,
-      kind: kinds ? { in: kinds } : undefined,
+      // Only add kind filter if kinds array has items
+      kind: kinds && kinds.length > 0 ? { in: kinds } : undefined,
     };
 
     console.log('[WidgetService.list] Where clause:', where);

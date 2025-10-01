@@ -353,6 +353,17 @@ export async function POST(
 			},
 		});
 
+		console.log("✅ Invoice row created with ID:", invoiceRow.id);
+		
+		// Verify the invoice row was actually created
+		if (!invoiceRow || !invoiceRow.id) {
+			console.error("❌ Failed to create invoice row - no ID returned");
+			return NextResponse.json(
+				{ error: "Failed to create invoice row" },
+				{ status: 500 }
+			);
+		}
+
 		// Create invoice cells
 		const invoiceCells: Array<{
 			rowId: number;
@@ -692,11 +703,21 @@ export async function POST(
 
 			// Add cells only for columns that exist
 			if (columns.invoice_id) {
+				console.log(`📝 Creating invoice_item with invoice_id: ${invoiceRow.id} (invoice row ID) for item row ${itemRow.id}`);
+				
+				// Verify that invoiceRow.id is a valid number
+				if (!invoiceRow.id || typeof invoiceRow.id !== 'number') {
+					console.error("❌ Invalid invoice row ID:", invoiceRow.id);
+					throw new Error(`Invalid invoice row ID: ${invoiceRow.id}`);
+				}
+				
 				itemCells.push({
 					rowId: itemRow.id,
 					columnId: columns.invoice_id.id,
 					value: invoiceRow.id,
 				});
+			} else {
+				console.error("❌ invoice_id column not found in invoice_items table!");
 			}
 
 			if (columns.product_ref_table) {
@@ -922,6 +943,24 @@ export async function POST(
 					value: totals.grandTotal.toString(),
 				},
 			});
+		}
+
+		console.log("✅ Invoice creation completed:");
+		console.log("   - Invoice Row ID:", invoiceRow.id);
+		console.log("   - Invoice Number:", invoiceNumber);
+		console.log("   - Invoice Items created:", invoiceItemRows.length);
+		console.log("   - Total amount:", totals.grandTotal);
+
+		// Verify invoice row still exists and has correct ID
+		const verifyInvoice = await prisma.row.findUnique({
+			where: { id: invoiceRow.id },
+			select: { id: true, tableId: true }
+		});
+		
+		if (!verifyInvoice) {
+			console.error("❌ CRITICAL: Invoice row disappeared after creation!");
+		} else {
+			console.log("✅ Invoice row verified in database:", verifyInvoice);
 		}
 
 		return NextResponse.json({

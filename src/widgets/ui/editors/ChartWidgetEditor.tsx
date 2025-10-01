@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X, TrendingUp, Group, Filter } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
+import { WidgetFilters } from "../components/WidgetFilters";
 
 interface ChartWidgetEditorProps {
   value: z.infer<typeof chartWidgetConfigSchema>;
@@ -57,20 +58,8 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
     });
   };
 
-  const addFilter = () => {
-    const newFilters = [...value.data.filters, { column: "", operator: "=" as const, value: "" }];
-    updateData({ filters: newFilters });
-  };
-
-  const updateFilter = (index: number, updates: Partial<typeof value.data.filters[0]>) => {
-    const newFilters = [...value.data.filters];
-    newFilters[index] = { ...newFilters[index], ...updates };
-    updateData({ filters: newFilters });
-  };
-
-  const removeFilter = (index: number) => {
-    const newFilters = value.data.filters.filter((_, i) => i !== index);
-    updateData({ filters: newFilters });
+  const handleFiltersChange = (filters: any[]) => {
+    updateData({ filters });
   };
 
   const updateMapping = (key: string, mappingValue: string) => {
@@ -130,25 +119,6 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
             </div>
 
 
-            <div>
-              <Label htmlFor="valueFormat" className="text-xs font-medium uppercase tracking-wide">
-                Value Format
-              </Label>
-              <Select
-                value={value.settings.valueFormat}
-                onValueChange={(val) => updateSettings({ valueFormat: val as typeof value.settings.valueFormat })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="number">Number</SelectItem>
-                  <SelectItem value="currency">Currency</SelectItem>
-                  <SelectItem value="percentage">Percentage</SelectItem>
-                  <SelectItem value="duration">Duration</SelectItem>
-                </SelectContent>
-              </Select>
-      </div>
 
       <div>
               <Label htmlFor="refreshInterval" className="text-xs font-medium uppercase tracking-wide">
@@ -323,229 +293,17 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                     )}
                   </div>
 
-                  {/* Category - For categorizing data points */}
-                  {["bar", "line", "area"].includes(value.settings.chartType) && (
-                    <div className="flex items-center space-x-2">
-                      <Label className="w-16 text-xs">Category:</Label>
-                      <Select
-                        value={value.data.mappings.group || ""}
-                        onValueChange={(val) => updateMapping("group", val)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select category column (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {availableColumns
-                            .filter(col => ["string", "text"].includes(col.type))
-                            .map((column) => (
-                              <SelectItem key={column.id} value={column.name}>
-                                {column.name} ({column.type})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Series - For multi-series charts */}
-                  {["line", "bar", "area"].includes(value.settings.chartType) && (
-                    <div className="flex items-center space-x-2">
-                      <Label className="w-16 text-xs">Series:</Label>
-                      <Select
-                        value={value.data.mappings.series || ""}
-                        onValueChange={(val) => updateMapping("series", val)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select series column (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {availableColumns
-                            .filter(col => ["string", "text"].includes(col.type))
-                            .map((column) => (
-                              <SelectItem key={column.id} value={column.name}>
-                                {column.name} ({column.type})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Color - For charts with color mapping */}
-                  <div className="flex items-center space-x-2">
-                    <Label className="w-16 text-xs">Color:</Label>
-                    <Select
-                      value={value.data.mappings.color || ""}
-                      onValueChange={(val) => updateMapping("color", val)}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select color column (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {availableColumns
-                          .filter(col => ["string", "text"].includes(col.type))
-                          .map((column) => (
-                            <SelectItem key={column.id} value={column.name}>
-                              {column.name} ({column.type})
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
               </div>
             )}
 
             {/* Filters */}
             {availableColumns.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium uppercase tracking-wide">Filters</Label>
-                  <Button size="sm" variant="outline" onClick={addFilter} className="h-6 px-2">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Filter
-                  </Button>
-                </div>
-                <div className="mt-2 space-y-2">
-                  {value.data.filters.map((filter, index) => {
-                    const selectedColumn = availableColumns.find(col => col.name === filter.column);
-                    const columnType = selectedColumn?.type || 'text';
-                    
-                    // Get operators based on column type
-                    const getOperatorsForType = (type: string) => {
-                      switch (type) {
-                        case 'number':
-                        case 'integer':
-                        case 'decimal':
-                          return [
-                            { value: '=', label: '=' },
-                            { value: '!=', label: '!=' },
-                            { value: '>', label: '>' },
-                            { value: '<', label: '<' },
-                            { value: '>=', label: '>=' },
-                            { value: '<=', label: '<=' },
-                            { value: 'contains', label: 'contains' }
-                          ];
-                        case 'date':
-                        case 'datetime':
-                          return [
-                            { value: '=', label: '=' },
-                            { value: '!=', label: '!=' },
-                            { value: '>', label: 'after' },
-                            { value: '<', label: 'before' },
-                            { value: '>=', label: 'after or equal' },
-                            { value: '<=', label: 'before or equal' }
-                          ];
-                        case 'boolean':
-                          return [
-                            { value: '=', label: '=' },
-                            { value: '!=', label: '!=' }
-                          ];
-                        default: // text, string, etc.
-                          return [
-                            { value: '=', label: '=' },
-                            { value: '!=', label: '!=' },
-                            { value: 'contains', label: 'contains' },
-                            { value: 'startsWith', label: 'starts with' },
-                            { value: 'endsWith', label: 'ends with' }
-                          ];
-                      }
-                    };
-
-                    const availableOperators = getOperatorsForType(columnType);
-
-                    return (
-                      <div key={index} className="flex items-center space-x-2 p-2 border rounded">
-                        {/* Column Selection */}
-                        <Select
-                          value={filter.column || ""}
-                          onValueChange={(val) => updateFilter(index, { column: val })}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Column" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableColumns.map((column) => (
-                              <SelectItem key={column.id} value={column.name}>
-                                {column.name} ({column.type})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {/* Operator Selection */}
-                        <Select
-                          value={filter.operator || ""}
-                          onValueChange={(val) => updateFilter(index, { operator: val as any })}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Operator" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableOperators.map((op) => (
-                              <SelectItem key={op.value} value={op.value}>
-                                {op.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {/* Value Input */}
-                        {columnType === 'boolean' ? (
-                          <Select
-                            value={String(filter.value)}
-                            onValueChange={(val) => updateFilter(index, { value: val === 'true' })}
-                          >
-                            <SelectTrigger className="flex-1">
-                              <SelectValue placeholder="Value" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true">True</SelectItem>
-                              <SelectItem value="false">False</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : columnType === 'date' ? (
-                          <Input
-                            type="date"
-                            value={String(filter.value)}
-                            onChange={(e) => updateFilter(index, { value: e.target.value })}
-                            placeholder="Value"
-                            className="flex-1"
-                          />
-                        ) : ['number', 'integer', 'decimal'].includes(columnType) ? (
-                          <Input
-                            type="number"
-                            value={String(filter.value)}
-                            onChange={(e) => updateFilter(index, { value: parseFloat(e.target.value) || 0 })}
-                            placeholder="Value"
-                            className="flex-1"
-                          />
-                        ) : (
-                          <Input
-                            value={String(filter.value)}
-                            onChange={(e) => updateFilter(index, { value: e.target.value })}
-                            placeholder="Value"
-                            className="flex-1"
-                          />
-                        )}
-
-                        {/* Remove Button */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeFilter(index)}
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <WidgetFilters
+                filters={value.data.filters}
+                availableColumns={availableColumns}
+                onChange={handleFiltersChange}
+              />
             )}
           </div>
         </TabsContent>
@@ -553,9 +311,15 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
         {/* Aggregation Tab */}
         <TabsContent value="aggregation" className="space-y-4">
           <div className="space-y-4">
+            <div className="p-3 bg-muted/50 rounded-md mb-4">
+              <p className="text-xs text-muted-foreground">
+                <strong>Data Aggregation:</strong> Apply mathematical functions to numeric columns (e.g., sum, average, count, min, max)
+              </p>
+            </div>
+            
             <div className="flex items-center justify-between">
               <Label htmlFor="enableAggregation" className="text-xs font-medium uppercase tracking-wide">
-                Enable Aggregation
+                Enable Data Aggregation
               </Label>
               <Switch
                 id="enableAggregation"
@@ -568,7 +332,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <>
                 <div>
                   <Label htmlFor="aggregationFunction" className="text-xs font-medium uppercase tracking-wide">
-                    Default Aggregation Function
+                    Aggregation Function
                   </Label>
                   <Select
                     value={value.settings.aggregationFunction || "sum"}
@@ -585,11 +349,14 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                       <SelectItem value="max">Maximum</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This function will be applied to all selected numeric columns
+                  </p>
                 </div>
 
                 <div>
                   <Label className="text-xs font-medium uppercase tracking-wide">
-                    Columns to Aggregate
+                    Numeric Columns to Aggregate
                   </Label>
                   <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
                     {availableColumns
@@ -616,6 +383,11 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         );
                       })}
                   </div>
+                  {(!value.settings.aggregationColumns || value.settings.aggregationColumns.length === 0) && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Please select at least one numeric column to aggregate.
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -627,13 +399,13 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
           <div className="space-y-4">
             <div className="p-3 bg-muted/50 rounded-md mb-4">
               <p className="text-xs text-muted-foreground">
-                <strong>Data Aggregation:</strong> Group rows by a column and aggregate numeric values within each group (e.g., sum sales by region)
+                <strong>Data Grouping:</strong> Group rows by categorical columns and aggregate numeric values within each group (e.g., sum sales by region, average score by department)
               </p>
             </div>
             
             <div className="flex items-center justify-between">
               <Label htmlFor="enableGrouping" className="text-xs font-medium uppercase tracking-wide">
-                Enable Data Aggregation
+                Enable Data Grouping
               </Label>
               <Switch
                 id="enableGrouping"
@@ -646,7 +418,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <>
                 <div>
                   <Label htmlFor="groupByColumn" className="text-xs font-medium uppercase tracking-wide">
-                    Group By Column (Aggregate by this column)
+                    Group By Column
                   </Label>
                   <Select
                     value={value.settings.groupByColumn || ""}
@@ -657,7 +429,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                     </SelectTrigger>
                     <SelectContent>
                       {availableColumns
-                        .filter(col => ["string", "text"].includes(col.type))
+                        .filter(col => ["string", "text", "date", "boolean"].includes(col.type))
                         .map((column) => (
                           <SelectItem key={column.id} value={column.name}>
                             {column.name} ({column.type})
@@ -666,13 +438,13 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Rows will be grouped by unique values in this column
+                    Rows will be grouped by unique values in this column. Each group becomes a data point in the chart.
                   </p>
                 </div>
 
                 <div>
                   <Label className="text-xs font-medium uppercase tracking-wide">
-                    Aggregate Columns in Groups
+                    Numeric Columns to Aggregate in Groups
                   </Label>
                   <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
                     {availableColumns
@@ -699,6 +471,11 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         );
                       })}
                   </div>
+                  {(!value.settings.aggregationColumns || value.settings.aggregationColumns.length === 0) && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Please select at least one numeric column to aggregate within groups.
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -708,9 +485,15 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
         {/* Top N Tab */}
         <TabsContent value="topn" className="space-y-4">
           <div className="space-y-4">
+            <div className="p-3 bg-muted/50 rounded-md mb-4">
+              <p className="text-xs text-muted-foreground">
+                <strong>Top N Filtering:</strong> Show only the top or bottom N results based on a sortable column (e.g., top 10 best selling products, bottom 5 departments by performance)
+              </p>
+            </div>
+            
             <div className="flex items-center justify-between">
               <Label htmlFor="enableTopN" className="text-xs font-medium uppercase tracking-wide">
-                Enable Top N Results
+                Enable Top N Filtering
               </Label>
               <Switch
                 id="enableTopN"
@@ -723,7 +506,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
               <>
                 <div>
                   <Label htmlFor="topNCount" className="text-xs font-medium uppercase tracking-wide">
-                    Number of Results
+                    Number of Results to Show
                   </Label>
                   <Input
                     id="topNCount"
@@ -733,7 +516,11 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                     value={value.settings.topNCount || 10}
                     onChange={(e) => updateSettings({ topNCount: parseInt(e.target.value) || 10 })}
                     className="mt-1"
+                    placeholder="10"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Maximum number of data points to display in the chart
+                  </p>
                 </div>
 
                 <div>
@@ -755,6 +542,9 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Column used to determine the ranking order
+                  </p>
                 </div>
 
                 <div>
@@ -769,10 +559,13 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="desc">Descending (Highest First)</SelectItem>
-                      <SelectItem value="asc">Ascending (Lowest First)</SelectItem>
+                      <SelectItem value="desc">Descending (Highest Values First)</SelectItem>
+                      <SelectItem value="asc">Ascending (Lowest Values First)</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Choose whether to show the highest or lowest values
+                  </p>
                 </div>
               </>
             )}
