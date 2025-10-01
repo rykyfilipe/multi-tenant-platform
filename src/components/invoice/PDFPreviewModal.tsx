@@ -83,20 +83,31 @@ export function PDFPreviewModal({
           const transformedData = {
             invoice: data.invoice,
             customer: data.customer,
-            items: data.items.map((item: any) => ({
-              product_name: item.product_name || 'Product',
-              description: item.description || item.product_description || '',
-              quantity: Number(item.quantity) || 0,
-              unit_price: Number(item.unit_price) || 0,
-              total: Number(item.total_price) || Number(item.unit_price) * Number(item.quantity) || 0,
-              vat_rate: Number(item.product_vat) || 0,
-              currency: item.currency || 'USD'
-            })),
+            items: data.items.map((item: any) => {
+              const quantity = Number(item.quantity) || 0;
+              const unitPrice = Number(item.unit_price || item.price) || 0;
+              const total = Number(item.total_price) || (unitPrice * quantity) || 0;
+              const vatRate = Number(item.product_vat || item.vat_rate) || 0;
+              
+              return {
+                product_name: item.product_name || 'Product',
+                description: item.description || item.product_description || '',
+                quantity,
+                unit_price: unitPrice,
+                total,
+                vat_rate: vatRate,
+                currency: item.currency || 'USD',
+                unit_of_measure: item.unit_of_measure || item.unit || 'pcs',
+                product_sku: item.product_sku || '',
+                product_category: item.product_category || '',
+                product_brand: item.product_brand || '',
+              };
+            }),
             totals: {
-              subtotal: data.totals.subtotal || 0,
-              vatTotal: data.totals.vatTotal || data.totals.vat_total || 0,
-              grandTotal: data.totals.grandTotal || data.totals.grand_total || 0,
-              currency: data.totals.base_currency || data.invoice.base_currency || 'USD'
+              subtotal: Number(data.totals.subtotal) || 0,
+              vatTotal: Number(data.totals.vatTotal || data.totals.vat_total) || 0,
+              grandTotal: Number(data.totals.grandTotal || data.totals.grand_total) || 0,
+              currency: data.totals.currency || data.totals.base_currency || data.invoice.base_currency || 'USD'
             }
           };
           setInvoiceData(transformedData);

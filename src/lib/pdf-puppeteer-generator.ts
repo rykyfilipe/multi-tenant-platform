@@ -556,9 +556,28 @@ export class PuppeteerPDFGenerator {
 			
 			console.log('🔍 PDF DEBUG: Calculated totals using unified service:', totals);
 
+			// Enhance items with calculated totals for display
+			const enhancedItems = items.map((item: any) => {
+				const quantity = Number(item.quantity) || 0;
+				const unitPrice = Number(item.unit_price || item.price) || 0;
+				const calculatedTotal = unitPrice * quantity;
+				const vatRate = Number(item.product_vat) || 0;
+				const vatAmount = (calculatedTotal * vatRate) / 100;
+				
+				return {
+					...item,
+					unit_price: unitPrice,
+					total_price: calculatedTotal,
+					total: calculatedTotal, // For compatibility
+					vat_rate: vatRate,
+					vat_amount: vatAmount,
+					total_with_vat: calculatedTotal + vatAmount
+				};
+			});
+
 			return {
 				invoice,
-				items,
+				items: enhancedItems,
 				customer,
 				totals: {
 					...totals,

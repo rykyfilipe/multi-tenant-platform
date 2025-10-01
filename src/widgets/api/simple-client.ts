@@ -30,11 +30,19 @@ export class WidgetsApiClient {
     const searchParams = new URLSearchParams();
     if (includeConfig) searchParams.set("includeConfig", "true");
 
-    const res = await fetch(
-      `/api/v1/tenants/${this.tenantId}/dashboards/${this.dashboardId}/widgets?${searchParams.toString()}`
-    );
-    if (!res.ok) throw new Error("Failed to fetch widgets");
-    return (await res.json()) as WidgetsListResponse;
+    const url = `/api/v1/tenants/${this.tenantId}/dashboards/${this.dashboardId}/widgets?${searchParams.toString()}`;
+    console.log('[fetchWidgets] Fetching from URL:', url);
+    
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('[fetchWidgets] Fetch failed:', res.status, res.statusText);
+      throw new Error("Failed to fetch widgets");
+    }
+    
+    const data = (await res.json()) as WidgetsListResponse;
+    console.log('[fetchWidgets] API Response:', data);
+    
+    return data;
   }
 
   async fetchDrafts(): Promise<DraftListResponse> {

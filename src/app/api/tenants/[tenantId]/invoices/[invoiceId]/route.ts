@@ -310,16 +310,37 @@ export async function GET(
 		console.log("🔍 API DEBUG: Items count:", mappedItems.length);
 		console.log("🔍 API DEBUG: Base currency:", baseCurrency);
 
+		// Enhance items with calculated totals for display
+		const enhancedItems = items.map(item => {
+			const quantity = Number(item.quantity) || 0;
+			const unitPrice = Number(item.unit_price || item.price) || 0;
+			const calculatedTotal = unitPrice * quantity;
+			const vatRate = Number(item.product_vat) || 0;
+			const vatAmount = (calculatedTotal * vatRate) / 100;
+			
+			return {
+				...item,
+				unit_price: unitPrice,
+				total_price: calculatedTotal,
+				vat_rate: vatRate,
+				vat_amount: vatAmount,
+				total_with_vat: calculatedTotal + vatAmount
+			};
+		});
+
 		return NextResponse.json({
 			invoice: invoiceData,
 			customer: customerData,
-			items,
+			items: enhancedItems,
 			totals: {
 				subtotal: totals.subtotal,
-				vat_total: totals.vatTotal,
-				grand_total: totals.grandTotal,
+				vatTotal: totals.vatTotal,
+				vat_total: totals.vatTotal, // Keep both for compatibility
+				grandTotal: totals.grandTotal,
+				grand_total: totals.grandTotal, // Keep both for compatibility
 				subtotal_in_base_currency: totals.subtotalInBaseCurrency,
 				base_currency: totals.baseCurrency,
+				currency: totals.baseCurrency, // Add currency at root level too
 				totals_by_currency: totals.totalsByCurrency,
 				vat_totals_by_currency: totals.vatTotalsByCurrency,
 				items_count: totals.itemsCount,

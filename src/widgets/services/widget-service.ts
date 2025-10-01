@@ -129,11 +129,15 @@ export class WidgetService {
   async list<TConfig extends WidgetConfig = WidgetConfig>(params: ListWidgetsParams): Promise<ListWidgetsResponse<TConfig>> {
     const { tenantId, dashboardId, limit = 50, cursor, includeConfig = false, kinds } = params;
 
+    console.log('[WidgetService.list] Query params:', { tenantId, dashboardId, limit, cursor, includeConfig, kinds });
+
     const where: Prisma.WidgetWhereInput = {
       tenantId,
       dashboardId,
       kind: kinds ? { in: kinds } : undefined,
     };
+
+    console.log('[WidgetService.list] Where clause:', where);
 
     const items = await this.prisma.widget.findMany({
       where,
@@ -143,10 +147,14 @@ export class WidgetService {
       select: this.selectWidget(includeConfig),
     });
 
+    console.log('[WidgetService.list] Found items:', items.length);
+
     const hasNext = items.length > limit;
     const reduced = hasNext ? items.slice(0, -1) : items;
     const nextCursor = hasNext ? reduced[reduced.length - 1]?.id ?? null : null;
     const total = await this.prisma.widget.count({ where });
+
+    console.log('[WidgetService.list] Returning:', { itemsCount: reduced.length, nextCursor, total });
 
     return {
       items: reduced as unknown as WidgetEntity<TConfig>[],
