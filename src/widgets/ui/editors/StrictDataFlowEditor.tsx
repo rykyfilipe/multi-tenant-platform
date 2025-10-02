@@ -259,8 +259,8 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
               
               <DatabaseSelector
                 tenantId={tenantId}
-                selectedDatabaseId={value.dataSource.databaseId}
-                selectedTableId={Number(value.dataSource.tableId)}
+                selectedDatabaseId={value.dataSource?.databaseId}
+                selectedTableId={Number(value.dataSource?.tableId)}
                 onDatabaseChange={(databaseId) => updateConfig({
                   dataSource: { ...value.dataSource, databaseId, tableId: "" }
                 })}
@@ -270,7 +270,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                 onColumnsChange={setAvailableColumns}
               />
 
-              {value.dataSource.databaseId && value.dataSource.tableId && (
+              {value.dataSource?.databaseId && value.dataSource?.tableId && (
                 <div className="flex items-center space-x-2 text-green-600">
                   <CheckCircle className="w-4 h-4" />
                   <span className="text-sm font-medium">Data source configured successfully</span>
@@ -296,9 +296,9 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                         <div key={column.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={`primary-${column.name}`}
-                            checked={value.columnSelection.primaryColumns.includes(column.name)}
+                            checked={value.columnSelection?.primaryColumns?.includes(column.name) || false}
                             onCheckedChange={(checked) => {
-                              const current = value.columnSelection.primaryColumns;
+                              const current = value.columnSelection?.primaryColumns || [];
                               const updated = checked
                                 ? [...current, column.name]
                                 : current.filter(c => c !== column.name);
@@ -319,7 +319,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                     <Label className="text-sm font-medium">Grouping Column (Optional)</Label>
                     <p className="text-xs text-gray-500 mb-2">Column to group data by for aggregation</p>
                     <Select
-                      value={value.columnSelection.groupingColumn || ""}
+                      value={value.columnSelection?.groupingColumn || ""}
                       onValueChange={(val) => updateConfig({
                         columnSelection: { ...value.columnSelection, groupingColumn: val || undefined }
                       })}
@@ -529,11 +529,11 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                           value={value.secondaryFunctions?.sortConfig?.sortByColumn || ""}
                           onValueChange={(val) => updateConfig({
                             secondaryFunctions: {
-                              ...value.secondaryFunctions,
+                              functions: value.secondaryFunctions?.functions || [],
                               sortConfig: {
-                                ...value.secondaryFunctions?.sortConfig,
                                 enabled: true,
-                                sortByColumn: val || undefined
+                                sortByColumn: val || undefined,
+                                direction: value.secondaryFunctions?.sortConfig?.direction || "desc"
                               }
                             }
                           })}
@@ -551,11 +551,11 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                           value={value.secondaryFunctions?.sortConfig?.direction || "desc"}
                           onValueChange={(val) => updateConfig({
                             secondaryFunctions: {
-                              ...value.secondaryFunctions,
+                              functions: value.secondaryFunctions?.functions || [],
                               sortConfig: {
-                                ...value.secondaryFunctions?.sortConfig,
                                 enabled: true,
-                                direction: val as "asc" | "desc"
+                                direction: val as "asc" | "desc",
+                                sortByColumn: value.secondaryFunctions?.sortConfig?.sortByColumn
                               }
                             }
                           })}
@@ -606,7 +606,11 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                         filters={value.filtering?.whereFilters || []}
                         availableColumns={availableColumns}
                         onChange={(filters) => updateConfig({
-                          filtering: { ...value.filtering, whereFilters: filters }
+                          filtering: { 
+                            whereFilters: filters as any,
+                            havingFilters: value.filtering?.havingFilters || [],
+                            postProcessingFilters: value.filtering?.postProcessingFilters || []
+                          }
                         })}
                       />
                     </div>
@@ -666,8 +670,9 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                               output: {
                                 ...value.output,
                                 chartConfig: {
-                                  ...value.output.chartConfig,
-                                  xAxisColumn: val
+                                  xAxisColumn: val,
+                                  yAxisColumns: value.output.chartConfig?.yAxisColumns || [],
+                                  chartType: value.output.chartConfig?.chartType || "bar"
                                 }
                               }
                             })}
@@ -699,8 +704,9 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                                       output: {
                                         ...value.output,
                                         chartConfig: {
-                                          ...value.output.chartConfig,
-                                          yAxisColumns: updated
+                                          xAxisColumn: value.output.chartConfig?.xAxisColumn || "",
+                                          yAxisColumns: updated,
+                                          chartType: value.output.chartConfig?.chartType || "bar"
                                         }
                                       }
                                     });
@@ -727,8 +733,8 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                               output: {
                                 ...value.output,
                                 kpiConfig: {
-                                  ...value.output.kpiConfig,
-                                  displayFormat: val as any
+                                  displayFormat: val as any,
+                                  showTrend: value.output.kpiConfig?.showTrend || false
                                 }
                               }
                             })}
@@ -752,7 +758,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                               output: {
                                 ...value.output,
                                 kpiConfig: {
-                                  ...value.output.kpiConfig,
+                                  displayFormat: value.output.kpiConfig?.displayFormat || "number",
                                   showTrend: checked
                                 }
                               }

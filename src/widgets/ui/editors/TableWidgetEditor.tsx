@@ -84,18 +84,18 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
   };
 
   const addSort = () => {
-    const newSort = [...value.data.sort, { column: "", direction: "asc" as const }];
+    const newSort = [...(value.data?.sort || []), { column: "", direction: "asc" as const }];
     updateData({ sort: newSort });
   };
 
-  const updateSort = (index: number, updates: Partial<typeof value.data.sort[0]>) => {
-    const newSort = [...value.data.sort];
+  const updateSort = (index: number, updates: Partial<typeof value.data?.sort?.[0]>) => {
+    const newSort = [...(value.data?.sort || [])];
     newSort[index] = { ...newSort[index], ...updates };
     updateData({ sort: newSort });
   };
 
   const removeSort = (index: number) => {
-    const newSort = value.data.sort.filter((_, i) => i !== index);
+    const newSort = (value.data?.sort || []).filter((_, i) => i !== index);
     updateData({ sort: newSort });
   };
 
@@ -405,8 +405,8 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
               <h3 className="text-sm font-semibold text-foreground mb-3">Data Source</h3>
               <DatabaseSelector
                 tenantId={tenantId}
-                selectedDatabaseId={value.data.databaseId}
-                selectedTableId={Number(value.data.tableId)}
+                selectedDatabaseId={value.data?.databaseId}
+                selectedTableId={Number(value.data?.tableId)}
                 onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", filters: [], sort: [] })}
                 onTableChange={(tableId) => updateData({ tableId: tableId.toString(), filters: [], sort: [] })}
                 onColumnsChange={setAvailableColumns}
@@ -562,7 +562,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-3">Data Filters</h3>
                   <WidgetFilters
-                    filters={value.data.filters}
+                    filters={value.data?.filters || []}
                     availableColumns={availableColumns}
                     onChange={handleFiltersChange}
                   />
@@ -643,7 +643,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                 <div className="border-t pt-4">
                   <h3 className="text-sm font-semibold text-foreground mb-3">Sorting</h3>
                   <div className="space-y-2">
-                    {value.data.sort.map((sortItem, index) => (
+                    {(value.data?.sort || []).map((sortItem, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <Select
                           value={sortItem.column}
