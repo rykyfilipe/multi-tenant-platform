@@ -57,11 +57,11 @@ export async function POST(
     for (let i = 0; i < validatedData.operations.length; i++) {
       const operation = validatedData.operations[i];
       
+      // Determine operation type - support both frontend (kind) and backend (type) formats
+      const operationType = 'kind' in operation ? operation.kind : operation.type;
+      
       try {
         let result;
-        
-        // Determine operation type - support both frontend (kind) and backend (type) formats
-        const operationType = 'kind' in operation ? operation.kind : operation.type;
         
         switch (operationType) {
           case 'create':
@@ -85,9 +85,16 @@ export async function POST(
               DashboardValidators.validateWidgetConfig(createData.type, createData.config);
             }
             
+            // Map type to kind for backend compatibility
+            const widgetData = {
+              ...createData,
+              kind: createData.type.toUpperCase() as any, // Convert to WidgetKind enum
+              type: undefined // Remove type field
+            };
+            
             result = await DashboardService.createWidget(
               dashboardId,
-              createData as any,
+              widgetData as any,
               Number(session.user.tenantId),
               Number(session.user.id)
             );
