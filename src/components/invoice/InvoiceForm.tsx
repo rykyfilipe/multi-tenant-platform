@@ -691,7 +691,19 @@ export function InvoiceForm({
 				onSuccess?.();
 			} else {
 				// Create new invoice
-				await createInvoice(invoiceData);
+				const response = await createInvoice(invoiceData);
+				
+				// Check if the response has the expected structure
+				if (response && response.data && response.data.invoice) {
+					console.log("✅ Invoice created successfully:", response.data.invoice);
+					showAlert(t("invoice.form.invoiceCreated"), "success");
+					onSuccess?.();
+				} else {
+					console.log("✅ Invoice created successfully:", response);
+					showAlert(t("invoice.form.invoiceCreated"), "success");
+					onSuccess?.();
+				}
+				
 				// Reset forms
 				setProducts([]);
 				setInvoiceForm({
@@ -702,8 +714,6 @@ export function InvoiceForm({
 					status: "draft",
 					invoice_series: "",
 				});
-				showAlert(t("invoice.form.invoiceCreated"), "success");
-				onSuccess?.();
 			}
 		} catch (error: any) {
 			console.error(

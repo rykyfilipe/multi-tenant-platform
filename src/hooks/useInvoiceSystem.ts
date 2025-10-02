@@ -81,22 +81,35 @@ export function useInvoiceSystem() {
 
 	// Fetch invoices
 	const fetchInvoices = useCallback(async () => {
-		if (!token || !tenantId) return;
+		console.log('🔍 fetchInvoices called with:', { token: !!token, tenantId });
+		
+		if (!token || !tenantId) {
+			console.log('❌ fetchInvoices: Missing token or tenantId');
+			return;
+		}
 
 		try {
 			setInitialLoading(true);
 			setError(null);
 
+			console.log('📡 fetchInvoices: Making API request to:', `/api/tenants/${tenantId}/invoices`);
+			
 			const response = await fetch(`/api/tenants/${tenantId}/invoices`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
+			console.log('📡 fetchInvoices: Response status:', response.status, response.statusText);
+			
 			if (!response.ok) {
-				throw new Error("Failed to fetch invoices");
+				const errorText = await response.text();
+				console.error('❌ fetchInvoices: API error:', response.status, errorText);
+				throw new Error(`Failed to fetch invoices: ${response.status} ${response.statusText}`);
 			}
 
 			const data = await response.json();
-			setInvoices(data.data.invoices || []);
+			console.log("📄 fetchInvoices: GET invoices response:", data);
+			console.log("📄 fetchInvoices: Setting invoices:", data.data || []);
+			setInvoices(data.data || []);
 		} catch (err) {
 			console.error("Error fetching invoices:", err);
 			setError(err instanceof Error ? err.message : "Failed to fetch invoices");
@@ -206,29 +219,36 @@ export function useInvoiceSystem() {
 
 				const data = await response.json();
 
-				// Add to local state immediately (optimistic update) with all calculated data
-				const newInvoice = {
-					id: data.invoice.id,
-					invoice_number: data.invoice.invoice_number,
-					customer_id: data.invoice.customer_id,
-					date: data.invoice.date || new Date().toISOString(),
-					due_date: data.invoice.due_date,
-					status: data.invoice.status || "draft",
-					base_currency: data.invoice.base_currency,
-					payment_terms: data.invoice.payment_terms,
-					payment_method: data.invoice.payment_method,
-					notes: data.invoice.notes,
-					items_count: data.invoice.items_count || 0,
-					subtotal: data.invoice.subtotal || 0,
-					vat_total: data.invoice.vat_total || 0,
-					total_amount: data.invoice.total_amount || 0,
-					// Add other fields that might be needed
-				};
+				// Check if the response has the expected structure
+				if (data.success && data.data && data.data.invoice) {
+					// Add to local state immediately (optimistic update) with all calculated data
+					const newInvoice = {
+						id: data.data.invoice.id,
+						invoice_number: data.data.invoice.invoice_number,
+						customer_id: data.data.invoice.customer_id,
+						date: data.data.invoice.date || new Date().toISOString(),
+						due_date: data.data.invoice.due_date,
+						status: data.data.invoice.status || "draft",
+						base_currency: data.data.invoice.base_currency,
+						payment_terms: data.data.invoice.payment_terms,
+						payment_method: data.data.invoice.payment_method,
+						notes: data.data.invoice.notes,
+						items_count: data.data.invoice.items_count || 0,
+						subtotal: data.data.invoice.subtotal || 0,
+						vat_total: data.data.invoice.vat_total || 0,
+						total_amount: data.data.invoice.total_amount || 0,
+						// Add other fields that might be needed
+					};
 
-				console.log("✅ Adding invoice to local state:", newInvoice);
-				setInvoices((prev) => [newInvoice, ...prev]);
+					console.log("✅ Adding invoice to local state:", newInvoice);
+					setInvoices((prev) => [newInvoice, ...prev]);
 
-				return data.invoice;
+					return data.data.invoice;
+				} else {
+					// Fallback for unexpected response structure
+					console.warn("Unexpected response structure:", data);
+					throw new Error("Unexpected response structure from server");
+				}
 			} catch (err) {
 				console.error("Error creating invoice:", err);
 				setError(

@@ -715,12 +715,17 @@ export async function GET(
 	}
 
 	try {
+		console.log('🔍 GET invoices - Starting request for tenant:', tenantId);
+		
 		// Get the database for this tenant
 		const database = await prisma.database.findFirst({
 			where: { tenantId: Number(tenantId) },
 		});
 
+		console.log('💾 GET invoices - Database found:', database ? `ID: ${database.id}` : 'NOT FOUND');
+
 		if (!database) {
+			console.log('❌ GET invoices - Database not found for tenant:', tenantId);
 			return NextResponse.json(
 				{ error: "Database not found for this tenant" },
 				{ status: 404 },
@@ -733,7 +738,14 @@ export async function GET(
 			database.id,
 		);
 
+		console.log('📊 GET invoices - Invoice tables found:', {
+			customers: !!invoiceTables.customers,
+			invoices: !!invoiceTables.invoices,
+			invoice_items: !!invoiceTables.invoice_items
+		});
+
 		if (!invoiceTables.invoices) {
+			console.log('❌ GET invoices - Invoice system not initialized');
 			return NextResponse.json(
 				{ error: "Invoice system not initialized" },
 				{ status: 404 },
@@ -741,6 +753,8 @@ export async function GET(
 		}
 
 		// Get all invoices with their data
+		console.log('🔍 GET invoices - Fetching invoices from table ID:', invoiceTables.invoices.id);
+		
 		const invoices = await prisma.row.findMany({
 			where: {
 				tableId: invoiceTables.invoices.id,
@@ -757,13 +771,19 @@ export async function GET(
 			},
 		});
 
+		console.log(`📄 GET invoices - Found ${invoices.length} invoices in database`);
+
 		// Transform invoices to include readable data
-		const transformedInvoices = invoices.map((invoice: any) => {
+		console.log('🔄 GET invoices - Starting transformation of invoices...');
+		
+		const transformedInvoices = invoices.map((invoice: any, index: number) => {
 			const invoiceData: any = {
 				id: invoice.id,
 				createdAt: invoice.createdAt,
 				updatedAt: invoice.updatedAt,
 			};
+
+			console.log(`📝 GET invoices - Transforming invoice ${index + 1} (ID: ${invoice.id}) with ${invoice.cells.length} cells`);
 
 			// Map cells to readable format
 			invoice.cells.forEach((cell: any) => {
@@ -779,17 +799,37 @@ export async function GET(
 				invoiceData[columnName] = cell.value;
 			});
 
+			console.log(`✅ GET invoices - Transformed invoice ${index + 1}:`, {
+				id: invoiceData.id,
+				invoice_number: invoiceData.invoice_number,
+				total_amount: invoiceData.total_amount,
+				status: invoiceData.status
+			});
+
 			return invoiceData;
 		});
 
-		return NextResponse.json({
+		const response = {
 			success: true,
 			data: transformedInvoices,
 			count: transformedInvoices.length,
+		};
+
+		console.log('📤 GET invoices - Returning response:', {
+			success: response.success,
+			count: response.count,
+			firstInvoiceId: transformedInvoices.length > 0 ? transformedInvoices[0].id : null
 		});
 
+		return NextResponse.json(response);
+
 	} catch (error: any) {
-		console.error("Error fetching invoices:", error);
+		console.error("❌ GET invoices - Error fetching invoices:", error);
+		console.error("❌ GET invoices - Error details:", {
+			message: error.message,
+			stack: error.stack,
+			code: error.code
+		});
 		return NextResponse.json(
 			{ 
 				error: "Internal server error",
