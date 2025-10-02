@@ -10,6 +10,7 @@ import {
 	validateTableForInvoices,
 	extractProductDetails,
 	getValidationMessage,
+	createSemanticExtractor,
 } from "@/lib/semantic-helpers";
 import { SemanticColumnType } from "@/lib/semantic-types";
 
@@ -551,25 +552,127 @@ export async function POST(
 			}
 		}
 
-		// Add additional data cells if any
-		if (parsedData.additional_data) {
-			// Get custom columns for invoices table
-			const customColumns = invoiceTables.invoices!.columns!.filter(
-				(c: any) => !c.isLocked,
-			);
+		// Complete all available columns in invoices table with available data
+		const allInvoiceColumns = invoiceTables.invoices!.columns!;
+		
+		// Get customer details to populate additional invoice fields
+		let customerDetails: any = {};
+		if (parsedData.customer_id) {
+			try {
+				// Find customer table
+				const customerTable = await tx.table.findFirst({
+					where: {
+						name: "customers",
+						databaseId: database.id,
+					},
+					include: {
+						columns: true,
+					},
+				});
 
-			for (const [key, value] of Object.entries(parsedData.additional_data)) {
-				const column = customColumns.find((c: any) => c.name === key);
-				if (
-					column &&
-					(typeof value === "string" || typeof value === "number")
-				) {
-					invoiceCells.push({
-						rowId: invoiceRow.id,
-						columnId: column.id,
-						value,
+				if (customerTable) {
+					const customerRow = await tx.row.findUnique({
+						where: { id: parsedData.customer_id },
+						include: {
+							cells: {
+								include: {
+									column: true,
+								},
+							},
+						},
 					});
+
+					if (customerRow) {
+						// Extract customer details using semantic types
+						const customerExtractor = createSemanticExtractor(customerTable.columns, customerRow.cells);
+						customerDetails = {
+							name: customerExtractor.getValue(SemanticColumnType.CUSTOMER_NAME) || customerExtractor.getValue(SemanticColumnType.NAME),
+							email: customerExtractor.getValue(SemanticColumnType.CUSTOMER_EMAIL) || customerExtractor.getValue(SemanticColumnType.EMAIL),
+							phone: customerExtractor.getValue(SemanticColumnType.CUSTOMER_PHONE) || customerExtractor.getValue(SemanticColumnType.PHONE),
+							address: customerExtractor.getValue(SemanticColumnType.CUSTOMER_ADDRESS) || customerExtractor.getValue(SemanticColumnType.ADDRESS),
+							city: customerExtractor.getValue(SemanticColumnType.CUSTOMER_CITY),
+							country: customerExtractor.getValue(SemanticColumnType.CUSTOMER_COUNTRY),
+							postalCode: customerExtractor.getValue(SemanticColumnType.CUSTOMER_POSTAL_CODE),
+							taxId: customerExtractor.getValue(SemanticColumnType.CUSTOMER_TAX_ID),
+						};
+					}
 				}
+			} catch (error) {
+				console.warn("Failed to fetch customer details:", error);
+			}
+		}
+
+		// Add all available invoice columns with data
+		for (const column of allInvoiceColumns) {
+			// Skip if already added
+			if (invoiceCells.some(cell => cell.columnId === column.id)) {
+				continue;
+			}
+
+			let value: any = null;
+
+			// Map semantic types to available data
+			switch (column.semanticType) {
+				case "invoice_customer_name":
+					value = customerDetails.name;
+					break;
+				case "invoice_customer_email":
+					value = customerDetails.email;
+					break;
+				case "invoice_customer_phone":
+					value = customerDetails.phone;
+					break;
+				case "invoice_customer_address":
+					value = customerDetails.address;
+					break;
+				case "invoice_customer_city":
+					value = customerDetails.city;
+					break;
+				case "invoice_customer_country":
+					value = customerDetails.country;
+					break;
+				case "invoice_customer_postal_code":
+					value = customerDetails.postalCode;
+					break;
+				case "invoice_customer_tax_id":
+					value = customerDetails.taxId;
+					break;
+				case "invoice_total_amount":
+					// Will be calculated later
+					value = 0;
+					break;
+				case "invoice_subtotal":
+					// Will be calculated later
+					value = 0;
+					break;
+				case "invoice_tax_total":
+					// Will be calculated later
+					value = 0;
+					break;
+				case "invoice_discount_amount":
+					value = (parsedData as any).discount_amount || 0;
+					break;
+				case "invoice_discount_rate":
+					value = (parsedData as any).discount_rate || 0;
+					break;
+				case "invoice_late_fee":
+					value = (parsedData as any).late_fee || 0;
+					break;
+				default:
+					// Try to get from additional_data
+					if (parsedData.additional_data && parsedData.additional_data[column.name]) {
+						value = parsedData.additional_data[column.name];
+					}
+					break;
+			}
+
+			// Only add if we have a value and column is not locked (unless it's a calculated field)
+			if (value !== null && value !== undefined && value !== "" && (!column.isLocked || ["invoice_total_amount", "invoice_subtotal", "invoice_tax_total"].includes(column.semanticType))) {
+				invoiceCells.push({
+					rowId: invoiceRow.id,
+					columnId: column.id,
+					value,
+				});
 			}
 		}
 
@@ -711,10 +814,11 @@ export async function POST(
 					throw new Error(`Invalid invoice row ID: ${invoiceRow.id}`);
 				}
 				
+				// For reference columns, value must be an array (always multiple selection)
 				itemCells.push({
 					rowId: itemRow.id,
 					columnId: columns.invoice_id.id,
-					value: invoiceRow.id,
+					value: [invoiceRow.id], // ✅ CORECT: array cu ID-ul invoice-ului
 				});
 			} else {
 				console.error("❌ invoice_id column not found in invoice_items table!");
@@ -780,65 +884,101 @@ export async function POST(
 				});
 			}
 
-			// Add product details if columns exist
-			if (columns.product_name && productDetails.name) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_name.id,
-					value: productDetails.name,
-				});
-			}
-			if (columns.product_description && productDetails.description) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_description.id,
-					value: productDetails.description,
-				});
-			}
-			if (columns.product_category && productDetails.category) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_category.id,
-					value: productDetails.category,
-				});
-			}
-			if (columns.product_sku && productDetails.sku) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_sku.id,
-					value: productDetails.sku,
-				});
-			}
-			if (columns.product_brand && productDetails.brand) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_brand.id,
-					value: productDetails.brand,
-				});
-			}
-			if (columns.product_weight && productDetails.weight) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_weight.id,
-					value: productDetails.weight,
-				});
-			}
-			if (columns.product_dimensions && productDetails.dimensions) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_dimensions.id,
-					value: productDetails.dimensions,
-				});
+			// Complete all available columns in invoice_items table with product data
+			const allInvoiceItemColumns = invoiceTables.invoice_items!.columns!;
+			
+			for (const column of allInvoiceItemColumns) {
+				// Skip if already added
+				if (itemCells.some(cell => cell.columnId === column.id)) {
+					continue;
+				}
+
+				let value: any = null;
+
+				// Map semantic types to available product data
+				switch (column.semanticType) {
+					case "product_name":
+						value = productDetails.name;
+						break;
+					case "product_description":
+						value = productDetails.description;
+						break;
+					case "product_category":
+						value = productDetails.category;
+						break;
+					case "product_sku":
+						value = productDetails.sku;
+						break;
+					case "product_brand":
+						value = productDetails.brand;
+						break;
+					case "product_weight":
+						value = productDetails.weight;
+						break;
+					case "product_dimensions":
+						value = productDetails.dimensions;
+						break;
+					case "product_image":
+						value = productDetails.image;
+						break;
+					case "product_status":
+						value = productDetails.status;
+						break;
+					case "product_vat":
+						value = productDetails.vat;
+						break;
+					case "product_currency":
+						value = productDetails.currency;
+						break;
+					case "product_unit_of_measure":
+						value = productDetails.unitOfMeasure;
+						break;
+					case "product_price":
+					case "unit_price":
+						value = productDetails.price;
+						break;
+					case "total_price":
+						// Calculate total price: quantity * unit_price
+						const unitPrice = productDetails.price || product.price || 0;
+						const quantity = product.quantity || 1;
+						value = unitPrice * quantity;
+						break;
+					case "tax_rate":
+						value = productDetails.vat || 0;
+						break;
+					case "tax_amount":
+						// Calculate tax amount: total_price * (tax_rate / 100)
+						const totalPrice = (productDetails.price || product.price || 0) * (product.quantity || 1);
+						const taxRate = productDetails.vat || 0;
+						value = totalPrice * (taxRate / 100);
+						break;
+					case "discount_rate":
+						value = (product as any).discount_rate || 0;
+						break;
+					case "discount_amount":
+						value = (product as any).discount_amount || 0;
+						break;
+					case "description":
+						value = product.description;
+						break;
+					default:
+						// Try to get from product data directly
+						if ((product as any)[column.name] !== undefined) {
+							value = (product as any)[column.name];
+						}
+						break;
+				}
+
+				// Only add if we have a value
+				if (value !== null && value !== undefined && value !== "") {
+					itemCells.push({
+						rowId: itemRow.id,
+						columnId: column.id,
+						value,
+					});
+				}
 			}
 
-			// Add description if provided and column exists
-			if (product.description && columns.description) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.description.id,
-					value: product.description,
-				});
-			}
 
 			// Remove duplicate cells before creating
 			const uniqueItemCells = itemCells.filter((cell, index, self) => 
