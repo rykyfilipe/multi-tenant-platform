@@ -5,6 +5,16 @@ import { strictDataFlowSchema, StrictDataFlowConfig } from "./strictDataFlow";
 export const chartSettingsSchema = z.object({
   chartType: z.enum(["line", "bar", "area", "pie", "radar", "scatter"]),
   refreshInterval: z.number().int().positive().max(3600).default(60),
+  
+  // Data processing settings
+  processingMode: z.enum(["raw", "grouped", "aggregated"]).default("raw"),
+  aggregationFunction: z.enum(["sum", "count", "avg", "min", "max"]).default("sum"),
+  aggregationColumns: z.array(z.string()).default([]),
+  groupByColumn: z.string().optional(),
+  enableTopN: z.boolean().default(false),
+  topNCount: z.number().int().positive().max(100).default(10),
+  sortByColumn: z.string().optional(),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const chartStyleSchema = z.object({

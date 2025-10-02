@@ -321,12 +321,15 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     schema: kpiWidgetConfigSchema,
     defaultConfig: kpiWidgetConfigSchema.parse({
       settings: {
-        valueField: "value",
         label: "KPI Value",
         format: "number",
         showTrend: true,
         showComparison: false,
-        aggregation: "sum",
+        showExtremeValueDetails: false,
+        extremeValueMode: "max",
+        valueField: "value",
+        displayFields: [],
+        selectedAggregations: ["sum"],
       },
       style: {
         theme: "platinum",

@@ -9,6 +9,12 @@ export const kpiSettingsSchema = z.object({
   showComparison: z.boolean().default(false),
   showExtremeValueDetails: z.boolean().default(false),
   extremeValueMode: z.enum(["max", "min"]).default("max"),
+  
+  // Data processing settings
+  valueField: z.string().optional(),
+  displayFields: z.array(z.string()).default([]),
+  selectedAggregations: z.array(z.enum(["sum", "count", "avg", "min", "max"])).default(["sum"]),
+  comparisonField: z.string().optional(),
 });
 
 export const kpiStyleSchema = z.object({
