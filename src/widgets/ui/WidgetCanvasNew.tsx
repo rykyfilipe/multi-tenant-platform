@@ -95,52 +95,79 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   // Undo function
   const handleUndo = useCallback(() => {
-    // Find the most recently modified widget to undo
-    const dirtyWidgetIds = Array.from(useWidgetsStore.getState().dirtyWidgetIds);
-    if (dirtyWidgetIds.length > 0) {
-      const lastModifiedWidgetId = dirtyWidgetIds[dirtyWidgetIds.length - 1];
-      const success = undoLastChange(lastModifiedWidgetId);
-      if (success) {
-        toast({
-          title: "Undo",
-          description: "Last change has been undone.",
-          variant: "default",
-        });
-      }
+    const state = useWidgetsStore.getState();
+    const lastModifiedWidgetId = state.lastModifiedWidgetId;
+    
+    if (!lastModifiedWidgetId) {
+      console.log('[handleUndo] No widget to undo');
+      toast({
+        title: "Nothing to undo",
+        description: "No recent changes to undo.",
+        variant: "default",
+      });
+      return;
+    }
+    
+    const success = undoLastChange(lastModifiedWidgetId);
+    if (success) {
+      toast({
+        title: "Undo successful",
+        description: "Last change has been undone.",
+        variant: "default",
+      });
+    } else {
+      toast({
+        title: "Cannot undo",
+        description: "No more changes to undo for this widget.",
+        variant: "default",
+      });
     }
   }, [undoLastChange, toast]);
 
   // Redo function
   const handleRedo = useCallback(() => {
-    // Find the most recently modified widget to redo
-    const dirtyWidgetIds = Array.from(useWidgetsStore.getState().dirtyWidgetIds);
-    if (dirtyWidgetIds.length > 0) {
-      const lastModifiedWidgetId = dirtyWidgetIds[dirtyWidgetIds.length - 1];
-      const success = redoLastChange(lastModifiedWidgetId);
-      if (success) {
-        toast({
-          title: "Redo",
-          description: "Last change has been redone.",
-          variant: "default",
-        });
-      }
+    const state = useWidgetsStore.getState();
+    const lastModifiedWidgetId = state.lastModifiedWidgetId;
+    
+    if (!lastModifiedWidgetId) {
+      console.log('[handleRedo] No widget to redo');
+      toast({
+        title: "Nothing to redo",
+        description: "No changes to redo.",
+        variant: "default",
+      });
+      return;
+    }
+    
+    const success = redoLastChange(lastModifiedWidgetId);
+    if (success) {
+      toast({
+        title: "Redo successful",
+        description: "Last change has been redone.",
+        variant: "default",
+      });
+    } else {
+      toast({
+        title: "Cannot redo",
+        description: "No more changes to redo for this widget.",
+        variant: "default",
+      });
     }
   }, [redoLastChange, toast]);
 
   // Discard all changes function
   const handleDiscard = useCallback(() => {
-    // Discard changes for all dirty widgets
-    const dirtyWidgetIds = Array.from(useWidgetsStore.getState().dirtyWidgetIds);
-    dirtyWidgetIds.forEach(widgetId => {
-      discardChanges(widgetId);
-    });
+    console.log('[handleDiscard] Discarding all pending changes');
+    
+    // Simply call clearPending - it will restore all DB widgets to original and remove local widgets
     clearPending();
+    
     toast({
       title: "All changes discarded",
       description: "Dashboard restored to original state.",
       variant: "default",
     });
-  }, [discardChanges, clearPending, toast]);
+  }, [clearPending, toast]);
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -11,6 +11,7 @@ export interface PendingChangesState {
   drafts: Record<number, WidgetDraftEntity>;
   pendingOperations: DraftOperation[];
   dirtyWidgetIds: Set<number>;
+  lastModifiedWidgetId: number | null; // Track last modified widget for undo/redo
 
   // History management
   history: Record<number, WidgetEntity[]>;
@@ -78,6 +79,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
       drafts: {},
       pendingOperations: [],
       dirtyWidgetIds: new Set<number>(),
+      lastModifiedWidgetId: null,
 
       // History management
       history: {},
@@ -121,6 +123,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
             console.warn('[createLocal] Widget already exists:', widget.id, '- updating instead');
             return {
               widgets: { ...state.widgets, [widget.id]: widgetWithRefresh },
+              originalWidgets: { ...state.originalWidgets },
             };
           }
 
@@ -138,11 +141,13 @@ export const useWidgetsStore = create<PendingChangesState>()(
           
           return {
             widgets: { ...state.widgets, [widget.id]: widgetWithRefresh },
+            originalWidgets: { ...state.originalWidgets },
             pendingOperations: [
               ...state.pendingOperations,
               { kind: "create", id: `create-${widget.id}`, widget: widgetWithRefresh },
             ],
             dirtyWidgetIds: new Set(state.dirtyWidgetIds).add(widget.id),
+            lastModifiedWidgetId: widget.id,
             history: { ...state.history, [widget.id]: [] },
             redoHistory: { ...state.redoHistory, [widget.id]: [] },
           };
@@ -199,8 +204,10 @@ export const useWidgetsStore = create<PendingChangesState>()(
           
           const newState = {
           widgets: { ...state.widgets, [widgetId]: updated },
+            originalWidgets: { ...state.originalWidgets },
             pendingOperations: [...state.pendingOperations],
             dirtyWidgetIds: new Set(state.dirtyWidgetIds),
+            lastModifiedWidgetId: widgetId, // Track last modified
             history: { ...state.history, [widgetId]: newHistory },
             redoHistory: { ...state.redoHistory, [widgetId]: [] }, // Clear redo history on new change
           };
@@ -278,8 +285,10 @@ export const useWidgetsStore = create<PendingChangesState>()(
         set((state) => {
           const newState = {
             widgets: { ...state.widgets },
+            originalWidgets: { ...state.originalWidgets },
             pendingOperations: [...state.pendingOperations],
             dirtyWidgetIds: new Set(state.dirtyWidgetIds),
+            lastModifiedWidgetId: state.lastModifiedWidgetId === widgetId ? null : state.lastModifiedWidgetId,
             history: { ...state.history },
             redoHistory: { ...state.redoHistory },
           };
@@ -328,9 +337,11 @@ export const useWidgetsStore = create<PendingChangesState>()(
 
       // History operations
       discardChanges: (widgetId) => {
+        console.log('[discardChanges] Discarding changes for widget:', widgetId);
         set((state) => {
           const newState = {
             widgets: { ...state.widgets },
+            originalWidgets: { ...state.originalWidgets },
             pendingOperations: [...state.pendingOperations],
             dirtyWidgetIds: new Set(state.dirtyWidgetIds),
             history: { ...state.history },
@@ -338,18 +349,24 @@ export const useWidgetsStore = create<PendingChangesState>()(
           };
 
           if (isLocalWidget(widgetId)) {
-            // For local widgets, remove completely
+            // For local widgets, remove completely (they were never in DB)
+            console.log('[discardChanges] Removing local widget:', widgetId);
             delete newState.widgets[widgetId];
             newState.pendingOperations = state.pendingOperations.filter(op => 
               !(op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widgetId)
             );
             newState.dirtyWidgetIds.delete(widgetId);
           } else {
-            // For DB widgets, restore original version (remove from widgets if it was deleted)
-            // Note: Original widgets are loaded from DB, so we just remove from local state
-            delete newState.widgets[widgetId];
+            // For DB widgets, RESTORE to original version from DB
+            if (state.originalWidgets[widgetId]) {
+              console.log('[discardChanges] Restoring DB widget to original:', widgetId);
+              newState.widgets[widgetId] = state.originalWidgets[widgetId];
+            } else {
+              console.warn('[discardChanges] No original widget found, removing from state:', widgetId);
+              delete newState.widgets[widgetId];
+            }
             
-            // Remove all operations for this widget
+            // Remove all pending operations for this widget
             newState.pendingOperations = state.pendingOperations.filter(op => {
               if (op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId) return false;
               if (op.kind === "delete" && hasWidgetId(op) && op.widgetId === widgetId) return false;
@@ -363,21 +380,28 @@ export const useWidgetsStore = create<PendingChangesState>()(
           delete newState.history[widgetId];
           delete newState.redoHistory[widgetId];
 
+          console.log('[discardChanges] Changes discarded, widget restored to original');
           return newState;
         });
       },
 
       undoLastChange: (widgetId) => {
+        console.log('[undoLastChange] Undoing change for widget:', widgetId);
         const state = get();
         const history = state.history[widgetId];
         
-        if (!history || history.length === 0) return false;
+        if (!history || history.length === 0) {
+          console.log('[undoLastChange] No history available for widget:', widgetId);
+          return false;
+        }
 
         const lastVersion = history[0];
+        console.log('[undoLastChange] Restoring to version from history');
         
         set((currentState) => {
           const newState = {
             widgets: { ...currentState.widgets, [widgetId]: lastVersion },
+            originalWidgets: { ...currentState.originalWidgets },
             pendingOperations: [...currentState.pendingOperations],
             dirtyWidgetIds: new Set(currentState.dirtyWidgetIds),
             history: { ...currentState.history },
@@ -409,31 +433,50 @@ export const useWidgetsStore = create<PendingChangesState>()(
             }
           } else {
             // For DB widgets, check if we're back to original
-            const originalWidget = currentState.widgets[widgetId];
-            const isBackToOriginal = JSON.stringify(lastVersion.config) === JSON.stringify(originalWidget?.config) &&
-                                   lastVersion.title === originalWidget?.title &&
-                                   lastVersion.description === originalWidget?.description;
+            const originalWidget = currentState.originalWidgets[widgetId];
+            const isBackToOriginal = originalWidget && 
+                                   JSON.stringify(lastVersion.config) === JSON.stringify(originalWidget.config) &&
+                                   lastVersion.title === originalWidget.title &&
+                                   lastVersion.description === originalWidget.description;
             
             if (isBackToOriginal) {
-              // Remove update operation
+              // Remove update operation - back to original
+              console.log('[undoLastChange] Back to original, removing pending operation');
               newState.pendingOperations = currentState.pendingOperations.filter(op => 
                 !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
               );
               newState.dirtyWidgetIds.delete(widgetId);
             } else {
-              // Update the update operation
+              // Update the update operation with undo version
+              console.log('[undoLastChange] Still modified, updating pending operation');
               const updateOpIndex = currentState.pendingOperations.findIndex(op => 
                 op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
               );
+              
+              const patch = {
+                config: lastVersion.config,
+                title: lastVersion.title,
+                description: lastVersion.description
+              };
               
               if (updateOpIndex >= 0) {
                 newState.pendingOperations[updateOpIndex] = {
                   kind: "update",
                   id: `update-${widgetId}-${generateOperationId()}`,
                   widgetId,
-                  patch: { config: lastVersion.config, title: lastVersion.title, description: lastVersion.description },
+                  patch,
                   expectedVersion: lastVersion.version,
                 };
+              } else {
+                // If no operation exists, create one
+                newState.pendingOperations.push({
+                  kind: "update",
+                  id: `update-${widgetId}-${generateOperationId()}`,
+                  widgetId,
+                  patch,
+                  expectedVersion: lastVersion.version,
+                });
+                newState.dirtyWidgetIds.add(widgetId);
               }
             }
           }
@@ -445,16 +488,22 @@ export const useWidgetsStore = create<PendingChangesState>()(
       },
 
       redoLastChange: (widgetId) => {
+        console.log('[redoLastChange] Redoing change for widget:', widgetId);
         const state = get();
         const redoHistory = state.redoHistory[widgetId];
         
-        if (!redoHistory || redoHistory.length === 0) return false;
+        if (!redoHistory || redoHistory.length === 0) {
+          console.log('[redoLastChange] No redo history available for widget:', widgetId);
+          return false;
+        }
 
         const nextVersion = redoHistory[0];
+        console.log('[redoLastChange] Restoring to version from redo history');
         
         set((currentState) => {
           const newState = {
             widgets: { ...currentState.widgets, [widgetId]: nextVersion },
+            originalWidgets: { ...currentState.originalWidgets },
             pendingOperations: [...currentState.pendingOperations],
             dirtyWidgetIds: new Set(currentState.dirtyWidgetIds),
             history: { ...currentState.history },
@@ -485,24 +534,47 @@ export const useWidgetsStore = create<PendingChangesState>()(
               } as any;
             }
           } else {
-            // For DB widgets, add or update the update operation
-            const updateOpIndex = currentState.pendingOperations.findIndex(op => 
-              op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
-            );
+            // For DB widgets, check if back to original or still modified
+            const originalWidget = currentState.originalWidgets[widgetId];
+            const isBackToOriginal = originalWidget &&
+                                   JSON.stringify(nextVersion.config) === JSON.stringify(originalWidget.config) &&
+                                   nextVersion.title === originalWidget.title &&
+                                   nextVersion.description === originalWidget.description;
             
-            const newOperation = {
-              kind: "update" as const,
-              id: `update-${widgetId}-${generateOperationId()}`,
-              widgetId,
-              patch: { config: nextVersion.config, title: nextVersion.title, description: nextVersion.description },
-              expectedVersion: nextVersion.version,
-            };
-            
-            if (updateOpIndex >= 0) {
-              newState.pendingOperations[updateOpIndex] = newOperation;
+            if (isBackToOriginal) {
+              // Remove update operation - back to original
+              console.log('[redoLastChange] Back to original, removing pending operation');
+              newState.pendingOperations = currentState.pendingOperations.filter(op => 
+                !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
+              );
+              newState.dirtyWidgetIds.delete(widgetId);
             } else {
-              newState.pendingOperations.push(newOperation);
-              newState.dirtyWidgetIds.add(widgetId);
+              // Add or update the update operation
+              console.log('[redoLastChange] Still modified, updating pending operation');
+              const updateOpIndex = currentState.pendingOperations.findIndex(op => 
+                op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
+              );
+              
+              const patch = {
+                config: nextVersion.config,
+                title: nextVersion.title,
+                description: nextVersion.description
+              };
+              
+              const newOperation = {
+                kind: "update" as const,
+                id: `update-${widgetId}-${generateOperationId()}`,
+                widgetId,
+                patch,
+                expectedVersion: nextVersion.version,
+              };
+              
+              if (updateOpIndex >= 0) {
+                newState.pendingOperations[updateOpIndex] = newOperation;
+              } else {
+                newState.pendingOperations.push(newOperation);
+                newState.dirtyWidgetIds.add(widgetId);
+              }
             }
           }
 
@@ -645,6 +717,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
 
           return {
             widgets: restoredWidgets,
+            lastModifiedWidgetId: null,
             pendingOperations: [],
             dirtyWidgetIds: new Set<number>(),
             history: cleanedHistory,
@@ -793,6 +866,7 @@ export const useWidgetsStore = create<PendingChangesState>()(
         originalWidgets: state.originalWidgets,
         drafts: state.drafts,
         pendingOperations: state.pendingOperations,
+        lastModifiedWidgetId: state.lastModifiedWidgetId,
         history: state.history,
         redoHistory: state.redoHistory,
       }),
