@@ -76,6 +76,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         glow: false,
       },
       data: {
+        databaseId: 0,
         tableId: "default_table",
         filters: [],
         mappings: {
@@ -115,6 +116,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         zebraStripes: true,
       },
       data: {
+        databaseId: 0,
         tableId: "default_table",
         filters: [],
         sort: [],
@@ -338,6 +340,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         alignment: "center",
       },
       data: {
+        databaseId: 0,
         tableId: "default_kpi",
         filters: [],
       },

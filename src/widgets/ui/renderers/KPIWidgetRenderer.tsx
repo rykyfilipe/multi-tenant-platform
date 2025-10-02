@@ -507,8 +507,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   
   const { data: rawData, isLoading, error, refetch } = useTableRows(
     widget.tenantId,
-    data.databaseId || 0,
-    Number(data.tableId) || 0,
+    data?.databaseId || 0,
+    Number(data?.tableId) || 0,
     {
       pageSize: 1000,
       filters: filterString
