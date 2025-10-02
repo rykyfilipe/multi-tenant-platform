@@ -698,7 +698,8 @@ export async function POST(
 			// Find all columns safely using semantic types (some may be missing if schema is not updated)
 			const columns = {
 				invoice_id: invoiceTables.invoice_items!.columns!.find(
-					(c: any) => c.semanticType === SemanticColumnType.INVOICE_ID,
+					(c: any) => c.semanticType === SemanticColumnType.INVOICE_ID || 
+							   (c.name === "invoice_id" && c.type === "reference"),
 				),
 				product_ref_table: invoiceTables.invoice_items!.columns!.find(
 					(c: any) => c.semanticType === SemanticColumnType.PRODUCT_REF_TABLE,
@@ -802,87 +803,15 @@ export async function POST(
 				);
 			}
 
-			const itemCells = [];
+			const itemCells: Array<{ rowId: number; columnId: number; value: any }> = [];
 
-			// Add cells only for columns that exist
-			if (columns.invoice_id) {
-				console.log(`📝 Creating invoice_item with invoice_id: ${invoiceRow.id} (invoice row ID) for item row ${itemRow.id}`);
-				
-				// Verify that invoiceRow.id is a valid number
-				if (!invoiceRow.id || typeof invoiceRow.id !== 'number') {
-					console.error("❌ Invalid invoice row ID:", invoiceRow.id);
-					throw new Error(`Invalid invoice row ID: ${invoiceRow.id}`);
-				}
-				
-				// For reference columns, value must be an array (always multiple selection)
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.invoice_id.id,
-					value: [invoiceRow.id], // ✅ CORECT: array cu ID-ul invoice-ului
-				});
-			} else {
-				console.error("❌ invoice_id column not found in invoice_items table!");
+			// Verify that invoiceRow.id is a valid number
+			if (!invoiceRow.id || typeof invoiceRow.id !== 'number') {
+				console.error("❌ Invalid invoice row ID:", invoiceRow.id);
+				throw new Error(`Invalid invoice row ID: ${invoiceRow.id}`);
 			}
-
-			if (columns.product_ref_table && productTable) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_ref_table.id,
-					value: productTable.id, // Use table ID instead of table name
-				});
-			}
-
-			if (columns.product_ref_id) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_ref_id.id,
-					value: product.product_ref_id,
-				});
-			}
-
-			if (columns.quantity) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.quantity.id,
-					value: product.quantity,
-				});
-			}
-
-			if (columns.price) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.price.id,
-					value: product.price || productDetails.price || 0, // Use provided price or extract from product
-				});
-			}
-
-			if (columns.product_vat) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.product_vat.id,
-					value: productDetails.vat || 0, // Extract VAT from product details
-				});
-			}
-
-			if (columns.currency) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: columns.currency.id,
-					value: product.currency || productDetails.currency || "USD", // Use provided currency or extract from product
-				});
-			}
-
-			// Add unit of measure if column exists
-			const unitOfMeasureColumn = invoiceTables.invoice_items!.columns!.find(
-				(c: any) => c.semanticType === SemanticColumnType.UNIT_OF_MEASURE,
-			);
-			if (unitOfMeasureColumn && product.unit_of_measure) {
-				itemCells.push({
-					rowId: itemRow.id,
-					columnId: unitOfMeasureColumn.id,
-					value: product.unit_of_measure,
-				});
-			}
+			
+			console.log(`📝 Creating invoice_item with invoice_id: ${invoiceRow.id} (invoice row ID) for item row ${itemRow.id}`);
 
 			// Complete all available columns in invoice_items table with product data
 			const allInvoiceItemColumns = invoiceTables.invoice_items!.columns!;
@@ -897,6 +826,31 @@ export async function POST(
 
 				// Map semantic types to available product data
 				switch (column.semanticType) {
+					case "invoice_id":
+						// For reference columns, value must be an array (always multiple selection)
+						value = [invoiceRow.id];
+						break;
+					case "product_ref_table":
+						value = productTable ? productTable.id : null;
+						break;
+					case "id": // product_ref_id
+						value = product.product_ref_id;
+						break;
+					case "quantity":
+						value = product.quantity;
+						break;
+					case "unit_price":
+						value = product.price || productDetails.price || 0;
+						break;
+					case "product_vat":
+						value = productDetails.vat || 0;
+						break;
+					case "currency":
+						value = product.currency || productDetails.currency || "USD";
+						break;
+					case "unit_of_measure":
+						value = product.unit_of_measure || productDetails.unitOfMeasure;
+						break;
 					case "product_name":
 						value = productDetails.name;
 						break;
@@ -923,19 +877,6 @@ export async function POST(
 						break;
 					case "product_status":
 						value = productDetails.status;
-						break;
-					case "product_vat":
-						value = productDetails.vat;
-						break;
-					case "product_currency":
-						value = productDetails.currency;
-						break;
-					case "product_unit_of_measure":
-						value = productDetails.unitOfMeasure;
-						break;
-					case "product_price":
-					case "unit_price":
-						value = productDetails.price;
 						break;
 					case "total_price":
 						// Calculate total price: quantity * unit_price
