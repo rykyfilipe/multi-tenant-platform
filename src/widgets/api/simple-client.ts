@@ -213,6 +213,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
       console.log('[loadWidgets] Fetching widgets from API...');
       const data = await apiClient.fetchWidgets(includeConfig);
       console.log('[loadWidgets] Received widgets:', data.items);
+      console.log('[loadWidgets] Widget IDs from API:', data.items.map((w: any) => w.id));
       
       // Ensure widgets have proper structure to prevent hydration issues
       const normalizedWidgets = data.items.map(widget => ({
@@ -223,6 +224,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
         updatedAt: new Date(widget.updatedAt),
       }));
       
+      console.log('[loadWidgets] Normalized widget IDs:', normalizedWidgets.map((w: any) => w.id));
       setWidgets(normalizedWidgets as WidgetEntity[]);
       // Clear pending operations when loading widgets for a new dashboard context
       clearPending();

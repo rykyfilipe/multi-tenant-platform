@@ -64,7 +64,7 @@ export async function POST(
 
 	const { tenantId } = await params;
 
-	const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+	 const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
 	if (tenantAccessError) {
 		return tenantAccessError;
 	}
@@ -93,7 +93,7 @@ export async function POST(
 			
 			return NextResponse.json(
 				{ 
-					error: "Validation failed",
+					error: "Validation failed", 
 					details: errors
 				}, 
 				{ status: 400 }
@@ -129,7 +129,7 @@ export async function POST(
 
 		// Get the database for this tenant
 		const database = await prisma.database.findFirst({
-			where: { tenantId: Number(tenantId) },
+				where: { tenantId: Number(tenantId) },
 		});
 
 		if (!database) {
@@ -151,7 +151,7 @@ export async function POST(
 			invoices: !!invoiceTables.invoices,
 			invoice_items: !!invoiceTables.invoice_items
 		});
-
+		
 		// If tables don't exist, create them
 		if (!invoiceTables.customers || !invoiceTables.invoices || !invoiceTables.invoice_items) {
 			console.log("=== CREATING INVOICE TABLES ===");
@@ -162,11 +162,11 @@ export async function POST(
 		}
 
 		// Ensure we have the latest table structure
-		invoiceTables = await InvoiceSystemService.getInvoiceTables(
-			Number(tenantId),
-			database.id,
-		);
-
+				invoiceTables = await InvoiceSystemService.getInvoiceTables(
+					Number(tenantId),
+					database.id,
+				);
+				
 		// Validate that all required tables exist
 		if (!invoiceTables.invoices?.columns || !invoiceTables.invoice_items?.columns) {
 			console.error("Invoice system tables not properly initialized");
@@ -226,13 +226,13 @@ export async function POST(
 			});
 
 			console.log("✅ Invoice row created with ID:", invoiceRow.id);
-
+			
 			// Create invoice cells using all available columns
-			const invoiceCells: Array<{
-				rowId: number;
-				columnId: number;
-				value: string | number;
-			}> = [];
+		const invoiceCells: Array<{
+			rowId: number;
+			columnId: number;
+			value: string | number;
+		}> = [];
 
 			// Map payload data to invoice columns using semantic types
 			for (const column of invoiceTables.invoices!.columns!) {
@@ -326,13 +326,13 @@ export async function POST(
 						columnId: column.id,
 						value,
 					});
-				}
 			}
+		}
 
-			// Remove duplicate cells before creating
-			const uniqueInvoiceCells = invoiceCells.filter((cell, index, self) => 
-				index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
-			);
+		// Remove duplicate cells before creating
+		const uniqueInvoiceCells = invoiceCells.filter((cell, index, self) => 
+			index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
+		);
 
 			// Create all invoice cells
 			await tx.cell.createMany({
@@ -370,35 +370,35 @@ export async function POST(
 
 				try {
 					const productTable = await tx.table.findFirst({
-						where: {
-							name: product.product_ref_table,
-							databaseId: database.id,
-						},
+					where: {
+						name: product.product_ref_table,
+						databaseId: database.id,
+					},
+					include: {
+						columns: true,
+					},
+				});
+
+				if (productTable) {
+					const productRow = await tx.row.findUnique({
+						where: { id: product.product_ref_id },
 						include: {
-							columns: true,
+							cells: {
+								include: {
+									column: true,
+								},
+							},
 						},
 					});
 
-					if (productTable) {
-						const productRow = await tx.row.findUnique({
-							where: { id: product.product_ref_id },
-							include: {
-								cells: {
-									include: {
-										column: true,
-									},
-								},
-							},
-						});
-
-						if (productRow) {
-							productDetails = extractProductDetails(
-								productTable.columns,
-								productRow.cells,
-							);
-						}
+					if (productRow) {
+						productDetails = extractProductDetails(
+							productTable.columns,
+							productRow.cells,
+						);
 					}
-				} catch (error) {
+				}
+			} catch (error) {
 					console.warn(`Failed to fetch details for product ${product.product_ref_table}:${product.product_ref_id}`, error);
 				}
 
@@ -416,7 +416,7 @@ export async function POST(
 							console.warn("Invoice ID is missing for invoice_id column.");
 							continue; // Skip if invoice ID is not available
 						}
-					} else {
+			} else {
 						// Map product data to invoice item columns using semantic types
 						switch (column.semanticType) {
 							case SemanticColumnType.PRODUCT_REF_TABLE:
@@ -496,18 +496,18 @@ export async function POST(
 
 					// Only add if we have a value
 					if (value !== null && value !== undefined && value !== "") {
-						itemCells.push({
-							rowId: itemRow.id,
+				itemCells.push({
+					rowId: itemRow.id,
 							columnId: column.id,
 							value,
 						});
 					}
-				}
+			}
 
-				// Remove duplicate cells before creating
-				const uniqueItemCells = itemCells.filter((cell, index, self) => 
-					index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
-				);
+			// Remove duplicate cells before creating
+			const uniqueItemCells = itemCells.filter((cell, index, self) => 
+				index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
+			);
 
 				await tx.cell.createMany({
 					data: uniqueItemCells,
@@ -516,18 +516,18 @@ export async function POST(
 				invoiceItemRows.push(itemRow);
 			}
 
-			// Calculate totals using unified service
-			const itemsForCalculation = parsedData.products.map((product) => ({
-				id: 0, // Temporary ID for calculation
-				product_ref_table: product.product_ref_table,
-				product_ref_id: product.product_ref_id,
-				quantity: product.quantity || 1,
-				price: product.price || 0,
-				currency: product.currency || "USD",
-				product_vat: 0, // Will be populated from product details
-				description: product.description,
-				unit_of_measure: product.unit_of_measure,
-			}));
+		// Calculate totals using unified service
+		const itemsForCalculation = parsedData.products.map((product) => ({
+			id: 0, // Temporary ID for calculation
+			product_ref_table: product.product_ref_table,
+			product_ref_id: product.product_ref_id,
+			quantity: product.quantity || 1,
+			price: product.price || 0,
+			currency: product.currency || "USD",
+			product_vat: 0, // Will be populated from product details
+			description: product.description,
+			unit_of_measure: product.unit_of_measure,
+		}));
 
 			// Get VAT rates for products
 			for (let i = 0; i < itemsForCalculation.length; i++) {
@@ -555,38 +555,38 @@ export async function POST(
 							},
 						});
 
-						if (productRow) {
-							const productDetails = extractProductDetails(
-								productTable.columns,
-								productRow.cells,
-							);
-							itemsForCalculation[i].product_vat = productDetails.vat || 0;
-						}
+					if (productRow) {
+						const productDetails = extractProductDetails(
+							productTable.columns,
+							productRow.cells,
+						);
+						itemsForCalculation[i].product_vat = productDetails.vat || 0;
 					}
-				} catch (error) {
-					console.warn(
-						`Failed to fetch VAT for product ${product.product_ref_table}:${product.product_ref_id}`,
-						error,
-					);
 				}
+			} catch (error) {
+				console.warn(
+					`Failed to fetch VAT for product ${product.product_ref_table}:${product.product_ref_id}`,
+					error,
+				);
 			}
+		}
 
-			// Debug: Log the data being passed to calculation service
-			console.log("=== INVOICE CREATION DEBUG ===");
+		// Debug: Log the data being passed to calculation service
+		console.log("=== INVOICE CREATION DEBUG ===");
 			console.log("Items for calculation:", JSON.stringify(itemsForCalculation, null, 2));
 			console.log("Base currency:", parsedData.base_currency);
 
 			// Calculate totals
-			const totals = await InvoiceCalculationService.calculateInvoiceTotals(
-				itemsForCalculation,
-				{
+		const totals = await InvoiceCalculationService.calculateInvoiceTotals(
+			itemsForCalculation,
+			{
 					baseCurrency: parsedData.base_currency,
 					exchangeRates: {}, // Will be populated by the service
-				},
-			);
+			},
+		);
 
-			// Debug: Log the calculated totals
-			console.log("Calculated totals:", JSON.stringify(totals, null, 2));
+		// Debug: Log the calculated totals
+		console.log("Calculated totals:", JSON.stringify(totals, null, 2));
 
 			// Update total_amount in invoice (cell was already created with value 0)
 			const totalAmountColumn = invoiceTables.invoices!.columns!.find(
@@ -666,30 +666,30 @@ export async function POST(
 
 	} catch (error: any) {
 		console.error("Error creating invoice:", error);
-		
+
 		// Handle specific error types
 		if (error.code === 'P2002') {
-			return NextResponse.json(
-				{ 
+				return NextResponse.json(
+					{ 
 					error: "Duplicate entry", 
 					message: "A record with this information already exists" 
-				}, 
+					},
 				{ status: 409 }
-			);
-		}
-		
+				);
+			}
+
 		if (error instanceof z.ZodError) {
-			return NextResponse.json(
-				{ 
+				return NextResponse.json(
+					{ 
 					error: "Validation failed",
 					details: error.errors 
-				}, 
+					},
 				{ status: 400 }
-			);
-		}
+				);
+			}
 
-		return NextResponse.json(
-			{ 
+				return NextResponse.json(
+					{ 
 				error: "Internal server error",
 				message: error.message || "Failed to create invoice"
 			}, 
@@ -709,7 +709,7 @@ export async function GET(
 
 	const { tenantId } = await params;
 
-	const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+	 const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
 	if (tenantAccessError) {
 		return tenantAccessError;
 	}
@@ -759,17 +759,17 @@ export async function GET(
 			where: {
 				tableId: invoiceTables.invoices.id,
 			},
-			include: {
-				cells: {
-					include: {
-						column: true,
+				include: {
+					cells: {
+						include: {
+							column: true,
+						},
 					},
 				},
-			},
 			orderBy: {
 				createdAt: 'desc',
-			},
-		});
+					},
+				});
 
 		console.log(`📄 GET invoices - Found ${invoices.length} invoices in database`);
 
@@ -786,7 +786,7 @@ export async function GET(
 			console.log(`📝 GET invoices - Transforming invoice ${index + 1} (ID: ${invoice.id}) with ${invoice.cells.length} cells`);
 
 			// Map cells to readable format
-			invoice.cells.forEach((cell: any) => {
+				invoice.cells.forEach((cell: any) => {
 				const columnName = cell.column.name;
 				const semanticType = cell.column.semanticType;
 				

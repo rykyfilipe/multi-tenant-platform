@@ -630,8 +630,10 @@ export const useWidgetsStore = create<PendingChangesState>()(
 
       setWidgets: (widgets) => {
         console.log('[setWidgets] Setting widgets:', widgets.length, 'widgets');
+        console.log('[setWidgets] Input widget IDs:', widgets.map(w => w.id));
         set(() => {
           const widgetsMap = widgets.reduce<Record<number, WidgetEntity>>((acc, widget) => {
+            console.log('[setWidgets] Processing widget ID:', widget.id, 'isLocal:', isLocalWidget(widget.id));
             // Ensure config has all required fields for backward compatibility
             const widgetWithCorrectConfig = {
               ...widget,
@@ -665,6 +667,8 @@ export const useWidgetsStore = create<PendingChangesState>()(
             acc[widget.id] = widgetWithCorrectConfig;
             return acc;
           }, {});
+          
+          console.log('[setWidgets] Final widget IDs in map:', Object.keys(widgetsMap));
           
           // Store both current and original widgets
           // Original widgets are used for comparison to detect changes
