@@ -246,7 +246,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     try {
       const response = await apiClient.createWidget(payload);
       
-      if (response.conflicts.length) {
+      if (response.conflicts && response.conflicts.length > 0) {
         setConflicts(response.conflicts);
       } else {
         // Note: Don't reload widgets - let the caller handle state updates
@@ -265,7 +265,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
       const response = await apiClient.savePending(payload);
       console.log('[savePending] Batch save response:', response);
 
-      if (response.conflicts.length) {
+      if (response.conflicts && response.conflicts.length > 0) {
         console.log('[savePending] Conflicts detected:', response.conflicts.length);
         setConflicts(response.conflicts);
       } else {
@@ -311,7 +311,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     try {
       const response = await apiClient.applyDraft(draftId, actorId);
 
-      if (response.conflicts.length) {
+      if (response.conflicts && response.conflicts.length > 0) {
         setConflicts(response.conflicts);
       } else {
         // Remove the applied draft from store
