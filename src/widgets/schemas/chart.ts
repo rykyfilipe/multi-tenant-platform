@@ -5,8 +5,8 @@ export const chartSettingsSchema = z.object({
   chartType: z.enum(["line", "bar", "area", "pie", "radar", "scatter"]),
   refreshInterval: z.number().int().positive().max(3600).default(60),
   // Data processing mode
-  processingMode: z.enum(["raw", "aggregated", "grouped"]).default("raw"),
-  // Aggregation (used for both simple aggregation and grouping)
+  processingMode: z.enum(["raw", "grouped"]).default("raw"),
+  // Aggregation (only for grouped mode)
   aggregationFunction: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
   aggregationColumns: z.array(z.string()).default([]),
   // Grouping

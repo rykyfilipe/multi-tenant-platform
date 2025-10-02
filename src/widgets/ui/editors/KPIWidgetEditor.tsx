@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
-import { TrendingUp, Group, Filter } from "lucide-react";
+import { TrendingUp, Filter } from "lucide-react";
 
 interface KPIWidgetEditorProps {
   value: z.infer<typeof kpiWidgetConfigSchema>;
@@ -315,60 +315,6 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                       <p className="text-xs text-amber-600 p-2 bg-amber-50 rounded">
                         ⚠️ Please select at least one aggregation function.
                       </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Grouping Section */}
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Group className="h-4 w-4" />
-                    Data Grouping
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-muted/50 rounded-md">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Grouping:</strong> Calculate KPIs for each unique value in a column (e.g., Sales per Region).
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="enableGrouping" className="text-xs font-medium uppercase tracking-wide">
-                        Enable Grouping
-                      </Label>
-                      <Switch
-                        id="enableGrouping"
-                        checked={value.settings.enableGrouping || false}
-                        onCheckedChange={(checked) => updateSettings({ enableGrouping: checked })}
-                      />
-                    </div>
-
-                    {value.settings.enableGrouping && (
-                      <div>
-                        <Label htmlFor="groupByColumn" className="text-xs font-medium uppercase tracking-wide">
-                          Group By Column
-                        </Label>
-                        <Select
-                          value={value.settings.groupByColumn || ""}
-                          onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Select column" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableColumns
-                              .filter(col => ["string", "text", "date", "datetime", "boolean"].includes(col.type))
-                              .map((column) => (
-                                <SelectItem key={column.id} value={column.name}>
-                                  {column.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          KPIs will be calculated for each unique value in this column
-                        </p>
-                      </div>
                     )}
                   </div>
                 </div>

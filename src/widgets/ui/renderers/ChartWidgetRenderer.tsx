@@ -354,7 +354,7 @@ function applyHavingFilters(data: AggregatedRow[], havingFilters?: HavingFilter[
  * Applies TOP N filtering by sorting and limiting results
  * 
  * RULE: TOP N is applied AFTER aggregation and HAVING filters
- * RULE: Sorting is done on aggregated columns
+ * RULE: Sorting is done on aggregated columns or any numeric column
  * 
  * @param data - Aggregated rows
  * @param sortByColumn - Column to sort by (defaults to first numeric column)
@@ -382,20 +382,42 @@ function applyTopN(
       key => key !== 'name' && typeof data[0][key] === 'number'
     );
     effectiveSortColumn = numericColumns[0] || 'name';
+    console.log(`  🔍 Auto-detected sort column: ${effectiveSortColumn}`);
   }
 
-  // Sort data
-  const sorted = [...data].sort((a, b) => {
-    const aVal = typeof a[effectiveSortColumn!] === 'number' ? a[effectiveSortColumn!] : 0;
-    const bVal = typeof b[effectiveSortColumn!] === 'number' ? b[effectiveSortColumn!] : 0;
+  console.log(`  📊 Sorting by: ${effectiveSortColumn} (${sortDirection})`);
 
-    return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
+  // Sort data with proper numeric comparison
+  const sorted = [...data].sort((a, b) => {
+    let aVal: number | string = a[effectiveSortColumn!];
+    let bVal: number | string = b[effectiveSortColumn!];
+    
+    // Handle numeric values
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
+    }
+    
+    // Handle string values (for 'name' column)
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      const comparison = aVal.localeCompare(bVal);
+      return sortDirection === 'desc' ? -comparison : comparison;
+    }
+    
+    // Fallback: convert to number
+    const numA = typeof aVal === 'number' ? aVal : parseFloat(String(aVal)) || 0;
+    const numB = typeof bVal === 'number' ? bVal : parseFloat(String(bVal)) || 0;
+    return sortDirection === 'desc' ? numB - numA : numA - numB;
   });
 
   // Apply limit
   const limited = sorted.slice(0, limit);
 
   console.log(`✅ [STEP 6: TOP N] Sorted and limited ${data.length} → ${limited.length} rows`);
+  console.log(`  📋 Top ${Math.min(3, limited.length)} results:`, limited.slice(0, 3).map(r => ({ 
+    name: r.name, 
+    [effectiveSortColumn]: r[effectiveSortColumn] 
+  })));
+  
   return limited;
 }
 
@@ -521,17 +543,10 @@ function executeDataPipeline(rawData: any[], config: PipelineConfig): ChartDataP
         count: rows.length
       }));
     }
-  } else if (config.enableAggregation && config.aggregationColumns.length > 0) {
-    // Aggregation mode: AGGREGATE entire dataset (no grouping)
-    aggregatedData = aggregateEntireDataset(
-      normalizedData,
-      config.aggregationColumns,
-      config.aggregationFunction
-    );
   } else {
-    // Pass-through mode: No grouping or aggregation
+    // Raw mode: No grouping or aggregation
     // Transform normalized data to aggregated format (keep as-is)
-    console.log('⏭️ [STEP 3-4: NO GROUPING/AGGREGATION] Pass-through mode');
+    console.log('⏭️ [STEP 3-4: RAW MODE] Pass-through mode - no grouping or aggregation');
     aggregatedData = normalizedData.map((row, index) => ({
       name: row[config.xAxisColumn] !== undefined 
         ? String(row[config.xAxisColumn])
@@ -601,9 +616,9 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const sortByColumn = config?.settings?.sortByColumn;
   const sortDirection = config?.settings?.sortDirection || "desc";
   
-  // Derive enableAggregation and enableGrouping from processingMode
-  const enableAggregation = processingMode === "aggregated";
+  // Only grouped mode has aggregation
   const enableGrouping = processingMode === "grouped";
+  const enableAggregation = false; // Removed simple aggregation mode
 
   // Fetch data from API (WHERE filters applied here)
   const validFilters = filters.filter((f: any) => f.column && f.operator && f.value !== undefined);

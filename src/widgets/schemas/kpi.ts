@@ -14,8 +14,6 @@ export const kpiSettingsSchema = z.object({
   selectedAggregations: z.array(z.enum(["sum", "avg", "count", "min", "max"])).default(["sum"]),
   showExtremeValueDetails: z.boolean().default(false), // New: show additional details from extreme value row
   extremeValueMode: z.enum(["max", "min"]).default("max"), // New: which extreme value to find
-  enableGrouping: z.boolean().default(false), // New: enable grouping by column
-  groupByColumn: z.string().optional(), // New: column to group by
 });
 
 export const kpiStyleSchema = z.object({

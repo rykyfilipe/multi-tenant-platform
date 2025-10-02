@@ -57,16 +57,13 @@ interface KPIPipelineConfig {
   valueColumn: string;
   displayColumns?: string[];
   
-  // Grouping (optional)
-  enableGrouping: boolean;
-  groupByColumn?: string;
-  
   // Aggregations (can select multiple)
   aggregations: Array<'sum' | 'avg' | 'count' | 'min' | 'max'>;
   
   // Comparison
   enableComparison: boolean;
   comparisonColumn?: string;
+  comparisonAggregation?: 'sum' | 'avg' | 'count' | 'min' | 'max';
   
   // Formatting
   format: 'number' | 'currency' | 'percentage' | 'duration';
@@ -327,50 +324,7 @@ function calculateKPIValues(
 }
 
 // ============================================================================
-// STEP 6: GROUPING - Calculate KPIs per group
-// ============================================================================
-
-/**
- * Calculate KPIs with grouping
- */
-function calculateGroupedKPIs(
-  rows: NormalizedRow[],
-  groupByColumn: string,
-  config: KPIPipelineConfig
-): GroupedKPIResult[] {
-  console.log(`🔢 [KPI STEP 6: GROUP BY] Grouping by: ${groupByColumn}`);
-  
-  // Group rows
-  const grouped: Record<string, NormalizedRow[]> = {};
-  rows.forEach(row => {
-    const groupKey = row[groupByColumn] !== undefined && row[groupByColumn] !== null
-      ? String(row[groupByColumn])
-      : '__NULL__';
-    
-    if (!grouped[groupKey]) {
-      grouped[groupKey] = [];
-    }
-    grouped[groupKey].push(row);
-  });
-  
-  console.log(`  📊 Created ${Object.keys(grouped).length} groups`);
-  
-  // Calculate KPIs for each group
-  const groupedResults: GroupedKPIResult[] = [];
-  Object.entries(grouped).forEach(([groupKey, groupRows]) => {
-    const results = calculateKPIValues(groupRows, config);
-    groupedResults.push({
-      groupKey: groupKey === '__NULL__' ? 'N/A' : groupKey,
-      results
-    });
-  });
-  
-  console.log(`✅ [KPI STEP 6: GROUP BY] Generated ${groupedResults.length} grouped KPIs`);
-  return groupedResults;
-}
-
-// ============================================================================
-// STEP 7: COMPARISON - Calculate comparison metrics
+// STEP 6: COMPARISON - Calculate comparison metrics
 // ============================================================================
 
 /**
@@ -380,19 +334,22 @@ function calculateComparison(
   rows: NormalizedRow[],
   config: KPIPipelineConfig
 ): KPIResult | null {
-  if (!config.enableComparison || !config.comparisonColumn || !config.aggregations.length) {
+  if (!config.enableComparison || !config.comparisonColumn) {
+    console.log('⏭️ [KPI STEP 6: COMPARISON] Comparison disabled or no column specified');
     return null;
   }
   
-  console.log(`📊 [KPI STEP 7: COMPARISON] Calculating comparison metric...`);
+  console.log(`📊 [KPI STEP 6: COMPARISON] Calculating comparison metric...`);
   
-  // Use the first aggregation type for comparison
-  const aggType = config.aggregations[0];
-  const comparisonConfig = { ...config, valueColumn: config.comparisonColumn };
+  // Use the same aggregation type as the first primary KPI
+  const aggType = config.comparisonAggregation || config.aggregations[0];
   
   const values = extractNumericValues(rows, config.comparisonColumn);
   
-  if (!values.length) return null;
+  if (!values.length) {
+    console.warn('⚠️ [KPI STEP 6: COMPARISON] No valid values found');
+    return null;
+  }
   
   let value: number;
   switch (aggType) {
@@ -411,14 +368,16 @@ function calculateComparison(
     case 'max':
       value = Math.max(...values);
       break;
+    default:
+      value = values.reduce((acc, val) => acc + val, 0);
   }
   
-  console.log(`✅ [KPI STEP 7: COMPARISON] Comparison value: ${value}`);
+  console.log(`✅ [KPI STEP 6: COMPARISON] Comparison value: ${value} (${aggType} of ${values.length} values)`);
   
   return {
     aggregationType: aggType,
     value,
-    label: 'Comparison',
+    label: 'Previous',
     metadata: { count: values.length }
   };
 }
@@ -435,14 +394,12 @@ function executeKPIPipeline(
   config: KPIPipelineConfig
 ): { 
   results: KPIResult[]; 
-  groupedResults?: GroupedKPIResult[];
   comparison?: KPIResult | null;
 } {
   console.log('🚀 [KPI PIPELINE START] =====================================');
   console.log('Configuration:', {
     valueColumn: config.valueColumn,
     aggregations: config.aggregations,
-    grouping: config.enableGrouping,
     comparison: config.enableComparison
   });
   
@@ -456,31 +413,20 @@ function executeKPIPipeline(
   // STEP 2: WHERE - Already applied at API level
   console.log('✅ [KPI STEP 2: WHERE] Filters applied at API level');
   
-  let results: KPIResult[] = [];
-  let groupedResults: GroupedKPIResult[] | undefined;
+  // STEP 3-5: AGGREGATE - Calculate KPI values
+  const results = calculateKPIValues(normalizedData, config);
   
-  // STEP 3-6: GROUP BY + AGGREGATE
-  if (config.enableGrouping && config.groupByColumn) {
-    // Grouped KPIs
-    groupedResults = calculateGroupedKPIs(normalizedData, config.groupByColumn, config);
-    // For backward compatibility, also return the totals
-    results = calculateKPIValues(normalizedData, config);
-  } else {
-    // Simple KPIs (no grouping)
-    results = calculateKPIValues(normalizedData, config);
-  }
-  
-  // STEP 7: COMPARISON
+  // STEP 6: COMPARISON
   const comparison = calculateComparison(normalizedData, config);
   
   console.log('✅ [KPI PIPELINE END] =====================================');
   console.log('Results:', {
     kpiCount: results.length,
-    groupCount: groupedResults?.length || 0,
-    hasComparison: !!comparison
+    hasComparison: !!comparison,
+    comparisonValue: comparison?.value
   });
   
-  return { results, groupedResults, comparison };
+  return { results, comparison };
 }
 
 // ============================================================================
@@ -574,19 +520,18 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   });
   
   // Process data through the pipeline
-  const { results, groupedResults, comparison } = useMemo(() => {
+  const { results, comparison } = useMemo(() => {
     if (!rawData?.data?.length || !settings.valueField) {
-      return { results: [], groupedResults: undefined, comparison: undefined };
+      return { results: [], comparison: undefined };
     }
     
     const pipelineConfig: KPIPipelineConfig = {
       valueColumn: settings.valueField,
       displayColumns: settings.displayFields || [],
-      enableGrouping: settings.enableGrouping || false,
-      groupByColumn: settings.groupByColumn,
       aggregations: settings.selectedAggregations || ['sum'],
       enableComparison: settings.showComparison || false,
       comparisonColumn: settings.comparisonField,
+      comparisonAggregation: settings.selectedAggregations?.[0] || 'sum',
       format: settings.format || 'number',
       showExtremeValueDetails: settings.showExtremeValueDetails || false,
       extremeValueMode: settings.extremeValueMode || 'max'
@@ -597,13 +542,31 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   
   // Calculate trend if comparison is available
   const trendData = useMemo(() => {
-    if (!comparison || !results.length) return null;
+    if (!comparison || !results.length) {
+      console.log('⏭️ No trend data: comparison or results missing');
+      return null;
+    }
     
     const primaryValue = results[0].value;
-    const percentage = calculateTrendPercentage(primaryValue, comparison.value);
-    const isPositive = primaryValue >= comparison.value;
+    const comparisonValue = comparison.value;
     
-    return { percentage, isPositive };
+    console.log('📊 Trend calculation:', {
+      primaryValue,
+      comparisonValue,
+      aggregationType: results[0].aggregationType
+    });
+    
+    const percentage = calculateTrendPercentage(primaryValue, comparisonValue);
+    const isPositive = primaryValue >= comparisonValue;
+    
+    console.log(`✅ Trend: ${isPositive ? '+' : ''}${percentage.toFixed(1)}%`);
+    
+    return { 
+      percentage: Math.abs(percentage), 
+      isPositive,
+      currentValue: primaryValue,
+      previousValue: comparisonValue
+    };
   }, [results, comparison]);
   
   // Loading state
@@ -654,42 +617,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         alignment === 'left' ? 'items-start' : 
         alignment === 'right' ? 'items-end' : 'items-center'
       }`}>
-        {/* Grouped KPIs Display */}
-        {groupedResults && groupedResults.length > 0 ? (
-          <div className="w-full space-y-4">
-            <div className="text-sm font-medium text-center text-muted-foreground">
-              {settings.label || 'KPI Metrics'} by {settings.groupByColumn}
-            </div>
-            <div className={`grid gap-3 ${
-              groupedResults.length <= 2 ? 'grid-cols-1' :
-              groupedResults.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
-            }`}>
-              {groupedResults.map((group) => (
-                <div key={group.groupKey} className="p-3 bg-muted/30 rounded-lg space-y-2">
-                  <div className="text-xs font-medium text-muted-foreground text-center border-b pb-1">
-                    {group.groupKey}
-                  </div>
-                  {group.results.map((result) => (
-                    <div key={result.aggregationType} className="text-center">
-                      <div 
-                        className={`font-bold ${
-                          size === 'small' ? 'text-lg' : 
-                          size === 'large' ? 'text-2xl' : 'text-xl'
-                        }`}
-                        style={{ color: style.valueColor || '#000' }}
-                      >
-                        {formatValue(result.value, format)}
-                      </div>
-                      <div className="text-xs" style={{ color: style.labelColor || '#666' }}>
-                        {result.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : results.length === 1 ? (
+        {results.length === 1 ? (
           // Single KPI Display
           <div className="text-center space-y-2">
             <div

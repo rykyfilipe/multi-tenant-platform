@@ -292,7 +292,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                       <Select
                         value={value.settings.processingMode || "raw"}
                         onValueChange={(val) => updateSettings({ 
-                          processingMode: val as "raw" | "aggregated" | "grouped" 
+                          processingMode: val as "raw" | "grouped" 
                         })}
                       >
                         <SelectTrigger className="mt-1">
@@ -300,21 +300,19 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="raw">Raw Data (No Processing)</SelectItem>
-                          <SelectItem value="aggregated">Aggregated (Summary)</SelectItem>
-                          <SelectItem value="grouped">Grouped (Per Category)</SelectItem>
+                          <SelectItem value="grouped">Grouped (Aggregate per Category)</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground mt-1">
                         {value.settings.processingMode === "raw" && "Display data as-is from the table"}
-                        {value.settings.processingMode === "aggregated" && "Calculate single summary values (e.g., Total Sales)"}
-                        {value.settings.processingMode === "grouped" && "Calculate values per group (e.g., Sales per Region)"}
+                        {value.settings.processingMode === "grouped" && "Group data and calculate aggregated values per category (e.g., Sales per Region)"}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Aggregation Settings (for aggregated or grouped mode) */}
-                {(value.settings.processingMode === "aggregated" || value.settings.processingMode === "grouped") && (
+                {/* Aggregation Settings (only for grouped mode) */}
+                {value.settings.processingMode === "grouped" && (
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4" />
