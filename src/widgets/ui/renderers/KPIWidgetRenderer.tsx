@@ -5,7 +5,7 @@ import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { Skeleton } from "@/components/ui/skeleton";
+import { WidgetLoadingState, WidgetErrorState, WidgetEmptyState } from "../components/WidgetStates";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface KPIWidgetRendererProps {
@@ -608,43 +608,40 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   
   // Loading state
   if (isLoading) {
-    return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <div className="flex h-full flex-col items-center justify-center space-y-4">
-          <Skeleton className="h-12 w-32" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-      </BaseWidget>
-    );
+    return <WidgetLoadingState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      variant="kpi"
+    />;
   }
   
   // Error state
   if (error) {
-    return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <div className="flex h-full flex-col items-center justify-center">
-          <div className="text-center text-red-500">
-            <p className="text-sm font-medium">Error loading KPI data</p>
-            <p className="text-xs text-muted-foreground mt-1">{error.message}</p>
-          </div>
-        </div>
-      </BaseWidget>
-    );
+    return <WidgetErrorState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      error={error}
+      title="Error loading KPI data"
+    />;
   }
   
   // No data state
   if (!results.length) {
-    return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <div className="flex h-full flex-col items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <p className="text-sm">No data available</p>
-            <p className="text-xs mt-1">Configure data source and value column</p>
-          </div>
-        </div>
-      </BaseWidget>
-    );
+    return <WidgetEmptyState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      title="No data available"
+      message="Configure data source and value column"
+    />;
   }
   
   const alignment = style.alignment || 'center';

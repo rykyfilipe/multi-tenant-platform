@@ -7,6 +7,9 @@ export const tableColumnSchema = z.object({
   width: z.number().int().positive().max(800).optional(),
   sortable: z.boolean().default(true),
   format: z.enum(["text", "number", "currency", "date", "percentage", "badge", "link"]).default("text"),
+  // Column-level aggregation (for footer statistics)
+  showStatistics: z.boolean().default(false),
+  statisticFunction: z.enum(["sum", "avg", "count", "min", "max"]).optional(),
 });
 
 export const tableSettingsSchema = z.object({
@@ -14,6 +17,12 @@ export const tableSettingsSchema = z.object({
   pageSize: z.number().int().positive().max(200).default(25),
   enableExport: z.boolean().default(false),
   stickyHeader: z.boolean().default(true),
+  // Data processing
+  processingMode: z.enum(["raw", "grouped"]).default("raw"),
+  groupByColumn: z.string().optional(),
+  showGroupSummary: z.boolean().default(false),
+  // Footer statistics
+  showFooterStatistics: z.boolean().default(false),
 });
 
 export const tableStyleSchema = z.object({
@@ -21,6 +30,7 @@ export const tableStyleSchema = z.object({
   density: z.enum(["comfortable", "compact", "expanded"]).default("comfortable"),
   showRowBorders: z.boolean().default(false),
   zebraStripes: z.boolean().default(true),
+  headerStyle: z.enum(["default", "bold", "accent"]).default("default"),
 });
 
 export const tableDataSchema = z.object({
@@ -52,4 +62,3 @@ export const tableWidgetConfigSchema = baseWidgetConfigSchema.extend({
 });
 
 export type TableWidgetConfig = z.infer<typeof tableWidgetConfigSchema>;
-

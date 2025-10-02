@@ -4,8 +4,7 @@ import React from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 import { useWeather } from "@/hooks/useWeather";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { WidgetLoadingState, WidgetErrorState } from "../components/WidgetStates";
 
 interface WeatherWidgetRendererProps {
   widget: WidgetEntity;
@@ -65,29 +64,26 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
   };
 
   if (loading) {
-    return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <div className="flex h-full flex-col items-center justify-center space-y-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
-          <div className="space-y-2 text-center">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-        </div>
-      </BaseWidget>
-    );
+    return <WidgetLoadingState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      variant="default"
+    />;
   }
 
   if (error) {
-    return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <Alert className="m-4">
-          <AlertDescription>
-            Unable to load weather data: {error}
-          </AlertDescription>
-        </Alert>
-      </BaseWidget>
-    );
+    return <WidgetErrorState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      error={error}
+      title="Error loading weather data"
+    />;
   }
 
   const currentWeather = weatherData || {

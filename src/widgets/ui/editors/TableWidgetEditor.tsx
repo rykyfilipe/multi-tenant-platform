@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, X, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, X, ArrowUp, ArrowDown, Group, TrendingUp } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
@@ -47,24 +47,13 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
     });
   };
 
-  const updateRefresh = (updates: Partial<typeof value.refresh>) => {
-    onChange({
-      ...value,
-      refresh: { 
-        enabled: false, 
-        interval: 30000, 
-        ...value.refresh, 
-        ...updates 
-      },
-    });
-  };
-
   const addColumn = () => {
     const newColumns = [...value.settings.columns, { 
       id: `column_${Date.now()}`, 
       label: "New Column", 
       sortable: true, 
-      format: "text" as const 
+      format: "text" as const,
+      showStatistics: false
     }];
     updateSettings({ columns: newColumns });
   };
@@ -113,111 +102,38 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="style">Style</TabsTrigger>
           <TabsTrigger value="data">Data</TabsTrigger>
-          <TabsTrigger value="refresh">Refresh</TabsTrigger>
         </TabsList>
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-4">
-          <div className="space-y-3">
-            {/* Columns Management */}
+          <div className="space-y-4">
             <div>
-      <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium uppercase tracking-wide">Columns</Label>
-                <Button size="sm" variant="outline" onClick={addColumn} className="h-6 px-2">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Column
-                </Button>
-              </div>
-              <div className="mt-2 space-y-2">
-                {value.settings.columns.map((column, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-2 border rounded">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => moveColumn(index, 'up')}
-                      disabled={index === 0}
-                      className="h-6 w-6 p-0"
-                    >
-                      <ArrowUp className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => moveColumn(index, 'down')}
-                      disabled={index === value.settings.columns.length - 1}
-                      className="h-6 w-6 p-0"
-                    >
-                      <ArrowDown className="h-3 w-3" />
-                    </Button>
-                    <Input
-                      value={column.id}
-                      onChange={(e) => updateColumn(index, { id: e.target.value })}
-                      placeholder="Column ID"
-                      className="flex-1"
-                    />
-                    <Input
-                      value={column.label}
-                      onChange={(e) => updateColumn(index, { label: e.target.value })}
-                      placeholder="Column Label"
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      value={column.width || ""}
-                      onChange={(e) => updateColumn(index, { width: e.target.value ? Number(e.target.value) : undefined })}
-                      placeholder="Width"
-                      className="w-20"
-                    />
-                    <Select
-                      value={column.format}
-                      onValueChange={(val) => updateColumn(index, { format: val as typeof column.format })}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="text">Text</SelectItem>
-                        <SelectItem value="number">Number</SelectItem>
-                        <SelectItem value="currency">Currency</SelectItem>
-                        <SelectItem value="date">Date</SelectItem>
-                        <SelectItem value="percentage">Percentage</SelectItem>
-                        <SelectItem value="badge">Badge</SelectItem>
-                        <SelectItem value="link">Link</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Switch
-                      checked={column.sortable}
-                      onCheckedChange={(checked) => updateColumn(index, { sortable: checked })}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeColumn(index)}
-                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-      </div>
-
-      <div>
               <Label htmlFor="pageSize" className="text-xs font-medium uppercase tracking-wide">
                 Page Size
               </Label>
               <Input
                 id="pageSize"
-          type="number"
-                min="1"
+                type="number"
+                min="10"
                 max="200"
-          value={value.settings.pageSize}
-                onChange={(e) => updateSettings({ pageSize: Number(e.target.value) })}
+                value={value.settings.pageSize}
+                onChange={(e) => updateSettings({ pageSize: parseInt(e.target.value) || 25 })}
                 className="mt-1"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="stickyHeader" className="text-xs font-medium uppercase tracking-wide">
+                Sticky Header
+              </Label>
+              <Switch
+                id="stickyHeader"
+                checked={value.settings.stickyHeader}
+                onCheckedChange={(checked) => updateSettings({ stickyHeader: checked })}
               />
             </div>
 
@@ -233,13 +149,13 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="stickyHeader" className="text-xs font-medium uppercase tracking-wide">
-                Sticky Header
+              <Label htmlFor="showFooterStatistics" className="text-xs font-medium uppercase tracking-wide">
+                Show Footer Statistics
               </Label>
               <Switch
-                id="stickyHeader"
-                checked={value.settings.stickyHeader}
-                onCheckedChange={(checked) => updateSettings({ stickyHeader: checked })}
+                id="showFooterStatistics"
+                checked={value.settings.showFooterStatistics || false}
+                onCheckedChange={(checked) => updateSettings({ showFooterStatistics: checked })}
               />
             </div>
           </div>
@@ -249,27 +165,8 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
         <TabsContent value="style" className="space-y-4">
           <div className="space-y-3">
             <div>
-              <Label htmlFor="theme" className="text-xs font-medium uppercase tracking-wide">
-                Theme
-              </Label>
-              <Select
-                value={value.style.theme}
-                onValueChange={(val) => updateStyle({ theme: val as typeof value.style.theme })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="premium-light">Premium Light</SelectItem>
-                  <SelectItem value="premium-dark">Premium Dark</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
               <Label htmlFor="density" className="text-xs font-medium uppercase tracking-wide">
-                Density
+                Row Density
               </Label>
               <Select
                 value={value.style.density}
@@ -279,22 +176,11 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="comfortable">Comfortable</SelectItem>
                   <SelectItem value="compact">Compact</SelectItem>
+                  <SelectItem value="comfortable">Comfortable</SelectItem>
                   <SelectItem value="expanded">Expanded</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="showRowBorders" className="text-xs font-medium uppercase tracking-wide">
-                Show Row Borders
-              </Label>
-              <Switch
-                id="showRowBorders"
-                checked={value.style.showRowBorders}
-                onCheckedChange={(checked) => updateStyle({ showRowBorders: checked })}
-              />
             </div>
 
             <div className="flex items-center justify-between">
@@ -307,149 +193,312 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                 onCheckedChange={(checked) => updateStyle({ zebraStripes: checked })}
               />
             </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showRowBorders" className="text-xs font-medium uppercase tracking-wide">
+                Show Row Borders
+              </Label>
+              <Switch
+                id="showRowBorders"
+                checked={value.style.showRowBorders}
+                onCheckedChange={(checked) => updateStyle({ showRowBorders: checked })}
+              />
+            </div>
           </div>
         </TabsContent>
 
         {/* Data Tab */}
         <TabsContent value="data" className="space-y-4">
-          <div className="space-y-3">
+          <div className="space-y-6">
             {/* Database and Table Selection */}
-            <DatabaseSelector
-              tenantId={tenantId}
-              selectedDatabaseId={value.data.databaseId}
-              selectedTableId={ Number(value.data.tableId) }
-              onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", sort: [] })}
-              onTableChange={(tableId) => updateData({ tableId: tableId.toString(), sort: [] })}
-              onColumnsChange={setAvailableColumns}
-            />
-
-            {/* Column Selection for Table Display */}
-            {availableColumns.length > 0 && (
-              <div>
-                <Label className="text-xs font-medium uppercase tracking-wide">Display Columns</Label>
-                <div className="mt-2 space-y-2">
-                  {availableColumns.map((column) => (
-                    <div key={column.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`column-${column.id}`}
-                        checked={value.settings.columns.some(col => col.id === column.name)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            // Add column to display
-                            const newColumns = [...value.settings.columns, {
-                              id: column.name,
-                              label: column.name,
-                              sortable: true,
-                              format: column.type === "number" ? "number" as const : 
-                                      column.type === "date" ? "date" as const :
-                                      column.type === "boolean" ? "badge" as const : "text" as const
-                            }];
-                            updateSettings({ columns: newColumns });
-                          } else {
-                            // Remove column from display
-                            const newColumns = value.settings.columns.filter(col => col.id !== column.name);
-                            updateSettings({ columns: newColumns });
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      <Label htmlFor={`column-${column.id}`} className="text-sm">
-                        {column.name} ({column.type})
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Filters */}
-            {availableColumns.length > 0 && (
-              <WidgetFilters
-                filters={value.data.filters}
-                availableColumns={availableColumns}
-                onChange={handleFiltersChange}
-              />
-            )}
-
-            {/* Sort */}
             <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium uppercase tracking-wide">Sort</Label>
-                <Button size="sm" variant="outline" onClick={addSort} className="h-6 px-2">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Sort
-                </Button>
-              </div>
-              <div className="mt-2 space-y-2">
-                {value.data.sort.map((sort, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-2 border rounded">
-                    <Input
-                      value={sort.column}
-                      onChange={(e) => updateSort(index, { column: e.target.value })}
-                      placeholder="Column"
-                      className="flex-1"
-                    />
-                    <Select
-                      value={sort.direction}
-                      onValueChange={(val) => updateSort(index, { direction: val as typeof sort.direction })}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="asc">Ascending</SelectItem>
-                        <SelectItem value="desc">Descending</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeSort(index)}
-                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-3 w-3" />
+              <h3 className="text-sm font-semibold text-foreground mb-3">Data Source</h3>
+              <DatabaseSelector
+                tenantId={tenantId}
+                selectedDatabaseId={value.data.databaseId}
+                selectedTableId={Number(value.data.tableId)}
+                onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", filters: [], sort: [] })}
+                onTableChange={(tableId) => updateData({ tableId: tableId.toString(), filters: [], sort: [] })}
+                onColumnsChange={setAvailableColumns}
+              />
+            </div>
+
+            {/* Columns Configuration */}
+            {availableColumns.length > 0 && (
+              <>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Columns</h3>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {value.settings.columns.map((column, index) => (
+                      <div key={column.id} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/20">
+                        <div className="flex-1 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Column ID</Label>
+                              <Select
+                                value={column.id}
+                                onValueChange={(val) => updateColumn(index, { id: val })}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableColumns.map((col) => (
+                                    <SelectItem key={col.id} value={col.name}>
+                                      {col.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs">Label</Label>
+                              <Input
+                                value={column.label}
+                                onChange={(e) => updateColumn(index, { label: e.target.value })}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Format</Label>
+                              <Select
+                                value={column.format}
+                                onValueChange={(val) => updateColumn(index, { format: val as any })}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="text">Text</SelectItem>
+                                  <SelectItem value="number">Number</SelectItem>
+                                  <SelectItem value="currency">Currency</SelectItem>
+                                  <SelectItem value="date">Date</SelectItem>
+                                  <SelectItem value="percentage">Percentage</SelectItem>
+                                  <SelectItem value="badge">Badge</SelectItem>
+                                  <SelectItem value="link">Link</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {column.showStatistics && (
+                              <div>
+                                <Label className="text-xs">Statistic</Label>
+                                <Select
+                                  value={column.statisticFunction || "sum"}
+                                  onValueChange={(val) => updateColumn(index, { statisticFunction: val as any })}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="sum">Sum</SelectItem>
+                                    <SelectItem value="avg">Average</SelectItem>
+                                    <SelectItem value="count">Count</SelectItem>
+                                    <SelectItem value="min">Min</SelectItem>
+                                    <SelectItem value="max">Max</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Switch
+                                id={`sortable-${index}`}
+                                checked={column.sortable}
+                                onCheckedChange={(checked) => updateColumn(index, { sortable: checked })}
+                                className="scale-75"
+                              />
+                              <Label htmlFor={`sortable-${index}`} className="text-xs">Sortable</Label>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Switch
+                                id={`stats-${index}`}
+                                checked={column.showStatistics || false}
+                                onCheckedChange={(checked) => updateColumn(index, { 
+                                  showStatistics: checked,
+                                  statisticFunction: checked ? 'sum' : undefined
+                                })}
+                                className="scale-75"
+                              />
+                              <Label htmlFor={`stats-${index}`} className="text-xs">Statistics</Label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => moveColumn(index, 'up')}
+                            disabled={index === 0}
+                            className="h-6 w-6 p-0"
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => moveColumn(index, 'down')}
+                            disabled={index === value.settings.columns.length - 1}
+                            className="h-6 w-6 p-0"
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeColumn(index)}
+                            className="h-6 w-6 p-0 text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button onClick={addColumn} variant="outline" size="sm" className="w-full mt-2">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Column
+                  </Button>
+                </div>
+
+                {/* Filters Section */}
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Data Filters</h3>
+                  <WidgetFilters
+                    filters={value.data.filters}
+                    availableColumns={availableColumns}
+                    onChange={handleFiltersChange}
+                  />
+                </div>
+
+                {/* Grouping Section */}
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Group className="h-4 w-4" />
+                    Data Grouping
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted/50 rounded-md">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Grouping:</strong> Group rows by category with optional group summaries.
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-medium uppercase tracking-wide">
+                        Processing Mode
+                      </Label>
+                      <Select
+                        value={value.settings.processingMode || "raw"}
+                        onValueChange={(val) => updateSettings({ processingMode: val as "raw" | "grouped" })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="raw">Raw Data (No Grouping)</SelectItem>
+                          <SelectItem value="grouped">Grouped Data</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {value.settings.processingMode === "grouped" && (
+                      <>
+                        <div>
+                          <Label className="text-xs font-medium uppercase tracking-wide">
+                            Group By Column
+                          </Label>
+                          <Select
+                            value={value.settings.groupByColumn || ""}
+                            onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select column" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableColumns
+                                .filter(col => ["string", "text", "date", "datetime", "boolean"].includes(col.type))
+                                .map((column) => (
+                                  <SelectItem key={column.id} value={column.name}>
+                                    {column.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="showGroupSummary" className="text-xs font-medium uppercase tracking-wide">
+                            Show Group Summaries
+                          </Label>
+                          <Switch
+                            id="showGroupSummary"
+                            checked={value.settings.showGroupSummary || false}
+                            onCheckedChange={(checked) => updateSettings({ showGroupSummary: checked })}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sorting */}
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Sorting</h3>
+                  <div className="space-y-2">
+                    {value.data.sort.map((sortItem, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Select
+                          value={sortItem.column}
+                          onValueChange={(val) => updateSort(index, { column: val })}
+                        >
+                          <SelectTrigger className="flex-1 h-8 text-xs">
+                            <SelectValue placeholder="Column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {value.settings.columns.map((col) => (
+                              <SelectItem key={col.id} value={col.id}>
+                                {col.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={sortItem.direction}
+                          onValueChange={(val) => updateSort(index, { direction: val as "asc" | "desc" })}
+                        >
+                          <SelectTrigger className="w-24 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="asc">Asc</SelectItem>
+                            <SelectItem value="desc">Desc</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSort(index)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button onClick={addSort} variant="outline" size="sm" className="w-full">
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Sort Rule
                     </Button>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Refresh Tab */}
-        <TabsContent value="refresh" className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="refreshEnabled" className="text-xs font-medium uppercase tracking-wide">
-                Auto Refresh
-              </Label>
-              <Switch
-                id="refreshEnabled"
-                checked={value.refresh?.enabled || false}
-                onCheckedChange={(checked) => updateRefresh({ enabled: checked })}
-        />
-      </div>
-            
-            {value.refresh?.enabled && (
-              <div>
-                <Label htmlFor="refreshInterval" className="text-xs font-medium uppercase tracking-wide">
-                  Refresh Interval (seconds)
-                </Label>
-                <Input
-                  id="refreshInterval"
-                  type="number"
-                  min="10"
-                  max="3600"
-                  value={value.refresh?.interval ? Math.floor(value.refresh.interval / 1000) : 30}
-                  onChange={(e) => updateRefresh({ interval: parseInt(e.target.value) * 1000 })}
-                  placeholder="30"
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Data will refresh automatically every {Math.floor((value.refresh?.interval || 30000) / 1000)} seconds
-                </p>
-              </div>
+                </div>
+              </>
             )}
           </div>
         </TabsContent>

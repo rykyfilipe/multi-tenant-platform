@@ -7,7 +7,7 @@ import { BaseWidget } from "../components/BaseWidget";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend, BarChart, Bar, PieChart, Pie, Cell, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { Skeleton } from "@/components/ui/skeleton";
+import { WidgetLoadingState, WidgetErrorState, WidgetEmptyState } from "../components/WidgetStates";
 
 interface ChartWidgetRendererProps {
   widget: WidgetEntity;
@@ -755,35 +755,27 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Loading state
   if (isLoading) {
-    return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <div className="h-full w-full p-4">
-          <div className="h-full flex items-center justify-center">
-            <div className="space-y-3 w-full">
-              <Skeleton className="h-4 w-3/4 mx-auto" />
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-4 w-1/2 mx-auto" />
-            </div>
-          </div>
-        </div>
-      </BaseWidget>
-    );
+    return <WidgetLoadingState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      variant="chart"
+    />;
   }
 
   // Error state
   if (error) {
-    return (
-      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <div className="h-full w-full p-4">
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-red-500">
-              <p className="text-sm">Error loading chart data</p>
-              <p className="text-xs text-muted-foreground mt-1">{error.message}</p>
-            </div>
-          </div>
-        </div>
-      </BaseWidget>
-    );
+    return <WidgetErrorState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      error={error}
+      title="Error loading chart data"
+    />;
   }
 
   // Render chart
