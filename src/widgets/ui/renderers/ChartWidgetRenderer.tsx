@@ -617,14 +617,14 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const refreshSettings = config.refresh || { enabled: false, interval: 30000 };
 
   // Data processing configuration with defensive checks
-  const processingMode = config.settings.processingMode || "raw";
-  const aggregationFunction = config.settings.aggregationFunction || "sum";
-  const aggregationColumns = config.settings.aggregationColumns || [];
-  const groupByColumn = config.settings.groupByColumn;
-  const enableTopN = config.settings.enableTopN || false;
-  const topNCount = config.settings.topNCount || 10;
-  const sortByColumn = config.settings.sortByColumn;
-  const sortDirection = config.settings.sortDirection || "desc";
+  const processingMode = config?.settings?.processingMode || "raw";
+  const aggregationFunction = config?.settings?.aggregationFunction || "sum";
+  const aggregationColumns = config?.settings?.aggregationColumns || [];
+  const groupByColumn = config?.settings?.groupByColumn;
+  const enableTopN = config?.settings?.enableTopN || false;
+  const topNCount = config?.settings?.topNCount || 10;
+  const sortByColumn = config?.settings?.sortByColumn;
+  const sortDirection = config?.settings?.sortDirection || "desc";
   
   // Only grouped mode has aggregation
   const enableGrouping = processingMode === "grouped";

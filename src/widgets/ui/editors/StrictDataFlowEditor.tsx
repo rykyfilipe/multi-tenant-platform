@@ -401,9 +401,9 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                         <div key={func} className="flex items-center space-x-2">
                           <Checkbox
                             id={func}
-                            checked={value.aggregation.functions.includes(func)}
+                            checked={value.aggregation?.functions?.includes(func) || false}
                             onCheckedChange={(checked) => {
-                              const current = value.aggregation.functions;
+                              const current = value.aggregation?.functions || [];
                               const updated = checked
                                 ? [...current, func]
                                 : current.filter(f => f !== func);
@@ -434,9 +434,9 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                           <div key={column.id} className="flex items-center space-x-2">
                             <Checkbox
                               id={`agg-${column.name}`}
-                              checked={value.aggregation.aggregationColumns.includes(column.name)}
+                              checked={value.aggregation?.aggregationColumns?.includes(column.name) || false}
                               onCheckedChange={(checked) => {
-                                const current = value.aggregation.aggregationColumns;
+                                const current = value.aggregation?.aggregationColumns || [];
                                 const updated = checked
                                   ? [...current, column.name]
                                   : current.filter(c => c !== column.name);
@@ -453,7 +453,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                     </div>
                   </div>
 
-                  {value.aggregation.functions.length > 0 && value.aggregation.aggregationColumns.length > 0 && (
+                  {(value.aggregation?.functions?.length || 0) > 0 && (value.aggregation?.aggregationColumns?.length || 0) > 0 && (
                     <div className="flex items-center space-x-2 text-green-600">
                       <CheckCircle className="w-4 h-4" />
                       <span className="text-sm font-medium">Aggregation configuration completed</span>
@@ -478,7 +478,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                 Apply additional functions to your aggregated data. These operate on the results from Step 3.
               </p>
 
-              {value.aggregation.functions.length > 0 ? (
+              {(value.aggregation?.functions?.length || 0) > 0 ? (
                 <div className="space-y-4">
                   <Alert>
                     <Info className="h-4 w-4" />
@@ -542,7 +542,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                             <SelectValue placeholder="Sort by column" />
                           </SelectTrigger>
                           <SelectContent>
-                            {value.aggregation.aggregationColumns.map((column) => (
+                            {(value.aggregation?.aggregationColumns || []).map((column) => (
                               <SelectItem key={column} value={column}>{column}</SelectItem>
                             ))}
                           </SelectContent>
@@ -590,7 +590,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                 Apply filters at different levels: WHERE (raw data), HAVING (aggregated data), and post-processing.
               </p>
 
-              {value.aggregation.functions.length > 0 ? (
+              {(value.aggregation?.functions?.length || 0) > 0 ? (
                 <Tabs defaultValue="where" className="space-y-4">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="where">WHERE Filters</TabsTrigger>
@@ -656,7 +656,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                 Configure how the processed data will be displayed in your widget.
               </p>
 
-              {value.aggregation.functions.length > 0 ? (
+              {(value.aggregation?.functions?.length || 0) > 0 ? (
                 <div className="space-y-4">
                   {widgetType === "chart" && (
                     <div className="space-y-3">
@@ -665,14 +665,14 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                         <div>
                           <Label className="text-xs">X-Axis Column</Label>
                           <Select
-                            value={value.output.chartConfig?.xAxisColumn || ""}
+                            value={value.output?.chartConfig?.xAxisColumn || ""}
                             onValueChange={(val) => updateConfig({
                               output: {
                                 ...value.output,
                                 chartConfig: {
                                   xAxisColumn: val,
-                                  yAxisColumns: value.output.chartConfig?.yAxisColumns || [],
-                                  chartType: value.output.chartConfig?.chartType || "bar"
+                                  yAxisColumns: value.output?.chartConfig?.yAxisColumns || [],
+                                  chartType: value.output?.chartConfig?.chartType || "bar"
                                 }
                               }
                             })}
@@ -690,13 +690,13 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                         <div>
                           <Label className="text-xs">Y-Axis Columns</Label>
                           <div className="space-y-1 max-h-20 overflow-y-auto border rounded-md p-2">
-                            {value.aggregation.aggregationColumns.map((column) => (
+                            {(value.aggregation?.aggregationColumns || []).map((column) => (
                               <div key={column} className="flex items-center space-x-2">
                                 <Checkbox
                                   id={`y-axis-${column}`}
-                                  checked={value.output.chartConfig?.yAxisColumns.includes(column) || false}
+                                  checked={value.output?.chartConfig?.yAxisColumns.includes(column) || false}
                                   onCheckedChange={(checked) => {
-                                    const current = value.output.chartConfig?.yAxisColumns || [];
+                                    const current = value.output?.chartConfig?.yAxisColumns || [];
                                     const updated = checked
                                       ? [...current, column]
                                       : current.filter(c => c !== column);
@@ -704,9 +704,9 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                                       output: {
                                         ...value.output,
                                         chartConfig: {
-                                          xAxisColumn: value.output.chartConfig?.xAxisColumn || "",
+                                          xAxisColumn: value.output?.chartConfig?.xAxisColumn || "",
                                           yAxisColumns: updated,
-                                          chartType: value.output.chartConfig?.chartType || "bar"
+                                          chartType: value.output?.chartConfig?.chartType || "bar"
                                         }
                                       }
                                     });
@@ -728,13 +728,13 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                         <div>
                           <Label className="text-xs">Display Format</Label>
                           <Select
-                            value={value.output.kpiConfig?.displayFormat || "number"}
+                            value={value.output?.kpiConfig?.displayFormat || "number"}
                             onValueChange={(val) => updateConfig({
                               output: {
                                 ...value.output,
                                 kpiConfig: {
                                   displayFormat: val as any,
-                                  showTrend: value.output.kpiConfig?.showTrend || false
+                                  showTrend: value.output?.kpiConfig?.showTrend || false
                                 }
                               }
                             })}
@@ -753,12 +753,12 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                         <div className="flex items-center space-x-2">
                           <Switch
                             id="showTrend"
-                            checked={value.output.kpiConfig?.showTrend || false}
+                            checked={value.output?.kpiConfig?.showTrend || false}
                             onCheckedChange={(checked) => updateConfig({
                               output: {
                                 ...value.output,
                                 kpiConfig: {
-                                  displayFormat: value.output.kpiConfig?.displayFormat || "number",
+                                  displayFormat: value.output?.kpiConfig?.displayFormat || "number",
                                   showTrend: checked
                                 }
                               }
@@ -770,7 +770,7 @@ export const StrictDataFlowEditor: React.FC<StrictDataFlowEditorProps> = ({
                     </div>
                   )}
 
-                  {value.output.chartConfig?.xAxisColumn || value.output.kpiConfig?.displayFormat ? (
+                  {value.output?.chartConfig?.xAxisColumn || value.output?.kpiConfig?.displayFormat ? (
                     <div className="flex items-center space-x-2 text-green-600">
                       <CheckCircle className="w-4 h-4" />
                       <span className="text-sm font-medium">Output configuration completed</span>
