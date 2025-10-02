@@ -133,7 +133,7 @@ export async function GET(
 					column: {
 						name: "invoice_id",
 					},
-					value: { equals: invoiceId.toString() },
+					value: { equals: [Number(invoiceId)] },
 				},
 			},
 		},

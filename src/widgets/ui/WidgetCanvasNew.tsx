@@ -8,6 +8,16 @@ import { useWidgetsApi } from "@/widgets/api/simple-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { WidgetKind } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
@@ -19,6 +29,7 @@ import {
   Target, 
   Clock, 
   CloudSun, 
+  CheckSquare,
   Settings, 
   Save, 
   Undo2, 
@@ -27,7 +38,6 @@ import {
   Copy,
   Trash2,
   X,
-  CheckSquare,
   ArrowUpDown
 } from "lucide-react";
 
@@ -47,6 +57,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
   const pendingOperations = useWidgetsStore((state) => state.getPending());
   const clearPending = useWidgetsStore((state) => state.clearPending);
+  const discardAllChanges = useWidgetsStore((state) => state.discardAllChanges);
   const cleanupOldIds = useWidgetsStore((state) => state.cleanupOldIds);
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
@@ -159,20 +170,40 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const handleDiscard = useCallback(() => {
     console.log('[handleDiscard] Discarding all pending changes');
     
-    // Simply call clearPending - it will restore all DB widgets to original and remove local widgets
-    clearPending();
+    // Use discardAllChanges instead of clearPending to keep local widgets
+    discardAllChanges();
     
     toast({
       title: "All changes discarded",
-      description: "Dashboard restored to original state.",
+      description: "Widgets restored to original state.",
       variant: "default",
     });
-  }, [clearPending, toast]);
+  }, [discardAllChanges, toast]);
 
+  // State declarations
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedWidgets, setSelectedWidgets] = useState<Set<number>>(new Set());
   const [containerWidth, setContainerWidth] = useState(1200);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
+
+  // Handle exit confirmation dialog
+  const handleExitConfirm = useCallback(() => {
+    console.log('[handleExitConfirm] Confirming exit and clearing all changes');
+    clearPending(); // Clear all pending changes
+    setShowExitDialog(false);
+    if (pendingExitAction) {
+      pendingExitAction();
+      setPendingExitAction(null);
+    }
+  }, [clearPending, pendingExitAction]);
+
+  const handleExitCancel = useCallback(() => {
+    console.log('[handleExitCancel] Canceling exit');
+    setShowExitDialog(false);
+    setPendingExitAction(null);
+  }, []);
 
   const widgetList = useMemo(() => {
     const filtered = Object.values(widgetsRecord).filter((widget) => 
@@ -219,6 +250,37 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       clearTimeout(timeoutId);
     };
   }, []);
+
+  // Handle page exit with confirmation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Check if there are pending changes
+      if (pendingOperations.length > 0) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      // Check if there are pending changes when navigating back/forward
+      if (pendingOperations.length > 0) {
+        e.preventDefault();
+        setShowExitDialog(true);
+        setPendingExitAction(() => () => {
+          window.history.back();
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [pendingOperations]);
 
   const layout: Layout[] = useMemo(() => {
     const layoutItems = widgetList
@@ -465,11 +527,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.CHART)}
+                  onClick={() => handleAddWidget(WidgetKind.TASKS)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
-                  title="Add Chart Widget"
+                  title="Add Tasks Widget"
                 >
-                  <Settings className="h-4 w-4" />
+                  <CheckSquare className="h-4 w-4" />
                 </Button>
               </div>
 
@@ -889,6 +951,27 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           }}
         />
       )}
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to your dashboard. If you leave now, all changes will be lost.
+              Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleExitCancel}>
+              Stay on Page
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleExitConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Leave & Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </HydrationBoundary>
   );

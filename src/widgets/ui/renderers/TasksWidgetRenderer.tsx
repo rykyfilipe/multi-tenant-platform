@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
+import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import {
   CheckCircle,
   Circle,
@@ -107,6 +109,9 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   const maxTasks = settings.maxTasks || 50;
   const showPriorityColors = style.showPriorityColors !== false;
   const showDueDates = style.showDueDates !== false;
+
+  // Get theme and apply styles
+  const theme = getPremiumTheme(style.theme || 'premium-light');
 
   // Advanced filtering and sorting
   const filteredTasks = useMemo(() => {
@@ -380,7 +385,8 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className="space-y-4">
+      <PremiumWidgetContainer style={style} className="h-full w-full">
+        <div className="space-y-4">
         {/* Controls */}
         <div className="space-y-3">
           {/* Progress Overview */}
@@ -475,7 +481,8 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
             </Button>
           </div>
         )}
-      </div>
+        </div>
+      </PremiumWidgetContainer>
     </BaseWidget>
   );
 };

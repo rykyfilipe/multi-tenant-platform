@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { ConflictMetadata, DraftOperation, WidgetEntity, WidgetDraftEntity } from "../domain/entities";
 import { getWidgetDefinition } from "../registry/widget-registry";
 import { hasWidgetId } from "../utils/pendingHelpers";
@@ -37,6 +36,7 @@ export interface PendingChangesState {
   setWidgets: (widgets: WidgetEntity[]) => void;
   clearPending: () => void;
   clearPendingOperations: () => void;
+  discardAllChanges: () => void;
   getPending: () => DraftOperation[];
   cleanupOldIds: () => void;
   
@@ -71,9 +71,7 @@ const generateOperationId = (): string => {
 
 const MAX_HISTORY_SIZE = 20;
 
-export const useWidgetsStore = create<PendingChangesState>()(
-  persist(
-    (set, get) => ({
+export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       // Core state
       widgets: {},
       originalWidgets: {}, // Store original widgets from DB
@@ -747,6 +745,60 @@ export const useWidgetsStore = create<PendingChangesState>()(
         });
       },
 
+      discardAllChanges: () => {
+        console.log('[discardAllChanges] Discarding all changes and restoring to original state');
+        set((state) => {
+          const restoredWidgets: Record<number, WidgetEntity> = {};
+          
+          // Restore all widgets to their original state
+          Object.entries(state.widgets).forEach(([idStr, widget]) => {
+            const widgetId = Number(idStr);
+            
+            if (state.originalWidgets[widgetId]) {
+              // Restore DB widgets to original state
+              console.log('[discardAllChanges] Restoring widget to original:', widgetId);
+              restoredWidgets[widgetId] = state.originalWidgets[widgetId];
+            } else {
+              // Keep local widgets as they are (they don't have original state)
+              console.log('[discardAllChanges] Keeping local widget:', widgetId);
+              restoredWidgets[widgetId] = widget;
+            }
+          });
+          
+          // Clean up history for non-existent widgets
+          const cleanedHistory: Record<number, WidgetEntity[]> = {};
+          Object.entries(state.history).forEach(([widgetId, history]) => {
+            if (restoredWidgets[Number(widgetId)]) {
+              cleanedHistory[Number(widgetId)] = history;
+            }
+          });
+
+          // Clean up redo history for non-existent widgets
+          const cleanedRedoHistory: Record<number, WidgetEntity[]> = {};
+          Object.entries(state.redoHistory).forEach(([widgetId, redoHistory]) => {
+            if (restoredWidgets[Number(widgetId)]) {
+              cleanedRedoHistory[Number(widgetId)] = redoHistory;
+            }
+          });
+
+          console.log('[discardAllChanges] Discarded changes:', {
+            restoredWidgets: Object.keys(restoredWidgets).length,
+            keptLocalWidgets: Object.values(restoredWidgets).filter(w => isLocalWidget(w.id)).length
+          });
+
+          return {
+            widgets: restoredWidgets,
+            lastModifiedWidgetId: null,
+            pendingOperations: [],
+            dirtyWidgetIds: new Set<number>(),
+            history: cleanedHistory,
+            redoHistory: cleanedRedoHistory,
+            conflicts: [],
+            activeConflict: null,
+          };
+        });
+      },
+
       getPending: () => get().pendingOperations,
 
       cleanupOldIds: () => {
@@ -877,51 +929,5 @@ export const useWidgetsStore = create<PendingChangesState>()(
           const { [draftId]: removed, ...remainingDrafts } = state.drafts;
           return { drafts: remainingDrafts };
         }),
-    }),
-    {
-      name: "widgets-pending-store",
-      partialize: (state) => ({
-        widgets: state.widgets,
-        originalWidgets: state.originalWidgets,
-        drafts: state.drafts,
-        pendingOperations: state.pendingOperations,
-        lastModifiedWidgetId: state.lastModifiedWidgetId,
-        history: state.history,
-        redoHistory: state.redoHistory,
-      }),
-      version: 5, // Force reset due to CUSTOM widget removal and schema changes
-      migrate: (persistedState: any, version: number) => {
-        if (version < 4) {
-          console.log('🔄 Migrating widget store from version', version, 'to version 4');
-
-          // Remove any CUSTOM widgets from persisted state
-          if (persistedState.widgets) {
-            const filteredWidgets: Record<number, any> = {};
-            Object.entries(persistedState.widgets).forEach(([id, widget]: [string, any]) => {
-              if (widget.kind !== 'CUSTOM') {
-                filteredWidgets[Number(id)] = widget;
-              } else {
-                console.log('🗑️ Removing CUSTOM widget from persisted state:', id);
-              }
-            });
-            persistedState.widgets = filteredWidgets;
-          }
-
-          // Also clean pending operations that reference CUSTOM widgets
-          if (persistedState.pendingOperations) {
-            persistedState.pendingOperations = persistedState.pendingOperations.filter((op: any) => {
-              if (op.widget && op.widget.kind === 'CUSTOM') {
-                console.log('🗑️ Removing CUSTOM widget operation from persisted state:', op.id);
-                return false;
-              }
-              return true;
-            });
-          }
-
-          console.log('✅ Widget store migration completed');
-        }
-        return persistedState;
-      },
-    }
-  )
+    })
 );

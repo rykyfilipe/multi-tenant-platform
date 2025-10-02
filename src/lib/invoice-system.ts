@@ -1395,7 +1395,7 @@ export class InvoiceSystemService {
 				cells: {
 					some: {
 						column: { name: "invoice_id" },
-						value: { equals: invoiceId.toString() },
+						value: { equals: [invoiceId] },
 					},
 				},
 			},

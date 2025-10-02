@@ -311,7 +311,7 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
           cells: {
             some: {
               column: { name: 'invoice_id' },
-              value: { equals: invoiceId.toString() },
+              value: { equals: [invoiceId] },
             },
           },
         },

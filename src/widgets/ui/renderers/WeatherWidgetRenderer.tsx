@@ -5,6 +5,8 @@ import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 import { useWeather } from "@/hooks/useWeather";
 import { WidgetLoadingState, WidgetErrorState } from "../components/WidgetStates";
+import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
+import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 
 interface WeatherWidgetRendererProps {
   widget: WidgetEntity;
@@ -22,10 +24,15 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
   isEditMode = false
 }) => {
   const config = widget.config as any;
-  const location = config?.settings?.location || "London";
-  const units = config?.settings?.units || "metric";
-  const showForecast = config?.settings?.showForecast !== false;
-  const forecastDays = config?.settings?.forecastDays || 5;
+  const settings = config?.settings || {};
+  const style = config?.style || {};
+  const location = settings.location || "London";
+  const units = settings.units || "metric";
+  const showForecast = settings.showForecast !== false;
+  const forecastDays = settings.forecastDays || 5;
+
+  // Get theme and apply styles
+  const theme = getPremiumTheme(style.theme || 'premium-light');
 
   const { data: weatherData, loading, error } = useWeather(location);
 
@@ -104,7 +111,8 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className="flex h-full flex-col items-center justify-center space-y-6">
+      <PremiumWidgetContainer style={style} className="h-full w-full">
+        <div className="flex h-full flex-col items-center justify-center space-y-6">
         {/* Current Weather */}
         <div className="text-center">
           <div className="mb-4">
@@ -156,7 +164,8 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </PremiumWidgetContainer>
     </BaseWidget>
   );
 };

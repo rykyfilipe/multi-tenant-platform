@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 
@@ -44,21 +44,25 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
   const dateFormat = settings.dateFormat || "DD/MM/YYYY";
   const clockType = settings.clockType || "digital";
 
-  const timeString = time.toLocaleTimeString('en-US', {
-    timeZone: timezone,
-    hour12: !format24h,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: showSeconds ? '2-digit' : undefined
-  });
+  const timeString = useMemo(() => {
+    return time.toLocaleTimeString('en-US', {
+      timeZone: timezone,
+      hour12: !format24h,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: showSeconds ? '2-digit' : undefined
+    });
+  }, [time, timezone, format24h, showSeconds]);
 
-  const dateString = showDate ? time.toLocaleDateString('en-US', {
-    timeZone: timezone,
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }) : '';
+  const dateString = useMemo(() => {
+    return showDate ? time.toLocaleDateString('en-US', {
+      timeZone: timezone,
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }) : '';
+  }, [time, timezone, showDate, dateFormat]);
 
   // Apply theme-based styling
   const getThemeClasses = (theme: string) => {
