@@ -6,6 +6,7 @@ import { BaseWidget } from "../components/BaseWidget";
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface KPIWidgetRendererProps {
   widget: WidgetEntity;
@@ -15,6 +16,523 @@ interface KPIWidgetRendererProps {
   isEditMode?: boolean;
 }
 
+// ============================================================================
+// DATA PROCESSING PIPELINE FOR KPI - TYPES & INTERFACES
+// ============================================================================
+
+/**
+ * Normalized row format after initial data extraction
+ */
+interface NormalizedRow {
+  [columnName: string]: any;
+}
+
+/**
+ * KPI calculation result for a single aggregation
+ */
+interface KPIResult {
+  aggregationType: 'sum' | 'avg' | 'count' | 'min' | 'max';
+  value: number;
+  label: string;
+  metadata?: {
+    sourceRow?: NormalizedRow; // For min/max: the actual row with extreme value
+    displayFields?: Record<string, any>; // Additional fields to display
+    count?: number; // Number of rows used in calculation
+  };
+}
+
+/**
+ * Grouped KPI results (when grouping is enabled)
+ */
+interface GroupedKPIResult {
+  groupKey: string; // Group identifier (e.g., "North America", "Q1 2024")
+  results: KPIResult[]; // Multiple aggregations per group
+}
+
+/**
+ * KPI pipeline configuration
+ */
+interface KPIPipelineConfig {
+  // Data source
+  valueColumn: string;
+  displayColumns?: string[];
+  
+  // Grouping (optional)
+  enableGrouping: boolean;
+  groupByColumn?: string;
+  
+  // Aggregations (can select multiple)
+  aggregations: Array<'sum' | 'avg' | 'count' | 'min' | 'max'>;
+  
+  // Comparison
+  enableComparison: boolean;
+  comparisonColumn?: string;
+  
+  // Formatting
+  format: 'number' | 'currency' | 'percentage' | 'duration';
+  
+  // Display options
+  showExtremeValueDetails: boolean;
+  extremeValueMode: 'max' | 'min';
+}
+
+// ============================================================================
+// STEP 1: SELECT DATASET - Normalize raw API data
+// ============================================================================
+
+/**
+ * Converts raw API response to normalized row objects
+ */
+function selectDataset(rawData: any[]): NormalizedRow[] {
+  console.log('📋 [KPI STEP 1: SELECT] Normalizing raw data...');
+  
+  if (!rawData || !Array.isArray(rawData)) {
+    console.warn('⚠️ [KPI STEP 1: SELECT] No valid data provided');
+    return [];
+  }
+
+  const normalized = rawData.map((row) => {
+    const normalizedRow: NormalizedRow = {};
+
+    if (row.cells && Array.isArray(row.cells)) {
+      row.cells.forEach((cell: any) => {
+        if (cell.column && cell.column.name) {
+          normalizedRow[cell.column.name] = cell.value;
+        }
+      });
+    }
+
+    return normalizedRow;
+  });
+
+  console.log(`✅ [KPI STEP 1: SELECT] Normalized ${normalized.length} rows`);
+  return normalized;
+}
+
+// ============================================================================
+// STEP 2: WHERE FILTERS - Applied at API level (already done)
+// ============================================================================
+
+// WHERE filters are applied at the API level via the useTableRows hook
+
+// ============================================================================
+// STEP 3: EXTRACT NUMERIC VALUES - Helper function
+// ============================================================================
+
+/**
+ * Extracts numeric values from a column across multiple rows
+ */
+function extractNumericValues(rows: NormalizedRow[], columnName: string): number[] {
+  return rows
+    .map(row => {
+      const value = row[columnName];
+      if (value === null || value === undefined) return null;
+      const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
+      return isNaN(numericValue) ? null : numericValue;
+    })
+    .filter((val): val is number => val !== null);
+}
+
+// ============================================================================
+// STEP 4: AGGREGATION FUNCTIONS - Pure functions for each type
+// ============================================================================
+
+/**
+ * Calculate SUM aggregation
+ */
+function calculateSum(rows: NormalizedRow[], columnName: string): KPIResult {
+  const values = extractNumericValues(rows, columnName);
+  const sum = values.reduce((acc, val) => acc + val, 0);
+  
+  return {
+    aggregationType: 'sum',
+    value: sum,
+    label: 'Sum',
+    metadata: { count: values.length }
+  };
+}
+
+/**
+ * Calculate AVG aggregation
+ */
+function calculateAverage(rows: NormalizedRow[], columnName: string): KPIResult {
+  const values = extractNumericValues(rows, columnName);
+  const avg = values.length > 0 ? values.reduce((acc, val) => acc + val, 0) / values.length : 0;
+  
+  return {
+    aggregationType: 'avg',
+    value: avg,
+    label: 'Average',
+    metadata: { count: values.length }
+  };
+}
+
+/**
+ * Calculate COUNT aggregation
+ */
+function calculateCount(rows: NormalizedRow[], columnName: string): KPIResult {
+  const values = extractNumericValues(rows, columnName);
+  
+  return {
+    aggregationType: 'count',
+    value: values.length,
+    label: 'Count',
+    metadata: { count: values.length }
+  };
+}
+
+/**
+ * Calculate MIN aggregation with source row
+ */
+function calculateMin(
+  rows: NormalizedRow[], 
+  columnName: string,
+  displayColumns?: string[]
+): KPIResult {
+  const values = extractNumericValues(rows, columnName);
+  
+  if (values.length === 0) {
+    return {
+      aggregationType: 'min',
+      value: 0,
+      label: 'Minimum'
+    };
+  }
+  
+  const minValue = Math.min(...values);
+  
+  // Find the source row with minimum value
+  const sourceRow = rows.find(row => {
+    const value = row[columnName];
+    const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
+    return numericValue === minValue;
+  });
+  
+  // Extract display fields if specified
+  let displayFields: Record<string, any> | undefined;
+  if (sourceRow && displayColumns && displayColumns.length > 0) {
+    displayFields = {};
+    displayColumns.forEach(col => {
+      displayFields![col] = sourceRow[col];
+    });
+  }
+  
+  return {
+    aggregationType: 'min',
+    value: minValue,
+    label: 'Minimum',
+    metadata: {
+      sourceRow,
+      displayFields,
+      count: values.length
+    }
+  };
+}
+
+/**
+ * Calculate MAX aggregation with source row
+ */
+function calculateMax(
+  rows: NormalizedRow[], 
+  columnName: string,
+  displayColumns?: string[]
+): KPIResult {
+  const values = extractNumericValues(rows, columnName);
+  
+  if (values.length === 0) {
+    return {
+      aggregationType: 'max',
+      value: 0,
+      label: 'Maximum'
+    };
+  }
+  
+  const maxValue = Math.max(...values);
+  
+  // Find the source row with maximum value
+  const sourceRow = rows.find(row => {
+    const value = row[columnName];
+    const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
+    return numericValue === maxValue;
+  });
+  
+  // Extract display fields if specified
+  let displayFields: Record<string, any> | undefined;
+  if (sourceRow && displayColumns && displayColumns.length > 0) {
+    displayFields = {};
+    displayColumns.forEach(col => {
+      displayFields![col] = sourceRow[col];
+    });
+  }
+  
+  return {
+    aggregationType: 'max',
+    value: maxValue,
+    label: 'Maximum',
+    metadata: {
+      sourceRow,
+      displayFields,
+      count: values.length
+    }
+  };
+}
+
+// ============================================================================
+// STEP 5: CALCULATE KPI - Main aggregation function
+// ============================================================================
+
+/**
+ * Calculate KPI values for given aggregation types
+ */
+function calculateKPIValues(
+  rows: NormalizedRow[],
+  config: KPIPipelineConfig
+): KPIResult[] {
+  console.log(`📊 [KPI STEP 5: AGGREGATE] Calculating ${config.aggregations.length} KPI(s)...`);
+  
+  if (!rows.length || !config.valueColumn) {
+    console.warn('⚠️ [KPI STEP 5: AGGREGATE] No data or value column specified');
+    return [];
+  }
+  
+  const results: KPIResult[] = [];
+  
+  config.aggregations.forEach(aggType => {
+    let result: KPIResult;
+    
+    switch (aggType) {
+      case 'sum':
+        result = calculateSum(rows, config.valueColumn);
+        break;
+      case 'avg':
+        result = calculateAverage(rows, config.valueColumn);
+        break;
+      case 'count':
+        result = calculateCount(rows, config.valueColumn);
+        break;
+      case 'min':
+        result = calculateMin(rows, config.valueColumn, config.displayColumns);
+        break;
+      case 'max':
+        result = calculateMax(rows, config.valueColumn, config.displayColumns);
+        break;
+    }
+    
+    results.push(result);
+    console.log(`  📈 ${result.label}: ${result.value} (${result.metadata?.count || 0} rows)`);
+  });
+  
+  console.log(`✅ [KPI STEP 5: AGGREGATE] Calculated ${results.length} KPI values`);
+  return results;
+}
+
+// ============================================================================
+// STEP 6: GROUPING - Calculate KPIs per group
+// ============================================================================
+
+/**
+ * Calculate KPIs with grouping
+ */
+function calculateGroupedKPIs(
+  rows: NormalizedRow[],
+  groupByColumn: string,
+  config: KPIPipelineConfig
+): GroupedKPIResult[] {
+  console.log(`🔢 [KPI STEP 6: GROUP BY] Grouping by: ${groupByColumn}`);
+  
+  // Group rows
+  const grouped: Record<string, NormalizedRow[]> = {};
+  rows.forEach(row => {
+    const groupKey = row[groupByColumn] !== undefined && row[groupByColumn] !== null
+      ? String(row[groupByColumn])
+      : '__NULL__';
+    
+    if (!grouped[groupKey]) {
+      grouped[groupKey] = [];
+    }
+    grouped[groupKey].push(row);
+  });
+  
+  console.log(`  📊 Created ${Object.keys(grouped).length} groups`);
+  
+  // Calculate KPIs for each group
+  const groupedResults: GroupedKPIResult[] = [];
+  Object.entries(grouped).forEach(([groupKey, groupRows]) => {
+    const results = calculateKPIValues(groupRows, config);
+    groupedResults.push({
+      groupKey: groupKey === '__NULL__' ? 'N/A' : groupKey,
+      results
+    });
+  });
+  
+  console.log(`✅ [KPI STEP 6: GROUP BY] Generated ${groupedResults.length} grouped KPIs`);
+  return groupedResults;
+}
+
+// ============================================================================
+// STEP 7: COMPARISON - Calculate comparison metrics
+// ============================================================================
+
+/**
+ * Calculate comparison KPI (for trend analysis)
+ */
+function calculateComparison(
+  rows: NormalizedRow[],
+  config: KPIPipelineConfig
+): KPIResult | null {
+  if (!config.enableComparison || !config.comparisonColumn || !config.aggregations.length) {
+    return null;
+  }
+  
+  console.log(`📊 [KPI STEP 7: COMPARISON] Calculating comparison metric...`);
+  
+  // Use the first aggregation type for comparison
+  const aggType = config.aggregations[0];
+  const comparisonConfig = { ...config, valueColumn: config.comparisonColumn };
+  
+  const values = extractNumericValues(rows, config.comparisonColumn);
+  
+  if (!values.length) return null;
+  
+  let value: number;
+  switch (aggType) {
+    case 'sum':
+      value = values.reduce((acc, val) => acc + val, 0);
+      break;
+    case 'avg':
+      value = values.reduce((acc, val) => acc + val, 0) / values.length;
+      break;
+    case 'count':
+      value = values.length;
+      break;
+    case 'min':
+      value = Math.min(...values);
+      break;
+    case 'max':
+      value = Math.max(...values);
+      break;
+  }
+  
+  console.log(`✅ [KPI STEP 7: COMPARISON] Comparison value: ${value}`);
+  
+  return {
+    aggregationType: aggType,
+    value,
+    label: 'Comparison',
+    metadata: { count: values.length }
+  };
+}
+
+// ============================================================================
+// PIPELINE ORCHESTRATOR
+// ============================================================================
+
+/**
+ * Execute the complete KPI data processing pipeline
+ */
+function executeKPIPipeline(
+  rawData: any[],
+  config: KPIPipelineConfig
+): { 
+  results: KPIResult[]; 
+  groupedResults?: GroupedKPIResult[];
+  comparison?: KPIResult | null;
+} {
+  console.log('🚀 [KPI PIPELINE START] =====================================');
+  console.log('Configuration:', {
+    valueColumn: config.valueColumn,
+    aggregations: config.aggregations,
+    grouping: config.enableGrouping,
+    comparison: config.enableComparison
+  });
+  
+  // STEP 1: SELECT - Normalize raw data
+  const normalizedData = selectDataset(rawData);
+  if (!normalizedData.length) {
+    console.log('❌ [KPI PIPELINE END] No data after normalization');
+    return { results: [] };
+  }
+  
+  // STEP 2: WHERE - Already applied at API level
+  console.log('✅ [KPI STEP 2: WHERE] Filters applied at API level');
+  
+  let results: KPIResult[] = [];
+  let groupedResults: GroupedKPIResult[] | undefined;
+  
+  // STEP 3-6: GROUP BY + AGGREGATE
+  if (config.enableGrouping && config.groupByColumn) {
+    // Grouped KPIs
+    groupedResults = calculateGroupedKPIs(normalizedData, config.groupByColumn, config);
+    // For backward compatibility, also return the totals
+    results = calculateKPIValues(normalizedData, config);
+  } else {
+    // Simple KPIs (no grouping)
+    results = calculateKPIValues(normalizedData, config);
+  }
+  
+  // STEP 7: COMPARISON
+  const comparison = calculateComparison(normalizedData, config);
+  
+  console.log('✅ [KPI PIPELINE END] =====================================');
+  console.log('Results:', {
+    kpiCount: results.length,
+    groupCount: groupedResults?.length || 0,
+    hasComparison: !!comparison
+  });
+  
+  return { results, groupedResults, comparison };
+}
+
+// ============================================================================
+// VALUE FORMATTING - Helper functions
+// ============================================================================
+
+/**
+ * Format value based on format type
+ */
+function formatValue(value: number, format: string): string {
+  switch (format) {
+    case 'currency':
+      return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    case 'percentage':
+      return `${value.toFixed(1)}%`;
+    case 'duration':
+      const hours = Math.floor(value / 3600);
+      const minutes = Math.floor((value % 3600) / 60);
+      const seconds = Math.floor(value % 60);
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      if (minutes > 0) return `${minutes}m ${seconds}s`;
+      return `${seconds}s`;
+    case 'number':
+    default:
+      return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+}
+
+/**
+ * Format display value for non-numeric types
+ */
+function formatDisplayValue(value: any): string {
+  if (value === null || value === undefined) return 'N/A';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'object' && value instanceof Date) {
+    return value.toLocaleDateString();
+  }
+  return String(value);
+}
+
+/**
+ * Calculate trend percentage
+ */
+function calculateTrendPercentage(current: number, previous: number): number {
+  if (previous === 0) return 0;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({ 
   widget, 
   onEdit, 
@@ -22,278 +540,72 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   onDuplicate, 
   isEditMode = false
 }) => {
+  // Extract configuration
   const config = widget.config as any;
   const settings = config?.settings || {};
   const style = config?.style || {};
   const data = config?.data || {};
   
-  const valueField = settings.valueField || 'value';
-  // Support both old (displayField) and new (displayFields) for backward compatibility
-  const displayFields = settings.displayFields || 
-    (settings.displayField && settings.displayField !== "none" ? [settings.displayField] : []);
-  const label = settings.label || 'KPI Value';
-  const format = settings.format || 'number';
-  const aggregation = settings.aggregation || 'sum';
-  const selectedAggregations = settings.selectedAggregations || ['sum'];
-  const showTrend = settings.showTrend !== false;
-  const showComparison = settings.showComparison || false;
-  const comparisonField = settings.comparisonField;
-  const showExtremeValueDetails = settings.showExtremeValueDetails || false;
-  const extremeValueMode = settings.extremeValueMode || 'max';
-  
-  console.log('🔍 [KPI] Display settings:', {
-    displayFields,
-    showExtremeValueDetails,
-    extremeValueMode,
-    rawDisplayField: settings.displayField,
-    rawDisplayFields: settings.displayFields
-  });
-  
-  const databaseId = data.databaseId;
-  const tableId = data.tableId;
-  const filters = data.filters || [];
   const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
   
-  // Fetch real data from API
-  const validFilters = filters.filter((f: any) => f.column && f.operator && f.value !== undefined);
-  const filterString = validFilters.map((f: any) => `${f.column}${f.operator}${f.value}`).join(',');
+  // Fetch data from API (WHERE filters applied here)
+  const validFilters = (data.filters || []).filter((f: any) => 
+    f.column && f.operator && f.value !== undefined
+  );
+  const filterString = validFilters.map((f: any) => 
+    `${f.column}${f.operator}${f.value}`
+  ).join(',');
   
-  console.log('🔍 KPIWidgetRenderer - Data construction:', {
-    tenantId: widget.tenantId,
-    databaseId,
-    tableId: Number(tableId),
-    filters,
-    validFilters,
-    filterString,
-    valueField,
-    aggregation
-  });
-
   const { data: rawData, isLoading, error, refetch } = useTableRows(
     widget.tenantId,
-    databaseId || 0,
-    Number(tableId) || 0,
+    data.databaseId || 0,
+    Number(data.tableId) || 0,
     {
       pageSize: 1000,
       filters: filterString
     }
   );
-
-  console.log('📡 KPIWidgetRenderer - API Response:', {
-    rawData,
-    isLoading,
-    error,
-    hasData: !!rawData?.data,
-    dataLength: rawData?.data?.length || 0
-  });
-
-  // Auto-refresh functionality
+  
+  // Auto-refresh
   useAutoRefresh({
     enabled: refreshSettings.enabled,
     interval: refreshSettings.interval,
     onRefresh: refetch
   });
-
-  // Helper function to find row with extreme value and extract display columns
-  const findExtremeValueRow = useMemo(() => {
-    console.log('🔍 [KPI] findExtremeValueRow check:', {
-      hasData: !!rawData?.data,
-      dataLength: rawData?.data?.length,
-      valueField,
-      displayFields,
-      showExtremeValueDetails,
-      selectedAggregations
-    });
-    
-    // Only use extreme value logic for min/max functions
-    const shouldUseExtremeValue = showExtremeValueDetails && 
-      selectedAggregations.length > 0 && 
-      (selectedAggregations.includes('min') || selectedAggregations.includes('max'));
-    
-    if (!rawData?.data || !valueField || !displayFields || displayFields.length === 0 || !shouldUseExtremeValue) {
-      console.log('🔍 [KPI] findExtremeValueRow early return - missing required data or not applicable for current aggregation');
-      return null;
+  
+  // Process data through the pipeline
+  const { results, groupedResults, comparison } = useMemo(() => {
+    if (!rawData?.data?.length || !settings.valueField) {
+      return { results: [], groupedResults: undefined, comparison: undefined };
     }
-
-    const rowsWithData = rawData.data
-      .map((row : any) => {
-        // Convert cells array to object for easier access
-        const rowData: any = {};
-        if (row.cells && Array.isArray(row.cells)) {
-          row.cells.forEach((cell: any) => {
-            if (cell.column && cell.column.name) {
-              rowData[cell.column.name] = cell.value;
-            }
-          });
-        }
-        return { row, rowData };
-      })
-      .filter(({ rowData }: { rowData: any }) => !isNaN(parseFloat(rowData[valueField])));
-
-    console.log('🔍 [KPI] Rows with valid data:', rowsWithData.length);
-
-    if (!rowsWithData.length) return null;
-
-    // Determine which extreme value to find based on selected aggregations
-    let targetExtremeMode = extremeValueMode;
-    if (selectedAggregations.includes('max') && !selectedAggregations.includes('min')) {
-      targetExtremeMode = 'max';
-    } else if (selectedAggregations.includes('min') && !selectedAggregations.includes('max')) {
-      targetExtremeMode = 'min';
-    }
-
-    // Find row with extreme value
-    const extremeRow = rowsWithData.reduce((extreme : any, current : any) => {
-      const currentValue = parseFloat(current.rowData[valueField]);
-      const extremeValue = parseFloat(extreme.rowData[valueField]);
-
-      if (targetExtremeMode === 'max') {
-        return currentValue > extremeValue ? current : extreme;
-      } else {
-        return currentValue < extremeValue ? current : extreme;
-      }
-    });
-
-    // Extract values for selected display fields
-    const displayValues: Record<string, any> = {};
-    displayFields.forEach((field: string) => {
-      displayValues[field] = extremeRow.rowData[field];
-    });
-
-    const result = {
-      calculationValue: parseFloat(extremeRow.rowData[valueField]),
-      displayValues,
-      rowData: extremeRow.rowData
+    
+    const pipelineConfig: KPIPipelineConfig = {
+      valueColumn: settings.valueField,
+      displayColumns: settings.displayFields || [],
+      enableGrouping: settings.enableGrouping || false,
+      groupByColumn: settings.groupByColumn,
+      aggregations: settings.selectedAggregations || ['sum'],
+      enableComparison: settings.showComparison || false,
+      comparisonColumn: settings.comparisonField,
+      format: settings.format || 'number',
+      showExtremeValueDetails: settings.showExtremeValueDetails || false,
+      extremeValueMode: settings.extremeValueMode || 'max'
     };
     
-    console.log('🔍 [KPI] findExtremeValueRow result:', result);
+    return executeKPIPipeline(rawData.data, pipelineConfig);
+  }, [rawData, settings]);
+  
+  // Calculate trend if comparison is available
+  const trendData = useMemo(() => {
+    if (!comparison || !results.length) return null;
     
-    return result;
-  }, [rawData, valueField, displayFields, extremeValueMode, selectedAggregations, showExtremeValueDetails]);
-
-  // Calculate KPI values based on selected aggregations
-  const kpiValues = useMemo(() => {
-    if (!rawData?.data || !valueField || !selectedAggregations.length) return {};
-
-    const values = rawData.data
-      .map((row : any) => {
-        // Convert cells array to object for easier access
-        const rowData: any = {};
-        if (row.cells && Array.isArray(row.cells)) {
-          row.cells.forEach((cell: any) => {
-            if (cell.column && cell.column.name) {
-              rowData[cell.column.name] = cell.value;
-            }
-          });
-        }
-        return parseFloat(rowData[valueField]) || 0;
-      })
-      .filter((val : any) => !isNaN(val));
-
-    if (!values.length) return {};
-
-    const results: Record<string, number> = {};
-
-    selectedAggregations.forEach((agg: 'sum' | 'avg' | 'count' | 'min' | 'max') => {
-      switch (agg) {
-        case 'sum':
-          results.sum = values.reduce((sum : any, val : any) => sum + val, 0);
-          break;
-        case 'avg':
-          results.avg = values.reduce((sum : any, val : any) => sum + val, 0) / values.length;
-          break;
-        case 'count':
-          results.count = values.length;
-          break;
-        case 'min':
-          results.min = Math.min(...values);
-          break;
-        case 'max':
-          results.max = Math.max(...values);
-          break;
-      }
-    });
-
-    return results;
-  }, [rawData, valueField, selectedAggregations]);
-
-  // Enhanced KPI value that considers extreme value display
-  const enhancedKpiValue = useMemo(() => {
-    // Only use extreme value calculation for min/max functions
-    if (findExtremeValueRow && selectedAggregations.length > 0 && 
-        (selectedAggregations.includes('min') || selectedAggregations.includes('max'))) {
-      return findExtremeValueRow.calculationValue;
-    }
-
-    if (selectedAggregations.length === 0) return 0;
-    const primaryAgg = selectedAggregations[0];
-    return kpiValues[primaryAgg] || 0;
-  }, [kpiValues, selectedAggregations, findExtremeValueRow]);
-
-  // Get the primary KPI value (for backward compatibility and trend calculation)
-  const kpiValue = useMemo(() => {
-    if (selectedAggregations.length === 0) return 0;
-    const primaryAgg = selectedAggregations[0];
-    return kpiValues[primaryAgg] || 0;
-  }, [kpiValues, selectedAggregations]);
-
-  // Calculate comparison value if needed (using primary aggregation)
-  const comparisonValue = useMemo(() => {
-    if (!showComparison || !comparisonField || !rawData?.data || selectedAggregations.length === 0) return null;
-
-    const values = rawData.data
-      .map((row : any) => parseFloat(row[comparisonField]) || 0)
-      .filter((val : any) => !isNaN(val));
-
-    if (!values.length) return null;
-
-    const primaryAgg = selectedAggregations[0];
-    switch (primaryAgg) {
-      case 'sum':
-        return values.reduce((sum : any, val : any) => sum + val, 0);
-      case 'avg':
-        return values.reduce((sum : any, val : any) => sum + val, 0) / values.length;
-      case 'count':
-        return values.length;
-      case 'min':
-        return Math.min(...values);
-      case 'max':
-        return Math.max(...values);
-      default:
-        return values.reduce((sum : any, val : any) => sum + val, 0);
-    }
-  }, [rawData, comparisonField, selectedAggregations, showComparison]);
-
-  // Format value based on format type
-  const formatValue = (value: number) => {
-    switch (format) {
-      case 'currency':
-        return `$${value.toLocaleString()}`;
-      case 'percentage':
-        return `${value.toFixed(1)}%`;
-      case 'duration':
-        return `${Math.floor(value / 60)}:${(value % 60).toString().padStart(2, '0')}`;
-      default:
-        return value.toLocaleString();
-    }
-  };
-
-  // Format display value for non-numeric types
-  const formatDisplayValue = (value: any) => {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (typeof value === 'object' && value instanceof Date) return value.toLocaleDateString();
-    return String(value);
-  };
-
-  // Calculate trend percentage
-  const trendPercentage = useMemo(() => {
-    if (!showTrend || !comparisonValue || kpiValue === 0) return null;
-
-    const percentage = ((kpiValue - comparisonValue) / comparisonValue) * 100;
-    return Math.abs(percentage);
-  }, [kpiValue, comparisonValue, showTrend]);
-
+    const primaryValue = results[0].value;
+    const percentage = calculateTrendPercentage(primaryValue, comparison.value);
+    const isPositive = primaryValue >= comparison.value;
+    
+    return { percentage, isPositive };
+  }, [results, comparison]);
+  
   // Loading state
   if (isLoading) {
     return (
@@ -306,41 +618,96 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       </BaseWidget>
     );
   }
-
+  
   // Error state
   if (error) {
     return (
       <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <div className="flex h-full flex-col items-center justify-center space-y-4">
+        <div className="flex h-full flex-col items-center justify-center">
           <div className="text-center text-red-500">
-            <p className="text-sm">Error loading KPI data</p>
+            <p className="text-sm font-medium">Error loading KPI data</p>
             <p className="text-xs text-muted-foreground mt-1">{error.message}</p>
           </div>
         </div>
       </BaseWidget>
     );
   }
-
+  
+  // No data state
+  if (!results.length) {
+    return (
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+        <div className="flex h-full flex-col items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <p className="text-sm">No data available</p>
+            <p className="text-xs mt-1">Configure data source and value column</p>
+          </div>
+        </div>
+      </BaseWidget>
+    );
+  }
+  
+  const alignment = style.alignment || 'center';
+  const size = style.size || 'medium';
+  const format = settings.format || 'number';
+  
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className={`flex h-full flex-col items-center justify-center space-y-4 px-4 py-6 ${
-        style.alignment === 'left' ? 'items-start' : 
-        style.alignment === 'right' ? 'items-end' : 'items-center'
+      <div className={`flex h-full flex-col px-4 py-6 space-y-4 ${
+        alignment === 'left' ? 'items-start' : 
+        alignment === 'right' ? 'items-end' : 'items-center'
       }`}>
-        {selectedAggregations.length === 1 ? (
-          // Single KPI display (original layout with enhanced features)
-          <div className="text-center">
+        {/* Grouped KPIs Display */}
+        {groupedResults && groupedResults.length > 0 ? (
+          <div className="w-full space-y-4">
+            <div className="text-sm font-medium text-center text-muted-foreground">
+              {settings.label || 'KPI Metrics'} by {settings.groupByColumn}
+            </div>
+            <div className={`grid gap-3 ${
+              groupedResults.length <= 2 ? 'grid-cols-1' :
+              groupedResults.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+            }`}>
+              {groupedResults.map((group) => (
+                <div key={group.groupKey} className="p-3 bg-muted/30 rounded-lg space-y-2">
+                  <div className="text-xs font-medium text-muted-foreground text-center border-b pb-1">
+                    {group.groupKey}
+                  </div>
+                  {group.results.map((result) => (
+                    <div key={result.aggregationType} className="text-center">
+                      <div 
+                        className={`font-bold ${
+                          size === 'small' ? 'text-lg' : 
+                          size === 'large' ? 'text-2xl' : 'text-xl'
+                        }`}
+                        style={{ color: style.valueColor || '#000' }}
+                      >
+                        {formatValue(result.value, format)}
+                      </div>
+                      <div className="text-xs" style={{ color: style.labelColor || '#666' }}>
+                        {result.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : results.length === 1 ? (
+          // Single KPI Display
+          <div className="text-center space-y-2">
             <div
-              className={`font-bold text-foreground ${
-                style.size === 'small' ? 'text-2xl' :
-                style.size === 'large' ? 'text-5xl' : 'text-4xl'
+              className={`font-bold ${
+                size === 'small' ? 'text-2xl' :
+                size === 'large' ? 'text-5xl' : 'text-4xl'
               }`}
-              style={{ color: style.valueColor }}
+              style={{ color: style.valueColor || '#000' }}
             >
-              {findExtremeValueRow && displayFields.length > 0 ? (
-                // Show display values from extreme value row (only for min/max functions)
+              {/* Show display fields for min/max with extreme value details */}
+              {settings.showExtremeValueDetails && 
+               (results[0].aggregationType === 'min' || results[0].aggregationType === 'max') &&
+               results[0].metadata?.displayFields ? (
                 <div className="space-y-1">
-                  {Object.entries(findExtremeValueRow.displayValues).map(([field, value]) => (
+                  {Object.entries(results[0].metadata.displayFields).map(([field, value]) => (
                     <div key={field} className="flex flex-col">
                       <span className="text-xs opacity-60 font-normal">{field}:</span>
                       <span>{formatDisplayValue(value)}</span>
@@ -348,99 +715,74 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
                   ))}
                 </div>
               ) : (
-                formatValue(enhancedKpiValue)
+                formatValue(results[0].value, format)
               )}
             </div>
-            <div
-              className="text-sm mt-1"
-              style={{ color: style.labelColor }}
-            >
-              {findExtremeValueRow ? (
-                // Show enhanced label with extreme value context (only for min/max functions)
-                `${label} (${selectedAggregations.includes('max') && !selectedAggregations.includes('min') ? 'Highest' : 'Lowest'} ${valueField})`
-              ) : (
-                label
-              )}
+            
+            <div className="text-sm" style={{ color: style.labelColor || '#666' }}>
+              {settings.label || results[0].label}
             </div>
-
+            
             {/* Show calculation value if displaying different fields */}
-            {findExtremeValueRow && displayFields.length > 0 && (
-              <div
-                className="text-xs mt-1 opacity-75"
-                style={{ color: style.labelColor }}
-              >
-                Calculated {valueField}: {formatValue(findExtremeValueRow.calculationValue)}
+            {settings.showExtremeValueDetails && 
+             results[0].metadata?.displayFields &&
+             Object.keys(results[0].metadata.displayFields).length > 0 && (
+              <div className="text-xs opacity-75" style={{ color: style.labelColor || '#666' }}>
+                {settings.valueField}: {formatValue(results[0].value, format)}
               </div>
             )}
-
-            {/* Show additional row data if enabled */}
-            {findExtremeValueRow && displayFields.length === 0 && (
-              <div className="mt-2 p-2 bg-muted/30 rounded text-xs">
-                <div className="font-medium mb-1">
-                  {selectedAggregations.includes('max') && !selectedAggregations.includes('min') ? 'Highest' : 'Lowest'} Value Details:
-                </div>
-                <div className="grid grid-cols-2 gap-1 text-left">
-                  {Object.entries(findExtremeValueRow.rowData)
-                    .filter(([key]) => !displayFields.includes(key) && key !== valueField)
-                    .slice(0, 4) // Show max 4 additional fields
-                    .map(([key, value]) => (
-                      <div key={key} className="truncate">
-                        <span className="font-medium">{key}:</span> {formatDisplayValue(value)}
-                      </div>
-                    ))}
-                </div>
+            
+            {/* Trend indicator */}
+            {trendData && (
+              <div 
+                className={`flex items-center justify-center space-x-1 text-sm ${
+                  trendData.isPositive ? 'text-green-600' : 'text-red-600'
+                }`}
+                style={{ color: style.trendColor }}
+              >
+                {trendData.isPositive ? (
+                  <TrendingUp className="h-4 w-4" />
+                ) : trendData.percentage === 0 ? (
+                  <Minus className="h-4 w-4" />
+                ) : (
+                  <TrendingDown className="h-4 w-4" />
+                )}
+                <span className="font-medium">{Math.abs(trendData.percentage).toFixed(1)}%</span>
               </div>
             )}
           </div>
         ) : (
-          // Multiple KPIs display
+          // Multiple KPIs Display
           <div className="w-full space-y-3">
-            <div 
-              className="text-sm text-center"
-              style={{ color: style.labelColor }}
-            >
-              {label}
+            <div className="text-sm text-center" style={{ color: style.labelColor || '#666' }}>
+              {settings.label || 'KPI Metrics'}
             </div>
             <div className={`grid gap-3 ${
-              selectedAggregations.length <= 2 ? 'grid-cols-1' :
-              selectedAggregations.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+              results.length <= 2 ? 'grid-cols-1' :
+              results.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
             }`}>
-              {selectedAggregations.map((agg: 'sum' | 'avg' | 'count' | 'min' | 'max') => (
-                <div key={agg} className="text-center p-2 bg-muted/30 rounded-lg">
+              {results.map((result) => (
+                <div key={result.aggregationType} className="text-center p-3 bg-muted/30 rounded-lg">
                   <div 
-                    className={`font-bold text-foreground ${
-                      style.size === 'small' ? 'text-lg' : 
-                      style.size === 'large' ? 'text-2xl' : 'text-xl'
+                    className={`font-bold ${
+                      size === 'small' ? 'text-lg' : 
+                      size === 'large' ? 'text-2xl' : 'text-xl'
                     }`}
-                    style={{ color: style.valueColor }}
+                    style={{ color: style.valueColor || '#000' }}
                   >
-                    {formatValue(kpiValues[agg] || 0)}
+                    {formatValue(result.value, format)}
                   </div>
-                  <div 
-                    className="text-xs mt-1 capitalize"
-                    style={{ color: style.labelColor }}
-                  >
-                    {agg === 'avg' ? 'Average' : 
-                     agg === 'count' ? 'Count' :
-                     agg === 'min' ? 'Minimum' :
-                     agg === 'max' ? 'Maximum' :
-                     agg === 'sum' ? 'Sum' : agg}
+                  <div className="text-xs mt-1" style={{ color: style.labelColor || '#666' }}>
+                    {result.label}
                   </div>
+                  {result.metadata?.count !== undefined && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      ({result.metadata.count} rows)
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        
-        {showTrend && trendPercentage !== null && (
-          <div 
-            className={`flex items-center space-x-1 text-sm ${
-              kpiValue >= (comparisonValue || 0) ? 'text-green-600' : 'text-red-600'
-            }`}
-            style={{ color: style.trendColor }}
-          >
-            <span className={kpiValue >= (comparisonValue || 0) ? '↑' : '↓'}></span>
-            <span>{trendPercentage.toFixed(1)}%</span>
           </div>
         )}
       </div>

@@ -149,6 +149,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   const widgetList = useMemo(() => {
     const filtered = Object.values(widgetsRecord).filter((widget) => 
+      widget && // Ensure widget exists
       widget.tenantId === tenantId && 
       widget.dashboardId === dashboardId && 
       widget.isVisible
@@ -193,24 +194,26 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   }, []);
 
   const layout: Layout[] = useMemo(() => {
-    const layoutItems = widgetList.map((widget) => {
-      // Ensure position values are valid numbers, default to 0 if NaN/undefined
-      const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
-      const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
-      const w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
-      const h = Number.isFinite(widget.position.h) ? widget.position.h : 4;
-      
-      return {
-        i: widget.id.toString(),
-        x,
-        y,
-        w,
-        h,
-      };
-    });
+    const layoutItems = widgetList
+      .filter(widget => widget && widgetsRecord[widget.id]) // Double-check widget still exists
+      .map((widget) => {
+        // Ensure position values are valid numbers, default to 0 if NaN/undefined
+        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
+        const w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
+        const h = Number.isFinite(widget.position.h) ? widget.position.h : 4;
+        
+        return {
+          i: widget.id.toString(),
+          x,
+          y,
+          w,
+          h,
+        };
+      });
     console.log('🎯 [DEBUG] Layout:', layoutItems);
     return layoutItems;
-  }, [widgetList]);
+  }, [widgetList, widgetsRecord]);
 
   const closeEditor = () => setEditorWidgetId(null);
 
@@ -340,6 +343,24 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Clean up selectedWidgets and editorWidgetId when widgets are deleted
+  useEffect(() => {
+    // Remove deleted widgets from selection
+    const currentWidgetIds = new Set(widgetList.map(w => w.id));
+    const updatedSelection = new Set(
+      Array.from(selectedWidgets).filter(id => currentWidgetIds.has(id))
+    );
+    
+    if (updatedSelection.size !== selectedWidgets.size) {
+      setSelectedWidgets(updatedSelection);
+    }
+    
+    // Close editor if the widget was deleted
+    if (editorWidgetId && !currentWidgetIds.has(editorWidgetId)) {
+      setEditorWidgetId(null);
+    }
+  }, [widgetList, selectedWidgets, editorWidgetId]);
 
   if (isLoading) {
     return (
@@ -488,9 +509,19 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   onClick={() => {
                     // Delete selected widgets
                     const count = selectedWidgets.size;
-                    selectedWidgets.forEach(widgetId => {
+                    const widgetsToDelete = Array.from(selectedWidgets);
+                    
+                    // Close editor if the widget being deleted is currently open
+                    if (editorWidgetId && selectedWidgets.has(editorWidgetId)) {
+                      setEditorWidgetId(null);
+                    }
+                    
+                    // Delete widgets
+                    widgetsToDelete.forEach(widgetId => {
                       deleteLocal(widgetId);
                     });
+                    
+                    // Clear selection
                     handleDeselectAll();
                     
                     toast({
@@ -764,61 +795,57 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
               });
             }}
           >
-            {widgetList.map((widget) => {
-              // Add guard to ensure widget exists in current state
-              if (!widgetsRecord[widget.id]) {
-                console.warn(`⚠️ [WidgetCanvasNew] Widget ${widget.id} not found in current state, skipping render`);
-                return null;
-              }
+            {widgetList
+              .filter(widget => widget && widgetsRecord[widget.id]) // Ensure widget still exists before rendering
+              .map((widget) => {
+                const definition = getWidgetDefinition(widget.kind);
+                const Renderer = definition.renderer as React.ComponentType<{
+                  widget: WidgetEntity;
+                  onEdit?: () => void;
+                  onDelete?: () => void;
+                  onDuplicate?: () => void;
+                  isEditMode?: boolean;
+                  isDraft?: boolean;
+                  onApplyDraft?: () => void;
+                  onDeleteDraft?: () => void;
+                }>;
+                const isSelected = selectedWidgets.has(widget.id);
 
-              const definition = getWidgetDefinition(widget.kind);
-              const Renderer = definition.renderer as React.ComponentType<{
-                widget: WidgetEntity;
-                onEdit?: () => void;
-                onDelete?: () => void;
-                onDuplicate?: () => void;
-                isEditMode?: boolean;
-                isDraft?: boolean;
-                onApplyDraft?: () => void;
-                onDeleteDraft?: () => void;
-              }>;
-              const isSelected = selectedWidgets.has(widget.id);
-
-              return (
-                  <div 
-                    key={widget.id} 
-                    className={`border border-dashed rounded transition-all cursor-pointer ${
-                      isEditMode 
-                        ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
-                        : 'border-transparent'
-                    }`}
-                    onClick={(e) => {
-                      if (!isEditMode) return;
-                      
-                      e.stopPropagation();
-                      if (e.ctrlKey || e.metaKey) {
-                        // Multi-select: add to selection
-                        handleSelectWidget(widget.id);
-                      } else {
-                        // Single select: clear others and select this one
-                        handleDeselectAll();
-                        handleSelectWidget(widget.id);
+                return (
+                    <div 
+                      key={widget.id} 
+                      className={`border border-dashed rounded transition-all cursor-pointer ${
+                        isEditMode 
+                          ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
+                          : 'border-transparent'
+                      }`}
+                      onClick={(e) => {
+                        if (!isEditMode) return;
                         
-                        // Auto-open editor for the selected widget
-                        setEditorWidgetId(widget.id);
-                      }
-                    }}
-                  >
-                  <Renderer
-                    widget={widget}
-                    onEdit={undefined}
-                    onDelete={undefined}
-                    onDuplicate={undefined}
-                     isEditMode={isEditMode}
-                  />
-                </div>
-              );
-            }).filter(Boolean)}
+                        e.stopPropagation();
+                        if (e.ctrlKey || e.metaKey) {
+                          // Multi-select: add to selection
+                          handleSelectWidget(widget.id);
+                        } else {
+                          // Single select: clear others and select this one
+                          handleDeselectAll();
+                          handleSelectWidget(widget.id);
+                          
+                          // Auto-open editor for the selected widget
+                          setEditorWidgetId(widget.id);
+                        }
+                      }}
+                    >
+                    <Renderer
+                      widget={widget}
+                      onEdit={undefined}
+                      onDelete={undefined}
+                      onDuplicate={undefined}
+                       isEditMode={isEditMode}
+                    />
+                  </div>
+                );
+              })}
           </GridLayout>
         </WidgetErrorBoundary>
       </div>
