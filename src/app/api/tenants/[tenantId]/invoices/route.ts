@@ -697,3 +697,105 @@ export async function POST(
 		);
 	}
 }
+
+export async function GET(
+	request: NextRequest,
+	{ params }: { params: Promise<{ tenantId: string }> },
+) {
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+
+	const { tenantId } = await params;
+
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId.toString());
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
+
+	try {
+		// Get the database for this tenant
+		const database = await prisma.database.findFirst({
+			where: { tenantId: Number(tenantId) },
+		});
+
+		if (!database) {
+			return NextResponse.json(
+				{ error: "Database not found for this tenant" },
+				{ status: 404 },
+			);
+		}
+
+		// Get invoice tables
+		const invoiceTables = await InvoiceSystemService.getInvoiceTables(
+			Number(tenantId),
+			database.id,
+		);
+
+		if (!invoiceTables.invoices) {
+			return NextResponse.json(
+				{ error: "Invoice system not initialized" },
+				{ status: 404 },
+			);
+		}
+
+		// Get all invoices with their data
+		const invoices = await prisma.row.findMany({
+			where: {
+				tableId: invoiceTables.invoices.id,
+			},
+			include: {
+				cells: {
+					include: {
+						column: true,
+					},
+				},
+			},
+			orderBy: {
+				createdAt: 'desc',
+			},
+		});
+
+		// Transform invoices to include readable data
+		const transformedInvoices = invoices.map((invoice: any) => {
+			const invoiceData: any = {
+				id: invoice.id,
+				createdAt: invoice.createdAt,
+				updatedAt: invoice.updatedAt,
+			};
+
+			// Map cells to readable format
+			invoice.cells.forEach((cell: any) => {
+				const columnName = cell.column.name;
+				const semanticType = cell.column.semanticType;
+				
+				// Use semantic type as key for better API structure
+				if (semanticType) {
+					invoiceData[semanticType] = cell.value;
+				}
+				
+				// Also keep column name for backward compatibility
+				invoiceData[columnName] = cell.value;
+			});
+
+			return invoiceData;
+		});
+
+		return NextResponse.json({
+			success: true,
+			data: transformedInvoices,
+			count: transformedInvoices.length,
+		});
+
+	} catch (error: any) {
+		console.error("Error fetching invoices:", error);
+		return NextResponse.json(
+			{ 
+				error: "Internal server error",
+				message: error.message || "Failed to fetch invoices"
+			}, 
+			{ status: 500 }
+		);
+	}
+}
