@@ -88,7 +88,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
     updateData({ sort: newSort });
   };
 
-  const updateSort = (index: number, updates: Partial<typeof value.data?.sort?.[0]>) => {
+  const updateSort = (index: number, updates: Partial<{ column: string; direction: "asc" | "desc" }>) => {
     const newSort = [...(value.data?.sort || [])];
     newSort[index] = { ...newSort[index], ...updates };
     updateData({ sort: newSort });
