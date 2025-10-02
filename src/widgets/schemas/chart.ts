@@ -40,7 +40,7 @@ export const chartDataSchema = z.object({
     .default([]),
   mappings: z.object({
     x: z.string().optional(),
-    y: z.array(z.string()).default([]), // Multi-column support for Y axis
+    y: z.union([z.array(z.string()), z.string()]).transform(val => Array.isArray(val) ? val : val ? [val] : []).default([]), // Multi-column support for Y axis
     group: z.string().optional(),
     series: z.string().optional(),
     color: z.string().optional(),

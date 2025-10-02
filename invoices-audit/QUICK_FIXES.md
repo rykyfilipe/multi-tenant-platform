@@ -2,11 +2,11 @@
 
 This document provides immediate fixes for the most critical issues found in the invoice generation subsystem audit.
 
-## 1. Fix Build Error (CRITICAL - Blocks Deployment)
+## 1. Fix Build Error (CRITICAL - Blocks Deployment) ✅ FIXED
 
 **Issue**: Zod validation error in widget resolve endpoint
-**File**: `src/widgets/schemas/base.ts`
-**Line**: 6
+**Files**: `src/widgets/schemas/base.ts` and `src/widgets/schemas/chart.ts`
+**Status**: ✅ **RESOLVED** - Build now passes successfully
 
 ```typescript
 // BEFORE (causing build failure)
@@ -28,7 +28,16 @@ export const widgetPositionSchema = z.object({
   maxH: z.coerce.number().int().positive().optional(),
   static: z.boolean().optional(),
 });
+
+// ADDITIONAL FIX for mappings.y field:
+// BEFORE (causing build failure)
+y: z.array(z.string()).default([]),
+
+// AFTER (fixed)
+y: z.union([z.array(z.string()), z.string()]).transform(val => Array.isArray(val) ? val : val ? [val] : []).default([]),
 ```
+
+**Verification**: Build now completes successfully with exit code 0
 
 ## 2. Fix Invoice Numbering Race Condition (HIGH PRIORITY)
 

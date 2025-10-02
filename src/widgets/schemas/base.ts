@@ -2,14 +2,14 @@ import { z } from "zod";
 import { WidgetKind } from "@/generated/prisma";
 
 export const widgetPositionSchema = z.object({
-  x: z.number().int().nonnegative(),
-  y: z.number().int().nonnegative(),
-  w: z.number().int().positive(),
-  h: z.number().int().positive(),
-  minW: z.number().int().positive().optional(),
-  minH: z.number().int().positive().optional(),
-  maxW: z.number().int().positive().optional(),
-  maxH: z.number().int().positive().optional(),
+  x: z.coerce.number().int().nonnegative(),
+  y: z.coerce.number().int().nonnegative(),
+  w: z.coerce.number().int().positive(),
+  h: z.coerce.number().int().positive(),
+  minW: z.coerce.number().int().positive().optional(),
+  minH: z.coerce.number().int().positive().optional(),
+  maxW: z.coerce.number().int().positive().optional(),
+  maxH: z.coerce.number().int().positive().optional(),
   static: z.boolean().optional(),
 });
 
