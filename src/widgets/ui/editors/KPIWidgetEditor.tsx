@@ -33,14 +33,14 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
   const updateSettings = (updates: Partial<typeof value.settings>) => {
     onChange({
       ...value,
-      settings: { ...value.settings, ...updates },
+      settings: { ...(value.settings || {}), ...updates },
     });
   };
 
   const updateStyle = (updates: Partial<typeof value.style>) => {
     onChange({
       ...value,
-      style: { ...value.style, ...updates },
+      style: { ...(value.style || {}), ...updates },
     });
   };
 
@@ -51,7 +51,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
         filters: [], 
         databaseId: undefined, 
         tableId: undefined, 
-        ...value.data, 
+        ...(value.data || {}), 
         ...updates 
       },
     });
@@ -70,7 +70,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
       refresh: { 
         enabled: false, 
         interval: 30000, 
-        ...value.refresh, 
+        ...(value.refresh || {}), 
         ...updates 
       },
     });
@@ -390,7 +390,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                         Value Column (for calculations)
                       </Label>
                       <Select
-                        value={legacySettings.valueField}
+                        value={legacySettings.valueField || ""}
                         onValueChange={(val) => {
                           onChange({
                             ...value,
@@ -600,7 +600,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                           Comparison Column
                         </Label>
                         <Select
-                          value={legacySettings.comparisonField || ""}
+                          value={legacySettings?.comparisonField || ""}
                           onValueChange={(val) => {
                             onChange({
                               ...value,

@@ -33,14 +33,14 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
   const updateSettings = (updates: Partial<typeof value.settings>) => {
     onChange({
       ...value,
-      settings: { ...value.settings, ...updates },
+      settings: { ...(value.settings || {}), ...updates },
     });
   };
 
   const updateStyle = (updates: Partial<typeof value.style>) => {
     onChange({
       ...value,
-      style: { ...value.style, ...updates },
+      style: { ...(value.style || {}), ...updates },
     });
   };
 
@@ -52,7 +52,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
         mappings: { y: [] }, 
         databaseId: undefined, 
         tableId: undefined, 
-        ...value.data, 
+        ...(value.data || {}), 
         ...updates 
       },
     });

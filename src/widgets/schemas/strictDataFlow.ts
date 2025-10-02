@@ -198,7 +198,7 @@ export function validateDataFlow(config: z.infer<typeof strictDataFlowSchema>): 
   }
   
   // Validate aggregation columns are numeric
-  if (config.aggregation.aggregationColumns.length > 0) {
+  if (config.aggregation?.aggregationColumns?.length > 0) {
     // This would need to be validated against actual column metadata
     // For now, we assume it's validated at the UI level
   }
@@ -206,7 +206,7 @@ export function validateDataFlow(config: z.infer<typeof strictDataFlowSchema>): 
   // Validate secondary functions don't conflict with aggregation
   if (config.secondaryFunctions) {
     const hasConflictingFunctions = config.secondaryFunctions.functions.some(func => {
-      return config.aggregation.functions.includes(func as any);
+      return config.aggregation?.functions?.includes(func as any);
     });
     
     if (hasConflictingFunctions) {
@@ -217,7 +217,7 @@ export function validateDataFlow(config: z.infer<typeof strictDataFlowSchema>): 
   // Validate filter levels are used appropriately
   if (config.filtering) {
     const hasHavingFilters = config.filtering.havingFilters.length > 0;
-    const hasAggregation = config.aggregation.functions.length > 0;
+    const hasAggregation = (config.aggregation?.functions?.length || 0) > 0;
     
     if (hasHavingFilters && !hasAggregation) {
       errors.push("HAVING filters can only be used with aggregation functions");
