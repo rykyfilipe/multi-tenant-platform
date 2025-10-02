@@ -649,15 +649,36 @@ export class DashboardService {
         throw new Error('Dashboard not found');
       }
 
+      // Get default configuration from widget registry
+      const { getWidgetDefinition } = await import('@/widgets/registry/widget-registry');
+      const widgetDefinition = getWidgetDefinition(validatedData.type as any);
+      
+      // Merge with default configuration to ensure complete structure
+      const completeConfig = {
+        ...widgetDefinition.defaultConfig,
+        ...validatedData.config,
+        settings: {
+          ...widgetDefinition.defaultConfig.settings,
+          ...validatedData.config?.settings,
+        },
+        style: {
+          ...widgetDefinition.defaultConfig.style,
+          ...validatedData.config?.style,
+        },
+        data: {
+          ...widgetDefinition.defaultConfig.data,
+          ...validatedData.config?.data,
+        },
+      };
+
       // Validate widget configuration
-      if (validatedData.config) {
-        DashboardValidators.validateWidgetConfig(validatedData.type, validatedData.config);
-      }
+      DashboardValidators.validateWidgetConfig(validatedData.type, completeConfig);
 
       // Create widget
       const widget = await prisma.widget.create({
         data: {
           ...validatedData,
+          config: completeConfig,
           dashboardId,
           createdBy: userId,
           updatedBy: userId,
