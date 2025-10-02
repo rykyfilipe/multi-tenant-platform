@@ -494,7 +494,7 @@ export class PuppeteerPDFGenerator {
 						column: {
 							name: 'invoice_id',
 						},
-						value: options.invoiceId.toString(),
+						value: { equals: options.invoiceId.toString() },
 					},
 				},
 			},

@@ -125,7 +125,7 @@ export async function GET(
 					column: {
 						name: "invoice_id",
 					},
-					value: invoiceId,
+					value: { equals: invoiceId.toString() },
 				},
 			},
 		},
@@ -155,7 +155,7 @@ export async function GET(
 				distinct: ['value'],
 			});
 			
-			console.log(`🔍 API DEBUG: Available invoice IDs in invoice_items:`, allInvoiceIdCells.map(c => c.value));
+			console.log(`🔍 API DEBUG: Available invoice IDs in invoice_items:`, allInvoiceIdCells.map((c: any) => c.value));
 		}
 
 		// Transform invoice data
@@ -594,7 +594,7 @@ export async function DELETE(
 					column: {
 						name: "invoice_id",
 					},
-					value: invoiceId,
+					value: { equals: invoiceId.toString() },
 				},
 			},
 		},

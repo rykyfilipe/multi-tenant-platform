@@ -175,7 +175,7 @@ export class WidgetsApiClient {
     console.log('[savePending] Sending batch request with operations:', payload.operations.length);
     
     const res = await fetch(
-      `/api/v1/tenants/${this.tenantId}/dashboards/${this.dashboardId}/widgets/1`,
+      `/api/dashboards/${this.dashboardId}/widgets/batch`,
       {
         method: "POST",
         body: JSON.stringify(payload satisfies Omit<SavePendingRequest, "tenantId" | "dashboardId">),
