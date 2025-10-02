@@ -26,11 +26,46 @@ export const tableSettingsSchema = z.object({
 });
 
 export const tableStyleSchema = z.object({
-  theme: z.enum(["premium-light", "premium-dark", "auto"]).default("premium-light"),
+  // Theme & Colors
+  theme: z.enum(["platinum", "onyx", "pearl", "obsidian", "custom"]).default("platinum"),
+  backgroundColor: z.string().optional(),
+  textColor: z.string().optional(),
+  headerBgColor: z.string().optional(),
+  headerTextColor: z.string().optional(),
+  borderColor: z.string().optional(),
+  hoverColor: z.string().optional(),
+  
+  // Typography
+  fontFamily: z.string().optional(),
+  fontSize: z.enum(["xs", "sm", "base"]).default("xs"),
+  fontWeight: z.enum(["light", "normal", "medium", "semibold", "bold"]).default("normal"),
+  headerFontWeight: z.enum(["normal", "medium", "semibold", "bold"]).default("semibold"),
+  
+  // Layout
   density: z.enum(["comfortable", "compact", "expanded"]).default("comfortable"),
+  padding: z.enum(["none", "xs", "sm", "md", "lg"]).default("sm"),
+  borderRadius: z.enum(["none", "sm", "md", "lg", "xl"]).default("lg"),
+  
+  // Borders
   showRowBorders: z.boolean().default(false),
+  borderWidth: z.number().min(0).max(4).default(1),
+  headerBorderWidth: z.number().min(0).max(8).default(2),
+  
+  // Stripes & Patterns
   zebraStripes: z.boolean().default(true),
-  headerStyle: z.enum(["default", "bold", "accent"]).default("default"),
+  zebraOpacity: z.number().min(0).max(1).default(0.05),
+  
+  // Header
+  headerStyle: z.enum(["default", "bold", "accent", "gradient"]).default("bold"),
+  stickyHeader: z.boolean().default(true),
+  
+  // Shadows & Effects
+  shadow: z.enum(["none", "subtle", "medium", "bold"]).default("subtle"),
+  rowHoverEffect: z.enum(["none", "highlight", "lift", "glow"]).default("highlight"),
+  
+  // Premium Effects
+  glassEffect: z.boolean().default(false),
+  shine: z.boolean().default(false),
 });
 
 export const tableDataSchema = z.object({

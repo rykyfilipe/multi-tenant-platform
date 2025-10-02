@@ -162,47 +162,237 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
         </TabsContent>
 
         {/* Style Tab */}
-        <TabsContent value="style" className="space-y-4">
-          <div className="space-y-3">
+        <TabsContent value="style" className="space-y-4 max-h-[600px] overflow-y-auto">
+          <div className="space-y-6">
+            {/* Premium Theme */}
             <div>
-              <Label htmlFor="density" className="text-xs font-medium uppercase tracking-wide">
-                Row Density
-              </Label>
+              <h3 className="text-sm font-semibold mb-3">Premium Theme</h3>
               <Select
-                value={value.style.density}
-                onValueChange={(val) => updateStyle({ density: val as typeof value.style.density })}
+                value={value.style.theme}
+                onValueChange={(val) => updateStyle({ theme: val as any })}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="compact">Compact</SelectItem>
-                  <SelectItem value="comfortable">Comfortable</SelectItem>
-                  <SelectItem value="expanded">Expanded</SelectItem>
+                  <SelectItem value="platinum">💎 Platinum (Bright White)</SelectItem>
+                  <SelectItem value="onyx">⬛ Onyx (Deep Black)</SelectItem>
+                  <SelectItem value="pearl">🤍 Pearl (Warm White)</SelectItem>
+                  <SelectItem value="obsidian">⚫ Obsidian (Cool Black)</SelectItem>
+                  <SelectItem value="custom">🎨 Custom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="zebraStripes" className="text-xs font-medium uppercase tracking-wide">
-                Zebra Stripes
-              </Label>
-              <Switch
-                id="zebraStripes"
-                checked={value.style.zebraStripes}
-                onCheckedChange={(checked) => updateStyle({ zebraStripes: checked })}
-              />
+            {/* Colors */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Colors</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Background</Label>
+                  <Input
+                    type="color"
+                    value={value.style.backgroundColor || "#FFFFFF"}
+                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Text</Label>
+                  <Input
+                    type="color"
+                    value={value.style.textColor || "#000000"}
+                    onChange={(e) => updateStyle({ textColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Header BG</Label>
+                  <Input
+                    type="color"
+                    value={value.style.headerBgColor || "#F5F5F5"}
+                    onChange={(e) => updateStyle({ headerBgColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Border</Label>
+                  <Input
+                    type="color"
+                    value={value.style.borderColor || "#E5E5E5"}
+                    onChange={(e) => updateStyle({ borderColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="showRowBorders" className="text-xs font-medium uppercase tracking-wide">
-                Show Row Borders
-              </Label>
-              <Switch
-                id="showRowBorders"
-                checked={value.style.showRowBorders}
-                onCheckedChange={(checked) => updateStyle({ showRowBorders: checked })}
-              />
+            {/* Typography */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Typography</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Font Size</Label>
+                  <Select
+                    value={value.style.fontSize || "xs"}
+                    onValueChange={(val) => updateStyle({ fontSize: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="xs">Extra Small</SelectItem>
+                      <SelectItem value="sm">Small</SelectItem>
+                      <SelectItem value="base">Base</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Font Weight</Label>
+                  <Select
+                    value={value.style.fontWeight || "normal"}
+                    onValueChange={(val) => updateStyle({ fontWeight: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="semibold">Semibold</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Layout */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Layout</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Density</Label>
+                  <Select
+                    value={value.style.density}
+                    onValueChange={(val) => updateStyle({ density: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="compact">Compact</SelectItem>
+                      <SelectItem value="comfortable">Comfortable</SelectItem>
+                      <SelectItem value="expanded">Expanded</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Header Style</Label>
+                  <Select
+                    value={value.style.headerStyle || "bold"}
+                    onValueChange={(val) => updateStyle({ headerStyle: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Default</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                      <SelectItem value="accent">Accent</SelectItem>
+                      <SelectItem value="gradient">Gradient</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Row Effects */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Row Effects</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Zebra Stripes</Label>
+                  <Switch
+                    checked={value.style.zebraStripes}
+                    onCheckedChange={(checked) => updateStyle({ zebraStripes: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Row Borders</Label>
+                  <Switch
+                    checked={value.style.showRowBorders}
+                    onCheckedChange={(checked) => updateStyle({ showRowBorders: checked })}
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs">Hover Effect</Label>
+                  <Select
+                    value={value.style.rowHoverEffect || "highlight"}
+                    onValueChange={(val) => updateStyle({ rowHoverEffect: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="highlight">Highlight</SelectItem>
+                      <SelectItem value="lift">Lift</SelectItem>
+                      <SelectItem value="glow">Glow</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Premium Effects */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Premium Effects</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Shadow</Label>
+                  <Select
+                    value={value.style.shadow || "subtle"}
+                    onValueChange={(val) => updateStyle({ shadow: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="subtle">Subtle</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1">
+                    <Switch
+                      id="glassEffect"
+                      checked={value.style.glassEffect || false}
+                      onCheckedChange={(checked) => updateStyle({ glassEffect: checked })}
+                      className="scale-75"
+                    />
+                    <Label htmlFor="glassEffect" className="text-xs">Glass</Label>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Switch
+                      id="shine"
+                      checked={value.style.shine || false}
+                      onCheckedChange={(checked) => updateStyle({ shine: checked })}
+                      className="scale-75"
+                    />
+                    <Label htmlFor="shine" className="text-xs">Shine</Label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>

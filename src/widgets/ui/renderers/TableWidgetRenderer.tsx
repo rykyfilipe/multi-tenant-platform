@@ -6,7 +6,10 @@ import { BaseWidget } from "../components/BaseWidget";
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { WidgetLoadingState, WidgetErrorState, WidgetEmptyState } from "../components/WidgetStates";
+import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
+import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface TableWidgetRendererProps {
   widget: WidgetEntity;
@@ -360,22 +363,40 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     return executeTablePipeline(rawData.data, pipelineConfig);
   }, [rawData, columns, processingMode, groupByColumn, showGroupSummary, showFooterStatistics]);
 
+  // Get premium theme
+  const styleConfig = config?.style || {};
+  const theme = getPremiumTheme(styleConfig.theme || 'platinum');
+  
   // Get cell padding based on density
   const getCellPadding = () => {
-    switch (density) {
-      case 'compact': return 'px-2 py-1';
-      case 'expanded': return 'px-4 py-3';
-      default: return 'px-3 py-2';
-    }
+    const paddingMap = {
+      compact: 'px-2 py-1.5',
+      expanded: 'px-5 py-4',
+      comfortable: 'px-4 py-2.5',
+    };
+    return paddingMap[density as keyof typeof paddingMap] || 'px-4 py-2.5';
   };
 
-  // Get text size based on density
+  // Get text size based on configuration
   const getTextSize = () => {
-    switch (density) {
-      case 'compact': return 'text-xs';
-      case 'expanded': return 'text-sm';
-      default: return 'text-xs';
-    }
+    const fontSizeMap = {
+      xs: 'text-xs',
+      sm: 'text-sm',
+      base: 'text-base',
+    };
+    return fontSizeMap[styleConfig.fontSize as keyof typeof fontSizeMap] || 'text-xs';
+  };
+  
+  // Get font weight
+  const getFontWeight = () => {
+    const fontWeightMap = {
+      light: 'font-light',
+      normal: 'font-normal',
+      medium: 'font-medium',
+      semibold: 'font-semibold',
+      bold: 'font-bold',
+    };
+    return fontWeightMap[styleConfig.fontWeight as keyof typeof fontWeightMap] || 'font-normal';
   };
 
   // Loading state
@@ -418,22 +439,79 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
 
   const cellPadding = getCellPadding();
   const textSize = getTextSize();
+  const fontWeight = getFontWeight();
+  
+  // Colors from theme
+  const textColor = styleConfig.textColor || theme.colors.foreground;
+  const headerBgColor = styleConfig.headerBgColor || theme.colors.muted;
+  const headerTextColor = styleConfig.headerTextColor || theme.colors.foreground;
+  const borderColor = styleConfig.borderColor || theme.colors.border;
+  const hoverColor = styleConfig.hoverColor || theme.colors.hover;
+  
+  // Header style
+  const getHeaderStyle = () => {
+    switch (styleConfig.headerStyle) {
+      case 'gradient':
+        return {
+          background: theme.gradients.subtle,
+          fontWeight: theme.typography.fontWeight.bold,
+        };
+      case 'accent':
+        return {
+          backgroundColor: theme.colors.accent,
+          color: theme.colors.background,
+          fontWeight: theme.typography.fontWeight.semibold,
+        };
+      case 'bold':
+        return {
+          backgroundColor: headerBgColor,
+          fontWeight: theme.typography.fontWeight.bold,
+        };
+      default:
+        return {
+          backgroundColor: headerBgColor,
+          fontWeight: theme.typography.fontWeight.semibold,
+        };
+    }
+  };
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className="h-full w-full overflow-hidden">
+      <PremiumWidgetContainer style={styleConfig} className="h-full w-full overflow-hidden">
         <div className="h-full overflow-auto">
-          <table className={`w-full ${textSize}`}>
-            {/* Table Header */}
-            <thead className={`${stickyHeader ? 'sticky top-0' : ''} bg-background border-b-2 border-border z-10`}>
-              <tr className="bg-muted/50">
+          <table 
+            className={cn('w-full', textSize, fontWeight)}
+            style={{ 
+              fontFamily: styleConfig.fontFamily || theme.typography.fontFamily,
+              color: textColor 
+            }}
+          >
+            {/* Table Header - Premium Design */}
+            <thead 
+              className={cn(
+                stickyHeader && 'sticky top-0 z-10',
+                'backdrop-blur-sm'
+              )}
+              style={{
+                ...getHeaderStyle(),
+                borderBottom: `${styleConfig.headerBorderWidth || 2}px solid ${borderColor}`,
+                boxShadow: stickyHeader ? theme.shadows.subtle : 'none'
+              }}
+            >
+              <tr>
                 {columns.map((column: any) => (
                   <th
                     key={column.id}
-                    className={`text-left font-semibold text-foreground ${cellPadding} ${
-                      showRowBorders ? 'border-r border-border last:border-r-0' : ''
-                    }`}
-                    style={{ width: column.width ? `${column.width}px` : 'auto' }}
+                    className={cn(
+                      'text-left uppercase tracking-wider text-xs',
+                      cellPadding,
+                      showRowBorders && 'border-r last:border-r-0'
+                    )}
+                    style={{ 
+                      width: column.width ? `${column.width}px` : 'auto',
+                      color: headerTextColor,
+                      borderColor: borderColor
+                    }}
                   >
                     {column.label}
                   </th>
@@ -444,35 +522,67 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
             {/* Table Body - Grouped or Regular */}
             <tbody>
               {groupedRows && groupedRows.length > 0 ? (
-                // Grouped display
+                // Grouped display - Premium
                 groupedRows.map((group) => (
                   <React.Fragment key={group.groupKey}>
-                    {/* Group Header */}
-                    <tr className="bg-muted/30 font-medium border-t-2 border-border">
+                    {/* Group Header - Premium */}
+                    <tr 
+                      className="font-semibold"
+                      style={{
+                        backgroundColor: theme.colors.muted,
+                        borderTop: `2px solid ${borderColor}`,
+                      }}
+                    >
                       <td colSpan={columns.length} className={cellPadding}>
                         <div className="flex items-center justify-between">
-                          <span className="text-foreground">{group.groupKey}</span>
-                          <Badge variant="outline" className="text-xs">
+                          <span className="text-sm uppercase tracking-wide" style={{ color: textColor }}>
+                            {group.groupKey}
+                          </span>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs font-normal"
+                            style={{ borderColor: borderColor }}
+                          >
                             {group.rows.length} rows
                           </Badge>
                         </div>
                       </td>
                     </tr>
                     
-                    {/* Group Rows */}
+                    {/* Group Rows - Premium */}
                     {group.rows.map((row: NormalizedRow, rowIndex: number) => (
                       <tr
                         key={row.id || rowIndex}
-                        className={`${
-                          zebraStripes ? (rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/10') : 'bg-background'
-                        } hover:bg-muted/30 transition-colors`}
+                        className={cn(
+                          'transition-all duration-150',
+                          styleConfig.rowHoverEffect === 'lift' && 'hover:translate-x-1',
+                          styleConfig.rowHoverEffect === 'glow' && 'hover:shadow-md'
+                        )}
+                        style={{
+                          backgroundColor: zebraStripes && rowIndex % 2 === 1
+                            ? `${theme.colors.muted}${Math.floor((styleConfig.zebraOpacity || 0.05) * 255).toString(16).padStart(2, '0')}`
+                            : 'transparent',
+                          cursor: 'default'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (styleConfig.rowHoverEffect !== 'none') {
+                            e.currentTarget.style.backgroundColor = hoverColor;
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = zebraStripes && rowIndex % 2 === 1
+                            ? `${theme.colors.muted}${Math.floor((styleConfig.zebraOpacity || 0.05) * 255).toString(16).padStart(2, '0')}`
+                            : 'transparent';
+                        }}
                       >
                         {columns.map((column: any) => (
                           <td
                             key={column.id}
-                            className={`${cellPadding} ${
-                              showRowBorders ? 'border-r border-border last:border-r-0' : ''
-                            }`}
+                            className={cn(
+                              cellPadding,
+                              showRowBorders && 'border-r last:border-r-0'
+                            )}
+                            style={{ borderColor: borderColor }}
                           >
                             {formatCellValue(row[column.id], column.format)}
                           </td>
@@ -480,17 +590,23 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                       </tr>
                     ))}
                     
-                    {/* Group Summary */}
+                    {/* Group Summary - Premium */}
                     {showGroupSummary && group.summary && (
-                      <tr className="bg-muted/20 font-medium border-b">
-                        {columns.map((column: any) => (
-                          <td key={column.id} className={`${cellPadding} text-xs`}>
+                      <tr 
+                        className="font-semibold"
+                        style={{
+                          backgroundColor: `${theme.colors.accent}10`,
+                          borderBottom: `1px solid ${borderColor}`
+                        }}
+                      >
+                        {columns.map((column: any, colIndex: number) => (
+                          <td key={column.id} className={cn(cellPadding, 'text-xs')}>
                             {group.summary && group.summary[column.id] !== undefined ? (
-                              <span className="text-primary">
+                              <span style={{ color: theme.colors.accent }}>
                                 {formatCellValue(group.summary[column.id], column.format)}
                               </span>
                             ) : (
-                              column.id === columns[0].id ? 'Subtotal' : ''
+                              colIndex === 0 ? <span className="opacity-60">Subtotal</span> : ''
                             )}
                           </td>
                         ))}
@@ -499,20 +615,39 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                   </React.Fragment>
                 ))
               ) : (
-                // Regular display
+                // Regular display - Premium
                 rows.map((row: NormalizedRow, rowIndex: number) => (
                   <tr
                     key={row.id || rowIndex}
-                    className={`${
-                      zebraStripes ? (rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/10') : 'bg-background'
-                    } hover:bg-muted/30 transition-colors`}
+                    className={cn(
+                      'transition-all duration-150',
+                      styleConfig.rowHoverEffect === 'lift' && 'hover:translate-x-1',
+                      styleConfig.rowHoverEffect === 'glow' && 'hover:shadow-md'
+                    )}
+                    style={{
+                      backgroundColor: zebraStripes && rowIndex % 2 === 1
+                        ? `${theme.colors.muted}${Math.floor((styleConfig.zebraOpacity || 0.05) * 255).toString(16).padStart(2, '0')}`
+                        : 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (styleConfig.rowHoverEffect !== 'none') {
+                        e.currentTarget.style.backgroundColor = hoverColor;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = zebraStripes && rowIndex % 2 === 1
+                        ? `${theme.colors.muted}${Math.floor((styleConfig.zebraOpacity || 0.05) * 255).toString(16).padStart(2, '0')}`
+                        : 'transparent';
+                    }}
                   >
                     {columns.map((column: any) => (
                       <td
                         key={column.id}
-                        className={`${cellPadding} ${
-                          showRowBorders ? 'border-r border-border last:border-r-0' : ''
-                        }`}
+                        className={cn(
+                          cellPadding,
+                          showRowBorders && 'border-r last:border-r-0'
+                        )}
+                        style={{ borderColor: borderColor }}
                       >
                         {formatCellValue(row[column.id], column.format)}
                       </td>
@@ -522,27 +657,55 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
               )}
             </tbody>
 
-            {/* Table Footer - Statistics */}
+            {/* Table Footer - Statistics - Premium */}
             {showFooterStatistics && statistics && Object.keys(statistics).length > 0 && (
-              <tfoot className="sticky bottom-0 bg-muted/70 border-t-2 border-border backdrop-blur-sm">
-                <tr className="font-semibold">
+              <tfoot 
+                className={cn(
+                  'sticky bottom-0 z-10 backdrop-blur-md font-bold',
+                  styleConfig.glassEffect && 'bg-opacity-90'
+                )}
+                style={{
+                  backgroundColor: headerBgColor,
+                  borderTop: `${styleConfig.headerBorderWidth || 2}px solid ${borderColor}`,
+                  boxShadow: theme.shadows.medium
+                }}
+              >
+                <tr>
                   {columns.map((column: any, index: number) => {
                     const stat = statistics[column.id];
                     const func = column.statisticFunction || 'sum';
                     
                     return (
-                      <td key={column.id} className={`${cellPadding} text-xs`}>
+                      <td 
+                        key={column.id} 
+                        className={cn(
+                          cellPadding, 
+                          'text-xs',
+                          showRowBorders && 'border-r last:border-r-0'
+                        )}
+                        style={{ borderColor: borderColor }}
+                      >
                         {stat && stat[func as keyof typeof stat] !== undefined ? (
-                          <div className="flex flex-col">
-                            <span className="text-primary font-bold">
+                          <div className="flex flex-col gap-0.5">
+                            <span 
+                              className="font-bold tabular-nums"
+                              style={{ color: theme.colors.accent }}
+                            >
                               {formatCellValue(stat[func as keyof typeof stat], column.format)}
                             </span>
-                            <span className="text-muted-foreground text-[10px] uppercase">
+                            <span 
+                              className="text-[10px] uppercase tracking-wider opacity-60"
+                              style={{ color: textColor }}
+                            >
                               {func}
                             </span>
                           </div>
                         ) : (
-                          index === 0 ? 'Total' : ''
+                          index === 0 ? (
+                            <span className="uppercase tracking-wide opacity-75" style={{ color: textColor }}>
+                              Total
+                            </span>
+                          ) : ''
                         )}
                       </td>
                     );
@@ -552,7 +715,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
             )}
           </table>
         </div>
-      </div>
+      </PremiumWidgetContainer>
     </BaseWidget>
   );
 };
