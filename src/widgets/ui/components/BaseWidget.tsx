@@ -22,42 +22,38 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
 }) => {
   return (
     <div className={`
-      flex h-full flex-col rounded-xl shadow-sm transition-all duration-300
+      flex h-full flex-col overflow-hidden transition-all duration-300
       ${isEditMode 
-        ? 'bg-card border border-border/60 hover:shadow-md' 
-        : 'bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:scale-[1.02]'
+        ? 'rounded-lg bg-card/50 backdrop-blur-sm border border-border/40 hover:border-border/60 hover:shadow-md' 
+        : 'rounded-xl bg-transparent border-0'
       }
     `}>
-      {/* Header - Only show in edit mode or when there's a title */}
-      {(isEditMode || title) && (
+      {/* Clean header for edit mode only - minimal drag handle */}
+      {isEditMode && (
         <div 
-          className={`
-            widget-header flex items-center justify-between px-3 py-2 text-xs
-            ${isEditMode 
-              ? 'border-b border-border/60 cursor-grab active:cursor-grabbing' 
-              : 'border-b border-white/10 bg-gradient-to-r from-background/5 to-background/10'
-            }
-          `}
+          className="widget-header flex items-center justify-between px-3 py-1.5 text-xs border-b border-border/30 cursor-grab active:cursor-grabbing bg-background/20"
         >
           <div className="flex items-center gap-2">
-            <span className={`font-medium ${isEditMode ? 'text-foreground/80' : 'text-foreground/90'}`}>
-              {title ?? "Untitled widget"}
-            </span>
+            {/* Drag handle indicator */}
+            <div className="flex gap-0.5">
+              <div className="w-0.5 h-3 bg-foreground/20 rounded-full" />
+              <div className="w-0.5 h-3 bg-foreground/20 rounded-full" />
+            </div>
             {isDirty && (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                Unsaved
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-amber-600 dark:text-amber-400">
+                Modified
               </span>
             )}
           </div>
         </div>
       )}
       
-      {/* Content */}
+      {/* Content - Full space, premium and clean */}
       <div className={`
-        widget-content flex-1 overflow-hidden text-sm
+        widget-content flex-1 overflow-hidden
         ${isEditMode 
-          ? 'p-3 text-muted-foreground cursor-grab active:cursor-grabbing' 
-          : 'p-4 text-foreground/90'
+          ? 'p-3 cursor-grab active:cursor-grabbing' 
+          : 'p-0'
         }
       `}>
         {children}
