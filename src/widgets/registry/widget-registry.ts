@@ -52,8 +52,10 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         processingMode: "raw",
         aggregationFunction: "sum",
         aggregationColumns: [],
+        groupByColumn: undefined,
         enableTopN: false,
         topNCount: 10,
+        sortByColumn: undefined,
         sortDirection: "desc",
       },
       style: {
@@ -330,6 +332,7 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         valueField: "value",
         displayFields: [],
         selectedAggregations: ["sum"],
+        comparisonField: undefined,
       },
       style: {
         theme: "platinum",

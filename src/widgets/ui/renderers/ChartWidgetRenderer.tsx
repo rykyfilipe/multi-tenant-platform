@@ -600,24 +600,31 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   onDuplicate, 
   isEditMode = false
 }) => {
-  // Extract chart configuration
+  // Extract chart configuration with defensive checks
   const config = widget.config as any;
-  const chartType = config?.settings?.chartType || "bar";
-  const mappings = config?.data?.mappings || { y: [] };
-  const databaseId = config?.data?.databaseId;
-  const tableId = config?.data?.tableId;
-  const filters = config?.data?.filters || [];
-  const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
+  
+  // Ensure config and settings exist
+  if (!config || !config.settings) {
+    console.error('ChartWidgetRenderer: Invalid config or missing settings', { config });
+    return <div>Invalid widget configuration</div>;
+  }
+  
+  const chartType = config.settings.chartType || "bar";
+  const mappings = config.data?.mappings || { y: [] };
+  const databaseId = config.data?.databaseId;
+  const tableId = config.data?.tableId;
+  const filters = config.data?.filters || [];
+  const refreshSettings = config.refresh || { enabled: false, interval: 30000 };
 
-  // Data processing configuration
-  const processingMode = config?.settings?.processingMode || "raw";
-  const aggregationFunction = config?.settings?.aggregationFunction || "sum";
-  const aggregationColumns = config?.settings?.aggregationColumns || [];
-  const groupByColumn = config?.settings?.groupByColumn;
-  const enableTopN = config?.settings?.enableTopN || false;
-  const topNCount = config?.settings?.topNCount || 10;
-  const sortByColumn = config?.settings?.sortByColumn;
-  const sortDirection = config?.settings?.sortDirection || "desc";
+  // Data processing configuration with defensive checks
+  const processingMode = config.settings.processingMode || "raw";
+  const aggregationFunction = config.settings.aggregationFunction || "sum";
+  const aggregationColumns = config.settings.aggregationColumns || [];
+  const groupByColumn = config.settings.groupByColumn;
+  const enableTopN = config.settings.enableTopN || false;
+  const topNCount = config.settings.topNCount || 10;
+  const sortByColumn = config.settings.sortByColumn;
+  const sortDirection = config.settings.sortDirection || "desc";
   
   // Only grouped mode has aggregation
   const enableGrouping = processingMode === "grouped";
