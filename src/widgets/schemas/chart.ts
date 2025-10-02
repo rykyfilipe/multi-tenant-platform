@@ -3,57 +3,19 @@ import { baseWidgetConfigSchema } from "./base";
 
 export const chartSettingsSchema = z.object({
   chartType: z.enum(["line", "bar", "area", "pie", "radar", "scatter"]),
-  xAxis: z.string().min(1, "xAxis is required"),
-  yAxis: z.string().min(1, "yAxis is required"),
-  groupBy: z.string().optional(),
-  valueFormat: z.enum(["number", "currency", "percentage", "duration"]).default("number"),
   refreshInterval: z.number().int().positive().max(3600).default(60),
-  // Advanced features - mutually exclusive
-  enableAggregation: z.boolean().default(false),
+  // Data processing mode
+  processingMode: z.enum(["raw", "aggregated", "grouped"]).default("raw"),
+  // Aggregation (used for both simple aggregation and grouping)
   aggregationFunction: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
   aggregationColumns: z.array(z.string()).default([]),
-  enableGrouping: z.boolean().default(false),
+  // Grouping
   groupByColumn: z.string().optional(),
+  // Top N
   enableTopN: z.boolean().default(false),
   topNCount: z.number().int().positive().max(100).default(10),
   sortByColumn: z.string().optional(),
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
-}).refine((data) => {
-  // Ensure aggregation and grouping are mutually exclusive
-  if (data.enableAggregation && data.enableGrouping) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Aggregation and grouping cannot be enabled at the same time",
-  path: ["enableGrouping"]
-}).refine((data) => {
-  // Ensure aggregation columns are specified when aggregation is enabled
-  if (data.enableAggregation && data.aggregationColumns.length === 0) {
-    return false;
-  }
-  return true;
-}, {
-  message: "At least one aggregation column must be specified when aggregation is enabled",
-  path: ["aggregationColumns"]
-}).refine((data) => {
-  // Ensure group by column is specified when grouping is enabled
-  if (data.enableGrouping && !data.groupByColumn) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Group by column must be specified when grouping is enabled",
-  path: ["groupByColumn"]
-}).refine((data) => {
-  // Ensure aggregation columns are specified when grouping is enabled
-  if (data.enableGrouping && data.aggregationColumns.length === 0) {
-    return false;
-  }
-  return true;
-}, {
-  message: "At least one aggregation column must be specified when grouping is enabled",
-  path: ["aggregationColumns"]
 });
 
 export const chartStyleSchema = z.object({
@@ -76,24 +38,13 @@ export const chartDataSchema = z.object({
       })
     )
     .default([]),
-  mappings: z
-    .record(z.enum(["x", "y", "group", "series", "color" ]), z.string().optional())
-    .default({}),
-  // Advanced data processing options
-  aggregationConfig: z.object({
-    columns: z.array(z.string()).default([]),
-    functions: z.record(z.string(), z.enum(["sum", "avg", "count", "min", "max"])).default({}),
-  }).optional(),
-  groupingConfig: z.object({
-    groupByColumns: z.array(z.string()).default([]),
-    aggregateColumns: z.array(z.string()).default([]),
-  }).optional(),
-  topNConfig: z.object({
-    enabled: z.boolean().default(false),
-    count: z.number().int().positive().max(100).default(10),
-    sortBy: z.string().optional(),
-    sortDirection: z.enum(["asc", "desc"]).default("desc"),
-  }).optional(),
+  mappings: z.object({
+    x: z.string().optional(),
+    y: z.array(z.string()).default([]), // Multi-column support for Y axis
+    group: z.string().optional(),
+    series: z.string().optional(),
+    color: z.string().optional(),
+  }).default({ y: [] }),
 });
 
 export const chartWidgetConfigSchema = baseWidgetConfigSchema.extend({
@@ -103,4 +54,3 @@ export const chartWidgetConfigSchema = baseWidgetConfigSchema.extend({
 });
 
 export type ChartWidgetConfig = z.infer<typeof chartWidgetConfigSchema>;
-

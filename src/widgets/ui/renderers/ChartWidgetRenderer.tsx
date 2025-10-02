@@ -585,22 +585,25 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Extract chart configuration
   const config = widget.config as any;
   const chartType = config?.settings?.chartType || "bar";
-  const mappings = config?.data?.mappings || {};
+  const mappings = config?.data?.mappings || { y: [] };
   const databaseId = config?.data?.databaseId;
   const tableId = config?.data?.tableId;
   const filters = config?.data?.filters || [];
   const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
 
-  // Advanced features configuration
-  const enableAggregation = config?.settings?.enableAggregation || false;
+  // Data processing configuration
+  const processingMode = config?.settings?.processingMode || "raw";
   const aggregationFunction = config?.settings?.aggregationFunction || "sum";
   const aggregationColumns = config?.settings?.aggregationColumns || [];
-  const enableGrouping = config?.settings?.enableGrouping || false;
   const groupByColumn = config?.settings?.groupByColumn;
   const enableTopN = config?.settings?.enableTopN || false;
   const topNCount = config?.settings?.topNCount || 10;
   const sortByColumn = config?.settings?.sortByColumn;
   const sortDirection = config?.settings?.sortDirection || "desc";
+  
+  // Derive enableAggregation and enableGrouping from processingMode
+  const enableAggregation = processingMode === "aggregated";
+  const enableGrouping = processingMode === "grouped";
 
   // Fetch data from API (WHERE filters applied here)
   const validFilters = filters.filter((f: any) => f.column && f.operator && f.value !== undefined);
@@ -637,6 +640,8 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Process data through the pipeline
   const processedData = useMemo(() => {
     // Return mock data if no configuration or data
+    const yColumns = Array.isArray(mappings.y) ? mappings.y : (mappings.y ? [mappings.y] : []);
+    
     if (!mappings.x || !rawData?.data?.length) {
       console.log('📊 Using mock data (no mappings or data)');
       return [
@@ -655,13 +660,13 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       groupByColumn,
       enableAggregation,
       aggregationFunction,
-      aggregationColumns,
+      aggregationColumns: aggregationColumns.length > 0 ? aggregationColumns : yColumns,
       enableTopN,
       topNCount,
       sortByColumn,
       sortDirection,
       xAxisColumn: mappings.x,
-      yAxisColumn: mappings.y,
+      yAxisColumn: yColumns[0], // Use first Y column for backward compatibility
       chartType,
     };
 
@@ -686,7 +691,9 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const dataKeys = useMemo(() => {
     if (!processedData.length) return [{ key: "value", name: "Value", color: premiumColors.primary }];
     
-    // If aggregation columns specified, use them as data keys
+    const yColumns = Array.isArray(mappings.y) ? mappings.y : (mappings.y ? [mappings.y] : []);
+    
+    // Priority 1: Use aggregation columns if specified
     if (aggregationColumns.length > 0) {
       return aggregationColumns.map((column: string, index: number) => ({
         key: column,
@@ -695,7 +702,16 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       }));
     }
     
-    // Auto-detect numeric columns
+    // Priority 2: Use Y columns from mappings if specified
+    if (yColumns.length > 0) {
+      return yColumns.map((column: string, index: number) => ({
+        key: column,
+        name: column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, ' '),
+        color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
+      }));
+    }
+    
+    // Priority 3: Auto-detect numeric columns
     const keys = new Set<string>();
     processedData.forEach((row: any) => {
       Object.keys(row).forEach((key: any) => {
@@ -714,7 +730,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
       color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
     }));
-  }, [processedData, aggregationColumns, premiumColors]);
+  }, [processedData, aggregationColumns, mappings, premiumColors]);
 
   // Style configuration
   const showGrid = config?.style?.showGrid !== false;

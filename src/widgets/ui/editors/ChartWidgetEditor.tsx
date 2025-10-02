@@ -3,14 +3,13 @@
 import React, { useState } from "react";
 import { z } from "zod";
 import { chartWidgetConfigSchema } from "@/widgets/schemas/chart";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, TrendingUp, Group, Filter } from "lucide-react";
+import { TrendingUp, Group, Filter } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
@@ -46,30 +45,21 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
     });
   };
 
-  const updateRefresh = (updates: Partial<typeof value.refresh>) => {
-    onChange({
-      ...value,
-      refresh: { 
-        enabled: false, 
-        interval: 30000, 
-        ...value.refresh, 
-        ...updates 
-      },
-    });
-  };
-
   const handleFiltersChange = (filters: any[]) => {
     updateData({ filters });
   };
 
-  const updateMapping = (key: string, mappingValue: string) => {
-    const newMappings = { ...value.data.mappings };
-    if (mappingValue) {
-      newMappings[key as keyof typeof newMappings] = mappingValue;
-    } else {
-      delete newMappings[key as keyof typeof newMappings];
-    }
-    updateData({ mappings: newMappings });
+  const toggleYColumn = (columnName: string) => {
+    const currentY = value.data.mappings?.y || [];
+    const updated = currentY.includes(columnName)
+      ? currentY.filter(c => c !== columnName)
+      : [...currentY, columnName];
+    updateData({ 
+      mappings: { 
+        ...value.data.mappings, 
+        y: updated 
+      } 
+    });
   };
 
   return (
@@ -105,8 +95,6 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                 </SelectContent>
               </Select>
             </div>
-
-
 
       <div>
               <Label htmlFor="refreshInterval" className="text-xs font-medium uppercase tracking-wide">
@@ -207,26 +195,30 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                 tenantId={tenantId}
                 selectedDatabaseId={value.data.databaseId}
                 selectedTableId={Number(value.data.tableId)}
-                onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", mappings: {} })}
-                onTableChange={(tableId) => updateData({ tableId: tableId.toString(), mappings: {} })}
+                onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", mappings: { y: [] } })}
+                onTableChange={(tableId) => updateData({ tableId: tableId.toString(), mappings: { y: [] } })}
                 onColumnsChange={setAvailableColumns}
               />
             </div>
 
-            {/* Data Mappings - Dynamic based on available columns */}
+            {/* Column Mappings */}
             {availableColumns.length > 0 && (
               <>
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-3">Column Mappings</h3>
-                  <div className="space-y-2">
-                    {/* X Axis - Required for most chart types */}
-                    <div className="flex items-center space-x-2">
-                      <Label className="w-16 text-xs">X Axis:</Label>
+                  <div className="space-y-3">
+                    {/* X Axis */}
+                    <div>
+                      <Label className="text-xs font-medium uppercase tracking-wide">
+                        X Axis (Category/Label)
+                      </Label>
                       <Select
-                        value={value.data.mappings.x || ""}
-                        onValueChange={(val) => updateMapping("x", val)}
+                        value={value.data.mappings?.x || ""}
+                        onValueChange={(val) => updateData({ 
+                          mappings: { ...value.data.mappings, x: val } 
+                        })}
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select X axis column" />
                         </SelectTrigger>
                         <SelectContent>
@@ -234,33 +226,47 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                             .filter(col => ["string", "text", "date"].includes(col.type))
                             .map((column) => (
                               <SelectItem key={column.id} value={column.name}>
-                                {column.name} ({column.type})
+                                {column.name}
                               </SelectItem>
                             ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {/* Y Axis - Multi-column for some chart types */}
-                    <div className="flex items-center space-x-2">
-                      <Label className="w-16 text-xs">Y Axis:</Label>
-                      <Select
-                        value={value.data.mappings.y || ""}
-                        onValueChange={(val) => updateMapping("y", val)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select Y axis column" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableColumns
-                            .filter(col => ["number"].includes(col.type))
-                            .map((column) => (
-                              <SelectItem key={column.id} value={column.name}>
-                                {column.name} ({column.type})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                    {/* Y Axis - Multi-select */}
+                    <div>
+                      <Label className="text-xs font-medium uppercase tracking-wide">
+                        Y Axis (Values) - Multi-select
+                      </Label>
+                      <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                        {availableColumns
+                          .filter(col => ["number"].includes(col.type))
+                          .map((column) => {
+                            const isSelected = (value.data.mappings?.y || []).includes(column.name);
+                            return (
+                              <div key={column.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`y-${column.name}`}
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleYColumn(column.name)}
+                                />
+                                <Label htmlFor={`y-${column.name}`} className="text-sm">
+                                  {column.name}
+                                </Label>
+                              </div>
+                            );
+                          })}
+                      </div>
+                      {(!value.data.mappings?.y || value.data.mappings.y.length === 0) && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          ⚠️ Please select at least one Y axis column.
+                        </p>
+                      )}
+                      {value.data.mappings?.y && value.data.mappings.y.length > 0 && (
+                        <p className="text-xs text-green-600 mt-1">
+                          ✅ {value.data.mappings.y.length} column(s) selected
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -275,208 +281,131 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                   />
                 </div>
 
-                {/* Aggregation Section */}
+                {/* Processing Mode */}
                 <div className="border-t pt-4">
-                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Data Aggregation
-                  </h3>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Data Processing</h3>
                   <div className="space-y-3">
-                    <div className="p-3 bg-muted/50 rounded-md">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Aggregation:</strong> Apply mathematical functions to create summary values. Mutually exclusive with Grouping.
+                    <div>
+                      <Label className="text-xs font-medium uppercase tracking-wide">
+                        Processing Mode
+                      </Label>
+                      <Select
+                        value={value.settings.processingMode || "raw"}
+                        onValueChange={(val) => updateSettings({ 
+                          processingMode: val as "raw" | "aggregated" | "grouped" 
+                        })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="raw">Raw Data (No Processing)</SelectItem>
+                          <SelectItem value="aggregated">Aggregated (Summary)</SelectItem>
+                          <SelectItem value="grouped">Grouped (Per Category)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {value.settings.processingMode === "raw" && "Display data as-is from the table"}
+                        {value.settings.processingMode === "aggregated" && "Calculate single summary values (e.g., Total Sales)"}
+                        {value.settings.processingMode === "grouped" && "Calculate values per group (e.g., Sales per Region)"}
                       </p>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="enableAggregation" className="text-xs font-medium uppercase tracking-wide">
-                        Enable Aggregation
-                      </Label>
-                      <Switch
-                        id="enableAggregation"
-                        checked={value.settings.enableAggregation || false}
-                        onCheckedChange={(checked) => {
-                          if (checked && value.settings.enableGrouping) {
-                            updateSettings({ 
-                              enableAggregation: true, 
-                              enableGrouping: false,
-                              groupByColumn: undefined 
-                            });
-                          } else {
-                            updateSettings({ enableAggregation: checked });
-                          }
-                        }}
-                        disabled={value.settings.enableGrouping}
-                      />
-                    </div>
-
-                    {value.settings.enableAggregation && (
-                      <>
-                        <div>
-                          <Label htmlFor="aggregationFunction" className="text-xs font-medium uppercase tracking-wide">
-                            Function
-                          </Label>
-                          <Select
-                            value={value.settings.aggregationFunction || "sum"}
-                            onValueChange={(val) => updateSettings({ aggregationFunction: val as any })}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sum">Sum</SelectItem>
-                              <SelectItem value="avg">Average</SelectItem>
-                              <SelectItem value="count">Count</SelectItem>
-                              <SelectItem value="min">Minimum</SelectItem>
-                              <SelectItem value="max">Maximum</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="text-xs font-medium uppercase tracking-wide">
-                            Columns to Aggregate
-                          </Label>
-                          <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                            {availableColumns
-                              .filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type))
-                              .map((column) => (
-                                <div key={column.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`agg-${column.name}`}
-                                    checked={value.settings.aggregationColumns?.includes(column.name) || false}
-                                    onCheckedChange={(checked) => {
-                                      const current = value.settings.aggregationColumns || [];
-                                      const updated = checked
-                                        ? [...current, column.name]
-                                        : current.filter(c => c !== column.name);
-                                      updateSettings({ aggregationColumns: updated });
-                                    }}
-                                  />
-                                  <Label htmlFor={`agg-${column.name}`} className="text-sm">
-                                    {column.name}
-                                  </Label>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
 
-                {/* Grouping Section */}
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Group className="h-4 w-4" />
-                    Data Grouping
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-muted/50 rounded-md">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Grouping:</strong> Group rows by category and aggregate values within groups. Mutually exclusive with Aggregation.
-                      </p>
+                {/* Aggregation Settings (for aggregated or grouped mode) */}
+                {(value.settings.processingMode === "aggregated" || value.settings.processingMode === "grouped") && (
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Aggregation
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs font-medium uppercase tracking-wide">
+                          Aggregation Function
+                        </Label>
+                        <Select
+                          value={value.settings.aggregationFunction || "sum"}
+                          onValueChange={(val) => updateSettings({ aggregationFunction: val as any })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sum">Sum</SelectItem>
+                            <SelectItem value="avg">Average</SelectItem>
+                            <SelectItem value="count">Count</SelectItem>
+                            <SelectItem value="min">Minimum</SelectItem>
+                            <SelectItem value="max">Maximum</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-medium uppercase tracking-wide">
+                          Columns to Aggregate
+                        </Label>
+                        <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                          {availableColumns
+                            .filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type))
+                            .map((column) => (
+                              <div key={column.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`agg-${column.name}`}
+                                  checked={value.settings.aggregationColumns?.includes(column.name) || false}
+                                  onCheckedChange={(checked) => {
+                                    const current = value.settings.aggregationColumns || [];
+                                    const updated = checked
+                                      ? [...current, column.name]
+                                      : current.filter(c => c !== column.name);
+                                    updateSettings({ aggregationColumns: updated });
+                                  }}
+                                />
+                                <Label htmlFor={`agg-${column.name}`} className="text-sm">
+                                  {column.name}
+                                </Label>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="enableGrouping" className="text-xs font-medium uppercase tracking-wide">
-                        Enable Grouping
-                      </Label>
-                      <Switch
-                        id="enableGrouping"
-                        checked={value.settings.enableGrouping || false}
-                        onCheckedChange={(checked) => {
-                          if (checked && value.settings.enableAggregation) {
-                            updateSettings({ 
-                              enableGrouping: true, 
-                              enableAggregation: false,
-                              aggregationColumns: []
-                            });
-                          } else {
-                            updateSettings({ enableGrouping: checked });
-                          }
-                        }}
-                        disabled={value.settings.enableAggregation}
-                      />
-                    </div>
-
-                    {value.settings.enableGrouping && (
-                      <>
-                        <div>
-                          <Label htmlFor="groupByColumn" className="text-xs font-medium uppercase tracking-wide">
-                            Group By Column
-                          </Label>
-                          <Select
-                            value={value.settings.groupByColumn || ""}
-                            onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select column to group by" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableColumns
-                                .filter(col => ["string", "text", "date", "datetime", "boolean"].includes(col.type))
-                                .map((column) => (
-                                  <SelectItem key={column.id} value={column.name}>
-                                    {column.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="groupingAggregationFunction" className="text-xs font-medium uppercase tracking-wide">
-                            Aggregation Function
-                          </Label>
-                          <Select
-                            value={value.settings.aggregationFunction || "sum"}
-                            onValueChange={(val) => updateSettings({ aggregationFunction: val as any })}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sum">Sum</SelectItem>
-                              <SelectItem value="avg">Average</SelectItem>
-                              <SelectItem value="count">Count</SelectItem>
-                              <SelectItem value="min">Minimum</SelectItem>
-                              <SelectItem value="max">Maximum</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="text-xs font-medium uppercase tracking-wide">
-                            Columns to Aggregate
-                          </Label>
-                          <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                            {availableColumns
-                              .filter(col => ["number", "integer", "decimal", "float", "double"].includes(col.type))
-                              .map((column) => (
-                                <div key={column.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`group-agg-${column.name}`}
-                                    checked={value.settings.aggregationColumns?.includes(column.name) || false}
-                                    onCheckedChange={(checked) => {
-                                      const current = value.settings.aggregationColumns || [];
-                                      const updated = checked
-                                        ? [...current, column.name]
-                                        : current.filter(c => c !== column.name);
-                                      updateSettings({ aggregationColumns: updated });
-                                    }}
-                                  />
-                                  <Label htmlFor={`group-agg-${column.name}`} className="text-sm">
-                                    {column.name}
-                                  </Label>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
-                </div>
+                )}
+
+                {/* Grouping Column (only for grouped mode) */}
+                {value.settings.processingMode === "grouped" && (
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Group className="h-4 w-4" />
+                      Grouping
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs font-medium uppercase tracking-wide">
+                          Group By Column
+                        </Label>
+                        <Select
+                          value={value.settings.groupByColumn || ""}
+                          onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableColumns
+                              .filter(col => ["string", "text", "date", "datetime", "boolean"].includes(col.type))
+                              .map((column) => (
+                                <SelectItem key={column.id} value={column.name}>
+                                  {column.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Top N Section */}
                 <div className="border-t pt-4">
@@ -485,12 +414,6 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                     Top N Filtering
                   </h3>
                   <div className="space-y-3">
-                    <div className="p-3 bg-muted/50 rounded-md">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Top N:</strong> Show only the top or bottom N results based on a sortable column.
-                      </p>
-                    </div>
-                    
                     <div className="flex items-center justify-between">
                       <Label htmlFor="enableTopN" className="text-xs font-medium uppercase tracking-wide">
                         Enable Top N
@@ -565,7 +488,6 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
             )}
           </div>
         </TabsContent>
-
       </Tabs>
     </div>
   );
