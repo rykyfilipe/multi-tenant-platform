@@ -89,25 +89,31 @@ export async function GET(
 			);
 		}
 
-		// Get customer ID from invoice
-		const customerIdCell = invoice.cells.find(
-			(c: any) => c.column.name === "customer_id",
+	// Get customer ID from invoice
+	const customerIdCell = invoice.cells.find(
+		(c: any) => c.column.name === "customer_id",
+	);
+	if (!customerIdCell) {
+		return NextResponse.json(
+			{ error: "Invoice missing customer ID" },
+			{ status: 400 },
 		);
-		if (!customerIdCell) {
-			return NextResponse.json(
-				{ error: "Invoice missing customer ID" },
-				{ status: 400 },
-			);
-		}
+	}
 
-		const customerId = customerIdCell.value;
+	// Extract customer ID from array if it's a reference type
+	let customerId = customerIdCell.value;
+	if (Array.isArray(customerId)) {
+		customerId = Number(customerId[0]);
+	} else {
+		customerId = Number(customerId);
+	}
 
-		// Get customer details
-		const customer = await prisma.row.findFirst({
-			where: {
-				id: customerId,
-				tableId: invoiceTables.customers.id,
-			},
+	// Get customer details
+	const customer = await prisma.row.findFirst({
+		where: {
+			id: customerId,
+			tableId: invoiceTables.customers.id,
+		},
 			include: {
 				cells: {
 					include: {

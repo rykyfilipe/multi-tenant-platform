@@ -1,19 +1,14 @@
 import { z } from "zod";
 import { baseWidgetConfigSchema } from "./base";
+import { strictDataFlowSchema, StrictDataFlowConfig } from "./strictDataFlow";
 
 export const kpiSettingsSchema = z.object({
-  valueField: z.string().min(1, "Value field is required"),
-  displayField: z.string().optional(), // Deprecated: kept for backward compatibility
-  displayFields: z.array(z.string()).optional(), // New: multiple fields to display from extreme value row
   label: z.string().min(1, "Label is required"),
   format: z.enum(["number", "currency", "percentage", "duration"]).default("number"),
   showTrend: z.boolean().default(true),
   showComparison: z.boolean().default(false),
-  comparisonField: z.string().optional(),
-  aggregation: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
-  selectedAggregations: z.array(z.enum(["sum", "avg", "count", "min", "max"])).default(["sum"]),
-  showExtremeValueDetails: z.boolean().default(false), // New: show additional details from extreme value row
-  extremeValueMode: z.enum(["max", "min"]).default("max"), // New: which extreme value to find
+  showExtremeValueDetails: z.boolean().default(false),
+  extremeValueMode: z.enum(["max", "min"]).default("max"),
 });
 
 export const kpiStyleSchema = z.object({
@@ -55,6 +50,7 @@ export const kpiStyleSchema = z.object({
   pulse: z.boolean().default(false),
 });
 
+// Legacy data schema for backward compatibility
 export const kpiDataSchema = z.object({
   databaseId: z.number().optional(),
   tableId: z.string().optional(),
@@ -69,10 +65,30 @@ export const kpiDataSchema = z.object({
     .default([]),
 });
 
+// Legacy settings schema for backward compatibility
+export const legacyKpiSettingsSchema = z.object({
+  valueField: z.string().min(1, "Value field is required"),
+  displayField: z.string().optional(),
+  displayFields: z.array(z.string()).optional(),
+  label: z.string().min(1, "Label is required"),
+  format: z.enum(["number", "currency", "percentage", "duration"]).default("number"),
+  showTrend: z.boolean().default(true),
+  showComparison: z.boolean().default(false),
+  comparisonField: z.string().optional(),
+  aggregation: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
+  selectedAggregations: z.array(z.enum(["sum", "avg", "count", "min", "max"])).default(["sum"]),
+  showExtremeValueDetails: z.boolean().default(false),
+  extremeValueMode: z.enum(["max", "min"]).default("max"),
+});
+
 export const kpiWidgetConfigSchema = baseWidgetConfigSchema.extend({
   settings: kpiSettingsSchema,
   style: kpiStyleSchema,
-  data: kpiDataSchema,
+  // Use strict data flow schema for new configurations
+  dataFlow: strictDataFlowSchema.optional(),
+  // Keep legacy data and settings schemas for backward compatibility
+  data: kpiDataSchema.optional(),
+  legacySettings: legacyKpiSettingsSchema.optional(),
 });
 
 export type KPIWidgetConfig = z.infer<typeof kpiWidgetConfigSchema>;

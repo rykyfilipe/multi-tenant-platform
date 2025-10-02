@@ -785,19 +785,25 @@ export async function GET(
 
 			console.log(`📝 GET invoices - Transforming invoice ${index + 1} (ID: ${invoice.id}) with ${invoice.cells.length} cells`);
 
-			// Map cells to readable format
-				invoice.cells.forEach((cell: any) => {
-				const columnName = cell.column.name;
-				const semanticType = cell.column.semanticType;
-				
-				// Use semantic type as key for better API structure
-				if (semanticType) {
-					invoiceData[semanticType] = cell.value;
-				}
-				
-				// Also keep column name for backward compatibility
-				invoiceData[columnName] = cell.value;
-			});
+		// Map cells to readable format
+			invoice.cells.forEach((cell: any) => {
+			const columnName = cell.column.name;
+			const semanticType = cell.column.semanticType;
+			let value = cell.value;
+			
+			// Extract value from array if it's a reference type (customer_id, etc.)
+			if (Array.isArray(value) && value.length > 0) {
+				value = value[0];
+			}
+			
+			// Use semantic type as key for better API structure
+			if (semanticType) {
+				invoiceData[semanticType] = value;
+			}
+			
+			// Also keep column name for backward compatibility
+			invoiceData[columnName] = value;
+		});
 
 			console.log(`✅ GET invoices - Transformed invoice ${index + 1}:`, {
 				id: invoiceData.id,

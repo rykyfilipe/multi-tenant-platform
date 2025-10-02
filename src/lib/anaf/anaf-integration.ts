@@ -325,9 +325,13 @@ export class ANAFIntegration implements InvoiceSubmissionProvider {
       });
 
       // Get customer data
-      const customerId = invoiceRow.cells.find((c:any) => c.column.name === 'customer_id')?.value;
+      let customerId = invoiceRow.cells.find((c:any) => c.column.name === 'customer_id')?.value;
       let customer = null;
       if (customerId && invoiceTables.customers) {
+        // Extract from array if it's a reference type
+        if (Array.isArray(customerId)) {
+          customerId = customerId[0];
+        }
         customer = await prisma.row.findFirst({
           where: {
             id: parseInt(customerId),

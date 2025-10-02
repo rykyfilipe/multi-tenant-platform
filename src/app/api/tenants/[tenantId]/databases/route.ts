@@ -45,20 +45,26 @@ export async function GET(
 					id: true,
 					name: true,
 					tenantId: true,
+					createdAt: true,
 					// Optimized: Only get essential table metadata, not full data
-					// Exclude predefined tables (isProtected or isModuleTable)
 					tables: {
-						
 						select: {
 							id: true,
 							name: true,
 							description: true,
+							isProtected: true,
+							isModuleTable: true,
+							protectedType: true,
+							moduleType: true,
 							_count: {
 								select: {
 									columns: true,
 									rows: true,
 								},
 							},
+						},
+						orderBy: {
+							createdAt: 'asc',
 						},
 					},
 				},
@@ -67,19 +73,48 @@ export async function GET(
 				},
 			});
 
-			// Optimize table data format for frontend compatibility
-			const optimizedDatabases = databases.map((db: any) => ({
-				...db,
-				tables: db.tables.map((table: any) => ({
-					...table,
-					columnsCount: table._count.columns,
-					rowsCount: table._count.rows,
-					// Remove _count from the response
-					_count: undefined,
-				})),
+		// Optimize table data format for frontend compatibility
+		const optimizedDatabases = databases.map((db: any) => {
+			// Group tables by name to find duplicates
+			const tablesByName = new Map();
+			
+			db.tables.forEach((table: any) => {
+				const existing = tablesByName.get(table.name);
+				if (!existing) {
+					tablesByName.set(table.name, table);
+				} else {
+					// If we have duplicates, keep the one with more rows
+					// Or if both have 0 rows, keep the one that is a module table
+					const existingRows = existing._count.rows;
+					const currentRows = table._count.rows;
+					
+					if (currentRows > existingRows) {
+						tablesByName.set(table.name, table);
+					} else if (currentRows === existingRows && existingRows === 0) {
+						// Both empty, prefer module table
+						if (table.isModuleTable && !existing.isModuleTable) {
+							tablesByName.set(table.name, table);
+						}
+					}
+				}
+			});
+			
+			// Convert back to array
+			const uniqueTables = Array.from(tablesByName.values()).map((table: any) => ({
+				...table,
+				columnsCount: table._count.columns,
+				rowsCount: table._count.rows,
+				// Remove _count from the response
+				_count: undefined,
 			}));
+			
+			return {
+				...db,
+				tables: uniqueTables,
+			};
+		});
 
-			return NextResponse.json(optimizedDatabases, { status: 200 });
+		return NextResponse.json(optimizedDatabases, { status: 200 });
 		}
 
 		// Pentru utilizatorii non-admin, returnăm doar bazele de date cu tabelele la care au acces

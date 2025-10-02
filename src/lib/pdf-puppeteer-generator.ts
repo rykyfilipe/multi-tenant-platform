@@ -507,12 +507,16 @@ export class PuppeteerPDFGenerator {
 				},
 			});
 
-			// Get customer data
-			const customerId = invoiceRow.cells.find((c: any) => c.column.name === 'customer_id')?.value;
-			let customer = null;
-			if (customerId) {
-				customer = await this.getCustomerData(options.tenantId, options.databaseId, parseInt(customerId));
+		// Get customer data
+		let customerId = invoiceRow.cells.find((c: any) => c.column.name === 'customer_id')?.value;
+		let customer = null;
+		if (customerId) {
+			// Extract from array if it's a reference type
+			if (Array.isArray(customerId)) {
+				customerId = customerId[0];
 			}
+			customer = await this.getCustomerData(options.tenantId, options.databaseId, parseInt(customerId));
+		}
 
 			// Transform data
 			const invoice = this.transformRowToObject(invoiceRow);

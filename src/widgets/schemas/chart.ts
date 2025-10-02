@@ -1,21 +1,10 @@
 import { z } from "zod";
 import { baseWidgetConfigSchema } from "./base";
+import { strictDataFlowSchema, StrictDataFlowConfig } from "./strictDataFlow";
 
 export const chartSettingsSchema = z.object({
   chartType: z.enum(["line", "bar", "area", "pie", "radar", "scatter"]),
   refreshInterval: z.number().int().positive().max(3600).default(60),
-  // Data processing mode
-  processingMode: z.enum(["raw", "grouped"]).default("raw"),
-  // Aggregation (only for grouped mode)
-  aggregationFunction: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
-  aggregationColumns: z.array(z.string()).default([]),
-  // Grouping
-  groupByColumn: z.string().optional(),
-  // Top N
-  enableTopN: z.boolean().default(false),
-  topNCount: z.number().int().positive().max(100).default(10),
-  sortByColumn: z.string().optional(),
-  sortDirection: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const chartStyleSchema = z.object({
@@ -59,6 +48,7 @@ export const chartStyleSchema = z.object({
   glow: z.boolean().default(false),
 });
 
+// Legacy data schema for backward compatibility
 export const chartDataSchema = z.object({
   databaseId: z.number().optional(),
   tableId: z.string().optional(),
@@ -83,7 +73,10 @@ export const chartDataSchema = z.object({
 export const chartWidgetConfigSchema = baseWidgetConfigSchema.extend({
   settings: chartSettingsSchema,
   style: chartStyleSchema,
-  data: chartDataSchema,
+  // Use strict data flow schema for new configurations
+  dataFlow: strictDataFlowSchema.optional(),
+  // Keep legacy data schema for backward compatibility
+  data: chartDataSchema.optional(),
 });
 
 export type ChartWidgetConfig = z.infer<typeof chartWidgetConfigSchema>;
