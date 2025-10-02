@@ -169,7 +169,7 @@ export async function POST(
 		// Check if tables exist but have wrong schema
 		// We'll check for a more fundamental column that should always exist in invoice_items
 		const hasCorrectSchema = invoiceTables.invoice_items?.columns?.some(
-			(c: any) => c.name === "quantity" && c.semanticType === "quantity",
+			(c: any) => c.name === "quantity" && c.semanticType === SemanticColumnType.QUANTITY,
 		);
 
 		// If tables don't exist OR have wrong schema, recreate them
@@ -373,19 +373,19 @@ export async function POST(
 
 		// Find required columns safely using semantic types
 		const invoiceNumberColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_number",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_NUMBER,
 		);
 		const invoiceSeriesColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_series",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_SERIES,
 		);
 		const dateColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_date",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_DATE,
 		);
 		const dueDateColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_due_date",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_DUE_DATE,
 		);
 		let customerIdColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_customer_id",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID,
 		);
 		
 		// If not found by semantic type, look for customer_id column and fix it
@@ -400,9 +400,9 @@ export async function POST(
 				try {
 					await prisma.column.update({
 						where: { id: customerIdColumnByName.id },
-						data: { semanticType: "invoice_customer_id" }
+						data: { semanticType: SemanticColumnType.INVOICE_CUSTOMER_ID }
 					});
-					customerIdColumn = { ...customerIdColumnByName, semanticType: "invoice_customer_id" };
+					customerIdColumn = { ...customerIdColumnByName, semanticType: SemanticColumnType.INVOICE_CUSTOMER_ID };
 					console.log("✅ Successfully updated customer_id column semantic type");
 				} catch (error) {
 					console.error("❌ Failed to update customer_id column:", error);
@@ -485,7 +485,7 @@ export async function POST(
 
 		// Add payment details if columns exist
 		const paymentTermsColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_payment_terms",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_PAYMENT_TERMS,
 		);
 		if (paymentTermsColumn && parsedData.payment_terms) {
 			invoiceCells.push({
@@ -496,7 +496,7 @@ export async function POST(
 		}
 
 		const paymentMethodColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_payment_method",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_PAYMENT_METHOD,
 		);
 		if (paymentMethodColumn && parsedData.payment_method) {
 			invoiceCells.push({
@@ -507,7 +507,7 @@ export async function POST(
 		}
 
 		const notesColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_notes",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_NOTES,
 		);
 		if (notesColumn && parsedData.notes) {
 			invoiceCells.push({
@@ -519,7 +519,7 @@ export async function POST(
 
 		// Add status column
 		const statusColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_status",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_STATUS,
 		);
 		if (statusColumn) {
 			invoiceCells.push({
@@ -531,7 +531,7 @@ export async function POST(
 
 		// Add base currency column
 		const baseCurrencyColumn = invoiceTables.invoices!.columns!.find(
-			(c: any) => c.semanticType === "invoice_base_currency",
+			(c: any) => c.semanticType === SemanticColumnType.INVOICE_BASE_CURRENCY,
 		);
 		if (baseCurrencyColumn && parsedData.base_currency) {
 			invoiceCells.push({
@@ -613,49 +613,49 @@ export async function POST(
 
 			// Map semantic types to available data
 			switch (column.semanticType) {
-				case "invoice_customer_name":
+				case SemanticColumnType.CUSTOMER_NAME:
 					value = customerDetails.name;
 					break;
-				case "invoice_customer_email":
+				case SemanticColumnType.CUSTOMER_EMAIL:
 					value = customerDetails.email;
 					break;
-				case "invoice_customer_phone":
+				case SemanticColumnType.CUSTOMER_PHONE:
 					value = customerDetails.phone;
 					break;
-				case "invoice_customer_address":
+				case SemanticColumnType.CUSTOMER_ADDRESS:
 					value = customerDetails.address;
 					break;
-				case "invoice_customer_city":
+				case SemanticColumnType.CUSTOMER_CITY:
 					value = customerDetails.city;
 					break;
-				case "invoice_customer_country":
+				case SemanticColumnType.CUSTOMER_COUNTRY:
 					value = customerDetails.country;
 					break;
-				case "invoice_customer_postal_code":
+				case SemanticColumnType.CUSTOMER_POSTAL_CODE:
 					value = customerDetails.postalCode;
 					break;
-				case "invoice_customer_tax_id":
+				case SemanticColumnType.CUSTOMER_TAX_ID:
 					value = customerDetails.taxId;
 					break;
-				case "invoice_total_amount":
+				case SemanticColumnType.INVOICE_TOTAL_AMOUNT:
 					// Will be calculated later
 					value = 0;
 					break;
-				case "invoice_subtotal":
+				case SemanticColumnType.INVOICE_SUBTOTAL:
 					// Will be calculated later
 					value = 0;
 					break;
-				case "invoice_tax_total":
+				case SemanticColumnType.INVOICE_TAX_TOTAL:
 					// Will be calculated later
 					value = 0;
 					break;
-				case "invoice_discount_amount":
+				case SemanticColumnType.INVOICE_DISCOUNT_AMOUNT:
 					value = (parsedData as any).discount_amount || 0;
 					break;
-				case "invoice_discount_rate":
+				case SemanticColumnType.INVOICE_DISCOUNT_RATE:
 					value = (parsedData as any).discount_rate || 0;
 					break;
-				case "invoice_late_fee":
+				case SemanticColumnType.INVOICE_LATE_FEE:
 					value = (parsedData as any).late_fee || 0;
 					break;
 				default:
@@ -824,82 +824,87 @@ export async function POST(
 
 				let value: any = null;
 
-				// Map semantic types to available product data
-				switch (column.semanticType) {
-					case "invoice_id":
-						// For reference columns, value must be an array (always multiple selection)
-						value = [invoiceRow.id];
-						break;
-					case "product_ref_table":
+				// Handle invoice_id as a special case for reference type
+				if (column.name === "invoice_id") {
+					if (invoiceRow.id) {
+						value = [invoiceRow.id]; // Ensure it's an array for reference type
+					} else {
+						console.warn("Invoice ID is missing for invoice_id column.");
+						continue; // Skip if invoice ID is not available
+					}
+				} else {
+					// Map semantic types to available product data
+					switch (column.semanticType) {
+					case SemanticColumnType.PRODUCT_REF_TABLE:
 						value = productTable ? productTable.id : null;
 						break;
-					case "id": // product_ref_id
+					case SemanticColumnType.ID: // product_ref_id
 						value = product.product_ref_id;
 						break;
-					case "quantity":
+					case SemanticColumnType.QUANTITY:
 						value = product.quantity;
 						break;
-					case "unit_price":
+					case SemanticColumnType.UNIT_PRICE:
 						value = product.price || productDetails.price || 0;
 						break;
-					case "product_vat":
+					case SemanticColumnType.PRODUCT_VAT:
 						value = productDetails.vat || 0;
 						break;
-					case "currency":
+					case SemanticColumnType.CURRENCY:
 						value = product.currency || productDetails.currency || "USD";
 						break;
-					case "unit_of_measure":
+					case SemanticColumnType.UNIT_OF_MEASURE:
 						value = product.unit_of_measure || productDetails.unitOfMeasure;
 						break;
-					case "product_name":
+					case SemanticColumnType.PRODUCT_NAME:
 						value = productDetails.name;
 						break;
-					case "product_description":
+					case SemanticColumnType.PRODUCT_DESCRIPTION:
 						value = productDetails.description;
 						break;
-					case "product_category":
+					case SemanticColumnType.PRODUCT_CATEGORY:
 						value = productDetails.category;
 						break;
-					case "product_sku":
+					case SemanticColumnType.PRODUCT_SKU:
 						value = productDetails.sku;
 						break;
-					case "product_brand":
+					case SemanticColumnType.PRODUCT_BRAND:
 						value = productDetails.brand;
 						break;
-					case "product_weight":
+					case SemanticColumnType.PRODUCT_WEIGHT:
 						value = productDetails.weight;
 						break;
-					case "product_dimensions":
+					case SemanticColumnType.PRODUCT_DIMENSIONS:
 						value = productDetails.dimensions;
 						break;
-					case "product_image":
+					case SemanticColumnType.PRODUCT_IMAGE:
 						value = productDetails.image;
 						break;
-					case "product_status":
+					case SemanticColumnType.PRODUCT_STATUS:
 						value = productDetails.status;
 						break;
-					case "total_price":
+					case SemanticColumnType.TOTAL_PRICE:
 						// Calculate total price: quantity * unit_price
 						const unitPrice = productDetails.price || product.price || 0;
 						const quantity = product.quantity || 1;
 						value = unitPrice * quantity;
 						break;
-					case "tax_rate":
+					case SemanticColumnType.TAX_RATE:
 						value = productDetails.vat || 0;
 						break;
-					case "tax_amount":
+					case SemanticColumnType.TAX_AMOUNT:
 						// Calculate tax amount: total_price * (tax_rate / 100)
 						const totalPrice = (productDetails.price || product.price || 0) * (product.quantity || 1);
 						const taxRate = productDetails.vat || 0;
 						value = totalPrice * (taxRate / 100);
 						break;
-					case "discount_rate":
+					case SemanticColumnType.DISCOUNT_RATE:
 						value = (product as any).discount_rate || 0;
 						break;
-					case "discount_amount":
+					case SemanticColumnType.DISCOUNT_AMOUNT:
 						value = (product as any).discount_amount || 0;
 						break;
-					case "description":
+					case SemanticColumnType.DESCRIPTION:
 						value = product.description;
 						break;
 					default:
@@ -908,6 +913,7 @@ export async function POST(
 							value = (product as any)[column.name];
 						}
 						break;
+					}
 				}
 
 				// Only add if we have a value
@@ -1013,7 +1019,7 @@ export async function POST(
 
 			// Add total_amount to invoice
 			const totalAmountColumn = invoiceTables.invoices!.columns!.find(
-				(c: any) => c.semanticType === "invoice_total_amount",
+				(c: any) => c.semanticType === SemanticColumnType.INVOICE_TOTAL_AMOUNT,
 			);
 
 			if (totalAmountColumn) {
