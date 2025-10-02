@@ -1386,22 +1386,22 @@ export class InvoiceSystemService {
 			}
 		}
 
-		// Delete existing invoice items
-		const existingItems = await prisma.findManyWithCache(
-			prisma.row,
-			{
-				where: {
-					tableId: invoiceTables.invoice_items.id,
-					cells: {
-						some: {
-							column: { name: "invoice_id" },
-							value: { equals: invoiceId },
-						},
+	// Delete existing invoice items
+	const existingItems = await prisma.findManyWithCache(
+		prisma.row,
+		{
+			where: {
+				tableId: invoiceTables.invoice_items.id,
+				cells: {
+					some: {
+						column: { name: "invoice_id" },
+						value: invoiceId.toString(),
 					},
 				},
 			},
-			DEFAULT_CACHE_STRATEGIES.rowList,
-		);
+		},
+		DEFAULT_CACHE_STRATEGIES.rowList,
+	);
 
 		// Delete cells and rows for existing items
 		for (const item of existingItems) {

@@ -116,27 +116,27 @@ export async function GET(
 			);
 		}
 
-		// Get invoice items
-		const invoiceItems = await prisma.row.findMany({
-			where: {
-				tableId: invoiceTables.invoice_items.id,
-				cells: {
-					some: {
-						column: {
-							name: "invoice_id",
-						},
-						value: { equals: Number(invoiceId) },
+	// Get invoice items
+	const invoiceItems = await prisma.row.findMany({
+		where: {
+			tableId: invoiceTables.invoice_items.id,
+			cells: {
+				some: {
+					column: {
+						name: "invoice_id",
 					},
+					value: invoiceId,
 				},
 			},
-			include: {
-				cells: {
-					include: {
-						column: true,
-					},
+		},
+		include: {
+			cells: {
+				include: {
+					column: true,
 				},
 			},
-		});
+		},
+	});
 
 		// Debug: Log invoice items found
 		console.log(`🔍 API DEBUG: Found ${invoiceItems.length} items for invoice ${invoiceId}`);
@@ -585,20 +585,20 @@ export async function DELETE(
 			console.warn(`Invoice ${invoiceId} missing invoice_number cell but has other invoice columns. Proceeding with deletion.`);
 		}
 
-		// Get invoice items to delete
-		const invoiceItems = await prisma.row.findMany({
-			where: {
-				tableId: invoiceTables.invoice_items.id,
-				cells: {
-					some: {
-						column: {
-							name: "invoice_id",
-						},
-						value: { equals: Number(invoiceId) },
+	// Get invoice items to delete
+	const invoiceItems = await prisma.row.findMany({
+		where: {
+			tableId: invoiceTables.invoice_items.id,
+			cells: {
+				some: {
+					column: {
+						name: "invoice_id",
 					},
+					value: invoiceId,
 				},
 			},
-		});
+		},
+	});
 
 		// Delete invoice items first (cascade delete)
 		for (const item of invoiceItems) {

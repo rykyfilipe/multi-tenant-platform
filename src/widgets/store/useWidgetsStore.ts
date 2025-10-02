@@ -36,6 +36,7 @@ export interface PendingChangesState {
   upsertWidget: (widget: WidgetEntity) => void;
   setWidgets: (widgets: WidgetEntity[]) => void;
   clearPending: () => void;
+  clearPendingOperations: () => void;
   getPending: () => DraftOperation[];
   cleanupOldIds: () => void;
   
@@ -726,6 +727,20 @@ export const useWidgetsStore = create<PendingChangesState>()(
             dirtyWidgetIds: new Set<number>(),
             history: cleanedHistory,
             redoHistory: cleanedRedoHistory,
+            conflicts: [],
+            activeConflict: null,
+          };
+        });
+      },
+
+      clearPendingOperations: () => {
+        console.log('[clearPendingOperations] Clearing only pending operations, keeping widgets');
+        set((state) => {
+          return {
+            ...state,
+            pendingOperations: [],
+            dirtyWidgetIds: new Set<number>(),
+            lastModifiedWidgetId: null,
             conflicts: [],
             activeConflict: null,
           };

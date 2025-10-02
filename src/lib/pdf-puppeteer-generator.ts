@@ -485,23 +485,21 @@ export class PuppeteerPDFGenerator {
 				throw new Error('Invoice not found');
 			}
 
-			// Get invoice items
-			const invoiceItems = await prisma.row.findMany({
-				where: {
-					tableId: invoiceTables.invoice_items.id,
-					cells: {
-						some: {
-							column: {
-								name: 'invoice_id',
-							},
-							value: {
-								equals: options.invoiceId,
-							},
+		// Get invoice items
+		const invoiceItems = await prisma.row.findMany({
+			where: {
+				tableId: invoiceTables.invoice_items.id,
+				cells: {
+					some: {
+						column: {
+							name: 'invoice_id',
 						},
+						value: options.invoiceId.toString(),
 					},
 				},
-				include: {
-					cells: {
+			},
+			include: {
+				cells: {
 						include: {
 							column: true,
 						},

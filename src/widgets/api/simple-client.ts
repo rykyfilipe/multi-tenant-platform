@@ -15,9 +15,6 @@ export type WidgetsListResponse = {
   total: number;
 };
 
-export type DraftListResponse = {
-  drafts: WidgetDraftEntity[];
-};
 
 // Simple fetch-based API client without React Query
 export class WidgetsApiClient {
@@ -207,6 +204,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
   const removeDraft = useWidgetsStore((state) => state.removeDraft);
   const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
   const clearPending = useWidgetsStore((state) => state.clearPending);
+  const clearPendingOperations = useWidgetsStore((state) => state.clearPendingOperations);
 
   const loadWidgets = async (includeConfig = false) => {
     try {
@@ -273,8 +271,9 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
       } else {
         console.log('[savePending] No conflicts, clearing conflicts state');
         setConflicts([]);
-        // Clear pending operations after successful save
-        clearPending();
+        // After successful save, just clear pending operations but keep widgets
+        clearPendingOperations();
+        console.log('[savePending] Save successful, cleared pending operations');
       }
 
       return response;
