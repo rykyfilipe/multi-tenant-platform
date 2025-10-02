@@ -48,10 +48,7 @@ export async function GET(
 					// Optimized: Only get essential table metadata, not full data
 					// Exclude predefined tables (isProtected or isModuleTable)
 					tables: {
-						where: {
-							isProtected: false,
-							isModuleTable: false,
-						},
+						
 						select: {
 							id: true,
 							name: true,

@@ -250,7 +250,7 @@ async function main() {
             value = dueDate.toISOString().split('T')[0];
             break;
           case SemanticColumnType.INVOICE_CUSTOMER_ID:
-            value = customerId;
+            value = [customerId]; // Array because it's a reference type
             break;
           case SemanticColumnType.INVOICE_STATUS:
             value = status;
