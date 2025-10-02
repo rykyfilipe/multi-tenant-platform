@@ -573,17 +573,43 @@ export default function DashboardsPage() {
       {/* Top Header Bar - Minimal and Clean */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/20">
         <div className="flex items-center justify-between px-6 py-3">
-          {/* Left: Dashboard Info */}
+          {/* Left: Dashboard Selector and Info */}
           <div className="flex items-center space-x-4">
+            {/* Dashboard Selector */}
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
                 <LayoutDashboard className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="flex items-center space-x-3">
+                <Select value={selectedDashboardId?.toString() || ''} onValueChange={(value) => setSelectedDashboardId(parseInt(value))}>
+                  <SelectTrigger className="w-64 h-9 bg-background/50 border-border/50 focus:border-primary/50">
+                    <SelectValue placeholder="Select a dashboard" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dashboards.map((dashboard) => (
+                      <SelectItem key={dashboard.id} value={dashboard.id.toString()}>
+                        <div className="flex items-center space-x-2">
+                          <span>{dashboard.name}</span>
+                          {dashboard.isDefault && (
+                            <Badge variant="secondary" className="text-xs">
+                              Default
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Dashboard Info */}
+            {selectedDashboardId && (
+              <div className="hidden sm:block">
                 <h1 className="text-lg font-semibold text-foreground">{dashboardName}</h1>
                 <p className="text-xs text-muted-foreground">Dashboard Management</p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right: Actions */}

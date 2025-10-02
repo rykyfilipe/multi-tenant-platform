@@ -465,32 +465,41 @@ export class InvoiceTemplate {
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 30%;">${t.item || 'Item'}</th>
+            <th style="width: 25%;">${t.item || 'Item'}</th>
             <th style="width: 10%;">${t.sku || 'SKU'}</th>
-            <th style="width: 10%;">${t.quantity || 'Qty'}</th>
-            <th style="width: 10%;">${t.unit || 'Unit'}</th>
-            <th style="width: 15%;">${t.unitPrice || 'Unit Price'}</th>
-            <th style="width: 10%;">${t.taxRate || 'Tax %'}</th>
-            <th style="width: 15%;">${t.total || 'Total'}</th>
+            <th style="width: 8%;">${t.quantity || 'Qty'}</th>
+            <th style="width: 7%;">${t.unit || 'Unit'}</th>
+            <th style="width: 12%;">${t.unitPrice || 'Unit Price'}</th>
+            <th style="width: 6%;">${t.currency || 'Curr.'}</th>
+            <th style="width: 8%;">${t.taxRate || 'Tax %'}</th>
+            <th style="width: 12%;">${t.taxAmount || 'Tax Amt'}</th>
+            <th style="width: 12%;">${t.total || 'Total'}</th>
           </tr>
         </thead>
         <tbody>
-          ${data.items.map(item => `
+          ${data.items.map(item => {
+            const itemTotal = item.total || 0;
+            const taxRate = item.tax_rate || 0;
+            const taxAmount = item.tax_amount || (itemTotal * taxRate / 100);
+            const totalWithTax = itemTotal + taxAmount;
+            
+            return `
             <tr>
               <td>
-                <div class="product-name">${item.product_name || ''}</div>
+                <div class="product-name">${item.product_name || 'N/A'}</div>
                 ${item.product_description ? `<div class="product-description">${item.product_description}</div>` : ''}
-                ${item.product_category ? `<div class="product-description">${t.category || 'Category'}: ${item.product_category}</div>` : ''}
-                ${item.product_brand ? `<div class="product-description">${t.brand || 'Brand'}: ${item.product_brand}</div>` : ''}
               </td>
-              <td>${item.product_sku || ''}</td>
-              <td>${formatNumber(item.quantity, 0)}</td>
-              <td>${item.unit_of_measure || 'pcs'}</td>
-              <td>${formatCurrency(item.unit_price, item.currency || currency)}</td>
-              <td>${formatNumber(item.tax_rate || 0, 1)}%</td>
-              <td>${formatCurrency(item.total, item.currency || currency)}</td>
+              <td>${item.product_sku || '-'}</td>
+              <td style="text-align: center;">${formatNumber(item.quantity, 2)}</td>
+              <td style="text-align: center;">${item.unit_of_measure || 'pcs'}</td>
+              <td style="text-align: right;">${formatCurrency(item.unit_price, item.currency || currency)}</td>
+              <td style="text-align: center; font-weight: 600;">${item.currency || currency}</td>
+              <td style="text-align: center;">${formatNumber(taxRate, 1)}%</td>
+              <td style="text-align: right;">${formatCurrency(taxAmount, item.currency || currency)}</td>
+              <td style="text-align: right; font-weight: 600;">${formatCurrency(totalWithTax, item.currency || currency)}</td>
             </tr>
-          `).join('')}
+          `;
+          }).join('')}
         </tbody>
       </table>
     </div>

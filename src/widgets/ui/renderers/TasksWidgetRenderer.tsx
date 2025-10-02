@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
@@ -10,8 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
 import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
+import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import {
   CheckCircle,
   Circle,
@@ -26,7 +30,8 @@ import {
   Plus,
   Search,
   ArrowUpDown,
-  Filter
+  Filter,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,51 +62,105 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   onDuplicate,
   isEditMode = false
 }) => {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Complete project proposal',
-      description: 'Finalize the Q1 project proposal document',
-      completed: false,
-      priority: 'high',
-      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      assignee: 'John Doe',
-      progress: 75,
-      tags: ['work', 'urgent']
-    },
-    {
-      id: '2',
-      title: 'Review design mockups',
-      description: 'Review and approve the new dashboard designs',
-      completed: true,
-      priority: 'medium',
-      dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      assignee: 'Jane Smith',
-      progress: 100,
-      tags: ['design', 'review']
-    },
-    {
-      id: '3',
-      title: 'Update documentation',
-      description: 'Update API documentation with new endpoints',
-      completed: false,
-      priority: 'low',
-      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-      assignee: 'Mike Johnson',
-      progress: 30,
-      tags: ['documentation']
+  const updateLocal = useWidgetsStore((state) => state.updateLocal);
+  
+  const config = widget.config as any;
+  const settings = config?.settings || {};
+  const style = config?.style || {};
+  
+  // Get tasks from widget data or use default
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (config?.data?.tasks && Array.isArray(config.data.tasks)) {
+      return config.data.tasks.map((task: any) => ({
+        ...task,
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined
+      }));
     }
-  ]);
+    return [
+      {
+        id: '1',
+        title: 'Complete project proposal',
+        description: 'Finalize the Q1 project proposal document',
+        completed: false,
+        priority: 'high',
+        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        assignee: 'John Doe',
+        progress: 75,
+        tags: ['work', 'urgent']
+      },
+      {
+        id: '2',
+        title: 'Review design mockups',
+        description: 'Review and approve the new dashboard designs',
+        completed: true,
+        priority: 'medium',
+        dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        assignee: 'Jane Smith',
+        progress: 100,
+        tags: ['design', 'review']
+      },
+      {
+        id: '3',
+        title: 'Update documentation',
+        description: 'Update API documentation with new endpoints',
+        completed: false,
+        priority: 'low',
+        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        assignee: 'Mike Johnson',
+        progress: 30,
+        tags: ['documentation']
+      }
+    ];
+  });
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'title'>('priority');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const config = widget.config as any;
-  const settings = config?.settings || {};
-  const style = config?.style || {};
+  // Save tasks to widget data
+  const saveTasks = useCallback((newTasks: Task[]) => {
+    const updatedConfig = {
+      ...config,
+      data: {
+        ...config?.data,
+        tasks: newTasks
+      }
+    };
+    updateLocal(widget.id, { config: updatedConfig });
+  }, [config, updateLocal, widget.id]);
+
+  // CRUD operations
+  const addTask = useCallback((task: Omit<Task, 'id'>) => {
+    const newTask: Task = {
+      ...task,
+      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
+    const newTasks = [...tasks, newTask];
+    setTasks(newTasks);
+    saveTasks(newTasks);
+  }, [tasks, saveTasks]);
+
+  const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
+    const newTasks = tasks.map(task => 
+      task.id === taskId ? { ...task, ...updates } : task
+    );
+    setTasks(newTasks);
+    saveTasks(newTasks);
+  }, [tasks, saveTasks]);
+
+  const deleteTask = useCallback((taskId: string) => {
+    const newTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(newTasks);
+    saveTasks(newTasks);
+  }, [tasks, saveTasks]);
+
+  const toggleTask = useCallback((taskId: string) => {
+    updateTask(taskId, { completed: !tasks.find(t => t.id === taskId)?.completed });
+  }, [tasks, updateTask]);
 
   const layout = settings.layout || 'list';
   const showCompleted = settings.showCompleted !== false;
@@ -174,11 +233,6 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
     return filtered.slice(0, maxTasks);
   }, [tasks, filter, showCompleted, searchTerm, sortBy, sortOrder, maxTasks]);
 
-  const toggleTask = (taskId: string) => {
-    setTasks(prev => prev.map(task =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -297,9 +351,37 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
           )}
         </div>
 
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="sm">
-            <Edit className="w-3 h-3" />
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <Dialog open={editingTask?.id === task.id} onOpenChange={(open) => !open && setEditingTask(null)}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setEditingTask(task)}
+              >
+                <Edit className="w-3 h-3" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Task</DialogTitle>
+              </DialogHeader>
+              <TaskForm 
+                task={task}
+                onSubmit={(taskData) => {
+                  updateTask(task.id, taskData);
+                  setEditingTask(null);
+                }}
+                onCancel={() => setEditingTask(null)}
+              />
+            </DialogContent>
+          </Dialog>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => deleteTask(task.id)}
+          >
+            <Trash2 className="w-3 h-3" />
           </Button>
         </div>
       </div>
@@ -372,9 +454,39 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
           </div>
         )}
 
-        <Button variant="ghost" size="sm">
-          <Edit className="w-3 h-3" />
-        </Button>
+        <div className="flex gap-1">
+          <Dialog open={editingTask?.id === task.id} onOpenChange={(open) => !open && setEditingTask(null)}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setEditingTask(task)}
+              >
+                <Edit className="w-3 h-3" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Task</DialogTitle>
+              </DialogHeader>
+              <TaskForm 
+                task={task}
+                onSubmit={(taskData) => {
+                  updateTask(task.id, taskData);
+                  setEditingTask(null);
+                }}
+                onCancel={() => setEditingTask(null)}
+              />
+            </DialogContent>
+          </Dialog>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => deleteTask(task.id)}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
@@ -421,6 +533,26 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
               >
                 Completed
               </Button>
+              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="default" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Task
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Task</DialogTitle>
+                  </DialogHeader>
+                  <TaskForm 
+                    onSubmit={(taskData) => {
+                      addTask(taskData);
+                      setShowAddDialog(false);
+                    }}
+                    onCancel={() => setShowAddDialog(false)}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
@@ -475,14 +607,180 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
           <div className="text-center py-8 text-muted-foreground">
             <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No tasks found</p>
-            <Button variant="outline" size="sm" className="mt-2">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Task
-            </Button>
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Task
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Task</DialogTitle>
+                </DialogHeader>
+                <TaskForm 
+                  onSubmit={(taskData) => {
+                    addTask(taskData);
+                    setShowAddDialog(false);
+                  }}
+                  onCancel={() => setShowAddDialog(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         )}
         </div>
       </PremiumWidgetContainer>
     </BaseWidget>
+  );
+};
+
+// Task Form Component
+interface TaskFormProps {
+  task?: Task;
+  onSubmit: (taskData: Omit<Task, 'id'>) => void;
+  onCancel: () => void;
+}
+
+const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
+    title: task?.title || '',
+    description: task?.description || '',
+    priority: task?.priority || 'medium' as const,
+    dueDate: task?.dueDate ? task.dueDate.toISOString().split('T')[0] : '',
+    assignee: task?.assignee || '',
+    progress: task?.progress || 0,
+    tags: task?.tags?.join(', ') || '',
+    completed: task?.completed || false
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim()) return;
+
+    const taskData: Omit<Task, 'id'> = {
+      title: formData.title.trim(),
+      description: formData.description.trim() || undefined,
+      priority: formData.priority,
+      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+      assignee: formData.assignee.trim() || undefined,
+      progress: formData.progress || undefined,
+      tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined,
+      completed: formData.completed
+    };
+
+    onSubmit(taskData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="title">Title *</Label>
+        <Input
+          id="title"
+          value={formData.title}
+          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          placeholder="Enter task title"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Enter task description"
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select
+            value={formData.priority}
+            onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => 
+              setFormData(prev => ({ ...prev, priority: value }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="dueDate">Due Date</Label>
+          <Input
+            id="dueDate"
+            type="date"
+            value={formData.dueDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="assignee">Assignee</Label>
+          <Input
+            id="assignee"
+            value={formData.assignee}
+            onChange={(e) => setFormData(prev => ({ ...prev, assignee: e.target.value }))}
+            placeholder="Enter assignee name"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="progress">Progress (%)</Label>
+          <Input
+            id="progress"
+            type="number"
+            min="0"
+            max="100"
+            value={formData.progress}
+            onChange={(e) => setFormData(prev => ({ ...prev, progress: parseInt(e.target.value) || 0 }))}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="tags">Tags</Label>
+        <Input
+          id="tags"
+          value={formData.tags}
+          onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+          placeholder="Enter tags separated by commas"
+        />
+      </div>
+
+      {task && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="completed"
+            checked={formData.completed}
+            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, completed: !!checked }))}
+          />
+          <Label htmlFor="completed">Mark as completed</Label>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">
+          {task ? 'Update Task' : 'Create Task'}
+        </Button>
+      </div>
+    </form>
   );
 };

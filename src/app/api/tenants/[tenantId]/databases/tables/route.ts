@@ -42,7 +42,7 @@ export async function GET(
 				if (jwtToken?.id && jwtToken?.tenantId) {
 					userId = Number(jwtToken.id);
 					tenantIdFromAuth = Number(jwtToken.tenantId);
-					role = jwtToken.role;
+					role = jwtToken.role as string;
 					console.log('✅ Using cookie JWT token:', { userId, tenantId: tenantIdFromAuth, role });
 				}
 			} catch (error) {
@@ -107,7 +107,6 @@ export async function GET(
 					database: {
 						tenantId: Number(tenantId),
 					},
-					...(includePredefined ? {} : { isProtected: false }), // Excludem tabelele protejate doar dacă nu se solicită includerea lor
 				};
 
 				const tables = await withRetry(() => prisma.table.findMany({
@@ -152,7 +151,6 @@ export async function GET(
 					database: {
 						tenantId: Number(tenantId),
 					},
-					...(includePredefined ? {} : { isProtected: false }), // Excludem tabelele protejate doar dacă nu se solicită includerea lor
 				},
 			};
 

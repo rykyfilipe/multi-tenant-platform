@@ -1058,22 +1058,22 @@ export function InvoiceForm({
 	}
 
 	return (
-		<div className='space-y-6'>
+		<div className='space-y-4'>
 			{/* Header Card */}
-			<Card className='border-0 shadow-lg bg-gradient-to-r from-primary/5 to-primary/10'>
-				<CardContent className='p-6'>
+			<Card className='border shadow-sm bg-white dark:bg-background'>
+				<CardContent className='p-4'>
 					<div className='flex items-center justify-between'>
-						<div className='flex items-center gap-4'>
-							<div className='w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center'>
-								<FileText className='w-6 h-6 text-primary' />
+						<div className='flex items-center gap-3'>
+							<div className='w-10 h-10 bg-black dark:bg-white rounded flex items-center justify-center'>
+								<FileText className='w-5 h-5 text-white dark:text-black' />
 							</div>
 							<div>
-								<h2 className='text-2xl font-bold text-foreground'>
+								<h2 className='text-xl font-bold text-foreground'>
 									{isEditMode
 										? t("invoice.form.editInvoice")
 										: t("invoice.form.createInvoice")}
 								</h2>
-								<p className='text-muted-foreground'>
+								<p className='text-sm text-muted-foreground'>
 									{isEditMode
 										? t("invoice.form.editDescription")
 										: t("invoice.form.createDescription")}
@@ -1130,21 +1130,21 @@ export function InvoiceForm({
 				</CardContent>
 			</Card>
 
-			<Card className='border-0 shadow-lg'>
-				<CardHeader className='pb-4'>
-					<CardTitle className='flex items-center gap-2 text-xl'>
-						<Calculator className='w-5 h-5 text-primary' />
-						{t("invoice.form.invoiceConfiguration")}
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<form onSubmit={handleSubmit} className='space-y-6'>
-						{/* Invoice Base Currency Selection */}
-						<div className='space-y-4'>
-							<Label className='text-base font-medium flex items-center gap-2'>
-								<Globe className='w-4 h-4 text-primary' />
-								{t("invoice.form.baseCurrency")}
-							</Label>
+		<Card className='border shadow-sm bg-white dark:bg-background'>
+			<CardHeader className='pb-3'>
+				<CardTitle className='flex items-center gap-2 text-lg'>
+					<Calculator className='w-5 h-5' />
+					{t("invoice.form.invoiceConfiguration")}
+				</CardTitle>
+			</CardHeader>
+			<CardContent>
+				<form onSubmit={handleSubmit} className='space-y-4'>
+					{/* Invoice Base Currency Selection */}
+					<div className='space-y-3'>
+						<Label className='text-sm font-medium flex items-center gap-2'>
+							<Globe className='w-4 h-4' />
+							{t("invoice.form.baseCurrency")}
+						</Label>
 							<Select value={baseCurrency} onValueChange={setBaseCurrency}>
 								<SelectTrigger className='w-full sm:w-64'>
 									<SelectValue
@@ -1183,13 +1183,13 @@ export function InvoiceForm({
 							</p>
 						</div>
 
-						{/* Customer Selection */}
-						<div className='space-y-4'>
-							<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-								<Label className='text-base font-medium flex items-center gap-2'>
-									<User className='w-4 h-4 text-primary' />
-									{t("invoice.form.customer")}
-								</Label>
+					{/* Customer Selection */}
+					<div className='space-y-3'>
+						<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+							<Label className='text-sm font-medium flex items-center gap-2'>
+								<User className='w-4 h-4' />
+								{t("invoice.form.customer")}
+							</Label>
 								<Button
 									type='button'
 									variant='outline'
@@ -1241,14 +1241,14 @@ export function InvoiceForm({
 							)}
 						</div>
 
-						{/* Invoice Details */}
-						<div className='space-y-3'>
-							<Label className='text-sm font-medium flex items-center gap-2'>
-								<FileText className='w-4 h-4 text-primary' />
-								{t("invoice.form.invoiceDetails")}
-							</Label>
+					{/* Invoice Details */}
+					<div className='space-y-3'>
+						<Label className='text-sm font-medium flex items-center gap-2'>
+							<FileText className='w-4 h-4' />
+							{t("invoice.form.invoiceDetails")}
+						</Label>
 
-							<div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-2'>
 								{/* Data Scadentă */}
 								<div>
 									<Label htmlFor='due_date'>
@@ -1311,7 +1311,7 @@ export function InvoiceForm({
 											variant="outline"
 											size="sm"
 											onClick={() => setInvoiceForm({...invoiceForm, status: "paid"})}
-											className={`${invoiceForm.status === "paid" ? "bg-green-50 border-green-200 text-green-800" : ""}`}
+											className={`${invoiceForm.status === "paid" ? "bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20" : ""}`}
 										>
 											<CheckCircle className='w-3 h-3 mr-1' />
 											{t("status.paid")}
@@ -1331,7 +1331,7 @@ export function InvoiceForm({
 											variant="outline"
 											size="sm"
 											onClick={() => setInvoiceForm({...invoiceForm, status: "issued"})}
-											className={`${invoiceForm.status === "issued" ? "bg-blue-50 border-blue-200 text-blue-800" : ""}`}
+											className={`${invoiceForm.status === "issued" ? "bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20" : ""}`}
 										>
 											<Send className='w-3 h-3 mr-1' />
 											{t("status.issued")}
@@ -1461,16 +1461,16 @@ export function InvoiceForm({
 							</div>
 						</div>
 
-						{/* Product Selection Form */}
-						<div className='space-y-3'>
-							<Label className='text-sm font-medium flex items-center gap-2'>
-								<Package className='w-4 h-4 text-primary' />
-								{t("invoice.form.addProduct")}
-							</Label>
+					{/* Product Selection Form */}
+					<div className='space-y-2'>
+						<Label className='text-sm font-medium flex items-center gap-2'>
+							<Package className='w-4 h-4' />
+							{t("invoice.form.addProduct")}
+						</Label>
 
-							<Card className='border border-border/50 shadow-sm bg-muted/10'>
-								<CardContent className='p-4'>
-									<div className='grid grid-cols-1 lg:grid-cols-6 gap-3'>
+						<Card className='border shadow-sm bg-white dark:bg-background'>
+							<CardContent className='p-3'>
+								<div className='grid grid-cols-1 lg:grid-cols-6 gap-2'>
 										{/* Table Selection */}
 										<div className='lg:col-span-2'>
 											<Label className='text-sm font-medium'>
@@ -1519,7 +1519,7 @@ export function InvoiceForm({
 												<div
 													className={`mt-3 p-3 rounded-lg text-sm border ${
 														tableValidation.isValid
-															? "bg-green-50 text-green-800 border-green-200 dark:bg-green-950/20 dark:text-green-300 dark:border-green-800"
+															? "bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20"
 															: "bg-red-50 text-red-800 border-red-200 dark:bg-red-950/20 dark:text-red-300 dark:border-red-800"
 													}`}>
 													{tableValidation.message}
@@ -1714,12 +1714,12 @@ export function InvoiceForm({
 								{products.map((product, index) => (
 									<Card
 										key={product.id}
-										className='border border-border/50 shadow-sm hover:shadow-md transition-all duration-200'>
-										<CardContent className='p-4'>
+									className='border shadow-sm hover:shadow transition-all duration-200 bg-white dark:bg-background'>
+									<CardContent className='p-3'>
 											<div className='flex items-center justify-between gap-4'>
 												{/* Product Info */}
 												<div className='flex items-center gap-3 flex-1 min-w-0'>
-													<div className='w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm'>
+													<div className='w-8 h-8 bg-black dark:bg-white rounded flex items-center justify-center text-white dark:text-black font-bold text-sm'>
 														{index + 1}
 													</div>
 													<div className='flex-1 min-w-0'>
@@ -1757,7 +1757,7 @@ export function InvoiceForm({
 																return details.sku && (
 																	<>
 																		<span>•</span>
-																		<span className='bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded text-xs'>
+																		<span className='bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs'>
 																			{details.sku}
 																		</span>
 																	</>
@@ -1843,7 +1843,7 @@ export function InvoiceForm({
 														<Label className='text-xs text-muted-foreground'>
 															{t("invoice.form.unitPrice")}
 														</Label>
-														<div className='h-8 flex items-center justify-center text-sm font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 rounded border'>
+														<div className='h-8 flex items-center justify-center text-sm font-semibold bg-black/5 dark:bg-white/5 rounded border'>
 															{product.extractedPrice && !isNaN(product.extractedPrice) ? (
 																`${product.extractedPrice.toFixed(2)} ${product.currency}`
 															) : (
@@ -1859,7 +1859,7 @@ export function InvoiceForm({
 														<Label className='text-xs text-muted-foreground'>
 															{t("invoice.form.totalOriginal")}
 														</Label>
-														<div className='h-8 flex items-center justify-center text-sm font-bold text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/20 rounded border'>
+														<div className='h-8 flex items-center justify-center text-sm font-bold bg-black/5 dark:bg-white/5 rounded border'>
 															{product.calculatedTotal && !isNaN(product.calculatedTotal) ? (
 																`${product.calculatedTotal.toFixed(2)} ${product.currency}`
 															) : (
@@ -1873,7 +1873,7 @@ export function InvoiceForm({
 														<Label className='text-xs text-muted-foreground'>
 															{baseCurrency}
 														</Label>
-														<div className='h-8 flex items-center justify-center text-sm font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 rounded border'>
+														<div className='h-8 flex items-center justify-center text-sm font-bold bg-black/10 dark:bg-white/10 rounded border border-black/20 dark:border-white/20'>
 															{product.convertedTotal && !isNaN(product.convertedTotal) ? (
 																formatCurrency(product.convertedTotal, baseCurrency)
 															) : (
@@ -1952,7 +1952,7 @@ export function InvoiceForm({
 
 						{/* Invoice Summary */}
 						{products.length > 0 ? (
-							<Card className='border border-border/50 shadow-sm bg-gradient-to-br from-muted/10 to-muted/20'>
+							<Card className='border shadow-sm bg-white dark:bg-background'>
 								<CardContent className='p-4'>
 									<div className='space-y-4'>
 										<div className='flex items-center justify-between'>
@@ -1964,8 +1964,8 @@ export function InvoiceForm({
 													{products.length}
 												</p>
 											</div>
-											<div className='w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center'>
-												<Calculator className='w-6 h-6 text-primary' />
+										<div className='w-10 h-10 bg-black dark:bg-white rounded flex items-center justify-center'>
+											<Calculator className='w-6 h-6 text-white dark:text-black' />
 											</div>
 										</div>
 

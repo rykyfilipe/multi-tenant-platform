@@ -5,12 +5,24 @@ import { DashboardService } from '@/lib/dashboard-service';
 import { DashboardValidators, handleValidationError } from '@/lib/dashboard-validators';
 import { z } from 'zod';
 
-// Batch operation schema
-const BatchOperationSchema = z.object({
-  type: z.enum(['create', 'update', 'delete']),
-  widgetId: z.union([z.number(), z.string()]).optional(),
-  data: z.any().optional(),
-});
+// Batch operation schema - supports both frontend format (kind) and backend format (type)
+const BatchOperationSchema = z.union([
+  // Frontend format (DraftOperation)
+  z.object({
+    id: z.string(),
+    kind: z.enum(['create', 'update', 'delete']),
+    widget: z.any().optional(),
+    widgetId: z.number().optional(),
+    expectedVersion: z.number().optional(),
+    patch: z.any().optional(),
+  }),
+  // Legacy backend format
+  z.object({
+    type: z.enum(['create', 'update', 'delete']),
+    widgetId: z.union([z.number(), z.string()]).optional(),
+    data: z.any().optional(),
+  })
+]);
 
 const BatchRequestSchema = z.object({
   operations: z.array(BatchOperationSchema).min(1, 'At least one operation is required'),
@@ -48,14 +60,25 @@ export async function POST(
       try {
         let result;
         
-        switch (operation.type) {
+        // Determine operation type - support both frontend (kind) and backend (type) formats
+        const operationType = 'kind' in operation ? operation.kind : operation.type;
+        
+        switch (operationType) {
           case 'create':
-            if (!operation.data) {
-              throw new Error('Data is required for create operation');
+            // Support both frontend format (widget) and backend format (data)
+            const createPayload = 'widget' in operation ? operation.widget : operation.data;
+            if (!createPayload) {
+              throw new Error('Widget data is required for create operation');
             }
             
+            // Normalize widget type from uppercase to lowercase for validation
+            const normalizedPayload = {
+              ...createPayload,
+              type: createPayload.kind?.toLowerCase() || createPayload.type?.toLowerCase()
+            };
+            
             // Validate widget creation data
-            const createData = DashboardValidators.validateWidgetCreate(operation.data);
+            const createData = DashboardValidators.validateWidgetCreate(normalizedPayload);
             
             // Validate widget configuration if provided
             if (createData.config && createData.type) {
@@ -71,12 +94,22 @@ export async function POST(
             break;
             
           case 'update':
-            if (!operation.widgetId || !operation.data) {
-              throw new Error('Widget ID and data are required for update operation');
+            // Support both frontend format (patch) and backend format (data)
+            const updateWidgetId = 'patch' in operation ? operation.widgetId : operation.widgetId;
+            const updatePayload = 'patch' in operation ? operation.patch : operation.data;
+            
+            if (!updateWidgetId || !updatePayload) {
+              throw new Error('Widget ID and update data are required for update operation');
             }
             
+            // Normalize widget type from uppercase to lowercase for validation
+            const normalizedUpdatePayload = {
+              ...updatePayload,
+              type: updatePayload.kind?.toLowerCase() || updatePayload.type?.toLowerCase()
+            };
+            
             // Validate widget update data
-            const updateData = DashboardValidators.validateWidgetUpdate(operation.data);
+            const updateData = DashboardValidators.validateWidgetUpdate(normalizedUpdatePayload);
             
             // Validate widget configuration if provided
             if (updateData.config && updateData.type) {
@@ -85,7 +118,7 @@ export async function POST(
             
             result = await DashboardService.updateWidget(
               dashboardId,
-              Number(operation.widgetId),
+              Number(updateWidgetId),
               updateData as any,
               Number(session.user.tenantId),
               Number(session.user.id)
@@ -108,12 +141,12 @@ export async function POST(
             break;
             
           default:
-            throw new Error(`Unknown operation type: ${operation.type}`);
+            throw new Error(`Unknown operation type: ${operationType}`);
         }
         
         results.push({
           index: i,
-          type: operation.type,
+          type: operationType,
           success: true,
           result,
         });
@@ -124,7 +157,7 @@ export async function POST(
         const validationError = handleValidationError(error);
         errors.push({
           index: i,
-          type: operation.type,
+          type: operationType,
           success: false,
           error: validationError.message,
           field: validationError.field,
