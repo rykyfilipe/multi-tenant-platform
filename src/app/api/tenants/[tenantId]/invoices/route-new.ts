@@ -441,7 +441,7 @@ export async function POST(
 								value = product.currency || productDetails.currency || "USD";
 								break;
 							case SemanticColumnType.UNIT_OF_MEASURE:
-								value = product.unit_of_measure || "pcs";
+								value = product.unit_of_measure || productDetails.unitOfMeasure || "pcs";
 								break;
 							case SemanticColumnType.PRODUCT_NAME:
 								value = productDetails.name;

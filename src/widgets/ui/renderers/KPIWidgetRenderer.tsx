@@ -6,7 +6,10 @@ import { BaseWidget } from "../components/BaseWidget";
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { WidgetLoadingState, WidgetErrorState, WidgetEmptyState } from "../components/WidgetStates";
+import { PremiumWidgetContainer, PremiumHeading, PremiumText } from "../components/PremiumWidgetContainer";
+import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface KPIWidgetRendererProps {
   widget: WidgetEntity;
@@ -610,31 +613,71 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const alignment = style.alignment || 'center';
   const size = style.size || 'medium';
   const format = settings.format || 'number';
+  const theme = getPremiumTheme(style.theme || 'platinum');
+  
+  // Font size mapping for values
+  const valueFontSizeMap = {
+    xl: 'text-4xl',
+    '2xl': 'text-5xl',
+    '3xl': 'text-6xl',
+    '4xl': 'text-7xl',
+    '5xl': 'text-8xl',
+    '6xl': 'text-9xl',
+  };
+  
+  const valueFontSize = style.valueFontSize || '4xl';
+  const valueFontWeight = style.valueFontWeight || 'bold';
+  const letterSpacing = style.letterSpacing || 'normal';
+  
+  const fontWeightMap = {
+    light: 'font-light',
+    normal: 'font-normal',
+    medium: 'font-medium',
+    semibold: 'font-semibold',
+    bold: 'font-bold',
+  };
+  
+  const letterSpacingMap = {
+    tighter: 'tracking-tighter',
+    tight: 'tracking-tight',
+    normal: 'tracking-normal',
+    wide: 'tracking-wide',
+    wider: 'tracking-wider',
+  };
   
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className={`flex h-full flex-col px-4 py-6 space-y-4 ${
+      <PremiumWidgetContainer style={style} className={cn(
+        'flex h-full flex-col space-y-6',
         alignment === 'left' ? 'items-start' : 
         alignment === 'right' ? 'items-end' : 'items-center'
-      }`}>
+      )}>
         {results.length === 1 ? (
-          // Single KPI Display
-          <div className="text-center space-y-2">
+          // Single KPI Display - Premium Design
+          <div className="flex flex-col items-center space-y-3 text-center">
             <div
-              className={`font-bold ${
-                size === 'small' ? 'text-2xl' :
-                size === 'large' ? 'text-5xl' : 'text-4xl'
-              }`}
-              style={{ color: style.valueColor || '#000' }}
+              className={cn(
+                valueFontSizeMap[valueFontSize as keyof typeof valueFontSizeMap],
+                fontWeightMap[valueFontWeight as keyof typeof fontWeightMap],
+                letterSpacingMap[letterSpacing as keyof typeof letterSpacingMap],
+                'tabular-nums'
+              )}
+              style={{ 
+                color: style.valueColor || theme.colors.foreground,
+                fontFamily: style.fontFamily || theme.typography.fontFamily,
+                textShadow: style.glow ? `0 0 30px ${style.valueColor || theme.colors.foreground}40` : 'none'
+              }}
             >
               {/* Show display fields for min/max with extreme value details */}
               {settings.showExtremeValueDetails && 
                (results[0].aggregationType === 'min' || results[0].aggregationType === 'max') &&
                results[0].metadata?.displayFields ? (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {Object.entries(results[0].metadata.displayFields).map(([field, value]) => (
                     <div key={field} className="flex flex-col">
-                      <span className="text-xs opacity-60 font-normal">{field}:</span>
+                      <span className="text-sm opacity-60 font-normal tracking-wide uppercase mb-1">
+                        {field}
+                      </span>
                       <span>{formatDisplayValue(value)}</span>
                     </div>
                   ))}
@@ -644,7 +687,13 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               )}
             </div>
             
-            <div className="text-sm" style={{ color: style.labelColor || '#666' }}>
+            <div 
+              className="text-sm font-medium uppercase tracking-wider"
+              style={{ 
+                color: style.labelColor || theme.colors.mutedForeground,
+                fontFamily: style.fontFamily || theme.typography.fontFamily
+              }}
+            >
               {settings.label || results[0].label}
             </div>
             
@@ -652,57 +701,106 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
             {settings.showExtremeValueDetails && 
              results[0].metadata?.displayFields &&
              Object.keys(results[0].metadata.displayFields).length > 0 && (
-              <div className="text-xs opacity-75" style={{ color: style.labelColor || '#666' }}>
+              <div 
+                className="text-xs opacity-75 font-medium"
+                style={{ color: style.labelColor || theme.colors.mutedForeground }}
+              >
                 {settings.valueField}: {formatValue(results[0].value, format)}
               </div>
             )}
             
-            {/* Trend indicator */}
+            {/* Trend indicator - Premium Design */}
             {trendData && (
               <div 
-                className={`flex items-center justify-center space-x-1 text-sm ${
-                  trendData.isPositive ? 'text-green-600' : 'text-red-600'
-                }`}
-                style={{ color: style.trendColor }}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
+                  style.glassEffect && "backdrop-blur-md bg-white/10"
+                )}
+                style={{ 
+                  color: trendData.isPositive 
+                    ? (style.trendColor || '#16a34a')
+                    : '#dc2626',
+                  backgroundColor: trendData.isPositive
+                    ? `${style.trendColor || '#16a34a'}10`
+                    : '#dc262610',
+                  border: `1px solid ${trendData.isPositive ? (style.trendColor || '#16a34a')  : '#dc2626'}20`
+                }}
               >
                 {trendData.isPositive ? (
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="h-5 w-5" strokeWidth={2.5} />
                 ) : trendData.percentage === 0 ? (
-                  <Minus className="h-4 w-4" />
+                  <Minus className="h-5 w-5" strokeWidth={2.5} />
                 ) : (
-                  <TrendingDown className="h-4 w-4" />
+                  <TrendingDown className="h-5 w-5" strokeWidth={2.5} />
                 )}
-                <span className="font-medium">{Math.abs(trendData.percentage).toFixed(1)}%</span>
+                <div className="flex flex-col items-start">
+                  <span className="font-bold text-lg tabular-nums">
+                    {trendData.isPositive ? '+' : '−'}{Math.abs(trendData.percentage).toFixed(1)}%
+                  </span>
+                  <span className="text-xs opacity-75">
+                    vs {formatValue(trendData.previousValue, format)}
+                  </span>
+                </div>
               </div>
             )}
           </div>
         ) : (
-          // Multiple KPIs Display
-          <div className="w-full space-y-3">
-            <div className="text-sm text-center" style={{ color: style.labelColor || '#666' }}>
+          // Multiple KPIs Display - Premium Grid
+          <div className="w-full space-y-4">
+            <div 
+              className="text-sm font-medium uppercase tracking-wider text-center"
+              style={{ 
+                color: style.labelColor || theme.colors.mutedForeground,
+                fontFamily: style.fontFamily || theme.typography.fontFamily
+              }}
+            >
               {settings.label || 'KPI Metrics'}
             </div>
-            <div className={`grid gap-3 ${
+            <div className={cn(
+              'grid gap-4',
               results.length <= 2 ? 'grid-cols-1' :
               results.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
-            }`}>
+            )}>
               {results.map((result) => (
-                <div key={result.aggregationType} className="text-center p-3 bg-muted/30 rounded-lg">
+                <div 
+                  key={result.aggregationType} 
+                  className={cn(
+                    "text-center p-4 rounded-xl transition-all border",
+                    style.glassEffect && "backdrop-blur-sm bg-white/5"
+                  )}
+                  style={{
+                    backgroundColor: style.glassEffect ? undefined : theme.colors.muted,
+                    borderColor: theme.colors.border,
+                    boxShadow: theme.shadows.subtle
+                  }}
+                >
                   <div 
-                    className={`font-bold ${
-                      size === 'small' ? 'text-lg' : 
-                      size === 'large' ? 'text-2xl' : 'text-xl'
-                    }`}
-                    style={{ color: style.valueColor || '#000' }}
+                    className={cn(
+                      'font-bold tabular-nums',
+                      size === 'small' ? 'text-xl' : 
+                      size === 'large' ? 'text-3xl' : 
+                      size === 'xl' ? 'text-4xl' : 'text-2xl'
+                    )}
+                    style={{ 
+                      color: style.valueColor || theme.colors.foreground,
+                      fontFamily: style.fontFamily || theme.typography.fontFamily,
+                      textShadow: style.glow ? `0 0 20px ${style.valueColor || theme.colors.foreground}30` : 'none'
+                    }}
                   >
                     {formatValue(result.value, format)}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: style.labelColor || '#666' }}>
+                  <div 
+                    className="text-xs mt-2 font-medium uppercase tracking-wide"
+                    style={{ color: style.labelColor || theme.colors.mutedForeground }}
+                  >
                     {result.label}
                   </div>
                   {result.metadata?.count !== undefined && (
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      ({result.metadata.count} rows)
+                    <div 
+                      className="text-xs mt-1 opacity-60"
+                      style={{ color: style.labelColor || theme.colors.mutedForeground }}
+                    >
+                      {result.metadata.count} rows
                     </div>
                   )}
                 </div>
@@ -710,7 +808,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
             </div>
           </div>
         )}
-      </div>
+      </PremiumWidgetContainer>
     </BaseWidget>
   );
 };

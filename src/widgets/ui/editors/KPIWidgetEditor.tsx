@@ -110,102 +110,197 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
         </TabsContent>
 
         {/* Style Tab */}
-        <TabsContent value="style" className="space-y-4">
-          <div className="space-y-3">
+        <TabsContent value="style" className="space-y-4 max-h-[600px] overflow-y-auto">
+          <div className="space-y-6">
+            {/* Premium Theme */}
             <div>
-              <Label htmlFor="theme" className="text-xs font-medium uppercase tracking-wide">
-                Theme
-              </Label>
+              <h3 className="text-sm font-semibold mb-3">Premium Theme</h3>
               <Select
                 value={value.style.theme}
-                onValueChange={(val) => updateStyle({ theme: val as typeof value.style.theme })}
+                onValueChange={(val) => updateStyle({ theme: val as any })}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="premium-light">Premium Light</SelectItem>
-                  <SelectItem value="premium-dark">Premium Dark</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="platinum">💎 Platinum (Bright White)</SelectItem>
+                  <SelectItem value="onyx">⬛ Onyx (Deep Black)</SelectItem>
+                  <SelectItem value="pearl">🤍 Pearl (Warm White)</SelectItem>
+                  <SelectItem value="obsidian">⚫ Obsidian (Cool Black)</SelectItem>
+                  <SelectItem value="custom">🎨 Custom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="size" className="text-xs font-medium uppercase tracking-wide">
-                Size
-              </Label>
-              <Select
-                value={value.style.size}
-                onValueChange={(val) => updateStyle({ size: val as typeof value.style.size })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">Small</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="large">Large</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Colors */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Colors</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Background</Label>
+                  <Input
+                    type="color"
+                    value={value.style.backgroundColor || "#FFFFFF"}
+                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Value</Label>
+                  <Input
+                    type="color"
+                    value={value.style.valueColor || "#000000"}
+                    onChange={(e) => updateStyle({ valueColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Label</Label>
+                  <Input
+                    type="color"
+                    value={value.style.labelColor || "#666666"}
+                    onChange={(e) => updateStyle({ labelColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Trend</Label>
+                  <Input
+                    type="color"
+                    value={value.style.trendColor || "#22c55e"}
+                    onChange={(e) => updateStyle({ trendColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="alignment" className="text-xs font-medium uppercase tracking-wide">
-                Alignment
-              </Label>
-              <Select
-                value={value.style.alignment}
-                onValueChange={(val) => updateStyle({ alignment: val as typeof value.style.alignment })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="left">Left</SelectItem>
-                  <SelectItem value="center">Center</SelectItem>
-                  <SelectItem value="right">Right</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Typography */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Typography</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Value Size</Label>
+                  <Select
+                    value={value.style.valueFontSize || "4xl"}
+                    onValueChange={(val) => updateStyle({ valueFontSize: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="xl">Extra Large</SelectItem>
+                      <SelectItem value="2xl">2XL</SelectItem>
+                      <SelectItem value="3xl">3XL</SelectItem>
+                      <SelectItem value="4xl">4XL (Default)</SelectItem>
+                      <SelectItem value="5xl">5XL</SelectItem>
+                      <SelectItem value="6xl">6XL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Value Weight</Label>
+                  <Select
+                    value={value.style.valueFontWeight || "bold"}
+                    onValueChange={(val) => updateStyle({ valueFontWeight: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="semibold">Semibold</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Letter Spacing</Label>
+                  <Select
+                    value={value.style.letterSpacing || "normal"}
+                    onValueChange={(val) => updateStyle({ letterSpacing: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tighter">Tighter</SelectItem>
+                      <SelectItem value="tight">Tight</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="wide">Wide</SelectItem>
+                      <SelectItem value="wider">Wider</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="valueColor" className="text-xs font-medium uppercase tracking-wide">
-                Value Color
-              </Label>
-              <Input
-                id="valueColor"
-                type="color"
-                value={value.style.valueColor || "#000000"}
-                onChange={(e) => updateStyle({ valueColor: e.target.value })}
-                className="mt-1 h-10"
-              />
-            </div>
+            {/* Shadows & Effects */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Premium Effects</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Shadow</Label>
+                  <Select
+                    value={value.style.shadow || "medium"}
+                    onValueChange={(val) => updateStyle({ shadow: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="subtle">Subtle</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                      <SelectItem value="glow">Glow</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div>
-              <Label htmlFor="labelColor" className="text-xs font-medium uppercase tracking-wide">
-                Label Color
-              </Label>
-              <Input
-                id="labelColor"
-                type="color"
-                value={value.style.labelColor || "#666666"}
-                onChange={(e) => updateStyle({ labelColor: e.target.value })}
-                className="mt-1 h-10"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="trendColor" className="text-xs font-medium uppercase tracking-wide">
-                Trend Color
-              </Label>
-              <Input
-                id="trendColor"
-                type="color"
-                value={value.style.trendColor || "#22c55e"}
-                onChange={(e) => updateStyle({ trendColor: e.target.value })}
-                className="mt-1 h-10"
-              />
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex items-center gap-1">
+                    <Switch
+                      id="glassEffect"
+                      checked={value.style.glassEffect || false}
+                      onCheckedChange={(checked) => updateStyle({ glassEffect: checked })}
+                      className="scale-75"
+                    />
+                    <Label htmlFor="glassEffect" className="text-xs">Glass</Label>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Switch
+                      id="shine"
+                      checked={value.style.shine || false}
+                      onCheckedChange={(checked) => updateStyle({ shine: checked })}
+                      className="scale-75"
+                    />
+                    <Label htmlFor="shine" className="text-xs">Shine</Label>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Switch
+                      id="glow"
+                      checked={value.style.glow || false}
+                      onCheckedChange={(checked) => updateStyle({ glow: checked })}
+                      className="scale-75"
+                    />
+                    <Label htmlFor="glow" className="text-xs">Glow</Label>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Switch
+                      id="pulse"
+                      checked={value.style.pulse || false}
+                      onCheckedChange={(checked) => updateStyle({ pulse: checked })}
+                      className="scale-75"
+                    />
+                    <Label htmlFor="pulse" className="text-xs">Pulse</Label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>

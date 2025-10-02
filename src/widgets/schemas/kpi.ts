@@ -17,14 +17,42 @@ export const kpiSettingsSchema = z.object({
 });
 
 export const kpiStyleSchema = z.object({
-  theme: z.enum(["premium-light", "premium-dark", "auto"]).default("premium-light"),
+  // Theme & Colors
+  theme: z.enum(["platinum", "onyx", "pearl", "obsidian", "custom"]).default("platinum"),
   backgroundColor: z.string().optional(),
+  backgroundGradient: z.string().optional(),
   textColor: z.string().optional(),
   valueColor: z.string().optional(),
   labelColor: z.string().optional(),
   trendColor: z.string().optional(),
-  size: z.enum(["small", "medium", "large"]).default("medium"),
+  
+  // Typography
+  fontFamily: z.string().optional(),
+  valueFontSize: z.enum(["xl", "2xl", "3xl", "4xl", "5xl", "6xl"]).default("4xl"),
+  valueFontWeight: z.enum(["light", "normal", "medium", "semibold", "bold"]).default("bold"),
+  labelFontSize: z.enum(["xs", "sm", "base", "lg"]).default("sm"),
+  letterSpacing: z.enum(["tighter", "tight", "normal", "wide", "wider"]).default("normal"),
+  
+  // Layout
+  size: z.enum(["small", "medium", "large", "xl"]).default("medium"),
   alignment: z.enum(["left", "center", "right"]).default("center"),
+  padding: z.enum(["none", "xs", "sm", "md", "lg", "xl", "2xl"]).default("lg"),
+  borderRadius: z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]).default("xl"),
+  
+  // Borders
+  borderWidth: z.number().min(0).max(8).default(0),
+  borderColor: z.string().optional(),
+  borderStyle: z.enum(["none", "solid", "dashed", "dotted"]).default("none"),
+  
+  // Shadows & Effects
+  shadow: z.enum(["none", "subtle", "medium", "bold", "glow"]).default("medium"),
+  glassEffect: z.boolean().default(false),
+  backdropBlur: z.enum(["none", "sm", "md", "lg"]).default("none"),
+  
+  // Premium effects
+  shine: z.boolean().default(false),
+  glow: z.boolean().default(false),
+  pulse: z.boolean().default(false),
 });
 
 export const kpiDataSchema = z.object({

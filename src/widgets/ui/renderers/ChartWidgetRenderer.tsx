@@ -8,6 +8,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { WidgetLoadingState, WidgetErrorState, WidgetEmptyState } from "../components/WidgetStates";
+import { getPremiumTheme, premiumDataColors } from "@/widgets/styles/premiumThemes";
+import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
+import { cn } from "@/lib/utils";
 
 interface ChartWidgetRendererProps {
   widget: WidgetEntity;
@@ -641,16 +644,13 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     onRefresh: refetch
   });
 
-  // Premium color palette
-  const premiumColors = {
-    primary: "#1f2937",
-    secondary: "#374151",
-    accent: "#4b5563",
-    success: "#111827",
-    warning: "#6b7280",
-    error: "#000000",
-    neutral: "#9ca3af",
-  };
+  // Get premium theme
+  const theme = getPremiumTheme(config?.style?.theme || 'platinum');
+  
+  // Premium color palette for data visualization
+  const premiumColors = config?.style?.theme === 'onyx' || config?.style?.theme === 'obsidian'
+    ? premiumDataColors.elegant
+    : premiumDataColors.professional;
 
   // Process data through the pipeline
   const processedData = useMemo(() => {
@@ -704,7 +704,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Generate data keys for multi-series charts
   const dataKeys = useMemo(() => {
-    if (!processedData.length) return [{ key: "value", name: "Value", color: premiumColors.primary }];
+    if (!processedData.length) return [{ key: "value", name: "Value", color: premiumColors[0] }];
     
     const yColumns = Array.isArray(mappings.y) ? mappings.y : (mappings.y ? [mappings.y] : []);
     
@@ -737,22 +737,25 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     });
     
     if (keys.size === 0) {
-      return [{ key: "value", name: "Value", color: premiumColors.primary }];
+      return [{ key: "value", name: "Value", color: premiumColors[0] }];
     }
     
     return Array.from(keys).map((key: string, index: number) => ({
       key,
       name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-      color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
+      color: premiumColors[index % premiumColors.length]
     }));
   }, [processedData, aggregationColumns, mappings, premiumColors]);
 
   // Style configuration
-  const showGrid = config?.style?.showGrid !== false;
-  const showLegend = config?.style?.showLegend !== false;
+  const styleConfig = config?.style || {};
+  const showGrid = styleConfig.showGrid !== false;
+  const showLegend = styleConfig.showLegend !== false;
+  const legendPosition = styleConfig.legendPosition || "bottom";
   const showTooltip = true;
-  const backgroundColor = config?.style?.backgroundColor || "#ffffff";
-  const textColor = config?.style?.textColor || "#000000";
+  const gridColor = styleConfig.gridColor || theme.colors.border;
+  const textColor = styleConfig.textColor || theme.colors.foreground;
+  const accentColor = styleConfig.accentColor || theme.colors.accent;
 
   // Chart component selector
   const getChartComponent = () => {
@@ -796,7 +799,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Render chart
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className="h-full w-full p-4">
+      <PremiumWidgetContainer style={styleConfig} className="h-full w-full">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -806,36 +809,58 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <ChartComponent 
               data={processedData} 
-              margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
-              style={{ backgroundColor }}
+              margin={{ 
+                top: legendPosition === "top" ? 30 : 10, 
+                right: legendPosition === "right" ? 100 : 20, 
+                left: legendPosition === "left" ? 100 : 10, 
+                bottom: legendPosition === "bottom" ? 30 : 10 
+              }}
             >
               {showGrid && chartType !== "pie" && chartType !== "radar" && (
                 <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke="#e5e7eb" 
-                  strokeOpacity={0.3}
+                  strokeDasharray="1 1" 
+                  stroke={gridColor}
+                  strokeOpacity={0.2}
                   vertical={false}
                 />
               )}
               
               {chartType === "radar" ? (
                 <>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="name" />
-                  <PolarRadiusAxis />
+                  <PolarGrid stroke={gridColor} strokeOpacity={0.3} />
+                  <PolarAngleAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 10, fill: textColor, fontWeight: 500 }}
+                  />
+                  <PolarRadiusAxis 
+                    tick={{ fontSize: 10, fill: textColor, fontWeight: 500 }}
+                    stroke={gridColor}
+                  />
                 </>
               ) : chartType !== "pie" && (
                 <>
                   <XAxis 
                     dataKey="name" 
-                    tick={{ fontSize: 11, fill: "#6b7280", fontWeight: 500 }}
-                    tickLine={{ stroke: "#e5e7eb" }}
-                    axisLine={{ stroke: "#e5e7eb" }}
+                    tick={{ 
+                      fontSize: 10, 
+                      fill: textColor,
+                      fontWeight: 500,
+                      fontFamily: theme.typography.fontFamily
+                    }}
+                    tickLine={{ stroke: gridColor, strokeWidth: 1 }}
+                    axisLine={{ stroke: gridColor, strokeWidth: 1 }}
+                    tickMargin={8}
                   />
                   <YAxis 
-                    tick={{ fontSize: 11, fill: "#6b7280", fontWeight: 500 }}
-                    tickLine={{ stroke: "#e5e7eb" }}
-                    axisLine={{ stroke: "#e5e7eb" }}
+                    tick={{ 
+                      fontSize: 10, 
+                      fill: textColor,
+                      fontWeight: 500,
+                      fontFamily: theme.typography.fontFamily
+                    }}
+                    tickLine={{ stroke: gridColor, strokeWidth: 1 }}
+                    axisLine={{ stroke: gridColor, strokeWidth: 1 }}
+                    tickMargin={8}
                   />
                 </>
               )}
@@ -843,23 +868,42 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
               {showTooltip && (
                 <Tooltip 
                   contentStyle={{
-                    backgroundColor: "rgba(255, 255, 255, 0.95)",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                    fontSize: "12px",
+                    backgroundColor: theme.colors.background,
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: "12px",
+                    boxShadow: theme.shadows.bold,
+                    backdropFilter: "blur(12px)",
+                    fontFamily: theme.typography.fontFamily,
+                    fontSize: "11px",
+                    fontWeight: theme.typography.fontWeight.medium,
                     color: textColor,
+                    padding: "12px 16px"
                   }}
+                  labelStyle={{
+                    fontWeight: theme.typography.fontWeight.semibold,
+                    color: textColor,
+                    fontSize: "12px",
+                    marginBottom: "6px",
+                    letterSpacing: "-0.01em"
+                  }}
+                  cursor={{ fill: theme.colors.muted, opacity: 0.1 }}
                 />
               )}
               
               {showLegend && dataKeys.length > 1 && (
                 <Legend 
+                  verticalAlign={legendPosition === "top" || legendPosition === "bottom" ? legendPosition : "middle"}
+                  align={legendPosition === "left" || legendPosition === "right" ? legendPosition : "center"}
+                  layout={legendPosition === "left" || legendPosition === "right" ? "vertical" : "horizontal"}
                   wrapperStyle={{
-                    paddingTop: "10px",
-                    fontSize: "11px",
-                    color: textColor
+                    fontFamily: theme.typography.fontFamily,
+                    fontSize: "10px",
+                    fontWeight: theme.typography.fontWeight.medium,
+                    color: textColor,
+                    letterSpacing: "0.02em"
                   }}
+                  iconType="circle"
+                  iconSize={8}
                 />
               )}
               
@@ -871,8 +915,9 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
                   fill={dataKey.color}
-                  fillOpacity={0.15}
-                  strokeWidth={2}
+                  fillOpacity={0.12}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
                   name={dataKey.name}
                 />
               ))}
@@ -883,7 +928,8 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   dataKey={dataKey.key}
                   fill={dataKey.color}
                   name={dataKey.name}
-                  radius={[4, 4, 0, 0]}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={60}
                 />
               ))}
               
@@ -895,10 +941,21 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
+                  innerRadius={styleConfig.shine ? 20 : 0}
+                  paddingAngle={2}
                   label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{
+                    stroke: textColor,
+                    strokeWidth: 1
+                  }}
                 >
                   {processedData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={Object.values(premiumColors)[index % Object.values(premiumColors).length]} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={premiumColors[index % premiumColors.length]}
+                      stroke={theme.colors.background}
+                      strokeWidth={2}
+                    />
                   ))}
                 </Pie>
               )}
@@ -909,6 +966,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   data={processedData}
                   fill={dataKey.color}
                   name={dataKey.name}
+                  shape="circle"
                 />
               ))}
               
@@ -920,6 +978,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   stroke={dataKey.color}
                   fill={dataKey.color}
                   fillOpacity={0.15}
+                  strokeWidth={2}
                 />
               ))}
               
@@ -929,16 +988,23 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   type="monotone"
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
                   dot={{ r: 0 }}
-                  activeDot={{ r: 4, fill: "white", stroke: dataKey.color, strokeWidth: 2 }}
+                  activeDot={{ 
+                    r: 5, 
+                    fill: theme.colors.background, 
+                    stroke: dataKey.color, 
+                    strokeWidth: 2.5,
+                    filter: `drop-shadow(0 2px 4px ${dataKey.color}40)`
+                  }}
                   name={dataKey.name}
                 />
               ))}
             </ChartComponent>
           </ResponsiveContainer>
         </motion.div>
-      </div>
+      </PremiumWidgetContainer>
     </BaseWidget>
   );
 };

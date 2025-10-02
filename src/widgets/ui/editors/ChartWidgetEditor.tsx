@@ -114,73 +114,266 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
         </TabsContent>
 
         {/* Style Tab */}
-        <TabsContent value="style" className="space-y-4">
-          <div className="space-y-3">
+        <TabsContent value="style" className="space-y-4 max-h-[600px] overflow-y-auto">
+          <div className="space-y-6">
+            {/* Theme Selection */}
             <div>
-              <Label htmlFor="theme" className="text-xs font-medium uppercase tracking-wide">
-                Theme
-              </Label>
+              <h3 className="text-sm font-semibold mb-3">Premium Theme</h3>
               <Select
                 value={value.style.theme}
-                onValueChange={(val) => updateStyle({ theme: val as typeof value.style.theme })}
+                onValueChange={(val) => updateStyle({ theme: val as any })}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="premium-light">Premium Light</SelectItem>
-                  <SelectItem value="premium-dark">Premium Dark</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="platinum">💎 Platinum (Bright White)</SelectItem>
+                  <SelectItem value="onyx">⬛ Onyx (Deep Black)</SelectItem>
+                  <SelectItem value="pearl">🤍 Pearl (Warm White)</SelectItem>
+                  <SelectItem value="obsidian">⚫ Obsidian (Cool Black)</SelectItem>
+                  <SelectItem value="custom">🎨 Custom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="backgroundColor" className="text-xs font-medium uppercase tracking-wide">
-                Background Color
-              </Label>
-              <Input
-                id="backgroundColor"
-                type="color"
-                value={value.style.backgroundColor}
-                onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
-                className="mt-1 h-10"
-              />
+            {/* Colors */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Colors</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Background</Label>
+                  <Input
+                    type="color"
+                    value={value.style.backgroundColor}
+                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Text</Label>
+                  <Input
+                    type="color"
+                    value={value.style.textColor}
+                    onChange={(e) => updateStyle({ textColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Grid</Label>
+                  <Input
+                    type="color"
+                    value={value.style.gridColor || "#E5E5E5"}
+                    onChange={(e) => updateStyle({ gridColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Border</Label>
+                  <Input
+                    type="color"
+                    value={value.style.borderColor || "#E5E5E5"}
+                    onChange={(e) => updateStyle({ borderColor: e.target.value })}
+                    className="h-10 mt-1"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="textColor" className="text-xs font-medium uppercase tracking-wide">
-                Text Color
-              </Label>
-              <Input
-                id="textColor"
-                type="color"
-                value={value.style.textColor}
-                onChange={(e) => updateStyle({ textColor: e.target.value })}
-                className="mt-1 h-10"
-              />
+            {/* Typography */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Typography</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Font Size</Label>
+                  <Select
+                    value={value.style.fontSize || "sm"}
+                    onValueChange={(val) => updateStyle({ fontSize: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="xs">Extra Small</SelectItem>
+                      <SelectItem value="sm">Small</SelectItem>
+                      <SelectItem value="base">Base</SelectItem>
+                      <SelectItem value="lg">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Font Weight</Label>
+                  <Select
+                    value={value.style.fontWeight || "normal"}
+                    onValueChange={(val) => updateStyle({ fontWeight: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light (300)</SelectItem>
+                      <SelectItem value="normal">Normal (400)</SelectItem>
+                      <SelectItem value="medium">Medium (500)</SelectItem>
+                      <SelectItem value="semibold">Semibold (600)</SelectItem>
+                      <SelectItem value="bold">Bold (700)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="showLegend" className="text-xs font-medium uppercase tracking-wide">
-                Show Legend
-              </Label>
-              <Switch
-                id="showLegend"
-                checked={value.style.showLegend}
-                onCheckedChange={(checked) => updateStyle({ showLegend: checked })}
-              />
+            {/* Layout & Spacing */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Layout</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Padding</Label>
+                  <Select
+                    value={value.style.padding || "md"}
+                    onValueChange={(val) => updateStyle({ padding: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="xs">XS</SelectItem>
+                      <SelectItem value="sm">Small</SelectItem>
+                      <SelectItem value="md">Medium</SelectItem>
+                      <SelectItem value="lg">Large</SelectItem>
+                      <SelectItem value="xl">XL</SelectItem>
+                      <SelectItem value="2xl">2XL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Border Radius</Label>
+                  <Select
+                    value={value.style.borderRadius || "xl"}
+                    onValueChange={(val) => updateStyle({ borderRadius: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None (Square)</SelectItem>
+                      <SelectItem value="sm">Small</SelectItem>
+                      <SelectItem value="md">Medium</SelectItem>
+                      <SelectItem value="lg">Large</SelectItem>
+                      <SelectItem value="xl">XL</SelectItem>
+                      <SelectItem value="2xl">2XL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="showGrid" className="text-xs font-medium uppercase tracking-wide">
-                Show Grid
-              </Label>
-              <Switch
-                id="showGrid"
-                checked={value.style.showGrid}
-                onCheckedChange={(checked) => updateStyle({ showGrid: checked })}
-              />
+            {/* Borders */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Borders</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Border Width (px)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="8"
+                    value={value.style.borderWidth || 1}
+                    onChange={(e) => updateStyle({ borderWidth: parseInt(e.target.value) })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Shadows & Effects */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Shadows & Effects</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Shadow</Label>
+                  <Select
+                    value={value.style.shadow || "medium"}
+                    onValueChange={(val) => updateStyle({ shadow: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="subtle">Subtle</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                      <SelectItem value="glow">Glow</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Glass Effect</Label>
+                  <Switch
+                    checked={value.style.glassEffect || false}
+                    onCheckedChange={(checked) => updateStyle({ glassEffect: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Shine Effect</Label>
+                  <Switch
+                    checked={value.style.shine || false}
+                    onCheckedChange={(checked) => updateStyle({ shine: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Glow Effect</Label>
+                  <Switch
+                    checked={value.style.glow || false}
+                    onCheckedChange={(checked) => updateStyle({ glow: checked })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Chart Specific */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Chart Options</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Show Legend</Label>
+                  <Switch
+                    checked={value.style.showLegend}
+                    onCheckedChange={(checked) => updateStyle({ showLegend: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Show Grid</Label>
+                  <Switch
+                    checked={value.style.showGrid}
+                    onCheckedChange={(checked) => updateStyle({ showGrid: checked })}
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs">Legend Position</Label>
+                  <Select
+                    value={value.style.legendPosition || "bottom"}
+                    onValueChange={(val) => updateStyle({ legendPosition: val as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top">Top</SelectItem>
+                      <SelectItem value="bottom">Bottom</SelectItem>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>
