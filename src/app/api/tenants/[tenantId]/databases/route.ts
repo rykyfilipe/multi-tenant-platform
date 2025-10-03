@@ -64,7 +64,7 @@ export async function GET(
 							},
 						},
 						orderBy: {
-							name: 'asc',
+							createdAt: 'asc',
 						},
 					},
 				},

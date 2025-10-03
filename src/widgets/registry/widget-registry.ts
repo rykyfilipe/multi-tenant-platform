@@ -52,10 +52,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         processingMode: "raw",
         aggregationFunction: "sum",
         aggregationColumns: [],
-        groupByColumn: undefined,
         enableTopN: false,
         topNCount: 10,
-        sortByColumn: undefined,
         sortDirection: "desc",
       },
       style: {
@@ -78,7 +76,6 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         glow: false,
       },
       data: {
-        databaseId: 0,
         tableId: "default_table",
         filters: [],
         mappings: {
@@ -118,7 +115,6 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         zebraStripes: true,
       },
       data: {
-        databaseId: 0,
         tableId: "default_table",
         filters: [],
         sort: [],
@@ -323,16 +319,12 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     schema: kpiWidgetConfigSchema,
     defaultConfig: kpiWidgetConfigSchema.parse({
       settings: {
+        valueField: "value",
         label: "KPI Value",
         format: "number",
         showTrend: true,
         showComparison: false,
-        showExtremeValueDetails: false,
-        extremeValueMode: "max",
-        valueField: "value",
-        displayFields: [],
-        selectedAggregations: ["sum"],
-        comparisonField: undefined,
+        aggregation: "sum",
       },
       style: {
         theme: "platinum",
@@ -346,7 +338,6 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         alignment: "center",
       },
       data: {
-        databaseId: 0,
         tableId: "default_kpi",
         filters: [],
       },

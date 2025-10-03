@@ -13,9 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
-import { TrendingUp, Filter, Database, Settings } from "lucide-react";
-import { StrictDataFlowEditor } from "./StrictDataFlowEditor";
-import { createDefaultDataFlowConfig, StrictDataFlowConfig } from "@/widgets/schemas/strictDataFlow";
+import { TrendingUp, Filter } from "lucide-react";
 
 interface KPIWidgetEditorProps {
   value: z.infer<typeof kpiWidgetConfigSchema>;
@@ -24,43 +22,27 @@ interface KPIWidgetEditorProps {
 }
 
 export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChange, tenantId }) => {
-  const [activeTab, setActiveTab] = useState("dataFlow");
+  const [activeTab, setActiveTab] = useState("settings");
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
-
-  // Initialize data flow if not present
-  const dataFlow = value.dataFlow || createDefaultDataFlowConfig() as StrictDataFlowConfig;
 
   const updateSettings = (updates: Partial<typeof value.settings>) => {
     onChange({
       ...value,
-      settings: { ...(value.settings || {}), ...updates },
+      settings: { ...value.settings, ...updates },
     });
   };
 
   const updateStyle = (updates: Partial<typeof value.style>) => {
     onChange({
       ...value,
-      style: { ...(value.style || {}), ...updates },
+      style: { ...value.style, ...updates },
     });
   };
 
   const updateData = (updates: Partial<typeof value.data>) => {
     onChange({
       ...value,
-      data: { 
-        filters: [], 
-        databaseId: undefined, 
-        tableId: undefined, 
-        ...(value.data || {}), 
-        ...updates 
-      },
-    });
-  };
-
-  const updateDataFlow = (updates: StrictDataFlowConfig) => {
-    onChange({
-      ...value,
-      dataFlow: updates,
+      data: { ...value.data, ...updates },
     });
   };
 
@@ -70,7 +52,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
       refresh: { 
         enabled: false, 
         interval: 30000, 
-        ...(value.refresh || {}), 
+        ...value.refresh, 
         ...updates 
       },
     });
@@ -80,46 +62,14 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
     updateData({ filters });
   };
 
-  // Legacy settings access for backward compatibility
-  const legacySettings = value.legacySettings || {
-    valueField: "",
-    selectedAggregations: ["sum"],
-    displayFields: [],
-    comparisonField: undefined,
-    aggregation: "sum" as const,
-    showTrend: true,
-    label: "KPI",
-    format: "number" as const,
-    showComparison: false,
-    showExtremeValueDetails: false,
-    extremeValueMode: "max" as const
-  };
-
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dataFlow" className="flex items-center space-x-1">
-            <Database className="w-3 h-3" />
-            <span>Data Flow</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center space-x-1">
-            <Settings className="w-3 h-3" />
-            <span>Settings</span>
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="style">Style</TabsTrigger>
-          <TabsTrigger value="legacy" className="text-xs">Legacy</TabsTrigger>
+          <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
-
-        {/* Data Flow Tab - NEW STRICT FLOW */}
-        <TabsContent value="dataFlow" className="space-y-4">
-          <StrictDataFlowEditor
-            value={dataFlow}
-            onChange={updateDataFlow}
-            tenantId={tenantId}
-            widgetType="kpi"
-          />
-        </TabsContent>
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-4">
@@ -355,24 +305,16 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
           </div>
         </TabsContent>
 
-        {/* Legacy Data Tab */}
-        <TabsContent value="legacy" className="space-y-4">
+        {/* Data Tab */}
+        <TabsContent value="data" className="space-y-4">
           <div className="space-y-6">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h3 className="text-sm font-semibold text-yellow-800 mb-2">⚠️ Legacy Configuration</h3>
-              <p className="text-sm text-yellow-700">
-                This is the legacy data configuration method. For better control and validation, 
-                please use the "Data Flow" tab which enforces the proper processing order.
-              </p>
-            </div>
-
             {/* Database and Table Selection */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-3">Data Source</h3>
               <DatabaseSelector
                 tenantId={tenantId}
-                selectedDatabaseId={value.data?.databaseId}
-                selectedTableId={Number(value.data?.tableId)}
+                selectedDatabaseId={value.data.databaseId}
+                selectedTableId={Number(value.data.tableId)}
                 onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", filters: [] })}
                 onTableChange={(tableId) => updateData({ tableId: tableId.toString(), filters: [] })}
                 onColumnsChange={setAvailableColumns}
@@ -390,13 +332,8 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                         Value Column (for calculations)
                       </Label>
                       <Select
-                        value={legacySettings.valueField || ""}
-                        onValueChange={(val) => {
-                          onChange({
-                            ...value,
-                            legacySettings: { ...legacySettings, valueField: val }
-                          });
-                        }}
+                        value={value.settings.valueField}
+                        onValueChange={(val) => updateSettings({ valueField: val })}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select numeric column" />
@@ -422,7 +359,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-3">Data Filters</h3>
                   <WidgetFilters
-                    filters={value.data?.filters || []}
+                    filters={value.data.filters}
                     availableColumns={availableColumns}
                     onChange={handleFiltersChange}
                   />
@@ -446,19 +383,15 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                         <div key={aggregation} className="flex items-center space-x-2">
                           <Checkbox
                             id={aggregation}
-                            checked={legacySettings.selectedAggregations?.includes(aggregation) || false}
+                            checked={value.settings.selectedAggregations?.includes(aggregation) || false}
                             onCheckedChange={(checked) => {
-                              const current = legacySettings.selectedAggregations || [];
+                              const current = value.settings.selectedAggregations || [];
                               const updated = checked
                                 ? [...current, aggregation]
-                                : current.filter((a: string) => a !== aggregation);
-                              onChange({
-                                ...value,
-                                legacySettings: { 
-                                  ...legacySettings,
-                                  selectedAggregations: updated,
-                                  aggregation: updated.length > 0 ? updated[0] : "sum"
-                                }
+                                : current.filter(a => a !== aggregation);
+                              updateSettings({ 
+                                selectedAggregations: updated,
+                                aggregation: updated.length > 0 ? updated[0] : "sum"
                               });
                             }}
                           />
@@ -473,7 +406,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                       ))}
                     </div>
 
-                    {(!legacySettings.selectedAggregations || legacySettings.selectedAggregations.length === 0) && (
+                    {(!value.settings.selectedAggregations || value.settings.selectedAggregations.length === 0) && (
                       <p className="text-xs text-amber-600 p-2 bg-amber-50 rounded">
                         ⚠️ Please select at least one aggregation function.
                       </p>
@@ -531,7 +464,7 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                           </Label>
                           <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-md p-2">
                             {availableColumns.map((column) => {
-                              const selectedFields = legacySettings.displayFields || [];
+                              const selectedFields = value.settings.displayFields || [];
                               const isSelected = selectedFields.includes(column.name);
                               return (
                                 <div key={column.id} className="flex items-center space-x-2">
@@ -539,14 +472,11 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                                     id={`display-${column.name}`}
                                     checked={isSelected}
                                     onCheckedChange={(checked) => {
-                                      const current = legacySettings.displayFields || [];
+                                      const current = value.settings.displayFields || [];
                                       const updated = checked
                                         ? [...current, column.name]
-                                        : current.filter((c: string) => c !== column.name);
-                                      onChange({
-                                        ...value,
-                                        legacySettings: { ...legacySettings, displayFields: updated }
-                                      });
+                                        : current.filter(c => c !== column.name);
+                                      updateSettings({ displayFields: updated });
                                     }}
                                   />
                                   <Label htmlFor={`display-${column.name}`} className="text-sm">
@@ -600,13 +530,8 @@ export const KPIWidgetEditor: React.FC<KPIWidgetEditorProps> = ({ value, onChang
                           Comparison Column
                         </Label>
                         <Select
-                          value={legacySettings?.comparisonField || ""}
-                          onValueChange={(val) => {
-                            onChange({
-                              ...value,
-                              legacySettings: { ...legacySettings, comparisonField: val || undefined }
-                            });
-                          }}
+                          value={value.settings.comparisonField || ""}
+                          onValueChange={(val) => updateSettings({ comparisonField: val || undefined })}
                         >
                           <SelectTrigger className="mt-1">
                             <SelectValue placeholder="Select comparison column" />

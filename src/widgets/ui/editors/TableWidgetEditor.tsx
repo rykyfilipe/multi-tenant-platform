@@ -29,26 +29,26 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
   const updateSettings = (updates: Partial<typeof value.settings>) => {
     onChange({
       ...value,
-      settings: { ...(value.settings || {}), ...updates },
+      settings: { ...value.settings, ...updates },
     });
   };
 
   const updateStyle = (updates: Partial<typeof value.style>) => {
     onChange({
       ...value,
-      style: { ...(value.style || {}), ...updates },
+      style: { ...value.style, ...updates },
     });
   };
 
   const updateData = (updates: Partial<typeof value.data>) => {
     onChange({
       ...value,
-      data: { ...(value.data || {}), ...updates },
+      data: { ...value.data, ...updates },
     });
   };
 
   const addColumn = () => {
-    const newColumns = [...(value.settings?.columns || []), { 
+    const newColumns = [...value.settings.columns, { 
       id: `column_${Date.now()}`, 
       label: "New Column", 
       sortable: true, 
@@ -58,19 +58,19 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
     updateSettings({ columns: newColumns });
   };
 
-  const updateColumn = (index: number, updates: Partial<{ id: string; label: string; sortable: boolean; format: string; showStatistics: boolean }>) => {
-    const newColumns = [...value.settings?.columns || []];
+  const updateColumn = (index: number, updates: Partial<typeof value.settings.columns[0]>) => {
+    const newColumns = [...value.settings.columns];
     newColumns[index] = { ...newColumns[index], ...updates };
     updateSettings({ columns: newColumns });
   };
 
   const removeColumn = (index: number) => {
-    const newColumns = value.settings?.columns || [].filter((_, i) => i !== index);
+    const newColumns = value.settings.columns.filter((_, i) => i !== index);
     updateSettings({ columns: newColumns });
   };
 
   const moveColumn = (index: number, direction: 'up' | 'down') => {
-    const newColumns = [...value.settings?.columns || []];
+    const newColumns = [...value.settings.columns];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     
     if (targetIndex >= 0 && targetIndex < newColumns.length) {
@@ -84,18 +84,18 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
   };
 
   const addSort = () => {
-    const newSort = [...(value.data?.sort || []), { column: "", direction: "asc" as const }];
+    const newSort = [...value.data.sort, { column: "", direction: "asc" as const }];
     updateData({ sort: newSort });
   };
 
-  const updateSort = (index: number, updates: Partial<{ column: string; direction: "asc" | "desc" }>) => {
-    const newSort = [...(value.data?.sort || [])];
+  const updateSort = (index: number, updates: Partial<typeof value.data.sort[0]>) => {
+    const newSort = [...value.data.sort];
     newSort[index] = { ...newSort[index], ...updates };
     updateData({ sort: newSort });
   };
 
   const removeSort = (index: number) => {
-    const newSort = (value.data?.sort || []).filter((_, i) => i !== index);
+    const newSort = value.data.sort.filter((_, i) => i !== index);
     updateData({ sort: newSort });
   };
 
@@ -405,8 +405,8 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
               <h3 className="text-sm font-semibold text-foreground mb-3">Data Source</h3>
               <DatabaseSelector
                 tenantId={tenantId}
-                selectedDatabaseId={value.data?.databaseId}
-                selectedTableId={Number(value.data?.tableId)}
+                selectedDatabaseId={value.data.databaseId}
+                selectedTableId={Number(value.data.tableId)}
                 onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", filters: [], sort: [] })}
                 onTableChange={(tableId) => updateData({ tableId: tableId.toString(), filters: [], sort: [] })}
                 onColumnsChange={setAvailableColumns}
@@ -419,7 +419,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-3">Columns</h3>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {value.settings?.columns || [].map((column, index) => (
+                    {value.settings.columns.map((column, index) => (
                       <div key={column.id} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/20">
                         <div className="flex-1 space-y-2">
                           <div className="grid grid-cols-2 gap-2">
@@ -534,7 +534,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                             variant="ghost"
                             size="sm"
                             onClick={() => moveColumn(index, 'down')}
-                            disabled={index === value.settings?.columns || [].length - 1}
+                            disabled={index === value.settings.columns.length - 1}
                             className="h-6 w-6 p-0"
                           >
                             <ArrowDown className="h-3 w-3" />
@@ -562,7 +562,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-3">Data Filters</h3>
                   <WidgetFilters
-                    filters={value.data?.filters || []}
+                    filters={value.data.filters}
                     availableColumns={availableColumns}
                     onChange={handleFiltersChange}
                   />
@@ -643,7 +643,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                 <div className="border-t pt-4">
                   <h3 className="text-sm font-semibold text-foreground mb-3">Sorting</h3>
                   <div className="space-y-2">
-                    {(value.data?.sort || []).map((sortItem, index) => (
+                    {value.data.sort.map((sortItem, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <Select
                           value={sortItem.column}
@@ -653,7 +653,7 @@ export const TableWidgetEditor: React.FC<TableWidgetEditorProps> = ({ value, onC
                             <SelectValue placeholder="Column" />
                           </SelectTrigger>
                           <SelectContent>
-                            {value.settings?.columns || [].map((col) => (
+                            {value.settings.columns.map((col) => (
                               <SelectItem key={col.id} value={col.id}>
                                 {col.label}
                               </SelectItem>

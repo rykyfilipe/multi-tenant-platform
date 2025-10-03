@@ -600,23 +600,16 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   onDuplicate, 
   isEditMode = false
 }) => {
-  // Extract chart configuration with defensive checks
+  // Extract chart configuration
   const config = widget.config as any;
-  
-  // Ensure config and settings exist
-  if (!config || !config.settings) {
-    console.error('ChartWidgetRenderer: Invalid config or missing settings', { config });
-    return <div>Invalid widget configuration</div>;
-  }
-  
-  const chartType = config.settings.chartType || "bar";
-  const mappings = config.data?.mappings || { y: [] };
-  const databaseId = config.data?.databaseId;
-  const tableId = config.data?.tableId;
-  const filters = config.data?.filters || [];
-  const refreshSettings = config.refresh || { enabled: false, interval: 30000 };
+  const chartType = config?.settings?.chartType || "bar";
+  const mappings = config?.data?.mappings || { y: [] };
+  const databaseId = config?.data?.databaseId;
+  const tableId = config?.data?.tableId;
+  const filters = config?.data?.filters || [];
+  const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
 
-  // Data processing configuration with defensive checks
+  // Data processing configuration
   const processingMode = config?.settings?.processingMode || "raw";
   const aggregationFunction = config?.settings?.aggregationFunction || "sum";
   const aggregationColumns = config?.settings?.aggregationColumns || [];

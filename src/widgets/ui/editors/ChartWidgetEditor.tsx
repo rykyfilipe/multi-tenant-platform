@@ -9,12 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { TrendingUp, Group, Filter, Database, Settings } from "lucide-react";
+import { TrendingUp, Group, Filter } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
-import { StrictDataFlowEditor } from "./StrictDataFlowEditor";
-import { createDefaultDataFlowConfig, StrictDataFlowConfig } from "@/widgets/schemas/strictDataFlow";
 
 interface ChartWidgetEditorProps {
   value: z.infer<typeof chartWidgetConfigSchema>;
@@ -23,45 +21,27 @@ interface ChartWidgetEditorProps {
 }
 
 export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onChange, tenantId }) => {
-  const [activeTab, setActiveTab] = useState("dataFlow");
+  const [activeTab, setActiveTab] = useState("settings");
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
-  const [useStrictFlow, setUseStrictFlow] = useState(!!value.dataFlow);
-
-  // Initialize data flow if not present
-  const dataFlow = value.dataFlow || createDefaultDataFlowConfig() as StrictDataFlowConfig;
 
   const updateSettings = (updates: Partial<typeof value.settings>) => {
     onChange({
       ...value,
-      settings: { ...(value.settings || {}), ...updates },
+      settings: { ...value.settings, ...updates },
     });
   };
 
   const updateStyle = (updates: Partial<typeof value.style>) => {
     onChange({
       ...value,
-      style: { ...(value.style || {}), ...updates },
+      style: { ...value.style, ...updates },
     });
   };
 
   const updateData = (updates: Partial<typeof value.data>) => {
     onChange({
       ...value,
-      data: { 
-        filters: [], 
-        mappings: { y: [] }, 
-        databaseId: undefined, 
-        tableId: undefined, 
-        ...(value.data || {}), 
-        ...updates 
-      },
-    });
-  };
-
-  const updateDataFlow = (updates: StrictDataFlowConfig) => {
-    onChange({
-      ...value,
-      dataFlow: updates,
+      data: { ...value.data, ...updates },
     });
   };
 
@@ -70,55 +50,26 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
   };
 
   const toggleYColumn = (columnName: string) => {
-    const currentY = value.data?.mappings?.y || [];
+    const currentY = value.data.mappings?.y || [];
     const updated = currentY.includes(columnName)
       ? currentY.filter(c => c !== columnName)
       : [...currentY, columnName];
     updateData({ 
       mappings: { 
-        ...value.data?.mappings, 
+        ...value.data.mappings, 
         y: updated 
       } 
     });
   };
 
-  // Legacy settings access for backward compatibility
-  const legacySettings = {
-    processingMode: "raw" as "raw" | "grouped",
-    aggregationFunction: "sum" as "sum" | "avg" | "count" | "min" | "max",
-    aggregationColumns: [] as string[],
-    groupByColumn: undefined as string | undefined,
-    enableTopN: false,
-    topNCount: 10,
-    sortByColumn: undefined as string | undefined,
-    sortDirection: "desc" as "asc" | "desc"
-  };
-
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dataFlow" className="flex items-center space-x-1">
-            <Database className="w-3 h-3" />
-            <span>Data Flow</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center space-x-1">
-            <Settings className="w-3 h-3" />
-            <span>Settings</span>
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="style">Style</TabsTrigger>
-          <TabsTrigger value="legacy" className="text-xs">Legacy</TabsTrigger>
+          <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
-
-        {/* Data Flow Tab - NEW STRICT FLOW */}
-        <TabsContent value="dataFlow" className="space-y-4">
-          <StrictDataFlowEditor
-            value={dataFlow}
-            onChange={updateDataFlow}
-            tenantId={tenantId}
-            widgetType="chart"
-          />
-        </TabsContent>
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-4">
@@ -427,24 +378,16 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
           </div>
         </TabsContent>
 
-        {/* Legacy Data Tab */}
-        <TabsContent value="legacy" className="space-y-4">
+        {/* Data Tab */}
+        <TabsContent value="data" className="space-y-4">
           <div className="space-y-6">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h3 className="text-sm font-semibold text-yellow-800 mb-2">⚠️ Legacy Configuration</h3>
-              <p className="text-sm text-yellow-700">
-                This is the legacy data configuration method. For better control and validation, 
-                please use the "Data Flow" tab which enforces the proper processing order.
-              </p>
-            </div>
-
             {/* Database and Table Selection */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-3">Data Source</h3>
               <DatabaseSelector
                 tenantId={tenantId}
-                selectedDatabaseId={value.data?.databaseId}
-                selectedTableId={Number(value.data?.tableId)}
+                selectedDatabaseId={value.data.databaseId}
+                selectedTableId={Number(value.data.tableId)}
                 onDatabaseChange={(databaseId) => updateData({ databaseId, tableId: "", mappings: { y: [] } })}
                 onTableChange={(tableId) => updateData({ tableId: tableId.toString(), mappings: { y: [] } })}
                 onColumnsChange={setAvailableColumns}
@@ -463,13 +406,9 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         X Axis (Category/Label)
                       </Label>
                       <Select
-                        value={value.data?.mappings?.x || ""}
+                        value={value.data.mappings?.x || ""}
                         onValueChange={(val) => updateData({ 
-                          mappings: { 
-                            y: [], 
-                            ...value.data?.mappings, 
-                            x: val 
-                          } 
+                          mappings: { ...value.data.mappings, x: val } 
                         })}
                       >
                         <SelectTrigger className="mt-1">
@@ -496,7 +435,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         {availableColumns
                           .filter(col => ["number"].includes(col.type))
                           .map((column) => {
-                            const isSelected = (value.data?.mappings?.y || []).includes(column.name);
+                            const isSelected = (value.data.mappings?.y || []).includes(column.name);
                             return (
                               <div key={column.id} className="flex items-center space-x-2">
                                 <Checkbox
@@ -511,14 +450,14 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                             );
                           })}
                       </div>
-                      {(!value.data?.mappings?.y || value.data?.mappings?.y.length === 0) && (
+                      {(!value.data.mappings?.y || value.data.mappings.y.length === 0) && (
                         <p className="text-xs text-amber-600 mt-1">
                           ⚠️ Please select at least one Y axis column.
                         </p>
                       )}
-                      {value.data?.mappings?.y && value.data?.mappings?.y.length > 0 && (
+                      {value.data.mappings?.y && value.data.mappings.y.length > 0 && (
                         <p className="text-xs text-green-600 mt-1">
-                          ✅ {value.data?.mappings?.y.length} column(s) selected
+                          ✅ {value.data.mappings.y.length} column(s) selected
                         </p>
                       )}
                     </div>
@@ -528,11 +467,11 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                 {/* Filters Section */}
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-3">Data Filters</h3>
-              <WidgetFilters
-                filters={value.data?.filters || []}
-                availableColumns={availableColumns}
-                onChange={handleFiltersChange}
-              />
+                  <WidgetFilters
+                    filters={value.data.filters}
+                    availableColumns={availableColumns}
+                    onChange={handleFiltersChange}
+                  />
                 </div>
 
                 {/* Processing Mode */}
@@ -544,11 +483,10 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         Processing Mode
                       </Label>
                       <Select
-                        value={legacySettings.processingMode}
-                        onValueChange={(val) => {
-                          // Legacy mode - just show the selection but don't actually update
-                          console.log("Legacy processing mode selected:", val);
-                        }}
+                        value={value.settings.processingMode || "raw"}
+                        onValueChange={(val) => updateSettings({ 
+                          processingMode: val as "raw" | "grouped" 
+                        })}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
@@ -559,15 +497,15 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {legacySettings.processingMode === "raw" && "Display data as-is from the table"}
-                        {legacySettings.processingMode === "grouped" && "Group data and calculate aggregated values per category (e.g., Sales per Region)"}
+                        {value.settings.processingMode === "raw" && "Display data as-is from the table"}
+                        {value.settings.processingMode === "grouped" && "Group data and calculate aggregated values per category (e.g., Sales per Region)"}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Aggregation Settings (only for grouped mode) */}
-                {legacySettings.processingMode === "grouped" && (
+                {value.settings.processingMode === "grouped" && (
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4" />
@@ -579,10 +517,8 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                           Aggregation Function
                         </Label>
                         <Select
-                          value={legacySettings.aggregationFunction}
-                          onValueChange={(val) => {
-                            console.log("Legacy aggregation function selected:", val);
-                          }}
+                          value={value.settings.aggregationFunction || "sum"}
+                          onValueChange={(val) => updateSettings({ aggregationFunction: val as any })}
                         >
                           <SelectTrigger className="mt-1">
                             <SelectValue />
@@ -608,9 +544,13 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                               <div key={column.id} className="flex items-center space-x-2">
                                 <Checkbox
                                   id={`agg-${column.name}`}
-                                  checked={legacySettings.aggregationColumns.includes(column.name)}
+                                  checked={value.settings.aggregationColumns?.includes(column.name) || false}
                                   onCheckedChange={(checked) => {
-                                    console.log("Legacy aggregation column selected:", column.name, checked);
+                                    const current = value.settings.aggregationColumns || [];
+                                    const updated = checked
+                                      ? [...current, column.name]
+                                      : current.filter(c => c !== column.name);
+                                    updateSettings({ aggregationColumns: updated });
                                   }}
                                 />
                                 <Label htmlFor={`agg-${column.name}`} className="text-sm">
@@ -625,7 +565,7 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                 )}
 
                 {/* Grouping Column (only for grouped mode) */}
-                {legacySettings.processingMode === "grouped" && (
+                {value.settings.processingMode === "grouped" && (
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                       <Group className="h-4 w-4" />
@@ -637,10 +577,8 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                           Group By Column
                         </Label>
                         <Select
-                          value={legacySettings.groupByColumn || ""}
-                          onValueChange={(val) => {
-                            console.log("Legacy group by column selected:", val);
-                          }}
+                          value={value.settings.groupByColumn || ""}
+                          onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
                         >
                           <SelectTrigger className="mt-1">
                             <SelectValue placeholder="Select column" />
@@ -673,14 +611,12 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                       </Label>
                       <Switch
                         id="enableTopN"
-                        checked={legacySettings.enableTopN}
-                        onCheckedChange={(checked) => {
-                          console.log("Legacy enableTopN changed:", checked);
-                        }}
+                        checked={value.settings.enableTopN || false}
+                        onCheckedChange={(checked) => updateSettings({ enableTopN: checked })}
                       />
                     </div>
 
-                    {legacySettings.enableTopN && (
+                    {value.settings.enableTopN && (
                       <>
                         <div>
                           <Label htmlFor="topNCount" className="text-xs font-medium uppercase tracking-wide">
@@ -691,10 +627,8 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                             type="number"
                             min="1"
                             max="100"
-                            value={legacySettings.topNCount}
-                            onChange={(e) => {
-                              console.log("Legacy topNCount changed:", e.target.value);
-                            }}
+                            value={value.settings.topNCount || 10}
+                            onChange={(e) => updateSettings({ topNCount: parseInt(e.target.value) || 10 })}
                             className="mt-1"
                           />
                         </div>
@@ -704,10 +638,8 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                             Sort By
                           </Label>
                           <Select
-                            value={legacySettings.sortByColumn || ""}
-                            onValueChange={(val) => {
-                              console.log("Legacy sortByColumn changed:", val);
-                            }}
+                            value={value.settings.sortByColumn || ""}
+                            onValueChange={(val) => updateSettings({ sortByColumn: val || undefined })}
                           >
                             <SelectTrigger className="mt-1">
                               <SelectValue placeholder="Select column" />
@@ -727,10 +659,8 @@ export const ChartWidgetEditor: React.FC<ChartWidgetEditorProps> = ({ value, onC
                             Direction
                           </Label>
                           <Select
-                            value={legacySettings.sortDirection}
-                            onValueChange={(val) => {
-                              console.log("Legacy sortDirection changed:", val);
-                            }}
+                            value={value.settings.sortDirection || "desc"}
+                            onValueChange={(val) => updateSettings({ sortDirection: val as "asc" | "desc" })}
                           >
                             <SelectTrigger className="mt-1">
                               <SelectValue />
