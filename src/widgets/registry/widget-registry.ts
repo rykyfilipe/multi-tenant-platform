@@ -1,12 +1,12 @@
 import { WidgetKind } from "@/generated/prisma";
-import { chartWidgetConfigSchema } from "../schemas/chart";
-import { tableWidgetConfigSchema } from "../schemas/table";
-import { kpiWidgetConfigSchema } from "../schemas/kpi";
+import { chartWidgetConfigSchema } from "../schemas/chart-v2";
+import { tableWidgetConfigSchemaV2 } from "../schemas/table-v2";
+import { kpiWidgetConfigSchemaV2 } from "../schemas/kpi-v2";
 import { baseWidgetConfigSchema } from "../schemas/base";
 import { z } from "zod";
 import { ChartWidgetEditorV2 as ChartWidgetEditor } from "../ui/editors/ChartWidgetEditorV2";
-import { TableWidgetEditor } from "../ui/editors/TableWidgetEditor";
-import { KPIWidgetEditor } from "../ui/editors/KPIWidgetEditor";
+import { TableWidgetEditorV2 as TableWidgetEditor } from "../ui/editors/TableWidgetEditorV2";
+import { KPIWidgetEditorV2 as KPIWidgetEditor } from "../ui/editors/KPIWidgetEditorV2";
 import { ClockWidgetEditor } from "../ui/editors/ClockWidgetEditor";
 import { WeatherWidgetEditor } from "../ui/editors/WeatherWidgetEditor";
 import { TasksWidgetEditor } from "../ui/editors/TasksWidgetEditor";
@@ -92,36 +92,72 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   },
   [WidgetKind.TABLE]: {
     kind: WidgetKind.TABLE,
-    schema: tableWidgetConfigSchema,
-    defaultConfig: tableWidgetConfigSchema.parse({
+    schema: tableWidgetConfigSchemaV2,
+    defaultConfig: {
       settings: {
-        columns: [
-          {
-            id: "column_1",
-            label: "Column 1",
-            sortable: true,
-          },
-        ],
-        pageSize: 25,
-        enableExport: false,
-        stickyHeader: true,
+        aggregation: {
+          enabled: false,
+          groupBy: undefined,
+          columns: [],
+          showSummaryRow: true,
+          showGroupTotals: false,
+        },
+        pagination: {
+          enabled: true,
+          pageSize: 50,
+        },
+        sorting: {
+          enabled: true,
+          defaultColumn: undefined,
+          defaultDirection: "asc",
+        },
+        showRowNumbers: true,
+        showColumnHeaders: true,
+        alternateRowColors: true,
+        refreshInterval: 60,
       },
       style: {
         theme: "platinum",
-        density: "comfortable",
-        showRowBorders: false,
-        zebraStripes: true,
+        backgroundColor: "#FFFFFF",
+        textColor: "#000000",
+        borderColor: "#E5E7EB",
+        headerBackgroundColor: "#F9FAFB",
+        headerTextColor: "#374151",
+        evenRowColor: "#FFFFFF",
+        oddRowColor: "#F9FAFB",
+        hoverRowColor: "#F3F4F6",
+        selectedRowColor: "#EBF4FF",
+        fontSize: "sm",
+        headerFontSize: "base",
+        fontWeight: "normal",
+        headerFontWeight: "semibold",
+        padding: "sm",
+        borderWidth: "1",
+        borderRadius: "md",
+        columnMinWidth: 100,
+        columnMaxWidth: 300,
+        shadow: "subtle",
+        stripedRows: true,
+        hoverEffects: true,
+        summaryRowStyle: {
+          backgroundColor: "#F3F4F6",
+          textColor: "#374151",
+          fontWeight: "semibold",
+          borderTop: true,
+        },
       },
       data: {
-        tableId: "default_table",
+        databaseId: undefined,
+        tableId: undefined,
         filters: [],
-        sort: [],
+        columns: [],
       },
       refresh: {
         enabled: false,
         interval: 30000,
       },
-    }),
+      metadata: {},
+    },
     editor: TableWidgetEditor,
     renderer: TableWidgetRenderer,
   },
@@ -314,36 +350,49 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   },
   [WidgetKind.KPI]: {
     kind: WidgetKind.KPI,
-    schema: kpiWidgetConfigSchema,
-    defaultConfig: kpiWidgetConfigSchema.parse({
+    schema: kpiWidgetConfigSchemaV2,
+    defaultConfig: {
       settings: {
-        valueField: "value",
-        label: "KPI Value",
-        format: "number",
+        layout: "grid",
+        columns: 2,
         showTrend: true,
         showComparison: false,
-        aggregation: "sum",
+        showTargets: false,
+        refreshInterval: 60,
       },
       style: {
         theme: "platinum",
         backgroundColor: "#FFFFFF",
-        valueColor: "#000000",
-        labelColor: "#737373",
-        trendColor: "#16a34a",
-        valueFontSize: "4xl",
-        valueFontWeight: "bold",
-        size: "medium",
-        alignment: "center",
+        textColor: "#000000",
+        accentColor: undefined,
+        fontSize: "2xl",
+        fontWeight: "bold",
+        padding: "lg",
+        borderRadius: "xl",
+        gap: "md",
+        valueSize: "3xl",
+        labelSize: "sm",
+        trendSize: "xs",
+        shadow: "medium",
+        glassEffect: false,
+        shine: false,
+        glow: false,
+        positiveColor: "#16a34a",
+        negativeColor: "#dc2626",
+        neutralColor: "#6b7280",
       },
       data: {
-        tableId: "default_kpi",
+        databaseId: undefined,
+        tableId: undefined,
         filters: [],
+        metrics: [],
       },
       refresh: {
         enabled: false,
         interval: 30000,
       },
-    }),
+      metadata: {},
+    },
     editor: KPIWidgetEditor,
     renderer: KPIWidgetRenderer,
   },
