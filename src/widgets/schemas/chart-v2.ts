@@ -27,6 +27,8 @@ export const chartStyleSchema = z.object({
   backgroundColor: z.string().default("#FFFFFF"),
   textColor: z.string().default("#000000"),
   accentColor: z.string().optional(),
+  gridColor: z.string().optional(),
+  borderColor: z.string().optional(),
   
   // Typography
   fontSize: z.enum(["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl"]).default("sm"),

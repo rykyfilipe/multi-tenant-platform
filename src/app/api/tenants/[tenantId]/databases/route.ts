@@ -34,6 +34,10 @@ export async function GET(
 		return tenantAccessError;
 	}
 
+	// Parse query parameters
+	const url = new URL(request.url);
+	const includePredefined = url.searchParams.get('includePredefined') !== 'false';
+
 	try {
 		if (role === "ADMIN") {
 			// Optimized: Single query with proper joins to avoid N+1
@@ -48,6 +52,10 @@ export async function GET(
 					createdAt: true,
 					// Optimized: Only get essential table metadata, not full data
 					tables: {
+						where: includePredefined ? undefined : {
+							isProtected: false,
+							isModuleTable: false,
+						},
 						select: {
 							id: true,
 							name: true,

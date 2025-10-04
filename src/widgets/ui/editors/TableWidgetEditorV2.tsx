@@ -609,21 +609,21 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                         </div>
                       </Label>
                       <Select
-                        value={value.settings.aggregation.groupBy || ""}
+                        value={value.settings.aggregation.groupBy || "__none__"}
                         onValueChange={(val) => updateSettings({
-                          aggregation: { ...value.settings.aggregation, groupBy: val || undefined }
+                          aggregation: { ...value.settings.aggregation, groupBy: val === "__none__" ? undefined : val }
                         })}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select column to group by" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">No grouping</SelectItem>
-                          {availableColumns.map((column) => (
-                            <SelectItem key={column.id} value={column.name}>
-                              {column.name} ({column.type})
-                            </SelectItem>
-                          ))}
+                      <SelectContent>
+                        <SelectItem value="__none__">No grouping</SelectItem>
+                        {availableColumns.map((column) => (
+                          <SelectItem key={column.id} value={column.name}>
+                            {column.name} ({column.type})
+                          </SelectItem>
+                        ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -1074,7 +1074,7 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <div>
                     <Label className="text-sm font-medium">Default Sort Column</Label>
                     <Select
-                      value={value.settings.sorting.defaultColumn || ""}
+                      value={value.settings.sorting.defaultColumn || undefined}
                       onValueChange={(val) => updateSettings({
                         sorting: { ...value.settings.sorting, defaultColumn: val || undefined }
                       })}

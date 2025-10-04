@@ -97,7 +97,7 @@ export async function GET(
 
 	// Parse query parameters
 	const url = new URL(request.url);
-	const includePredefined = url.searchParams.get('includePredefined') === 'true';
+	const includePredefined = url.searchParams.get('includePredefined') !== 'false';
 
 		try {
 			if (role === "ADMIN") {
@@ -107,6 +107,10 @@ export async function GET(
 					database: {
 						tenantId: Number(tenantId),
 					},
+					...(includePredefined ? {} : {
+						isProtected: false,
+						isModuleTable: false,
+					}),
 				};
 
 				const tables = await withRetry(() => prisma.table.findMany({
@@ -151,6 +155,10 @@ export async function GET(
 					database: {
 						tenantId: Number(tenantId),
 					},
+					...(includePredefined ? {} : {
+						isProtected: false,
+						isModuleTable: false,
+					}),
 				},
 			};
 

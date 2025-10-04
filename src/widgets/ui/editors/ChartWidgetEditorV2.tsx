@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { z } from "zod";
-import { chartWidgetConfigSchema } from "@/widgets/schemas/chart";
+import { chartWidgetConfigSchema } from "@/widgets/schemas/chart-v2";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -109,7 +109,7 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
         groupBy: value.settings.groupByColumn,
         aggregationFunction: value.settings.aggregationFunction as any,
       },
-      filters: (value.data.filters || []).filter(f => f.column && f.operator && f.value !== undefined) as any,
+      filters: (value.data.filters || []).filter((f: any) => f.column && f.operator && f.value !== undefined) as any,
       topN: value.settings.enableTopN ? {
         enabled: true,
         count: value.settings.topNCount || 10,
@@ -173,7 +173,7 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
   const toggleYColumn = (columnName: string) => {
     const currentY = value.data.mappings?.y || [];
     const updated = currentY.includes(columnName)
-      ? currentY.filter(c => c !== columnName)
+      ? currentY.filter((c: string) => c !== columnName)
       : [...currentY, columnName];
     updateData({ 
       mappings: { 
@@ -379,7 +379,7 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                         </div>
                       </Label>
                       <Select
-                        value={value.data.mappings?.x || ""}
+                        value={value.data.mappings?.x || undefined}
                         onValueChange={(val) => updateData({ 
                           mappings: { ...value.data.mappings, x: val } 
                         })}
@@ -501,7 +501,7 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                             </div>
                           </Label>
                           <Select
-                            value={value.settings.groupByColumn || ""}
+                            value={value.settings.groupByColumn || undefined}
                             onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
                           >
                             <SelectTrigger className="mt-1">

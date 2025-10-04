@@ -107,6 +107,11 @@ export const api = {
 		batchUpdate: (dashboardId: number, updates: Array<{ id: number; data: UpdateWidgetData }>) => request<any[]>(`/api/dashboards/${dashboardId}/widgets/batch`, { method: 'PUT', body: JSON.stringify({ updates }) }),
 	},
 	tables: {
+		list: (tenantId: number, databaseId: number, includePredefined: boolean = false) => {
+			const searchParams = new URLSearchParams();
+			searchParams.set('includePredefined', String(includePredefined));
+			return request<any[]>(`/api/tenants/${tenantId}/databases/${databaseId}/tables?${searchParams.toString()}`);
+		},
 		rows: (tenantId: number, databaseId: number, tableId: number, query?: QueryData) => {
 			const searchParams = new URLSearchParams();
 			if (query) {
@@ -168,7 +173,18 @@ export const api = {
 			return { success: true, data: allRows };
 		},
 		columns: (tenantId: number, databaseId: number, tableId: number) => request<any[]>(`/api/tenants/${tenantId}/databases/${databaseId}/tables/${tableId}/columns`),
-		list: (tenantId: number, databaseId: number) => request<any[]>(`/api/tenants/${tenantId}/databases/${databaseId}/tables`),
+	},
+	databases: {
+		list: (tenantId: number, includePredefined: boolean = false) => {
+			const searchParams = new URLSearchParams();
+			searchParams.set('includePredefined', String(includePredefined));
+			return request<any[]>(`/api/tenants/${tenantId}/databases?${searchParams.toString()}`);
+		},
+		allTables: (tenantId: number, includePredefined: boolean = true) => {
+			const searchParams = new URLSearchParams();
+			searchParams.set('includePredefined', String(includePredefined));
+			return request<any[]>(`/api/tenants/${tenantId}/databases/tables?${searchParams.toString()}`);
+		},
 	},
 	health: () => request<{ status: string; timestamp: string }>('/api/health'),
 }

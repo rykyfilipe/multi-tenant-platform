@@ -110,15 +110,15 @@ export const useDashboardData = () => {
 				hasToken: !!token
 			});
 			
-			// Fetch only essential data first for faster FCP
-			const [databasesResponse, usersResponse] = await Promise.all([
-				fetch(`/api/tenants/${tenant.id}/databases`, {
-					headers: { Authorization: `Bearer ${token}` },
-				}),
-				fetch(`/api/tenants/${tenant.id}/users`, {
-					headers: { Authorization: `Bearer ${token}` },
-				}),
-			]);
+		// Fetch only essential data first for faster FCP
+		const [databasesResponse, usersResponse] = await Promise.all([
+			fetch(`/api/tenants/${tenant.id}/databases?includePredefined=false`, {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+			fetch(`/api/tenants/${tenant.id}/users`, {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		]);
 
 			console.log('[useDashboardData] API responses:', {
 				databasesOk: databasesResponse.ok,

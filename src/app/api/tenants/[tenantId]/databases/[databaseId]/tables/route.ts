@@ -171,6 +171,10 @@ export async function GET(
 		return tenantAccessError;
 	}
 
+	// Parse query parameters
+	const url = new URL(request.url);
+	const includePredefined = url.searchParams.get('includePredefined') !== 'false';
+
 	try {
 		// Verificăm că baza de date există și aparține tenant-ului
 		const database = await prisma.database.findFirst({
@@ -202,8 +206,8 @@ export async function GET(
 				},
 			});
 
-			// Add predefined tables for widgets
-			const predefinedTables = [
+			// Add predefined tables for widgets only if includePredefined is true
+			const predefinedTables = includePredefined ? [
 				{
 					id: -1, // Special ID for predefined tables
 					name: "invoices",
@@ -255,7 +259,7 @@ export async function GET(
 					],
 					_count: { rows: 0 },
 				},
-			];
+			] : [];
 
 			// Combine regular tables with predefined tables
 			const allTables = [...tables, ...predefinedTables];
@@ -297,8 +301,8 @@ export async function GET(
 				rows: Array(item.table._count.rows).fill(null), // Create array of correct length for counting
 			}));
 
-		// Add predefined tables for non-admin users too
-		const predefinedTables = [
+		// Add predefined tables for non-admin users too only if includePredefined is true
+		const predefinedTables = includePredefined ? [
 			{
 				id: -1, // Special ID for predefined tables
 				name: "invoices",
@@ -350,7 +354,7 @@ export async function GET(
 				],
 				_count: { rows: 0 },
 			},
-		];
+		] : [];
 
 		// Combine regular tables with predefined tables
 		const allTables = [...tables, ...predefinedTables];

@@ -54,7 +54,7 @@ export const useDatabaseTables = (tenantId: number) => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/tenants/${tenantId}/databases`);
+        const response = await fetch(`/api/tenants/${tenantId}/databases?includePredefined=false`);
         if (!response.ok) {
           throw new Error("Failed to fetch databases");
         }

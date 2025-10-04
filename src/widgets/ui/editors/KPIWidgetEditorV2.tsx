@@ -465,19 +465,19 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                               </div>
                             </Label>
                             <Select
-                              value={metric.groupBy || ""}
-                              onValueChange={(val) => updateMetric(metricIndex, { groupBy: val || undefined })}
+                              value={metric.groupBy || "__none__"}
+                              onValueChange={(val) => updateMetric(metricIndex, { groupBy: val === "__none__" ? undefined : val })}
                             >
                               <SelectTrigger className="mt-1">
                                 <SelectValue placeholder="Select group field" />
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="">No grouping</SelectItem>
-                                {availableColumns.map((column) => (
-                                  <SelectItem key={column.id} value={column.name}>
-                                    {column.name} ({column.type})
-                                  </SelectItem>
-                                ))}
+                            <SelectContent>
+                              <SelectItem value="__none__">No grouping</SelectItem>
+                              {availableColumns.map((column) => (
+                                <SelectItem key={column.id} value={column.name}>
+                                  {column.name} ({column.type})
+                                </SelectItem>
+                              ))}
                               </SelectContent>
                             </Select>
                           </div>

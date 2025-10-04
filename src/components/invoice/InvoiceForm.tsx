@@ -248,24 +248,24 @@ export function InvoiceForm({
 		const fetchTables = async () => {
 			if (!token || !tenant?.id) return;
 
-			setAvailableTablesLoading(true);
-			try {
-				const response = await fetch(
-					`/api/tenants/${tenant.id}/databases/tables`,
-					{
-						headers: { Authorization: `Bearer ${token}` },
-					},
-				);
+		setAvailableTablesLoading(true);
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenant.id}/databases/tables?includePredefined=true`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			);
 
-				if (response.ok) {
-					const tables = await response.json();
-					setAvailableTables(tables);
-				}
-			} catch (error) {
-				console.error("Error fetching tables:", error);
-			} finally {
-				setAvailableTablesLoading(false);
+			if (response.ok) {
+				const tables = await response.json();
+				setAvailableTables(tables);
 			}
+		} catch (error) {
+			console.error("Error fetching tables:", error);
+		} finally {
+			setAvailableTablesLoading(false);
+		}
 		};
 
 		fetchTables();
