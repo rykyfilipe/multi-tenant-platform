@@ -27,6 +27,11 @@ export interface ProcessingConfig {
   mode: 'raw' | 'aggregated';
   groupBy?: string; // Required for aggregated mode
   aggregationFunction?: 'sum' | 'avg' | 'count' | 'min' | 'max'; // Required for aggregated mode
+  // Support for multiple aggregations on same data
+  multipleAggregations?: Array<{
+    function: 'sum' | 'avg' | 'count' | 'min' | 'max';
+    label: string;
+  }>;
 }
 
 /**
@@ -295,8 +300,8 @@ export class ChartDataProcessor {
   private static processAggregatedData(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
     console.log('📊 [Step 3b: Aggregated] Processing aggregated data...');
 
-    if (!config.processing.groupBy || !config.processing.aggregationFunction) {
-      throw new Error('Group By and Aggregation Function are required for aggregated mode');
+    if (!config.processing.groupBy) {
+      throw new Error('Group By is required for aggregated mode');
     }
 
     // Group data by the specified column
@@ -319,11 +324,21 @@ export class ChartDataProcessor {
         name: groupKey === '__NULL__' ? 'N/A' : groupKey,
       };
 
-      // Apply aggregation function to each Y-axis column
+      // Apply aggregation function(s) to each Y-axis column
       config.mappings.y.forEach(yColumn => {
         const values = this.extractNumericValues(groupRows, yColumn);
-        const aggregatedValue = this.applyAggregationFunction(values, config.processing.aggregationFunction!);
-        chartPoint[yColumn] = aggregatedValue;
+        
+        // Support multiple aggregations on same data
+        if (config.processing.multipleAggregations && config.processing.multipleAggregations.length > 0) {
+          config.processing.multipleAggregations.forEach((agg, index) => {
+            const aggregatedValue = this.applyAggregationFunction(values, agg.function);
+            chartPoint[`${yColumn}_${agg.function}_${index}`] = aggregatedValue;
+          });
+        } else if (config.processing.aggregationFunction) {
+          // Single aggregation (backwards compatibility)
+          const aggregatedValue = this.applyAggregationFunction(values, config.processing.aggregationFunction);
+          chartPoint[yColumn] = aggregatedValue;
+        }
       });
 
       aggregated.push(chartPoint);

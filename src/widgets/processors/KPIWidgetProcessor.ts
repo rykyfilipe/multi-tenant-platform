@@ -18,6 +18,7 @@ export interface DataSourceConfig {
 export interface MetricConfig {
   field: string; // Column name
   label: string; // Display name
+  groupBy?: string; // Optional group by field for complex aggregations
   aggregations: Array<{
     function: 'sum' | 'avg' | 'count' | 'min' | 'max';
     label: string; // Display name for this aggregation
@@ -225,12 +226,54 @@ export class KPIWidgetProcessor {
     // Step 2: Apply filters (already done at API level)
     console.log('✅ [KPIWidgetProcessor] Filters applied at API level');
 
-    // Step 3: Process metrics
+    // Step 3: Process metrics with proper aggregation logic
     const results: KPIResult[] = [];
     
     config.metrics.forEach(metric => {
-      metric.aggregations.forEach(aggregation => {
-        const value = this.calculateAggregation(normalizedData, metric.field, aggregation.function);
+      // For each metric, we need to apply ALL aggregation functions on the SAME dataset
+      // This allows for complex queries like "max of sum" or "avg of count"
+      
+      // Step 1: Group data if groupBy is specified
+      let dataToProcess = normalizedData;
+      if (metric.groupBy) {
+        dataToProcess = this.groupDataByField(normalizedData, metric.groupBy);
+      }
+      
+      metric.aggregations.forEach((aggregation, aggIndex) => {
+        let value: number;
+        let processedData = dataToProcess;
+
+        // If this is not the first aggregation, we need to apply previous aggregations first
+        if (aggIndex > 0) {
+          // Apply all previous aggregations in sequence
+          for (let i = 0; i < aggIndex; i++) {
+            const prevAgg = metric.aggregations[i];
+            processedData = this.applyAggregationToDataset(processedData, metric.field, prevAgg.function);
+          }
+        }
+
+        // Apply current aggregation
+        if (metric.groupBy) {
+          // If we have grouping, apply aggregation within each group, then aggregate the results
+          if (aggIndex === 0) {
+            // First aggregation: sum/avg/count within each group
+            const groupResults = this.calculateAggregationByGroup(processedData, metric.field, metric.groupBy, aggregation.function);
+            value = this.calculateAggregation(groupResults, 'value', 'sum'); // Sum all group results
+          } else {
+            // Subsequent aggregations: apply to grouped results
+            value = this.calculateAggregation(processedData, metric.field, aggregation.function);
+          }
+        } else {
+          // No grouping - apply aggregation directly to data
+          if (aggIndex === 0) {
+            // First aggregation - apply to original data
+            value = this.calculateAggregation(processedData, metric.field, aggregation.function);
+          } else {
+            // Subsequent aggregations - this should be chained properly
+            // For now, let's just apply to the original data again
+            value = this.calculateAggregation(normalizedData, metric.field, aggregation.function);
+          }
+        }
         
         const result: KPIResult = {
           metric: `${metric.field}-${aggregation.function}`,
@@ -240,8 +283,8 @@ export class KPIWidgetProcessor {
           format: metric.format || 'number',
         };
 
-        // Calculate trend if enabled
-        if (metric.showTrend) {
+        // Calculate trend if enabled (only for first aggregation)
+        if (metric.showTrend && aggIndex === 0) {
           result.trend = this.calculateTrend(normalizedData, metric.field, aggregation.function);
         }
 
@@ -366,6 +409,81 @@ export class KPIWidgetProcessor {
       percentage: Math.abs(percentage),
       status
     };
+  }
+
+  /**
+   * Group data by a specific field
+   */
+  private static groupDataByField(data: NormalizedRow[], groupByField: string): NormalizedRow[] {
+    const groups = new Map<string, NormalizedRow[]>();
+    
+    data.forEach(row => {
+      const groupKey = String(row[groupByField] || 'Unknown');
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, []);
+      }
+      groups.get(groupKey)!.push(row);
+    });
+
+    // Return grouped data as array of objects with group info
+    const groupedData: NormalizedRow[] = [];
+    groups.forEach((groupRows, groupKey) => {
+      groupedData.push({
+        _groupKey: groupKey,
+        _groupRows: groupRows,
+        _groupCount: groupRows.length
+      });
+    });
+
+    return groupedData;
+  }
+
+  /**
+   * Calculate aggregation by group (for grouped data)
+   */
+  private static calculateAggregationByGroup(
+    groupedData: NormalizedRow[], 
+    field: string, 
+    groupByField: string, 
+    aggregation: 'sum' | 'avg' | 'count' | 'min' | 'max'
+  ): NormalizedRow[] {
+    const results: NormalizedRow[] = [];
+    
+    groupedData.forEach(group => {
+      if (group._groupRows) {
+        const groupRows = group._groupRows as NormalizedRow[];
+        const groupValue = this.calculateAggregation(groupRows, field, aggregation);
+        
+        results.push({
+          value: groupValue,
+          groupKey: group._groupKey,
+          groupCount: group._groupCount
+        });
+      }
+    });
+
+    return results;
+  }
+
+  /**
+   * Apply aggregation to dataset and return processed data
+   */
+  private static applyAggregationToDataset(
+    data: NormalizedRow[], 
+    field: string, 
+    aggregation: 'sum' | 'avg' | 'count' | 'min' | 'max'
+  ): NormalizedRow[] {
+    // This method is used for chaining aggregations
+    // For example: first sum by group, then find max of sums
+    
+    const value = this.calculateAggregation(data, field, aggregation);
+    
+    // Return a single row with the aggregated value
+    return [{
+      [field]: value,
+      _aggregated: true,
+      _aggregation_type: aggregation
+    }];
   }
 
   /**

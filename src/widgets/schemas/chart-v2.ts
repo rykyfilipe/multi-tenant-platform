@@ -8,6 +8,11 @@ export const chartSettingsSchema = z.object({
   processingMode: z.enum(["raw", "grouped"]).default("raw"),
   // Aggregation (only for grouped mode)
   aggregationFunction: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
+  // Multiple aggregations on same data (for complex queries)
+  multipleAggregations: z.array(z.object({
+    function: z.enum(["sum", "avg", "count", "min", "max"]),
+    label: z.string().min(1, "Aggregation label is required"),
+  })).optional(),
   // Grouping
   groupByColumn: z.string().optional(),
   // Top N - simplified (auto-sort by default)

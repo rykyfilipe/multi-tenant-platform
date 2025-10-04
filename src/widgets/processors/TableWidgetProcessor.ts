@@ -360,10 +360,17 @@ export class TableWidgetProcessor {
 
       // Calculate aggregations for each configured column
       config.columns.forEach(colConfig => {
-        colConfig.aggregations.forEach(aggConfig => {
-          const value = this.calculateAggregation(groupRows, colConfig.column, aggConfig.function);
-          aggregatedRow[`${colConfig.column}_${aggConfig.function}`] = value;
-        });
+        // Use multiple aggregations method for complex queries
+        const multiResults = this.calculateMultipleAggregations(groupRows, colConfig.column, colConfig.aggregations);
+        
+      // Add results to aggregated row with proper naming
+      Object.keys(multiResults).forEach(key => {
+        // Extract the function name from the key (e.g., "sales_sum_0" -> "sum")
+        const parts = key.split('_');
+        const functionName = parts[parts.length - 2]; // Get the function name
+        const finalKey = `${colConfig.column}_${functionName}`;
+        aggregatedRow[finalKey] = multiResults[key];
+      });
       });
 
       aggregatedRows.push(aggregatedRow);
@@ -384,12 +391,19 @@ export class TableWidgetProcessor {
     const summary: any = {};
 
     columns.forEach(colConfig => {
-      colConfig.aggregations.forEach(aggConfig => {
-        const value = this.calculateAggregation(data, colConfig.column, aggConfig.function);
-        if (!summary[colConfig.column]) {
-          summary[colConfig.column] = {};
-        }
-        summary[colConfig.column][aggConfig.function] = value;
+      // Use multiple aggregations method for complex queries
+      const multiResults = this.calculateMultipleAggregations(data, colConfig.column, colConfig.aggregations);
+      
+      if (!summary[colConfig.column]) {
+        summary[colConfig.column] = {};
+      }
+      
+      // Add all aggregation results with proper naming
+      Object.keys(multiResults).forEach(key => {
+        // Extract the function name from the key (e.g., "sales_sum_0" -> "sum")
+        const parts = key.split('_');
+        const functionName = parts[parts.length - 2]; // Get the function name
+        summary[colConfig.column][functionName] = multiResults[key];
       });
     });
 
@@ -429,6 +443,36 @@ export class TableWidgetProcessor {
       default:
         return 0;
     }
+  }
+
+  /**
+   * Calculate multiple aggregations for the same column (for complex queries)
+   */
+  private static calculateMultipleAggregations(
+    data: NormalizedRow[], 
+    field: string, 
+    aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last'; label: string }>
+  ): Record<string, number | string | any> {
+    const results: Record<string, number | string | any> = {};
+    let processedData = data;
+
+    aggregations.forEach((agg, index) => {
+      // Apply aggregation to current data
+      const value = this.calculateAggregation(processedData, field, agg.function);
+      results[`${field}_${agg.function}_${index}`] = value;
+      
+      // For chaining aggregations (e.g., max of sum)
+      if (index > 0) {
+        // Create intermediate result for next aggregation
+        processedData = [{
+          [field]: value,
+          _intermediate: true,
+          _aggregation_type: agg.function
+        }];
+      }
+    });
+
+    return results;
   }
 
   /**

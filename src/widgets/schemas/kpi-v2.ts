@@ -4,6 +4,8 @@ import { baseWidgetConfigSchema } from "./base";
 export const kpiMetricSchema = z.object({
   field: z.string().min(1, "Field is required"),
   label: z.string().min(1, "Label is required"),
+  // Group by field for complex aggregations (e.g., group by product, then sum quantity)
+  groupBy: z.string().optional(),
   aggregations: z.array(z.object({
     function: z.enum(["sum", "avg", "count", "min", "max"]),
     label: z.string().min(1, "Aggregation label is required"),

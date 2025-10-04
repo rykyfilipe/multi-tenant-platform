@@ -424,33 +424,63 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {/* Field Selection */}
-                        <div>
-                          <Label className="text-sm font-medium flex items-center gap-2">
-                            Field
-                            <div className="group relative">
-                              <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                {getTooltipContent("field")}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm font-medium flex items-center gap-2">
+                              Value Field
+                              <div className="group relative">
+                                <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  {getTooltipContent("field")}
+                                </div>
                               </div>
-                            </div>
-                          </Label>
-                          <Select
-                            value={metric.field}
-                            onValueChange={(val) => updateMetric(metricIndex, { field: val })}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select numeric field" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableColumns
-                                .filter(col => ['number', 'integer', 'decimal', 'float', 'double'].includes(col.type))
-                                .map((column) => (
+                            </Label>
+                            <Select
+                              value={metric.field}
+                              onValueChange={(val) => updateMetric(metricIndex, { field: val })}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Select value field" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableColumns
+                                  .filter(col => ['number', 'integer', 'decimal', 'float', 'double'].includes(col.type))
+                                  .map((column) => (
+                                    <SelectItem key={column.id} value={column.name}>
+                                      {column.name} ({column.type})
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium flex items-center gap-2">
+                              Group By (Optional)
+                              <div className="group relative">
+                                <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  Group data before aggregating (e.g., group by product, then sum quantity)
+                                </div>
+                              </div>
+                            </Label>
+                            <Select
+                              value={metric.groupBy || ""}
+                              onValueChange={(val) => updateMetric(metricIndex, { groupBy: val || undefined })}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Select group field" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">No grouping</SelectItem>
+                                {availableColumns.map((column) => (
                                   <SelectItem key={column.id} value={column.name}>
                                     {column.name} ({column.type})
                                   </SelectItem>
                                 ))}
-                            </SelectContent>
-                          </Select>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
 
                         {/* Label */}
