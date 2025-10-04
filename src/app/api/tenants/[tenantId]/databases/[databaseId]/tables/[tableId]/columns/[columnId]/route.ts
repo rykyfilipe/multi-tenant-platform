@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkTableEditPermission } from "@/lib/auth";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
 
+
 export async function PATCH(
 	request: NextRequest,
 	{

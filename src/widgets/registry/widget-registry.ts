@@ -4,7 +4,7 @@ import { tableWidgetConfigSchema } from "../schemas/table";
 import { kpiWidgetConfigSchema } from "../schemas/kpi";
 import { baseWidgetConfigSchema } from "../schemas/base";
 import { z } from "zod";
-import { ChartWidgetEditor } from "../ui/editors/ChartWidgetEditor";
+import { ChartWidgetEditorV2 as ChartWidgetEditor } from "../ui/editors/ChartWidgetEditorV2";
 import { TableWidgetEditor } from "../ui/editors/TableWidgetEditor";
 import { KPIWidgetEditor } from "../ui/editors/KPIWidgetEditor";
 import { ClockWidgetEditor } from "../ui/editors/ClockWidgetEditor";
@@ -51,10 +51,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         refreshInterval: 60,
         processingMode: "raw",
         aggregationFunction: "sum",
-        aggregationColumns: [],
         enableTopN: false,
         topNCount: 10,
-        sortDirection: "desc",
       },
       style: {
         theme: "platinum",
