@@ -5,6 +5,7 @@ import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
 import { useWidgetsApi } from "@/widgets/api/simple-client";
+import { useAutoSave } from "@/widgets/hooks/useAutoSave";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -65,6 +66,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
 
   const api = useWidgetsApi(tenantId, dashboardId);
+  
+  // Auto-save functionality
+  useAutoSave({
+    tenantId,
+    dashboardId,
+    actorId,
+    debounceMs: 2000, // 2 seconds debounce
+    enabled: isEditMode, // Only auto-save in edit mode
+  });
   
   // Undo/Redo functionality from store
   const undoLastChange = useWidgetsStore((state) => state.undoLastChange);
@@ -216,6 +226,28 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     return filtered;
   }, [widgetsRecord, tenantId, dashboardId]);
 
+
+  // Load widgets on component mount and when dashboard changes
+  useEffect(() => {
+    const loadInitialWidgets = async () => {
+      try {
+        console.log('🔄 [WidgetCanvasNew] Loading widgets for dashboard:', dashboardId);
+        await api.loadWidgets(true); // Load with config
+        console.log('✅ [WidgetCanvasNew] Widgets loaded successfully');
+      } catch (error) {
+        console.error('❌ [WidgetCanvasNew] Failed to load widgets:', error);
+        toast({
+          title: "Failed to load widgets",
+          description: "Could not load dashboard widgets. Please refresh the page.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    if (tenantId && dashboardId) {
+      loadInitialWidgets();
+    }
+  }, [tenantId, dashboardId, api, toast]);
 
   // Cleanup old IDs on component mount
   useEffect(() => {

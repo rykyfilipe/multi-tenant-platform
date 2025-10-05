@@ -126,7 +126,7 @@ export const useTables = () => {
 			setLoading(true);
 
 			const response = await fetch(
-				`/api/tenants/${tenant.id}/databases/tables?includePredefined=false`,
+				`/api/tenants/${tenant.id}/databases/tables?includePredefined=true`,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,

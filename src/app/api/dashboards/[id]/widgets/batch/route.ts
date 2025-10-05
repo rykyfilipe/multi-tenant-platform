@@ -71,11 +71,26 @@ export async function POST(
               throw new Error('Widget data is required for create operation');
             }
             
+            console.log('[batch] Create payload received:', JSON.stringify(createPayload, null, 2));
+            
             // Normalize widget type from uppercase to lowercase for validation
+            const widgetType = createPayload.kind?.toLowerCase() || createPayload.type?.toLowerCase() || createPayload.type;
+            
+            if (!widgetType) {
+              console.error('[batch] No valid widget type found in payload:', {
+                kind: createPayload.kind,
+                type: createPayload.type,
+                payload: createPayload
+              });
+              throw new Error('Widget type is required but not found in payload');
+            }
+            
             const normalizedPayload = {
               ...createPayload,
-              type: createPayload.kind?.toLowerCase() || createPayload.type?.toLowerCase()
+              type: widgetType
             };
+            
+            console.log('[batch] Normalized payload:', JSON.stringify(normalizedPayload, null, 2));
             
             // Validate widget creation data
             const createData = DashboardValidators.validateWidgetCreate(normalizedPayload);
@@ -109,11 +124,24 @@ export async function POST(
               throw new Error('Widget ID and update data are required for update operation');
             }
             
-            // Normalize widget type from uppercase to lowercase for validation
-            const normalizedUpdatePayload = {
-              ...updatePayload,
-              type: updatePayload.kind?.toLowerCase() || updatePayload.type?.toLowerCase()
-            };
+            // Normalize widget type from uppercase to lowercase for validation (if type is being updated)
+            let normalizedUpdatePayload = { ...updatePayload };
+            
+            // Only normalize type if it's being updated
+            if (updatePayload.kind !== undefined || updatePayload.type !== undefined) {
+              const widgetType = updatePayload.kind?.toLowerCase() || updatePayload.type?.toLowerCase() || updatePayload.type;
+              
+              if (!widgetType) {
+                console.error('[batch] No valid widget type found in update payload:', {
+                  kind: updatePayload.kind,
+                  type: updatePayload.type,
+                  payload: updatePayload
+                });
+                throw new Error('Widget type is required but not found in update payload');
+              }
+              
+              normalizedUpdatePayload.type = widgetType;
+            }
             
             // Validate widget update data
             const updateData = DashboardValidators.validateWidgetUpdate(normalizedUpdatePayload);

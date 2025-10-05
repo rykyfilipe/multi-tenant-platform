@@ -65,14 +65,14 @@ export const tableStyleSchema = z.object({
   // Layout
   padding: z.enum(["xs", "sm", "md", "lg", "xl"]).default("sm"),
   borderWidth: z.enum(["0", "1", "2", "4"]).default("1"),
-  borderRadius: z.enum(["none", "sm", "md", "lg", "xl"]).default("md"),
+  borderRadius: z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]).default("md"),
   
   // Column settings
   columnMinWidth: z.number().int().min(50).max(500).default(100),
   columnMaxWidth: z.number().int().min(100).max(1000).default(300),
   
   // Effects
-  shadow: z.enum(["none", "subtle", "medium", "bold"]).default("subtle"),
+  shadow: z.enum(["none", "subtle", "medium", "bold", "sm", "md", "lg"]).default("subtle"),
   stripedRows: z.boolean().default(true),
   hoverEffects: z.boolean().default(true),
   
