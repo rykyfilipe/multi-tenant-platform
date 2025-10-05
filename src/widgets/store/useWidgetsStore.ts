@@ -92,6 +92,12 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       createLocal: (widget) => {
         console.log('[createLocal] Creating widget:', widget.id);
         
+        // Validate widget ID
+        if (!widget.id || typeof widget.id !== 'number' || isNaN(widget.id)) {
+          console.error('[createLocal] Invalid widget ID:', widget.id);
+          return;
+        }
+        
         // Ensure config has refresh field for backward compatibility
         const widgetWithRefresh = {
           ...widget,
@@ -631,8 +637,15 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
         console.log('[setWidgets] Setting widgets:', widgets.length, 'widgets');
         console.log('[setWidgets] Input widget IDs:', widgets.map(w => w.id));
         set(() => {
-          const widgetsMap = widgets.reduce<Record<number, WidgetEntity>>((acc, widget) => {
-            console.log('[setWidgets] Processing widget ID:', widget.id, 'isLocal:', isLocalWidget(widget.id));
+          const widgetsMap = widgets
+            .filter(widget => 
+              widget && // Ensure widget exists
+              widget.id && // Ensure widget has valid ID
+              typeof widget.id === 'number' && // Ensure ID is a number
+              !isNaN(widget.id) // Ensure ID is not NaN
+            )
+            .reduce<Record<number, WidgetEntity>>((acc, widget) => {
+              console.log('[setWidgets] Processing widget ID:', widget.id, 'isLocal:', isLocalWidget(widget.id));
             // Ensure config has all required fields for backward compatibility
             const widgetWithCorrectConfig = {
               ...widget,

@@ -5,7 +5,7 @@ import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
 import { useWidgetsApi } from "@/widgets/api/simple-client";
-import { useAutoSave } from "@/widgets/hooks/useAutoSave";
+// import { useAutoSave } from "@/widgets/hooks/useAutoSave"; // Removed auto-save
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -66,15 +66,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
 
   const api = useWidgetsApi(tenantId, dashboardId);
-  
-  // Auto-save functionality
-  useAutoSave({
-    tenantId,
-    dashboardId,
-    actorId,
-    debounceMs: 2000, // 2 seconds debounce
-    enabled: isEditMode, // Only auto-save in edit mode
-  });
   
   // Undo/Redo functionality from store
   const undoLastChange = useWidgetsStore((state) => state.undoLastChange);
@@ -194,7 +185,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const handleDuplicateWidget = useCallback((widget: WidgetEntity) => {
     const newWidget: WidgetEntity = {
       ...widget,
-      id: Date.now() + Math.random(), // Generate new ID
+      id: Math.floor(Date.now() + Math.random() * 1000000), // Generate new integer ID
       title: `${widget.title} (Copy)`,
       position: {
         ...widget.position,
@@ -245,6 +236,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const widgetList = useMemo(() => {
     const filtered = Object.values(widgetsRecord).filter((widget) => 
       widget && // Ensure widget exists
+      widget.id && // Ensure widget has valid ID
+      typeof widget.id === 'number' && // Ensure ID is a number
+      !isNaN(widget.id) && // Ensure ID is not NaN
       widget.tenantId === tenantId && 
       widget.dashboardId === dashboardId && 
       widget.isVisible
@@ -348,7 +342,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   const layout: Layout[] = useMemo(() => {
     const layoutItems = widgetList
-      .filter(widget => widget && widgetsRecord[widget.id]) // Double-check widget still exists
+      .filter(widget => 
+        widget && // Ensure widget exists
+        widget.id && // Ensure widget has valid ID
+        typeof widget.id === 'number' && // Ensure ID is a number
+        !isNaN(widget.id) && // Ensure ID is not NaN
+        widgetsRecord[widget.id] // Double-check widget still exists in record
+      )
       .map((widget) => {
         // Ensure position values are valid numbers, default to 0 if NaN/undefined
         const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
@@ -356,14 +356,23 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         const w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
         const h = Number.isFinite(widget.position.h) ? widget.position.h : 4;
         
+        // Double-check ID is valid before converting to string
+        const widgetId = widget.id;
+        if (!widgetId || typeof widgetId !== 'number' || isNaN(widgetId)) {
+          console.error('[Layout] Invalid widget ID:', widgetId, 'for widget:', widget);
+          return null;
+        }
+        
         return {
-          i: widget.id.toString(),
+          i: widgetId.toString(),
           x,
           y,
           w,
           h,
         };
-      });
+      })
+      .filter(item => item !== null) as Layout[]; // Remove null items
+      
     console.log('🎯 [DEBUG] Layout:', layoutItems);
     return layoutItems;
   }, [widgetList, widgetsRecord]);
@@ -949,7 +958,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
           >
             {widgetList
-              .filter(widget => widget && widgetsRecord[widget.id]) // Ensure widget still exists before rendering
+              .filter(widget => 
+                widget && // Ensure widget exists
+                widget.id && // Ensure widget has valid ID
+                typeof widget.id === 'number' && // Ensure ID is a number
+                !isNaN(widget.id) && // Ensure ID is not NaN
+                widgetsRecord[widget.id] // Ensure widget still exists in record
+              )
               .map((widget) => {
                 const definition = getWidgetDefinition(widget.kind);
                 const Renderer = definition.renderer as React.ComponentType<{

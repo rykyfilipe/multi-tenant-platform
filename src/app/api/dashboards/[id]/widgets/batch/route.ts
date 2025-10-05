@@ -74,7 +74,12 @@ export async function POST(
             console.log('[batch] Create payload received:', JSON.stringify(createPayload, null, 2));
             
             // Normalize widget type from uppercase to lowercase for validation
-            const widgetType = createPayload.kind?.toLowerCase() || createPayload.type?.toLowerCase() || createPayload.type;
+            let widgetType = createPayload.kind?.toLowerCase() || createPayload.type?.toLowerCase() || createPayload.type;
+            
+            // If we still don't have a type, try to infer from kind
+            if (!widgetType && createPayload.kind) {
+              widgetType = createPayload.kind.toLowerCase();
+            }
             
             if (!widgetType) {
               console.error('[batch] No valid widget type found in payload:', {

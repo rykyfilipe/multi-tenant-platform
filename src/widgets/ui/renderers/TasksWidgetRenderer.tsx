@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
 import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
+import { useTasksAutoSave } from "@/widgets/hooks/useTasksAutoSave";
+import { useAuth, useTenant } from "@/contexts/AppContext";
 import {
   CheckCircle,
   Circle,
@@ -63,6 +65,8 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   isEditMode = false
 }) => {
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
+  const { user } = useAuth();
+  const { tenant } = useTenant();
   
   const config = widget.config as any;
   const settings = config?.settings || {};
@@ -120,6 +124,16 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  // Auto-save for tasks widget
+  useTasksAutoSave({
+    tenantId: tenant?.id || 0,
+    dashboardId: widget.dashboardId,
+    actorId: user?.id || 0,
+    widgetId: widget.id,
+    debounceMs: 1000, // 1 second debounce for tasks
+    enabled: true,
+  });
 
   // Save tasks to widget data
   const saveTasks = useCallback((newTasks: Task[]) => {
