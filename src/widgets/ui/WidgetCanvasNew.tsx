@@ -190,6 +190,33 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     });
   }, [discardAllChanges, toast]);
 
+  // Duplicate widget function
+  const handleDuplicateWidget = useCallback((widget: WidgetEntity) => {
+    const newWidget: WidgetEntity = {
+      ...widget,
+      id: Date.now() + Math.random(), // Generate new ID
+      title: `${widget.title} (Copy)`,
+      position: {
+        ...widget.position,
+        x: widget.position.x + 2, // Offset position
+        y: widget.position.y + 2,
+      },
+      version: 1,
+      schemaVersion: widget.schemaVersion,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: actorId,
+      updatedBy: actorId,
+    };
+    
+    createLocal(newWidget);
+    toast({
+      title: "Widget duplicated",
+      description: `${widget.title} has been duplicated.`,
+      variant: "default",
+    });
+  }, [createLocal, actorId, toast]);
+
   // State declarations
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -228,10 +255,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
 
   // Load widgets on component mount and when dashboard changes
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
   useEffect(() => {
     const loadInitialWidgets = async () => {
       try {
         console.log('🔄 [WidgetCanvasNew] Loading widgets for dashboard:', dashboardId);
+        setIsInitialLoad(true);
         await api.loadWidgets(true); // Load with config
         console.log('✅ [WidgetCanvasNew] Widgets loaded successfully');
       } catch (error) {
@@ -241,13 +271,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           description: "Could not load dashboard widgets. Please refresh the page.",
           variant: "destructive",
         });
+      } finally {
+        setIsInitialLoad(false);
       }
     };
 
     if (tenantId && dashboardId) {
       loadInitialWidgets();
     }
-  }, [tenantId, dashboardId, api, toast]);
+  }, [tenantId, dashboardId]); // Remove api and toast from dependencies to prevent loops
 
   // Cleanup old IDs on component mount
   useEffect(() => {
@@ -960,9 +992,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     <Renderer
                       widget={widget}
                       onEdit={undefined}
-                      onDelete={undefined}
-                      onDuplicate={undefined}
-                       isEditMode={isEditMode}
+                      onDelete={isEditMode ? () => deleteLocal(widget.id) : undefined}
+                      onDuplicate={isEditMode ? () => handleDuplicateWidget(widget) : undefined}
+                      isEditMode={isEditMode}
                     />
                   </div>
                 );

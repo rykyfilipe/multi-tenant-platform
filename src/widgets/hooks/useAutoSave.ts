@@ -46,6 +46,7 @@ export function useAutoSave({
       pendingOperations.length !== lastOperationsRef.current.length ||
       JSON.stringify(pendingOperations) !== JSON.stringify(lastOperationsRef.current);
 
+    // Only auto-save if we have pending operations and they're not just being cleared
     if (operationsChanged && pendingOperations.length > 0) {
       // Clear existing timeout
       if (timeoutRef.current) {
@@ -54,10 +55,17 @@ export function useAutoSave({
 
       // Set new timeout for auto-save
       timeoutRef.current = setTimeout(() => {
-        savePending();
+        // Double-check that we still have pending operations before saving
+        const currentPending = useWidgetsStore.getState().getPending();
+        if (currentPending.length > 0) {
+          savePending();
+        }
       }, debounceMs);
 
       // Update last operations reference
+      lastOperationsRef.current = pendingOperations;
+    } else if (operationsChanged && pendingOperations.length === 0) {
+      // If operations were cleared, update the reference but don't auto-save
       lastOperationsRef.current = pendingOperations;
     }
 
