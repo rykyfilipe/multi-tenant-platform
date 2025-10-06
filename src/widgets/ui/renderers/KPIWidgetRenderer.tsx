@@ -136,8 +136,18 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   }
 
   // Single metric display
-  const metric = config.data.metric;
+  const metric = config.data?.metric;
   const processedKPI = useMemo(() => {
+    if (!metric) {
+      return {
+        metric: '',
+        label: '',
+        value: 0,
+        aggregation: 'sum',
+        format: 'number',
+      };
+    }
+
     const kpiConfig = {
       dataSource: {
         databaseId: config.data.databaseId || 0,
@@ -148,7 +158,12 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     };
 
     return KPIWidgetProcessor.process(mockData, kpiConfig);
-  }, [config.data, metric, mockData]);
+  }, [
+    config.data?.databaseId, 
+    config.data?.tableId, 
+    JSON.stringify(metric), // Serialize entire metric object to avoid reference issues
+    JSON.stringify(config.data?.filters),
+  ]);
 
   return (
     <BaseWidget
