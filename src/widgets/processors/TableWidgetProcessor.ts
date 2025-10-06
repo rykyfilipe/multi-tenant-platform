@@ -482,7 +482,28 @@ export class TableWidgetProcessor {
    */
   private static extractValues(rows: NormalizedRow[], columnName: string): any[] {
     return rows
-      .map(row => row[columnName])
+      .map(row => {
+        const value = row[columnName];
+        if (value === null || value === undefined) return null;
+        
+        // For numeric values, ensure integers stay integers
+        if (typeof value === 'number') {
+          return value;
+        }
+        
+        // Parse string to number if it looks numeric
+        const strValue = String(value).trim();
+        if (/^\d+$/.test(strValue)) {
+          // Integer string → return as integer
+          return parseInt(strValue, 10);
+        } else if (/^\d+\.\d+$/.test(strValue)) {
+          // Decimal string → return as float
+          return parseFloat(strValue);
+        }
+        
+        // Non-numeric value, return as-is
+        return value;
+      })
       .filter(value => value !== null && value !== undefined);
   }
 

@@ -74,6 +74,9 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   }, [config.data, mockData]);
 
   const formatValue = (value: number, format: string): string => {
+    // Check if value is integer (no decimals) for quantity-like fields
+    const isInteger = Number.isInteger(value);
+    
     switch (format) {
       case "currency":
         return new Intl.NumberFormat("en-US", {
@@ -84,7 +87,13 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         return `${value.toFixed(1)}%`;
       case "decimal":
         return value.toFixed(2);
+      case "number":
       default:
+        // For integers (quantity, count, etc.) - NO commas, just the number
+        if (isInteger) {
+          return value.toString();
+        }
+        // For decimals - use locale formatting
         return new Intl.NumberFormat("en-US").format(value);
     }
   };

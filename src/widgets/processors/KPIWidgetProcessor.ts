@@ -495,8 +495,22 @@ export class KPIWidgetProcessor {
       .map(row => {
         const value = row[columnName];
         if (value === null || value === undefined) return null;
-        const numericValue = typeof value === 'number' ? value : parseFloat(value);
-        return isNaN(numericValue) ? null : numericValue;
+        
+        // If already a number, use it as-is
+        if (typeof value === 'number') {
+          return value;
+        }
+        
+        // Parse string to number
+        const numericValue = parseFloat(value);
+        if (isNaN(numericValue)) return null;
+        
+        // If original value looks like an integer string (quantity, count, etc.), return integer
+        if (/^\d+$/.test(String(value).trim())) {
+          return Math.floor(numericValue);
+        }
+        
+        return numericValue;
       })
       .filter((val): val is number => val !== null);
   }

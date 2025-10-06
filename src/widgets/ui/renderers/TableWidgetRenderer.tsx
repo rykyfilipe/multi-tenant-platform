@@ -123,16 +123,24 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   const formatValue = (value: any, format: string): string => {
     if (value === null || value === undefined) return "-";
     
+    const numericValue = Number(value);
+    const isInteger = Number.isInteger(numericValue);
+    
     switch (format) {
       case "currency":
         return new Intl.NumberFormat("en-US", {
           style: "currency",
           currency: "USD",
-        }).format(Number(value));
+        }).format(numericValue);
       case "percentage":
-        return `${Number(value).toFixed(1)}%`;
+        return `${numericValue.toFixed(1)}%`;
       case "number":
-        return new Intl.NumberFormat("en-US").format(Number(value));
+        // For integers (quantity, count, id) - NO commas
+        if (isInteger) {
+          return numericValue.toString();
+        }
+        // For decimals - use locale formatting
+        return new Intl.NumberFormat("en-US").format(numericValue);
       case "date":
         return new Date(value).toLocaleDateString();
       case "boolean":
