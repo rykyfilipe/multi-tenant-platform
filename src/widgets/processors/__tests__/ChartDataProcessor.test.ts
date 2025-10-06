@@ -60,16 +60,6 @@ describe('ChartDataProcessor', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('mappings.y: At least one Y axis column is required');
     });
-
-    it('should reject aggregated mode without group by', () => {
-      const invalidConfig = {
-        ...validConfig,
-        processing: { mode: 'aggregated' as const }
-      };
-      const result = ChartDataProcessor.validate(invalidConfig);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Group By column is required for aggregated mode');
-    });
   });
 
   describe('getSuggestedConfig', () => {
@@ -84,10 +74,11 @@ describe('ChartDataProcessor', () => {
       
       expect(suggestion.mappings?.x).toBe('month');
       expect(suggestion.mappings?.y).toEqual(['revenue', 'customers']);
-      expect(suggestion.processing?.mode).toBe('raw');
+      expect(suggestion.processing).toBeDefined();
+      expect(suggestion.processing?.yColumnAggregations).toBeUndefined(); // No default aggregations
     });
 
-    it('should suggest aggregated mode when no numeric columns', () => {
+    it('should suggest configuration when no numeric columns', () => {
       const columns = [
         { name: 'category', type: 'string' },
         { name: 'description', type: 'text' },
@@ -97,7 +88,7 @@ describe('ChartDataProcessor', () => {
       
       expect(suggestion.mappings?.x).toBe('category');
       expect(suggestion.mappings?.y).toEqual([]);
-      expect(suggestion.processing?.mode).toBe('aggregated');
+      expect(suggestion.processing).toBeDefined();
     });
   });
 
@@ -123,24 +114,29 @@ describe('ChartDataProcessor', () => {
       });
     });
 
-    it('should process aggregated data correctly', () => {
+    it('should process aggregated data correctly with auto-grouping by X axis', () => {
       const aggregatedConfig = {
         ...validConfig,
+        mappings: {
+          x: 'region', // Auto-groups by this
+          y: ['sales', 'profit'],
+        },
         processing: {
-          mode: 'aggregated' as const,
-          groupBy: 'region',
-          aggregationFunction: 'sum' as const,
+          yColumnAggregations: {
+            'sales': [{ function: 'sum' as const, label: 'Total Sales' }],
+            'profit': [{ function: 'sum' as const, label: 'Total Profit' }],
+          },
         },
       };
 
       const result = ChartDataProcessor.process(mockRawData, aggregatedConfig);
       
-      expect(result).toHaveLength(2);
+      expect(result).toHaveLength(2); // North and South groups
       
       const northGroup = result.find(r => r.name === 'North');
       const southGroup = result.find(r => r.name === 'South');
       
-      expect(northGroup?.sales).toBe(1800); // 1000 + 800
+      expect(northGroup?.sales).toBe(1800); // 1000 + 800 (auto-grouped by region='North')
       expect(northGroup?.profit).toBe(350); // 200 + 150
       expect(southGroup?.sales).toBe(1500);
       expect(southGroup?.profit).toBe(300);

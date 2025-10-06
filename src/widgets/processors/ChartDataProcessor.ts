@@ -21,13 +21,12 @@ export interface ColumnMappings {
 }
 
 /**
- * Data processing configuration
+ * Data processing configuration (SIMPLIFIED)
+ * Automatic grouping by X axis when aggregations are configured
  */
 export interface ProcessingConfig {
-  mode: 'raw' | 'aggregated';
-  groupBy?: string; // Required for aggregated mode
-  aggregationFunction?: 'sum' | 'avg' | 'count' | 'min' | 'max'; // Required for aggregated mode
   // Chained aggregations per Y column (e.g., { "revenue": [SUM, AVG, MAX] })
+  // If configured, automatically groups by X axis
   yColumnAggregations?: Record<string, Array<{
     function: 'sum' | 'avg' | 'count' | 'min' | 'max';
     label: string;
@@ -111,21 +110,16 @@ export const chartConfigSchema = z.object({
     y: z.array(z.string()).min(1, "At least one Y axis column is required"),
   }),
   processing: z.object({
-    mode: z.enum(["raw", "aggregated"]),
-    groupBy: z.string().optional(),
-    aggregationFunction: z.enum(["sum", "avg", "count", "min", "max"]).optional(),
-  }).refine(
-    (data) => {
-      if (data.mode === "aggregated") {
-        return data.groupBy && data.aggregationFunction;
-      }
-      return true;
-    },
-    {
-      message: "Group By and Aggregation Function are required for aggregated mode",
-      path: ["processing"],
-    }
-  ),
+    // Chained aggregations per Y column
+    // Automatically groups by X axis when configured
+    yColumnAggregations: z.record(
+      z.string(),
+      z.array(z.object({
+        function: z.enum(["sum", "avg", "count", "min", "max"]),
+        label: z.string().min(1),
+      }))
+    ).optional(),
+  }),
   filters: z.array(z.object({
     column: z.string(),
     operator: z.enum(["=", "!=", ">", "<", ">=", "<=", "contains", "startsWith", "endsWith"]),
@@ -162,17 +156,17 @@ export class ChartDataProcessor {
     }
 
     // Additional business logic validations
-    if (config.processing.mode === 'aggregated') {
-      if (!config.processing.groupBy) {
-        errors.push('Group By column is required for aggregated mode');
-      }
-      if (!config.processing.aggregationFunction) {
-        errors.push('Aggregation function is required for aggregated mode');
-      }
+    if (config.topN?.enabled && config.topN.count > 50) {
+      warnings.push('Large Top N count may impact performance');
     }
 
-    if (config.topN?.enabled && !config.topN.autoSort && config.topN.count > 50) {
-      warnings.push('Large Top N count without auto-sort may impact performance');
+    // Warn about complex aggregation pipelines
+    if (config.processing.yColumnAggregations) {
+      Object.entries(config.processing.yColumnAggregations).forEach(([column, aggs]) => {
+        if (aggs.length > 5) {
+          warnings.push(`Column "${column}" has ${aggs.length} chained aggregations - may be hard to interpret`);
+        }
+      });
     }
 
     return {
@@ -198,9 +192,8 @@ export class ChartDataProcessor {
         y: suggestedY,
       },
       processing: {
-        mode: suggestedY.length > 0 ? 'raw' : 'aggregated',
-        groupBy: textColumns[0]?.name,
-        aggregationFunction: 'sum',
+        // Aggregations are optional - configured per Y column
+        yColumnAggregations: undefined,
       },
       filters: [],
       topN: {
@@ -212,10 +205,11 @@ export class ChartDataProcessor {
   }
 
   /**
-   * Processes raw data through the simplified pipeline
+   * Processes raw data through the SIMPLIFIED pipeline
+   * AUTOMATIC grouping by X axis when aggregations are configured
    */
   static process(rawData: RawDataRow[], config: ChartConfig): ChartDataPoint[] {
-    console.log('🚀 [ChartDataProcessor] Starting data processing pipeline...');
+    console.log('🚀 [ChartDataProcessor] Starting SIMPLIFIED processing pipeline...');
 
     // Step 1: Normalize data
     const normalizedData = this.normalizeData(rawData);
@@ -227,12 +221,20 @@ export class ChartDataProcessor {
     // Step 2: Apply filters (already done at API level)
     console.log('✅ [ChartDataProcessor] Filters applied at API level');
 
-    // Step 3: Process data based on mode
+    // Step 3: Auto-detect if aggregation is needed
+    const hasAggregations = config.processing.yColumnAggregations && 
+      Object.keys(config.processing.yColumnAggregations).length > 0;
+
     let processedData: ChartDataPoint[];
-    if (config.processing.mode === 'raw') {
-      processedData = this.processRawData(normalizedData, config);
+    
+    if (hasAggregations) {
+      // AUTOMATIC grouping by X axis + apply aggregations
+      console.log('📊 [Auto-Aggregation] Grouping by X axis:', config.mappings.x);
+      processedData = this.processWithAggregations(normalizedData, config);
     } else {
-      processedData = this.processAggregatedData(normalizedData, config);
+      // RAW mode: simple pass-through
+      console.log('📊 [Raw Mode] Pass-through data');
+      processedData = this.processRawData(normalizedData, config);
     }
 
     // Step 4: Apply Top N if enabled
@@ -271,39 +273,11 @@ export class ChartDataProcessor {
   }
 
   /**
-   * Step 3a: Process raw data (pass-through with mapping)
-   * Note: Chained aggregations în raw mode se aplică pe toate datele odată
+   * Step 3a: Process raw data (simple pass-through)
    */
   private static processRawData(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
-    console.log('📊 [Step 3a: Raw] Processing raw data...');
+    console.log('📊 [Raw Mode] Simple pass-through...');
 
-    // Check if we have chained aggregations for any column
-    const hasChainedAggregations = config.processing.yColumnAggregations && 
-      Object.keys(config.processing.yColumnAggregations).length > 0;
-
-    if (hasChainedAggregations) {
-      // Apply chained aggregations to entire dataset
-      const chartPoint: ChartDataPoint = {
-        name: 'Aggregated Result',
-      };
-
-      config.mappings.y.forEach(yColumn => {
-        const allValues = this.extractNumericValues(data, yColumn);
-        const columnAggregations = config.processing.yColumnAggregations?.[yColumn];
-        
-        if (columnAggregations && columnAggregations.length > 0) {
-          const finalValue = this.applyChainedAggregations(allValues, columnAggregations);
-          chartPoint[yColumn] = finalValue;
-        } else {
-          // No chaining, just take average or first value
-          chartPoint[yColumn] = allValues.length > 0 ? allValues[0] : 0;
-        }
-      });
-
-      return [chartPoint];
-    }
-
-    // Normal raw mode: pass-through with mapping
     return data.map((row, index) => {
       const chartPoint: ChartDataPoint = {
         name: row[config.mappings.x] !== undefined 
@@ -311,7 +285,7 @@ export class ChartDataProcessor {
           : `Row ${index + 1}`,
       };
 
-      // Add all Y-axis columns
+      // Add all Y-axis columns as-is
       config.mappings.y.forEach(yColumn => {
         if (row[yColumn] !== undefined) {
           chartPoint[yColumn] = row[yColumn];
@@ -323,20 +297,20 @@ export class ChartDataProcessor {
   }
 
   /**
-   * Step 3b: Process aggregated data (group by + aggregate)
+   * Step 3b: Process with aggregations (AUTOMATIC grouping by X axis)
    */
-  private static processAggregatedData(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
-    console.log('📊 [Step 3b: Aggregated] Processing aggregated data...');
+  private static processWithAggregations(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
+    console.log('📊 [Auto-Aggregation] Grouping by X axis and applying pipelines...');
 
-    if (!config.processing.groupBy) {
-      throw new Error('Group By is required for aggregated mode');
-    }
+    // AUTOMATIC grouping by X axis column
+    const groupByColumn = config.mappings.x;
+    console.log(`   Grouping by: ${groupByColumn}`);
 
-    // Group data by the specified column
+    // Group data by X axis
     const grouped: Record<string, NormalizedRow[]> = {};
     data.forEach(row => {
-      const groupKey = row[config.processing.groupBy!] !== undefined 
-        ? String(row[config.processing.groupBy!])
+      const groupKey = row[groupByColumn] !== undefined 
+        ? String(row[groupByColumn])
         : '__NULL__';
       
       if (!grouped[groupKey]) {
@@ -345,28 +319,28 @@ export class ChartDataProcessor {
       grouped[groupKey].push(row);
     });
 
-    // Apply aggregation to each group
+    console.log(`   Created ${Object.keys(grouped).length} groups`);
+
+    // Apply aggregation pipelines to each group
     const aggregated: ChartDataPoint[] = [];
     Object.entries(grouped).forEach(([groupKey, groupRows]) => {
       const chartPoint: ChartDataPoint = {
         name: groupKey === '__NULL__' ? 'N/A' : groupKey,
       };
 
-      // Apply aggregation function(s) to each Y-axis column
+      // Apply chained aggregations for each Y-axis column
       config.mappings.y.forEach(yColumn => {
         const values = this.extractNumericValues(groupRows, yColumn);
-        
-        // Check if this column has chained aggregations
         const columnAggregations = config.processing.yColumnAggregations?.[yColumn];
         
         if (columnAggregations && columnAggregations.length > 0) {
           // Apply chained aggregations (pipeline)
           const finalValue = this.applyChainedAggregations(values, columnAggregations);
           chartPoint[yColumn] = finalValue;
-        } else if (config.processing.aggregationFunction) {
-          // Single aggregation (backwards compatibility)
-          const aggregatedValue = this.applyAggregationFunction(values, config.processing.aggregationFunction);
-          chartPoint[yColumn] = aggregatedValue;
+        } else {
+          // No pipeline configured - use simple SUM as default
+          const sum = values.reduce((acc, val) => acc + val, 0);
+          chartPoint[yColumn] = sum;
         }
       });
 

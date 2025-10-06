@@ -73,9 +73,9 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
       required: true,
     },
     {
-      id: "processing",
-      title: "Processing Mode",
-      description: "Choose raw or aggregated data",
+      id: "aggregations",
+      title: "Configure Pipelines",
+      description: "Optional: Add aggregation pipelines",
       completed: true,
       required: false,
     },
@@ -107,9 +107,7 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
         y: Array.isArray(value.data.mappings?.y) ? value.data.mappings.y : [],
       },
       processing: {
-        mode: (value.settings.processingMode as 'raw' | 'aggregated') || 'raw',
-        groupBy: value.settings.groupByColumn,
-        aggregationFunction: value.settings.aggregationFunction as any,
+        yColumnAggregations: value.settings.yColumnAggregations,
       },
       filters: (value.data.filters || []).filter((f: any) => f.column && f.operator && f.value !== undefined) as any,
       topN: value.settings.enableTopN ? {
@@ -133,12 +131,6 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
           mappings: {
             x: suggestion.mappings?.x || "",
             y: suggestion.mappings?.y || [],
-          },
-          settings: {
-            ...value.settings,
-            processingMode: suggestion.processing?.mode as any,
-            groupByColumn: suggestion.processing?.groupBy,
-            aggregationFunction: suggestion.processing?.aggregationFunction as any,
           },
         });
       }
@@ -225,7 +217,7 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
               onClick={() => {
                 if (step.id === "datasource") setActiveTab("data");
                 if (step.id === "columns") setActiveTab("data");
-                if (step.id === "processing") setActiveTab("data");
+                if (step.id === "aggregations") setActiveTab("data");
                 if (step.id === "filters") setActiveTab("data");
                 if (step.id === "preview") setActiveTab("settings");
               }}
@@ -448,7 +440,7 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                 </Card>
 
                 {/* Chained Aggregations per Y Column */}
-                {value.data.mappings?.y && value.data.mappings.y.length > 0 && value.settings.processingMode === "grouped" && (
+                {value.data.mappings?.y && value.data.mappings.y.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -456,7 +448,8 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                         Y Column Aggregation Pipelines
                       </CardTitle>
                       <CardDescription>
-                        Configure chained aggregation pipeline for each Y column
+                        Configure chained aggregation pipeline for each Y column. 
+                        Data will be automatically grouped by X axis ({value.data.mappings.x}).
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -571,110 +564,16 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                   </Card>
                 )}
 
-                {/* Processing Mode */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Processing Mode
-                    </CardTitle>
-                    <CardDescription>
-                      Choose how to process your data
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium flex items-center gap-2">
-                        Mode
-                        <div className="group relative">
-                          <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                            {getTooltipContent("processingMode")}
-                          </div>
-                        </div>
-                      </Label>
-                      <Select
-                        value={value.settings.processingMode || "raw"}
-                        onValueChange={(val) => updateSettings({ 
-                          processingMode: val as "raw" | "grouped" 
-                        })}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="raw">Raw Data (No Processing)</SelectItem>
-                          <SelectItem value="grouped">Aggregated (Group & Calculate)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {value.settings.processingMode === "raw" && "Display data as-is from the table"}
-                        {value.settings.processingMode === "grouped" && "Group data and calculate aggregated values per category"}
-                      </p>
-                    </div>
-
-                    {/* Aggregation Settings (only for grouped mode) */}
-                    {value.settings.processingMode === "grouped" && (
-                      <div className="space-y-4 pt-4 border-t">
-                        <div>
-                          <Label className="text-sm font-medium flex items-center gap-2">
-                            Group By Column
-                            <div className="group relative">
-                              <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                {getTooltipContent("groupBy")}
-                              </div>
-                            </div>
-                          </Label>
-                          <Select
-                            value={value.settings.groupByColumn || undefined}
-                            onValueChange={(val) => updateSettings({ groupByColumn: val || undefined })}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select column to group by" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableColumns
-                                .filter(col => ["string", "text", "date", "datetime", "boolean"].includes(col.type))
-                                .map((column) => (
-                                  <SelectItem key={column.id} value={column.name}>
-                                    {column.name} ({column.type})
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium flex items-center gap-2">
-                            Aggregation Function
-                            <div className="group relative">
-                              <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                {getTooltipContent("aggregationFunction")}
-                              </div>
-                            </div>
-                          </Label>
-                          <Select
-                            value={value.settings.aggregationFunction || "sum"}
-                            onValueChange={(val) => updateSettings({ aggregationFunction: val as any })}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sum">Sum</SelectItem>
-                              <SelectItem value="avg">Average</SelectItem>
-                              <SelectItem value="count">Count</SelectItem>
-                              <SelectItem value="min">Minimum</SelectItem>
-                              <SelectItem value="max">Maximum</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {/* Info Card - Auto Grouping */}
+                {value.data.mappings?.y && value.data.mappings.y.length > 0 && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>Auto-Grouping:</strong> When you configure aggregation pipelines below, 
+                      data will automatically be grouped by the X axis column ({value.data.mappings.x || 'not selected'}).
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 {/* Filters */}
                 <Card>

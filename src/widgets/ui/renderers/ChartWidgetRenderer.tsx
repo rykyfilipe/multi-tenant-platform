@@ -54,10 +54,8 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const filters = config?.data?.filters || [];
   const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
 
-  // Data processing configuration - simplified
-  const processingMode = config?.settings?.processingMode || "raw";
-  const aggregationFunction = config?.settings?.aggregationFunction || "sum";
-  const groupByColumn = config?.settings?.groupByColumn;
+  // Data processing configuration - SIMPLIFIED (auto-grouping by X axis)
+  const yColumnAggregations = config?.settings?.yColumnAggregations;
   const enableTopN = config?.settings?.enableTopN || false;
   const topNCount = config?.settings?.topNCount || 10;
 
@@ -107,7 +105,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       ];
     }
 
-    // Build simplified configuration for ChartDataProcessor
+    // Build SIMPLIFIED configuration for ChartDataProcessor
     const chartConfig = {
       dataSource: {
         databaseId: databaseId || 0,
@@ -118,29 +116,25 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
         y: yColumns,
       },
       processing: {
-        mode: processingMode as 'raw' | 'aggregated',
-        groupBy: groupByColumn,
-        aggregationFunction: aggregationFunction as any,
+        yColumnAggregations: yColumnAggregations || undefined,
       },
       filters: filters,
       topN: enableTopN ? {
         enabled: true,
         count: topNCount,
-        autoSort: true, // Always auto-sort on first Y column
+        autoSort: true,
       } : undefined,
     };
 
-    // Execute the simplified pipeline
+    // Execute the simplified pipeline (auto-groups by X axis when aggregations configured)
     return ChartDataProcessor.process(rawData.data, chartConfig);
   }, [
     rawData,
     mappings,
     databaseId,
     tableId,
-    processingMode,
-    groupByColumn,
-    aggregationFunction,
-    filters,
+    JSON.stringify(yColumnAggregations),
+    JSON.stringify(filters),
     enableTopN,
     topNCount,
   ]);

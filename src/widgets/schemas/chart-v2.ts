@@ -4,9 +4,8 @@ import { baseWidgetConfigSchema } from "./base";
 export const chartSettingsSchema = z.object({
   chartType: z.enum(["line", "bar", "area", "pie", "radar", "scatter"]),
   refreshInterval: z.number().int().positive().max(3600).default(60),
-  // Data processing mode - simplified
-  processingMode: z.enum(["raw", "grouped"]).default("raw"),
   // Aggregation pipeline for each Y column (chained)
+  // When configured, automatically groups by X axis
   yColumnAggregations: z.record(
     z.string(), // column name
     z.array(z.object({
@@ -14,10 +13,6 @@ export const chartSettingsSchema = z.object({
       label: z.string().min(1, "Aggregation label is required"),
     }))
   ).optional(),
-  // Legacy single aggregation function (kept for backward compatibility)
-  aggregationFunction: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
-  // Grouping
-  groupByColumn: z.string().optional(),
   // Top N - simplified (auto-sort by default)
   enableTopN: z.boolean().default(false),
   topNCount: z.number().int().positive().max(100).default(10),
