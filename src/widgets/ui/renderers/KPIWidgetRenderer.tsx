@@ -7,12 +7,15 @@ import { TrendingUp, TrendingDown, Target, CheckCircle, XCircle, Minus } from "l
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { BaseWidget } from "../components/BaseWidget";
 
 interface KPIWidgetRendererProps {
   widget: WidgetEntity;
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  isEditMode?: boolean;
+  isSelected?: boolean;
 }
 
 export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
@@ -20,6 +23,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   onEdit,
   onDelete,
   onDuplicate,
+  isEditMode = false,
+  isSelected = false,
 }) => {
   const config = widget.config as any;
 
@@ -106,163 +111,159 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     }
   };
 
-  if (!config.data?.metrics || config.data.metrics.length === 0) {
+  // Empty state content
+  if (!config.data?.metric || !config.data?.metric?.field) {
     return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full">
-          <div className="text-center text-gray-500">
+      <BaseWidget
+        title={widget.title}
+        widgetType="KPI"
+        widgetId={widget.id}
+        isEditMode={isEditMode}
+        isSelected={isSelected}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+      >
+        <div className="flex items-center justify-center h-full min-h-[200px]">
+          <div className="text-center text-muted-foreground">
             <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No KPI metrics configured</p>
-            <p className="text-sm">Configure metrics to display KPIs</p>
+            <p className="font-medium">No KPI metric configured</p>
+            <p className="text-sm mt-1">Click edit to configure your KPI</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </BaseWidget>
     );
   }
 
-  return (
-    <Card 
-      className="h-full"
-      style={{
-        backgroundColor: config.style?.backgroundColor || "#FFFFFF",
-        color: config.style?.textColor || "#000000",
-      }}
-    >
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold">
-          {widget.title || "KPI Dashboard"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div 
-          className={cn(
-            "grid gap-4",
-            config.settings?.layout === "list" ? "grid-cols-1" : "grid-cols-2",
-            config.settings?.layout === "cards" ? "grid-cols-1" : "",
-            config.settings?.columns === 1 ? "grid-cols-1" : "",
-            config.settings?.columns === 2 ? "grid-cols-2" : "",
-            config.settings?.columns === 3 ? "grid-cols-3" : "",
-            config.settings?.columns === 4 ? "grid-cols-4" : ""
-          )}
-        >
-          {processedData.map((kpi, index) => (
-            <Card 
-              key={`${kpi.metric}-${index}`}
-              className={cn(
-                "relative overflow-hidden",
-                config.style?.shadow === "none" ? "" : "shadow-md",
-                config.style?.shadow === "subtle" ? "shadow-sm" : "",
-                config.style?.shadow === "medium" ? "shadow-md" : "",
-                config.style?.shadow === "bold" ? "shadow-lg" : "",
-                config.style?.shadow === "glow" ? "shadow-xl ring-2 ring-blue-500/20" : "",
-                config.style?.glassEffect ? "backdrop-blur-sm bg-white/80" : "",
-                config.style?.shine ? "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-pulse" : ""
-              )}
-              style={{
-                borderRadius: config.style?.borderRadius === "none" ? "0" : 
-                           config.style?.borderRadius === "sm" ? "0.25rem" :
-                           config.style?.borderRadius === "md" ? "0.5rem" :
-                           config.style?.borderRadius === "lg" ? "0.75rem" :
-                           config.style?.borderRadius === "xl" ? "1rem" :
-                           config.style?.borderRadius === "2xl" ? "1.5rem" : "1rem",
-                padding: config.style?.padding === "none" ? "0" :
-                        config.style?.padding === "xs" ? "0.5rem" :
-                        config.style?.padding === "sm" ? "0.75rem" :
-                        config.style?.padding === "md" ? "1rem" :
-                        config.style?.padding === "lg" ? "1.5rem" :
-                        config.style?.padding === "xl" ? "2rem" : "1rem",
-              }}
-            >
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  {/* Label */}
-                  <div className="flex items-center justify-between">
-                    <p 
-                      className={cn(
-                        "font-medium text-gray-600",
-                        config.style?.labelSize === "xs" ? "text-xs" : "",
-                        config.style?.labelSize === "sm" ? "text-sm" : "",
-                        config.style?.labelSize === "base" ? "text-base" : "",
-                        config.style?.labelSize === "lg" ? "text-lg" : ""
-                      )}
-                    >
-                      {kpi.label}
-                    </p>
-                    <Badge variant="outline" className="text-xs">
-                      {kpi.aggregation}
-                    </Badge>
-                  </div>
+  // Single metric display
+  const metric = config.data.metric;
+  const processedKPI = useMemo(() => {
+    const kpiConfig = {
+      dataSource: {
+        databaseId: config.data.databaseId || 0,
+        tableId: config.data.tableId || "",
+      },
+      metric,
+      filters: config.data.filters || [],
+    };
 
-                  {/* Value */}
-                  <div 
+    return KPIWidgetProcessor.process(mockData, kpiConfig);
+  }, [config.data, metric, mockData]);
+
+  return (
+    <BaseWidget
+      title={widget.title}
+      widgetType="KPI"
+      widgetId={widget.id}
+      isEditMode={isEditMode}
+      isSelected={isSelected}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      onDuplicate={onDuplicate}
+    >
+      <Card 
+        className="h-full border-0 shadow-none"
+        style={{
+          backgroundColor: config.style?.backgroundColor || "transparent",
+          color: config.style?.textColor || "inherit",
+        }}
+      >
+        <CardContent className="p-6">
+          {/* Single KPI Display */}
+          <div className="space-y-6">
+            {/* Aggregation Pipeline - Shows chained functions */}
+            {metric.aggregations && metric.aggregations.length > 1 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-medium">Pipeline:</span>
+                {metric.aggregations.map((agg, idx) => (
+                  <React.Fragment key={idx}>
+                    {idx > 0 && <span>→</span>}
+                    <Badge variant="outline" className="text-xs">
+                      {agg.label || agg.function.toUpperCase()}
+                    </Badge>
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+
+            {/* Main Value */}
+            <div className="text-center space-y-3">
+              <div 
+                className={cn(
+                  "font-bold text-foreground",
+                  config.style?.valueSize === "sm" ? "text-3xl" : "",
+                  config.style?.valueSize === "md" ? "text-4xl" : "",
+                  config.style?.valueSize === "lg" ? "text-5xl" : "",
+                  config.style?.valueSize === "xl" ? "text-6xl" : "",
+                  config.style?.valueSize === "2xl" ? "text-7xl" : "",
+                  config.style?.valueSize === "3xl" ? "text-8xl" : "",
+                  !config.style?.valueSize && "text-5xl"
+                )}
+              >
+                {formatValue(processedKPI.value, metric.format)}
+              </div>
+              
+              <p 
+                className={cn(
+                  "font-medium text-muted-foreground",
+                  config.style?.labelSize === "xs" ? "text-xs" : "",
+                  config.style?.labelSize === "sm" ? "text-sm" : "",
+                  config.style?.labelSize === "base" ? "text-base" : "",
+                  config.style?.labelSize === "lg" ? "text-lg" : "",
+                  !config.style?.labelSize && "text-sm"
+                )}
+              >
+                {metric.label || metric.field}
+              </p>
+            </div>
+
+            {/* Stats Row */}
+            <div className="flex items-center justify-center gap-6 pt-4 border-t border-border/50">
+              {/* Trend */}
+              {metric.showTrend && processedKPI.trend && (
+                <div className="flex items-center gap-2">
+                  {getTrendIcon(processedKPI.trend.direction)}
+                  <span 
                     className={cn(
-                      "font-bold",
-                      config.style?.valueSize === "sm" ? "text-lg" : "",
-                      config.style?.valueSize === "md" ? "text-xl" : "",
-                      config.style?.valueSize === "lg" ? "text-2xl" : "",
-                      config.style?.valueSize === "xl" ? "text-3xl" : "",
-                      config.style?.valueSize === "2xl" ? "text-4xl" : "",
-                      config.style?.valueSize === "3xl" ? "text-5xl" : "",
-                      config.style?.valueSize === "4xl" ? "text-6xl" : ""
+                      "text-sm font-semibold",
+                      processedKPI.trend.direction === "up" ? "text-green-600 dark:text-green-400" : "",
+                      processedKPI.trend.direction === "down" ? "text-red-600 dark:text-red-400" : "",
+                      processedKPI.trend.direction === "stable" ? "text-muted-foreground" : ""
                     )}
                   >
-                    {formatValue(kpi.value, kpi.format)}
-                  </div>
-
-                  {/* Trend */}
-                  {config.settings?.showTrend && kpi.trend && (
-                    <div className="flex items-center gap-2">
-                      {getTrendIcon(kpi.trend.direction)}
-                      <span 
-                        className={cn(
-                          "text-sm",
-                          kpi.trend.direction === "up" ? "text-green-600" : "",
-                          kpi.trend.direction === "down" ? "text-red-600" : "",
-                          kpi.trend.direction === "stable" ? "text-gray-600" : ""
-                        )}
-                      >
-                        {kpi.trend.direction === "up" ? "+" : kpi.trend.direction === "down" ? "-" : ""}
-                        {kpi.trend.percentage.toFixed(1)}%
-                      </span>
-                      <span 
-                        className={cn(
-                          "text-xs text-gray-500",
-                          config.style?.trendSize === "xs" ? "text-xs" : "",
-                          config.style?.trendSize === "sm" ? "text-sm" : "",
-                          config.style?.trendSize === "base" ? "text-base" : ""
-                        )}
-                      >
-                        vs previous period
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Comparison */}
-                  {config.settings?.showComparison && kpi.comparison && (
-                    <div className="flex items-center gap-2">
-                      {getComparisonIcon(kpi.comparison.status)}
-                      <span 
-                        className={cn(
-                          "text-sm",
-                          kpi.comparison.status === "above" ? "text-green-600" : "",
-                          kpi.comparison.status === "below" ? "text-red-600" : "",
-                          kpi.comparison.status === "on-target" ? "text-blue-600" : ""
-                        )}
-                      >
-                        {kpi.comparison.status === "above" ? "Above" : 
-                         kpi.comparison.status === "below" ? "Below" : "On"} target
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        ({formatValue(kpi.comparison.target, kpi.format)})
-                      </span>
-                    </div>
-                  )}
+                    {processedKPI.trend.direction === "up" ? "+" : processedKPI.trend.direction === "down" ? "-" : ""}
+                    {processedKPI.trend.percentage.toFixed(1)}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    vs previous
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+              )}
+
+              {/* Comparison */}
+              {metric.showComparison && processedKPI.comparison && (
+                <div className="flex items-center gap-2">
+                  {getComparisonIcon(processedKPI.comparison.status)}
+                  <span 
+                    className={cn(
+                      "text-sm font-semibold",
+                      processedKPI.comparison.status === "above" ? "text-green-600 dark:text-green-400" : "",
+                      processedKPI.comparison.status === "below" ? "text-red-600 dark:text-red-400" : "",
+                      processedKPI.comparison.status === "on-target" ? "text-blue-600 dark:text-blue-400" : ""
+                    )}
+                  >
+                    {processedKPI.comparison.status === "above" ? "Above" : 
+                     processedKPI.comparison.status === "below" ? "Below" : "On"} target
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    (target: {formatValue(processedKPI.comparison.target, metric.format)})
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </BaseWidget>
   );
 };

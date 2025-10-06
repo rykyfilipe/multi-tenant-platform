@@ -693,23 +693,42 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                                 </Select>
                               </div>
 
-                              {/* Aggregation Functions */}
+                              {/* Aggregation Pipeline (Chained) */}
                               <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <Label className="text-sm font-medium">Aggregation Functions</Label>
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <Label className="text-sm font-medium flex items-center gap-2">
+                                      Aggregation Pipeline (Chained)
+                                      <div className="group relative">
+                                        <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 max-w-xs">
+                                          Functions are applied in sequence: Column → Step 1 → Step 2 → Result
+                                        </div>
+                                      </div>
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Each function processes the result from the previous step
+                                    </p>
+                                  </div>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => addAggregationFunction(columnIndex)}
-                                    className="flex items-center gap-1"
+                                    className="flex items-center gap-2"
                                   >
-                                    <Plus className="h-3 w-3" />
-                                    Add Function
+                                    <Plus className="h-4 w-4" />
+                                    Add Step
                                   </Button>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                   {columnAgg.aggregations.map((aggregation, aggIndex) => (
-                                    <div key={aggIndex} className="flex items-center gap-2 p-2 border rounded-md">
+                                    <div key={aggIndex} className="flex items-center gap-3">
+                                      <Badge variant="secondary" className="min-w-[60px] justify-center">
+                                        Step {aggIndex + 1}
+                                      </Badge>
+                                      {aggIndex > 0 && (
+                                        <TrendingDown className="h-4 w-4 text-muted-foreground rotate-90" />
+                                      )}
                                       <Select
                                         value={aggregation.function}
                                         onValueChange={(val) => updateAggregationFunction(columnIndex, aggIndex, { function: val as any })}
@@ -746,6 +765,22 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                                     </div>
                                   ))}
                                 </div>
+
+                                {/* Pipeline explanation */}
+                                {columnAgg.aggregations.length > 1 && (
+                                  <Alert className="mt-3">
+                                    <Info className="h-4 w-4" />
+                                    <AlertDescription className="text-xs">
+                                      <strong>Pipeline flow:</strong> {columnAgg.column} → {' '}
+                                      {columnAgg.aggregations.map((agg, idx) => (
+                                        <React.Fragment key={idx}>
+                                          {idx > 0 && ' → '}
+                                          <span className="font-semibold">{agg.function.toUpperCase()}</span>
+                                        </React.Fragment>
+                                      ))} → Final result
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
                               </div>
                             </CardContent>
                           </Card>

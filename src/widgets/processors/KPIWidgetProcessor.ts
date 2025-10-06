@@ -30,11 +30,11 @@ export interface MetricConfig {
 }
 
 /**
- * Complete KPI configuration
+ * Complete KPI configuration (Single metric with chained aggregations)
  */
 export interface KPIConfig {
   dataSource: DataSourceConfig;
-  metrics: MetricConfig[];
+  metric: MetricConfig; // Single metric only
   filters: FilterConfig[];
   refresh?: {
     enabled: boolean;
@@ -107,7 +107,8 @@ export const kpiConfigSchema = z.object({
     databaseId: z.number().positive(),
     tableId: z.string().min(1),
   }),
-  metrics: z.array(z.object({
+  // Single metric with chained aggregation pipeline
+  metric: z.object({
     field: z.string().min(1, "Field is required"),
     label: z.string().min(1, "Label is required"),
     aggregations: z.array(z.object({
@@ -118,7 +119,7 @@ export const kpiConfigSchema = z.object({
     showTrend: z.boolean().optional(),
     showComparison: z.boolean().optional(),
     target: z.number().optional(),
-  })).min(1, "At least one metric is required"),
+  }),
   filters: z.array(z.object({
     column: z.string(),
     operator: z.enum(["=", "!=", ">", "<", ">=", "<=", "contains", "startsWith", "endsWith"]),
@@ -154,21 +155,18 @@ export class KPIWidgetProcessor {
     }
 
     // Additional business logic validations
-    if (config.metrics.length > 12) {
-      warnings.push('More than 12 metrics may impact performance and readability');
+    if (config.metric?.aggregations && config.metric.aggregations.length > 5) {
+      warnings.push('More than 5 chained aggregations may be hard to interpret');
     }
 
-    // Check for duplicate metric fields with same aggregation
-    const duplicates = new Set<string>();
-    config.metrics.forEach(metric => {
-      metric.aggregations.forEach(agg => {
-        const key = `${metric.field}-${agg.function}`;
-        if (duplicates.has(key)) {
-          errors.push(`Duplicate aggregation: ${agg.function} on ${metric.field}`);
-        }
-        duplicates.add(key);
-      });
-    });
+    // Warn about inefficient aggregation chains
+    if (config.metric?.aggregations && config.metric.aggregations.length > 1) {
+      const functions = config.metric.aggregations.map(a => a.function);
+      // COUNT followed by anything doesn't make sense mathematically
+      if (functions[0] === 'count' && functions.length > 1) {
+        warnings.push('Chaining aggregations after COUNT may produce unexpected results');
+      }
+    }
 
     return {
       isValid: errors.length === 0,
@@ -187,118 +185,121 @@ export class KPIWidgetProcessor {
 
     if (numericColumns.length === 0) {
       return {
-        metrics: [],
+        filters: [],
       };
     }
 
-    // Suggest up to 4 metrics with common aggregations
-    const suggestedMetrics: MetricConfig[] = numericColumns.slice(0, 4).map(column => ({
-      field: column.name,
-      label: `${column.name.charAt(0).toUpperCase() + column.name.slice(1)}`,
+    // Suggest first numeric column with simple sum aggregation
+    const firstColumn = numericColumns[0];
+    const suggestedMetric: MetricConfig = {
+      field: firstColumn.name,
+      label: `Total ${firstColumn.name.charAt(0).toUpperCase() + firstColumn.name.slice(1).replace(/_/g, ' ')}`,
       aggregations: [
         { function: 'sum' as const, label: 'Total' },
-        { function: 'avg' as const, label: 'Average' },
       ],
       format: 'number' as const,
       showTrend: true,
       showComparison: false,
-    }));
+    };
 
     return {
-      metrics: suggestedMetrics,
+      metric: suggestedMetric,
       filters: [],
     };
   }
 
   /**
-   * Processes raw data through the KPI pipeline
+   * Processes raw data through the KPI pipeline (Single metric with chained aggregations)
    */
-  static process(rawData: RawDataRow[], config: KPIConfig): KPIResult[] {
-    console.log('🚀 [KPIWidgetProcessor] Starting data processing pipeline...');
+  static process(rawData: RawDataRow[], config: KPIConfig): KPIResult {
+    console.log('🚀 [KPIWidgetProcessor] Starting chained aggregation pipeline...');
 
     // Step 1: Normalize data
     const normalizedData = this.normalizeData(rawData);
     if (normalizedData.length === 0) {
       console.log('❌ [KPIWidgetProcessor] No data to process');
-      return [];
+      return {
+        metric: config.metric.field,
+        label: config.metric.label,
+        value: 0,
+        aggregation: config.metric.aggregations[0]?.function || 'sum',
+        format: config.metric.format || 'number',
+      };
     }
 
-    // Step 2: Apply filters (already done at API level)
-    console.log('✅ [KPIWidgetProcessor] Filters applied at API level');
+    // Step 2: Extract column values
+    const columnValues = this.extractNumericValues(normalizedData, config.metric.field);
+    console.log(`📊 [KPIWidgetProcessor] Extracted ${columnValues.length} values from column: ${config.metric.field}`);
 
-    // Step 3: Process metrics with proper aggregation logic
-    const results: KPIResult[] = [];
-    
-    config.metrics.forEach(metric => {
-      // For each metric, we need to apply ALL aggregation functions on the SAME dataset
-      // This allows for complex queries like "max of sum" or "avg of count"
+    // Step 3: Apply chained aggregations
+    let currentValue = 0;
+    let intermediateResults: number[] = columnValues;
+
+    config.metric.aggregations.forEach((aggregation, aggIndex) => {
+      console.log(`🔗 [Step ${aggIndex + 1}] Applying ${aggregation.function.toUpperCase()} on ${intermediateResults.length} values`);
       
-      // Step 1: Group data if groupBy is specified
-      let dataToProcess = normalizedData;
-      if (metric.groupBy) {
-        dataToProcess = this.groupDataByField(normalizedData, metric.groupBy);
+      if (aggIndex === 0) {
+        // First aggregation: apply to original column values
+        currentValue = this.calculateAggregationOnArray(intermediateResults, aggregation.function);
+        console.log(`   ↳ Result: ${currentValue}`);
+      } else {
+        // Subsequent aggregations: apply to the single result from previous step
+        // Create array with single value to pass through aggregation
+        intermediateResults = [currentValue];
+        currentValue = this.calculateAggregationOnArray(intermediateResults, aggregation.function);
+        console.log(`   ↳ Chained result: ${currentValue}`);
       }
-      
-      metric.aggregations.forEach((aggregation, aggIndex) => {
-        let value: number;
-        let processedData = dataToProcess;
-
-        // If this is not the first aggregation, we need to apply previous aggregations first
-        if (aggIndex > 0) {
-          // Apply all previous aggregations in sequence
-          for (let i = 0; i < aggIndex; i++) {
-            const prevAgg = metric.aggregations[i];
-            processedData = this.applyAggregationToDataset(processedData, metric.field, prevAgg.function);
-          }
-        }
-
-        // Apply current aggregation
-        if (metric.groupBy) {
-          // If we have grouping, apply aggregation within each group, then aggregate the results
-          if (aggIndex === 0) {
-            // First aggregation: sum/avg/count within each group
-            const groupResults = this.calculateAggregationByGroup(processedData, metric.field, metric.groupBy, aggregation.function);
-            value = this.calculateAggregation(groupResults, 'value', 'sum'); // Sum all group results
-          } else {
-            // Subsequent aggregations: apply to grouped results
-            value = this.calculateAggregation(processedData, metric.field, aggregation.function);
-          }
-        } else {
-          // No grouping - apply aggregation directly to data
-          if (aggIndex === 0) {
-            // First aggregation - apply to original data
-            value = this.calculateAggregation(processedData, metric.field, aggregation.function);
-          } else {
-            // Subsequent aggregations - this should be chained properly
-            // For now, let's just apply to the original data again
-            value = this.calculateAggregation(normalizedData, metric.field, aggregation.function);
-          }
-        }
-        
-        const result: KPIResult = {
-          metric: `${metric.field}-${aggregation.function}`,
-          label: aggregation.label,
-          value,
-          aggregation: aggregation.function,
-          format: metric.format || 'number',
-        };
-
-        // Calculate trend if enabled (only for first aggregation)
-        if (metric.showTrend && aggIndex === 0) {
-          result.trend = this.calculateTrend(normalizedData, metric.field, aggregation.function);
-        }
-
-        // Calculate comparison if enabled and target provided
-        if (metric.showComparison && metric.target !== undefined) {
-          result.comparison = this.calculateComparison(value, metric.target);
-        }
-
-        results.push(result);
-      });
     });
 
-    console.log(`✅ [KPIWidgetProcessor] Generated ${results.length} KPI results`);
-    return results;
+    const finalAggregation = config.metric.aggregations[config.metric.aggregations.length - 1];
+    
+    const result: KPIResult = {
+      metric: config.metric.field,
+      label: config.metric.label,
+      value: currentValue,
+      aggregation: finalAggregation.label || finalAggregation.function,
+      format: config.metric.format || 'number',
+    };
+
+    // Calculate trend if enabled
+    if (config.metric.showTrend) {
+      result.trend = this.calculateTrend(normalizedData, config.metric.field, config.metric.aggregations[0].function);
+    }
+
+    // Calculate comparison if enabled and target provided
+    if (config.metric.showComparison && config.metric.target !== undefined) {
+      result.comparison = this.calculateComparison(currentValue, config.metric.target);
+    }
+
+    console.log(`✅ [KPIWidgetProcessor] Final KPI value: ${currentValue}`);
+    return result;
+  }
+
+  /**
+   * Calculate aggregation on array of numbers (for chaining)
+   */
+  private static calculateAggregationOnArray(
+    values: number[], 
+    aggregation: 'sum' | 'avg' | 'count' | 'min' | 'max'
+  ): number {
+    if (values.length === 0) {
+      return 0;
+    }
+
+    switch (aggregation) {
+      case 'sum':
+        return values.reduce((sum, val) => sum + val, 0);
+      case 'avg':
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+      case 'count':
+        return values.length;
+      case 'min':
+        return Math.min(...values);
+      case 'max':
+        return Math.max(...values);
+      default:
+        return 0;
+    }
   }
 
   /**

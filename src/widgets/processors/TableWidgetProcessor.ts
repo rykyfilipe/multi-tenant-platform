@@ -361,16 +361,14 @@ export class TableWidgetProcessor {
       // Calculate aggregations for each configured column
       config.columns.forEach(colConfig => {
         // Use multiple aggregations method for complex queries
-        const multiResults = this.calculateMultipleAggregations(groupRows, colConfig.column, colConfig.aggregations);
+        // Apply chained aggregations (pipeline)
+        const finalValue = this.calculateChainedAggregations(groupRows, colConfig.column, colConfig.aggregations);
         
-      // Add results to aggregated row with proper naming
-      Object.keys(multiResults).forEach(key => {
-        // Extract the function name from the key (e.g., "sales_sum_0" -> "sum")
-        const parts = key.split('_');
-        const functionName = parts[parts.length - 2]; // Get the function name
-        const finalKey = `${colConfig.column}_${functionName}`;
-        aggregatedRow[finalKey] = multiResults[key];
-      });
+        // Use the final aggregation label
+        const finalAggLabel = colConfig.aggregations[colConfig.aggregations.length - 1].function;
+        aggregatedRow[`${colConfig.column}_${finalAggLabel}`] = finalValue;
+        // Also add with just column name for easier access
+        aggregatedRow[colConfig.column] = finalValue;
       });
 
       aggregatedRows.push(aggregatedRow);
@@ -391,20 +389,18 @@ export class TableWidgetProcessor {
     const summary: any = {};
 
     columns.forEach(colConfig => {
-      // Use multiple aggregations method for complex queries
-      const multiResults = this.calculateMultipleAggregations(data, colConfig.column, colConfig.aggregations);
+      // Apply chained aggregations (pipeline) and get final result
+      const finalValue = this.calculateChainedAggregations(data, colConfig.column, colConfig.aggregations);
       
       if (!summary[colConfig.column]) {
         summary[colConfig.column] = {};
       }
       
-      // Add all aggregation results with proper naming
-      Object.keys(multiResults).forEach(key => {
-        // Extract the function name from the key (e.g., "sales_sum_0" -> "sum")
-        const parts = key.split('_');
-        const functionName = parts[parts.length - 2]; // Get the function name
-        summary[colConfig.column][functionName] = multiResults[key];
-      });
+      // Store final result with the last aggregation function name
+      const finalAggFunction = colConfig.aggregations[colConfig.aggregations.length - 1].function;
+      summary[colConfig.column][finalAggFunction] = finalValue;
+      // Also store as "value" for easier access
+      summary[colConfig.column].value = finalValue;
     });
 
     return summary;
@@ -446,33 +442,39 @@ export class TableWidgetProcessor {
   }
 
   /**
-   * Calculate multiple aggregations for the same column (for complex queries)
+   * Calculate chained aggregations for a column (pipeline)
+   * Example: [100, 200, 300] → SUM(600) → AVG(600) → MAX(600) = 600
    */
-  private static calculateMultipleAggregations(
+  private static calculateChainedAggregations(
     data: NormalizedRow[], 
     field: string, 
     aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last'; label: string }>
-  ): Record<string, number | string | any> {
-    const results: Record<string, number | string | any> = {};
+  ): number | string | any {
+    console.log(`🔗 [Table Chained Aggregations] Processing ${aggregations.length} steps on column: ${field}`);
+    
+    let currentValue: any = 0;
     let processedData = data;
 
     aggregations.forEach((agg, index) => {
-      // Apply aggregation to current data
-      const value = this.calculateAggregation(processedData, field, agg.function);
-      results[`${field}_${agg.function}_${index}`] = value;
+      console.log(`   Step ${index + 1}: ${agg.function.toUpperCase()}`);
       
-      // For chaining aggregations (e.g., max of sum)
-      if (index > 0) {
-        // Create intermediate result for next aggregation
+      if (index === 0) {
+        // First aggregation: apply to original data
+        currentValue = this.calculateAggregation(processedData, field, agg.function);
+        console.log(`   ↳ Result: ${currentValue}`);
+      } else {
+        // Subsequent aggregations: apply to single result from previous step
         processedData = [{
-          [field]: value,
+          [field]: currentValue,
           _intermediate: true,
           _aggregation_type: agg.function
         }];
+        currentValue = this.calculateAggregation(processedData, field, agg.function);
+        console.log(`   ↳ Chained result: ${currentValue}`);
       }
     });
 
-    return results;
+    return currentValue;
   }
 
   /**

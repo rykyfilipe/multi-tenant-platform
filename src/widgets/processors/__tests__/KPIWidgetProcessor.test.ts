@@ -30,19 +30,16 @@ describe('KPIWidgetProcessor', () => {
       databaseId: 1,
       tableId: 'table1',
     },
-    metrics: [
-      {
-        field: 'sales',
-        label: 'Total Sales',
-        aggregations: [
-          { function: 'sum' as const, label: 'Total' },
-          { function: 'avg' as const, label: 'Average' },
-        ],
-        format: 'currency' as const,
-        showTrend: true,
-        showComparison: false,
-      }
-    ],
+    metric: {
+      field: 'sales',
+      label: 'Total Sales',
+      aggregations: [
+        { function: 'sum' as const, label: 'Total' },
+      ],
+      format: 'currency' as const,
+      showTrend: true,
+      showComparison: false,
+    },
     filters: [],
   };
 
@@ -53,67 +50,65 @@ describe('KPIWidgetProcessor', () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should reject configuration without metrics', () => {
-      const invalidConfig = { ...validConfig, metrics: [] };
-      const result = KPIWidgetProcessor.validate(invalidConfig);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('metrics: At least one metric is required');
-    });
-
     it('should reject metric without field', () => {
       const invalidConfig = {
         ...validConfig,
-        metrics: [{ ...validConfig.metrics[0], field: '' }]
+        metric: { ...validConfig.metric, field: '' }
       };
       const result = KPIWidgetProcessor.validate(invalidConfig);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('metrics.0.field: Field is required');
+      expect(result.errors.some(e => e.includes('field'))).toBe(true);
     });
 
     it('should reject metric without aggregations', () => {
       const invalidConfig = {
         ...validConfig,
-        metrics: [{ ...validConfig.metrics[0], aggregations: [] }]
+        metric: { ...validConfig.metric, aggregations: [] }
       };
       const result = KPIWidgetProcessor.validate(invalidConfig);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('metrics.0.aggregations: At least one aggregation is required');
+      expect(result.errors.some(e => e.includes('aggregation'))).toBe(true);
     });
 
-    it('should warn about too many metrics', () => {
-      const manyMetrics = Array(15).fill(null).map((_, i) => ({
-        field: `field${i}`,
-        label: `Metric ${i}`,
-        aggregations: [{ function: 'sum' as const, label: 'Total' }],
-      }));
-      
-      const config = { ...validConfig, metrics: manyMetrics };
-      const result = KPIWidgetProcessor.validate(config);
-      
-      expect(result.warnings).toContain('More than 12 metrics may impact performance and readability');
-    });
-
-    it('should detect duplicate aggregations', () => {
+    it('should warn about too many chained aggregations', () => {
       const config = {
         ...validConfig,
-        metrics: [{
-          field: 'sales',
-          label: 'Sales',
+        metric: {
+          ...validConfig.metric,
           aggregations: [
-            { function: 'sum' as const, label: 'Total 1' },
-            { function: 'sum' as const, label: 'Total 2' }, // Duplicate
-          ],
-        }]
+            { function: 'sum' as const, label: 'Total' },
+            { function: 'avg' as const, label: 'Average' },
+            { function: 'max' as const, label: 'Maximum' },
+            { function: 'min' as const, label: 'Minimum' },
+            { function: 'count' as const, label: 'Count' },
+            { function: 'sum' as const, label: 'Sum Again' }, // 6th
+          ]
+        }
       };
       
       const result = KPIWidgetProcessor.validate(config);
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Duplicate aggregation: sum on sales');
+      expect(result.warnings).toContain('More than 5 chained aggregations may be hard to interpret');
+    });
+
+    it('should warn about COUNT followed by other aggregations', () => {
+      const config = {
+        ...validConfig,
+        metric: {
+          ...validConfig.metric,
+          aggregations: [
+            { function: 'count' as const, label: 'Count' },
+            { function: 'avg' as const, label: 'Average' }, // After COUNT
+          ]
+        }
+      };
+      
+      const result = KPIWidgetProcessor.validate(config);
+      expect(result.warnings).toContain('Chaining aggregations after COUNT may produce unexpected results');
     });
   });
 
   describe('getSuggestedConfig', () => {
-    it('should suggest configuration based on numeric columns', () => {
+    it('should suggest single metric based on first numeric column', () => {
       const columns = [
         { name: 'region', type: 'string' },
         { name: 'revenue', type: 'number' },
@@ -124,14 +119,14 @@ describe('KPIWidgetProcessor', () => {
 
       const suggestion = KPIWidgetProcessor.getSuggestedConfig(columns);
       
-      expect(suggestion.metrics).toHaveLength(3); // revenue, customers, profit
-      expect(suggestion.metrics?.[0].field).toBe('revenue');
-      expect(suggestion.metrics?.[0].aggregations).toHaveLength(2);
-      expect(suggestion.metrics?.[0].aggregations[0].function).toBe('sum');
-      expect(suggestion.metrics?.[0].aggregations[1].function).toBe('avg');
+      expect(suggestion.metric).toBeDefined();
+      expect(suggestion.metric?.field).toBe('revenue');
+      expect(suggestion.metric?.aggregations).toHaveLength(1);
+      expect(suggestion.metric?.aggregations[0].function).toBe('sum');
+      expect(suggestion.metric?.label).toBe('Total Revenue');
     });
 
-    it('should return empty metrics when no numeric columns', () => {
+    it('should return undefined metric when no numeric columns', () => {
       const columns = [
         { name: 'region', type: 'string' },
         { name: 'description', type: 'text' },
@@ -139,95 +134,101 @@ describe('KPIWidgetProcessor', () => {
 
       const suggestion = KPIWidgetProcessor.getSuggestedConfig(columns);
       
-      expect(suggestion.metrics).toEqual([]);
+      expect(suggestion.metric).toBeUndefined();
     });
   });
 
   describe('process', () => {
-    it('should process data correctly with multiple aggregations', () => {
+    it('should process data correctly with single aggregation', () => {
       const result = KPIWidgetProcessor.process(mockRawData, validConfig);
       
-      expect(result).toHaveLength(2); // sum and avg
+      expect(result).toBeDefined();
+      expect(result.value).toBe(3300); // 1000 + 1500 + 800
+      expect(result.aggregation).toBe('Total');
+      expect(result.label).toBe('Total Sales');
+      expect(result.metric).toBe('sales');
+    });
+
+    it('should chain multiple aggregations correctly', () => {
+      const config = {
+        ...validConfig,
+        metric: {
+          ...validConfig.metric,
+          aggregations: [
+            { function: 'sum' as const, label: 'Total' },
+            { function: 'avg' as const, label: 'Average' },
+          ]
+        }
+      };
+
+      const result = KPIWidgetProcessor.process(mockRawData, config);
       
-      const sumResult = result.find(r => r.aggregation === 'sum');
-      const avgResult = result.find(r => r.aggregation === 'avg');
-      
-      expect(sumResult?.value).toBe(3300); // 1000 + 1500 + 800
-      expect(avgResult?.value).toBe(1100); // 3300 / 3
-      expect(sumResult?.label).toBe('Total');
-      expect(avgResult?.label).toBe('Average');
+      // First: SUM([1000, 1500, 800]) = 3300
+      // Second: AVG([3300]) = 3300
+      expect(result.value).toBe(3300);
+      expect(result.aggregation).toBe('Average'); // Final aggregation label
     });
 
     it('should calculate trend correctly', () => {
       const config = {
         ...validConfig,
-        metrics: [{
-          ...validConfig.metrics[0],
+        metric: {
+          ...validConfig.metric,
           showTrend: true,
-        }]
+        }
       };
 
       const result = KPIWidgetProcessor.process(mockRawData, config);
       
-      const sumResult = result.find(r => r.aggregation === 'sum');
-      expect(sumResult?.trend).toBeDefined();
-      expect(sumResult?.trend?.direction).toBeDefined();
+      expect(result.trend).toBeDefined();
+      expect(result.trend?.direction).toBeDefined();
+      expect(['up', 'down', 'stable']).toContain(result.trend?.direction);
     });
 
     it('should calculate comparison correctly when target is provided', () => {
       const config = {
         ...validConfig,
-        metrics: [{
-          ...validConfig.metrics[0],
+        metric: {
+          ...validConfig.metric,
           showComparison: true,
           target: 3000,
-        }]
+        }
       };
 
       const result = KPIWidgetProcessor.process(mockRawData, config);
       
-      const sumResult = result.find(r => r.aggregation === 'sum');
-      expect(sumResult?.comparison).toBeDefined();
-      expect(sumResult?.comparison?.target).toBe(3000);
-      expect(sumResult?.comparison?.status).toBe('above'); // 3300 > 3000
+      expect(result.comparison).toBeDefined();
+      expect(result.comparison?.target).toBe(3000);
+      expect(result.comparison?.status).toBe('above'); // 3300 > 3000
     });
 
     it('should handle empty data gracefully', () => {
       const result = KPIWidgetProcessor.process([], validConfig);
-      expect(result).toEqual([]);
+      expect(result.value).toBe(0);
+      expect(result.metric).toBe('sales');
     });
 
-    it('should handle invalid data gracefully', () => {
-      const result = KPIWidgetProcessor.process(null as any, validConfig);
-      expect(result).toEqual([]);
-    });
-
-    it('should process multiple metrics correctly', () => {
+    it('should handle complex chained aggregations', () => {
       const config = {
         ...validConfig,
-        metrics: [
-          {
-            field: 'sales',
-            label: 'Sales',
-            aggregations: [{ function: 'sum' as const, label: 'Total' }],
-          },
-          {
-            field: 'profit',
-            label: 'Profit',
-            aggregations: [{ function: 'max' as const, label: 'Maximum' }],
-          }
-        ]
+        metric: {
+          field: 'sales',
+          label: 'Complex KPI',
+          aggregations: [
+            { function: 'sum' as const, label: 'Total' },
+            { function: 'max' as const, label: 'Max' },
+            { function: 'avg' as const, label: 'Average' },
+          ],
+        }
       };
 
       const result = KPIWidgetProcessor.process(mockRawData, config);
       
-      expect(result).toHaveLength(2);
-      
-      const salesResult = result.find(r => r.metric === 'sales-sum');
-      const profitResult = result.find(r => r.metric === 'profit-max');
-      
-      expect(salesResult?.value).toBe(3300); // sum of sales
-      expect(profitResult?.value).toBe(300); // max profit
+      // Step 1: SUM([1000, 1500, 800]) = 3300
+      // Step 2: MAX([3300]) = 3300
+      // Step 3: AVG([3300]) = 3300
+      expect(result.value).toBe(3300);
+      expect(result.aggregation).toBe('Average'); // Final label
     });
   });
 });

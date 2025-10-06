@@ -6,19 +6,21 @@ export const chartSettingsSchema = z.object({
   refreshInterval: z.number().int().positive().max(3600).default(60),
   // Data processing mode - simplified
   processingMode: z.enum(["raw", "grouped"]).default("raw"),
-  // Aggregation (only for grouped mode)
+  // Aggregation pipeline for each Y column (chained)
+  yColumnAggregations: z.record(
+    z.string(), // column name
+    z.array(z.object({
+      function: z.enum(["sum", "avg", "count", "min", "max"]),
+      label: z.string().min(1, "Aggregation label is required"),
+    }))
+  ).optional(),
+  // Legacy single aggregation function (kept for backward compatibility)
   aggregationFunction: z.enum(["sum", "avg", "count", "min", "max"]).default("sum"),
-  // Multiple aggregations on same data (for complex queries)
-  multipleAggregations: z.array(z.object({
-    function: z.enum(["sum", "avg", "count", "min", "max"]),
-    label: z.string().min(1, "Aggregation label is required"),
-  })).optional(),
   // Grouping
   groupByColumn: z.string().optional(),
   // Top N - simplified (auto-sort by default)
   enableTopN: z.boolean().default(false),
   topNCount: z.number().int().positive().max(100).default(10),
-  // Removed: aggregationColumns, sortByColumn, sortDirection (redundant)
 });
 
 export const chartStyleSchema = z.object({

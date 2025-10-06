@@ -75,7 +75,8 @@ export const kpiDataSchema = z.object({
       })
     )
     .default([]),
-  metrics: z.array(kpiMetricSchema).min(1, "At least one metric is required"),
+  // Single metric with chained aggregation pipeline
+  metric: kpiMetricSchema.optional(),
 });
 
 export const kpiWidgetConfigSchemaV2 = baseWidgetConfigSchema.extend({

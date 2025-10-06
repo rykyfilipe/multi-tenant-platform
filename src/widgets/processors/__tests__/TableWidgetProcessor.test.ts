@@ -183,8 +183,9 @@ describe('TableWidgetProcessor', () => {
       
       expect(result.data).toHaveLength(3); // Original rows
       expect(result.summary).toBeDefined();
-      expect(result.summary?.sales?.sum).toBe(3300); // 1000 + 1500 + 800
-      expect(result.summary?.sales?.avg).toBe(1100); // 3300 / 3
+      // With chained aggregations: SUM([1000, 1500, 800]) = 3300 → AVG([3300]) = 3300
+      expect(result.summary?.sales?.avg).toBe(3300); // Chained result
+      expect(result.summary?.sales?.value).toBeDefined(); // Final value also stored here
       expect(result.summary?.profit?.max).toBe(300);
       expect(result.totalRows).toBe(3);
     });
@@ -216,11 +217,12 @@ describe('TableWidgetProcessor', () => {
       expect(result.data).toHaveLength(2); // North and South groups
       expect(result.data[0]._groupKey).toBe('North');
       expect(result.data[0]._count).toBe(2);
-      expect(result.data[0].sales_sum).toBe(1800); // 1000 + 800
-      expect(result.data[0].sales_avg).toBe(900); // 1800 / 2
+      // With chained aggregations: SUM(1800) → AVG(1800) = 1800
+      expect(result.data[0].sales).toBe(1800); // Final result stored with column name
+      expect(result.data[0].sales_avg).toBe(1800); // Also stored with last aggregation function
       expect(result.data[1]._groupKey).toBe('South');
       expect(result.data[1]._count).toBe(1);
-      expect(result.data[1].sales_sum).toBe(1500);
+      expect(result.data[1].sales).toBe(1500); // SUM(1500) → AVG(1500) = 1500
     });
 
     it('should handle aggregation disabled', () => {

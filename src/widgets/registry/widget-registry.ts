@@ -385,7 +385,14 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         databaseId: undefined,
         tableId: undefined,
         filters: [],
-        metrics: [],
+        metric: {
+          field: "",
+          label: "",
+          aggregations: [{ function: "sum", label: "Total" }],
+          format: "number",
+          showTrend: true,
+          showComparison: false,
+        },
       },
       refresh: {
         enabled: false,

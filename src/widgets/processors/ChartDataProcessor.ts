@@ -27,11 +27,11 @@ export interface ProcessingConfig {
   mode: 'raw' | 'aggregated';
   groupBy?: string; // Required for aggregated mode
   aggregationFunction?: 'sum' | 'avg' | 'count' | 'min' | 'max'; // Required for aggregated mode
-  // Support for multiple aggregations on same data
-  multipleAggregations?: Array<{
+  // Chained aggregations per Y column (e.g., { "revenue": [SUM, AVG, MAX] })
+  yColumnAggregations?: Record<string, Array<{
     function: 'sum' | 'avg' | 'count' | 'min' | 'max';
     label: string;
-  }>;
+  }>>;
 }
 
 /**
@@ -272,10 +272,38 @@ export class ChartDataProcessor {
 
   /**
    * Step 3a: Process raw data (pass-through with mapping)
+   * Note: Chained aggregations în raw mode se aplică pe toate datele odată
    */
   private static processRawData(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
     console.log('📊 [Step 3a: Raw] Processing raw data...');
 
+    // Check if we have chained aggregations for any column
+    const hasChainedAggregations = config.processing.yColumnAggregations && 
+      Object.keys(config.processing.yColumnAggregations).length > 0;
+
+    if (hasChainedAggregations) {
+      // Apply chained aggregations to entire dataset
+      const chartPoint: ChartDataPoint = {
+        name: 'Aggregated Result',
+      };
+
+      config.mappings.y.forEach(yColumn => {
+        const allValues = this.extractNumericValues(data, yColumn);
+        const columnAggregations = config.processing.yColumnAggregations?.[yColumn];
+        
+        if (columnAggregations && columnAggregations.length > 0) {
+          const finalValue = this.applyChainedAggregations(allValues, columnAggregations);
+          chartPoint[yColumn] = finalValue;
+        } else {
+          // No chaining, just take average or first value
+          chartPoint[yColumn] = allValues.length > 0 ? allValues[0] : 0;
+        }
+      });
+
+      return [chartPoint];
+    }
+
+    // Normal raw mode: pass-through with mapping
     return data.map((row, index) => {
       const chartPoint: ChartDataPoint = {
         name: row[config.mappings.x] !== undefined 
@@ -328,12 +356,13 @@ export class ChartDataProcessor {
       config.mappings.y.forEach(yColumn => {
         const values = this.extractNumericValues(groupRows, yColumn);
         
-        // Support multiple aggregations on same data
-        if (config.processing.multipleAggregations && config.processing.multipleAggregations.length > 0) {
-          config.processing.multipleAggregations.forEach((agg, index) => {
-            const aggregatedValue = this.applyAggregationFunction(values, agg.function);
-            chartPoint[`${yColumn}_${agg.function}_${index}`] = aggregatedValue;
-          });
+        // Check if this column has chained aggregations
+        const columnAggregations = config.processing.yColumnAggregations?.[yColumn];
+        
+        if (columnAggregations && columnAggregations.length > 0) {
+          // Apply chained aggregations (pipeline)
+          const finalValue = this.applyChainedAggregations(values, columnAggregations);
+          chartPoint[yColumn] = finalValue;
         } else if (config.processing.aggregationFunction) {
           // Single aggregation (backwards compatibility)
           const aggregatedValue = this.applyAggregationFunction(values, config.processing.aggregationFunction);
@@ -388,6 +417,37 @@ export class ChartDataProcessor {
 
     // Apply limit
     return sorted.slice(0, config.topN.count);
+  }
+
+  /**
+   * Apply chained aggregations (pipeline) on array of values
+   * Example: [100, 200, 300] → SUM(600) → AVG(600) → MAX(600) = 600
+   */
+  private static applyChainedAggregations(
+    initialValues: number[],
+    aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max'; label: string }>
+  ): number {
+    console.log(`🔗 [Chained Aggregations] Processing ${aggregations.length} steps on ${initialValues.length} values`);
+    
+    let currentValue = 0;
+    let intermediateValues = initialValues;
+
+    aggregations.forEach((aggregation, index) => {
+      console.log(`   Step ${index + 1}: ${aggregation.function.toUpperCase()} on ${intermediateValues.length} values`);
+      
+      if (index === 0) {
+        // First aggregation: apply to original values
+        currentValue = this.applyAggregationFunction(intermediateValues, aggregation.function);
+        console.log(`   ↳ Result: ${currentValue}`);
+      } else {
+        // Subsequent aggregations: apply to the single result from previous step
+        intermediateValues = [currentValue];
+        currentValue = this.applyAggregationFunction(intermediateValues, aggregation.function);
+        console.log(`   ↳ Chained result: ${currentValue}`);
+      }
+    });
+
+    return currentValue;
   }
 
   /**

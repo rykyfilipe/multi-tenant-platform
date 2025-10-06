@@ -22,7 +22,9 @@ import {
   Info,
   CheckCircle,
   AlertCircle,
-  Lightbulb
+  Lightbulb,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
@@ -444,6 +446,130 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Chained Aggregations per Y Column */}
+                {value.data.mappings?.y && value.data.mappings.y.length > 0 && value.settings.processingMode === "grouped" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Y Column Aggregation Pipelines
+                      </CardTitle>
+                      <CardDescription>
+                        Configure chained aggregation pipeline for each Y column
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {value.data.mappings.y.map((yColumn, yIndex) => {
+                        const currentAggregations = value.settings.yColumnAggregations?.[yColumn] || [];
+                        
+                        const addYColumnAggregation = (column: string) => {
+                          const current = value.settings.yColumnAggregations || {};
+                          updateSettings({
+                            yColumnAggregations: {
+                              ...current,
+                              [column]: [
+                                ...(current[column] || []),
+                                { function: "avg" as const, label: "Average" }
+                              ]
+                            }
+                          });
+                        };
+
+                        const removeYColumnAggregation = (column: string, aggIndex: number) => {
+                          const current = value.settings.yColumnAggregations || {};
+                          const columnAggs = current[column] || [];
+                          if (columnAggs.length > 1) {
+                            updateSettings({
+                              yColumnAggregations: {
+                                ...current,
+                                [column]: columnAggs.filter((_, i) => i !== aggIndex)
+                              }
+                            });
+                          }
+                        };
+
+                        const updateYColumnAggregation = (column: string, aggIndex: number, updates: any) => {
+                          const current = value.settings.yColumnAggregations || {};
+                          const columnAggs = [...(current[column] || [])];
+                          columnAggs[aggIndex] = { ...columnAggs[aggIndex], ...updates };
+                          updateSettings({
+                            yColumnAggregations: {
+                              ...current,
+                              [column]: columnAggs
+                            }
+                          });
+                        };
+
+                        return (
+                          <Card key={yColumn} className="border-2 border-blue-100">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between">
+                                <Badge variant="outline">{yColumn}</Badge>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addYColumnAggregation(yColumn)}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  Add Step
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              {currentAggregations.length > 0 ? (
+                                currentAggregations.map((agg, aggIndex) => (
+                                  <div key={aggIndex} className="flex items-center gap-2">
+                                    <Badge variant="secondary" className="min-w-[60px] justify-center">
+                                      Step {aggIndex + 1}
+                                    </Badge>
+                                    {aggIndex > 0 && <span className="text-muted-foreground">→</span>}
+                                    <Select
+                                      value={agg.function}
+                                      onValueChange={(val) => updateYColumnAggregation(yColumn, aggIndex, { function: val })}
+                                    >
+                                      <SelectTrigger className="w-32">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="sum">SUM</SelectItem>
+                                        <SelectItem value="avg">AVG</SelectItem>
+                                        <SelectItem value="count">COUNT</SelectItem>
+                                        <SelectItem value="min">MIN</SelectItem>
+                                        <SelectItem value="max">MAX</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Input
+                                      value={agg.label}
+                                      onChange={(e) => updateYColumnAggregation(yColumn, aggIndex, { label: e.target.value })}
+                                      placeholder="Label"
+                                      className="flex-1"
+                                    />
+                                    {currentAggregations.length > 1 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeYColumnAggregation(yColumn, aggIndex)}
+                                        className="text-red-600 hover:text-red-700"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-xs text-muted-foreground text-center py-2">
+                                  No pipeline configured. Using default aggregation.
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Processing Mode */}
                 <Card>

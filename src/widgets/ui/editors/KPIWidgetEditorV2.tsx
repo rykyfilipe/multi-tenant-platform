@@ -68,10 +68,10 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
       required: true,
     },
     {
-      id: "metrics",
-      title: "Configure Metrics",
-      description: "Add KPI metrics with aggregations",
-      completed: value.data.metrics.length > 0,
+      id: "metric",
+      title: "Configure KPI Metric",
+      description: "Single metric with chained aggregations",
+      completed: !!(value.data.metric?.field && value.data.metric?.aggregations?.length > 0),
       required: true,
     },
     {
@@ -99,12 +99,17 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
 
   // Validate configuration whenever it changes
   useEffect(() => {
+    if (!value.data.metric) {
+      setValidationResult({ isValid: false, errors: ['No metric configured'], warnings: [] });
+      return;
+    }
+
     const config = {
       dataSource: {
         databaseId: value.data.databaseId || 0,
         tableId: value.data.tableId || "",
       },
-      metrics: value.data.metrics,
+      metric: value.data.metric,
       filters: (value.data.filters || []).filter(f => f.column && f.operator && f.value !== undefined) as any,
     };
 
@@ -114,17 +119,22 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
 
   // Smart defaults when columns change
   useEffect(() => {
-    if (availableColumns.length > 0 && value.data.metrics.length === 0) {
-      const suggestion = KPIWidgetProcessor.getSuggestedConfig(availableColumns);
+    if (availableColumns.length > 0 && !value.data.metric?.field) {
+      // Auto-select first numeric column
+      const numericColumn = availableColumns.find(col => 
+        ['number', 'integer', 'decimal', 'float', 'double'].includes(col.type)
+      );
       
-      if (suggestion.metrics && suggestion.metrics.length > 0) {
+      if (numericColumn) {
         updateData({
-          metrics: suggestion.metrics.map(metric => ({
-            ...metric,
-            showTrend: metric.showTrend ?? true,
-            showComparison: metric.showComparison ?? false,
-            format: metric.format ?? "number",
-          })),
+          metric: {
+            field: numericColumn.name,
+            label: numericColumn.name.charAt(0).toUpperCase() + numericColumn.name.slice(1).replace(/_/g, ' '),
+            aggregations: [{ function: "sum" as const, label: "Total" }],
+            format: "number" as const,
+            showTrend: true,
+            showComparison: false,
+          },
         });
       }
     }
@@ -155,60 +165,43 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
     updateData({ filters });
   };
 
-  const addMetric = () => {
-    const newMetric = {
-      field: "",
-      label: "",
-      aggregations: [{ function: "sum" as const, label: "Total" }],
-      format: "number" as const,
-      showTrend: true,
-      showComparison: false,
-    };
-    updateData({
-      metrics: [...value.data.metrics, newMetric],
+  // Single metric management
+  const updateMetric = (updates: Partial<typeof value.data.metric>) => {
+    updateData({ 
+      metric: { ...value.data.metric, ...updates } as any
     });
   };
 
-  const removeMetric = (index: number) => {
-    updateData({
-      metrics: value.data.metrics.filter((_, i) => i !== index),
+  // Aggregation pipeline management (chained)
+  const addAggregation = () => {
+    const currentAggregations = value.data.metric?.aggregations || [];
+    updateMetric({
+      aggregations: [...currentAggregations, {
+        function: "avg" as const,
+        label: "Average",
+      }],
     });
   };
 
-  const updateMetric = (index: number, updates: Partial<typeof value.data.metrics[0]>) => {
-    const updatedMetrics = [...value.data.metrics];
-    updatedMetrics[index] = { ...updatedMetrics[index], ...updates };
-    updateData({ metrics: updatedMetrics });
-  };
-
-  const addAggregation = (metricIndex: number) => {
-    const updatedMetrics = [...value.data.metrics];
-    updatedMetrics[metricIndex].aggregations.push({
-      function: "avg",
-      label: "Average",
-    });
-    updateData({ metrics: updatedMetrics });
-  };
-
-  const removeAggregation = (metricIndex: number, aggregationIndex: number) => {
-    const updatedMetrics = [...value.data.metrics];
-    if (updatedMetrics[metricIndex].aggregations.length > 1) {
-      updatedMetrics[metricIndex].aggregations.splice(aggregationIndex, 1);
-      updateData({ metrics: updatedMetrics });
+  const removeAggregation = (aggregationIndex: number) => {
+    const currentAggregations = value.data.metric?.aggregations || [];
+    if (currentAggregations.length > 1) {
+      updateMetric({
+        aggregations: currentAggregations.filter((_, i) => i !== aggregationIndex),
+      });
     }
   };
 
   const updateAggregation = (
-    metricIndex: number, 
     aggregationIndex: number, 
-    updates: Partial<typeof value.data.metrics[0]['aggregations'][0]>
+    updates: any
   ) => {
-    const updatedMetrics = [...value.data.metrics];
-    updatedMetrics[metricIndex].aggregations[aggregationIndex] = {
-      ...updatedMetrics[metricIndex].aggregations[aggregationIndex],
+    const currentAggregations = [...(value.data.metric?.aggregations || [])];
+    currentAggregations[aggregationIndex] = {
+      ...currentAggregations[aggregationIndex],
       ...updates,
     };
-    updateData({ metrics: updatedMetrics });
+    updateMetric({ aggregations: currentAggregations as any });
   };
 
   const getTooltipContent = (field: string): string => {
@@ -250,7 +243,7 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
               )}
               onClick={() => {
                 if (step.id === "datasource") setActiveTab("data");
-                if (step.id === "metrics") setActiveTab("data");
+                if (step.id === "metric") setActiveTab("data");
                 if (step.id === "filters") setActiveTab("data");
                 if (step.id === "style") setActiveTab("style");
                 if (step.id === "preview") setActiveTab("settings");
@@ -370,268 +363,239 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                   onDatabaseChange={(databaseId) => updateData({ 
                     databaseId, 
                     tableId: "", 
-                    metrics: [] 
+                    metric: undefined 
                   })}
                   onTableChange={(tableId) => updateData({ 
                     tableId: tableId.toString(), 
-                    metrics: [] 
+                    metric: undefined 
                   })}
                   onColumnsChange={setAvailableColumns}
                 />
               </CardContent>
             </Card>
 
-            {/* Metrics Configuration */}
+            {/* Single KPI Metric Configuration */}
             {availableColumns.length > 0 && (
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5" />
-                        KPI Metrics
-                      </CardTitle>
-                      <CardDescription>
-                        Configure metrics with multiple aggregation functions
-                      </CardDescription>
-                    </div>
-                    <Button onClick={addMetric} size="sm" className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add Metric
-                    </Button>
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5" />
+                      KPI Metric Configuration
+                    </CardTitle>
+                    <CardDescription>
+                      Configure a single metric with chained aggregation pipeline
+                    </CardDescription>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {value.data.metrics.map((metric, metricIndex) => (
-                    <Card key={metricIndex} className="border-2">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">Metric {metricIndex + 1}</Badge>
-                            <TrendingUp className="h-4 w-4 text-green-600" />
-                          </div>
-                          {value.data.metrics.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeMetric(metricIndex)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {/* Field Selection */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-sm font-medium flex items-center gap-2">
-                              Value Field
-                              <div className="group relative">
-                                <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                  {getTooltipContent("field")}
-                                </div>
+                <CardContent className="space-y-6">
+                  {value.data.metric ? (
+                    <Card className="border-2 border-primary/20">
+                      <CardContent className="pt-6 space-y-6">
+                      {/* Field Selection */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium flex items-center gap-2">
+                            Value Column
+                            <div className="group relative">
+                              <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                {getTooltipContent("field")}
                               </div>
-                            </Label>
-                            <Select
-                              value={metric.field}
-                              onValueChange={(val) => updateMetric(metricIndex, { field: val })}
-                            >
-                              <SelectTrigger className="mt-1">
-                                <SelectValue placeholder="Select value field" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableColumns
-                                  .filter(col => ['number', 'integer', 'decimal', 'float', 'double'].includes(col.type))
-                                  .map((column) => (
-                                    <SelectItem key={column.id} value={column.name}>
-                                      {column.name} ({column.type})
-                                    </SelectItem>
-                                  ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label className="text-sm font-medium flex items-center gap-2">
-                              Group By (Optional)
-                              <div className="group relative">
-                                <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                  Group data before aggregating (e.g., group by product, then sum quantity)
-                                </div>
-                              </div>
-                            </Label>
-                            <Select
-                              value={metric.groupBy || "__none__"}
-                              onValueChange={(val) => updateMetric(metricIndex, { groupBy: val === "__none__" ? undefined : val })}
-                            >
-                              <SelectTrigger className="mt-1">
-                                <SelectValue placeholder="Select group field" />
-                              </SelectTrigger>
+                            </div>
+                          </Label>
+                          <Select
+                            value={value.data.metric?.field || ""}
+                            onValueChange={(val) => updateMetric({ field: val })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select numeric column" />
+                            </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">No grouping</SelectItem>
-                              {availableColumns.map((column) => (
-                                <SelectItem key={column.id} value={column.name}>
-                                  {column.name} ({column.type})
-                                </SelectItem>
-                              ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                              {availableColumns
+                                .filter(col => ['number', 'integer', 'decimal', 'float', 'double'].includes(col.type))
+                                .map((column) => (
+                                  <SelectItem key={column.id} value={column.name}>
+                                    {column.name} ({column.type})
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
-                        {/* Label */}
                         <div>
                           <Label className="text-sm font-medium">Display Label</Label>
                           <Input
-                            value={metric.label}
-                            onChange={(e) => updateMetric(metricIndex, { label: e.target.value })}
+                            value={value.data.metric?.label || ""}
+                            onChange={(e) => updateMetric({ label: e.target.value })}
                             placeholder="e.g., Total Revenue"
                             className="mt-1"
                           />
                         </div>
+                      </div>
 
-                        {/* Aggregations */}
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
+                      {/* Aggregation Pipeline - Chained Functions */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
                             <Label className="text-sm font-medium flex items-center gap-2">
-                              Aggregations
+                              Aggregation Pipeline (Chained)
                               <div className="group relative">
                                 <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                  {getTooltipContent("aggregations")}
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 max-w-xs">
+                                  Functions are applied in sequence: Column → Function 1 → Function 2 → Result
                                 </div>
                               </div>
                             </Label>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => addAggregation(metricIndex)}
-                              className="flex items-center gap-1"
-                            >
-                              <Plus className="h-3 w-3" />
-                              Add
-                            </Button>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Each function processes the result from the previous step
+                            </p>
                           </div>
-                          <div className="space-y-2">
-                            {metric.aggregations.map((aggregation, aggIndex) => (
-                              <div key={aggIndex} className="flex items-center gap-2 p-2 border rounded-md">
-                                <Select
-                                  value={aggregation.function}
-                                  onValueChange={(val) => updateAggregation(metricIndex, aggIndex, { function: val as any })}
-                                >
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="sum">Sum</SelectItem>
-                                    <SelectItem value="avg">Average</SelectItem>
-                                    <SelectItem value="count">Count</SelectItem>
-                                    <SelectItem value="min">Min</SelectItem>
-                                    <SelectItem value="max">Max</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <Input
-                                  value={aggregation.label}
-                                  onChange={(e) => updateAggregation(metricIndex, aggIndex, { label: e.target.value })}
-                                  placeholder="e.g., Total"
-                                  className="flex-1"
-                                />
-                                {metric.aggregations.length > 1 && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeAggregation(metricIndex, aggIndex)}
-                                    className="text-red-600 hover:text-red-700"
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={addAggregation}
+                            className="flex items-center gap-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Add Step
+                          </Button>
+                        </div>
+
+                        {/* Pipeline visualization */}
+                        <div className="space-y-3">
+                          {value.data.metric?.aggregations?.map((aggregation, aggIndex) => (
+                            <div key={aggIndex} className="relative">
+                              {/* Step indicator */}
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Badge variant="secondary" className="min-w-[60px] justify-center">
+                                    Step {aggIndex + 1}
+                                  </Badge>
+                                  {aggIndex > 0 && (
+                                    <TrendingDown className="h-4 w-4 text-muted-foreground rotate-90" />
+                                  )}
+                                  <Select
+                                    value={aggregation.function}
+                                    onValueChange={(val) => updateAggregation(aggIndex, { function: val as any })}
                                   >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Format and Options */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-sm font-medium flex items-center gap-2">
-                              Format
-                              <div className="group relative">
-                                <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                  {getTooltipContent("format")}
+                                    <SelectTrigger className="w-36">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="sum">SUM</SelectItem>
+                                      <SelectItem value="avg">AVERAGE</SelectItem>
+                                      <SelectItem value="count">COUNT</SelectItem>
+                                      <SelectItem value="min">MIN</SelectItem>
+                                      <SelectItem value="max">MAX</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Input
+                                    value={aggregation.label}
+                                    onChange={(e) => updateAggregation(aggIndex, { label: e.target.value })}
+                                    placeholder="Step label"
+                                    className="flex-1"
+                                  />
+                                  {(value.data.metric?.aggregations?.length || 0) > 1 && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeAggregation(aggIndex)}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
-                            </Label>
-                            <Select
-                              value={metric.format}
-                              onValueChange={(val) => updateMetric(metricIndex, { format: val as any })}
-                            >
-                              <SelectTrigger className="mt-1">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="currency">Currency</SelectItem>
-                                <SelectItem value="percentage">Percentage</SelectItem>
-                                <SelectItem value="decimal">Decimal</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label className="text-sm font-medium">Target Value (Optional)</Label>
-                            <Input
-                              type="number"
-                              value={metric.target || ""}
-                              onChange={(e) => updateMetric(metricIndex, { 
-                                target: e.target.value ? parseFloat(e.target.value) : undefined 
-                              })}
-                              placeholder="e.g., 1000000"
-                              className="mt-1"
-                            />
-                          </div>
+                            </div>
+                          ))}
                         </div>
 
-                        {/* Options */}
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id={`trend-${metricIndex}`}
-                              checked={metric.showTrend}
-                              onCheckedChange={(checked) => updateMetric(metricIndex, { showTrend: checked })}
-                            />
-                            <Label htmlFor={`trend-${metricIndex}`} className="text-sm flex items-center gap-1">
-                              <TrendingUp className="h-3 w-3" />
-                              Show Trend
-                            </Label>
-                          </div>
+                        {/* Pipeline explanation */}
+                        {(value.data.metric?.aggregations?.length || 0) > 1 && (
+                          <Alert className="mt-4">
+                            <Info className="h-4 w-4" />
+                            <AlertDescription className="text-xs">
+                              <strong>Pipeline flow:</strong> {value.data.metric?.field} → {' '}
+                              {value.data.metric?.aggregations?.map((agg, idx) => (
+                                <React.Fragment key={idx}>
+                                  {idx > 0 && ' → '}
+                                  <span className="font-semibold">{agg.function.toUpperCase()}</span>
+                                </React.Fragment>
+                              ))} → Final result
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
 
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id={`comparison-${metricIndex}`}
-                              checked={metric.showComparison}
-                              onCheckedChange={(checked) => updateMetric(metricIndex, { showComparison: checked })}
-                            />
-                            <Label htmlFor={`comparison-${metricIndex}`} className="text-sm flex items-center gap-1">
-                              <Target className="h-3 w-3" />
-                              Show Comparison
-                            </Label>
-                          </div>
+                      {/* Format and Options */}
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div>
+                          <Label className="text-sm font-medium">Number Format</Label>
+                          <Select
+                            value={value.data.metric?.format || "number"}
+                            onValueChange={(val) => updateMetric({ format: val as any })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="number">Number</SelectItem>
+                              <SelectItem value="currency">Currency</SelectItem>
+                              <SelectItem value="percentage">Percentage</SelectItem>
+                              <SelectItem value="decimal">Decimal</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
 
-                  {value.data.metrics.length === 0 && (
+                        <div>
+                          <Label className="text-sm font-medium">Target Value (Optional)</Label>
+                          <Input
+                            type="number"
+                            value={value.data.metric?.target || ""}
+                            onChange={(e) => updateMetric({ 
+                              target: e.target.value ? parseFloat(e.target.value) : undefined 
+                            })}
+                            placeholder="e.g., 1000000"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Display Options */}
+                      <div className="flex items-center gap-6 pt-4 border-t">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="trend"
+                            checked={value.data.metric?.showTrend || false}
+                            onCheckedChange={(checked) => updateMetric({ showTrend: checked })}
+                          />
+                          <Label htmlFor="trend" className="text-sm flex items-center gap-1 cursor-pointer">
+                            <TrendingUp className="h-3 w-3" />
+                            Show Trend
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="comparison"
+                            checked={value.data.metric?.showComparison || false}
+                            onCheckedChange={(checked) => updateMetric({ showComparison: checked })}
+                          />
+                          <Label htmlFor="comparison" className="text-sm flex items-center gap-1 cursor-pointer">
+                            <Target className="h-3 w-3" />
+                            Show Comparison
+                          </Label>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  ) : (
                     <div className="text-center py-8 text-gray-500">
-                      <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No metrics configured yet.</p>
-                      <p className="text-sm">Click "Add Metric" to get started.</p>
+                      <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="font-medium">No KPI metric configured</p>
+                      <p className="text-sm mt-1">Select a data source to begin</p>
                     </div>
                   )}
                 </CardContent>
@@ -639,7 +603,7 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
             )}
 
             {/* Filters */}
-            {availableColumns.length > 0 && value.data.metrics.length > 0 && (
+            {availableColumns.length > 0 && value.data.metric?.field && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -647,7 +611,7 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                     Data Filters
                   </CardTitle>
                   <CardDescription>
-                    Filter your data before calculating KPIs (optional)
+                    Filter your data before calculating KPI (optional)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
