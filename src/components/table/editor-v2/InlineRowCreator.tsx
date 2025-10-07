@@ -36,7 +36,10 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false, 
 		console.log("🔍 InlineRowCreator useEffect called", { columns: columns.length });
 		const initialData: Record<string, any> = {};
 		columns.forEach((column) => {
-			if (column.defaultValue) {
+			// Auto-fill created_at with current timestamp
+			if (column.name === "created_at" && column.type === USER_FRIENDLY_COLUMN_TYPES.date) {
+				initialData[column.id.toString()] = new Date().toISOString();
+			} else if (column.defaultValue) {
 				initialData[column.id.toString()] = column.defaultValue;
 			} else if (column.type === USER_FRIENDLY_COLUMN_TYPES.yesNo) {
 				initialData[column.id.toString()] = false;
@@ -136,6 +139,15 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false, 
 	const renderCellEditor = (column: Column) => {
 		const value = rowData[column.id.toString()];
 		const error = errors[column.id.toString()];
+
+		// Read-only columns (created_at) - show value but don't allow editing
+		if (column.readOnly || (column.name === "created_at" && column.isLocked)) {
+			return (
+				<div className="h-8 flex items-center px-2 bg-muted/50 rounded text-xs text-muted-foreground italic">
+					{value ? new Date(value).toLocaleString() : 'Auto-generated'}
+				</div>
+			);
+		}
 
 		switch (column.type) {
 			case USER_FRIENDLY_COLUMN_TYPES.yesNo:

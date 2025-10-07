@@ -454,8 +454,8 @@ export class KPIWidgetProcessor {
   }
 
   /**
-   * Calculate trend using FULL AGGREGATION PIPELINE (not just first aggregation)
-   * Compares first half vs second half after applying entire pipeline
+   * Calculate trend using FULL AGGREGATION PIPELINE based on created_at timestamp
+   * Compares older half vs newer half (chronologically sorted)
    */
   private static calculateTrendWithPipeline(
     data: NormalizedRow[], 
@@ -466,37 +466,54 @@ export class KPIWidgetProcessor {
       return { value: 0, percentage: 0, direction: 'stable' };
     }
 
-    const midPoint = Math.floor(data.length / 2);
-    const firstHalf = data.slice(0, midPoint);
-    const secondHalf = data.slice(midPoint);
+    // Try to sort by created_at for chronological comparison
+    let sortedData = [...data];
+    const hasCreatedAt = data[0] && ('created_at' in data[0] || 'createdAt' in data[0]);
+    
+    if (hasCreatedAt) {
+      // Sort chronologically (oldest to newest)
+      sortedData.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
+        const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
+        return dateA - dateB;
+      });
+      console.log(`📅 [Trend] Sorted ${sortedData.length} rows by created_at (chronological)`);
+    } else {
+      console.log(`⚠️ [Trend] No created_at field found - using row order as-is`);
+    }
 
-    // Apply ENTIRE PIPELINE to both halves
-    const firstHalfValues = this.extractNumericValues(firstHalf, field);
-    const secondHalfValues = this.extractNumericValues(secondHalf, field);
+    // Split into older half (first) and newer half (second)
+    const midPoint = Math.floor(sortedData.length / 2);
+    const olderHalf = sortedData.slice(0, midPoint);
+    const newerHalf = sortedData.slice(midPoint);
 
-    // Apply chained aggregations to first half
-    let firstValue: number | number[] = firstHalfValues;
+    // Apply ENTIRE PIPELINE to both periods
+    const olderHalfValues = this.extractNumericValues(olderHalf, field);
+    const newerHalfValues = this.extractNumericValues(newerHalf, field);
+
+    // Apply chained aggregations to older period
+    let olderValue: number | number[] = olderHalfValues;
     aggregations.forEach(agg => {
-      firstValue = Array.isArray(firstValue)
-        ? this.calculateAggregationOnArray(firstValue, agg.function)
-        : firstValue;
+      olderValue = Array.isArray(olderValue)
+        ? this.calculateAggregationOnArray(olderValue, agg.function)
+        : olderValue;
     });
 
-    // Apply chained aggregations to second half
-    let secondValue: number | number[] = secondHalfValues;
+    // Apply chained aggregations to newer period
+    let newerValue: number | number[] = newerHalfValues;
     aggregations.forEach(agg => {
-      secondValue = Array.isArray(secondValue)
-        ? this.calculateAggregationOnArray(secondValue, agg.function)
-        : secondValue;
+      newerValue = Array.isArray(newerValue)
+        ? this.calculateAggregationOnArray(newerValue, agg.function)
+        : newerValue;
     });
 
-    const firstNum = typeof firstValue === 'number' ? firstValue : 0;
-    const secondNum = typeof secondValue === 'number' ? secondValue : 0;
+    const olderNum = typeof olderValue === 'number' ? olderValue : 0;
+    const newerNum = typeof newerValue === 'number' ? newerValue : 0;
 
-    const difference = secondNum - firstNum;
-    const percentage = firstNum !== 0 ? (difference / firstNum) * 100 : 0;
+    const difference = newerNum - olderNum;
+    const percentage = olderNum !== 0 ? (difference / olderNum) * 100 : 0;
 
-    console.log(`📈 [Trend Calculation] First half: ${firstNum}, Second half: ${secondNum}, Change: ${percentage.toFixed(2)}%`);
+    console.log(`📈 [Trend Calculation] Older period: ${olderNum}, Newer period: ${newerNum}, Change: ${percentage.toFixed(2)}%`);
 
     return {
       value: difference,

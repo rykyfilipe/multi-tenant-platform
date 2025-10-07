@@ -106,6 +106,24 @@ export async function POST(
 			},
 		});
 
+		// Automatically create "created_at" column for all new tables
+		console.log(`🕐 [Table Creation] Adding automatic 'created_at' column`);
+		await prisma.column.create({
+			data: {
+				name: "created_at",
+				type: "date",
+				semanticType: "created_date",
+				description: "Record creation timestamp (auto-generated)",
+				required: false,
+				unique: false,
+				defaultValue: new Date().toISOString(),
+				order: 0, // First column
+				tableId: table.id,
+				isLocked: true, // Cannot be deleted
+				// Note: readOnly will be handled in UI (not in schema yet)
+			},
+		});
+
 		const users = await prisma.user.findMany({
 			where: {
 				tenantId: Number(tenantId),
