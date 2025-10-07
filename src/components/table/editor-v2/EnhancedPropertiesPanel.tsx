@@ -21,11 +21,18 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { X, Save, Shield, CheckCircle, Link as LinkIcon, Code, ChevronDown, AlertCircle } from "lucide-react";
+import { X, Save, Shield, CheckCircle, Link as LinkIcon, Code, ChevronDown, AlertCircle, Sparkles } from "lucide-react";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 import { cn } from "@/lib/utils";
 import { getColumnTypeColor, getColumnTypeIcon, COLUMN_TYPE_EXAMPLES } from "@/lib/columnTypeStyles";
 import { Badge } from "@/components/ui/badge";
+import { 
+	SEMANTIC_TYPE_TEMPLATES, 
+	getTemplateCategories, 
+	getTemplatesByCategory,
+	applySemanticTemplate 
+} from "@/lib/semanticTypeTemplates";
+import { SemanticColumnType } from "@/lib/semantic-types";
 
 interface Props {
 	column: Column | null;
@@ -52,27 +59,63 @@ export function EnhancedPropertiesPanel({
 	});
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [showAdvanced, setShowAdvanced] = useState(false);
+	const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
 	useEffect(() => {
 		if (column) {
 			setFormData({
 				name: column.name,
 				type: column.type,
+				semanticType: column.semanticType || undefined,
+				description: column.description || "",
 				required: column.required || false,
-				primary: column.primary || false,
 				unique: column.unique || false,
 				referenceTableId: column.referenceTableId || undefined,
 				defaultValue: column.defaultValue || "",
-				description: column.description || "",
+				customOptions: column.customOptions || undefined,
 				order: column.order || 0,
+				// New properties
+				indexed: column.indexed || false,
+				searchable: column.searchable !== undefined ? column.searchable : true,
+				hidden: column.hidden || false,
+				readOnly: column.readOnly || false,
+				validation: column.validation || "",
+				placeholder: column.placeholder || "",
+				helpText: column.helpText || "",
 			});
 			setErrors({});
+			setSelectedTemplate(column.semanticType || "");
 		} else {
 			// Reset for new column
-			setFormData({ type: "text" });
+			setFormData({ type: "text", searchable: true });
 			setErrors({});
+			setSelectedTemplate("");
 		}
 	}, [column]);
+
+	// Handler for semantic type template selection
+	const handleTemplateSelect = (semanticType: string) => {
+		if (!semanticType || semanticType === "none") {
+			setSelectedTemplate("");
+			return;
+		}
+
+		setSelectedTemplate(semanticType);
+		
+		// Apply template to form data
+		const templateData = applySemanticTemplate(
+			semanticType as SemanticColumnType,
+			formData
+		);
+
+		setFormData({
+			...formData,
+			...templateData,
+		});
+
+		// Clear errors when template is applied
+		setErrors({});
+	};
 
 	const validateForm = () => {
 		const newErrors: Record<string, string> = {};
@@ -97,10 +140,6 @@ export function EnhancedPropertiesPanel({
 
 		if (formData.type === "reference" && !formData.referenceTableId) {
 			newErrors.referenceTableId = "Reference table is required for reference columns";
-		}
-
-		if (!isNewColumn && formData.primary && existingColumns.some((col) => col.primary && col.id !== column?.id)) {
-			newErrors.primary = "Only one primary key is allowed per table";
 		}
 
 		setErrors(newErrors);
@@ -167,6 +206,52 @@ export function EnhancedPropertiesPanel({
 
 			{/* Content */}
 			<CardContent className='space-y-4 py-4'>
+				{/* Quick Templates - Only for new columns */}
+				{isNewColumn && (
+					<div className='space-y-3 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20'>
+						<div className='flex items-center gap-2'>
+							<Sparkles className='w-4 h-4 text-primary' />
+							<Label className='text-sm font-semibold text-primary'>Quick Templates</Label>
+						</div>
+						<Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+							<SelectTrigger className='bg-background'>
+								<SelectValue placeholder='Choose a template to auto-fill...' />
+							</SelectTrigger>
+							<SelectContent className='max-h-[400px]'>
+								<SelectItem value='none'>
+									<span className='text-muted-foreground italic'>No template - start from scratch</span>
+								</SelectItem>
+								
+								{getTemplateCategories().map((category) => (
+									<div key={category}>
+										<div className='px-2 py-2 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0'>
+											{category}
+										</div>
+										{getTemplatesByCategory(category).map((template) => (
+											<SelectItem 
+												key={template.semanticType} 
+												value={template.semanticType}
+												className='cursor-pointer'
+											>
+												<div className='flex items-center gap-2'>
+													<span>{template.icon}</span>
+													<span className='text-sm'>{template.label}</span>
+												</div>
+											</SelectItem>
+										))}
+									</div>
+								))}
+							</SelectContent>
+						</Select>
+						{selectedTemplate && (
+							<div className='flex items-center gap-2 text-xs text-primary'>
+								<CheckCircle className='w-3 h-3' />
+								<span>Template applied! You can modify the fields below.</span>
+							</div>
+						)}
+					</div>
+				)}
+
 				{/* Basic Settings */}
 				<div className='space-y-4'>
 					<div className='flex items-center gap-2 mb-2'>
@@ -252,33 +337,60 @@ export function EnhancedPropertiesPanel({
 							/>
 						</div>
 
-						<div className='flex items-center justify-between'>
-							<div className='space-y-0.5'>
-								<Label className='text-sm font-normal'>Unique</Label>
-								<p className='text-xs text-muted-foreground'>No duplicates allowed</p>
-							</div>
-							<Switch
-								checked={formData.unique || false}
-								onCheckedChange={(checked) => handleInputChange("unique", checked)}
-							/>
+					<div className='flex items-center justify-between'>
+						<div className='space-y-0.5'>
+							<Label className='text-sm font-normal'>Unique</Label>
+							<p className='text-xs text-muted-foreground'>No duplicates allowed</p>
 						</div>
+						<Switch
+							checked={formData.unique || false}
+							onCheckedChange={(checked) => handleInputChange("unique", checked)}
+						/>
+					</div>
 
-						<div className='flex items-center justify-between'>
-							<div className='space-y-0.5'>
-								<Label className='text-sm font-normal'>Primary Key</Label>
-								<p className='text-xs text-muted-foreground'>Main identifier</p>
-							</div>
-							<Switch
-								checked={formData.primary || false}
-								onCheckedChange={(checked) => handleInputChange("primary", checked)}
-							/>
+					<div className='flex items-center justify-between'>
+						<div className='space-y-0.5'>
+							<Label className='text-sm font-normal'>Indexed</Label>
+							<p className='text-xs text-muted-foreground'>Faster queries & sorting</p>
 						</div>
-						{errors.primary && (
-							<p className='text-sm text-destructive flex items-center gap-1'>
-								<AlertCircle className='w-3 h-3' />
-								{errors.primary}
-							</p>
-						)}
+						<Switch
+							checked={formData.indexed || false}
+							onCheckedChange={(checked) => handleInputChange("indexed", checked)}
+						/>
+					</div>
+
+					<div className='flex items-center justify-between'>
+						<div className='space-y-0.5'>
+							<Label className='text-sm font-normal'>Searchable</Label>
+							<p className='text-xs text-muted-foreground'>Include in global search</p>
+						</div>
+						<Switch
+							checked={formData.searchable !== undefined ? formData.searchable : true}
+							onCheckedChange={(checked) => handleInputChange("searchable", checked)}
+						/>
+					</div>
+
+					<div className='flex items-center justify-between'>
+						<div className='space-y-0.5'>
+							<Label className='text-sm font-normal'>Hidden</Label>
+							<p className='text-xs text-muted-foreground'>Hide from default views</p>
+						</div>
+						<Switch
+							checked={formData.hidden || false}
+							onCheckedChange={(checked) => handleInputChange("hidden", checked)}
+						/>
+					</div>
+
+					<div className='flex items-center justify-between'>
+						<div className='space-y-0.5'>
+							<Label className='text-sm font-normal'>Read-Only</Label>
+							<p className='text-xs text-muted-foreground'>Prevent user editing</p>
+						</div>
+						<Switch
+							checked={formData.readOnly || false}
+							onCheckedChange={(checked) => handleInputChange("readOnly", checked)}
+						/>
+					</div>
 					</div>
 				</div>
 

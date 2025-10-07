@@ -306,24 +306,16 @@ export function SchemaMode({
 								/>
 							</div>
 
-							<div>
-								<Label>Primary Key</Label>
-								<Select value={columns.find(c => c.primary)?.id.toString() || ""} disabled>
-									<SelectTrigger>
-										<SelectValue placeholder='Select primary key column' />
-									</SelectTrigger>
-									<SelectContent>
-										{columns.map((col) => (
-											<SelectItem key={col.id} value={col.id.toString()}>
-												{col.name} ({col.type})
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-								<p className='text-xs text-muted-foreground mt-1'>
-									Unique identifier for each row
-								</p>
+						<div>
+							<Label>Total Columns</Label>
+							<div className='flex items-center gap-2 px-3 py-2 bg-muted rounded-md'>
+								<span className='text-2xl font-bold text-primary'>{columns.length}</span>
+								<span className='text-sm text-muted-foreground'>columns defined</span>
 							</div>
+							<p className='text-xs text-muted-foreground mt-1'>
+								Configure columns in the list below
+							</p>
+						</div>
 						</div>
 
 						<div>

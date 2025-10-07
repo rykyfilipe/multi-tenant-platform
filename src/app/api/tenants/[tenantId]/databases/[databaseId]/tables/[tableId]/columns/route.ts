@@ -26,13 +26,20 @@ const ColumnSchema = z.object({
 	description: z.string().optional(), // Column description
 	semanticType: z.string().optional(), // What this column represents (product_name, product_price, etc.)
 	required: z.boolean().optional(),
-	primary: z.boolean().optional(),
 	unique: z.boolean().optional(), // Unique constraint
 	autoIncrement: z.boolean().optional(),
 	referenceTableId: z.number().optional(), // doar pt type "reference"
 	customOptions: z.array(z.string()).optional(), // doar pt type "customArray"
 	defaultValue: z.string().optional(), // Default value for the column
 	order: z.number().optional(), // Ordinea coloanei
+	// New useful properties
+	indexed: z.boolean().optional(), // Database index for performance
+	searchable: z.boolean().optional(), // Include in global search
+	hidden: z.boolean().optional(), // Hide from default views
+	readOnly: z.boolean().optional(), // Prevent editing in UI
+	validation: z.string().optional(), // Custom validation rules
+	placeholder: z.string().optional(), // UI placeholder text
+	helpText: z.string().optional(), // Help tooltip text
 });
 
 const ColumnsSchema = z.object({
@@ -129,28 +136,11 @@ export async function POST(
 			}
 		}
 
-		// Verificăm dacă există deja o cheie primară în tabelă
-		const existingPrimaryKey = table.columns.find(
-			(col: { primary?: boolean }) => col.primary,
-		);
-		const newPrimaryKey = parsedData.columns.find((col) => col.primary);
-
-		if (existingPrimaryKey && newPrimaryKey) {
-			return NextResponse.json(
-				{
-					error:
-						"Table already has a primary key. Only one primary key is allowed per table.",
-				},
-				{ status: 409 },
-			);
-		}
-
-		// Verificăm că tabelele de referință au cheie primară definită
+		// Verificăm că tabelele de referință există
 		for (const column of parsedData.columns) {
 			if (column.type === "reference" && column.referenceTableId) {
 				const referenceTable = await prisma.table.findUnique({
 					where: { id: column.referenceTableId },
-					include: { columns: true },
 				});
 
 				if (!referenceTable) {
@@ -159,18 +149,6 @@ export async function POST(
 							error: `Reference table with ID ${column.referenceTableId} not found.`,
 						},
 						{ status: 404 },
-					);
-				}
-
-				const hasPrimaryKey = referenceTable.columns.some(
-					(col: { primary?: boolean }) => col.primary,
-				);
-				if (!hasPrimaryKey) {
-					return NextResponse.json(
-						{
-							error: `Table "${referenceTable.name}" must have a primary key defined before it can be referenced.`,
-						},
-						{ status: 400 },
 					);
 				}
 			}
@@ -214,25 +192,27 @@ export async function POST(
 					? columnData.order
 					: table.columns.length + i;
 
-			// Force required and unique for primary key columns
-			const isPrimary = columnData.primary || false;
-			const required = isPrimary ? true : (columnData.required || false);
-			const unique = isPrimary ? true : (columnData.unique || false);
-
 			const column = await prisma.column.create({
 				data: {
 					name: columnData.name,
 					type: columnData.type,
 					description: columnData.description || null,
 					semanticType: columnData.semanticType || null,
-					required: required,
-					primary: isPrimary,
-					unique: unique,
+					required: columnData.required || false,
+					unique: columnData.unique || false,
 					referenceTableId: columnData.referenceTableId || null,
 					customOptions: columnData.customOptions || undefined,
 					defaultValue: columnData.defaultValue || null,
 					order: order,
 					tableId: Number(tableId),
+					// New properties - will need migration to add to schema
+					// indexed: columnData.indexed || false,
+					// searchable: columnData.searchable !== undefined ? columnData.searchable : true,
+					// hidden: columnData.hidden || false,
+					// readOnly: columnData.readOnly || false,
+					// validation: columnData.validation || null,
+					// placeholder: columnData.placeholder || null,
+					// helpText: columnData.helpText || null,
 				},
 			});
 
