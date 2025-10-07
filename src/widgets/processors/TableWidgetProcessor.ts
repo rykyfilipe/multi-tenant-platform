@@ -502,20 +502,29 @@ export class TableWidgetProcessor {
   /**
    * Helper: Apply aggregation function directly to array of values
    */
-  private static applyAggregationOnArray(values: number[], func: 'sum' | 'avg' | 'count' | 'min' | 'max'): number {
+  private static applyAggregationOnArray(values: any[], func: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last'): number | any {
     if (!values || values.length === 0) return 0;
     
     switch (func) {
       case 'sum':
-        return values.reduce((sum, val) => sum + val, 0);
+        return values.reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
       case 'avg':
-        return values.reduce((sum, val) => sum + val, 0) / values.length;
+        const numericValues = values.filter(v => typeof v === 'number');
+        return numericValues.length > 0 
+          ? numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length 
+          : 0;
       case 'count':
         return values.length;
       case 'min':
-        return Math.min(...values);
+        const numericMin = values.filter(v => typeof v === 'number');
+        return numericMin.length > 0 ? Math.min(...numericMin) : 0;
       case 'max':
-        return Math.max(...values);
+        const numericMax = values.filter(v => typeof v === 'number');
+        return numericMax.length > 0 ? Math.max(...numericMax) : 0;
+      case 'first':
+        return values[0] ?? 0;
+      case 'last':
+        return values[values.length - 1] ?? 0;
       default:
         return 0;
     }

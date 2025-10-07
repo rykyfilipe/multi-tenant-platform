@@ -51,13 +51,26 @@ export async function POST(
 
 		// Verificăm limitele planului pentru tabele
 		const currentCounts = await getCurrentCounts(userId);
+		console.log(`🔍 [Table Creation] Current counts:`, currentCounts);
+		
 		const tableLimit = await checkPlanLimit(
 			userId,
 			"tables",
 			currentCounts.tables,
 		);
+		
+		console.log(`🔍 [Table Creation] Table limit check:`, {
+			allowed: tableLimit.allowed,
+			current: tableLimit.current,
+			limit: tableLimit.limit,
+			wouldBeAfterCreation: currentCounts.tables + 1,
+		});
 
 		if (!tableLimit.allowed) {
+			console.warn(`⚠️ [Table Creation] BLOCKED - Plan limit exceeded:`, {
+				current: tableLimit.current,
+				limit: tableLimit.limit,
+			});
 			return NextResponse.json(
 				{
 					error: `Plan limit exceeded. You can only have ${tableLimit.limit} table(s). Upgrade your plan to create more tables.`,
@@ -68,6 +81,8 @@ export async function POST(
 				{ status: 403 },
 			);
 		}
+		
+		console.log(`✅ [Table Creation] Plan limit check PASSED - proceeding with creation`);
 
 		const tableExists = await prisma.table.findFirst({
 			where: {

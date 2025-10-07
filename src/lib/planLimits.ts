@@ -29,9 +29,22 @@ export async function checkPlanLimit(
 			},
 		});
 
+		console.log(`🔍 [checkPlanLimit] User info:`, {
+			userId,
+			plan: user?.subscriptionPlan || 'Free',
+			status: user?.subscriptionStatus || 'inactive',
+			limitType,
+			currentCount,
+		});
+
 		if (!user || user.subscriptionStatus !== "active") {
 			// Default to Free plan if no subscription
 			const freeLimit = PLAN_LIMITS.Free[limitType];
+			console.log(`📋 [checkPlanLimit] Using Free plan (no active subscription):`, {
+				limit: freeLimit,
+				current: currentCount,
+				allowed: currentCount < freeLimit,
+			});
 			return {
 				allowed: currentCount < freeLimit,
 				limit: freeLimit,
@@ -42,12 +55,19 @@ export async function checkPlanLimit(
 		const planLimits = PLAN_LIMITS[user.subscriptionPlan || "Free"];
 		const limit = planLimits[limitType];
 
+		console.log(`📋 [checkPlanLimit] Using ${user.subscriptionPlan} plan:`, {
+			limit,
+			current: currentCount,
+			allowed: currentCount < limit,
+		});
+
 		return {
 			allowed: currentCount < limit,
 			limit,
 			current: currentCount,
 		};
 	} catch (error) {
+		console.error(`❌ [checkPlanLimit] Error:`, error);
 		// Default to Free plan on error
 		const freeLimit = PLAN_LIMITS.Free[limitType];
 		return {
