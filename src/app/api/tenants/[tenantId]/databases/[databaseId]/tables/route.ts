@@ -206,16 +206,14 @@ export async function GET(
 				},
 			});
 
-			// Add predefined tables for widgets only if includePredefined is true
-			const predefinedTables = includePredefined ? [
+			// Only add predefined tables if they don't already exist in the database
+			const existingTableNames = new Set(tables.map(t => t.name.toLowerCase()));
+			
+			const predefinedTableDefinitions = [
 				{
-					id: -1, // Special ID for predefined tables
+					id: -1,
 					name: "invoices",
 					description: "Predefined invoices table",
-					databaseId: Number(databaseId),
-					tenantId: Number(tenantId),
-					createdAt: new Date(),
-					updatedAt: new Date(),
 					columns: [
 						{ id: -1, name: "invoice_number", type: "TEXT", semanticType: "invoice_number" },
 						{ id: -2, name: "date", type: "DATE", semanticType: "invoice_date" },
@@ -224,32 +222,22 @@ export async function GET(
 						{ id: -5, name: "customer_id", type: "NUMBER", semanticType: "invoice_customer_id" },
 						{ id: -6, name: "total_amount", type: "NUMBER", semanticType: "invoice_total_amount" },
 					],
-					_count: { rows: 0 },
 				},
 				{
 					id: -2,
 					name: "customers",
 					description: "Predefined customers table",
-					databaseId: Number(databaseId),
-					tenantId: Number(tenantId),
-					createdAt: new Date(),
-					updatedAt: new Date(),
 					columns: [
 						{ id: -7, name: "name", type: "TEXT", semanticType: "customer_name" },
 						{ id: -8, name: "email", type: "EMAIL", semanticType: "customer_email" },
 						{ id: -9, name: "phone", type: "TEXT", semanticType: "customer_phone" },
 						{ id: -10, name: "address", type: "TEXT", semanticType: "customer_address" },
 					],
-					_count: { rows: 0 },
 				},
 				{
 					id: -3,
 					name: "invoice_items",
 					description: "Predefined invoice items table",
-					databaseId: Number(databaseId),
-					tenantId: Number(tenantId),
-					createdAt: new Date(),
-					updatedAt: new Date(),
 					columns: [
 						{ id: -11, name: "invoice_id", type: "NUMBER", semanticType: "reference" },
 						{ id: -12, name: "product_name", type: "TEXT", semanticType: "product_name" },
@@ -257,11 +245,24 @@ export async function GET(
 						{ id: -14, name: "unit_price", type: "NUMBER", semanticType: "unit_price" },
 						{ id: -15, name: "total_price", type: "NUMBER", semanticType: "total_price" },
 					],
-					_count: { rows: 0 },
 				},
-			] : [];
+			];
 
-			// Combine regular tables with predefined tables
+			// Filter out predefined tables that already exist and only add if includePredefined is true
+			const predefinedTables = includePredefined 
+				? predefinedTableDefinitions
+					.filter(predef => !existingTableNames.has(predef.name.toLowerCase()))
+					.map(predef => ({
+						...predef,
+						databaseId: Number(databaseId),
+						tenantId: Number(tenantId),
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						_count: { rows: 0 },
+					}))
+				: [];
+
+			// Combine regular tables with predefined tables (only non-duplicates)
 			const allTables = [...tables, ...predefinedTables];
 
 			// Transform response to include rows count as empty array for backwards compatibility
@@ -301,16 +302,14 @@ export async function GET(
 				rows: Array(item.table._count.rows).fill(null), // Create array of correct length for counting
 			}));
 
-		// Add predefined tables for non-admin users too only if includePredefined is true
-		const predefinedTables = includePredefined ? [
+		// Only add predefined tables if they don't already exist
+		const existingTableNames = new Set(tables.map((t: any) => t.name.toLowerCase()));
+		
+		const predefinedTableDefinitions = [
 			{
-				id: -1, // Special ID for predefined tables
+				id: -1,
 				name: "invoices",
 				description: "Predefined invoices table",
-				databaseId: Number(databaseId),
-				tenantId: Number(tenantId),
-				createdAt: new Date(),
-				updatedAt: new Date(),
 				columns: [
 					{ id: -1, name: "invoice_number", type: "TEXT", semanticType: "invoice_number" },
 					{ id: -2, name: "date", type: "DATE", semanticType: "invoice_date" },
@@ -319,32 +318,22 @@ export async function GET(
 					{ id: -5, name: "customer_id", type: "NUMBER", semanticType: "invoice_customer_id" },
 					{ id: -6, name: "total_amount", type: "NUMBER", semanticType: "invoice_total_amount" },
 				],
-				_count: { rows: 0 },
 			},
 			{
 				id: -2,
 				name: "customers",
 				description: "Predefined customers table",
-				databaseId: Number(databaseId),
-				tenantId: Number(tenantId),
-				createdAt: new Date(),
-				updatedAt: new Date(),
 				columns: [
 					{ id: -7, name: "name", type: "TEXT", semanticType: "customer_name" },
 					{ id: -8, name: "email", type: "EMAIL", semanticType: "customer_email" },
 					{ id: -9, name: "phone", type: "TEXT", semanticType: "customer_phone" },
 					{ id: -10, name: "address", type: "TEXT", semanticType: "customer_address" },
 				],
-				_count: { rows: 0 },
 			},
 			{
 				id: -3,
 				name: "invoice_items",
 				description: "Predefined invoice items table",
-				databaseId: Number(databaseId),
-				tenantId: Number(tenantId),
-				createdAt: new Date(),
-				updatedAt: new Date(),
 				columns: [
 					{ id: -11, name: "invoice_id", type: "NUMBER", semanticType: "reference" },
 					{ id: -12, name: "product_name", type: "TEXT", semanticType: "product_name" },
@@ -352,11 +341,25 @@ export async function GET(
 					{ id: -14, name: "unit_price", type: "NUMBER", semanticType: "unit_price" },
 					{ id: -15, name: "total_price", type: "NUMBER", semanticType: "total_price" },
 				],
-				_count: { rows: 0 },
 			},
-		] : [];
+		];
 
-		// Combine regular tables with predefined tables
+		// Filter out predefined tables that already exist and only add if includePredefined is true
+		const predefinedTables = includePredefined
+			? predefinedTableDefinitions
+				.filter(predef => !existingTableNames.has(predef.name.toLowerCase()))
+				.map(predef => ({
+					...predef,
+					databaseId: Number(databaseId),
+					tenantId: Number(tenantId),
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					_count: { rows: 0 },
+					rows: [],
+				}))
+			: [];
+
+		// Combine regular tables with predefined tables (only non-duplicates)
 		const allTables = [...tables, ...predefinedTables];
 
 		return NextResponse.json(allTables);

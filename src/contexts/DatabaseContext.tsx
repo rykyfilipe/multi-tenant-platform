@@ -64,7 +64,7 @@ export const DatabaseProvider = ({
 }: {
 	children: React.ReactNode;
 }) => {
-	const { token, user, loading, showAlert, tenant, setLoading } = useApp();
+	const { token, user, showAlert, tenant } = useApp();
 	const { handleApiError } = usePlanLimitError();
 	const { data: session } = useSession();
 	const tenantId = tenant?.id;
@@ -74,6 +74,7 @@ export const DatabaseProvider = ({
 		null,
 	);
 	const [tables, setTables] = useState<Table[] | null>(null);
+	const [loading, setLoading] = useState(false);
 
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");

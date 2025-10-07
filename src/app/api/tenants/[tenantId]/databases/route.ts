@@ -91,17 +91,28 @@ export async function GET(
 				if (!existing) {
 					tablesByName.set(table.name, table);
 				} else {
-					// If we have duplicates, keep the one with more rows
-					// Or if both have 0 rows, keep the one that is a module table
+					// Priority for keeping tables:
+					// 1. Tables with data (more rows)
+					// 2. If both empty: Module tables > Protected tables > User tables
 					const existingRows = existing._count.rows;
 					const currentRows = table._count.rows;
 					
+					// Always prefer table with more data
 					if (currentRows > existingRows) {
 						tablesByName.set(table.name, table);
-					} else if (currentRows === existingRows && existingRows === 0) {
-						// Both empty, prefer module table
-						if (table.isModuleTable && !existing.isModuleTable) {
+					} else if (currentRows === existingRows) {
+						// Both have same amount of data, use type priority
+						const existingPriority = existing.isModuleTable ? 3 : (existing.isProtected ? 2 : 1);
+						const currentPriority = table.isModuleTable ? 3 : (table.isProtected ? 2 : 1);
+						
+						if (currentPriority > existingPriority) {
 							tablesByName.set(table.name, table);
+						}
+						// If same priority and both empty, prefer the one with more columns
+						else if (currentPriority === existingPriority && currentRows === 0) {
+							if (table._count.columns > existing._count.columns) {
+								tablesByName.set(table.name, table);
+							}
 						}
 					}
 				}
