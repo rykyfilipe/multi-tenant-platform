@@ -139,6 +139,18 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 		},
 	});
 
+	// Keyboard shortcuts - MUST be called before any conditional returns
+	useTableEditorShortcuts({
+		onSave: pendingChangesCount > 0 ? savePendingChanges : undefined,
+		onNewColumn: mode === "schema" && tablePermissions.canEditTable() ? () => setSelectedColumn(null) : undefined,
+		onNewRow: mode === "data" && tablePermissions.canEditTable() ? () => {
+			// Trigger add row in data mode
+		} : undefined,
+		onUndo: pendingChangesCount > 0 ? discardPendingChanges : undefined,
+		onToggleMode: () => setMode(mode === "schema" ? "data" : "schema"),
+		enabled: true,
+	});
+
 	// Column management functions
 	const handleAddColumn = async (columnData: CreateColumnRequest) => {
 		if (!token || !tenantId) {
@@ -576,19 +588,6 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 	}
 
 	if (!table || !columns || !token || !user) return null;
-
-	// Keyboard shortcuts
-	useTableEditorShortcuts({
-		onSave: hasUnsavedChanges ? savePendingChanges : undefined,
-		onNewColumn: mode === "schema" && tablePermissions.canEditTable() ? () => setSelectedColumn(null) : undefined,
-		onNewRow: mode === "data" && tablePermissions.canEditTable() ? () => {
-			// Trigger add row in data mode
-			// This will be implemented when we add inline row creation
-		} : undefined,
-		onUndo: hasUnsavedChanges ? discardPendingChanges : undefined,
-		onToggleMode: () => setMode(mode === "schema" ? "data" : "schema"),
-		enabled: true,
-	});
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative'>
