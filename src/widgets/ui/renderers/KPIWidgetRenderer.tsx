@@ -32,7 +32,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const [realData, setRealData] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Fetch real data from API when widget is configured
+  // Fetch ALL data from API when widget is configured (not paginated)
   useEffect(() => {
     const fetchData = async () => {
       if (!config.data?.databaseId || !config.data?.tableId || !token || !tenant?.id) {
@@ -41,8 +41,9 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
 
       setIsLoadingData(true);
       try {
+        // Fetch ALL rows by using a large pageSize
         const response = await fetch(
-          `/api/tenants/${tenant.id}/databases/${config.data.databaseId}/tables/${config.data.tableId}/rows`,
+          `/api/tenants/${tenant.id}/databases/${config.data.databaseId}/tables/${config.data.tableId}/rows?pageSize=10000&page=1&includeCells=true`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -50,6 +51,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
 
         if (response.ok) {
           const result = await response.json();
+          console.log(`📊 [KPI Widget] Fetched ${result.data?.length || 0} rows for aggregation`);
           setRealData(result.data || []);
         }
       } catch (error) {
@@ -129,6 +131,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     config.data?.databaseId, 
     config.data?.tableId, 
     metric?.field,
+    metric?.groupBy,  // ✅ Added groupBy to dependencies
     metric?.label,
     metric?.format,
     metric?.showTrend,

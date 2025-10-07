@@ -233,7 +233,13 @@ export class KPIWidgetProcessor {
       };
     }
 
-    // Step 2: Extract column values
+    // Step 2: Check if GROUP BY is configured
+    if (config.metric.groupBy) {
+      console.log(`🔀 [Step 2] GROUP BY "${config.metric.groupBy}" detected - processing groups`);
+      return this.processWithGroupBy(normalizedData, config);
+    }
+
+    // Step 2 (No GroupBy): Extract column values
     const columnValues = this.extractNumericValues(normalizedData, config.metric.field);
     console.log(`📊 [KPIWidgetProcessor] Extracted ${columnValues.length} values from column: ${config.metric.field}`);
 
@@ -324,6 +330,71 @@ export class KPIWidgetProcessor {
       default:
         return 0;
     }
+  }
+
+  /**
+   * Process data with GROUP BY - groups rows, applies pipeline to each group, then aggregates results
+   */
+  private static processWithGroupBy(normalizedData: NormalizedRow[], config: KPIConfig): KPIResult {
+    const groupByField = config.metric.groupBy!;
+    console.log(`🔀 [GROUP BY] Grouping ${normalizedData.length} rows by "${groupByField}"`);
+
+    // Step 1: Group rows by the groupBy field
+    const groups: Record<string, NormalizedRow[]> = {};
+    normalizedData.forEach(row => {
+      const groupKey = String(row[groupByField] ?? '__NULL__');
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(row);
+    });
+
+    const groupKeys = Object.keys(groups);
+    console.log(`   Created ${groupKeys.length} groups:`, groupKeys.slice(0, 10));
+
+    // Step 2: Apply aggregation pipeline to each group
+    const groupResults: Array<{ group: string; value: number }> = [];
+    
+    groupKeys.forEach((groupKey, groupIndex) => {
+      const groupRows = groups[groupKey];
+      const groupValues = this.extractNumericValues(groupRows, config.metric.field);
+      
+      console.log(`   Group ${groupIndex + 1}/${groupKeys.length} "${groupKey}": ${groupValues.length} rows`);
+      
+      // Apply chained aggregations to this group
+      let currentValue: number | number[] = groupValues;
+      config.metric.aggregations.forEach(agg => {
+        currentValue = Array.isArray(currentValue)
+          ? this.calculateAggregationOnArray(currentValue, agg.function)
+          : currentValue;
+      });
+      
+      const groupFinalValue = typeof currentValue === 'number' ? currentValue : 0;
+      console.log(`      → Pipeline result for "${groupKey}": ${groupFinalValue}`);
+      groupResults.push({ group: groupKey, value: groupFinalValue });
+    });
+
+    // Step 3: Aggregate all group results using the last aggregation function
+    const finalAgg = config.metric.aggregations[config.metric.aggregations.length - 1];
+    const groupValues = groupResults.map(g => g.value);
+    
+    console.log(`🎯 [GROUP BY] Applying ${finalAgg.function.toUpperCase()} to ${groupResults.length} group results:`, groupValues);
+    
+    const finalValue = this.calculateAggregationOnArray(groupValues, finalAgg.function);
+    console.log(`   → Final aggregated value: ${finalValue}`);
+
+    return {
+      metric: config.metric.field,
+      label: config.metric.label,
+      value: finalValue,
+      aggregation: `${finalAgg.label} (grouped by ${groupByField})`,
+      format: config.metric.format || 'number',
+      allAggregations: [{
+        function: finalAgg.function,
+        label: `${finalAgg.label} across ${groupResults.length} groups`,
+        value: finalValue,
+      }],
+    };
   }
 
   /**

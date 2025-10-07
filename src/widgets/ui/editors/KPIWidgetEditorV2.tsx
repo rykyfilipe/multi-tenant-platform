@@ -488,18 +488,61 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                           </Select>
                         </div>
 
-                        <div>
-                          <Label className="text-sm font-medium">Display Label</Label>
-                          <Input
-                            value={value.data.metric?.label || ""}
-                            onChange={(e) => updateMetric({ label: e.target.value })}
-                            placeholder="e.g., Total Revenue"
-                            className="mt-1"
-                          />
-                        </div>
+                      <div>
+                        <Label className="text-sm font-medium">Display Label</Label>
+                        <Input
+                          value={value.data.metric?.label || ""}
+                          onChange={(e) => updateMetric({ label: e.target.value })}
+                          placeholder="e.g., Total Revenue"
+                          className="mt-1"
+                        />
                       </div>
+                    </div>
 
-                      {/* Aggregation Pipeline - Chained Functions */}
+                    {/* Group By Field (Optional) */}
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BarChart3 className="h-4 w-4 text-blue-600" />
+                        <Label className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                          Group By (Optional)
+                        </Label>
+                      </div>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+                        Group rows by a column before aggregating. Example: Group by "country" then SUM "deaths" per country.
+                      </p>
+                      <Select
+                        value={value.data.metric?.groupBy || "none"}
+                        onValueChange={(val) => updateMetric({ groupBy: val === "none" ? undefined : val })}
+                      >
+                        <SelectTrigger className="bg-white dark:bg-gray-900">
+                          <SelectValue placeholder="No grouping (aggregate all rows)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            <span className="text-muted-foreground italic">No grouping - aggregate all rows</span>
+                          </SelectItem>
+                          {availableColumns
+                            .filter(col => col.name !== value.data.metric?.field) // Exclude the metric field itself
+                            .map((column) => (
+                              <SelectItem key={column.id} value={column.name}>
+                                {column.name} ({column.type})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {value.data.metric?.groupBy && (
+                        <Alert className="mt-3">
+                          <Info className="h-4 w-4" />
+                          <AlertDescription className="text-xs">
+                            <strong>Flow:</strong> Group by "{value.data.metric.groupBy}" → 
+                            Apply pipeline to each group → 
+                            Final aggregation across groups
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+
+                    {/* Aggregation Pipeline - Chained Functions */}
                       <div>
                         <div className="flex items-center justify-between mb-3">
                           <div>
