@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { KPIWidgetProcessor } from "@/widgets/processors/KPIWidgetProcessor";
-import { TrendingUp, TrendingDown, Target, CheckCircle, XCircle, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, CheckCircle, XCircle, Minus, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { BaseWidget } from "../components/BaseWidget";
+import { useApp } from "@/contexts/AppContext";
 
 interface KPIWidgetRendererProps {
   widget: WidgetEntity;
@@ -27,33 +28,39 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   isSelected = false,
 }) => {
   const config = widget.config as any;
+  const { token, tenant } = useApp();
+  const [realData, setRealData] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Mock data for demonstration
-  const mockData = useMemo(() => {
-    return [
-      {
-        cells: [
-          { column: { name: "revenue" }, value: 125000 },
-          { column: { name: "profit" }, value: 25000 },
-          { column: { name: "orders" }, value: 150 },
-        ]
-      },
-      {
-        cells: [
-          { column: { name: "revenue" }, value: 98000 },
-          { column: { name: "profit" }, value: 18000 },
-          { column: { name: "orders" }, value: 120 },
-        ]
-      },
-      {
-        cells: [
-          { column: { name: "revenue" }, value: 156000 },
-          { column: { name: "profit" }, value: 32000 },
-          { column: { name: "orders" }, value: 180 },
-        ]
-      },
-    ];
-  }, []);
+  // Fetch real data from API when widget is configured
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!config.data?.databaseId || !config.data?.tableId || !token || !tenant?.id) {
+        return;
+      }
+
+      setIsLoadingData(true);
+      try {
+        const response = await fetch(
+          `/api/tenants/${tenant.id}/databases/${config.data.databaseId}/tables/${config.data.tableId}/rows`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          setRealData(result.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching KPI data:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [config.data?.databaseId, config.data?.tableId, token, tenant?.id]);
 
   const formatValue = (value: number, format: string): string => {
     // Check if value is integer (no decimals) for quantity-like fields
@@ -90,6 +97,21 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         value: 0,
         aggregation: 'sum',
         format: 'number',
+        trend: undefined,
+        comparison: undefined,
+      };
+    }
+
+    // Use real data if available, otherwise return 0 with proper structure
+    if (realData.length === 0) {
+      return {
+        metric: metric.field,
+        label: metric.label,
+        value: 0,
+        aggregation: metric.aggregations?.[0]?.function || 'sum',
+        format: metric.format || 'number',
+        trend: undefined,
+        comparison: undefined,
       };
     }
 
@@ -102,7 +124,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       filters: config.data.filters || [],
     };
 
-    return KPIWidgetProcessor.process(mockData, kpiConfig);
+    return KPIWidgetProcessor.process(realData, kpiConfig);
   }, [
     config.data?.databaseId, 
     config.data?.tableId, 
@@ -114,7 +136,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     metric?.target,
     metric?.aggregations?.length,
     config.data?.filters?.length,
-    mockData,
+    realData,
   ]);
 
   const getTrendIcon = (direction: string) => {
@@ -182,7 +204,14 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         }}
       >
         <CardContent className="p-6">
-          {/* Single KPI Display */}
+          {isLoadingData ? (
+            <div className="flex items-center justify-center h-full min-h-[200px]">
+              <div className="text-center text-muted-foreground">
+                <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
+                <p className="text-sm">Loading data...</p>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-6">
             {/* Aggregation Pipeline - Shows chained functions */}
             {metric.aggregations && metric.aggregations.length > 1 && (
@@ -275,6 +304,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               )}
             </div>
           </div>
+          )}
         </CardContent>
       </Card>
     </BaseWidget>
