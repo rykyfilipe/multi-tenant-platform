@@ -170,8 +170,15 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   }, [
     config.data?.databaseId, 
     config.data?.tableId, 
-    JSON.stringify(metric), // Serialize entire metric object to avoid reference issues
-    JSON.stringify(config.data?.filters),
+    metric?.field,
+    metric?.label,
+    metric?.format,
+    metric?.showTrend,
+    metric?.showComparison,
+    metric?.target,
+    metric?.aggregations?.length,
+    config.data?.filters?.length,
+    mockData,
   ]);
 
   return (

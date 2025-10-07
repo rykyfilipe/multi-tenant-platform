@@ -5,6 +5,7 @@ import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
 import { useWidgetsApi } from "@/widgets/api/simple-client";
+import { useRouter } from "next/navigation";
 // import { useAutoSave } from "@/widgets/hooks/useAutoSave"; // Removed auto-save
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

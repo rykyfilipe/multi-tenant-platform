@@ -230,15 +230,14 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
 
   const removeAggregationFunction = (columnIndex: number, functionIndex: number) => {
     const updatedColumns = [...value.settings.aggregation.columns];
-    if (updatedColumns[columnIndex].aggregations.length > 1) {
-      updatedColumns[columnIndex].aggregations.splice(functionIndex, 1);
-      updateSettings({
-        aggregation: {
-          ...value.settings.aggregation,
-          columns: updatedColumns,
-        }
-      });
-    }
+    // Allow removing even if it's the last aggregation
+    updatedColumns[columnIndex].aggregations.splice(functionIndex, 1);
+    updateSettings({
+      aggregation: {
+        ...value.settings.aggregation,
+        columns: updatedColumns,
+      }
+    });
   };
 
   const updateAggregationFunction = (
@@ -752,16 +751,14 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                                         placeholder="e.g., Total"
                                         className="flex-1"
                                       />
-                                      {columnAgg.aggregations.length > 1 && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => removeAggregationFunction(columnIndex, aggIndex)}
-                                          className="text-red-600 hover:text-red-700"
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeAggregationFunction(columnIndex, aggIndex)}
+                                        className="text-red-600 hover:text-red-700"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                   ))}
                                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { X, Check, ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { widgetRegistry } from "@/widgets/registry/widget-registry";
@@ -43,6 +43,25 @@ export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Live updates - apply changes immediately to widget - memoized to prevent infinite re-renders
+  const handleConfigChange = useCallback((newConfig: any) => {
+    setDraftConfig(newConfig);
+    updateLocal(widgetId, { config: newConfig });
+    setHasChanges(true);
+  }, [widgetId, updateLocal]);
+
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setDraftTitle(newTitle);
+    updateLocal(widgetId, { title: newTitle || null });
+    setHasChanges(true);
+  }, [widgetId, updateLocal]);
+
+  const handleSaveAndClose = useCallback(() => {
+    onSave(draftConfig, draftTitle);
+    setHasChanges(false);
+    onClose();
+  }, [draftConfig, draftTitle, onSave, onClose]);
+
   useEffect(() => {
     if (widget) {
       setDraftConfig(widget.config || {});
@@ -66,32 +85,13 @@ export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, draftConfig, draftTitle]);
+  }, [onClose, handleSaveAndClose]);
 
   if (!widget) {
     return null;
   }
 
   const definition = widgetRegistry[widget.kind];
-
-  // Live updates - apply changes immediately to widget
-  const handleConfigChange = (newConfig: any) => {
-    setDraftConfig(newConfig);
-    updateLocal(widgetId, { config: newConfig });
-    setHasChanges(true);
-  };
-
-  const handleTitleChange = (newTitle: string) => {
-    setDraftTitle(newTitle);
-    updateLocal(widgetId, { title: newTitle || null });
-    setHasChanges(true);
-  };
-
-  const handleSaveAndClose = () => {
-    onSave(draftConfig, draftTitle);
-    setHasChanges(false);
-    onClose();
-  };
 
   type EditorValue = z.infer<typeof definition.schema>;
   const EditorComponent = useMemo(

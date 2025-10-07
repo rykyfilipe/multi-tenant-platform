@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { z } from "zod";
 import { kpiWidgetConfigSchemaV2 } from "@/widgets/schemas/kpi-v2";
 import { Input } from "@/components/ui/input";
@@ -58,8 +58,8 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
 
-  // Wizard steps configuration
-  const wizardSteps: WizardStep[] = [
+  // Wizard steps configuration - memoized to prevent unnecessary recalculations
+  const wizardSteps: WizardStep[] = useMemo(() => [
     {
       id: "datasource",
       title: "Choose Data Source",
@@ -95,7 +95,7 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
       completed: validationResult?.isValid || false,
       required: true,
     },
-  ];
+  ], [value.data.databaseId, value.data.tableId, value.data.metric?.field, value.data.metric?.aggregations?.length, validationResult?.isValid]);
 
   // Validate configuration whenever it changes
   useEffect(() => {
@@ -138,61 +138,82 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
         });
       }
     }
-  }, [availableColumns]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableColumns.length]);
 
-  const updateSettings = (updates: Partial<typeof value.settings>) => {
+  const updateSettings = useCallback((updates: Partial<typeof value.settings>) => {
     onChange({
       ...value,
       settings: { ...value.settings, ...updates },
     });
-  };
+  }, [onChange, value]);
 
-  const updateStyle = (updates: Partial<typeof value.style>) => {
+  const updateStyle = useCallback((updates: Partial<typeof value.style>) => {
     onChange({
       ...value,
       style: { ...value.style, ...updates },
     });
-  };
+  }, [onChange, value]);
 
-  const updateData = (updates: Partial<typeof value.data>) => {
+  const updateData = useCallback((updates: Partial<typeof value.data>) => {
     onChange({
       ...value,
       data: { ...value.data, ...updates },
     });
-  };
+  }, [onChange, value]);
 
-  const handleFiltersChange = (filters: any[]) => {
-    updateData({ filters });
-  };
+  const handleFiltersChange = useCallback((filters: any[]) => {
+    onChange({
+      ...value,
+      data: { ...value.data, filters },
+    });
+  }, [onChange, value]);
 
   // Single metric management
-  const updateMetric = (updates: Partial<typeof value.data.metric>) => {
-    updateData({ 
-      metric: { ...value.data.metric, ...updates } as any
+  const updateMetric = useCallback((updates: Partial<typeof value.data.metric>) => {
+    onChange({ 
+      ...value,
+      data: {
+        ...value.data,
+        metric: { ...value.data.metric, ...updates } as any
+      }
     });
-  };
+  }, [onChange, value]);
 
   // Aggregation pipeline management (chained)
-  const addAggregation = () => {
+  const addAggregation = useCallback(() => {
     const currentAggregations = value.data.metric?.aggregations || [];
-    updateMetric({
-      aggregations: [...currentAggregations, {
-        function: "avg" as const,
-        label: "Average",
-      }],
+    onChange({
+      ...value,
+      data: {
+        ...value.data,
+        metric: {
+          ...value.data.metric,
+          aggregations: [...currentAggregations, {
+            function: "avg" as const,
+            label: "Average",
+          }],
+        } as any
+      }
     });
-  };
+  }, [onChange, value]);
 
-  const removeAggregation = (aggregationIndex: number) => {
+  const removeAggregation = useCallback((aggregationIndex: number) => {
     const currentAggregations = value.data.metric?.aggregations || [];
-    if (currentAggregations.length > 1) {
-      updateMetric({
-        aggregations: currentAggregations.filter((_, i) => i !== aggregationIndex),
-      });
-    }
-  };
+    // Allow removing even if it's the last aggregation
+    onChange({
+      ...value,
+      data: {
+        ...value.data,
+        metric: {
+          ...value.data.metric,
+          aggregations: currentAggregations.filter((_, i) => i !== aggregationIndex),
+        } as any
+      }
+    });
+  }, [onChange, value]);
 
-  const updateAggregation = (
+  const updateAggregation = useCallback((
     aggregationIndex: number, 
     updates: any
   ) => {
@@ -201,8 +222,17 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
       ...currentAggregations[aggregationIndex],
       ...updates,
     };
-    updateMetric({ aggregations: currentAggregations as any });
-  };
+    onChange({
+      ...value,
+      data: {
+        ...value.data,
+        metric: {
+          ...value.data.metric,
+          aggregations: currentAggregations as any
+        } as any
+      }
+    });
+  }, [onChange, value]);
 
   const getTooltipContent = (field: string): string => {
     const tooltips: Record<string, string> = {
@@ -496,16 +526,14 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                                     placeholder="Step label"
                                     className="flex-1"
                                   />
-                                  {(value.data.metric?.aggregations?.length || 0) > 1 && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeAggregation(aggIndex)}
-                                      className="text-red-600 hover:text-red-700"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeAggregation(aggIndex)}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </div>
                             </div>
