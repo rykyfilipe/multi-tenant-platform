@@ -142,6 +142,14 @@ export function EnhancedPropertiesPanel({
 			newErrors.referenceTableId = "Reference table is required for reference columns";
 		}
 
+		if (formData.type === "customArray") {
+			if (!formData.customOptions || formData.customOptions.length === 0) {
+				newErrors.customOptions = "At least one option is required for customArray type";
+			} else if (formData.customOptions.length < 2) {
+				newErrors.customOptions = "At least two options are recommended";
+			}
+		}
+
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
@@ -306,17 +314,89 @@ export function EnhancedPropertiesPanel({
 						)}
 					</div>
 
-					<div className='space-y-2'>
-						<Label htmlFor='description'>Description (Optional)</Label>
-						<Textarea
-							id='description'
-							value={formData.description || ""}
-							onChange={(e) => handleInputChange("description", e.target.value)}
-							placeholder='What does this column store?'
-							rows={2}
-						/>
-					</div>
+				<div className='space-y-2'>
+					<Label htmlFor='semanticType'>Semantic Type (Optional)</Label>
+					<Select 
+						value={formData.semanticType || "none"} 
+						onValueChange={(value) => handleInputChange("semanticType", value === "none" ? undefined : value)}
+					>
+						<SelectTrigger>
+							<SelectValue placeholder='Select semantic meaning...' />
+						</SelectTrigger>
+						<SelectContent className='max-h-[300px]'>
+							<SelectItem value='none'>
+								<span className='text-muted-foreground italic'>None - no semantic meaning</span>
+							</SelectItem>
+							
+							{getTemplateCategories().map((category) => (
+								<div key={category}>
+									<div className='px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0'>
+										{category}
+									</div>
+									{getTemplatesByCategory(category).map((template) => (
+										<SelectItem 
+											key={template.semanticType} 
+											value={template.semanticType}
+										>
+											<div className='flex items-center gap-2'>
+												<span>{template.icon}</span>
+												<span className='text-sm'>{template.label}</span>
+											</div>
+										</SelectItem>
+									))}
+								</div>
+							))}
+						</SelectContent>
+					</Select>
+					<p className='text-xs text-muted-foreground'>
+						Used for invoice mapping and data processing
+					</p>
 				</div>
+
+				<div className='space-y-2'>
+					<Label htmlFor='description'>Description (Optional)</Label>
+					<Textarea
+						id='description'
+						value={formData.description || ""}
+						onChange={(e) => handleInputChange("description", e.target.value)}
+						placeholder='What does this column store?'
+						rows={2}
+					/>
+				</div>
+
+				{/* Custom Options for customArray type */}
+				{formData.type === "customArray" && (
+					<div className='space-y-2'>
+						<Label htmlFor='customOptions'>Options (Required for customArray) *</Label>
+						<Textarea
+							id='customOptions'
+							value={(formData.customOptions || []).join('\n')}
+							onChange={(e) => {
+								const options = e.target.value
+									.split('\n')
+									.map(opt => opt.trim())
+									.filter(opt => opt.length > 0);
+								handleInputChange("customOptions", options);
+							}}
+							placeholder='Enter options (one per line)&#10;Example:&#10;Option 1&#10;Option 2&#10;Option 3'
+							rows={5}
+							className={cn(
+								errors.customOptions && "border-destructive",
+								"font-mono text-sm"
+							)}
+						/>
+						{errors.customOptions && (
+							<p className='text-sm text-destructive flex items-center gap-1'>
+								<AlertCircle className='w-3 h-3' />
+								{errors.customOptions}
+							</p>
+						)}
+						<p className='text-xs text-muted-foreground'>
+							One option per line. Users will select from this list.
+						</p>
+					</div>
+				)}
+			</div>
 
 				{/* Constraints */}
 				<div className='space-y-4'>
