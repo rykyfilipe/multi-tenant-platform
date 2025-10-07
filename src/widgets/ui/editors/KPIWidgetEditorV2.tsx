@@ -398,15 +398,27 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                   tenantId={tenantId}
                   selectedDatabaseId={value.data.databaseId}
                   selectedTableId={Number(value.data.tableId)}
-                  onDatabaseChange={(databaseId) => updateData({ 
-                    databaseId, 
-                    tableId: "", 
-                    metric: undefined 
-                  })}
-                  onTableChange={(tableId) => updateData({ 
-                    tableId: tableId.toString(), 
-                    metric: undefined 
-                  })}
+                  onDatabaseChange={(databaseId) => {
+                    onChange({
+                      ...value,
+                      data: {
+                        ...value.data,
+                        databaseId,
+                        tableId: "",
+                        metric: undefined
+                      }
+                    });
+                  }}
+                  onTableChange={(tableId) => {
+                    onChange({
+                      ...value,
+                      data: {
+                        ...value.data,
+                        tableId: tableId.toString(),
+                        metric: undefined
+                      }
+                    });
+                  }}
                   onColumnsChange={setAvailableColumns}
                 />
               </CardContent>

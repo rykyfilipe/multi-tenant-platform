@@ -420,15 +420,27 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   tenantId={tenantId}
                   selectedDatabaseId={value.data.databaseId}
                   selectedTableId={Number(value.data.tableId)}
-                  onDatabaseChange={(databaseId) => updateData({ 
-                    databaseId, 
-                    tableId: "", 
-                    columns: [] 
-                  })}
-                  onTableChange={(tableId) => updateData({ 
-                    tableId: tableId.toString(), 
-                    columns: [] 
-                  })}
+                  onDatabaseChange={(databaseId) => {
+                    onChange({
+                      ...value,
+                      data: {
+                        ...value.data,
+                        databaseId,
+                        tableId: "",
+                        columns: []
+                      }
+                    });
+                  }}
+                  onTableChange={(tableId) => {
+                    onChange({
+                      ...value,
+                      data: {
+                        ...value.data,
+                        tableId: tableId.toString(),
+                        columns: []
+                      }
+                    });
+                  }}
                   onColumnsChange={setAvailableColumns}
                 />
               </CardContent>

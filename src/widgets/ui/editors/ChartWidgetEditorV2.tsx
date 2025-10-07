@@ -333,15 +333,27 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                   tenantId={tenantId}
                   selectedDatabaseId={value.data.databaseId}
                   selectedTableId={Number(value.data.tableId)}
-                  onDatabaseChange={(databaseId) => updateData({ 
-                    databaseId, 
-                    tableId: "", 
-                    mappings: { y: [] } 
-                  })}
-                  onTableChange={(tableId) => updateData({ 
-                    tableId: tableId.toString(), 
-                    mappings: { y: [] } 
-                  })}
+                  onDatabaseChange={(databaseId) => {
+                    onChange({
+                      ...value,
+                      data: {
+                        ...value.data,
+                        databaseId,
+                        tableId: "",
+                        mappings: { y: [] }
+                      }
+                    });
+                  }}
+                  onTableChange={(tableId) => {
+                    onChange({
+                      ...value,
+                      data: {
+                        ...value.data,
+                        tableId: tableId.toString(),
+                        mappings: { y: [] }
+                      }
+                    });
+                  }}
                   onColumnsChange={setAvailableColumns}
                 />
               </CardContent>
