@@ -125,27 +125,35 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // Auto-save for tasks widget
+  // Auto-save for tasks widget - only in VIEW mode (not when editing dashboard layout)
   useTasksAutoSave({
     tenantId: tenant?.id || 0,
     dashboardId: widget.dashboardId,
     actorId: user?.id || 0,
     widgetId: widget.id,
     debounceMs: 1000, // 1 second debounce for tasks
-    enabled: true,
+    enabled: !isEditMode, // Only auto-save when in view mode
   });
 
-  // Save tasks to widget data
+  // Save tasks to widget data - only updates the data.tasks field
   const saveTasks = useCallback((newTasks: Task[]) => {
+    // Convert tasks to serializable format (Date → ISO string)
+    const serializableTasks = newTasks.map(task => ({
+      ...task,
+      dueDate: task.dueDate ? task.dueDate.toISOString() : undefined,
+    }));
+    
     const updatedConfig = {
       ...config,
       data: {
         ...config?.data,
-        tasks: newTasks
+        tasks: serializableTasks
       }
     };
     updateLocal(widget.id, { config: updatedConfig });
-  }, [config, updateLocal, widget.id]);
+    // Auto-save hook will detect this change and send to server in VIEW mode
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateLocal, widget.id]);
 
   // CRUD operations
   const addTask = useCallback((task: Omit<Task, 'id'>) => {

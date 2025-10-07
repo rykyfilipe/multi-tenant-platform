@@ -188,6 +188,19 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         showPriorityColors: z.boolean().default(true),
         showDueDates: z.boolean().default(true),
       }),
+      data: z.object({
+        tasks: z.array(z.object({
+          id: z.string(),
+          title: z.string(),
+          description: z.string().optional(),
+          completed: z.boolean(),
+          priority: z.enum(["low", "medium", "high", "urgent"]),
+          dueDate: z.string().optional(), // ISO string
+          assignee: z.string().optional(),
+          progress: z.number().optional(),
+          tags: z.array(z.string()).optional(),
+        })).optional().default([]),
+      }).optional().default({ tasks: [] }),
       refresh: z.object({
         enabled: z.boolean().default(false),
         interval: z.number().default(300000),
@@ -217,6 +230,9 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
         padding: "lg",
         showPriorityColors: true,
         showDueDates: true,
+      },
+      data: {
+        tasks: [],
       },
       refresh: {
         enabled: false,
