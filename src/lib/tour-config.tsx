@@ -91,22 +91,22 @@ export const databaseTourSteps: StepType[] = [
 	},
 ];
 
-// Unified Table Editor tour steps
+// Table Editor Redesigned tour steps
 export const unifiedTableEditorTourSteps: StepType[] = [
 	{
-		selector: ".unified-table-header",
+		selector: ".table-editor-mode-toggle",
 		content: (
 			<div className='space-y-3'>
 				<h3 className='text-lg font-semibold text-gray-900'>
-					Unified Table Editor
+					Schema & Data Modes
 				</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					This is your Excel-like table editor where you can manage both columns and rows in one place. 
-					The header shows table information and quick actions.
+					Switch between Schema mode (structure) and Data mode (content). 
+					Schema mode lets you design your table structure, while Data mode is for viewing and editing records.
 				</p>
 				<div className='bg-blue-50 p-3 rounded-lg'>
 					<p className='text-sm text-blue-700'>
-						💡 <strong>Tip:</strong> This unified interface combines column management and row editing for a seamless experience.
+						💡 <strong>Tip:</strong> Use Schema for table structure, Data for content management.
 					</p>
 				</div>
 			</div>
@@ -121,24 +121,24 @@ export const unifiedTableEditorTourSteps: StepType[] = [
 		},
 	},
 	{
-		selector: ".column-header",
+		selector: ".schema-columns-list",
 		content: (
 			<div className='space-y-3'>
 				<h3 className='text-lg font-semibold text-gray-900'>
-					Column Headers
+					Columns Overview
 				</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					Each column header shows the column name, type, and properties. Click on a column header to edit its properties, 
-					or use the + button to add a new column.
+					All your table columns with visual type indicators and badges for constraints. 
+					Click any column to edit its properties in the side panel.
 				</p>
 				<div className='bg-green-50 p-3 rounded-lg'>
 					<p className='text-sm text-green-700'>
-						✨ <strong>Feature:</strong> Hover over column headers to see edit options and properties.
+						✨ <strong>Visual:</strong> Color-coded types and instant property editing.
 					</p>
 				</div>
 			</div>
 		),
-		position: "bottom",
+		position: "right",
 		styles: {
 			popover: (base) => ({
 				...base,
@@ -148,24 +148,24 @@ export const unifiedTableEditorTourSteps: StepType[] = [
 		},
 	},
 	{
-		selector: ".data-grid",
+		selector: ".enhanced-properties-panel",
 		content: (
 			<div className='space-y-3'>
 				<h3 className='text-lg font-semibold text-gray-900'>
-					Data Grid
+					Properties Panel
 				</h3>
 				<p className='text-gray-600 leading-relaxed'>
-					This is where your data lives. Click on any cell to edit it directly, just like in Excel. 
-					Use the row numbers to select rows, and the action buttons to manage them.
+					Edit column properties inline without modals. All settings are organized in collapsible sections 
+					for easy access and a clean interface.
 				</p>
 				<div className='bg-purple-50 p-3 rounded-lg'>
 					<p className='text-sm text-purple-700'>
-						🔍 <strong>Quick Actions:</strong> Select multiple rows, edit cells inline, and manage your data efficiently.
+						🔍 <strong>Inline Editing:</strong> No popups, just smooth side-by-side editing.
 					</p>
 				</div>
 			</div>
 		),
-		position: "top",
+		position: "left",
 		styles: {
 			popover: (base) => ({
 				...base,

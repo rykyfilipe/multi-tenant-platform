@@ -3,13 +3,12 @@
 "use client";
 
 import { TableLoadingState } from "@/components/ui/loading-states";
-import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
 import TourProv from "@/contexts/TourProvider";
 import useTable from "@/hooks/useTable";
 import { useParams } from "next/navigation";
 import { tourUtils } from "@/lib/tour-config";
-import { UnifiedTableEditor } from "@/components/table/unified/UnifiedTableEditor";
+import { TableEditorRedesigned } from "@/components/table/editor-v2/TableEditorRedesigned";
 
 function Page() {
 	const params = useParams();
@@ -46,7 +45,7 @@ function Page() {
 				tourUtils.markTourSeen("unified-table-editor");
 			}}>
 			<div className='h-full bg-background'>
-				<UnifiedTableEditor 
+				<TableEditorRedesigned 
 					table={table} 
 					columns={columns} 
 					setColumns={setColumns} 
