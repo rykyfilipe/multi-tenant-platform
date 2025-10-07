@@ -86,7 +86,7 @@ export interface KPIResult {
   value: number;
   aggregation: string;
   format: string;
-  // All aggregation results (each applied independently to original values)
+  // All aggregation results (chained sequence: each step uses result from previous)
   allAggregations?: Array<{
     function: string;
     label: string;
@@ -237,22 +237,35 @@ export class KPIWidgetProcessor {
     const columnValues = this.extractNumericValues(normalizedData, config.metric.field);
     console.log(`📊 [KPIWidgetProcessor] Extracted ${columnValues.length} values from column: ${config.metric.field}`);
 
-    // Step 3: Apply ALL aggregations independently on original values
-    // Each aggregation is applied to the original column values, not chained
+    // Step 3: Apply aggregations in CHAINED sequence (cascading)
+    // Each aggregation is applied to the RESULT of the previous one
     const aggregationResults: Array<{ function: string; label: string; value: number }> = [];
+    let currentValue: number | number[] = columnValues; // Start with array of values
 
     config.metric.aggregations.forEach((aggregation, aggIndex) => {
-      console.log(`🔗 [Step ${aggIndex + 1}] Applying ${aggregation.function.toUpperCase()} on ${columnValues.length} original values`);
+      const isFirstStep = aggIndex === 0;
+      const inputDescription = isFirstStep 
+        ? `${columnValues.length} original values` 
+        : `result from previous step`;
       
-      // Apply each aggregation independently to original column values
-      const aggregatedValue = this.calculateAggregationOnArray(columnValues, aggregation.function);
-      console.log(`   ↳ Result: ${aggregatedValue}`);
+      console.log(`🔗 [Step ${aggIndex + 1}] Applying ${aggregation.function.toUpperCase()} on ${inputDescription}`);
+      
+      // Apply aggregation to current value(s)
+      const aggregatedValue = Array.isArray(currentValue)
+        ? this.calculateAggregationOnArray(currentValue, aggregation.function)
+        : currentValue; // If already a single value, return as-is
+      
+      console.log(`   ↳ Input: ${Array.isArray(currentValue) ? `[${currentValue.length} values]` : currentValue}`);
+      console.log(`   ↳ Output: ${aggregatedValue}`);
       
       aggregationResults.push({
         function: aggregation.function,
         label: aggregation.label,
         value: aggregatedValue
       });
+
+      // Update current value for next step (single number, not array)
+      currentValue = aggregatedValue;
     });
 
     // Use the last aggregation result as the primary display value
