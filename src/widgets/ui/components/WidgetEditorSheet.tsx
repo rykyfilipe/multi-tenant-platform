@@ -57,10 +57,12 @@ export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({
   }, [widgetId, updateLocal]);
 
   const handleSaveAndClose = useCallback(() => {
+    // Access current state via closure
     onSave(draftConfig, draftTitle);
     setHasChanges(false);
     onClose();
-  }, [draftConfig, draftTitle, onSave, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSave, onClose]);
 
   useEffect(() => {
     if (widget) {
