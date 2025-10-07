@@ -394,26 +394,40 @@ export class ChartDataProcessor {
   }
 
   /**
-   * Apply independent aggregations on array of values
-   * Each aggregation is applied to the original values independently
-   * Example: [100, 200, 300] → SUM(600), AVG(200), MAX(300) (all independent)
+   * Apply chained aggregations on array of values (CASCADING PIPELINE)
+   * Each aggregation is applied to the RESULT of the previous one
+   * Example: [100, 200, 300] → SUM(600) → AVG(600) = 600 → MAX(600) = 600
    */
   private static applyChainedAggregations(
     initialValues: number[],
     aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max'; label: string }>
   ): number {
-    console.log(`🔗 [Independent Aggregations] Processing ${aggregations.length} aggregations on ${initialValues.length} values`);
+    console.log(`🔗 [Chained Aggregations] Processing ${aggregations.length} aggregations in cascade on ${initialValues.length} values`);
     
-    // Apply each aggregation independently to original values
+    // Start with array of values, chain through aggregations
+    let currentValue: number | number[] = initialValues;
     const results: number[] = [];
     
     aggregations.forEach((aggregation, index) => {
-      console.log(`   Step ${index + 1}: ${aggregation.function.toUpperCase()} on ${initialValues.length} original values`);
+      const isFirstStep = index === 0;
+      const inputDescription = isFirstStep 
+        ? `${initialValues.length} original values` 
+        : `result from previous step`;
       
-      // Apply each aggregation independently to the original values
-      const result = this.applyAggregationFunction(initialValues, aggregation.function);
-      console.log(`   ↳ Result: ${result}`);
+      console.log(`   Step ${index + 1}: ${aggregation.function.toUpperCase()} on ${inputDescription}`);
+      
+      // Apply aggregation to current value(s)
+      const result = Array.isArray(currentValue)
+        ? this.applyAggregationFunction(currentValue, aggregation.function)
+        : currentValue; // Already a number from previous step
+      
+      console.log(`   ↳ Input: ${Array.isArray(currentValue) ? `[${currentValue.length} values]` : currentValue}`);
+      console.log(`   ↳ Output: ${result}`);
+      
       results.push(result);
+      
+      // Update current value for next step (single number)
+      currentValue = result;
     });
 
     // Return the last aggregation result as the primary value

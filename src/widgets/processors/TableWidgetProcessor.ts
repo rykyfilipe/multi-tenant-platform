@@ -451,22 +451,74 @@ export class TableWidgetProcessor {
     field: string, 
     aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last'; label: string }>
   ): number | string | any {
-    console.log(`🔗 [Table Independent Aggregations] Processing ${aggregations.length} aggregations on column: ${field}`);
+    console.log(`🔗 [Table Chained Aggregations] Processing ${aggregations.length} aggregations in cascade on column: ${field}`);
     
-    // Apply each aggregation independently to the original data
+    // Extract initial values
+    const initialValues = this.extractValues(data, field);
+    
+    // Start with array of values or data, chain through aggregations
+    let currentValue: any = initialValues;
+    let currentData: NormalizedRow[] | null = data; // Keep data reference for first/last
     const results: any[] = [];
 
     aggregations.forEach((agg, index) => {
-      console.log(`   Step ${index + 1}: ${agg.function.toUpperCase()} on ${data.length} original rows`);
+      const isFirstStep = index === 0;
+      const inputDescription = isFirstStep 
+        ? `${data.length} original rows` 
+        : `result from previous step`;
       
-      // Apply each aggregation independently to the original data
-      const result = this.calculateAggregation(data, field, agg.function);
-      console.log(`   ↳ Result: ${result}`);
+      console.log(`   Step ${index + 1}: ${agg.function.toUpperCase()} on ${inputDescription}`);
+      
+      // Apply aggregation to current value(s) or data
+      let result: any;
+      if (isFirstStep) {
+        // First step: use original data
+        result = this.calculateAggregation(currentData!, field, agg.function);
+      } else {
+        // Subsequent steps: operate on previous result
+        if (Array.isArray(currentValue)) {
+          // Still have array of values, aggregate it
+          result = this.applyAggregationOnArray(currentValue, agg.function);
+        } else {
+          // Already a single value from previous step
+          result = currentValue; // Pass through single values
+        }
+      }
+      
+      console.log(`   ↳ Input: ${isFirstStep ? `[${data.length} rows]` : (Array.isArray(currentValue) ? `[${currentValue.length} values]` : currentValue)}`);
+      console.log(`   ↳ Output: ${result}`);
+      
       results.push(result);
+      
+      // Update current value for next step
+      currentValue = result;
+      currentData = null; // After first step, work with values not data
     });
 
     // Return the last aggregation result as the primary value
     return results[results.length - 1];
+  }
+  
+  /**
+   * Helper: Apply aggregation function directly to array of values
+   */
+  private static applyAggregationOnArray(values: number[], func: 'sum' | 'avg' | 'count' | 'min' | 'max'): number {
+    if (!values || values.length === 0) return 0;
+    
+    switch (func) {
+      case 'sum':
+        return values.reduce((sum, val) => sum + val, 0);
+      case 'avg':
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+      case 'count':
+        return values.length;
+      case 'min':
+        return Math.min(...values);
+      case 'max':
+        return Math.max(...values);
+      default:
+        return 0;
+    }
   }
 
   /**
