@@ -55,24 +55,6 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     ];
   }, []);
 
-  // Process data using KPIWidgetProcessor
-  const processedData = useMemo(() => {
-    if (!config.data?.metrics || config.data.metrics.length === 0) {
-      return [];
-    }
-
-    const kpiConfig = {
-      dataSource: {
-        databaseId: config.data.databaseId || 0,
-        tableId: config.data.tableId || "",
-      },
-      metrics: config.data.metrics,
-      filters: config.data.filters || [],
-    };
-
-    return KPIWidgetProcessor.process(mockData, kpiConfig);
-  }, [config.data, mockData]);
-
   const formatValue = (value: number, format: string): string => {
     // Check if value is integer (no decimals) for quantity-like fields
     const isInteger = Number.isInteger(value);
@@ -97,6 +79,43 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         return new Intl.NumberFormat("en-US").format(value);
     }
   };
+
+  // Single metric display - MUST be before any return statements (Rules of Hooks)
+  const metric = config.data?.metric;
+  const processedKPI = useMemo(() => {
+    if (!metric) {
+      return {
+        metric: '',
+        label: '',
+        value: 0,
+        aggregation: 'sum',
+        format: 'number',
+      };
+    }
+
+    const kpiConfig = {
+      dataSource: {
+        databaseId: config.data.databaseId || 0,
+        tableId: config.data.tableId || "",
+      },
+      metric,
+      filters: config.data.filters || [],
+    };
+
+    return KPIWidgetProcessor.process(mockData, kpiConfig);
+  }, [
+    config.data?.databaseId, 
+    config.data?.tableId, 
+    metric?.field,
+    metric?.label,
+    metric?.format,
+    metric?.showTrend,
+    metric?.showComparison,
+    metric?.target,
+    metric?.aggregations?.length,
+    config.data?.filters?.length,
+    mockData,
+  ]);
 
   const getTrendIcon = (direction: string) => {
     switch (direction) {
@@ -144,43 +163,6 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     );
   }
 
-  // Single metric display
-  const metric = config.data?.metric;
-  const processedKPI = useMemo(() => {
-    if (!metric) {
-      return {
-        metric: '',
-        label: '',
-        value: 0,
-        aggregation: 'sum',
-        format: 'number',
-      };
-    }
-
-    const kpiConfig = {
-      dataSource: {
-        databaseId: config.data.databaseId || 0,
-        tableId: config.data.tableId || "",
-      },
-      metric,
-      filters: config.data.filters || [],
-    };
-
-    return KPIWidgetProcessor.process(mockData, kpiConfig);
-  }, [
-    config.data?.databaseId, 
-    config.data?.tableId, 
-    metric?.field,
-    metric?.label,
-    metric?.format,
-    metric?.showTrend,
-    metric?.showComparison,
-    metric?.target,
-    metric?.aggregations?.length,
-    config.data?.filters?.length,
-    mockData,
-  ]);
-
   return (
     <BaseWidget
       title={widget.title}
@@ -206,7 +188,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
             {metric.aggregations && metric.aggregations.length > 1 && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="font-medium">Pipeline:</span>
-                {metric.aggregations.map((agg, idx) => (
+                {metric.aggregations.map((agg: { function: string; label?: string }, idx: number) => (
                   <React.Fragment key={idx}>
                     {idx > 0 && <span>→</span>}
                     <Badge variant="outline" className="text-xs">

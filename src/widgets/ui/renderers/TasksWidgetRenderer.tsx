@@ -143,16 +143,19 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
       dueDate: task.dueDate ? task.dueDate.toISOString() : undefined,
     }));
     
+    // Get current widget config from store to avoid stale closure
+    const currentWidget = useWidgetsStore.getState().widgets[widget.id];
+    const currentConfig = currentWidget?.config || widget.config;
+    
     const updatedConfig = {
-      ...config,
+      ...currentConfig,
       data: {
-        ...config?.data,
+        ...(currentConfig as any)?.data,
         tasks: serializableTasks
       }
     };
     updateLocal(widget.id, { config: updatedConfig });
     // Auto-save hook will detect this change and send to server in VIEW mode
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateLocal, widget.id]);
 
   // CRUD operations

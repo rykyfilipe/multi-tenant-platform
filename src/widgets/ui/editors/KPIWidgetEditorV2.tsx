@@ -58,8 +58,8 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
 
-  // Wizard steps configuration - memoized to prevent unnecessary recalculations
-  const wizardSteps: WizardStep[] = useMemo(() => [
+  // Wizard steps configuration
+  const wizardSteps: WizardStep[] = [
     {
       id: "datasource",
       title: "Choose Data Source",
@@ -95,9 +95,9 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
       completed: validationResult?.isValid || false,
       required: true,
     },
-  ], [value.data.databaseId, value.data.tableId, value.data.metric?.field, value.data.metric?.aggregations?.length, validationResult?.isValid]);
+  ];
 
-  // Validate configuration whenever it changes
+  // Validate configuration whenever it changes - specific dependencies to avoid infinite loops
   useEffect(() => {
     if (!value.data.metric) {
       setValidationResult({ isValid: false, errors: ['No metric configured'], warnings: [] });
@@ -115,7 +115,13 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
 
     const result = KPIWidgetProcessor.validate(config);
     setValidationResult(result);
-  }, [value]);
+  }, [
+    value.data.databaseId,
+    value.data.tableId,
+    value.data.metric?.field,
+    value.data.metric?.aggregations?.length,
+    value.data.filters?.length,
+  ]);
 
   // Smart defaults when columns change
   useEffect(() => {
@@ -126,14 +132,18 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
       );
       
       if (numericColumn) {
-        updateData({
-          metric: {
-            field: numericColumn.name,
-            label: numericColumn.name.charAt(0).toUpperCase() + numericColumn.name.slice(1).replace(/_/g, ' '),
-            aggregations: [{ function: "sum" as const, label: "Total" }],
-            format: "number" as const,
-            showTrend: true,
-            showComparison: false,
+        onChange({
+          ...value,
+          data: {
+            ...value.data,
+            metric: {
+              field: numericColumn.name,
+              label: numericColumn.name.charAt(0).toUpperCase() + numericColumn.name.slice(1).replace(/_/g, ' '),
+              aggregations: [{ function: "sum" as const, label: "Total" }],
+              format: "number" as const,
+              showTrend: true,
+              showComparison: false,
+            },
           },
         });
       }
@@ -141,40 +151,36 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableColumns.length]);
 
-  const updateSettings = useCallback((updates: Partial<typeof value.settings>) => {
+  const updateSettings = (updates: Partial<typeof value.settings>) => {
     onChange({
       ...value,
       settings: { ...value.settings, ...updates },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
-  const updateStyle = useCallback((updates: Partial<typeof value.style>) => {
+  const updateStyle = (updates: Partial<typeof value.style>) => {
     onChange({
       ...value,
       style: { ...value.style, ...updates },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
-  const updateData = useCallback((updates: Partial<typeof value.data>) => {
+  const updateData = (updates: Partial<typeof value.data>) => {
     onChange({
       ...value,
       data: { ...value.data, ...updates },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
-  const handleFiltersChange = useCallback((filters: any[]) => {
+  const handleFiltersChange = (filters: any[]) => {
     onChange({
       ...value,
       data: { ...value.data, filters },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
   // Single metric management
-  const updateMetric = useCallback((updates: Partial<typeof value.data.metric>) => {
+  const updateMetric = (updates: Partial<typeof value.data.metric>) => {
     onChange({ 
       ...value,
       data: {
@@ -182,11 +188,10 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
         metric: { ...value.data.metric, ...updates } as any
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
   // Aggregation pipeline management (chained)
-  const addAggregation = useCallback(() => {
+  const addAggregation = () => {
     const currentAggregations = value.data.metric?.aggregations || [];
     onChange({
       ...value,
@@ -201,10 +206,9 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
         } as any
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
-  const removeAggregation = useCallback((aggregationIndex: number) => {
+  const removeAggregation = (aggregationIndex: number) => {
     const currentAggregations = value.data.metric?.aggregations || [];
     // Allow removing even if it's the last aggregation
     onChange({
@@ -217,10 +221,9 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
         } as any
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
-  const updateAggregation = useCallback((
+  const updateAggregation = (
     aggregationIndex: number, 
     updates: any
   ) => {
@@ -239,8 +242,7 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
         } as any
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  };
 
   const getTooltipContent = (field: string): string => {
     const tooltips: Record<string, string> = {
