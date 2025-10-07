@@ -178,6 +178,9 @@ export const usePermissionUpdates = (
 	setPermissions: React.Dispatch<React.SetStateAction<Permissions | null>>,
 ) => {
 	const [hasChanges, setHasChanges] = useState(false);
+	const { tenant, user } = useApp();
+	
+	const userId = user?.id;
 
 	const updateTablePermission = (
 		tableId: number,
@@ -201,7 +204,7 @@ export const usePermissionUpdates = (
 			} else {
 				const newPermission: TablePermission = {
 					id: Date.now(),
-					userId: parseInt(userId),
+					userId: userId || 0,
 					tableId,
 					tenantId: tenant?.id || 0,
 					canRead: field === "canRead" ? value : false,
@@ -246,7 +249,7 @@ export const usePermissionUpdates = (
 				// Creăm o nouă permisiune pentru coloană
 				const newColumnPermission: ColumnPermission = {
 					id: Date.now() + columnId, // ID temporar
-					userId: parseInt(userId),
+					userId: userId || 0,
 					tableId,
 					tenantId: tenant?.id || 0,
 					columnId,

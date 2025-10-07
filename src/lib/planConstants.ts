@@ -20,9 +20,12 @@ export interface RoleRestrictions {
 	canCreateRows: boolean;
 	canImportData: boolean;
 	canExportData: boolean;
+	canDeleteData: boolean;
+	canMakeTablesPublic: boolean;
 	canUseAdvancedFeatures: boolean;
 	canManagePermissions: boolean;
 	canAccessAnalytics: boolean;
+	canViewAnalytics: boolean; // Alias for canAccessAnalytics
 	canUseCustomIntegrations: boolean;
 	canAccessAdvancedSecurity: boolean;
 	canUsePrioritySupport: boolean;
@@ -36,13 +39,6 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 		users: 3, // Increased from 1 to 3 for team collaboration
 		storage: 100, // Increased from 10 MB to 100 MB
 		rows: 1000, // 1,000 rows
-	},
-	Starter: {
-		databases: 3,
-		tables: 15,
-		users: 5,
-		storage: 500, // 500 MB
-		rows: 10000, // 10,000 rows
 	},
 	Pro: {
 		databases: 5,
@@ -75,22 +71,11 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canAccessAdvancedSecurity: false,
 		canUsePrioritySupport: false,
 		canUseDedicatedSupport: false,
+		canDeleteData: false,
+		canMakeTablesPublic: false,
+		canViewAnalytics: false,
 	},
-	Starter: {
-		canCreateDatabases: true, // Up to 3 databases
-		canCreateTables: true,
-		canCreateUsers: true, // Up to 5 users
-		canCreateRows: true,
-		canImportData: true,
-		canExportData: true,
-		canUseAdvancedFeatures: false, // Limited advanced features
-		canManagePermissions: false,
-		canAccessAnalytics: true,
-		canUseCustomIntegrations: false,
-		canAccessAdvancedSecurity: false,
-		canUsePrioritySupport: false,
-		canUseDedicatedSupport: false,
-	},
+	
 	Pro: {
 		canCreateDatabases: true,
 		canCreateTables: true,
@@ -105,6 +90,9 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canAccessAdvancedSecurity: true,
 		canUsePrioritySupport: true,
 		canUseDedicatedSupport: true,
+		canDeleteData: true,
+		canMakeTablesPublic: true,
+		canViewAnalytics: true,
 	},
 	Enterprise: {
 		canCreateDatabases: true,
@@ -120,6 +108,9 @@ export const ROLE_RESTRICTIONS: Record<string, RoleRestrictions> = {
 		canAccessAdvancedSecurity: true,
 		canUsePrioritySupport: true,
 		canUseDedicatedSupport: true,
+		canDeleteData: true,
+		canMakeTablesPublic: true,
+		canViewAnalytics: true,
 	},
 };
 
@@ -145,17 +136,7 @@ export const PLAN_FEATURES: Record<
 		rows: "1,000 rows",
 		price: "$0/month",
 	},
-	Starter: {
-		databases: 3,
-		tables: 15,
-		users: 5,
-		storage: "500 MB",
-		rows: "10,000 rows",
-		price: "$9/month",
-		annualPrice: "$90/year",
-		annualDiscount: "17% off",
-		popular: true,
-	},
+	
 	Pro: {
 		databases: 5,
 		tables: 50,
@@ -240,7 +221,6 @@ export const checkPlanAndLimitPermission = (
 export const getMonthlyPrice = (plan: string): number => {
 	const prices: Record<string, number> = {
 		Free: 0,
-		Starter: 9,
 		Pro: 29,
 		Enterprise: 99,
 	};
@@ -262,10 +242,7 @@ export const getStripePriceId = (plan: string, billing: "monthly" | "annual"): s
 			monthly: process.env.NEXT_PUBLIC_STRIPE_FREE_PRICE_ID || "",
 			annual: process.env.NEXT_PUBLIC_STRIPE_FREE_PRICE_ID || "",
 		},
-		Starter: {
-			monthly: process.env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PRICE_ID || "",
-			annual: process.env.NEXT_PUBLIC_STRIPE_STARTER_ANNUAL_PRICE_ID || "",
-		},
+		
 		Pro: {
 			monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID || "",
 			annual: process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID || "",
@@ -292,7 +269,7 @@ export const formatPrice = (price: number, currency: string = "USD"): string => 
 };
 
 export const getPlanComparison = () => {
-	const plans = ["Free", "Starter", "Pro", "Enterprise"];
+	const plans = ["Free", "Pro", "Enterprise"];
 	return plans.map(plan => ({
 		name: plan,
 		...PLAN_FEATURES[plan],
