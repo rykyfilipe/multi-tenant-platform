@@ -1,7 +1,7 @@
 /** @format */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Column, Table, CreateColumnRequest } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -239,15 +239,10 @@ export function SchemaMode({
 		})
 	);
 
-	// Update local columns when prop changes
-	useState(() => {
+	// Sync local columns when prop changes
+	useEffect(() => {
 		setLocalColumns(columns);
-	});
-	
-	// Sync local columns with prop columns
-	if (JSON.stringify(localColumns.map(c => c.id)) !== JSON.stringify(columns.map(c => c.id))) {
-		setLocalColumns(columns);
-	}
+	}, [columns]);
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
