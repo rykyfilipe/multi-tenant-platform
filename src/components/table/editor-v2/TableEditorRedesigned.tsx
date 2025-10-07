@@ -17,6 +17,7 @@ import { UnsavedChangesFooter } from "./UnsavedChangesFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
+import { arrayMove } from "@dnd-kit/sortable";
 
 interface Props {
 	columns: Column[] | null;
@@ -365,6 +366,91 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 		}
 	};
 
+	// Column reordering handler
+	const handleReorderColumns = async (fromIndex: number, toIndex: number) => {
+		if (!token || !tenantId || !columns) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to reorder columns", "error");
+			return;
+		}
+
+		console.log("🔄 Reordering columns:", { fromIndex, toIndex });
+
+		// Optimistic update: Reorder columns locally
+		const reorderedColumns = arrayMove(columns, fromIndex, toIndex);
+		
+		// Update order field for each column
+		const columnsWithNewOrder = reorderedColumns.map((col, index) => ({
+			...col,
+			order: index + 1,
+		}));
+
+		setColumns(columnsWithNewOrder);
+		showAlert("Columns reordered!", "success");
+
+		// Persist to backend - batch update all column orders
+		try {
+			const updates = columnsWithNewOrder.map((col) => ({
+				id: col.id,
+				order: col.order,
+			}));
+
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/batch-update`,
+				{
+					method: "PATCH",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ updates }),
+				},
+			);
+
+			if (!response.ok) {
+				// If endpoint doesn't exist, update each column individually
+				if (response.status === 404) {
+					console.log("Batch endpoint not found, updating individually...");
+					
+					// Update each column individually
+					for (const col of columnsWithNewOrder) {
+						await fetch(
+							`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/columns/${col.id}`,
+							{
+								method: "PATCH",
+								headers: {
+									"Content-Type": "application/json",
+									Authorization: `Bearer ${token}`,
+								},
+								body: JSON.stringify({ order: col.order }),
+							},
+						);
+					}
+					showAlert("Column order saved successfully!", "success");
+				} else {
+					throw new Error("Failed to update column order");
+				}
+			} else {
+				showAlert("Column order saved successfully!", "success");
+			}
+
+			// Refresh table to ensure consistency
+			if (refreshTable) {
+				refreshTable();
+			}
+		} catch (error: any) {
+			console.error("Error reordering columns:", error);
+
+			// Revert optimistic update
+			setColumns(columns);
+			showAlert("Failed to save column order. Changes reverted.", "error");
+		}
+	};
+
 	// Row management
 	const handleDeleteRow = async (rowId: string) => {
 		if (!tablePermissions.canDeleteTable()) {
@@ -613,19 +699,20 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ duration: 0.2 }}>
-					<SchemaMode
-						table={table}
-						columns={columns}
-						selectedColumn={selectedColumn}
-						onSelectColumn={setSelectedColumn}
-						onAddColumn={handleAddColumn}
-						onUpdateColumn={handleUpdateColumn}
-						onDeleteColumn={handleDeleteColumn}
-						onDuplicateColumn={handleDuplicateColumn}
-						tables={tables || []}
-						canEdit={tablePermissions.canEditTable()}
-						isSubmitting={isAddingColumn || isUpdatingColumn}
-					/>
+				<SchemaMode
+					table={table}
+					columns={columns}
+					selectedColumn={selectedColumn}
+					onSelectColumn={setSelectedColumn}
+					onAddColumn={handleAddColumn}
+					onUpdateColumn={handleUpdateColumn}
+					onDeleteColumn={handleDeleteColumn}
+					onDuplicateColumn={handleDuplicateColumn}
+					onReorderColumns={handleReorderColumns}
+					tables={tables || []}
+					canEdit={tablePermissions.canEditTable()}
+					isSubmitting={isAddingColumn || isUpdatingColumn}
+				/>
 					</motion.div>
 				) : (
 					<motion.div

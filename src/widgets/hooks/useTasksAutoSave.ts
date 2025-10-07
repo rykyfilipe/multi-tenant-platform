@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useWidgetsStore } from '@/widgets/store/useWidgetsStore';
-import { useWidgetsApi } from '@/widgets/api/simple-client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AppContext';
 
 interface UseTasksAutoSaveOptions {
   tenantId: number;
@@ -20,43 +20,58 @@ export function useTasksAutoSave({
   debounceMs = 1000, // 1 second debounce for tasks
   enabled = true,
 }: UseTasksAutoSaveOptions) {
-  const pendingOperations = useWidgetsStore((state) => state.getPending());
-  const api = useWidgetsApi(tenantId, dashboardId);
+  const widgets = useWidgetsStore((state) => state.widgets);
+  const { token } = useAuth();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastOperationsRef = useRef<typeof pendingOperations>([]);
+  const lastWidgetConfigRef = useRef<any>(null);
   const { toast } = useToast();
 
   const savePending = useCallback(async () => {
-    if (!enabled || pendingOperations.length === 0) {
+    if (!enabled || !token) {
       return;
     }
 
-    // Filter only operations related to this specific widget
-    const widgetOperations = pendingOperations.filter(op => {
-      if (op.kind === 'update' && op.widgetId === widgetId) {
-        return true;
-      }
-      if (op.kind === 'create' && op.widget && (op.widget as any).id === widgetId) {
-        return true;
-      }
-      return false;
-    });
-
-    if (widgetOperations.length === 0) {
+    const currentWidget = widgets[widgetId];
+    if (!currentWidget) {
       return;
+    }
+
+    // Check if widget config has changed
+    const currentConfig = currentWidget.config;
+    if (JSON.stringify(currentConfig) === JSON.stringify(lastWidgetConfigRef.current)) {
+      return; // No changes to save
     }
 
     try {
-      console.log('[TasksAutoSave] Auto-saving tasks widget operations:', widgetOperations.length);
-      await api.savePending({ actorId, operations: widgetOperations });
+      console.log('[TasksAutoSave] Auto-saving tasks widget config via PATCH API');
+      
+      const response = await fetch(`/api/dashboards/${dashboardId}/widgets/${widgetId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          config: currentConfig,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`PATCH failed: ${response.statusText}`);
+      }
+
+      const updatedWidget = await response.json();
       console.log('[TasksAutoSave] Auto-save successful');
       
-      // Show success toast
-      toast({
-        title: "Tasks saved",
-        description: "Your task changes have been saved.",
-        variant: "default",
-      });
+      // Update last saved config reference
+      lastWidgetConfigRef.current = currentConfig;
+      
+      // Show success toast (silent - no notification for better UX)
+      // toast({
+      //   title: "Tasks saved",
+      //   description: "Your task changes have been saved.",
+      //   variant: "default",
+      // });
     } catch (error) {
       console.error('[TasksAutoSave] Auto-save failed:', error);
       
@@ -67,62 +82,34 @@ export function useTasksAutoSave({
         variant: "destructive",
       });
     }
-  }, [api, actorId, pendingOperations, enabled, widgetId, toast]);
+  }, [token, dashboardId, widgetId, widgets, enabled, toast]);
 
   useEffect(() => {
     if (!enabled) {
       return;
     }
 
-    // Check if operations have changed
-    const operationsChanged = 
-      pendingOperations.length !== lastOperationsRef.current.length ||
-      JSON.stringify(pendingOperations) !== JSON.stringify(lastOperationsRef.current);
+    const currentWidget = widgets[widgetId];
+    if (!currentWidget) {
+      return;
+    }
 
-    // Only auto-save if we have pending operations for this widget
-    if (operationsChanged && pendingOperations.length > 0) {
-      // Check if any operation is for this widget
-      const hasWidgetOperations = pendingOperations.some(op => {
-        if (op.kind === 'update' && op.widgetId === widgetId) {
-          return true;
-        }
-        if (op.kind === 'create' && op.widget && (op.widget as any).id === widgetId) {
-          return true;
-        }
-        return false;
-      });
+    const currentConfig = currentWidget.config;
 
-      if (hasWidgetOperations) {
-        // Clear existing timeout
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
+    // Check if widget config has changed
+    const configChanged = 
+      JSON.stringify(currentConfig) !== JSON.stringify(lastWidgetConfigRef.current);
 
-        // Set new timeout for auto-save
-        timeoutRef.current = setTimeout(() => {
-          // Double-check that we still have pending operations before saving
-          const currentPending = useWidgetsStore.getState().getPending();
-          const currentWidgetOperations = currentPending.filter(op => {
-            if (op.kind === 'update' && op.widgetId === widgetId) {
-              return true;
-            }
-            if (op.kind === 'create' && op.widget && (op.widget as any).id === widgetId) {
-              return true;
-            }
-            return false;
-          });
-          
-          if (currentWidgetOperations.length > 0) {
-            savePending();
-          }
-        }, debounceMs);
-
-        // Update last operations reference
-        lastOperationsRef.current = pendingOperations;
-      } else if (operationsChanged && pendingOperations.length === 0) {
-        // If operations were cleared, update the reference but don't auto-save
-        lastOperationsRef.current = pendingOperations;
+    if (configChanged) {
+      // Clear existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
+
+      // Set new timeout for auto-save
+      timeoutRef.current = setTimeout(() => {
+        savePending();
+      }, debounceMs);
     }
 
     // Cleanup timeout on unmount
@@ -131,7 +118,7 @@ export function useTasksAutoSave({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [pendingOperations, savePending, debounceMs, enabled, widgetId]);
+  }, [widgets, widgetId, savePending, debounceMs, enabled]);
 
   return {
     savePending,

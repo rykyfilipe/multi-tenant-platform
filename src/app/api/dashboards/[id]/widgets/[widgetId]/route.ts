@@ -101,6 +101,57 @@ export async function PUT(
 }
 
 /**
+ * PATCH /api/dashboards/[id]/widgets/[widgetId]
+ * Partially update a widget (e.g., just update config.data for tasks)
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string; widgetId: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id || !session.user.tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const dashboardId = parseInt(params.id);
+    const widgetId = parseInt(params.widgetId);
+    
+    if (isNaN(dashboardId) || isNaN(widgetId)) {
+      return NextResponse.json({ error: 'Invalid dashboard or widget ID' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    
+    // For PATCH, we allow partial updates without full validation
+    // Common use case: updating just config.data for tasks widget
+    const updatedWidget = await DashboardService.updateWidget(
+      dashboardId,
+      widgetId,
+      body as any,
+      Number(session.user.tenantId),
+      Number(session.user.id)
+    );
+
+    return NextResponse.json(updatedWidget);
+  } catch (error) {
+    console.error('Error patching widget:', error);
+    
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to patch widget' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * DELETE /api/dashboards/[id]/widgets/[widgetId]
  * Delete a specific widget
  */
