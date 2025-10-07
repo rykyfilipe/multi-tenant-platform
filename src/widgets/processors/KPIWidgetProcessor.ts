@@ -281,9 +281,13 @@ export class KPIWidgetProcessor {
       allAggregations: aggregationResults,
     };
 
-    // Calculate trend if enabled
+    // Calculate trend if enabled - using FULL PIPELINE not just first aggregation
     if (config.metric.showTrend) {
-      result.trend = this.calculateTrend(normalizedData, config.metric.field, config.metric.aggregations[0].function);
+      result.trend = this.calculateTrendWithPipeline(
+        normalizedData, 
+        config.metric.field, 
+        config.metric.aggregations
+      );
     }
 
     // Calculate comparison if enabled and target provided
@@ -379,7 +383,60 @@ export class KPIWidgetProcessor {
   }
 
   /**
-   * Calculate trend (simplified - compares first half vs second half)
+   * Calculate trend using FULL AGGREGATION PIPELINE (not just first aggregation)
+   * Compares first half vs second half after applying entire pipeline
+   */
+  private static calculateTrendWithPipeline(
+    data: NormalizedRow[], 
+    field: string, 
+    aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max'; label: string }>
+  ): { value: number; percentage: number; direction: 'up' | 'down' | 'stable' } {
+    if (data.length < 4) {
+      return { value: 0, percentage: 0, direction: 'stable' };
+    }
+
+    const midPoint = Math.floor(data.length / 2);
+    const firstHalf = data.slice(0, midPoint);
+    const secondHalf = data.slice(midPoint);
+
+    // Apply ENTIRE PIPELINE to both halves
+    const firstHalfValues = this.extractNumericValues(firstHalf, field);
+    const secondHalfValues = this.extractNumericValues(secondHalf, field);
+
+    // Apply chained aggregations to first half
+    let firstValue: number | number[] = firstHalfValues;
+    aggregations.forEach(agg => {
+      firstValue = Array.isArray(firstValue)
+        ? this.calculateAggregationOnArray(firstValue, agg.function)
+        : firstValue;
+    });
+
+    // Apply chained aggregations to second half
+    let secondValue: number | number[] = secondHalfValues;
+    aggregations.forEach(agg => {
+      secondValue = Array.isArray(secondValue)
+        ? this.calculateAggregationOnArray(secondValue, agg.function)
+        : secondValue;
+    });
+
+    const firstNum = typeof firstValue === 'number' ? firstValue : 0;
+    const secondNum = typeof secondValue === 'number' ? secondValue : 0;
+
+    const difference = secondNum - firstNum;
+    const percentage = firstNum !== 0 ? (difference / firstNum) * 100 : 0;
+
+    console.log(`📈 [Trend Calculation] First half: ${firstNum}, Second half: ${secondNum}, Change: ${percentage.toFixed(2)}%`);
+
+    return {
+      value: difference,
+      percentage: Math.abs(percentage),
+      direction: percentage > 1 ? 'up' : percentage < -1 ? 'down' : 'stable'
+    };
+  }
+
+  /**
+   * Calculate trend (OLD - kept for backward compatibility)
+   * @deprecated Use calculateTrendWithPipeline instead
    */
   private static calculateTrend(
     data: NormalizedRow[], 
