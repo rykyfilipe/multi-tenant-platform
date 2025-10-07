@@ -86,6 +86,12 @@ export interface KPIResult {
   value: number;
   aggregation: string;
   format: string;
+  // All aggregation results (each applied independently to original values)
+  allAggregations?: Array<{
+    function: string;
+    label: string;
+    value: number;
+  }>;
   trend?: {
     value: number;
     percentage: number;
@@ -209,10 +215,10 @@ export class KPIWidgetProcessor {
   }
 
   /**
-   * Processes raw data through the KPI pipeline (Single metric with chained aggregations)
+   * Processes raw data through the KPI pipeline (Single metric with multiple independent aggregations)
    */
   static process(rawData: RawDataRow[], config: KPIConfig): KPIResult {
-    console.log('🚀 [KPIWidgetProcessor] Starting chained aggregation pipeline...');
+    console.log('🚀 [KPIWidgetProcessor] Starting aggregation pipeline...');
 
     // Step 1: Normalize data
     const normalizedData = this.normalizeData(rawData);
@@ -231,34 +237,35 @@ export class KPIWidgetProcessor {
     const columnValues = this.extractNumericValues(normalizedData, config.metric.field);
     console.log(`📊 [KPIWidgetProcessor] Extracted ${columnValues.length} values from column: ${config.metric.field}`);
 
-    // Step 3: Apply chained aggregations
-    let currentValue = 0;
-    let intermediateResults: number[] = columnValues;
+    // Step 3: Apply ALL aggregations independently on original values
+    // Each aggregation is applied to the original column values, not chained
+    const aggregationResults: Array<{ function: string; label: string; value: number }> = [];
 
     config.metric.aggregations.forEach((aggregation, aggIndex) => {
-      console.log(`🔗 [Step ${aggIndex + 1}] Applying ${aggregation.function.toUpperCase()} on ${intermediateResults.length} values`);
+      console.log(`🔗 [Step ${aggIndex + 1}] Applying ${aggregation.function.toUpperCase()} on ${columnValues.length} original values`);
       
-      if (aggIndex === 0) {
-        // First aggregation: apply to original column values
-        currentValue = this.calculateAggregationOnArray(intermediateResults, aggregation.function);
-        console.log(`   ↳ Result: ${currentValue}`);
-      } else {
-        // Subsequent aggregations: apply to the single result from previous step
-        // Create array with single value to pass through aggregation
-        intermediateResults = [currentValue];
-        currentValue = this.calculateAggregationOnArray(intermediateResults, aggregation.function);
-        console.log(`   ↳ Chained result: ${currentValue}`);
-      }
+      // Apply each aggregation independently to original column values
+      const aggregatedValue = this.calculateAggregationOnArray(columnValues, aggregation.function);
+      console.log(`   ↳ Result: ${aggregatedValue}`);
+      
+      aggregationResults.push({
+        function: aggregation.function,
+        label: aggregation.label,
+        value: aggregatedValue
+      });
     });
 
-    const finalAggregation = config.metric.aggregations[config.metric.aggregations.length - 1];
+    // Use the last aggregation result as the primary display value
+    const finalAggregation = aggregationResults[aggregationResults.length - 1];
     
     const result: KPIResult = {
       metric: config.metric.field,
       label: config.metric.label,
-      value: currentValue,
+      value: finalAggregation.value,
       aggregation: finalAggregation.label || finalAggregation.function,
       format: config.metric.format || 'number',
+      // Store all aggregation results for display
+      allAggregations: aggregationResults,
     };
 
     // Calculate trend if enabled
@@ -268,10 +275,10 @@ export class KPIWidgetProcessor {
 
     // Calculate comparison if enabled and target provided
     if (config.metric.showComparison && config.metric.target !== undefined) {
-      result.comparison = this.calculateComparison(currentValue, config.metric.target);
+      result.comparison = this.calculateComparison(finalAggregation.value, config.metric.target);
     }
 
-    console.log(`✅ [KPIWidgetProcessor] Final KPI value: ${currentValue}`);
+    console.log(`✅ [KPIWidgetProcessor] All aggregation results:`, aggregationResults);
     return result;
   }
 

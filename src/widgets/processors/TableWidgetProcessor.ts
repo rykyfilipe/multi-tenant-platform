@@ -442,39 +442,31 @@ export class TableWidgetProcessor {
   }
 
   /**
-   * Calculate chained aggregations for a column (pipeline)
-   * Example: [100, 200, 300] → SUM(600) → AVG(600) → MAX(600) = 600
+   * Calculate independent aggregations for a column
+   * Each aggregation is applied to the original data independently
+   * Example: [100, 200, 300] → SUM(600), AVG(200), MAX(300) (all independent)
    */
   private static calculateChainedAggregations(
     data: NormalizedRow[], 
     field: string, 
     aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last'; label: string }>
   ): number | string | any {
-    console.log(`🔗 [Table Chained Aggregations] Processing ${aggregations.length} steps on column: ${field}`);
+    console.log(`🔗 [Table Independent Aggregations] Processing ${aggregations.length} aggregations on column: ${field}`);
     
-    let currentValue: any = 0;
-    let processedData = data;
+    // Apply each aggregation independently to the original data
+    const results: any[] = [];
 
     aggregations.forEach((agg, index) => {
-      console.log(`   Step ${index + 1}: ${agg.function.toUpperCase()}`);
+      console.log(`   Step ${index + 1}: ${agg.function.toUpperCase()} on ${data.length} original rows`);
       
-      if (index === 0) {
-        // First aggregation: apply to original data
-        currentValue = this.calculateAggregation(processedData, field, agg.function);
-        console.log(`   ↳ Result: ${currentValue}`);
-      } else {
-        // Subsequent aggregations: apply to single result from previous step
-        processedData = [{
-          [field]: currentValue,
-          _intermediate: true,
-          _aggregation_type: agg.function
-        }];
-        currentValue = this.calculateAggregation(processedData, field, agg.function);
-        console.log(`   ↳ Chained result: ${currentValue}`);
-      }
+      // Apply each aggregation independently to the original data
+      const result = this.calculateAggregation(data, field, agg.function);
+      console.log(`   ↳ Result: ${result}`);
+      results.push(result);
     });
 
-    return currentValue;
+    // Return the last aggregation result as the primary value
+    return results[results.length - 1];
   }
 
   /**

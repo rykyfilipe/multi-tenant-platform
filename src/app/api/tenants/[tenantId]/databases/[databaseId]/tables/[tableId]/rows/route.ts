@@ -22,7 +22,7 @@ import {
 	trackUserAction,
 	trackDatabaseOperationFromResponse,
 } from "@/lib/api-tracker";
-import { FilterConfig } from "@/types/filtering";
+import { FilterConfig, OPERATOR_COMPATIBILITY, ColumnType } from "@/types/filtering";
 import { FilterValidator } from "@/lib/filter-validator";
 import { PrismaFilterBuilder } from "@/lib/prisma-filter-builder";
 import { logger } from "@/lib/error-logger";
@@ -36,7 +36,7 @@ const RowSchema = z.object({
 	),
 });
 
-// Enhanced filter validation schema
+// Enhanced filter validation schema with operator compatibility checking
 const FilterSchema = z.object({
 	id: z.string().min(1),
 	columnId: z.number().positive(),
@@ -45,7 +45,44 @@ const FilterSchema = z.object({
 	operator: z.string().min(1),
 	value: z.any().optional().nullable(),
 	secondValue: z.any().optional().nullable(),
-});
+}).refine(
+	(data) => {
+		// Validate operator compatibility with column type
+		const validOperators = OPERATOR_COMPATIBILITY[data.columnType as ColumnType];
+		if (!validOperators) {
+			logger.warn(`Unknown column type: ${data.columnType}`);
+			return false;
+		}
+		const isValid = validOperators.includes(data.operator as any);
+		if (!isValid) {
+			logger.warn(`Invalid operator '${data.operator}' for column type '${data.columnType}'`, {
+				validOperators,
+				providedOperator: data.operator
+			});
+		}
+		return isValid;
+	},
+	(data) => ({
+		message: `Operator '${data.operator}' is not compatible with column type '${data.columnType}'. Valid operators: ${OPERATOR_COMPATIBILITY[data.columnType as ColumnType]?.join(', ') || 'none'}`,
+		path: ['operator']
+	})
+).refine(
+	(data) => {
+		// Validate range operators have secondValue
+		if (['between', 'not_between'].includes(data.operator)) {
+			const hasSecondValue = data.secondValue !== null && data.secondValue !== undefined;
+			if (!hasSecondValue) {
+				logger.warn(`Range operator '${data.operator}' missing secondValue`);
+			}
+			return hasSecondValue;
+		}
+		return true;
+	},
+	(data) => ({
+		message: `Range operator '${data.operator}' requires secondValue`,
+		path: ['secondValue']
+	})
+);
 
 const QueryParamsSchema = z.object({
 	page: z.string().transform((val) => Math.max(1, parseInt(val) || 1)),

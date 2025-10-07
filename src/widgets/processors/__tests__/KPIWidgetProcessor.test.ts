@@ -149,7 +149,7 @@ describe('KPIWidgetProcessor', () => {
       expect(result.metric).toBe('sales');
     });
 
-    it('should chain multiple aggregations correctly', () => {
+    it('should apply multiple aggregations independently', () => {
       const config = {
         ...validConfig,
         metric: {
@@ -163,10 +163,16 @@ describe('KPIWidgetProcessor', () => {
 
       const result = KPIWidgetProcessor.process(mockRawData, config);
       
-      // First: SUM([1000, 1500, 800]) = 3300
-      // Second: AVG([3300]) = 3300
-      expect(result.value).toBe(3300);
+      // Each aggregation is applied independently to original values:
+      // SUM([1000, 1500, 800]) = 3300
+      // AVG([1000, 1500, 800]) = 1100
+      // Result shows last aggregation (AVG)
+      expect(result.value).toBe(1100);
       expect(result.aggregation).toBe('Average'); // Final aggregation label
+      expect(result.allAggregations).toBeDefined();
+      expect(result.allAggregations).toHaveLength(2);
+      expect(result.allAggregations?.[0].value).toBe(3300); // SUM
+      expect(result.allAggregations?.[1].value).toBe(1100); // AVG
     });
 
     it('should calculate trend correctly', () => {
@@ -208,7 +214,7 @@ describe('KPIWidgetProcessor', () => {
       expect(result.metric).toBe('sales');
     });
 
-    it('should handle complex chained aggregations', () => {
+    it('should handle multiple independent aggregations', () => {
       const config = {
         ...validConfig,
         metric: {
@@ -224,11 +230,17 @@ describe('KPIWidgetProcessor', () => {
 
       const result = KPIWidgetProcessor.process(mockRawData, config);
       
-      // Step 1: SUM([1000, 1500, 800]) = 3300
-      // Step 2: MAX([3300]) = 3300
-      // Step 3: AVG([3300]) = 3300
-      expect(result.value).toBe(3300);
+      // Each aggregation is applied independently to original values:
+      // SUM([1000, 1500, 800]) = 3300
+      // MAX([1000, 1500, 800]) = 1500
+      // AVG([1000, 1500, 800]) = 1100
+      // Result shows last aggregation (AVG)
+      expect(result.value).toBe(1100);
       expect(result.aggregation).toBe('Average'); // Final label
+      expect(result.allAggregations).toHaveLength(3);
+      expect(result.allAggregations?.[0].value).toBe(3300); // SUM
+      expect(result.allAggregations?.[1].value).toBe(1500); // MAX
+      expect(result.allAggregations?.[2].value).toBe(1100); // AVG
     });
   });
 });
