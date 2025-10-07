@@ -134,8 +134,9 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     metric?.showTrend,
     metric?.showComparison,
     metric?.target,
-    metric?.aggregations?.length,
-    config.data?.filters?.length,
+    // ✅ FIX: Serialize aggregations to detect function changes
+    JSON.stringify(metric?.aggregations),
+    JSON.stringify(config.data?.filters),
     realData,
   ]);
 

@@ -228,6 +228,19 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
     updates: any
   ) => {
     const currentAggregations = [...(value.data.metric?.aggregations || [])];
+    
+    // If function is being updated, auto-update label to match
+    if (updates.function) {
+      const labelMap: Record<string, string> = {
+        sum: 'Total',
+        avg: 'Average',
+        count: 'Count',
+        min: 'Minimum',
+        max: 'Maximum',
+      };
+      updates.label = updates.label || labelMap[updates.function] || updates.function.toUpperCase();
+    }
+    
     currentAggregations[aggregationIndex] = {
       ...currentAggregations[aggregationIndex],
       ...updates,
