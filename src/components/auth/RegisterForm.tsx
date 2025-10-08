@@ -60,8 +60,10 @@ function RegisterForm({ closeForm }: { closeForm: (x: boolean) => void }) {
 				if (res?.ok) {
 					showAlert(t("register.accountCreated"), "success");
 					closeForm(true);
-					// Redirect to dashboard after successful registration and login
-					window.location.href = "/home/analytics";
+					// Wait a bit for the session to fully sync before redirecting
+					setTimeout(() => {
+						window.location.href = "/home/analytics";
+					}, 300);
 				} else {
 					showAlert(t("register.loginFailed"), "warning");
 				}

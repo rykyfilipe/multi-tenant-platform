@@ -180,7 +180,7 @@ export const api = {
 			searchParams.set('includePredefined', String(includePredefined));
 			return request<any[]>(`/api/tenants/${tenantId}/databases?${searchParams.toString()}`);
 		},
-		allTables: (tenantId: number, includePredefined: boolean = true) => {
+		allTables: (tenantId: number, includePredefined: boolean = false) => {
 			const searchParams = new URLSearchParams();
 			searchParams.set('includePredefined', String(includePredefined));
 			return request<any[]>(`/api/tenants/${tenantId}/databases/tables?${searchParams.toString()}`);

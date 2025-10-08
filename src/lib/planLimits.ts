@@ -13,23 +13,21 @@ export async function checkPlanLimit(
 	currentCount: number = 0,
 ): Promise<{ allowed: boolean; limit: number; current: number }> {
 	try {
-		const user = await prisma.user.findUnique({
-			where: { id: userId },
-			select: {
-				id: true,
-				email: true,
-				firstName: true,
-				lastName: true,
-				role: true,
-				tenantId: true,
-				subscriptionPlan: true,
-				subscriptionStatus: true,
-				createdAt: true,
-				updatedAt: true,
-			},
-		});
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: {
+			id: true,
+			email: true,
+			firstName: true,
+			lastName: true,
+			role: true,
+			tenantId: true,
+			subscriptionPlan: true,
+			subscriptionStatus: true,
+		},
+	});
 
-		console.log(`🔍 [checkPlanLimit] User info:`, {
+	console.log(`🔍 [checkPlanLimit] User info:`, {
 			userId,
 			plan: user?.subscriptionPlan || 'Free',
 			status: user?.subscriptionStatus || 'inactive',
@@ -82,23 +80,21 @@ export async function getCurrentCounts(
 	userId: number,
 ): Promise<Record<keyof PlanLimits, number>> {
 	try {
-		const user = await prisma.user.findUnique({
-			where: { id: userId },
-			select: {
-				id: true,
-				email: true,
-				firstName: true,
-				lastName: true,
-				role: true,
-				tenantId: true,
-				subscriptionPlan: true,
-				subscriptionStatus: true,
-				createdAt: true,
-				updatedAt: true,
-			},
-		});
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: {
+			id: true,
+			email: true,
+			firstName: true,
+			lastName: true,
+			role: true,
+			tenantId: true,
+			subscriptionPlan: true,
+			subscriptionStatus: true,
+		},
+	});
 
-		if (!user?.tenantId) {
+	if (!user?.tenantId) {
 			return {	
 				databases: 0,
 				tables: 0,

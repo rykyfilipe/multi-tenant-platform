@@ -171,8 +171,18 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
         setIsLoading(true);
         setError(null);
         
-        // Get tenant ID from URL or context - for now using tenant 1
-        const tenantId = 1;
+        // Get tenant ID from session
+        const sessionResponse = await fetch('/api/auth/session');
+        if (!sessionResponse.ok) {
+          throw new Error('Failed to fetch session');
+        }
+        
+        const session = await sessionResponse.json();
+        if (!session?.user?.tenantId) {
+          throw new Error('No tenant ID found in session');
+        }
+        
+        const tenantId = session.user.tenantId;
         const response = await fetch(`/api/tenants/${tenantId}/analytics/summary`);
         
         if (!response.ok) {

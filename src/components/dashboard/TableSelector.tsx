@@ -137,7 +137,7 @@ export function TableSelector({
 		setAllTablesError(null);
 		
 		try {
-			const response = await fetch(`/api/tenants/${tenant.id}/databases/tables?includePredefined=true`, {
+			const response = await fetch(`/api/tenants/${tenant.id}/databases/tables?includePredefined=false`, {
 				headers: {
 					'Authorization': `Bearer ${token}`
 				}

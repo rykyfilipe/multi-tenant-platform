@@ -98,7 +98,7 @@ export const DatabaseProvider = ({
 		setLoading(true);
 
 		try {
-			const response = await fetch(`/api/tenants/${tenant.id}/databases?includePredefined=true`, {
+			const response = await fetch(`/api/tenants/${tenant.id}/databases?includePredefined=false`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
@@ -145,7 +145,7 @@ export const DatabaseProvider = ({
 
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables?includePredefined=true`,
+				`/api/tenants/${tenantId}/databases/${selectedDatabase.id}/tables?includePredefined=false`,
 				{
 					headers: { Authorization: `Bearer ${token}` },
 				},

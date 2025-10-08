@@ -126,19 +126,30 @@ export async function POST(
 			}),
 		);
 
-		// Verificăm dacă coloanele există deja
-		for (const column of parsedData.columns) {
-			if (colExists(transformedColumns, column)) {
-				return NextResponse.json(
-					{ error: `Column "${column.name}" already exists` },
-					{ status: 409 },
-				);
-			}
+	// Filtrăm coloanele care există deja (pentru a permite template-uri cu created_at)
+	const columnsToCreate = parsedData.columns.filter((column) => {
+		const exists = colExists(transformedColumns, column);
+		if (exists) {
+			console.log(`⚠️  [Column Creation] Skipping duplicate column: "${column.name}"`);
 		}
+		return !exists;
+	});
 
-		// Verificăm că tabelele de referință există
-		for (const column of parsedData.columns) {
-			if (column.type === "reference" && column.referenceTableId) {
+	// Dacă toate coloanele există deja, returnăm success cu lista existentă
+	if (columnsToCreate.length === 0) {
+		return NextResponse.json(
+			{ 
+				message: "All columns already exist",
+				columns: transformedColumns,
+				skipped: parsedData.columns.map(c => c.name)
+			}, 
+			{ status: 200 }
+		);
+	}
+
+	// Verificăm că tabelele de referință există
+	for (const column of columnsToCreate) {
+		if (column.type === "reference" && column.referenceTableId) {
 				const referenceTable = await prisma.table.findUnique({
 					where: { id: column.referenceTableId },
 				});
@@ -153,20 +164,20 @@ export async function POST(
 				}
 			}
 
-			// Verificăm că coloanele customArray au opțiuni definite
-			if (column.type === "customArray") {
-				if (!column.customOptions || column.customOptions.length === 0) {
-					return NextResponse.json(
-						{
-							error: `Column "${column.name}" of type customArray must have at least one custom option defined.`,
-						},
-						{ status: 400 },
-					);
-				}
+		// Verificăm că coloanele customArray au opțiuni definite
+		if (column.type === "customArray") {
+			if (!column.customOptions || column.customOptions.length === 0) {
+				return NextResponse.json(
+					{
+						error: `Column "${column.name}" of type customArray must have at least one custom option defined.`,
+					},
+					{ status: 400 },
+				);
 			}
 		}
+	}
 
-		// Get all users in the tenant to create column permissions
+	// Get all users in the tenant to create column permissions
 		const users = await prisma.user.findMany({
 			where: {
 				tenantId: Number(tenantId),
@@ -181,10 +192,10 @@ export async function POST(
 
 		const subscriptionPlan = tenant?.admin?.subscriptionPlan || "Free";
 
-		// Creăm coloanele
-		const createdColumns = [];
-		for (let i = 0; i < parsedData.columns.length; i++) {
-			const columnData = parsedData.columns[i];
+	// Creăm doar coloanele care nu există deja
+	const createdColumns = [];
+	for (let i = 0; i < columnsToCreate.length; i++) {
+		const columnData = columnsToCreate[i];
 
 			// Calculăm ordinea - fie folosim ordinea specificată, fie o calculăm automat
 			const order =

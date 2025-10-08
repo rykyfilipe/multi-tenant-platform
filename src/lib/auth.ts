@@ -145,8 +145,8 @@ export const authOptions = {
 						const newTenant = await prisma.tenant.create({
 							data: { name: `${newUser.firstName}'s tenant`, adminId: Number(newUser.id), users: { connect: { id: Number(newUser.id) } } },
 						});
-						await prisma.database.create({ data: { tenantId: newTenant.id } });
 						await prisma.user.update({ where: { id: newUser.id }, data: { tenantId: newTenant.id } });
+						await prisma.database.create({ data: { name: "Main Database", tenantId: newTenant.id } });
 					}
 				} catch (error) {
 					console.error("Google OAuth signIn error:", error);
@@ -173,9 +173,10 @@ export const authOptions = {
 								},
 							});
 							const newTenant = await prisma.tenant.create({ data: { name: `${newUser.firstName}'s tenant`, adminId: Number(newUser.id), users: { connect: { id: Number(newUser.id) } } } });
-							await prisma.database.create({ data: { tenantId: newTenant.id } });
 							await prisma.user.update({ where: { id: newUser.id }, data: { tenantId: newTenant.id } });
-							dbUser = newUser;
+							await prisma.database.create({ data: { name: "Main Database", tenantId: newTenant.id } });
+							// Refetch user to get the updated tenantId
+							dbUser = await prisma.user.findFirst({ where: { id: newUser.id } });
 						}
 						Object.assign(token, {
 							id: dbUser.id.toString(),
@@ -205,18 +206,19 @@ export const authOptions = {
 					token.customJWT = generateToken({ userId: Number(token.id), role: token.role.toString() }, "7d");
 				}
 
-				if (token.id && token.role) {
-					const dbUser = await prisma.user.findFirst({ 
-						where: { id: parseInt(token.id as string) }, 
-						select: { subscriptionStatus: true, subscriptionPlan: true, subscriptionCurrentPeriodEnd: true, profileImage: true } 
-					});
-					if (dbUser) {
-						token.subscriptionStatus = dbUser.subscriptionStatus;
-						token.subscriptionPlan = dbUser.subscriptionPlan;
-						token.subscriptionCurrentPeriodEnd = dbUser.subscriptionCurrentPeriodEnd;
-						token.profileImage = dbUser.profileImage || undefined;
-					}
+			if (token.id && token.role) {
+				const dbUser = await prisma.user.findFirst({ 
+					where: { id: parseInt(token.id as string) }, 
+					select: { subscriptionStatus: true, subscriptionPlan: true, subscriptionCurrentPeriodEnd: true, profileImage: true, tenantId: true } 
+				});
+				if (dbUser) {
+					token.subscriptionStatus = dbUser.subscriptionStatus;
+					token.subscriptionPlan = dbUser.subscriptionPlan;
+					token.subscriptionCurrentPeriodEnd = dbUser.subscriptionCurrentPeriodEnd;
+					token.profileImage = dbUser.profileImage || undefined;
+					token.tenantId = dbUser.tenantId ? dbUser.tenantId.toString() : null;
 				}
+			}
 
 				if (account?.access_token) token.accessToken = account.access_token;
 

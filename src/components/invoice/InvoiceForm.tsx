@@ -251,7 +251,7 @@ export function InvoiceForm({
 		setAvailableTablesLoading(true);
 		try {
 			const response = await fetch(
-				`/api/tenants/${tenant.id}/databases/tables?includePredefined=true`,
+				`/api/tenants/${tenant.id}/databases/tables?includePredefined=false`,
 				{
 					headers: { Authorization: `Bearer ${token}` },
 				},

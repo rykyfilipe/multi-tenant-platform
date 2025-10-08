@@ -83,22 +83,29 @@ export async function POST(request: Request) {
 				{ status: 409 },
 			);
 
-		const newTenant = await prisma.tenant.create({
-			data: {
-				name: user.firstName + "'s tenant",
-				adminId: user.id,
-				users: { connect: { id: user.id } },
-			},
-		});
+	const newTenant = await prisma.tenant.create({
+		data: {
+			name: user.firstName + "'s tenant",
+			adminId: user.id,
+			users: { connect: { id: user.id } },
+		},
+	});
 
-		const newDatabase = await prisma.database.create({
-			data: {
-				tenantId: newTenant.id,
-			},
-		});
+	// Update user with tenantId
+	await prisma.user.update({
+		where: { id: user.id },
+		data: { tenantId: newTenant.id },
+	});
 
-		// Modules are now optional and can be enabled later
-		// No automatic table creation during registration
+	const newDatabase = await prisma.database.create({
+		data: {
+			name: "Main Database",
+			tenantId: newTenant.id,
+		},
+	});
+
+	// Modules are now optional and can be enabled later
+	// No automatic table creation during registration
 
 		const payload = {
 			userId: user.id,

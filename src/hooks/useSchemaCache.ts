@@ -86,7 +86,7 @@ export function useSchemaCache(tenantId: number, databaseId: number) {
 		// Prefer tenant API; fall back to dev API if unauthorized
 		let data: { tables: CachedTableMeta[] } | null = null
 		try {
-			const res = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables?includePredefined=true`)
+			const res = await fetch(`/api/tenants/${tenantId}/databases/${databaseId}/tables?includePredefined=false`)
 			if (res.ok) {
 				data = await res.json()
 			} else if (res.status === 401 || res.status === 403) {

@@ -135,9 +135,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const TenantProvider = ({ children }: { children: ReactNode }) => {
 	const { token } = useAuth();
 	const [tenant, setTenant] = useState<Tenant | null>(null);
+	const [hasFetched, setHasFetched] = useState(false);
 
 	const fetchTenant = useCallback(async () => {
-		if (!token || tenant) return;
+		if (!token) return;
 
 		try {
 			const response = await fetch("/api/tenants", {
@@ -148,18 +149,21 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
 
 			const data = await response.json();
 			setTenant(data);
+			setHasFetched(true);
 		} catch (error) {
 			console.error("Error fetching tenant:", error);
+			setHasFetched(true);
 		}
-	}, [token, tenant]);
+	}, [token]);
 
 	useEffect(() => {
-		if (token && !tenant) {
+		if (token && !hasFetched) {
 			fetchTenant();
-		} else if (!token && tenant) {
+		} else if (!token && (tenant || hasFetched)) {
 			setTenant(null);
+			setHasFetched(false);
 		}
-	}, [token, tenant, fetchTenant]);
+	}, [token, hasFetched, fetchTenant, tenant]);
 
 	const value = useMemo(
 		() => ({
