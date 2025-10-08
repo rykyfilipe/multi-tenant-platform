@@ -13,6 +13,7 @@ import {
 	Plus,
 	SortAsc,
 	SortDesc,
+	FileText,
 } from "lucide-react";
 import { FilterConfig } from "@/types/filtering";
 import { TableFilters } from "../rows/TableFilters";
