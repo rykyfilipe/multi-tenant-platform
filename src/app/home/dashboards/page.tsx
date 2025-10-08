@@ -511,16 +511,18 @@ export default function DashboardsPage() {
       </div>
 
       {/* Edit Dashboard Modal */}
-      <DashboardFormModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="Edit Dashboard"
-        description="Update your dashboard details"
-        form={editForm}
-        setForm={setEditForm}
-        onSubmit={handleUpdateDashboard}
-        submitLabel="Update Dashboard"
-      />
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DashboardFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          title="Edit Dashboard"
+          description="Update your dashboard details"
+          form={editForm}
+          setForm={setEditForm}
+          onSubmit={handleUpdateDashboard}
+          submitLabel="Update Dashboard"
+        />
+      </Dialog>
 
       {/* Delete Confirmation Modal */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>

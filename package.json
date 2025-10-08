@@ -150,6 +150,7 @@
 		"jest-environment-jsdom": "^29.7.0",
 		"jsonwebtoken": "^9.0.2",
 		"msw": "^2.6.8",
+		"nyc": "^15.1.0",
 		"prisma": "^6.13.0",
 		"tailwindcss": "^4.0.0",
 		"tw-animate-css": "^1.3.5",

@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, X, Check } from "lucide-react";
+import { CalendarIcon, Plus, X, Check, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { USER_FRIENDLY_COLUMN_TYPES } from "@/lib/columnTypes";
 import { MultipleReferenceSelect } from "../rows/MultipleReferenceSelect";
 import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
 	columns: Column[];
@@ -134,6 +135,18 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false, 
 		});
 		setRowData(initialData);
 		setErrors({});
+	};
+
+	const getColumnTypeLabel = (type: string): string => {
+		const typeMap: Record<string, string> = {
+			[USER_FRIENDLY_COLUMN_TYPES.text]: "Text",
+			[USER_FRIENDLY_COLUMN_TYPES.number]: "Number",
+			[USER_FRIENDLY_COLUMN_TYPES.yesNo]: "Yes/No",
+			[USER_FRIENDLY_COLUMN_TYPES.date]: "Date",
+			[USER_FRIENDLY_COLUMN_TYPES.link]: "Reference",
+			[USER_FRIENDLY_COLUMN_TYPES.customArray]: "Select",
+		};
+		return typeMap[type] || "Text";
 	};
 
 	const renderCellEditor = (column: Column) => {
@@ -268,8 +281,34 @@ export function InlineRowCreator({ columns, onSave, onCancel, isSaving = false, 
 					className="flex-1 min-w-[100px] sm:min-w-[120px] border-r border-blue-200 px-2 sm:px-4 py-2 hover:bg-blue-50 transition-all duration-200"
 					style={{ width: Math.max(200, 100) }}
 				>
-					<div className="w-full">
+					<div className="w-full space-y-1.5">
+						{/* Column details header */}
+						<div className="flex items-center justify-between gap-2 mb-1">
+							<div className="flex items-center gap-2 min-w-0 flex-1">
+								<span className="text-xs font-semibold text-foreground truncate">
+									{column.name}
+								</span>
+								{column.required && (
+									<span className="text-destructive text-xs flex-shrink-0">*</span>
+								)}
+							</div>
+							<div className="flex items-center gap-1 flex-shrink-0">
+								{(column.readOnly || column.isLocked) && (
+									<Lock className="w-3 h-3 text-muted-foreground" />
+								)}
+								<Badge 
+									variant="secondary" 
+									className="text-[10px] px-1.5 py-0 h-4 bg-muted/50 text-muted-foreground border-border"
+								>
+									{getColumnTypeLabel(column.type)}
+								</Badge>
+							</div>
+						</div>
+						
+						{/* Input field */}
 						{renderCellEditor(column)}
+						
+						{/* Error message */}
 						{errors[column.id.toString()] && (
 							<p className="text-xs text-destructive mt-1">
 								{errors[column.id.toString()]}

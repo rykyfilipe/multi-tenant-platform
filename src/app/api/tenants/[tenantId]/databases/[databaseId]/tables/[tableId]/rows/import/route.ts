@@ -527,8 +527,8 @@ export async function POST(
 		const importErrors: string[] = [];
 
 		try {
-			// Pentru importuri mari, folosim batch processing
-			const batchSize = 100;
+			// Pentru importuri mari, folosim batch processing cu batch-uri mai mici pentru a încăpea în limita de 15s a Prisma Accelerate
+			const batchSize = 50; // Reduced from 100 to fit within 15s timeout
 			const batches = [];
 			
 			for (let i = 0; i < validRows.length; i += batchSize) {
@@ -598,7 +598,7 @@ export async function POST(
 						}
 					}
 				}, {
-					timeout: 30000, // 30 seconds timeout per batch
+					timeout: 14000, // 14 seconds - within Prisma Accelerate's 15s limit with safety margin
 				});
 			}
 		} catch (error) {

@@ -15,6 +15,9 @@ on:
       - 'package-lock.json'
       - '.github/workflows/ci-widgets.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,6 +25,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/widgets_ci
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/widgets_ci
       NEXT_PUBLIC_WIDGETS_V2: "true"
+      NEXTAUTH_SECRET: test-secret-key-for-widgets-ci
+      NEXTAUTH_URL: http://localhost:3000
+      
     services:
       postgres:
         image: postgres:16
@@ -38,8 +44,11 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
@@ -63,12 +72,28 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Unit Tests
-        run: npm run test
+        run: npm run test:ci
 
       - name: Integration Tests
         run: npm run test:integration
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
 
       - name: E2E Tests (widgets)
         run: npm run test:e2e -- --project=widgets
         env:
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: 1
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: widgets-test-results
+          path: |
+            coverage/
+            playwright-report/
+          retention-days: 30
