@@ -187,7 +187,6 @@ export function UserManagementGrid({
 							<div className='col-span-4 flex items-center gap-4'>
 								<div className='relative'>
 									<Avatar className='w-12 h-12 border-2 border-white dark:border-slate-800 shadow-lg'>
-										<AvatarImage src={user.profileImage} className='object-cover' />
 										<AvatarFallback className='bg-gradient-to-br from-primary to-primary/80 text-white font-bold text-lg'>
 											{getInitials(user.firstName, user.lastName)}
 										</AvatarFallback>

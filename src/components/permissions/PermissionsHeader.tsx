@@ -1,8 +1,9 @@
 /** @format */
 
-// components/PermissionsHeader.tsx
 import React from "react";
-import { Save, User } from "lucide-react";
+import { Save, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface PermissionsHeaderProps {
 	hasChanges: boolean;
@@ -15,33 +16,22 @@ export const PermissionsHeader: React.FC<PermissionsHeaderProps> = ({
 	onSave,
 	loading = false,
 }) => {
-	return (
-		<div className='mb-8'>
-			<div className='flex items-center justify-between'>
-				<div className='flex items-center space-x-3'>
-					<div className='p-3 bg-card border border-border rounded-lg shadow-sm'>
-						<User className='h-6 w-6 text-primary' />
-					</div>
-					<div>
-						<h1 className='text-3xl font-bold text-foreground'>
-							User Permissions
-						</h1>
-						<p className='text-muted-foreground mt-1'>
-							Manage table and column access permissions
-						</p>
-					</div>
-				</div>
+	if (!hasChanges) return null;
 
-				{hasChanges && (
-					<button
-						onClick={onSave}
-						disabled={loading}
-						className='flex items-center space-x-2 bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors shadow-sm'>
-						<Save className='h-4 w-4' />
-						<span>{loading ? "Saving..." : "Save Changes"}</span>
-					</button>
-				)}
-			</div>
+	return (
+		<div className='flex items-center gap-3'>
+			<Badge variant="outline" className='bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 font-semibold px-3 py-1.5'>
+				<AlertCircle className='w-3 h-3 mr-1.5' />
+				Unsaved Changes
+			</Badge>
+			<Button
+				onClick={onSave}
+				disabled={loading}
+				className='gap-2 shadow-sm'
+			>
+				<Save className='h-4 w-4' />
+				<span>{loading ? "Saving..." : "Save Changes"}</span>
+			</Button>
 		</div>
 	);
 };

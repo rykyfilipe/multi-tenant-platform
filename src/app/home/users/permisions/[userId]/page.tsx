@@ -25,9 +25,36 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Shield, AlertCircle, Lock, Database } from "lucide-react";
 import { usePlanPermissions } from "@/hooks/usePlanPermissions";
 import { useApp } from "@/contexts/AppContext";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const PermissionsLoadingSkeleton = () => (
+	<div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+		<div className="max-w-[1400px] mx-auto p-6 space-y-8">
+			{/* Header Skeleton */}
+			<div className="flex items-start justify-between gap-6">
+				<div className="flex items-start gap-4">
+					<Skeleton className="h-14 w-14 rounded-2xl" />
+					<div className="space-y-2">
+						<Skeleton className="h-8 w-64" />
+						<Skeleton className="h-4 w-96" />
+					</div>
+				</div>
+				<Skeleton className="h-10 w-32" />
+			</div>
+
+			{/* Cards Skeleton */}
+			<div className="space-y-6">
+				{Array.from({ length: 3 }).map((_, i) => (
+					<Skeleton key={i} className="h-48 rounded-xl" />
+				))}
+			</div>
+		</div>
+	</div>
+);
 
 export default function PermissionsManager() {
 	const { user } = useApp();
@@ -58,25 +85,23 @@ export default function PermissionsManager() {
 	// Check if user is admin and has permission to manage permissions
 	if (user?.role !== "ADMIN" || !canManagePermissions()) {
 		return (
-			<div className='h-full bg-background'>
-				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-					<div className='text-center py-12'>
-						<Card className='max-w-md mx-auto'>
-							<CardHeader>
-								<div className='mx-auto w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mb-4 border border-destructive/30'>
-									<Shield className='w-6 h-6 text-destructive' />
-								</div>
-								<CardTitle className='text-destructive'>
-									Access Denied
-								</CardTitle>
-								<CardDescription>
-									{user?.role !== "ADMIN"
-										? "Only administrators can manage user permissions."
-										: "Permission management is not available in your current plan. Upgrade to Pro or Enterprise to manage user permissions."}
-								</CardDescription>
-							</CardHeader>
-						</Card>
-					</div>
+			<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
+				<div className='max-w-[1400px] mx-auto px-6 py-16'>
+					<Card className='max-w-xl mx-auto bg-card border-destructive/20 shadow-lg'>
+						<CardHeader className='text-center pb-4'>
+							<div className='mx-auto w-16 h-16 bg-destructive/10 rounded-2xl flex items-center justify-center mb-4 border border-destructive/20'>
+								<Lock className='w-8 h-8 text-destructive' />
+							</div>
+							<CardTitle className='text-2xl font-bold text-foreground'>
+								Access Denied
+							</CardTitle>
+							<CardDescription className='text-base mt-2'>
+								{user?.role !== "ADMIN"
+									? "Only administrators can manage user permissions."
+									: "Permission management is not available in your current plan. Upgrade to Pro or Enterprise to manage user permissions."}
+							</CardDescription>
+						</CardHeader>
+					</Card>
 				</div>
 			</div>
 		);
@@ -84,16 +109,21 @@ export default function PermissionsManager() {
 
 	if (!userId) {
 		return (
-			<div className='h-full bg-background'>
-				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-					<div className='text-center py-12'>
-						<h3 className='text-lg font-medium text-foreground mb-2'>
-							User ID not found
-						</h3>
-						<p className='text-muted-foreground'>
-							Please provide a valid user ID to manage permissions.
-						</p>
-					</div>
+			<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
+				<div className='max-w-[1400px] mx-auto px-6 py-16'>
+					<Card className='max-w-xl mx-auto bg-card border-border shadow-lg'>
+						<CardHeader className='text-center pb-4'>
+							<div className='mx-auto w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border'>
+								<AlertCircle className='w-8 h-8 text-muted-foreground' />
+							</div>
+							<CardTitle className='text-2xl font-bold text-foreground'>
+								User Not Found
+							</CardTitle>
+							<CardDescription className='text-base mt-2'>
+								Please provide a valid user ID to manage permissions.
+							</CardDescription>
+						</CardHeader>
+					</Card>
 				</div>
 			</div>
 		);
@@ -111,85 +141,108 @@ export default function PermissionsManager() {
 	// Handle error state
 	if (permissionsError) {
 		return (
-			<div className='h-full bg-background'>
-				<div className='max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-					<div className='text-center py-12'>
-						<Card className='max-w-md mx-auto'>
-							<CardHeader>
-								<div className='mx-auto w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mb-4 border border-destructive/30'>
-									<Shield className='w-6 h-6 text-destructive' />
-								</div>
-								<CardTitle className='text-destructive'>
-									Error Loading Permissions
-								</CardTitle>
-								<CardDescription>
-									{permissionsError}
-								</CardDescription>
-							</CardHeader>
-						</Card>
-					</div>
+			<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
+				<div className='max-w-[1400px] mx-auto px-6 py-16'>
+					<Card className='max-w-xl mx-auto bg-card border-destructive/20 shadow-lg'>
+						<CardHeader className='text-center pb-4'>
+							<div className='mx-auto w-16 h-16 bg-destructive/10 rounded-2xl flex items-center justify-center mb-4 border border-destructive/20'>
+								<AlertCircle className='w-8 h-8 text-destructive' />
+							</div>
+							<CardTitle className='text-2xl font-bold text-foreground'>
+								Error Loading Permissions
+							</CardTitle>
+							<CardDescription className='text-base mt-2'>
+								{permissionsError}
+							</CardDescription>
+						</CardHeader>
+					</Card>
 				</div>
 			</div>
 		);
 	}
 
+	if (loading) {
+		return <PermissionsLoadingSkeleton />;
+	}
+
+	const tablesWithPermissions = tables?.filter((table: TableInfo) => {
+		const tablePermission = permissions?.tablePermissions.find(
+			(tp) => tp.tableId === table.id,
+		);
+		return tablePermission?.canRead || tablePermission?.canEdit || tablePermission?.canDelete;
+	}).length || 0;
+
 	return (
-		<div className='h-full bg-background'>
-			{/* Header */}
-			<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50'>
-				<div className='flex items-center justify-between px-6 py-4'>
-					<div className='flex items-center space-x-4'>
-						<div>
-							<h1 className='text-xl font-semibold text-foreground'>
+		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
+			<div className='max-w-[1400px] mx-auto p-6 space-y-8'>
+				{/* Header */}
+				<div className='flex flex-col sm:flex-row sm:items-start justify-between gap-6'>
+					<div className='flex items-start gap-4'>
+						<div className='relative'>
+							<div className='w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20'>
+								<Shield className='w-7 h-7 text-primary' />
+							</div>
+							{hasChanges && (
+								<div className='absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-background'>
+									<div className='w-2 h-2 bg-white rounded-full' />
+								</div>
+							)}
+						</div>
+						<div className='space-y-1'>
+							<h1 className='text-3xl font-bold text-foreground tracking-tight'>
 								User Permissions
 							</h1>
-							<p className='text-sm text-muted-foreground'>
-								Manage access controls and permissions for team members
+							<p className='text-muted-foreground text-base'>
+								Manage granular access controls for tables and columns
 							</p>
+							<div className='flex items-center gap-4 mt-2'>
+								<Badge variant="outline" className='bg-primary/10 text-primary border-primary/20 font-semibold'>
+									<Database className='w-3 h-3 mr-1.5' />
+									{tables?.length || 0} {tables?.length === 1 ? 'Table' : 'Tables'}
+								</Badge>
+								{tablesWithPermissions > 0 && (
+									<Badge variant="outline" className='bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-semibold'>
+										<Shield className='w-3 h-3 mr-1.5' />
+										{tablesWithPermissions} With Access
+									</Badge>
+								)}
+							</div>
 						</div>
 					</div>
+
+					<PermissionsHeader
+						hasChanges={hasChanges}
+						onSave={handleSave}
+						loading={permissionsLoading}
+					/>
 				</div>
-			</div>
 
-			{/* Main Content */}
-			<div className='p-6 max-w-6xl mx-auto'>
-				<PermissionsHeader
-					hasChanges={hasChanges}
-					onSave={handleSave}
-					loading={loading}
-				/>
+				{/* Permission Cards */}
+				<div className='space-y-6'>
+					{tables?.map((table: TableInfo) => {
+						const tablePermission: TablePermission | undefined =
+							permissions?.tablePermissions.find(
+								(tp) => tp.tableId === table.id,
+							);
+						const columnPermissions: ColumnPermission[] =
+							permissions?.columnsPermissions.filter(
+								(cp) => cp.tableId === table.id,
+							) || [];
 
-				{loading ? (
-					<LoadingState />
-				) : (
-					<>
-						<div className='space-y-6'>
-							{tables?.map((table: TableInfo) => {
-								const tablePermission: TablePermission | undefined =
-									permissions?.tablePermissions.find(
-										(tp) => tp.tableId === table.id,
-									);
-								const columnPermissions: ColumnPermission[] =
-									permissions?.columnsPermissions.filter(
-										(cp) => cp.tableId === table.id,
-									) || [];
+						return (
+							<TablePermissionCard
+								key={table.id}
+								table={table}
+								tablePermission={tablePermission}
+								columnPermissions={columnPermissions}
+								onUpdateTablePermission={updateTablePermission}
+								onUpdateColumnPermission={onUpdateColumnPermission}
+							/>
+						);
+					})}
+				</div>
 
-								return (
-									<TablePermissionCard
-										key={table.id}
-										table={table}
-										tablePermission={tablePermission}
-										columnPermissions={columnPermissions}
-										onUpdateTablePermission={updateTablePermission}
-										onUpdateColumnPermission={updateColumnPermission}
-									/>
-								);
-							})}
-						</div>
-
-						{tables?.length === 0 && <EmptyState />}
-					</>
-				)}
+				{tables?.length === 0 && <EmptyState />}
 			</div>
 		</div>
 	);

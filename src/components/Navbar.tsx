@@ -240,8 +240,7 @@ export function MobileBottomNavbar() {
 								<DropdownMenuTrigger asChild>
 									<button className='flex items-center justify-center p-3 rounded-lg text-gray-600 dark:text-gray-300 w-12 h-12'>
 										<Avatar className='w-6 h-6'>
-											<AvatarImage src={session.user.image || undefined} />
-											<AvatarFallback className='bg-gray-100 text-gray-600 font-semibold text-xs'>
+											<AvatarFallback className='bg-gradient-to-br from-primary to-primary/80 text-white font-semibold text-xs'>
 												{session.user.firstName?.[0]}
 												{session.user.lastName?.[0]}
 											</AvatarFallback>
@@ -408,8 +407,7 @@ export function AppSidebar() {
 						<DropdownMenuTrigger asChild>
 							<div className="flex items-center justify-center cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 group">
 								<Avatar className='w-8 h-8'>
-									<AvatarImage src={session.user.image || undefined} />
-									<AvatarFallback className='bg-gray-100 text-gray-600 font-semibold text-sm'>
+									<AvatarFallback className='bg-gradient-to-br from-primary to-primary/80 text-white font-semibold text-sm'>
 										{session.user.firstName?.[0]}
 										{session.user.lastName?.[0]}
 									</AvatarFallback>

@@ -1,11 +1,11 @@
 /** @format */
 
-// components/TablePermissionCard.tsx
-import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Table } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronRight, Table, Lock } from "lucide-react";
 import { PermissionToggle } from "./PermissionToggle";
 import { ColumnPermissions } from "./ColumnPermissions";
 import { TablePermissionCardProps, TablePermission } from "@/types/permissions";
+import { Badge } from "@/components/ui/badge";
 
 export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 	table,
@@ -15,8 +15,6 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 	onUpdateColumnPermission,
 }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
-
-
 
 	const handleTablePermissionChange = (
 		field: keyof Pick<TablePermission, "canRead" | "canEdit" | "canDelete">,
@@ -31,18 +29,24 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 		tablePermission?.canDelete ||
 		false;
 
-	// Numărul real de coloane din tabel
 	const actualColumnCount = table.columns?.length || 0;
 
+	// Count active permissions
+	const activePermissionsCount = [
+		tablePermission?.canRead,
+		tablePermission?.canEdit,
+		tablePermission?.canDelete,
+	].filter(Boolean).length;
+
 	return (
-		<div className='bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow'>
+		<div className='bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200'>
 			<div className='p-6'>
-				<div className='flex items-center justify-between'>
-					<div className='flex items-center space-x-3'>
+				<div className='flex items-center justify-between mb-6'>
+					<div className='flex items-center gap-3 flex-1 min-w-0'>
 						<div
-							className={`p-2 rounded-lg ${
+							className={`p-2.5 rounded-xl flex-shrink-0 ${
 								hasTableAccess
-									? "bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800"
+									? "bg-green-500/10 border border-green-500/20"
 									: "bg-muted border border-border"
 							}`}>
 							<Table
@@ -53,32 +57,40 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 								}`}
 							/>
 						</div>
-						<div>
-							<h3 className='text-lg font-semibold text-foreground'>
-								{table.name}
-							</h3>
-							<p className='text-sm text-muted-foreground'>
-								{table.description}
-							</p>
+						<div className='flex-1 min-w-0'>
+							<div className='flex items-center gap-2 mb-1'>
+								<h3 className='text-lg font-semibold text-foreground truncate'>
+									{table.name}
+								</h3>
+								{hasTableAccess && (
+									<Badge variant="secondary" className='text-xs font-medium px-2 py-0.5'>
+										{activePermissionsCount} {activePermissionsCount === 1 ? 'permission' : 'permissions'}
+									</Badge>
+								)}
+							</div>
+							{table.description && (
+								<p className='text-sm text-muted-foreground line-clamp-1'>
+									{table.description}
+								</p>
+							)}
 						</div>
 					</div>
-					<div className='flex items-center space-x-4'>
-						<button
-							onClick={() => setIsExpanded(!isExpanded)}
-							className='flex items-center space-x-1 text-muted-foreground hover:text-foreground transition-colors'>
-							{isExpanded ? (
-								<ChevronDown className='h-4 w-4' />
-							) : (
-								<ChevronRight className='h-4 w-4' />
-							)}
-							<span className='text-sm font-medium'>
-								{actualColumnCount} column{actualColumnCount !== 1 ? "s" : ""}
-							</span>
-						</button>
-					</div>
+					<button
+						onClick={() => setIsExpanded(!isExpanded)}
+						className='flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-all duration-200 ml-4 flex-shrink-0'>
+						{isExpanded ? (
+							<ChevronDown className='h-4 w-4' />
+						) : (
+							<ChevronRight className='h-4 w-4' />
+						)}
+						<span className='text-sm font-medium'>
+							{actualColumnCount} {actualColumnCount === 1 ? 'column' : 'columns'}
+						</span>
+					</button>
 				</div>
 
-				<div className='mt-6 grid grid-cols-3 gap-4'>
+				{/* Table-level permissions */}
+				<div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
 					<PermissionToggle
 						enabled={tablePermission?.canRead || false}
 						onChange={(value) => handleTablePermissionChange("canRead", value)}
@@ -101,12 +113,15 @@ export const TablePermissionCard: React.FC<TablePermissionCardProps> = ({
 					/>
 				</div>
 
+				{/* Column-level permissions (expanded) */}
 				{isExpanded && (
-					<ColumnPermissions
-						table={table}
-						columnPermissions={columnPermissions}
-						onUpdateColumnPermission={onUpdateColumnPermission}
-					/>
+					<div className='mt-6 pt-6 border-t border-border'>
+						<ColumnPermissions
+							table={table}
+							columnPermissions={columnPermissions}
+							onUpdateColumnPermission={onUpdateColumnPermission}
+						/>
+					</div>
 				)}
 			</div>
 		</div>

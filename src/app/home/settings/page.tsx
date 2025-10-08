@@ -32,7 +32,7 @@ import PasswordSetter from "@/components/settings/user/PasswordSetter";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 import PlanLimitsDisplay from "@/components/PlanLimitsDisplay";
 import GDPRRights from "@/components/settings/user/GDPRRights";
-import { UserProfileImageUpload } from "@/components/users/UserProfileImageUpload";
+import { UserAvatar } from "@/components/users/UserAvatar";
 import { ANAFIntegrationToggle } from "@/components/anaf/ANAFIntegrationToggle";
 import TourProv from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
@@ -45,7 +45,7 @@ import {
 
 function Page() {
 	const { data: session } = useSession();
-	const { user, setUser, showAlert, loading, token, tenant } = useApp();
+	const { user, showAlert, loading, token, tenant } = useApp();
 	const { subscription, loading: subscriptionLoading } = useSubscription();
 	const { data: dashboardData, loading: dashboardLoading } = useDashboardData();
 	const { t } = useLanguage();
@@ -73,12 +73,6 @@ function Page() {
 			return () => clearTimeout(timer);
 		}
 	}, []);
-
-	const handleImageUpdate = (imageUrl: string) => {
-		if (user) {
-			setUser({ ...user, profileImage: imageUrl });
-		}
-	};
 
 	useEffect(() => {
 		// User changed
@@ -353,16 +347,27 @@ function Page() {
 												</CardDescription>
 											</CardHeader>
 											<CardContent>
-												<UserProfileImageUpload
-													userId={user.id}
-													currentImage={user.profileImage}
-													userName={
-														`${user.firstName || ""} ${
-															user.lastName || ""
-														}`.trim() || "User"
-													}
-													onImageUpdate={handleImageUpdate}
-												/>
+												<div className='flex flex-col items-center space-y-4 py-6'>
+													<UserAvatar
+														firstName={user.firstName}
+														lastName={user.lastName}
+														size='xl'
+														className='ring-4 ring-primary/10 shadow-lg'
+													/>
+													<div className='text-center'>
+														<p className='text-lg font-semibold text-foreground'>
+															{user.firstName} {user.lastName}
+														</p>
+														<p className='text-sm text-muted-foreground mt-1'>
+															{user.email}
+														</p>
+													</div>
+													<div className='bg-muted/50 rounded-lg p-4 border border-dashed border-border/50 max-w-sm'>
+														<p className='text-xs text-muted-foreground text-center'>
+															{t("settings.profile.avatarInfo") || "Your avatar is automatically generated based on your name"}
+														</p>
+													</div>
+												</div>
 											</CardContent>
 										</Card>
 									</div>

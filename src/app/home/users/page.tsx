@@ -12,10 +12,11 @@ import { UsersLoadingState } from "@/components/ui/loading-states";
 import TourProv from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
 import { tourUtils } from "@/lib/tour-config";
-import { Shield, Users, Plus, Search, Mail } from "lucide-react";
+import { Shield, Users, Plus, Search, Mail, RefreshCw, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { User, Role } from "@/types/user";
 
 type UserWithCreatedAt = User & {
@@ -41,6 +42,7 @@ const UsersPage = () => {
 	const [invitations, setInvitations] = useState<Invitation[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [invitationsLoading, setInvitationsLoading] = useState(false);
+	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [showInviteForm, setShowInviteForm] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const hasFetched = useRef(false);
@@ -52,12 +54,11 @@ const UsersPage = () => {
 	const startTour = useCallback(() => {
 		setCurrentStep(0);
 		setIsOpen(true);
-	}, []);
+	}, [setCurrentStep, setIsOpen]);
 
 	useEffect(() => {
 		const hasSeenTour = tourUtils.isTourSeen("users");
 		if (!hasSeenTour && !loading && users.length > 0) {
-			// Start tour after data is loaded
 			const timer = setTimeout(() => {
 				startTour();
 			}, 1000);
@@ -67,10 +68,13 @@ const UsersPage = () => {
 	}, [loading, users.length, startTour]);
 
 	// Fetch users
-	const fetchUsers = useCallback(async () => {
-		if (hasFetched.current || !tenant) return;
+	const fetchUsers = useCallback(async (showRefreshIndicator = false) => {
+		if (!tenant) return;
+		if (!showRefreshIndicator && hasFetched.current) return;
 
-		setLoading(true);
+		if (showRefreshIndicator) setIsRefreshing(true);
+		else setLoading(true);
+
 		try {
 			const res = await fetch(`/api/tenants/${tenant.id}/users`, {
 				headers: { Authorization: `Bearer ${token}` },
@@ -82,11 +86,10 @@ const UsersPage = () => {
 			}
 
 			const data = await res.json();
-			// Add createdAt field to each user for compatibility
 			const currentTime = new Date().toISOString();
 			const usersWithCreatedAt = data.map((user: any) => ({
 				...user,
-				createdAt: currentTime, // Default value since API doesn't return this
+				createdAt: currentTime,
 			}));
 			setUsers(usersWithCreatedAt);
 			hasFetched.current = true;
@@ -94,8 +97,9 @@ const UsersPage = () => {
 			showAlert(err.message || "Failed to load users", "error");
 		} finally {
 			setLoading(false);
+			setIsRefreshing(false);
 		}
-	}, [token, tenant]);
+	}, [token, tenant, handleApiError, showAlert]);
 
 	// Fetch invitations
 	const fetchInvitations = useCallback(async () => {
@@ -119,7 +123,7 @@ const UsersPage = () => {
 		} finally {
 			setInvitationsLoading(false);
 		}
-	}, [token, tenant]);
+	}, [token, tenant, handleApiError, showAlert]);
 
 	useEffect(() => {
 		if (token && tenant && !hasFetched.current) {
@@ -135,21 +139,18 @@ const UsersPage = () => {
 	// Refresh data
 	const refreshData = useCallback(() => {
 		if (tenant) {
-			hasFetched.current = false;
-			fetchUsers();
+			fetchUsers(true);
 			fetchInvitations();
 		}
-	}, [tenant]);
+	}, [tenant, fetchUsers, fetchInvitations]);
 
 	// Delete user with confirmation
 	const deleteUser = async (userId: string) => {
 		if (!tenant) return;
 
-		// Find the user to get their name for confirmation
 		const userToDelete = users.find(user => user.id.toString() === userId);
 		const userName = userToDelete ? `${userToDelete.firstName} ${userToDelete.lastName}` : 'this user';
 
-		// Show confirmation dialog
 		const confirmed = window.confirm(
 			`Are you sure you want to delete ${userName}? This action cannot be undone and will remove all their data and permissions.`
 		);
@@ -195,7 +196,6 @@ const UsersPage = () => {
 				return;
 			}
 
-			// Update the user in the local state
 			setUsers((prev) => 
 				prev.map((user) => 
 					user.id.toString() === userId 
@@ -249,7 +249,9 @@ const UsersPage = () => {
 		return <UsersLoadingState />;
 	}
 
-	// All authenticated users can view coworkers, but only admins can manage them
+	const adminCount = users.filter(u => u.role === 'ADMIN').length;
+	const editorCount = users.filter(u => u.role === 'EDITOR').length;
+	const viewerCount = users.filter(u => u.role === 'VIEWER').length;
 
 	return (
 		<TourProv
@@ -263,171 +265,199 @@ const UsersPage = () => {
 			onTourSkip={() => {
 				tourUtils.markTourSeen("users");
 			}}>
-			<div className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800'>
-				{/* Premium Header */}
-				<div className='relative overflow-hidden'>
-					<div className='absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5' />
-					<div className='relative border-b border-border/20 bg-background/95 backdrop-blur-xl'>
-						<div className='max-w-7xl mx-auto px-6 py-8'>
-							<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
-								{/* Header Content */}
-								<div className='flex items-start gap-4'>
-									<div className='relative'>
-										<div className='w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25'>
-											<Users className='w-8 h-8 text-white' />
-										</div>
-										<div className='absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center'>
-											<div className='w-3 h-3 bg-white rounded-full' />
-										</div>
-									</div>
-									<div className='space-y-2'>
-										<h1 className='text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent'>
-											Team Management
-										</h1>
-										<p className='text-slate-600 dark:text-slate-400 text-lg max-w-2xl'>
-											Manage your team members, roles, and permissions with precision and ease.
-										</p>
-										<div className='flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400'>
-											<div className='flex items-center gap-2'>
-												<div className='w-2 h-2 bg-green-500 rounded-full' />
-												<span>{users.length} Active Members</span>
-											</div>
-											{invitations.length > 0 && (
-												<div className='flex items-center gap-2'>
-													<div className='w-2 h-2 bg-amber-500 rounded-full' />
-													<span>{invitations.length} Pending Invites</span>
-												</div>
-											)}
-										</div>
-									</div>
+			<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
+				<div className='max-w-[1600px] mx-auto p-6 space-y-8'>
+					{/* Header */}
+					<div className='flex flex-col sm:flex-row sm:items-start justify-between gap-6'>
+						<div className='flex items-start gap-4'>
+							<div className='relative'>
+								<div className='w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20'>
+									<Users className='w-7 h-7 text-primary' />
 								</div>
-
-								{/* Action Buttons */}
-								<div className='flex items-center gap-3'>
-									{currentUser?.role === "ADMIN" && (
-										<Button
-											onClick={() => setShowInviteForm(!showInviteForm)}
-											className='h-12 px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200 rounded-xl font-medium'>
-											<Plus className='w-5 h-5 mr-2' />
-											{showInviteForm ? "Cancel Invite" : "Invite Member"}
-										</Button>
+								<div className='absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-background'>
+									<div className='w-2 h-2 bg-white rounded-full' />
+								</div>
+							</div>
+							<div className='space-y-1'>
+								<h1 className='text-3xl font-bold text-foreground tracking-tight'>
+									Team Management
+								</h1>
+								<p className='text-muted-foreground text-base'>
+									Manage your team members, roles, and permissions
+								</p>
+								<div className='flex items-center gap-4 mt-2'>
+									<Badge variant="outline" className='bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-semibold'>
+										<div className='w-2 h-2 bg-green-500 rounded-full mr-2' />
+										{users.length} Active {users.length === 1 ? 'Member' : 'Members'}
+									</Badge>
+									{invitations.length > 0 && (
+										<Badge variant="outline" className='bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 font-semibold'>
+											<div className='w-2 h-2 bg-amber-500 rounded-full mr-2' />
+											{invitations.length} Pending {invitations.length === 1 ? 'Invite' : 'Invites'}
+										</Badge>
 									)}
 								</div>
 							</div>
 						</div>
-					</div>
-				</div>
 
-				{/* Main Content */}
-				<div className='max-w-7xl mx-auto px-6 py-8'>
-					<div className='space-y-8'>
-						{/* Search and Stats Bar */}
-						<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
-							<div className='flex-1 max-w-md'>
-								<div className='relative group'>
-									<Search className='absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors' />
-									<Input
-										placeholder='Search team members...'
-										value={searchTerm}
-										onChange={(e) => setSearchTerm(e.target.value)}
-										className='pl-12 h-12 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 focus:border-primary/50 rounded-xl text-base shadow-sm hover:shadow-md transition-all duration-200'
-									/>
-								</div>
-							</div>
-							
-							{/* Quick Stats */}
-							<div className='flex items-center gap-6'>
-								<div className='text-center'>
-									<div className='text-2xl font-bold text-slate-900 dark:text-white'>{users.length}</div>
-									<div className='text-sm text-slate-500 dark:text-slate-400'>Total Members</div>
-								</div>
-								<div className='w-px h-8 bg-slate-200 dark:bg-slate-700' />
-								<div className='text-center'>
-									<div className='text-2xl font-bold text-green-600'>{users.filter(u => u.role === 'ADMIN').length}</div>
-									<div className='text-sm text-slate-500 dark:text-slate-400'>Administrators</div>
-								</div>
-								<div className='w-px h-8 bg-slate-200 dark:bg-slate-700' />
-								<div className='text-center'>
-									<div className='text-2xl font-bold text-blue-600'>{users.filter(u => u.role === 'EDITOR').length}</div>
-									<div className='text-sm text-slate-500 dark:text-slate-400'>Editors</div>
-								</div>
+						{/* Action Buttons */}
+						<div className='flex items-center gap-3'>
+							<Button
+								onClick={refreshData}
+								variant="outline"
+								size="default"
+								disabled={isRefreshing}
+								className='gap-2'
+							>
+								<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+								<span className="hidden sm:inline">Refresh</span>
+							</Button>
+							{currentUser?.role === "ADMIN" && (
+								<Button
+									onClick={() => setShowInviteForm(!showInviteForm)}
+									className='gap-2 shadow-sm'>
+									{showInviteForm ? (
+										<>
+											<span>Cancel</span>
+										</>
+									) : (
+										<>
+											<UserPlus className='w-4 h-4' />
+											<span>Invite Member</span>
+										</>
+									)}
+								</Button>
+							)}
+						</div>
+					</div>
+
+					{/* Search and Stats */}
+					<div className='flex flex-col lg:flex-row lg:items-center gap-6'>
+						<div className='flex-1 max-w-md'>
+							<div className='relative group'>
+								<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors' />
+								<Input
+									placeholder='Search by name or email...'
+									value={searchTerm}
+									onChange={(e) => setSearchTerm(e.target.value)}
+									className='pl-10 h-11 bg-card border-border focus:border-primary/50 rounded-lg shadow-sm'
+								/>
 							</div>
 						</div>
-
-						{/* Invitation Creation Form - Only for Admins */}
-						{showInviteForm && tenant && currentUser?.role === "ADMIN" && (
-							<div className='invitation-creation-section'>
-								<Card className='border-0 shadow-xl bg-white dark:bg-slate-900 rounded-2xl overflow-hidden'>
-									<div className='bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-6 border-b border-slate-200 dark:border-slate-700'>
-										<div className='flex items-center gap-3'>
-											<div className='w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center'>
-												<Plus className='w-5 h-5 text-primary' />
-											</div>
-											<div>
-												<h3 className='text-xl font-semibold text-slate-900 dark:text-white'>Invite New Team Member</h3>
-												<p className='text-slate-600 dark:text-slate-400'>Send an invitation to join your team</p>
-											</div>
-										</div>
-									</div>
-									<CardContent className='p-6'>
-										<InvitationCreationForm
-											tenantId={tenant.id}
-											onInvitationCreated={() => {
-												fetchInvitations();
-												setShowInviteForm(false);
-											}}
-										/>
-									</CardContent>
-								</Card>
+						
+						{/* Role Distribution Stats */}
+						<div className='flex items-center gap-6 flex-wrap'>
+							<div className='text-center'>
+								<div className='text-2xl font-bold text-foreground'>{users.length}</div>
+								<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Total</div>
 							</div>
-						)}
+							{adminCount > 0 && (
+								<>
+									<div className='w-px h-8 bg-border' />
+									<div className='text-center'>
+										<div className='text-2xl font-bold text-primary'>{adminCount}</div>
+										<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Admins</div>
+									</div>
+								</>
+							)}
+							{editorCount > 0 && (
+								<>
+									<div className='w-px h-8 bg-border' />
+									<div className='text-center'>
+										<div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>{editorCount}</div>
+										<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Editors</div>
+									</div>
+								</>
+							)}
+							{viewerCount > 0 && (
+								<>
+									<div className='w-px h-8 bg-border' />
+									<div className='text-center'>
+										<div className='text-2xl font-bold text-green-600 dark:text-green-400'>{viewerCount}</div>
+										<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Viewers</div>
+									</div>
+								</>
+							)}
+						</div>
+					</div>
 
-						{/* Users Table */}
-						<div className='users-table'>
-							<Card className='border-0 shadow-xl bg-white dark:bg-slate-900 rounded-2xl overflow-hidden'>
-								<div className='bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 p-6 border-b border-slate-200 dark:border-slate-700'>
-									<div className='flex items-center justify-between'>
-										<div>
-											<h3 className='text-xl font-semibold text-slate-900 dark:text-white'>Team Members</h3>
-											<p className='text-slate-600 dark:text-slate-400 mt-1'>Manage your team members and their permissions</p>
+					{/* Invitation Creation Form - Only for Admins */}
+					{showInviteForm && tenant && currentUser?.role === "ADMIN" && (
+						<div className='invitation-creation-section'>
+							<Card className='bg-card border-border shadow-sm'>
+								<CardHeader className='border-b border-border/50 pb-4'>
+									<div className='flex items-center gap-3'>
+										<div className='w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center'>
+											<UserPlus className='w-5 h-5 text-primary' />
 										</div>
-										<div className='text-sm text-slate-500 dark:text-slate-400'>
-											{filteredUsers.length} of {users.length} members
+										<div>
+											<CardTitle className='text-lg font-bold text-foreground'>Invite New Team Member</CardTitle>
+											<p className='text-sm text-muted-foreground mt-0.5'>Send an invitation to join your team</p>
 										</div>
 									</div>
-								</div>
-								<CardContent className='p-0'>
-									<UserManagementGrid
-										users={filteredUsers as User[]}
-										onDeleteRow={deleteUser}
-										onUpdateUserRole={updateUserRole}
+								</CardHeader>
+								<CardContent className='p-6'>
+									<InvitationCreationForm
+										tenantId={tenant.id}
+										onInvitationCreated={() => {
+											fetchInvitations();
+											setShowInviteForm(false);
+										}}
 									/>
 								</CardContent>
 							</Card>
 						</div>
+					)}
 
-						{/* Invitations List - Only for Admins */}
-						{tenant && currentUser?.role === "ADMIN" && (
-							<div className='invitations-section'>
-								<Card className='border-0 shadow-xl bg-white dark:bg-slate-900 rounded-2xl overflow-hidden'>
-									<div className='bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-6 border-b border-amber-200 dark:border-amber-800'>
-										<div className='flex items-center gap-3'>
-											<div className='w-10 h-10 bg-amber-100 dark:bg-amber-900/50 rounded-xl flex items-center justify-center'>
-												<Mail className='w-5 h-5 text-amber-600 dark:text-amber-400' />
-											</div>
-											<div>
-												<h3 className='text-xl font-semibold text-slate-900 dark:text-white'>Pending Invitations</h3>
-												<p className='text-slate-600 dark:text-slate-400 mt-1'>Invitations waiting for acceptance</p>
-											</div>
+					{/* Users Table */}
+					<div className='users-table'>
+						<Card className='bg-card border-border shadow-sm'>
+							<CardHeader className='border-b border-border/50 pb-4'>
+								<div className='flex items-center justify-between'>
+									<div>
+										<CardTitle className='text-lg font-bold text-foreground'>Team Members</CardTitle>
+										<p className='text-sm text-muted-foreground mt-0.5'>
+											Manage roles and permissions for your team
+										</p>
+									</div>
+									<Badge variant="secondary" className='font-semibold'>
+										{filteredUsers.length} {filteredUsers.length !== users.length && `of ${users.length}`}
+									</Badge>
+								</div>
+							</CardHeader>
+							<CardContent className='p-0'>
+								<UserManagementGrid
+									users={filteredUsers as User[]}
+									onDeleteRow={deleteUser}
+									onUpdateUserRole={updateUserRole}
+								/>
+							</CardContent>
+						</Card>
+					</div>
+
+					{/* Invitations List - Only for Admins */}
+					{tenant && currentUser?.role === "ADMIN" && (
+						<div className='invitations-section'>
+							<Card className='bg-card border-border shadow-sm'>
+								<CardHeader className='border-b border-border/50 pb-4'>
+									<div className='flex items-center gap-3'>
+										<div className='w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center'>
+											<Mail className='w-5 h-5 text-amber-600 dark:text-amber-400' />
+										</div>
+										<div>
+											<CardTitle className='text-lg font-bold text-foreground'>Pending Invitations</CardTitle>
+											<p className='text-sm text-muted-foreground mt-0.5'>
+												Invitations waiting for acceptance
+											</p>
 										</div>
 									</div>
-									<CardContent className='p-6'>
-										<InvitationManagementList tenantId={tenant.id} />
-									</CardContent>
-								</Card>
-							</div>
-						)}
-					</div>
+								</CardHeader>
+								<CardContent className='p-6'>
+									<InvitationManagementList tenantId={tenant.id} />
+								</CardContent>
+							</Card>
+						</div>
+					)}
 				</div>
 			</div>
 		</TourProv>
