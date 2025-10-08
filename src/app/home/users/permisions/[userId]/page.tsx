@@ -236,7 +236,7 @@ export default function PermissionsManager() {
 								tablePermission={tablePermission}
 								columnPermissions={columnPermissions}
 								onUpdateTablePermission={updateTablePermission}
-								onUpdateColumnPermission={onUpdateColumnPermission}
+								onUpdateColumnPermission={updateColumnPermission}
 							/>
 						);
 					})}

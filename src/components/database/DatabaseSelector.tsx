@@ -51,21 +51,21 @@ export default function DatabaseSelector() {
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant='outline'
-						className='gap-3 min-w-[240px] justify-between h-11 shadow-sm hover:shadow-md transition-all duration-200 border-gray-200 dark:border-border bg-white dark:bg-card hover:bg-gray-50 dark:hover:bg-card/80'>
-						<div className='flex items-center gap-3'>
-							<div className="p-1.5 rounded-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-primary/20 dark:to-primary/10">
-								<Database className='w-4 h-4 text-blue-600 dark:text-primary' />
+						className='gap-3 min-w-[200px] sm:min-w-[240px] justify-between h-11 shadow-sm hover:shadow-md transition-all duration-200 border-border bg-card hover:bg-muted/50'>
+						<div className='flex items-center gap-2 sm:gap-3 flex-1 min-w-0'>
+							<div className="p-1.5 rounded-lg bg-primary/10 flex-shrink-0">
+								<Database className='w-4 h-4 text-primary' />
 							</div>
-							<span className='truncate font-semibold text-gray-900 dark:text-foreground'>
+							<span className='truncate font-semibold text-foreground text-sm'>
 								{selectedDatabase?.name || t("database.selector.selectDatabase")}
 							</span>
 						</div>
-						<ChevronDown className='w-4 h-4 text-gray-500' />
+						<ChevronDown className='w-4 h-4 text-muted-foreground flex-shrink-0' />
 					</Button>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align='start' className='w-[280px] shadow-xl border-gray-200 dark:border-border'>
-					<div className='px-3 py-2 bg-gradient-to-r from-gray-50 to-white dark:from-card dark:to-card/50'>
-						<p className='text-xs font-bold text-gray-700 dark:text-foreground uppercase tracking-wide'>
+				<DropdownMenuContent align='start' className='w-[280px] shadow-xl border-border'>
+					<div className='px-3 py-2 bg-muted/30'>
+						<p className='text-xs font-bold text-foreground uppercase tracking-wide'>
 							{t("database.selector.databasesCount", { count: databases.length })}
 						</p>
 					</div>
@@ -76,14 +76,14 @@ export default function DatabaseSelector() {
 							onClick={() => {
 								handleSelectDatabase(database);
 							}}
-							className='flex items-center justify-between cursor-pointer py-3 px-3 hover:bg-gray-50 dark:hover:bg-card/50'>
+							className='flex items-center justify-between cursor-pointer py-3 px-3 hover:bg-muted/50 focus:bg-muted/50'>
 							<div className='flex items-center gap-3 flex-1 min-w-0'>
-								<div className={`p-1.5 rounded-md ${selectedDatabase?.id === database.id ? 'bg-blue-100 dark:bg-primary/20' : 'bg-gray-100 dark:bg-card'}`}>
-									<Database className={`w-4 h-4 ${selectedDatabase?.id === database.id ? 'text-blue-600 dark:text-primary' : 'text-gray-600 dark:text-foreground'}`} />
+								<div className={`p-1.5 rounded-lg ${selectedDatabase?.id === database.id ? 'bg-primary/20' : 'bg-muted/50'}`}>
+									<Database className={`w-4 h-4 ${selectedDatabase?.id === database.id ? 'text-primary' : 'text-muted-foreground'}`} />
 								</div>
-								<span className='truncate font-medium text-gray-900 dark:text-foreground'>{database.name}</span>
+								<span className='truncate font-medium text-foreground'>{database.name}</span>
 								{selectedDatabase?.id === database.id && (
-									<Badge className='text-xs bg-blue-100 text-blue-700 border-blue-200 font-semibold'>
+									<Badge className='text-xs bg-primary/10 text-primary border-primary/30 font-semibold'>
 										{t("database.selector.active")}
 									</Badge>
 								)}
@@ -104,13 +104,13 @@ export default function DatabaseSelector() {
 												handleDeleteDatabase(database.id);
 											}
 										}}
-										className='h-7 w-7 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors'>
+										className='h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'>
 										<Trash2 className='w-3.5 h-3.5' />
 									</Button>
 								)}
 							{user?.role === "ADMIN" &&
 								database.tables?.some((table: any) => table.isPredefined) && (
-									<Badge variant="outline" className='text-xs bg-amber-50 text-amber-700 border-amber-200'>
+									<Badge variant="outline" className='text-xs bg-amber-500/10 text-amber-700 dark:text-amber-500 border-amber-500/30'>
 										<Database className='w-3 h-3 mr-1' />
 										{t("database.selector.protected")}
 									</Badge>
@@ -123,7 +123,7 @@ export default function DatabaseSelector() {
 							onClick={() => {
 								setShowAddDatabaseModal(true);
 							}}
-							className='cursor-pointer py-3 px-3 font-semibold text-blue-600 dark:text-primary hover:bg-blue-50 dark:hover:bg-primary/10'>
+							className='cursor-pointer py-3 px-3 font-semibold text-primary hover:bg-primary/10 focus:bg-primary/10'>
 							<Plus className='w-4 h-4 mr-2' />
 							{t("database.selector.createNewDatabase")}
 						</DropdownMenuItem>

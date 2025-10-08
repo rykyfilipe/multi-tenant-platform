@@ -196,46 +196,50 @@ export function DatabaseContent() {
 				</div>
 
 				{/* Main Content */}
-				<div className='p-6'>
-					<div className='max-w-7xl mx-auto space-y-6'>
+				<div className='p-4 sm:p-6 lg:p-8'>
+					<div className='max-w-7xl mx-auto space-y-8'>
 						{/* Loading state */}
 						{loading && <DatabaseLoadingState />}
 
 						{/* Quick Stats Overview */}
 						{!loading && selectedDatabase && tables && tables.length > 0 && (
 							<div className="space-y-4">
-								<h2 className="text-xl font-bold text-gray-900 dark:text-foreground tracking-tight flex items-center gap-2">
-									<BarChart3 className="w-5 h-5 text-gray-600 dark:text-foreground" />
-									Quick Overview
-								</h2>
+								<div className='flex items-center gap-3'>
+									<div className='p-2 rounded-lg bg-primary/10'>
+										<BarChart3 className="w-5 h-5 text-primary" />
+									</div>
+									<h2 className="text-xl font-semibold text-foreground tracking-tight">
+										Quick Overview
+									</h2>
+								</div>
 								<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 									<QuickStatCard
 										icon={TableIcon}
 										label="Total Tables"
 										value={stats.totalTables}
 										sublabel={`in ${selectedDatabase.name}`}
-										color="blue"
+										variant="primary"
 									/>
 									<QuickStatCard
 										icon={Columns}
 										label="Total Columns"
 										value={stats.totalColumns}
 										sublabel={`avg ${stats.avgColumnsPerTable} per table`}
-										color="purple"
+										variant="secondary"
 									/>
 									<QuickStatCard
 										icon={BarChart3}
 										label="Total Rows"
 										value={stats.totalRows.toLocaleString()}
 										sublabel={`avg ${stats.avgRowsPerTable} per table`}
-										color="green"
+										variant="success"
 									/>
 									<QuickStatCard
 										icon={HardDrive}
 										label="Database"
 										value={selectedDatabase.name}
 										sublabel={`Created ${new Date(selectedDatabase.createdAt).toLocaleDateString()}`}
-										color="gray"
+										variant="default"
 									/>
 								</div>
 							</div>
@@ -246,70 +250,75 @@ export function DatabaseContent() {
 							<>
 								{tables.length > 0 ? (
 									<div className='space-y-4'>
-										<h2 className="text-xl font-bold text-gray-900 dark:text-foreground tracking-tight flex items-center gap-2">
-											<TableIcon className="w-5 h-5 text-gray-600 dark:text-foreground" />
-											Tables ({tables.length})
-										</h2>
+										<div className='flex items-center gap-3'>
+											<div className='p-2 rounded-lg bg-primary/10'>
+												<TableIcon className="w-5 h-5 text-primary" />
+											</div>
+											<h2 className="text-xl font-semibold text-foreground tracking-tight">
+												Tables
+												<span className='ml-2 text-muted-foreground font-normal'>({tables.length})</span>
+											</h2>
+										</div>
 										<div className='table-grid'>
 											<TableGrid tables={tables} />
 										</div>
 									</div>
 								) : (
-									<Card className="border-0 shadow-xl shadow-gray-100/50 rounded-2xl overflow-hidden">
-										<CardContent className="p-12 text-center">
-											<div className='max-w-md mx-auto'>
-												<div className='w-20 h-20 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-100/50'>
-													<Sparkles className='w-10 h-10 text-blue-600' />
+									<Card className="border border-border/50 shadow-lg rounded-2xl overflow-hidden bg-card">
+										<CardContent className="p-8 sm:p-12 text-center">
+											<div className='max-w-lg mx-auto'>
+												<div className='w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm'>
+													<Sparkles className='w-10 h-10 text-primary' />
 												</div>
-												<h3 className='text-2xl font-bold text-gray-900 dark:text-foreground mb-3'>
+												<h3 className='text-2xl font-bold text-foreground mb-3'>
 													No tables yet
 												</h3>
-												<p className='text-gray-600 dark:text-muted-foreground mb-8 text-base'>
-													Create your first table in <span className="font-semibold text-gray-900 dark:text-foreground">"{selectedDatabase.name}"</span> to start managing your data
+												<p className='text-muted-foreground mb-8 text-sm sm:text-base'>
+													Create your first table in <span className="font-semibold text-foreground">"{selectedDatabase.name}"</span> to start managing your data
 												</p>
-												<div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+												<div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
 													<Button
 														onClick={() => setShowAddTableModal(true)}
-														className='add-table-button shadow-lg hover:shadow-xl transition-all duration-200'
+														className='add-table-button shadow-md hover:shadow-lg transition-all duration-200'
 														size="lg">
 														<Plus className='w-5 h-5 mr-2' />
-														Create First Table
+														<span className='font-semibold'>Create First Table</span>
 													</Button>
 													<TableTemplateSelector />
 												</div>
 												
 												{/* Feature hints */}
-												<div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-													<div className="space-y-1">
+												<div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
+													<div className="space-y-2">
 														<div className="flex items-center gap-2">
-															<div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-																<TableIcon className="w-4 h-4 text-blue-600" />
+															<div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+																<TableIcon className="w-4 h-4 text-primary" />
 															</div>
-															<h4 className="font-semibold text-sm text-gray-900 dark:text-foreground">Custom Schemas</h4>
+															<h4 className="font-semibold text-sm text-foreground">Custom Schemas</h4>
 														</div>
-														<p className="text-xs text-gray-600 dark:text-muted-foreground ml-10">
+														<p className="text-xs text-muted-foreground">
 															Design tables that fit your exact needs
 														</p>
 													</div>
-													<div className="space-y-1">
+													<div className="space-y-2">
 														<div className="flex items-center gap-2">
-															<div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-																<Columns className="w-4 h-4 text-purple-600" />
+															<div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center">
+																<Columns className="w-4 h-4 text-secondary-foreground" />
 															</div>
-															<h4 className="font-semibold text-sm text-gray-900 dark:text-foreground">Rich Data Types</h4>
+															<h4 className="font-semibold text-sm text-foreground">Rich Data Types</h4>
 														</div>
-														<p className="text-xs text-gray-600 dark:text-muted-foreground ml-10">
+														<p className="text-xs text-muted-foreground">
 															Text, numbers, dates, references & more
 														</p>
 													</div>
-													<div className="space-y-1">
+													<div className="space-y-2">
 														<div className="flex items-center gap-2">
-															<div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-																<FileText className="w-4 h-4 text-green-600" />
+															<div className="w-9 h-9 rounded-xl bg-green-500/10 flex items-center justify-center">
+																<FileText className="w-4 h-4 text-green-600 dark:text-green-500" />
 															</div>
-															<h4 className="font-semibold text-sm text-gray-900 dark:text-foreground">Templates</h4>
+															<h4 className="font-semibold text-sm text-foreground">Templates</h4>
 														</div>
-														<p className="text-xs text-gray-600 dark:text-muted-foreground ml-10">
+														<p className="text-xs text-muted-foreground">
 															Start quickly with pre-built schemas
 														</p>
 													</div>
@@ -323,16 +332,16 @@ export function DatabaseContent() {
 
 						{/* No database selected */}
 						{!loading && !selectedDatabase && (
-							<Card className="border-0 shadow-xl shadow-gray-100/50 rounded-2xl overflow-hidden">
+							<Card className="border border-border/50 shadow-lg rounded-2xl overflow-hidden bg-card">
 								<CardContent className="p-12 text-center">
 									<div className='max-w-md mx-auto'>
-										<div className='w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-gray-100/50'>
-											<DatabaseIcon className='w-10 h-10 text-gray-600' />
+										<div className='w-20 h-20 bg-muted/50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm'>
+											<DatabaseIcon className='w-10 h-10 text-muted-foreground' />
 										</div>
-										<h3 className='text-2xl font-bold text-gray-900 dark:text-foreground mb-3'>
+										<h3 className='text-2xl font-bold text-foreground mb-3'>
 											Select a Database
 										</h3>
-										<p className='text-gray-600 dark:text-muted-foreground mb-8 text-base'>
+										<p className='text-muted-foreground mb-8 text-sm sm:text-base'>
 											Choose a database from the dropdown above to view and manage your tables
 										</p>
 									</div>
