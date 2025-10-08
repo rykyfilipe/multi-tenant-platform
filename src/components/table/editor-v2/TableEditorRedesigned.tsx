@@ -16,6 +16,7 @@ import { DataMode } from "./DataMode";
 import { UnsavedChangesFooter } from "./UnsavedChangesFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { arrayMove } from "@dnd-kit/sortable";
 
@@ -663,8 +664,31 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				throw new Error("CSV file must contain at least a header row and one data row");
 			}
 
+			// Auto-detect separator (try common separators)
+			const detectSeparator = (headerLine: string): string => {
+				const separators = [';', ',', '\t', '|'];
+				let bestSeparator = ';';
+				let maxColumns = 0;
+
+				for (const sep of separators) {
+					const count = headerLine.split(sep).length;
+					if (count > maxColumns) {
+						maxColumns = count;
+						bestSeparator = sep;
+					}
+				}
+
+				console.log('🔍 CSV Separator detected:', bestSeparator, 'Columns found:', maxColumns);
+				return bestSeparator;
+			};
+
+			const separator = detectSeparator(lines[0]);
+
 			// Parse header
-			const headers = lines[0].split(";").map((h) => h.trim().replace(/^"|"$/g, ""));
+			const headers = lines[0].split(separator).map((h) => h.trim().replace(/^"|"$/g, ""));
+
+			console.log('📋 CSV Headers found:', headers);
+			console.log('📋 Table Columns:', columns.map(c => c.name));
 
 			// Map headers to column IDs
 			const columnMapping = headers.map((header) => {
@@ -680,13 +704,22 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				return column ? { columnId: column.id, header, isReference: false } : null;
 			});
 
+			// Check for unmapped columns
+			const unmappedHeaders = headers.filter((_, index) => !columnMapping[index]);
+			if (unmappedHeaders.length > 0) {
+				console.warn('⚠️ Unmapped headers:', unmappedHeaders);
+			}
+
+			const mappedHeaders = headers.filter((_, index) => columnMapping[index]);
+			console.log('✅ Mapped headers:', mappedHeaders);
+
 			// Parse data rows
 			const rows = [];
 			for (let i = 1; i < lines.length; i++) {
 				const line = lines[i];
 				if (!line.trim()) continue;
 
-				// Simple CSV parsing (handle quoted values)
+				// Parse CSV line with detected separator (handle quoted values)
 				const values: string[] = [];
 				let currentValue = "";
 				let insideQuotes = false;
@@ -695,7 +728,7 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 					const char = line[j];
 					if (char === '"') {
 						insideQuotes = !insideQuotes;
-					} else if (char === ";" && !insideQuotes) {
+					} else if (char === separator && !insideQuotes) {
 						values.push(currentValue.trim().replace(/^"|"$/g, ""));
 						currentValue = "";
 					} else {
@@ -710,21 +743,23 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 					if (!mapping) continue;
 
 					const value = values[j];
-					if (!value || value === "") continue;
-
-					// For reference columns, we need to group values by base column
+					
+					// Allow empty values for non-required columns
+					// Skip reference column details
 					if (mapping.isReference) {
-						// Skip reference column details, will be handled by base column
 						continue;
 					}
 
 					const column = columns.find((col) => col.id === mapping.columnId);
 					if (!column) continue;
 
-					// Convert value based on column type
+					// Convert value based on column type (even if empty, for defaults)
 					let processedValue: any = value;
 
-					if (column.type === "number" || column.type === "integer" || column.type === "decimal") {
+					if (!value || value === "") {
+						// Use null for empty values, backend will handle defaults
+						processedValue = null;
+					} else if (column.type === "number" || column.type === "integer" || column.type === "decimal") {
 						processedValue = value ? parseFloat(value.replace(",", ".")) : null;
 					} else if (column.type === "boolean") {
 						processedValue = value === "✓" || value === "true" || value === "1";
@@ -738,14 +773,23 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 					});
 				}
 
+				// Add row even if some cells are empty (backend validation will handle required fields)
 				if (cells.length > 0) {
 					rows.push({ cells });
 				}
 			}
 
 			if (rows.length === 0) {
-				throw new Error("No valid data rows found in CSV file");
+				throw new Error(
+					`No valid data rows found in CSV file.\n\n` +
+					`Detected separator: "${separator}"\n` +
+					`CSV headers: ${headers.join(', ')}\n` +
+					`Table columns: ${columns.map(c => c.name).join(', ')}\n\n` +
+					`Make sure your CSV headers match your table column names exactly.`
+				);
 			}
+
+			console.log(`✅ Parsed ${rows.length} rows for import`);
 
 			// Send import request
 			const response = await fetch(
@@ -845,31 +889,52 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 	// Loading state
 	if (rowsLoading || permissionsLoading) {
 		return (
-			<div className='space-y-6 p-6'>
-				<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-					<div className='flex items-center gap-2'>
-						<Skeleton className='h-6 w-6' />
-						<Skeleton className='h-6 w-32' />
+			<div className='min-h-screen bg-background'>
+				<div className='max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+					{/* Header Skeleton */}
+					<div className='mb-8'>
+						<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6'>
+							<div className='flex items-center gap-4'>
+								<Skeleton className='h-12 w-12 rounded-xl' />
+								<div className='space-y-2'>
+									<Skeleton className='h-7 w-48' />
+									<Skeleton className='h-4 w-32' />
+								</div>
+							</div>
+							<div className='flex items-center gap-3'>
+								<Skeleton className='h-10 w-24 rounded-lg' />
+								<Skeleton className='h-10 w-24 rounded-lg' />
+							</div>
+						</div>
 					</div>
-					<div className='flex items-center gap-2'>
-						<Skeleton className='h-9 w-24' />
-						<Skeleton className='h-9 w-24' />
-					</div>
-				</div>
 
-				<Card className='shadow-lg'>
-					<CardContent className='p-6'>
-						<div className='space-y-3'>
-							{Array.from({ length: 3 }).map((_, rowIndex) => (
-								<div key={rowIndex} className='flex gap-4 items-center py-2'>
-									{Array.from({ length: 4 }).map((_, colIndex) => (
-										<Skeleton key={colIndex} className='h-8 w-24' />
+					{/* Mode Toggle Skeleton */}
+					<div className='mb-6 flex justify-center'>
+						<Skeleton className='h-11 w-64 rounded-xl' />
+					</div>
+
+					{/* Content Skeleton */}
+					<Card className='bg-card border-border shadow-lg overflow-hidden'>
+						<CardContent className='p-6 sm:p-8'>
+							<div className='space-y-6'>
+								{/* Table Header */}
+								<div className='flex items-center gap-4 pb-4 border-b border-border'>
+									{Array.from({ length: 5 }).map((_, colIndex) => (
+										<Skeleton key={colIndex} className='h-5 w-24' />
 									))}
 								</div>
-							))}
-						</div>
-					</CardContent>
-				</Card>
+								{/* Table Rows */}
+								{Array.from({ length: 8 }).map((_, rowIndex) => (
+									<div key={rowIndex} className='flex items-center gap-4 py-3'>
+										{Array.from({ length: 5 }).map((_, colIndex) => (
+											<Skeleton key={colIndex} className='h-9 w-24 rounded-md' />
+										))}
+									</div>
+								))}
+							</div>
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 		);
 	}
@@ -877,12 +942,36 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 	// Access check
 	if (!tablePermissions.canReadTable()) {
 		return (
-			<div className='space-y-6'>
-				<div className='text-center py-12'>
-					<div className='text-muted-foreground'>
-						<p className='text-lg font-medium mb-2'>Access Denied</p>
-						<p className='text-sm'>You don't have permission to view this table.</p>
-					</div>
+			<div className='min-h-screen bg-background flex items-center justify-center'>
+				<div className='max-w-md w-full mx-4'>
+					<Card className='bg-card border-border shadow-xl'>
+						<CardContent className='p-8 sm:p-12 text-center'>
+							<div className='w-20 h-20 bg-gradient-to-br from-destructive/10 to-destructive/5 rounded-3xl flex items-center justify-center mx-auto mb-6'>
+								<svg
+									className='w-10 h-10 text-destructive'
+									fill='none'
+									viewBox='0 0 24 24'
+									stroke='currentColor'>
+									<path
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										strokeWidth={2}
+										d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+									/>
+								</svg>
+							</div>
+							<h2 className='text-2xl font-bold text-foreground mb-3'>Access Denied</h2>
+							<p className='text-base text-muted-foreground mb-8'>
+								You don't have permission to view this table. Please contact your administrator to request access.
+							</p>
+							<Button
+								variant='outline'
+								onClick={() => window.history.back()}
+								className='w-full sm:w-auto'>
+								Go Back
+							</Button>
+						</CardContent>
+					</Card>
 				</div>
 			</div>
 		);
@@ -891,7 +980,7 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 	if (!table || !columns || !token || !user) return null;
 
 	return (
-		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative'>
+		<div className='min-h-screen bg-background relative'>
 			{/* Hidden file input for import */}
 			<input
 				id='import-data-file-input'
@@ -899,6 +988,7 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				accept='.csv'
 				onChange={handleFileSelect}
 				className='hidden'
+				aria-label='Import CSV file'
 			/>
 
 			{/* Header */}
@@ -919,84 +1009,88 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				canEdit={tablePermissions.tablePermissions.canEdit}
 			/>
 
-			{/* Mode Content */}
-			<AnimatePresence mode='wait'>
-				{mode === "schema" ? (
-					<motion.div
-						key='schema'
-						initial={{ opacity: 0, x: -20 }}
-						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: 20 }}
-						transition={{ duration: 0.2 }}>
-				<SchemaMode
-					table={table}
-					columns={columns}
-					selectedColumn={selectedColumn}
-					onSelectColumn={setSelectedColumn}
-					onAddColumn={handleAddColumn}
-					onUpdateColumn={handleUpdateColumn}
-					onDeleteColumn={handleDeleteColumn}
-					onDuplicateColumn={handleDuplicateColumn}
-					onReorderColumns={handleReorderColumns}
-					tables={tables || []}
-					canEdit={tablePermissions.canEditTable()}
-					isSubmitting={isAddingColumn || isUpdatingColumn}
-				/>
-					</motion.div>
-				) : (
-					<motion.div
-						key='data'
-						initial={{ opacity: 0, x: 20 }}
-						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.2 }}>
-						<DataMode
-							table={table}
-							columns={columns}
-							rows={paginatedRows || []}
-							pendingNewRows={pendingNewRows || []}
-							loading={rowsLoading}
-							pagination={pagination}
-							filters={filters}
-							globalSearch={globalSearch}
-							sortColumn={sortColumn}
-							sortDirection={sortDirection}
-							activeFiltersCount={activeFiltersCount}
-							searchQuery={searchQuery}
-							editingCell={editingCell}
-							onEditCell={handleEditCell}
-							onSaveCell={handleSaveCellWrapper}
-							onCancelEdit={handleCancelEdit}
-							hasPendingChange={hasPendingChange}
-							getPendingValue={getPendingValue}
-							onDeleteRow={handleDeleteRow}
-							onDeleteMultipleRows={handleDeleteMultipleRows}
-							onAddRow={(rowData) => {
-								addNewRow(rowData);
-								showAlert("Row added to batch - will be saved when you click Save Changes", "info");
-							}}
-							onSearch={handleSearch}
-							onSort={handleSort}
-							onApplyFilters={applyFilters}
-							onClearFilters={clearFilters}
-							onExport={handleExportData}
-							onImport={handleImportData}
-							onFileSelect={handleFileSelect}
-							importFile={importFile}
-							isExporting={isExporting}
-							isImporting={isImporting}
-							onPageChange={(page) => fetchRows(page, pagination?.pageSize || 25)}
-							onPageSizeChange={(pageSize) => fetchRows(1, pageSize)}
-							canEdit={tablePermissions.canEditTable()}
-							canDelete={tablePermissions.canDeleteTable()}
-							canRead={tablePermissions.canReadTable()}
-							tables={tables || []}
-							onRefreshReferenceData={() => {}}
-							isSavingNewRow={isSaving}
-						/>
-					</motion.div>
-				)}
-			</AnimatePresence>
+			{/* Mode Content Container */}
+			<div className='relative'>
+				<AnimatePresence mode='wait'>
+					{mode === "schema" ? (
+						<motion.div
+							key='schema'
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -10 }}
+							transition={{ duration: 0.3, ease: "easeInOut" }}
+							className='will-change-transform'>
+							<SchemaMode
+								table={table}
+								columns={columns}
+								selectedColumn={selectedColumn}
+								onSelectColumn={setSelectedColumn}
+								onAddColumn={handleAddColumn}
+								onUpdateColumn={handleUpdateColumn}
+								onDeleteColumn={handleDeleteColumn}
+								onDuplicateColumn={handleDuplicateColumn}
+								onReorderColumns={handleReorderColumns}
+								tables={tables || []}
+								canEdit={tablePermissions.canEditTable()}
+								isSubmitting={isAddingColumn || isUpdatingColumn}
+							/>
+						</motion.div>
+					) : (
+						<motion.div
+							key='data'
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -10 }}
+							transition={{ duration: 0.3, ease: "easeInOut" }}
+							className='will-change-transform'>
+							<DataMode
+								table={table}
+								columns={columns}
+								rows={paginatedRows || []}
+								pendingNewRows={pendingNewRows || []}
+								loading={rowsLoading}
+								pagination={pagination}
+								filters={filters}
+								globalSearch={globalSearch}
+								sortColumn={sortColumn}
+								sortDirection={sortDirection}
+								activeFiltersCount={activeFiltersCount}
+								searchQuery={searchQuery}
+								editingCell={editingCell}
+								onEditCell={handleEditCell}
+								onSaveCell={handleSaveCellWrapper}
+								onCancelEdit={handleCancelEdit}
+								hasPendingChange={hasPendingChange}
+								getPendingValue={getPendingValue}
+								onDeleteRow={handleDeleteRow}
+								onDeleteMultipleRows={handleDeleteMultipleRows}
+								onAddRow={(rowData) => {
+									addNewRow(rowData);
+									showAlert("Row added to batch - will be saved when you click Save Changes", "info");
+								}}
+								onSearch={handleSearch}
+								onSort={handleSort}
+								onApplyFilters={applyFilters}
+								onClearFilters={clearFilters}
+								onExport={handleExportData}
+								onImport={handleImportData}
+								onFileSelect={handleFileSelect}
+								importFile={importFile}
+								isExporting={isExporting}
+								isImporting={isImporting}
+								onPageChange={(page) => fetchRows(page, pagination?.pageSize || 25)}
+								onPageSizeChange={(pageSize) => fetchRows(1, pageSize)}
+								canEdit={tablePermissions.canEditTable()}
+								canDelete={tablePermissions.canDeleteTable()}
+								canRead={tablePermissions.canReadTable()}
+								tables={tables || []}
+								onRefreshReferenceData={() => {}}
+								isSavingNewRow={isSaving}
+							/>
+						</motion.div>
+					)}
+				</AnimatePresence>
+			</div>
 
 			{/* Unsaved Changes Footer */}
 			<UnsavedChangesFooter

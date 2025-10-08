@@ -15,22 +15,18 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	User,
 	Shield,
 	CreditCard,
-	Database,
-	Users,
-	Table,
-	BarChart3,
 	Settings,
-	Puzzle,
 	FileText,
+	Sparkles,
 } from "lucide-react";
 import BasicSettings from "@/components/settings/user/BasicSettings";
 import PasswordSetter from "@/components/settings/user/PasswordSetter";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
-import PlanLimitsDisplay from "@/components/PlanLimitsDisplay";
 import GDPRRights from "@/components/settings/user/GDPRRights";
 import { UserAvatar } from "@/components/users/UserAvatar";
 import { ANAFIntegrationToggle } from "@/components/anaf/ANAFIntegrationToggle";
@@ -65,7 +61,6 @@ function Page() {
 	useEffect(() => {
 		const hasSeenTour = tourUtils.isTourSeen("settings");
 		if (!hasSeenTour) {
-			// Start tour after a short delay to ensure elements are rendered
 			const timer = setTimeout(() => {
 				startTour();
 			}, 1000);
@@ -74,17 +69,12 @@ function Page() {
 		}
 	}, []);
 
-	useEffect(() => {
-		// User changed
-	}, [user]);
-
 	// ANAF Integration handlers
 	const handleAnafToggle = async (enabled: boolean) => {
 		if (!token || !tenant) return;
 		
 		setAnafLoading(true);
 		try {
-			// Update ANAF integration status
 			const response = await fetch(`/api/tenants/${tenant.id}/integrations/anaf`, {
 				method: 'PUT',
 				headers: {
@@ -104,7 +94,6 @@ function Page() {
 				showAlert(t("settings.anaf.integration.error"), "error");
 			}
 		} catch (error) {
-			console.error('Error toggling ANAF integration:', error);
 			showAlert(t("settings.anaf.integration.error"), "error");
 		} finally {
 			setAnafLoading(false);
@@ -116,7 +105,6 @@ function Page() {
 		
 		setAnafLoading(true);
 		try {
-			// Redirect to ANAF OAuth
 			const response = await fetch(`/api/anaf/auth-url`, {
 				method: 'POST',
 				headers: {
@@ -136,7 +124,6 @@ function Page() {
 				showAlert(t("settings.anaf.integration.auth_error"), "error");
 			}
 		} catch (error) {
-			console.error('Error authenticating with ANAF:', error);
 			showAlert(t("settings.anaf.integration.auth_error"), "error");
 		} finally {
 			setAnafLoading(false);
@@ -163,7 +150,6 @@ function Page() {
 				showAlert(t("settings.anaf.integration.disconnect_error"), "error");
 			}
 		} catch (error) {
-			console.error('Error disconnecting ANAF:', error);
 			showAlert(t("settings.anaf.integration.disconnect_error"), "error");
 		} finally {
 			setAnafLoading(false);
@@ -188,7 +174,7 @@ function Page() {
 					setAnafAuthenticated(data.authenticated || false);
 				}
 			} catch (error) {
-				console.error('Error checking ANAF status:', error);
+				// Silent fail for status check
 			}
 		};
 
@@ -198,13 +184,28 @@ function Page() {
 	const currentPlan = subscription?.subscriptionPlan || "Free";
 	const isSubscribed = subscription?.subscriptionStatus === "active";
 
-	// Show loading state if session is not available, user data is not available, or still loading
+	// Loading state
 	if (loading || !session?.user || !user) {
 		return (
-			<div className='h-full bg-background flex items-center justify-center'>
-				<div className='text-center'>
-					<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4'></div>
-					<p className='text-muted-foreground'>{t("settings.loading")}</p>
+			<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-6'>
+				<div className='max-w-7xl mx-auto space-y-6'>
+					<div className="flex items-center justify-between">
+						<div className="space-y-2">
+							<Skeleton className="h-8 w-48" />
+							<Skeleton className="h-4 w-72" />
+						</div>
+						<Skeleton className="h-9 w-24" />
+					</div>
+
+					<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+						<div className="lg:col-span-1">
+							<Skeleton className="h-96 rounded-xl" />
+						</div>
+						<div className="lg:col-span-3 space-y-6">
+							<Skeleton className="h-64 rounded-xl" />
+							<Skeleton className="h-64 rounded-xl" />
+						</div>
+					</div>
 				</div>
 			</div>
 		);
@@ -219,151 +220,152 @@ function Page() {
 			onTourSkip={() => {
 				tourUtils.markTourSeen("settings");
 			}}>
-			<div className='h-full bg-background'>
+			<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
 				{/* Header */}
-				<div className='border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm'>
-					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-6 gap-4'>
-						<div>
-							<h1 className='text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent'>
-								{t("settings.title")}
-							</h1>
-							<p className='text-sm text-muted-foreground mt-1'>
-								{t("settings.subtitle")}
-							</p>
+				<div className='border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40'>
+					<div className='max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-5 gap-4'>
+						<div className="flex items-center gap-4">
+							<div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+								<Settings className="h-6 w-6 text-primary" />
+							</div>
+							<div>
+								<h1 className='text-2xl font-bold text-foreground tracking-tight'>
+									{t("settings.title")}
+								</h1>
+								<p className='text-sm text-muted-foreground'>
+									{t("settings.subtitle")}
+								</p>
+							</div>
 						</div>
-						<div className='flex items-center space-x-3'>
+						<div className='flex items-center gap-3'>
 							<Badge
 								variant={isSubscribed ? "default" : "secondary"}
-								className='text-sm px-3 py-1.5 rounded-full shadow-sm'>
+								className='font-semibold px-3 py-1.5'>
 								{currentPlan} Plan
 							</Badge>
-							<div className='w-2 h-2 rounded-full bg-primary animate-pulse shadow-sm'></div>
 							<TourResetButton />
 						</div>
 					</div>
 				</div>
 
 				{/* Main Content */}
-				<div className='p-6 max-w-7xl mx-auto'>
-					<div className='grid grid-cols-1 lg:grid-cols-4 gap-8'>
-						{/* Sidebar */}
+				<div className='max-w-7xl mx-auto p-4 sm:p-6'>
+					<div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
+						{/* Sidebar Navigation */}
 						<div className='lg:col-span-1'>
-							<Card className='sticky top-8 border-border/20  backdrop-blur-sm settings-navigation shadow-xl border-0 bg-card'>
-								<CardHeader className='pb-4'>
-									<CardTitle className='text-lg flex items-center gap-2 text-foreground'>
-										<div className='p-2 bg-primary/10 rounded-xl'>
-											<Settings className='w-5 h-5 text-primary' />
-										</div>
-										{t("settings.navigation.title")}
-									</CardTitle>
-								</CardHeader>
-								<CardContent className='p-0'>
-									<PremiumTabNavigation
-										tabs={[
-											{
-												id: "profile",
-												label: t("settings.tabs.profile"),
-												icon: User,
-												description: t("settings.profile.subtitle"),
-											},
-											{
-												id: "security",
-												label: t("settings.tabs.security"),
-												icon: Shield,
-												description: t("settings.security.subtitle"),
-											},
-											{
-												id: "subscription",
-												label: t("settings.tabs.subscription"),
-												icon: CreditCard,
-												description: t("settings.subscription.adminSubtitle"),
-											},
-											{
-												id: "privacy",
-												label: t("settings.tabs.privacy"),
-												icon: Shield,
-												description: t("settings.privacy.subtitle"),
-											},
-											{
-												id: "anaf",
-												label: t("settings.tabs.anaf"),
-												icon: FileText,
-												description: t("settings.anaf.subtitle"),
-											},
-										]}
-										activeTab={activeTab}
-										onTabChange={setActiveTab}
-										variant='sidebar'
-										className='px-4 pb-4'
-									/>
-								</CardContent>
-							</Card>
+							<div className='lg:sticky lg:top-24'>
+								<Card className='bg-card border-border shadow-sm settings-navigation'>
+									<CardHeader className='pb-3'>
+										<CardTitle className='text-base font-bold text-foreground'>
+											Navigation
+										</CardTitle>
+									</CardHeader>
+									<CardContent className='p-0'>
+										<PremiumTabNavigation
+											tabs={[
+												{
+													id: "profile",
+													label: t("settings.tabs.profile"),
+													icon: User,
+													description: t("settings.profile.subtitle"),
+												},
+												{
+													id: "security",
+													label: t("settings.tabs.security"),
+													icon: Shield,
+													description: t("settings.security.subtitle"),
+												},
+												{
+													id: "subscription",
+													label: t("settings.tabs.subscription"),
+													icon: CreditCard,
+													description: t("settings.subscription.adminSubtitle"),
+												},
+												{
+													id: "privacy",
+													label: t("settings.tabs.privacy"),
+													icon: Shield,
+													description: t("settings.privacy.subtitle"),
+												},
+												{
+													id: "anaf",
+													label: t("settings.tabs.anaf"),
+													icon: FileText,
+													description: t("settings.anaf.subtitle"),
+												},
+											]}
+											activeTab={activeTab}
+											onTabChange={setActiveTab}
+											variant='sidebar'
+											className='px-3 pb-3'
+										/>
+									</CardContent>
+								</Card>
+							</div>
 						</div>
 
-						{/* Main Content Area */}
-						<div className='lg:col-span-3 space-y-8'>
+						{/* Content Area */}
+						<div className='lg:col-span-3 space-y-6'>
 							{/* Profile Tab */}
 							<PremiumTabContentWrapper isActive={activeTab === "profile"}>
 								<div className='space-y-6'>
 									<div>
-										<h2 className='text-2xl font-semibold text-foreground mb-2'>
+										<h2 className='text-xl font-bold text-foreground mb-1'>
 											{t("settings.profile.title")}
 										</h2>
-										<p className='text-muted-foreground'>
+										<p className='text-sm text-muted-foreground'>
 											{t("settings.profile.subtitle")}
 										</p>
 									</div>
 
 									<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-										<Card className='border-border/20  backdrop-blur-sm profile-settings shadow-lg border-0 bg-card'>
-											<CardHeader>
-												<CardTitle className='flex items-center gap-2'>
-													<div className='p-2 bg-primary/10 rounded-xl'>
-														<User className='w-5 h-5 text-primary' />
+										<Card className='bg-card border-border shadow-sm profile-settings'>
+											<CardHeader className="border-b border-border/50 pb-4">
+												<CardTitle className='text-base font-bold flex items-center gap-2'>
+													<div className='p-1.5 rounded-lg bg-primary/10'>
+														<User className='w-4 h-4 text-primary' />
 													</div>
 													{t("settings.profile.personalInformation.title")}
 												</CardTitle>
-												<CardDescription>
-													{t(
-														"settings.profile.personalInformation.description",
-													)}
+												<CardDescription className="text-xs">
+													{t("settings.profile.personalInformation.description")}
 												</CardDescription>
 											</CardHeader>
-											<CardContent>
+											<CardContent className="pt-6">
 												<BasicSettings user={user} />
 											</CardContent>
 										</Card>
 
-										<Card className='border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-											<CardHeader>
-												<CardTitle className='flex items-center gap-2'>
-													<div className='p-2 bg-primary/10 rounded-xl'>
-														<User className='w-5 h-5 text-primary' />
+										<Card className='bg-card border-border shadow-sm'>
+											<CardHeader className="border-b border-border/50 pb-4">
+												<CardTitle className='text-base font-bold flex items-center gap-2'>
+													<div className='p-1.5 rounded-lg bg-primary/10'>
+														<User className='w-4 h-4 text-primary' />
 													</div>
 													{t("settings.profile.profilePicture.title")}
 												</CardTitle>
-												<CardDescription>
+												<CardDescription className="text-xs">
 													{t("settings.profile.profilePicture.description")}
 												</CardDescription>
 											</CardHeader>
-											<CardContent>
-												<div className='flex flex-col items-center space-y-4 py-6'>
+											<CardContent className="pt-6">
+												<div className='flex flex-col items-center space-y-4 py-4'>
 													<UserAvatar
 														firstName={user.firstName}
 														lastName={user.lastName}
 														size='xl'
-														className='ring-4 ring-primary/10 shadow-lg'
+														className='ring-4 ring-primary/10 shadow-sm'
 													/>
 													<div className='text-center'>
-														<p className='text-lg font-semibold text-foreground'>
+														<p className='text-base font-semibold text-foreground'>
 															{user.firstName} {user.lastName}
 														</p>
-														<p className='text-sm text-muted-foreground mt-1'>
+														<p className='text-sm text-muted-foreground mt-0.5'>
 															{user.email}
 														</p>
 													</div>
-													<div className='bg-muted/50 rounded-lg p-4 border border-dashed border-border/50 max-w-sm'>
-														<p className='text-xs text-muted-foreground text-center'>
+													<div className='bg-muted/30 rounded-lg p-3 border border-border/50 max-w-sm'>
+														<p className='text-xs text-muted-foreground text-center leading-relaxed'>
 															{t("settings.profile.avatarInfo") || "Your avatar is automatically generated based on your name"}
 														</p>
 													</div>
@@ -378,29 +380,27 @@ function Page() {
 							<PremiumTabContentWrapper isActive={activeTab === "security"}>
 								<div className='space-y-6'>
 									<div>
-										<h2 className='text-2xl font-semibold text-foreground mb-2'>
+										<h2 className='text-xl font-bold text-foreground mb-1'>
 											{t("settings.security.title")}
 										</h2>
-										<p className='text-muted-foreground'>
+										<p className='text-sm text-muted-foreground'>
 											{t("settings.security.subtitle")}
 										</p>
 									</div>
 
-									<Card className='border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-										<CardHeader>
-											<CardTitle className='flex items-center gap-2'>
-												<div className='p-2 bg-primary/10 rounded-xl'>
-													<Shield className='w-5 h-5 text-primary' />
+									<Card className='bg-card border-border shadow-sm'>
+										<CardHeader className="border-b border-border/50 pb-4">
+											<CardTitle className='text-base font-bold flex items-center gap-2'>
+												<div className='p-1.5 rounded-lg bg-primary/10'>
+													<Shield className='w-4 h-4 text-primary' />
 												</div>
 												{t("settings.security.passwordAuthentication.title")}
 											</CardTitle>
-											<CardDescription>
-												{t(
-													"settings.security.passwordAuthentication.description",
-												)}
+											<CardDescription className="text-xs">
+												{t("settings.security.passwordAuthentication.description")}
 											</CardDescription>
 										</CardHeader>
-										<CardContent>
+										<CardContent className="pt-6">
 											<PasswordSetter user={user} />
 										</CardContent>
 									</Card>
@@ -411,10 +411,10 @@ function Page() {
 							<PremiumTabContentWrapper isActive={activeTab === "subscription"}>
 								<div className='space-y-6'>
 									<div>
-										<h2 className='text-2xl font-semibold text-foreground mb-2'>
+										<h2 className='text-xl font-bold text-foreground mb-1'>
 											{t("settings.subscription.title")}
 										</h2>
-										<p className='text-muted-foreground'>
+										<p className='text-sm text-muted-foreground'>
 											{user?.role === "ADMIN"
 												? t("settings.subscription.adminSubtitle")
 												: t("settings.subscription.userSubtitle")}
@@ -433,47 +433,37 @@ function Page() {
 												}
 											}
 											onRefresh={() => {
-												// Refresh subscription data
 												window.location.reload();
 											}}
 											isLoading={subscriptionLoading}
 										/>
 									) : (
-										<Card className='border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-											<CardHeader>
-												<CardTitle className='flex items-center gap-2'>
-													<div className='p-2 bg-primary/10 rounded-xl'>
-														<CreditCard className='w-5 h-5 text-primary' />
+										<Card className='bg-card border-border shadow-sm'>
+											<CardHeader className="border-b border-border/50 pb-4">
+												<CardTitle className='text-base font-bold flex items-center gap-2'>
+													<div className='p-1.5 rounded-lg bg-primary/10'>
+														<CreditCard className='w-4 h-4 text-primary' />
 													</div>
 													{t("settings.subscription.information.title")}
 												</CardTitle>
-												<CardDescription>
+												<CardDescription className="text-xs">
 													{t("settings.subscription.information.description")}
 												</CardDescription>
 											</CardHeader>
-											<CardContent>
+											<CardContent className="pt-6">
 												<div className='text-center py-8'>
-													<div className='w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20'>
+													<div className='inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-4'>
 														<CreditCard className='w-8 h-8 text-primary' />
 													</div>
-													<h3 className='text-lg font-semibold text-foreground mb-2'>
-														{subscription?.subscriptionPlan ||
-															t(
-																"settings.subscription.information.noPlan",
-															)}{" "}
-														Plan
+													<h3 className='text-lg font-bold text-foreground mb-2'>
+														{subscription?.subscriptionPlan || t("settings.subscription.information.noPlan")} Plan
 													</h3>
-													<p className='text-muted-foreground mb-4'>
+													<p className='text-sm text-muted-foreground mb-6'>
 														{t("settings.subscription.information.status")}{" "}
-														{subscription?.subscriptionStatus ||
-															t(
-																"settings.subscription.information.noSubscription",
-															)}
+														{subscription?.subscriptionStatus || t("settings.subscription.information.noSubscription")}
 													</p>
-													<div className='text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg border border-dashed'>
-														{t(
-															"settings.subscription.information.adminOnlyMessage",
-														)}
+													<div className='text-xs text-muted-foreground p-4 bg-muted/30 rounded-lg border border-border/50 max-w-md mx-auto'>
+														{t("settings.subscription.information.adminOnlyMessage")}
 													</div>
 												</div>
 											</CardContent>
@@ -482,32 +472,31 @@ function Page() {
 								</div>
 							</PremiumTabContentWrapper>
 
-
 							{/* Privacy Tab */}
 							<PremiumTabContentWrapper isActive={activeTab === "privacy"}>
 								<div className='space-y-6'>
 									<div>
-										<h2 className='text-2xl font-semibold text-foreground mb-2'>
+										<h2 className='text-xl font-bold text-foreground mb-1'>
 											{t("settings.privacy.title")}
 										</h2>
-										<p className='text-muted-foreground'>
+										<p className='text-sm text-muted-foreground'>
 											{t("settings.privacy.subtitle")}
 										</p>
 									</div>
 
-									<Card className=' border-border/20  backdrop-blur-sm shadow-lg border-0 bg-card'>
-										<CardHeader>
-											<CardTitle className='flex items-center gap-2'>
-												<div className='p-2 bg-primary/10 rounded-xl'>
-													<Shield className='w-5 h-5 text-primary' />
+									<Card className='bg-card border-border shadow-sm'>
+										<CardHeader className="border-b border-border/50 pb-4">
+											<CardTitle className='text-base font-bold flex items-center gap-2'>
+												<div className='p-1.5 rounded-lg bg-primary/10'>
+													<Shield className='w-4 h-4 text-primary' />
 												</div>
 												{t("settings.privacy.gdprRights.title")}
 											</CardTitle>
-											<CardDescription>
+											<CardDescription className="text-xs">
 												{t("settings.privacy.gdprRights.description")}
 											</CardDescription>
 										</CardHeader>
-										<CardContent>
+										<CardContent className="pt-6">
 											<GDPRRights />
 										</CardContent>
 									</Card>
@@ -518,27 +507,27 @@ function Page() {
 							<PremiumTabContentWrapper isActive={activeTab === "anaf"}>
 								<div className='space-y-6'>
 									<div>
-										<h2 className='text-2xl font-semibold text-foreground mb-2'>
+										<h2 className='text-xl font-bold text-foreground mb-1'>
 											{t("settings.anaf.title")}
 										</h2>
-										<p className='text-muted-foreground'>
+										<p className='text-sm text-muted-foreground'>
 											{t("settings.anaf.subtitle")}
 										</p>
 									</div>
 
-									<Card className='border-border/20 backdrop-blur-sm shadow-lg border-0 bg-card'>
-										<CardHeader>
-											<CardTitle className='flex items-center gap-2'>
-												<div className='p-2 bg-primary/10 rounded-xl'>
-													<FileText className='w-5 h-5 text-primary' />
+									<Card className='bg-card border-border shadow-sm'>
+										<CardHeader className="border-b border-border/50 pb-4">
+											<CardTitle className='text-base font-bold flex items-center gap-2'>
+												<div className='p-1.5 rounded-lg bg-primary/10'>
+													<FileText className='w-4 h-4 text-primary' />
 												</div>
 												{t("settings.anaf.integration.title")}
 											</CardTitle>
-											<CardDescription>
+											<CardDescription className="text-xs">
 												{t("settings.anaf.integration.description")}
 											</CardDescription>
 										</CardHeader>
-										<CardContent>
+										<CardContent className="pt-6">
 											<ANAFIntegrationToggle
 												onToggle={handleAnafToggle}
 												isEnabled={anafEnabled}

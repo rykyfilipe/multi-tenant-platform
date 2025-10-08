@@ -12,7 +12,7 @@ import { UsersLoadingState } from "@/components/ui/loading-states";
 import TourProv from "@/contexts/TourProvider";
 import { useTour } from "@reactour/tour";
 import { tourUtils } from "@/lib/tour-config";
-import { Shield, Users, Plus, Search, Mail, RefreshCw, UserPlus } from "lucide-react";
+import { Shield, Users, Plus, Search, Mail, RefreshCw, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -265,129 +265,208 @@ const UsersPage = () => {
 			onTourSkip={() => {
 				tourUtils.markTourSeen("users");
 			}}>
-			<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20'>
-				<div className='max-w-[1600px] mx-auto p-6 space-y-8'>
-					{/* Header */}
-					<div className='flex flex-col sm:flex-row sm:items-start justify-between gap-6'>
-						<div className='flex items-start gap-4'>
-							<div className='relative'>
-								<div className='w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20'>
-									<Users className='w-7 h-7 text-primary' />
+			<div className='min-h-screen bg-background'>
+				<div className='max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12'>
+					
+					{/* Modern Header */}
+					<div className='mb-8 sm:mb-10'>
+						<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
+							<div className='flex items-start gap-4 sm:gap-5'>
+								<div className='relative flex-shrink-0'>
+									<div className='w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl sm:rounded-3xl flex items-center justify-center border-2 border-border shadow-sm'>
+										<Users className='w-8 h-8 sm:w-10 sm:h-10 text-primary' />
+									</div>
+									<div className='absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center border-3 border-background shadow-lg'>
+										<div className='w-2 h-2 bg-white rounded-full animate-pulse' />
+									</div>
 								</div>
-								<div className='absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-background'>
-									<div className='w-2 h-2 bg-white rounded-full' />
-								</div>
-							</div>
-							<div className='space-y-1'>
-								<h1 className='text-3xl font-bold text-foreground tracking-tight'>
-									Team Management
-								</h1>
-								<p className='text-muted-foreground text-base'>
-									Manage your team members, roles, and permissions
-								</p>
-								<div className='flex items-center gap-4 mt-2'>
-									<Badge variant="outline" className='bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-semibold'>
-										<div className='w-2 h-2 bg-green-500 rounded-full mr-2' />
-										{users.length} Active {users.length === 1 ? 'Member' : 'Members'}
-									</Badge>
-									{invitations.length > 0 && (
-										<Badge variant="outline" className='bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 font-semibold'>
-											<div className='w-2 h-2 bg-amber-500 rounded-full mr-2' />
-											{invitations.length} Pending {invitations.length === 1 ? 'Invite' : 'Invites'}
-										</Badge>
-									)}
+								<div className='space-y-2'>
+									<h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground tracking-tight'>
+										Team Management
+									</h1>
+									<p className='text-sm sm:text-base text-muted-foreground max-w-2xl'>
+										Manage your team members, assign roles, and control permissions across your organization
+									</p>
 								</div>
 							</div>
-						</div>
 
-						{/* Action Buttons */}
-						<div className='flex items-center gap-3'>
-							<Button
-								onClick={refreshData}
-								variant="outline"
-								size="default"
-								disabled={isRefreshing}
-								className='gap-2'
-							>
-								<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-								<span className="hidden sm:inline">Refresh</span>
-							</Button>
-							{currentUser?.role === "ADMIN" && (
+							{/* Action Buttons */}
+							<div className='flex items-center gap-3 flex-shrink-0'>
 								<Button
-									onClick={() => setShowInviteForm(!showInviteForm)}
-									className='gap-2 shadow-sm'>
-									{showInviteForm ? (
-										<>
-											<span>Cancel</span>
-										</>
-									) : (
-										<>
-											<UserPlus className='w-4 h-4' />
-											<span>Invite Member</span>
-										</>
-									)}
+									onClick={refreshData}
+									variant="outline"
+									size="default"
+									disabled={isRefreshing}
+									className='gap-2 h-10 px-4 border-border bg-card hover:bg-muted/50 transition-all duration-200'
+								>
+									<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+									<span className="hidden sm:inline">Refresh</span>
 								</Button>
-							)}
+								{currentUser?.role === "ADMIN" && (
+									<Button
+										onClick={() => setShowInviteForm(!showInviteForm)}
+										className={`gap-2 h-10 px-5 transition-all duration-200 ${
+											showInviteForm 
+												? 'bg-destructive hover:bg-destructive/90' 
+												: 'bg-primary hover:bg-primary/90 shadow-sm'
+										}`}>
+										{showInviteForm ? (
+											<>
+												<X className='w-4 h-4' />
+												<span className="hidden sm:inline">Cancel</span>
+											</>
+										) : (
+											<>
+												<UserPlus className='w-4 h-4' />
+												<span>Invite Member</span>
+											</>
+										)}
+									</Button>
+								)}
+							</div>
 						</div>
 					</div>
 
-					{/* Search and Stats */}
-					<div className='flex flex-col lg:flex-row lg:items-center gap-6'>
-						<div className='flex-1 max-w-md'>
-							<div className='relative group'>
-								<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors' />
-								<Input
-									placeholder='Search by name or email...'
-									value={searchTerm}
-									onChange={(e) => setSearchTerm(e.target.value)}
-									className='pl-10 h-11 bg-card border-border focus:border-primary/50 rounded-lg shadow-sm'
-								/>
-							</div>
-						</div>
-						
-						{/* Role Distribution Stats */}
-						<div className='flex items-center gap-6 flex-wrap'>
-							<div className='text-center'>
-								<div className='text-2xl font-bold text-foreground'>{users.length}</div>
-								<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Total</div>
-							</div>
-							{adminCount > 0 && (
-								<>
-									<div className='w-px h-8 bg-border' />
-									<div className='text-center'>
-										<div className='text-2xl font-bold text-primary'>{adminCount}</div>
-										<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Admins</div>
+					{/* Stats Dashboard */}
+					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-8'>
+						{/* Total Members */}
+						<Card className='bg-card border-border hover:border-primary/30 transition-all duration-300 group'>
+							<CardContent className='p-5 sm:p-6'>
+								<div className='flex items-center justify-between mb-3'>
+									<div className='w-12 h-12 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+										<Users className='w-6 h-6 text-primary' />
 									</div>
-								</>
-							)}
-							{editorCount > 0 && (
-								<>
-									<div className='w-px h-8 bg-border' />
-									<div className='text-center'>
-										<div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>{editorCount}</div>
-										<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Editors</div>
+									<Badge variant="outline" className='bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-medium px-2 py-0.5 text-xs'>
+										Active
+									</Badge>
+								</div>
+								<div className='space-y-1'>
+									<p className='text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider'>
+										Total Members
+									</p>
+									<div className='flex items-baseline gap-2'>
+										<p className='text-3xl sm:text-4xl font-bold text-foreground'>
+											{users.length}
+										</p>
+										{invitations.length > 0 && (
+											<span className='text-xs text-muted-foreground'>
+												+{invitations.length} pending
+											</span>
+										)}
 									</div>
-								</>
-							)}
-							{viewerCount > 0 && (
-								<>
-									<div className='w-px h-8 bg-border' />
-									<div className='text-center'>
-										<div className='text-2xl font-bold text-green-600 dark:text-green-400'>{viewerCount}</div>
-										<div className='text-xs text-muted-foreground uppercase tracking-wide font-medium'>Viewers</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Admins */}
+						<Card className='bg-card border-border hover:border-purple-500/30 transition-all duration-300 group'>
+							<CardContent className='p-5 sm:p-6'>
+								<div className='flex items-center justify-between mb-3'>
+									<div className='w-12 h-12 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+										<Shield className='w-6 h-6 text-purple-600 dark:text-purple-400' />
 									</div>
-								</>
+									<div className='w-2 h-2 bg-purple-500 rounded-full' />
+								</div>
+								<div className='space-y-1'>
+									<p className='text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider'>
+										Administrators
+									</p>
+									<div className='flex items-baseline gap-2'>
+										<p className='text-3xl sm:text-4xl font-bold text-foreground'>
+											{adminCount}
+										</p>
+										{users.length > 0 && (
+											<span className='text-xs text-muted-foreground'>
+												{Math.round((adminCount / users.length) * 100)}%
+											</span>
+										)}
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Editors */}
+						<Card className='bg-card border-border hover:border-blue-500/30 transition-all duration-300 group'>
+							<CardContent className='p-5 sm:p-6'>
+								<div className='flex items-center justify-between mb-3'>
+									<div className='w-12 h-12 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+										<Mail className='w-6 h-6 text-blue-600 dark:text-blue-400' />
+									</div>
+									<div className='w-2 h-2 bg-blue-500 rounded-full' />
+								</div>
+								<div className='space-y-1'>
+									<p className='text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider'>
+										Editors
+									</p>
+									<div className='flex items-baseline gap-2'>
+										<p className='text-3xl sm:text-4xl font-bold text-foreground'>
+											{editorCount}
+										</p>
+										{users.length > 0 && (
+											<span className='text-xs text-muted-foreground'>
+												{Math.round((editorCount / users.length) * 100)}%
+											</span>
+										)}
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Viewers */}
+						<Card className='bg-card border-border hover:border-green-500/30 transition-all duration-300 group'>
+							<CardContent className='p-5 sm:p-6'>
+								<div className='flex items-center justify-between mb-3'>
+									<div className='w-12 h-12 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+										<Plus className='w-6 h-6 text-green-600 dark:text-green-400' />
+									</div>
+									<div className='w-2 h-2 bg-green-500 rounded-full' />
+								</div>
+								<div className='space-y-1'>
+									<p className='text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider'>
+										Viewers
+									</p>
+									<div className='flex items-baseline gap-2'>
+										<p className='text-3xl sm:text-4xl font-bold text-foreground'>
+											{viewerCount}
+										</p>
+										{users.length > 0 && (
+											<span className='text-xs text-muted-foreground'>
+												{Math.round((viewerCount / users.length) * 100)}%
+											</span>
+										)}
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+
+					{/* Search Bar */}
+					<div className='mb-6'>
+						<div className='relative max-w-md'>
+							<Search className='absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground transition-colors duration-200 peer-focus:text-primary' />
+							<Input
+								placeholder='Search members by name or email...'
+								value={searchTerm}
+								onChange={(e) => setSearchTerm(e.target.value)}
+								className='pl-12 h-12 bg-card border-border focus:border-primary/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 peer'
+							/>
+							{searchTerm && (
+								<button
+									onClick={() => setSearchTerm('')}
+									className='absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors'>
+									<X className='w-4 h-4' />
+								</button>
 							)}
 						</div>
 					</div>
 
 					{/* Invitation Creation Form - Only for Admins */}
 					{showInviteForm && tenant && currentUser?.role === "ADMIN" && (
-						<div className='invitation-creation-section'>
-							<Card className='bg-card border-border shadow-sm'>
-								<CardHeader className='border-b border-border/50 pb-4'>
+						<div className='invitation-creation-section mb-6 animate-in slide-in-from-top-4 duration-300'>
+							<Card className='bg-card border-border shadow-lg'>
+								<CardHeader className='border-b border-border/50 pb-5'>
 									<div className='flex items-center gap-3'>
-										<div className='w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center'>
+										<div className='w-11 h-11 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center'>
 											<UserPlus className='w-5 h-5 text-primary' />
 										</div>
 										<div>
@@ -410,19 +489,24 @@ const UsersPage = () => {
 					)}
 
 					{/* Users Table */}
-					<div className='users-table'>
-						<Card className='bg-card border-border shadow-sm'>
-							<CardHeader className='border-b border-border/50 pb-4'>
-								<div className='flex items-center justify-between'>
+					<div className='users-table mb-6'>
+						<Card className='bg-card border-border shadow-lg overflow-hidden'>
+							<CardHeader className='border-b border-border/50 pb-5 bg-muted/30'>
+								<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
 									<div>
-										<CardTitle className='text-lg font-bold text-foreground'>Team Members</CardTitle>
-										<p className='text-sm text-muted-foreground mt-0.5'>
+										<CardTitle className='text-lg font-bold text-foreground flex items-center gap-2'>
+											<Users className='w-5 h-5' />
+											Team Members
+										</CardTitle>
+										<p className='text-sm text-muted-foreground mt-1'>
 											Manage roles and permissions for your team
 										</p>
 									</div>
-									<Badge variant="secondary" className='font-semibold'>
-										{filteredUsers.length} {filteredUsers.length !== users.length && `of ${users.length}`}
-									</Badge>
+									{searchTerm && (
+										<Badge variant="secondary" className='font-semibold self-start sm:self-center'>
+											{filteredUsers.length} of {users.length} members
+										</Badge>
+									)}
 								</div>
 							</CardHeader>
 							<CardContent className='p-0'>
@@ -438,10 +522,10 @@ const UsersPage = () => {
 					{/* Invitations List - Only for Admins */}
 					{tenant && currentUser?.role === "ADMIN" && (
 						<div className='invitations-section'>
-							<Card className='bg-card border-border shadow-sm'>
-								<CardHeader className='border-b border-border/50 pb-4'>
+							<Card className='bg-card border-border shadow-lg overflow-hidden'>
+								<CardHeader className='border-b border-border/50 pb-5 bg-muted/30'>
 									<div className='flex items-center gap-3'>
-										<div className='w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center'>
+										<div className='w-11 h-11 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl flex items-center justify-center'>
 											<Mail className='w-5 h-5 text-amber-600 dark:text-amber-400' />
 										</div>
 										<div>

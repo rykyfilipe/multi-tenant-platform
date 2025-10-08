@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Database, 
   Users, 
@@ -19,10 +19,12 @@ import {
   BarChart3,
   RefreshCw,
   Download,
-  Settings,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart as RechartsPieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 interface AnalyticsSummary {
@@ -85,6 +87,7 @@ interface MetricCardProps {
     type: 'increase' | 'decrease';
   };
   size?: 'default' | 'large';
+  className?: string;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -95,85 +98,106 @@ const MetricCard: React.FC<MetricCardProps> = ({
   progress, 
   variant = 'default',
   trend,
-  size = 'default'
+  size = 'default',
+  className = ''
 }) => {
   const variantStyles = {
-    default: 'bg-card border-border',
-    primary: 'bg-card border-primary/20',
-    success: 'bg-card border-green-500/20',
-    warning: 'bg-card border-amber-500/20',
-    danger: 'bg-card border-destructive/20'
+    default: 'bg-card border-border hover:border-border',
+    primary: 'bg-card border-primary/20 hover:border-primary/30',
+    success: 'bg-card border-green-500/20 hover:border-green-500/30',
+    warning: 'bg-card border-amber-500/20 hover:border-amber-500/30',
+    danger: 'bg-card border-destructive/20 hover:border-destructive/30'
   };
 
-  const iconStyles = {
-    default: 'bg-muted text-muted-foreground',
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-green-500/10 text-green-600',
-    warning: 'bg-amber-500/10 text-amber-600',
-    danger: 'bg-destructive/10 text-destructive'
+  const iconBgStyles = {
+    default: 'bg-muted',
+    primary: 'bg-primary/10',
+    success: 'bg-green-500/10',
+    warning: 'bg-amber-500/10',
+    danger: 'bg-destructive/10'
   };
 
-  const trendColor = trend?.type === 'increase' ? 'text-green-600' : 'text-red-600';
+  const iconColorStyles = {
+    default: 'text-muted-foreground',
+    primary: 'text-primary',
+    success: 'text-green-600 dark:text-green-400',
+    warning: 'text-amber-600 dark:text-amber-400',
+    danger: 'text-destructive'
+  };
+
+  const trendColor = trend?.type === 'increase' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
   return (
-    <Card className={`${variantStyles[variant]} border shadow-sm hover:shadow-md transition-shadow duration-200`}>
-      <CardContent className={size === 'large' ? 'p-8' : 'p-6'}>
-        <div className="flex items-start justify-between gap-4">
+    <Card className={`${variantStyles[variant]} border-2 shadow-sm hover:shadow-md transition-all duration-300 ${className}`}>
+      <CardContent className={size === 'large' ? 'p-6' : 'p-5'}>
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
+            {/* Icon and Title */}
             <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2.5 rounded-xl ${iconStyles[variant]} shadow-sm`}>
+              <div className={`p-2.5 rounded-xl ${iconBgStyles[variant]} ${iconColorStyles[variant]}`}>
                 <Icon className={size === 'large' ? 'h-6 w-6' : 'h-5 w-5'} />
               </div>
-              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
             </div>
+
+            {/* Value */}
             <div className="flex items-baseline gap-2 mb-3">
-              <span className={`${size === 'large' ? 'text-4xl' : 'text-3xl'} font-bold text-foreground`}>
+              <span className={`${size === 'large' ? 'text-3xl' : 'text-2xl'} font-bold text-foreground tabular-nums`}>
                 {value}
               </span>
-              {unit && <span className="text-base font-medium text-muted-foreground">{unit}</span>}
+              {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
             </div>
+
+            {/* Trend */}
             {trend && (
               <div className="flex items-center gap-1.5">
                 {trend.type === 'increase' ? (
-                  <TrendingUp className={`h-4 w-4 ${trendColor}`} />
+                  <TrendingUp className={`h-3.5 w-3.5 ${trendColor}`} />
                 ) : (
-                  <TrendingDown className={`h-4 w-4 ${trendColor}`} />
+                  <TrendingDown className={`h-3.5 w-3.5 ${trendColor}`} />
                 )}
-                <span className={`text-sm font-semibold ${trendColor}`}>
+                <span className={`text-xs font-semibold ${trendColor} tabular-nums`}>
                   {Math.abs(trend.value)}%
                 </span>
                 <span className="text-xs text-muted-foreground">vs last period</span>
               </div>
             )}
           </div>
+
+          {/* Progress Circle */}
           {progress !== undefined && (
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative w-16 h-16">
-                <svg className="w-16 h-16 transform -rotate-90">
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <div className="relative w-14 h-14">
+                <svg className="w-14 h-14 transform -rotate-90">
                   <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
+                    cx="28"
+                    cy="28"
+                    r="24"
                     stroke="currentColor"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
                     className="text-muted/20"
                   />
                   <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
+                    cx="28"
+                    cy="28"
+                    r="24"
                     stroke="currentColor"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
-                    strokeDasharray={`${2 * Math.PI * 28}`}
-                    strokeDashoffset={`${2 * Math.PI * 28 * (1 - progress / 100)}`}
-                    className={variant === 'danger' ? 'text-destructive' : variant === 'warning' ? 'text-amber-500' : 'text-primary'}
+                    strokeDasharray={`${2 * Math.PI * 24}`}
+                    strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
+                    className={
+                      variant === 'danger' ? 'text-destructive' : 
+                      variant === 'warning' ? 'text-amber-500' : 
+                      variant === 'success' ? 'text-green-500' :
+                      'text-primary'
+                    }
                     strokeLinecap="round"
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-bold text-foreground">{Math.round(progress)}%</span>
+                  <span className="text-xs font-bold text-foreground tabular-nums">{Math.round(progress)}%</span>
                 </div>
               </div>
             </div>
@@ -193,16 +217,16 @@ interface ChartCardProps {
 }
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, subtitle, icon: Icon, children, action }) => (
-  <Card className="bg-card border-border shadow-sm hover:shadow-md transition-shadow duration-200">
-    <CardHeader className="border-b border-border/50 pb-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
+  <Card className="bg-card border-border shadow-sm hover:shadow-md transition-shadow duration-300">
+    <CardHeader className='border-b border-border/50 pb-4'>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
             <Icon className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <CardTitle className="text-lg font-bold text-foreground">{title}</CardTitle>
-            {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
+          <div className="min-w-0">
+            <CardTitle className="text-base font-bold text-foreground truncate">{title}</CardTitle>
+            {subtitle && <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
           </div>
         </div>
         {action}
@@ -215,28 +239,27 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, subtitle, icon: Icon, chil
 );
 
 const LoadingSkeleton = () => (
-  <div className="min-h-screen bg-background p-6 space-y-8">
-    {/* Header Skeleton */}
-    <div className="flex items-center justify-between">
-      <div className="space-y-2">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-4 w-96" />
+  <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-6">
+    <div className="max-w-[1600px] mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-72" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <Skeleton className="h-10 w-32" />
       </div>
-      <Skeleton className="h-10 w-32" />
-    </div>
 
-    {/* Metrics Grid Skeleton */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <Skeleton key={i} className="h-40 rounded-xl" />
-      ))}
-    </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-36 rounded-xl" />
+        ))}
+      </div>
 
-    {/* Charts Grid Skeleton */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-96 rounded-xl" />
-      ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-96 rounded-xl" />
+        ))}
+      </div>
     </div>
   </div>
 );
@@ -246,6 +269,7 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [timePeriod, setTimePeriod] = useState<'7d' | '30d' | '90d'>('30d');
   const { getUsagePercentage } = usePlanLimits();
 
   const fetchAnalytics = async (showRefreshing = false) => {
@@ -284,8 +308,6 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchAnalytics();
-
-    // Refresh data every 60 seconds
     const interval = setInterval(() => fetchAnalytics(true), 60000);
     return () => clearInterval(interval);
   }, []);
@@ -300,36 +322,40 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <Card className="border-destructive/20 bg-destructive/5">
-          <CardContent className="p-12 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-6">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Failed to Load Analytics</h3>
-            <p className="text-muted-foreground mb-6">{error?.message || 'An unexpected error occurred'}</p>
-            <Button onClick={handleRefresh} variant="outline" size="lg">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-6">
+        <div className="max-w-[1600px] mx-auto">
+          <Card className="border-destructive/20 bg-destructive/5">
+            <CardContent className="p-12 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-6">
+                <AlertCircle className="h-8 w-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Failed to Load Analytics</h3>
+              <p className="text-muted-foreground mb-6">{error?.message || 'An unexpected error occurred'}</p>
+              <Button onClick={handleRefresh} variant="outline" size="lg" className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
-              <BarChart3 className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">No Analytics Data</h3>
-            <p className="text-muted-foreground">Analytics data is not available at the moment.</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-6">
+        <div className="max-w-[1600px] mx-auto">
+          <Card>
+            <CardContent className="p-12 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
+                <BarChart3 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">No Analytics Data</h3>
+              <p className="text-muted-foreground">Analytics data is not available at the moment.</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -337,80 +363,146 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
   const { summary, userActivity, databaseActivity, systemPerformance } = data;
   const correctStorageUsagePercentage = getUsagePercentage('storage');
 
+  // Calculate insights
+  const insights = [
+    {
+      icon: Sparkles,
+      label: summary.userGrowth >= 0 ? 'Growing User Base' : 'User Base Declining',
+      value: `${Math.abs(summary.userGrowth)}% ${summary.userGrowth >= 0 ? 'growth' : 'decline'}`,
+      variant: summary.userGrowth >= 0 ? 'success' : 'warning' as const
+    },
+    {
+      icon: Zap,
+      label: systemPerformance.healthScore >= 80 ? 'Excellent Health' : 'Needs Attention',
+      value: `${systemPerformance.healthScore}/100`,
+      variant: systemPerformance.healthScore >= 80 ? 'success' : 'warning' as const
+    },
+    {
+      icon: CheckCircle2,
+      label: 'System Uptime',
+      value: `${systemPerformance.uptime.toFixed(2)}%`,
+      variant: systemPerformance.uptime >= 99.5 ? 'success' : 'warning' as const
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="max-w-[1600px] mx-auto p-6 space-y-8">
+      <div className="max-w-[1600px] mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Analytics Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Real-time insights and performance metrics for your platform</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Analytics Dashboard</h1>
+              <p className="text-sm text-muted-foreground mt-1">Real-time insights and performance metrics for your platform</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-semibold">
+                <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
+                Live Data
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 px-3 py-1.5 font-semibold">
-              <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
-              Live Data
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
+
+          {/* Quick Insights */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {insights.map((insight, index) => (
+              <div
+                key={index}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 ${
+                  insight.variant === 'success'
+                    ? 'bg-green-500/5 border-green-500/20'
+                    : 'bg-amber-500/5 border-amber-500/20'
+                } transition-all hover:shadow-sm`}
+              >
+                <div className={`p-2 rounded-lg ${
+                  insight.variant === 'success' ? 'bg-green-500/10' : 'bg-amber-500/10'
+                }`}>
+                  <insight.icon className={`h-4 w-4 ${
+                    insight.variant === 'success'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                  }`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground truncate">{insight.label}</p>
+                  <p className={`text-sm font-bold ${
+                    insight.variant === 'success'
+                      ? 'text-green-700 dark:text-green-400'
+                      : 'text-amber-700 dark:text-amber-400'
+                  }`}>{insight.value}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Primary Metrics - Larger cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard
-            title="Total Users"
-            value={summary.totalUsers}
-            icon={Users}
-            variant="primary"
-            size="large"
-            trend={{ value: summary.userGrowth, type: summary.userGrowth >= 0 ? 'increase' : 'decrease' }}
-          />
-          <MetricCard
-            title="Active Users"
-            value={summary.activeUsers}
-            icon={Activity}
-            variant="success"
-            size="large"
-            progress={summary.activeUserPercentage}
-          />
-          <MetricCard
-            title="Total Databases"
-            value={summary.totalDatabases}
-            icon={Database}
-            variant="primary"
-            size="large"
-            trend={{ value: summary.databaseGrowth, type: summary.databaseGrowth >= 0 ? 'increase' : 'decrease' }}
-          />
-          <MetricCard
-            title="Total Tables"
-            value={summary.totalTables}
-            icon={Server}
-            variant="default"
-            size="large"
-            trend={{ value: summary.tableGrowth, type: summary.tableGrowth >= 0 ? 'increase' : 'decrease' }}
-          />
-        </div>
-
-        {/* Secondary Metrics */}
+        {/* Primary Metrics */}
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-4">System Health</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <div className="w-1 h-5 bg-primary rounded-full" />
+            Key Metrics
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Total Users"
+              value={summary.totalUsers}
+              icon={Users}
+              variant="primary"
+              size="large"
+              trend={{ value: summary.userGrowth, type: summary.userGrowth >= 0 ? 'increase' : 'decrease' }}
+            />
+            <MetricCard
+              title="Active Users"
+              value={summary.activeUsers}
+              icon={Activity}
+              variant="success"
+              size="large"
+              progress={summary.activeUserPercentage}
+            />
+            <MetricCard
+              title="Databases"
+              value={summary.totalDatabases}
+              icon={Database}
+              variant="primary"
+              size="large"
+              trend={{ value: summary.databaseGrowth, type: summary.databaseGrowth >= 0 ? 'increase' : 'decrease' }}
+            />
+            <MetricCard
+              title="Tables"
+              value={summary.totalTables}
+              icon={Server}
+              variant="default"
+              size="large"
+              trend={{ value: summary.tableGrowth, type: summary.tableGrowth >= 0 ? 'increase' : 'decrease' }}
+            />
+          </div>
+        </div>
+
+        {/* System Health */}
+        <div>
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <div className="w-1 h-5 bg-green-500 rounded-full" />
+            System Health
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               title="Storage Usage"
-              value={`${summary.storageUsed.toFixed(1)} ${summary.storageUnit}`}
+              value={`${summary.storageUsed.toFixed(1)}`}
+              unit={summary.storageUnit}
               icon={HardDrive}
               variant={correctStorageUsagePercentage > 80 ? 'danger' : correctStorageUsagePercentage > 60 ? 'warning' : 'success'}
               progress={correctStorageUsagePercentage}
@@ -423,7 +515,7 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
               variant={systemPerformance.avgResponseTime < 100 ? 'success' : systemPerformance.avgResponseTime < 200 ? 'warning' : 'danger'}
             />
             <MetricCard
-              title="System Health"
+              title="Health Score"
               value={systemPerformance.healthScore}
               unit="/100"
               icon={Target}
@@ -441,16 +533,19 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Charts Section */}
+        {/* Charts */}
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-4">Activity & Performance</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <div className="w-1 h-5 bg-blue-500 rounded-full" />
+            Activity & Performance
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <ChartCard 
               title="User Activity" 
               subtitle="Active users over time"
               icon={Activity}
             >
-              <div className="h-80">
+              <div className="h-72 md:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={userActivity} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
@@ -462,12 +557,12 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} vertical={false} />
                     <XAxis 
                       dataKey="date" 
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={false}
                       axisLine={{ stroke: 'hsl(var(--border))' }}
                     />
                     <YAxis 
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={false}
                       axisLine={{ stroke: 'hsl(var(--border))' }}
                     />
@@ -494,10 +589,10 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
 
             <ChartCard 
               title="Database Distribution" 
-              subtitle="Rows per database"
+              subtitle="Data distribution across databases"
               icon={Database}
             >
-              <div className="h-80">
+              <div className="h-72 md:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPieChart>
                     <Pie
@@ -533,18 +628,17 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
             </ChartCard>
 
             <ChartCard 
-              title="System Performance" 
-              subtitle="Key performance indicators"
+              title="Performance Metrics" 
+              subtitle="System performance indicators"
               icon={TrendingUp}
             >
-              <div className="h-80">
+              <div className="h-72 md:h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
+                  <BarChart 
                     data={[
-                      { name: "Response Time", value: systemPerformance.avgResponseTime },
-                      { name: "Health Score", value: systemPerformance.healthScore },
-                      { name: "Uptime", value: systemPerformance.uptime },
-                      { name: "Error Rate", value: systemPerformance.errorRate * 100 }
+                      { name: "Response", value: systemPerformance.avgResponseTime, fill: "hsl(var(--primary))" },
+                      { name: "Health", value: systemPerformance.healthScore, fill: "hsl(142 76% 36%)" },
+                      { name: "Uptime", value: systemPerformance.uptime, fill: "hsl(221 83% 53%)" },
                     ]} 
                     margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                   >
@@ -554,12 +648,9 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
                       tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={false}
                       axisLine={{ stroke: 'hsl(var(--border))' }}
-                      angle={-15}
-                      textAnchor="end"
-                      height={60}
                     />
                     <YAxis 
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={false}
                       axisLine={{ stroke: 'hsl(var(--border))' }}
                     />
@@ -570,63 +661,60 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
                         borderRadius: '8px',
                       }}
                     />
-                    <Line
-                      type="monotone"
+                    <Bar
                       dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                      activeDot={{ r: 6 }}
+                      radius={[8, 8, 0, 0]}
                     />
-                  </LineChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </ChartCard>
 
             <ChartCard 
-              title="Storage Usage" 
+              title="Storage Overview" 
               subtitle="Current storage allocation"
               icon={HardDrive}
             >
-              <div className="h-80 flex items-center justify-center">
+              <div className="h-72 md:h-80 flex items-center justify-center">
                 <div className="text-center space-y-6">
                   <div className="relative inline-flex">
-                    <svg className="w-48 h-48 transform -rotate-90">
+                    <svg className="w-40 h-40">
                       <circle
-                        cx="96"
-                        cy="96"
-                        r="88"
+                        cx="80"
+                        cy="80"
+                        r="72"
                         stroke="currentColor"
-                        strokeWidth="12"
+                        strokeWidth="10"
                         fill="none"
                         className="text-muted/20"
                       />
                       <circle
-                        cx="96"
-                        cy="96"
-                        r="88"
+                        cx="80"
+                        cy="80"
+                        r="72"
                         stroke="currentColor"
-                        strokeWidth="12"
+                        strokeWidth="10"
                         fill="none"
-                        strokeDasharray={`${2 * Math.PI * 88}`}
-                        strokeDashoffset={`${2 * Math.PI * 88 * (1 - correctStorageUsagePercentage / 100)}`}
+                        strokeDasharray={`${2 * Math.PI * 72}`}
+                        strokeDashoffset={`${2 * Math.PI * 72 * (1 - correctStorageUsagePercentage / 100)}`}
                         className={correctStorageUsagePercentage > 80 ? 'text-destructive' : correctStorageUsagePercentage > 60 ? 'text-amber-500' : 'text-primary'}
                         strokeLinecap="round"
+                        transform="rotate(-90 80 80)"
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-4xl font-bold text-foreground">{Math.round(correctStorageUsagePercentage)}%</span>
-                      <span className="text-sm text-muted-foreground mt-1">Used</span>
+                      <span className="text-3xl font-bold text-foreground tabular-nums">{Math.round(correctStorageUsagePercentage)}%</span>
+                      <span className="text-xs text-muted-foreground mt-1">Used</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-8 text-sm">
-                      <span className="text-muted-foreground">Storage Used:</span>
-                      <span className="font-semibold text-foreground">{summary.storageUsed.toFixed(2)} {summary.storageUnit}</span>
+                  <div className="space-y-2 px-4">
+                    <div className="flex items-center justify-between gap-6 text-sm">
+                      <span className="text-muted-foreground">Used:</span>
+                      <span className="font-bold text-foreground tabular-nums">{summary.storageUsed.toFixed(2)} {summary.storageUnit}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-8 text-sm">
-                      <span className="text-muted-foreground">Storage Free:</span>
-                      <span className="font-semibold text-foreground">{(100 - correctStorageUsagePercentage).toFixed(1)}%</span>
+                    <div className="flex items-center justify-between gap-6 text-sm">
+                      <span className="text-muted-foreground">Free:</span>
+                      <span className="font-bold text-foreground tabular-nums">{(100 - correctStorageUsagePercentage).toFixed(1)}%</span>
                     </div>
                   </div>
                 </div>
@@ -635,24 +723,24 @@ export const SimplifiedAnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* System Overview */}
+        {/* Data Overview */}
         <Card className="bg-card border-border shadow-sm">
-          <CardHeader className="border-b border-border/50">
-            <CardTitle className="text-lg font-bold text-foreground">Data Overview</CardTitle>
+          <CardHeader className='border-b border-border/50 pb-4'>
+            <CardTitle className="text-base font-bold text-foreground">Data Overview</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center p-6 rounded-xl bg-muted/30">
-                <div className="text-4xl font-bold text-foreground mb-2">{summary.totalRows.toLocaleString()}</div>
-                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Total Rows</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="text-center p-5 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border">
+                <div className="text-3xl font-bold text-foreground mb-2 tabular-nums">{summary.totalRows.toLocaleString()}</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total Rows</div>
               </div>
-              <div className="text-center p-6 rounded-xl bg-muted/30">
-                <div className="text-4xl font-bold text-foreground mb-2">{summary.totalCells.toLocaleString()}</div>
-                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Total Cells</div>
+              <div className="text-center p-5 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border">
+                <div className="text-3xl font-bold text-foreground mb-2 tabular-nums">{summary.totalCells.toLocaleString()}</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total Cells</div>
               </div>
-              <div className="text-center p-6 rounded-xl bg-muted/30">
-                <div className="text-4xl font-bold text-foreground mb-2">{summary.lastUpdated}</div>
-                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Last Updated</div>
+              <div className="text-center p-5 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border">
+                <div className="text-3xl font-bold text-foreground mb-2">{summary.lastUpdated}</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Last Updated</div>
               </div>
             </div>
           </CardContent>
