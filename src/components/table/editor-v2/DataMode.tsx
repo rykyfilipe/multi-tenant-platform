@@ -10,14 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
 	Search,
 	Filter,
-	Upload,
-	Download,
 	Plus,
 	SortAsc,
 	SortDesc,
-	RefreshCw,
-	FileDown,
-	FileUp,
 } from "lucide-react";
 import { FilterConfig } from "@/types/filtering";
 import { TableFilters } from "../rows/TableFilters";
@@ -139,7 +134,6 @@ export function DataMode({
 							gridElement.scrollIntoView({ behavior: 'smooth' });
 						}
 					}}
-					onImport={onImport}
 				/>
 			</div>
 		);
@@ -201,39 +195,6 @@ export function DataMode({
 							Sort
 						</Button>
 
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={onExport}
-							disabled={isExporting || !canRead}
-							className='gap-2'>
-							{isExporting ? (
-								<RefreshCw className='w-4 h-4 animate-spin' />
-							) : (
-								<FileDown className='w-4 h-4' />
-							)}
-							Export
-						</Button>
-
-						<div className='relative'>
-							<input
-								id='import-file-input'
-								type='file'
-								accept='.csv'
-								onChange={onFileSelect}
-								className='hidden'
-							/>
-							<Button
-								variant='outline'
-								size='sm'
-								onClick={() => document.getElementById('import-file-input')?.click()}
-								disabled={isImporting || !canEdit}
-								className='gap-2'>
-								<FileUp className='w-4 h-4' />
-								Import
-							</Button>
-						</div>
-
 						{canEdit && (
 							<Button onClick={() => {
 								// Trigger add row
@@ -248,26 +209,6 @@ export function DataMode({
 						)}
 					</div>
 				</div>
-
-				{/* Import confirmation */}
-				{importFile && (
-					<div className='flex items-center gap-2 mt-4 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800'>
-						<span className='text-sm text-blue-700 dark:text-blue-300 flex-1 truncate'>
-							{importFile.name}
-						</span>
-						<Button
-							variant='default'
-							size='sm'
-							onClick={onImport}
-							disabled={isImporting}
-							className='bg-green-600 hover:bg-green-700'>
-							{isImporting ? (
-								<RefreshCw className='w-4 h-4 mr-1 animate-spin' />
-							) : null}
-							{isImporting ? 'Importing...' : 'Import'}
-						</Button>
-					</div>
-				)}
 			</Card>
 
 			{/* Filters Section */}

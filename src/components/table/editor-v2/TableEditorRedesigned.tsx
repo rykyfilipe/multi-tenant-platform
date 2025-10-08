@@ -677,6 +677,15 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative'>
+			{/* Hidden file input for import */}
+			<input
+				id='import-data-file-input'
+				type='file'
+				accept='.csv'
+				onChange={handleFileSelect}
+				className='hidden'
+			/>
+
 			{/* Header */}
 			<TableEditorHeader
 				table={table}
@@ -687,7 +696,11 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				hasUnsavedChanges={hasUnsavedChanges}
 				unsavedChangesCount={unsavedChangesCount}
 				onSaveAll={savePendingChanges}
+				onExportData={handleExportData}
+				onImportData={() => document.getElementById('import-data-file-input')?.click()}
 				isSaving={isSaving}
+				isExporting={isExporting}
+				canEdit={tablePermissions.tablePermissions.canEdit}
 			/>
 
 			{/* Mode Content */}

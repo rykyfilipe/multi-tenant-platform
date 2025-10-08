@@ -77,30 +77,17 @@ export function NoColumnsEmptyState({ onAddColumn, onUseTemplate }: NoColumnsEmp
 
 interface NoDataEmptyStateProps {
 	onAddRow: () => void;
-	onImport?: () => void;
 }
 
-export function NoDataEmptyState({ onAddRow, onImport }: NoDataEmptyStateProps) {
+export function NoDataEmptyState({ onAddRow }: NoDataEmptyStateProps) {
 	return (
 		<div className='flex items-center justify-center py-12 sm:py-16'>
 			<div className='text-center max-w-md px-4'>
 				<Database className='w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-muted-foreground/50' />
 				<h3 className='text-base sm:text-lg font-semibold mb-2'>No Data Yet</h3>
 				<p className='text-sm text-muted-foreground mb-4 sm:mb-6'>
-					This table is empty. Start adding rows or import data from a CSV file.
+					This table is empty. Use the inline form above to add your first row.
 				</p>
-				<div className='flex items-center justify-center gap-3'>
-					<Button onClick={onAddRow} className='gap-2'>
-						<Plus className='w-4 h-4' />
-						Add First Row
-					</Button>
-					{onImport && (
-						<Button variant='outline' onClick={onImport}>
-							<Upload className='w-4 h-4 mr-2' />
-							Import CSV
-						</Button>
-					)}
-				</div>
 			</div>
 		</div>
 	);

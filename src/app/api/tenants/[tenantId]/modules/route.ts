@@ -210,7 +210,23 @@ export async function POST(
 			}
 
 			// Create module tables
-			await createModuleTables(parseInt(databaseId), moduleId);
+			const createdTablesMap = await createModuleTables(parseInt(databaseId), moduleId);
+
+			// Get the created tables with full details
+			const tableIds = Object.values(createdTablesMap).map((table: any) => table.id);
+			const createdTables = await prisma.table.findMany({
+				where: {
+					id: { in: tableIds },
+				},
+				include: {
+					columns: true,
+					_count: {
+						select: {
+							rows: true,
+						},
+					},
+				},
+			});
 
 			// Update tenant enabled modules
 			await prisma.tenant.update({
@@ -226,6 +242,7 @@ export async function POST(
 				message: `Module '${moduleId}' enabled successfully`,
 				moduleId,
 				databaseId: parseInt(databaseId),
+				createdTables, // Return the created tables
 			});
 		} else if (action === "disable") {
 			// Check if module is enabled

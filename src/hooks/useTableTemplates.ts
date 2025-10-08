@@ -26,7 +26,7 @@ interface TemplateTable {
 
 export function useTableTemplates() {
 	const { token, tenant, showAlert } = useApp();
-	const { fetchTables, selectedDatabase } = useDatabase();
+	const { fetchTables, selectedDatabase, setTables, setSelectedDatabase } = useDatabase();
 	const { checkLimit, isAtLimit } = usePlanLimits();
 	const [isCreating, setIsCreating] = useState(false);
 	const [progress, setProgress] = useState<{
@@ -260,9 +260,25 @@ export function useTableTemplates() {
 				);
 			}
 
-			// Refresh tables in the database context to show new tables immediately
-			if (createdTables.length > 0 && selectedDatabase) {
-				console.log("Refreshing tables in context...");
+			// Update local state immediately for better UX
+			if (createdTables.length > 0) {
+				console.log("Updating local state with new tables...", createdTables);
+				
+				// Update tables in local state
+				setTables((prevTables) => 
+					prevTables ? [...prevTables, ...createdTables] : createdTables
+				);
+
+				// Also update selectedDatabase if it contains tables
+				if (selectedDatabase?.tables) {
+					setSelectedDatabase({
+						...selectedDatabase,
+						tables: [...selectedDatabase.tables, ...createdTables],
+					});
+				}
+
+				// Refresh from server to ensure consistency
+				console.log("Refreshing tables from server...");
 				await fetchTables();
 			}
 

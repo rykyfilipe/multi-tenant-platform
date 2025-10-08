@@ -16,8 +16,11 @@ import {
 	Save,
 	MoreHorizontal,
 	Download,
+	Upload,
 	Trash2,
 	ChevronLeft,
+	FileDown,
+	FileUp,
 } from "lucide-react";
 import { Table } from "@/types/database";
 import { useRouter } from "next/navigation";
@@ -32,8 +35,12 @@ interface Props {
 	unsavedChangesCount: number;
 	onSaveAll: () => void;
 	onExportSchema?: () => void;
+	onExportData?: () => void;
+	onImportData?: () => void;
 	onDeleteTable?: () => void;
 	isSaving?: boolean;
+	isExporting?: boolean;
+	canEdit?: boolean;
 }
 
 export function TableEditorHeader({
@@ -46,8 +53,12 @@ export function TableEditorHeader({
 	unsavedChangesCount,
 	onSaveAll,
 	onExportSchema,
+	onExportData,
+	onImportData,
 	onDeleteTable,
 	isSaving = false,
+	isExporting = false,
+	canEdit = false,
 }: Props) {
 	const router = useRouter();
 
@@ -130,6 +141,19 @@ export function TableEditorHeader({
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align='end'>
+							{onExportData && (
+								<DropdownMenuItem onClick={onExportData} disabled={isExporting}>
+									<FileDown className='w-4 h-4 mr-2' />
+									{isExporting ? 'Exporting...' : 'Export Data'}
+								</DropdownMenuItem>
+							)}
+							{onImportData && canEdit && (
+								<DropdownMenuItem onClick={onImportData}>
+									<FileUp className='w-4 h-4 mr-2' />
+									Import Data
+								</DropdownMenuItem>
+							)}
+							{(onExportData || onImportData) && <DropdownMenuSeparator />}
 							<DropdownMenuItem onClick={onExportSchema}>
 								<Download className='w-4 h-4 mr-2' />
 								Export Schema

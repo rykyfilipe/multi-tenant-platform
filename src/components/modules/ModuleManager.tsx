@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-// Removed useDatabase import - will use direct API calls instead
+import { useDatabase } from "@/contexts/DatabaseContext";
 import { getAllModules, ModuleDefinition } from "@/lib/modules";
 import {
 	AlertDialog,
@@ -54,6 +54,7 @@ interface ModulesResponse {
 export default function ModuleManager() {
 	const { token, tenant, showAlert, setTenant } = useApp();
 	const { t } = useLanguage();
+	const { setTables, selectedDatabase, setSelectedDatabase } = useDatabase();
 	const [modules, setModules] = useState<ModuleDefinition[]>([]);
 	const [modulesStatus, setModulesStatus] = useState<ModuleStatus[]>([]);
 	const [enabledModules, setEnabledModules] = useState<string[]>([]);
@@ -163,6 +164,8 @@ export default function ModuleManager() {
 			});
 
 			if (response.ok) {
+				const responseData = await response.json();
+				
 				// Update tenant context with new enabled modules
 				if (tenant) {
 					const updatedEnabledModules = action === "enable" 
@@ -173,6 +176,26 @@ export default function ModuleManager() {
 						...tenant,
 						enabledModules: updatedEnabledModules
 					});
+				}
+
+				// If module was enabled and tables were created, update local state
+				if (action === "enable" && responseData.createdTables && responseData.createdTables.length > 0) {
+					console.log("Module enabled - updating tables in context...", responseData.createdTables);
+					
+					// Update tables in local state
+					setTables((prevTables) => 
+						prevTables ? [...prevTables, ...responseData.createdTables] : responseData.createdTables
+					);
+
+					// Also update selectedDatabase if it matches the database where module was enabled
+					if (selectedDatabase && selectedDatabase.id === databaseId) {
+						if (selectedDatabase.tables) {
+							setSelectedDatabase({
+								...selectedDatabase,
+								tables: [...selectedDatabase.tables, ...responseData.createdTables],
+							});
+						}
+					}
 				}
 
 				// Refresh modules status to ensure consistency
