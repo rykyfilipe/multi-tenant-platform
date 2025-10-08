@@ -19,7 +19,7 @@ export async function GET(
     const userId = parseInt(params.userId);
     
     // Check if user is accessing their own preferences or is admin
-    if (session.user.id !== userId && session.user.role !== 'ADMIN') {
+    if (parseInt(session.user.id) !== userId && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -95,7 +95,7 @@ export async function PATCH(
     const userId = parseInt(params.userId);
     
     // Check if user is accessing their own preferences or is admin
-    if (session.user.id !== userId && session.user.role !== 'ADMIN') {
+    if (parseInt(session.user.id) !== userId && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
