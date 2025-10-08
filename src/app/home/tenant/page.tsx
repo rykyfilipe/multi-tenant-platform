@@ -58,17 +58,17 @@ function Page() {
 		return (
 			<div className='h-full bg-background'>
 				{/* Header */}
-				<div className='border-b border-border/20 bg-gradient-to-r from-background via-background/95 to-background/90 backdrop-blur-sm sticky top-0 z-50 shadow-sm'>
-					<div className='flex items-center justify-between px-6 py-6'>
-						<div className='flex items-center space-x-4'>
-							<div className='p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl shadow-lg'>
-								<Building2 className='w-7 h-7 text-primary' />
+				<div className='border-b border-border/20 bg-background/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm'>
+					<div className='px-4 sm:px-6 lg:px-8 py-6'>
+						<div className='flex items-center gap-3'>
+							<div className='p-2 rounded-xl bg-primary/10 shadow-sm'>
+								<Building2 className='w-6 h-6 text-primary' />
 							</div>
 							<div>
-								<h1 className='text-2xl font-bold text-foreground tracking-tight'>
+								<h1 className='text-2xl sm:text-3xl font-bold text-foreground tracking-tight'>
 									{t("tenant.management.title")}
 								</h1>
-								<p className='text-sm text-muted-foreground font-medium'>
+								<p className='text-sm text-muted-foreground'>
 									{t("tenant.management.subtitle")}
 								</p>
 							</div>
@@ -77,30 +77,31 @@ function Page() {
 				</div>
 
 				{/* Main Content */}
-				<div className='p-8 max-w-5xl mx-auto'>
-					<Card className='border border-border/20 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-xl'>
+				<div className='p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto'>
+					<Card className='border border-border/50 bg-card shadow-lg rounded-2xl'>
 						<CardHeader className='text-center pb-8'>
-							<div className='p-6 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full w-fit mx-auto mb-6 shadow-lg'>
+							<div className='p-6 bg-primary/10 rounded-full w-fit mx-auto mb-6 shadow-sm'>
 								<Building2 className='w-12 h-12 text-primary' />
 							</div>
-							<CardTitle className='text-3xl font-bold tracking-tight mb-2'>
+							<CardTitle className='text-2xl sm:text-3xl font-bold tracking-tight mb-2'>
 								{t("tenant.management.noOrganization.title")}
 							</CardTitle>
-							<p className='text-lg text-muted-foreground font-medium'>
+							<p className='text-base text-muted-foreground'>
 								{t("tenant.management.noOrganization.subtitle")}
 							</p>
 						</CardHeader>
 						<CardContent className='text-center space-y-6'>
 							<div className='max-w-md mx-auto'>
-								<p className='text-muted-foreground leading-relaxed'>
+								<p className='text-sm text-muted-foreground leading-relaxed'>
 									{t("tenant.management.noOrganization.description")}
 								</p>
 							</div>
 							<div className='flex justify-center'>
 								<Button
 									onClick={() => setShowForm(true)}
-									className='gap-3 px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200'
-									disabled={user?.role !== "ADMIN"}>
+									className='gap-2 px-8 py-3 text-base font-semibold shadow-md hover:shadow-lg transition-all duration-200'
+									disabled={user?.role !== "ADMIN"}
+									size="lg">
 									<Plus className='w-5 h-5' />
 									{t("tenant.management.launchOrganization")}
 								</Button>
@@ -117,134 +118,134 @@ function Page() {
 	return (
 		<div className='h-full bg-background'>
 			{/* Header */}
-			<div className='border-b border-border/20 bg-gradient-to-r from-background via-background/95 to-background/90 backdrop-blur-sm sticky top-0 z-50 shadow-sm'>
-				<div className='flex items-center justify-between px-6 py-6'>
-					<div className='flex items-center space-x-4'>
-						<div className='p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl shadow-lg'>
-							<Building2 className='w-7 h-7 text-primary' />
-						</div>
-						<div>
-							<h1 className='text-2xl font-bold text-foreground tracking-tight'>
-								{tenant.name}
-							</h1>
-							<p className='text-sm text-muted-foreground font-medium'>
-								{t("tenant.management.enterpriseCommandCenter")}
-							</p>
-						</div>
-					</div>
-					<div className='flex items-center space-x-3'>
-						<Badge
-							variant='secondary'
-							className='text-xs font-semibold px-3 py-1'>
-							{user?.role}
-						</Badge>
-						{user?.role === "ADMIN" ? (
-							<Button
-								onClick={() => setShowSettings(true)}
-								variant='outline'
-								size='sm'
-								className='gap-2 shadow-sm hover:shadow-md transition-shadow'>
-								<Settings className='w-4 h-4' />
-								{t("tenant.management.settings")}
-							</Button>
-						) : (
-							<div className='text-xs text-muted-foreground px-3 py-2 bg-muted/50 rounded-md border border-dashed'>
-								{t("tenant.management.onlyAdminsCanModify")}
+			<div className='border-b border-border/20 bg-background/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm'>
+				<div className='px-4 sm:px-6 lg:px-8 py-6'>
+					<div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+						<div className='flex items-center gap-3'>
+							<div className='p-2 rounded-xl bg-primary/10 shadow-sm'>
+								<Building2 className='w-6 h-6 text-primary' />
 							</div>
-						)}
+							<div>
+								<h1 className='text-2xl sm:text-3xl font-bold text-foreground tracking-tight'>
+									{tenant.name}
+								</h1>
+								<p className='text-sm text-muted-foreground'>
+									{t("tenant.management.enterpriseCommandCenter")}
+								</p>
+							</div>
+						</div>
+						<div className='flex items-center gap-3'>
+							<Badge
+								variant='secondary'
+								className='text-xs font-semibold px-3 py-1.5 bg-muted/50'>
+								{user?.role}
+							</Badge>
+							{user?.role === "ADMIN" ? (
+								<Button
+									onClick={() => setShowSettings(true)}
+									variant='outline'
+									size='sm'
+									className='gap-2 shadow-sm hover:shadow-md transition-all'>
+									<Settings className='w-4 h-4' />
+									{t("tenant.management.settings")}
+								</Button>
+							) : (
+								<div className='text-xs text-muted-foreground px-3 py-2 bg-muted/30 rounded-lg border border-border/50'>
+									{t("tenant.management.onlyAdminsCanModify")}
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
 
 			{/* Main Content */}
-			<div className='p-8 max-w-7xl mx-auto space-y-8'>
+			<div className='p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8'>
 
 				{/* Organization Details */}
-				<div className='grid grid-cols-1 xl:grid-cols-2 gap-8'>
+				<div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
 					{/* Basic Information */}
-					<Card className='border border-border/20 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-lg'>
+					<Card className='border border-border/50 bg-card shadow-md rounded-2xl'>
 						<CardHeader className='pb-4'>
-							<CardTitle className='flex items-center gap-3 text-lg font-bold'>
+							<CardTitle className='flex items-center gap-2 text-base font-semibold'>
 								<div className='p-2 bg-primary/10 rounded-lg'>
-									<Building2 className='w-5 h-5 text-primary' />
+									<Building2 className='w-4 h-4 text-primary' />
 								</div>
 								{t("tenant.management.enterpriseInformation.title")}
 							</CardTitle>
 						</CardHeader>
-						<CardContent className='space-y-4'>
-							<div className='space-y-4'>
-								<div className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
-									<span className='text-sm font-semibold text-muted-foreground'>
-										{t(
-											"tenant.management.enterpriseInformation.organizationName",
-										)}
-									</span>
-									<span className='text-sm font-bold text-foreground'>
-										{tenant.name}
-									</span>
-								</div>
-								<div className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
-									<span className='text-sm font-semibold text-muted-foreground'>
-										{t("tenant.management.enterpriseInformation.established")}
-									</span>
-									<span className='text-sm font-medium'>
-										{formatDate(tenant.createdAt)}
-									</span>
-								</div>
-								<div className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
-									<span className='text-sm font-semibold text-muted-foreground'>
-										{t("tenant.management.enterpriseInformation.lastUpdated")}
-									</span>
-									<span className='text-sm font-medium'>
-										{formatDate(tenant.updatedAt)}
-									</span>
-								</div>
-								{tenant.timezone && (
-									<div className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
-										<span className='text-sm font-semibold text-muted-foreground'>
-											{t("tenant.management.enterpriseInformation.timezone")}
-										</span>
-										<span className='text-sm font-medium flex items-center gap-2'>
-											<Globe className='w-4 h-4 text-primary' />
-											{tenant.timezone}
-										</span>
-									</div>
-								)}
-								{tenant.language && (
-									<div className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
-										<span className='text-sm font-semibold text-muted-foreground'>
-											{t("tenant.management.enterpriseInformation.language")}
-										</span>
-										<span className='text-sm font-medium'>
-											{tenant.language.toUpperCase()}
-										</span>
-									</div>
-								)}
+						<CardContent className='space-y-3'>
+							<div className='flex items-center justify-between p-3 bg-muted/30 border border-border/30 rounded-lg'>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+									{t(
+										"tenant.management.enterpriseInformation.organizationName",
+									)}
+								</span>
+								<span className='text-sm font-bold text-foreground'>
+									{tenant.name}
+								</span>
 							</div>
+							<div className='flex items-center justify-between p-3 bg-muted/30 border border-border/30 rounded-lg'>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+									{t("tenant.management.enterpriseInformation.established")}
+								</span>
+								<span className='text-sm font-medium text-foreground'>
+									{formatDate(tenant.createdAt)}
+								</span>
+							</div>
+							<div className='flex items-center justify-between p-3 bg-muted/30 border border-border/30 rounded-lg'>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+									{t("tenant.management.enterpriseInformation.lastUpdated")}
+								</span>
+								<span className='text-sm font-medium text-foreground'>
+									{formatDate(tenant.updatedAt)}
+								</span>
+							</div>
+							{tenant.timezone && (
+								<div className='flex items-center justify-between p-3 bg-muted/30 border border-border/30 rounded-lg'>
+									<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+										{t("tenant.management.enterpriseInformation.timezone")}
+									</span>
+									<span className='text-sm font-medium text-foreground flex items-center gap-2'>
+										<Globe className='w-4 h-4 text-muted-foreground' />
+										{tenant.timezone}
+									</span>
+								</div>
+							)}
+							{tenant.language && (
+								<div className='flex items-center justify-between p-3 bg-muted/30 border border-border/30 rounded-lg'>
+									<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wide'>
+										{t("tenant.management.enterpriseInformation.language")}
+									</span>
+									<span className='text-sm font-medium text-foreground'>
+										{tenant.language.toUpperCase()}
+									</span>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 
 					{/* Contact Information */}
-					<Card className='border border-border/20 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-lg'>
+					<Card className='border border-border/50 bg-card shadow-md rounded-2xl'>
 						<CardHeader className='pb-4'>
-							<CardTitle className='flex items-center gap-3 text-lg font-bold'>
-								<div className='p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg'>
-									<Mail className='w-5 h-5 text-blue-600 dark:text-blue-400' />
+							<CardTitle className='flex items-center gap-2 text-base font-semibold'>
+								<div className='p-2 bg-primary/10 rounded-lg'>
+									<Mail className='w-4 h-4 text-primary' />
 								</div>
 								{t("tenant.management.businessContact.title")}
 							</CardTitle>
 						</CardHeader>
-						<CardContent className='space-y-4'>
+						<CardContent className='space-y-3'>
 							{tenant.companyEmail ? (
-								<div className='flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-800'>
-									<div className='p-2 bg-blue-500 rounded-lg'>
-										<Mail className='w-4 h-4 text-white' />
+								<div className='flex items-center gap-3 p-3 bg-muted/30 border border-border/30 rounded-lg'>
+									<div className='p-2 bg-primary/10 rounded-lg flex-shrink-0'>
+										<Mail className='w-4 h-4 text-primary' />
 									</div>
-									<div className='flex-1'>
-										<p className='text-sm font-bold text-foreground'>
+									<div className='flex-1 min-w-0'>
+										<p className='text-sm font-semibold text-foreground truncate'>
 											{tenant.companyEmail}
 										</p>
-										<p className='text-xs text-muted-foreground font-medium'>
+										<p className='text-xs text-muted-foreground'>
 											{t(
 												"tenant.management.businessContact.primaryBusinessEmail",
 											)}
@@ -252,95 +253,79 @@ function Page() {
 									</div>
 								</div>
 							) : (
-								<div className='text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed'>
-									<Mail className='w-10 h-10 mx-auto mb-3 opacity-50' />
-									<p className='text-sm font-medium'>
+								<div className='text-center py-6 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50'>
+									<Mail className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-xs font-medium'>
 										{t("tenant.management.businessContact.noBusinessEmail")}
-									</p>
-									<p className='text-xs text-muted-foreground mt-1'>
-										{t(
-											"tenant.management.businessContact.addPrimaryContactEmail",
-										)}
 									</p>
 								</div>
 							)}
 
 							{tenant.phone ? (
-								<div className='flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-800'>
-									<div className='p-2 bg-green-500 rounded-lg'>
-										<Phone className='w-4 h-4 text-white' />
+								<div className='flex items-center gap-3 p-3 bg-muted/30 border border-border/30 rounded-lg'>
+									<div className='p-2 bg-primary/10 rounded-lg flex-shrink-0'>
+										<Phone className='w-4 h-4 text-primary' />
 									</div>
-									<div className='flex-1'>
-										<p className='text-sm font-bold text-foreground'>
+									<div className='flex-1 min-w-0'>
+										<p className='text-sm font-semibold text-foreground'>
 											{tenant.phone}
 										</p>
-										<p className='text-xs text-muted-foreground font-medium'>
+										<p className='text-xs text-muted-foreground'>
 											{t("tenant.management.businessContact.businessPhone")}
 										</p>
 									</div>
 								</div>
 							) : (
-								<div className='text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed'>
-									<Phone className='w-10 h-10 mx-auto mb-3 opacity-50' />
-									<p className='text-sm font-medium'>
+								<div className='text-center py-6 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50'>
+									<Phone className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-xs font-medium'>
 										{t("tenant.management.businessContact.noPhoneNumber")}
-									</p>
-									<p className='text-xs text-muted-foreground mt-1'>
-										{t(
-											"tenant.management.businessContact.addBusinessContactNumber",
-										)}
 									</p>
 								</div>
 							)}
 
 							{tenant.website ? (
-								<div className='flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-800'>
-									<div className='p-2 bg-purple-500 rounded-lg'>
-										<ExternalLink className='w-4 h-4 text-white' />
+								<div className='flex items-center gap-3 p-3 bg-muted/30 border border-border/30 rounded-lg'>
+									<div className='p-2 bg-primary/10 rounded-lg flex-shrink-0'>
+										<ExternalLink className='w-4 h-4 text-primary' />
 									</div>
-									<div className='flex-1'>
-										<p className='text-sm font-bold text-foreground'>
+									<div className='flex-1 min-w-0'>
+										<p className='text-sm font-semibold text-foreground truncate'>
 											{tenant.website}
 										</p>
-										<p className='text-xs text-muted-foreground font-medium'>
+										<p className='text-xs text-muted-foreground'>
 											{t("tenant.management.businessContact.corporateWebsite")}
 										</p>
 									</div>
 								</div>
 							) : (
-								<div className='text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed'>
-									<ExternalLink className='w-10 h-10 mx-auto mb-3 opacity-50' />
-									<p className='text-sm font-medium'>
+								<div className='text-center py-6 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50'>
+									<ExternalLink className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-xs font-medium'>
 										{t("tenant.management.businessContact.noWebsite")}
-									</p>
-									<p className='text-xs text-muted-foreground mt-1'>
-										{t("tenant.management.businessContact.addCompanyWebsite")}
 									</p>
 								</div>
 							)}
 
 							{tenant.address ? (
-								<div className='flex items-center gap-4 p-4 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl border border-orange-200 dark:border-orange-800'>
-									<div className='p-2 bg-orange-500 rounded-lg'>
-										<MapPin className='w-4 h-4 text-white' />
+								<div className='flex items-center gap-3 p-3 bg-muted/30 border border-border/30 rounded-lg'>
+									<div className='p-2 bg-primary/10 rounded-lg flex-shrink-0'>
+										<MapPin className='w-4 h-4 text-primary' />
 									</div>
-									<div className='flex-1'>
-										<p className='text-sm font-bold text-foreground'>
+									<div className='flex-1 min-w-0'>
+										<p className='text-sm font-semibold text-foreground'>
 											{tenant.address}
 										</p>
-										<p className='text-xs text-muted-foreground font-medium'>
+										<p className='text-xs text-muted-foreground'>
 											{t("tenant.management.businessContact.businessAddress")}
 										</p>
 									</div>
 								</div>
 							) : (
-								<div className='text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed'>
-									<MapPin className='w-10 h-10 mx-auto mb-3 opacity-50' />
-									<p className='text-sm font-medium'>
+								<div className='text-center py-6 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50'>
+									<MapPin className='w-8 h-8 mx-auto mb-2 opacity-50' />
+									<p className='text-xs font-medium'>
 										{t("tenant.management.businessContact.noAddress")}
-									</p>
-									<p className='text-xs text-muted-foreground mt-1'>
-										{t("tenant.management.businessContact.addBusinessLocation")}
 									</p>
 								</div>
 							)}
@@ -350,11 +335,11 @@ function Page() {
 				</div>
 
 				{/* Billing Information - Full Width */}
-				<Card className='border border-border/20 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-lg'>
+				<Card className='border border-border/50 bg-card shadow-md rounded-2xl'>
 					<CardHeader className='pb-4'>
-						<CardTitle className='flex items-center gap-3 text-lg font-bold'>
-							<div className='p-2 bg-green-100 dark:bg-green-900/30 rounded-lg'>
-								<Receipt className='w-5 h-5 text-green-600 dark:text-green-400' />
+						<CardTitle className='flex items-center gap-2 text-base font-semibold'>
+							<div className='p-2 bg-primary/10 rounded-lg'>
+								<Receipt className='w-4 h-4 text-primary' />
 							</div>
 							{t("tenant.management.billing.title")}
 						</CardTitle>
@@ -362,11 +347,11 @@ function Page() {
 					<CardContent className='space-y-4'>
 						{(tenant as any).companyTaxId ||
 						(tenant as any).registrationNumber ? (
-							<div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+							<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
 								{/* Informații Fiscale */}
-								<div className='p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-800'>
-									<h4 className='font-semibold text-sm text-green-800 dark:text-green-200 mb-3 flex items-center gap-2'>
-										<FileText className='w-4 h-4' />
+								<div className='p-4 bg-muted/30 border border-border/30 rounded-lg'>
+									<h4 className='font-semibold text-sm text-foreground mb-3 flex items-center gap-2'>
+										<FileText className='w-4 h-4 text-muted-foreground' />
 										{t("tenant.management.billing.fiscalInformation")}
 									</h4>
 									{(tenant as any).companyTaxId && (
@@ -394,9 +379,9 @@ function Page() {
 								{/* Adresa Sediului Social */}
 								{((tenant as any).companyStreet ||
 									(tenant as any).companyCity) && (
-									<div className='p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-800'>
-										<h4 className='font-semibold text-sm text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2'>
-											<MapPin className='w-4 h-4' />
+									<div className='p-4 bg-muted/30 border border-border/30 rounded-lg'>
+										<h4 className='font-semibold text-sm text-foreground mb-3 flex items-center gap-2'>
+											<MapPin className='w-4 h-4 text-muted-foreground' />
 											{t("tenant.management.billing.registeredOffice")}
 										</h4>
 										<div className='space-y-2'>
@@ -428,9 +413,9 @@ function Page() {
 								{/* Date Bancare */}
 								{((tenant as any).companyIban ||
 									(tenant as any).companyBank) && (
-									<div className='p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-800'>
-										<h4 className='font-semibold text-sm text-purple-800 dark:text-purple-200 mb-3 flex items-center gap-2'>
-											<CreditCard className='w-4 h-4' />
+									<div className='p-4 bg-muted/30 border border-border/30 rounded-lg'>
+										<h4 className='font-semibold text-sm text-foreground mb-3 flex items-center gap-2'>
+											<CreditCard className='w-4 h-4 text-muted-foreground' />
 											{t("tenant.management.billing.bankingDetails")}
 										</h4>
 										{(tenant as any).companyIban && (
@@ -457,7 +442,7 @@ function Page() {
 								)}
 							</div>
 						) : (
-							<div className='text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed'>
+							<div className='text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50'>
 								<Receipt className='w-10 h-10 mx-auto mb-3 opacity-50' />
 								<p className='text-sm font-medium'>
 									{t("tenant.management.billing.billingNotConfigured")}
@@ -480,19 +465,17 @@ function Page() {
 					</CardContent>
 				</Card>
 
-				{/* Quick Actions */}
-
 				{/* Modules Management */}
 				{user?.role === "ADMIN" && (
-					<Card className='border border-border/20 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-lg'>
+					<Card className='border border-border/50 bg-card shadow-md rounded-2xl'>
 						<CardHeader className='pb-4'>
-							<CardTitle className='flex items-center gap-3 text-lg font-bold'>
-								<div className='p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg'>
-									<Puzzle className='w-5 h-5 text-primary' />
+							<CardTitle className='flex items-center gap-2 text-base font-semibold'>
+								<div className='p-2 bg-primary/10 rounded-lg'>
+									<Puzzle className='w-4 h-4 text-primary' />
 								</div>
 								{t("tenant.management.modules.title") || "Module Management"}
 							</CardTitle>
-							<CardDescription>
+							<CardDescription className='text-sm text-muted-foreground'>
 								{t("tenant.management.modules.description") ||
 									"Enable or disable optional modules for your databases. Module tables are excluded from plan limits."}
 							</CardDescription>
@@ -502,25 +485,27 @@ function Page() {
 						</CardContent>
 					</Card>
 				)}
-				<Card className='border border-border/20 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-lg'>
+				
+				{/* Quick Actions */}
+				<Card className='border border-border/50 bg-card shadow-md rounded-2xl'>
 					<CardHeader className='pb-4'>
-						<CardTitle className='flex items-center gap-3 text-lg font-bold'>
-							<div className='p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg'>
-								<Zap className='w-5 h-5 text-primary' />
+						<CardTitle className='flex items-center gap-2 text-base font-semibold'>
+							<div className='p-2 bg-primary/10 rounded-lg'>
+								<Zap className='w-4 h-4 text-primary' />
 							</div>
 							{t("tenant.management.enterpriseActions.title")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+						<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
 							<Link href='/home/users'>
 								<Button
 									variant='outline'
-									className='h-auto p-6 flex flex-col items-center gap-3 w-full shadow-lg hover:shadow-xl transition-all duration-200 border-2 hover:border-primary/50'>
-									<div className='p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full'>
-										<Users className='w-6 h-6 text-blue-600 dark:text-blue-400' />
+									className='h-auto p-6 flex flex-col items-center gap-3 w-full shadow-sm hover:shadow-md transition-all duration-200 border border-border hover:border-primary/50'>
+									<div className='p-3 bg-primary/10 rounded-xl'>
+										<Users className='w-6 h-6 text-primary' />
 									</div>
-									<span className='font-semibold text-base'>
+									<span className='font-semibold text-sm'>
 										{user?.role === "ADMIN"
 											? t("tenant.management.enterpriseActions.manageTeam")
 											: t("tenant.management.enterpriseActions.viewTeam")}
@@ -537,11 +522,11 @@ function Page() {
 							<Link href='/home/database'>
 								<Button
 									variant='outline'
-									className='h-auto p-6 flex flex-col items-center gap-3 w-full shadow-lg hover:shadow-xl transition-all duration-200 border-2 hover:border-primary/50'>
-									<div className='p-3 bg-green-100 dark:bg-green-900/30 rounded-full'>
-										<Database className='w-6 h-6 text-green-600 dark:text-green-400' />
+									className='h-auto p-6 flex flex-col items-center gap-3 w-full shadow-sm hover:shadow-md transition-all duration-200 border border-border hover:border-primary/50'>
+									<div className='p-3 bg-primary/10 rounded-xl'>
+										<Database className='w-6 h-6 text-primary' />
 									</div>
-									<span className='font-semibold text-base'>
+									<span className='font-semibold text-sm'>
 										{t("tenant.management.enterpriseActions.dataCommandCenter")}
 									</span>
 									<span className='text-xs text-muted-foreground text-center leading-relaxed'>
@@ -554,12 +539,12 @@ function Page() {
 							{user?.role === "ADMIN" ? (
 								<Button
 									variant='outline'
-									className='h-auto p-6 flex flex-col items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-200 border-2 hover:border-primary/50'
+									className='h-auto p-6 flex flex-col items-center gap-3 shadow-sm hover:shadow-md transition-all duration-200 border border-border hover:border-primary/50'
 									onClick={() => setShowSettings(true)}>
-									<div className='p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full'>
-										<Settings className='w-6 h-6 text-purple-600 dark:text-purple-400' />
+									<div className='p-3 bg-primary/10 rounded-xl'>
+										<Settings className='w-6 h-6 text-primary' />
 									</div>
-									<span className='font-semibold text-base'>
+									<span className='font-semibold text-sm'>
 										{t(
 											"tenant.management.enterpriseActions.enterpriseSettings",
 										)}
@@ -571,11 +556,11 @@ function Page() {
 									</span>
 								</Button>
 							) : (
-								<div className='h-auto p-6 flex flex-col items-center gap-3 border-2 border-dashed rounded-lg bg-muted/20 shadow-lg'>
-									<div className='p-3 bg-muted/50 rounded-full'>
+								<div className='h-auto p-6 flex flex-col items-center gap-3 border border-dashed border-border/50 rounded-lg bg-muted/20'>
+									<div className='p-3 bg-muted/50 rounded-xl'>
 										<Settings className='w-6 h-6 text-muted-foreground' />
 									</div>
-									<span className='text-muted-foreground font-semibold text-base'>
+									<span className='text-muted-foreground font-semibold text-sm'>
 										{t(
 											"tenant.management.enterpriseActions.enterpriseSettings",
 										)}

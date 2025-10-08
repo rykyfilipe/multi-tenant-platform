@@ -40,6 +40,11 @@ export async function PATCH(
 					tenantId: Number(tenantId),
 				},
 			},
+			include: {
+				columns: {
+					select: { id: true },
+				},
+			},
 		});
 
 		if (!table) {
@@ -56,7 +61,11 @@ export async function PATCH(
 			);
 		}
 
-		// Validate all updates have id and at least one field to update
+		// Get valid column IDs for this table
+		const validColumnIds = new Set(table.columns.map(c => c.id));
+
+		// Validate and prepare updates
+		const validUpdates = [];
 		for (const update of updates) {
 			if (!update.id) {
 				return NextResponse.json(
@@ -66,26 +75,16 @@ export async function PATCH(
 			}
 
 			// Verify column belongs to this table
-			const column = await prisma.column.findFirst({
-				where: {
-					id: Number(update.id),
-					tableId: Number(tableId),
-				},
-			});
-
-			if (!column) {
+			if (!validColumnIds.has(Number(update.id))) {
 				return NextResponse.json(
 					{ error: `Column ${update.id} not found in this table` },
 					{ status: 404 },
 				);
 			}
-		}
 
-		// Perform batch update using transaction
-		const updatePromises = updates.map((update: any) => {
 			const { id, ...data } = update;
 			
-			// Only update fields that are provided
+			// Only include fields that are provided
 			const updateData: any = {};
 			if (data.order !== undefined) updateData.order = Number(data.order);
 			if (data.name !== undefined) updateData.name = data.name;
@@ -99,11 +98,19 @@ export async function PATCH(
 			if (data.isLocked !== undefined) updateData.isLocked = data.isLocked;
 			if (data.semanticType !== undefined) updateData.semanticType = data.semanticType;
 
-			return prisma.column.update({
-				where: { id: Number(id) },
+			validUpdates.push({
+				id: Number(id),
 				data: updateData,
 			});
-		});
+		}
+
+		// Use transaction with proper promise array
+		const updatePromises = validUpdates.map(({ id, data }) =>
+			prisma.column.update({
+				where: { id },
+				data,
+			})
+		);
 
 		const updatedColumns = await prisma.$transaction(updatePromises);
 
