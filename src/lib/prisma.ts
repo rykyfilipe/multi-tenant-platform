@@ -73,7 +73,7 @@ class PrismaAccelerateClient extends PrismaClient {
 		super({
 			datasources: {
 				db: {
-					url: process.env.DATABASE_URL,
+					url: process.env.YDV_DATABASE_URL,
 				},
 			},
 			log:
