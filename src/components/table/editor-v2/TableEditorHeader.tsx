@@ -40,6 +40,7 @@ interface Props {
 	onDeleteTable?: () => void;
 	isSaving?: boolean;
 	isExporting?: boolean;
+	isImporting?: boolean;
 	canEdit?: boolean;
 }
 
@@ -58,6 +59,7 @@ export function TableEditorHeader({
 	onDeleteTable,
 	isSaving = false,
 	isExporting = false,
+	isImporting = false,
 	canEdit = false,
 }: Props) {
 	const router = useRouter();
@@ -147,12 +149,12 @@ export function TableEditorHeader({
 									{isExporting ? 'Exporting...' : 'Export Data'}
 								</DropdownMenuItem>
 							)}
-							{onImportData && canEdit && (
-								<DropdownMenuItem onClick={onImportData}>
-									<FileUp className='w-4 h-4 mr-2' />
-									Import Data
-								</DropdownMenuItem>
-							)}
+						{onImportData && canEdit && (
+							<DropdownMenuItem onClick={onImportData} disabled={isImporting}>
+								<FileUp className='w-4 h-4 mr-2' />
+								{isImporting ? 'Importing...' : 'Import Data'}
+							</DropdownMenuItem>
+						)}
 							{(onExportData || onImportData) && <DropdownMenuSeparator />}
 							<DropdownMenuItem onClick={onExportSchema}>
 								<Download className='w-4 h-4 mr-2' />

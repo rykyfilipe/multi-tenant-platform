@@ -205,35 +205,34 @@ export function RowGrid({
 					<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100" />
 				</div>
 
-				{/* Inline Row Creator - Always show if user can edit */}
-				{canEdit && (
-					<InlineRowCreator
-						columns={columns}
-						onSave={onSaveNewRow || (() => {})}
-						onCancel={onCancelNewRow || (() => {})}
-						isSaving={isSavingNewRow}
-						tables={tables}
-					/>
-				)}
-				
-				{/* Debug info - remove after fixing */}
-				{process.env.NODE_ENV === 'development' && (
-					<div className="text-xs text-gray-500 p-2 bg-yellow-50 border border-yellow-200">
-						Debug: showInlineRowCreator={showInlineRowCreator.toString()}, canEdit={canEdit.toString()}, 
-						onSaveNewRow={!!onSaveNewRow}, onCancelNewRow={!!onCancelNewRow}
-					</div>
-				)}
+			{/* Inline Row Creator - Always show if user can edit */}
+			{canEdit && columns.length > 0 && (
+				<InlineRowCreator
+					columns={columns}
+					onSave={onSaveNewRow || (() => {})}
+					onCancel={onCancelNewRow || (() => {})}
+					isSaving={isSavingNewRow}
+					tables={tables}
+				/>
+			)}
 
-				{/* Empty state message */}
+			{/* Show message if no columns or can't edit */}
+			{(!canEdit || columns.length === 0) && (
 				<div className="flex flex-col items-center justify-center py-16 px-8 text-center">
 					<div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mb-4">
 						<FileText className="w-8 h-8 text-muted-foreground" />
 					</div>
-					<h3 className="text-lg font-semibold text-foreground mb-2">No Data</h3>
+					<h3 className="text-lg font-semibold text-foreground mb-2">
+						{columns.length === 0 ? "No Columns" : "No Data"}
+					</h3>
 					<p className="text-muted-foreground">
-						This table doesn't have any rows yet. Use the form above to add your first row.
+						{columns.length === 0 
+							? "This table has no columns yet. Switch to Schema mode to add columns first."
+							: "This table doesn't have any rows yet. You need edit permissions to add data."
+						}
 					</p>
 				</div>
+			)}
 			</div>
 		);
 	}
@@ -281,26 +280,18 @@ export function RowGrid({
 				<div className="w-12 sm:w-16 flex-shrink-0 border-l border-neutral-200 bg-neutral-100" />
 			</div>
 
-			{/* Inline Row Creator - Always show if user can edit */}
-			{canEdit && (
-				<InlineRowCreator
-					columns={columns}
-					onSave={onSaveNewRow || (() => {})}
-					onCancel={onCancelNewRow || (() => {})}
-					isSaving={isSavingNewRow}
-					tables={tables}
-				/>
-			)}
-			
-			{/* Debug info - remove after fixing */}
-			{process.env.NODE_ENV === 'development' && (
-				<div className="text-xs text-gray-500 p-2 bg-yellow-50 border border-yellow-200">
-					Debug: showInlineRowCreator={showInlineRowCreator.toString()}, canEdit={canEdit.toString()}, 
-					onSaveNewRow={!!onSaveNewRow}, onCancelNewRow={!!onCancelNewRow}
-				</div>
-			)}
+		{/* Inline Row Creator - Always show if user can edit and has columns */}
+		{canEdit && columns.length > 0 && (
+			<InlineRowCreator
+				columns={columns}
+				onSave={onSaveNewRow || (() => {})}
+				onCancel={onCancelNewRow || (() => {})}
+				isSaving={isSavingNewRow}
+				tables={tables}
+			/>
+		)}
 
-			{/* Data Rows */}
+		{/* Data Rows */}
 			{rows.map((row, rowIndex) => {
 				const isSelected = selectedRows.has(row.id.toString());
 				const isDeleting = deletingRows.has(row.id.toString());

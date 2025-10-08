@@ -581,17 +581,229 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 
 	// Import/Export handlers
 	const handleExportData = useCallback(async () => {
-		// Implement export logic from original component
-		// (same as in UnifiedTableEditor)
+		if (!token || !tenantId) {
+			showAlert("Missing authentication", "error");
+			return;
+		}
+
+		if (!tablePermissions.canReadTable()) {
+			showAlert("You don't have permission to export data from this table", "error");
+			return;
+		}
+
+		setIsExporting(true);
+		try {
+			const queryParams = new URLSearchParams({
+				format: "csv",
+				limit: "10000",
+			});
+
+			// Add global search if present
+			if (globalSearch) {
+				queryParams.append("globalSearch", globalSearch);
+			}
+
+			// Add filters if present
+			if (filters && filters.length > 0) {
+				queryParams.append("filters", JSON.stringify(filters));
+			}
+
+			const url = `/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/export?${queryParams.toString()}`;
+
+			const response = await fetch(url, {
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to export data");
+			}
+
+			// Get the CSV content and download it
+			const blob = await response.blob();
+			const downloadUrl = window.URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = downloadUrl;
+			link.download = `${table.name}_export_${new Date().toISOString().split("T")[0]}.csv`;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			window.URL.revokeObjectURL(downloadUrl);
+
+			showAlert("Data exported successfully!", "success");
+		} catch (error: any) {
+			console.error("Export error:", error);
+			showAlert(error.message || "Failed to export data", "error");
+		} finally {
+			setIsExporting(false);
+		}
 	}, [token, tenantId, table, tablePermissions, showAlert, globalSearch, filters]);
 
+	const processImportFile = useCallback(async (file: File) => {
+		if (!token || !tenantId || !columns) {
+			showAlert("Missing required information", "error");
+			return;
+		}
+
+		if (!tablePermissions.canEditTable()) {
+			showAlert("You don't have permission to import data into this table", "error");
+			return;
+		}
+
+		setIsImporting(true);
+		try {
+			// Parse CSV file
+			const text = await file.text();
+			const lines = text.split("\n").filter((line) => line.trim());
+
+			if (lines.length < 2) {
+				throw new Error("CSV file must contain at least a header row and one data row");
+			}
+
+			// Parse header
+			const headers = lines[0].split(";").map((h) => h.trim().replace(/^"|"$/g, ""));
+
+			// Map headers to column IDs
+			const columnMapping = headers.map((header) => {
+				// Handle reference column headers (e.g., "Product_Name")
+				const refMatch = header.match(/^(.+?)_(.+)$/);
+				if (refMatch) {
+					const [, baseName] = refMatch;
+					const column = columns.find((col) => col.name === baseName);
+					return column ? { columnId: column.id, header, isReference: true } : null;
+				}
+
+				const column = columns.find((col) => col.name === header);
+				return column ? { columnId: column.id, header, isReference: false } : null;
+			});
+
+			// Parse data rows
+			const rows = [];
+			for (let i = 1; i < lines.length; i++) {
+				const line = lines[i];
+				if (!line.trim()) continue;
+
+				// Simple CSV parsing (handle quoted values)
+				const values: string[] = [];
+				let currentValue = "";
+				let insideQuotes = false;
+
+				for (let j = 0; j < line.length; j++) {
+					const char = line[j];
+					if (char === '"') {
+						insideQuotes = !insideQuotes;
+					} else if (char === ";" && !insideQuotes) {
+						values.push(currentValue.trim().replace(/^"|"$/g, ""));
+						currentValue = "";
+					} else {
+						currentValue += char;
+					}
+				}
+				values.push(currentValue.trim().replace(/^"|"$/g, ""));
+
+				const cells = [];
+				for (let j = 0; j < values.length; j++) {
+					const mapping = columnMapping[j];
+					if (!mapping) continue;
+
+					const value = values[j];
+					if (!value || value === "") continue;
+
+					// For reference columns, we need to group values by base column
+					if (mapping.isReference) {
+						// Skip reference column details, will be handled by base column
+						continue;
+					}
+
+					const column = columns.find((col) => col.id === mapping.columnId);
+					if (!column) continue;
+
+					// Convert value based on column type
+					let processedValue: any = value;
+
+					if (column.type === "number" || column.type === "integer" || column.type === "decimal") {
+						processedValue = value ? parseFloat(value.replace(",", ".")) : null;
+					} else if (column.type === "boolean") {
+						processedValue = value === "✓" || value === "true" || value === "1";
+					} else if (column.type === "date" || column.type === "datetime") {
+						processedValue = value ? new Date(value).toISOString() : null;
+					}
+
+					cells.push({
+						columnId: mapping.columnId,
+						value: processedValue,
+					});
+				}
+
+				if (cells.length > 0) {
+					rows.push({ cells });
+				}
+			}
+
+			if (rows.length === 0) {
+				throw new Error("No valid data rows found in CSV file");
+			}
+
+			// Send import request
+			const response = await fetch(
+				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/import`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ rows }),
+				},
+			);
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || "Failed to import data");
+			}
+
+			// Update local state with imported rows (optimistic update only)
+			if (result.importedRowsData && result.importedRowsData.length > 0) {
+				setRows((currentRows) => [...result.importedRowsData, ...currentRows]);
+			}
+
+			// Clear import file
+			setImportFile(null);
+			
+			// Reset file input
+			const fileInput = document.getElementById("import-data-file-input") as HTMLInputElement;
+			if (fileInput) {
+				fileInput.value = "";
+			}
+
+			showAlert(
+				`Successfully imported ${result.importedRows || 0} rows!${
+					result.warnings?.length > 0 ? ` (${result.warnings.length} warnings)` : ""
+				}`,
+				"success",
+			);
+		} catch (error: any) {
+			console.error("Import error:", error);
+			showAlert(error.message || "Failed to import data", "error");
+		} finally {
+			setIsImporting(false);
+		}
+	}, [token, tenantId, table, tablePermissions, showAlert, columns, setRows]);
+
 	const handleImportData = useCallback(async () => {
-		// Implement import logic from original component
-		// (same as in UnifiedTableEditor)
-	}, [token, tenantId, table, tablePermissions, showAlert, importFile, columns, refetchRows]);
+		if (!importFile) {
+			showAlert("Please select a file to import", "error");
+			return;
+		}
+		await processImportFile(importFile);
+	}, [importFile, processImportFile, showAlert]);
 
 	const handleFileSelect = useCallback(
-		(event: React.ChangeEvent<HTMLInputElement>) => {
+		async (event: React.ChangeEvent<HTMLInputElement>) => {
 			const file = event.target.files?.[0];
 			if (file) {
 				if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
@@ -599,9 +811,12 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 					return;
 				}
 				setImportFile(file);
+				
+				// Process import immediately after file selection
+				await processImportFile(file);
 			}
 		},
-		[showAlert],
+		[showAlert, processImportFile],
 	);
 
 	const handleSaveCellWrapper = useCallback(
@@ -700,6 +915,7 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				onImportData={() => document.getElementById('import-data-file-input')?.click()}
 				isSaving={isSaving}
 				isExporting={isExporting}
+				isImporting={isImporting}
 				canEdit={tablePermissions.tablePermissions.canEdit}
 			/>
 

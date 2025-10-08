@@ -86,7 +86,7 @@ export function NoDataEmptyState({ onAddRow }: NoDataEmptyStateProps) {
 				<Database className='w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-muted-foreground/50' />
 				<h3 className='text-base sm:text-lg font-semibold mb-2'>No Data Yet</h3>
 				<p className='text-sm text-muted-foreground mb-4 sm:mb-6'>
-					This table is empty. Use the inline form above to add your first row.
+					This table is empty. You need edit permissions to add data.
 				</p>
 			</div>
 		</div>
