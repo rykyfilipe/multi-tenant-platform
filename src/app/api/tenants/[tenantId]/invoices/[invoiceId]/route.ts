@@ -82,9 +82,24 @@ export async function GET(
 		}
 
 	// Get customer ID from invoice
+	console.log('🔍 Invoice cells found:', invoice.cells.map((c: any) => ({
+		columnName: c.column.name,
+		columnType: c.column.type,
+		semanticType: c.column.semanticType,
+		value: c.value
+	})));
+	
 	const customerIdCell = invoice.cells.find(
 		(c: any) => c.column.name === "customer_id",
 	);
+	
+	console.log('🔍 Customer ID cell:', customerIdCell ? {
+		columnName: customerIdCell.column.name,
+		value: customerIdCell.value,
+		type: typeof customerIdCell.value,
+		isArray: Array.isArray(customerIdCell.value)
+	} : 'NOT FOUND');
+	
 	if (!customerIdCell) {
 		return NextResponse.json(
 			{ error: "Invoice missing customer ID" },

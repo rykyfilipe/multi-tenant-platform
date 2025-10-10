@@ -80,11 +80,11 @@ export class InvoiceSystemService {
 			},
 		});
 
-		// Create predefined columns for customers table
-		await this.createCustomerColumns(customersTable.id);
+	// Create predefined columns for customers table
+	await this.createCustomerColumns(customersTable.id);
 
-		// Create predefined columns for invoices table
-		await this.createInvoiceColumns(invoicesTable.id);
+	// Create predefined columns for invoices table
+	await this.createInvoiceColumns(invoicesTable.id, customersTable.id);
 
 		// Create company information table
 		await this.createCompanyColumns(customersTable.id);
@@ -399,7 +399,7 @@ export class InvoiceSystemService {
 	/**
 	 * Create predefined columns for invoices table
 	 */
-	private static async createInvoiceColumns(tableId: number) {
+	private static async createInvoiceColumns(tableId: number, customerTableId: number) {
 		const columns = [
 			{
 				name: "invoice_number",
@@ -445,6 +445,7 @@ export class InvoiceSystemService {
 				primary: false,
 				order: 5,
 				isLocked: true,
+				referenceTableId: customerTableId,
 			},
 			{
 				name: "status",

@@ -72,6 +72,8 @@ export async function POST(
 	try {
 		const body = await request.json();
 		
+		console.log('🔍 POST /invoices - Request body received:', JSON.stringify(body, null, 2));
+		
 		// Validate request body structure
 		if (!body || typeof body !== 'object') {
 			return NextResponse.json(
@@ -161,20 +163,37 @@ export async function POST(
 			);
 		}
 
-		// Ensure we have the latest table structure
-				invoiceTables = await InvoiceSystemService.getInvoiceTables(
-					Number(tenantId),
-					database.id,
-				);
-				
-		// Validate that all required tables exist
-		if (!invoiceTables.invoices?.columns || !invoiceTables.invoice_items?.columns) {
-			console.error("Invoice system tables not properly initialized");
-			return NextResponse.json(
-				{ error: "Invoice system tables not properly initialized" },
-				{ status: 500 },
+	// Ensure we have the latest table structure
+			invoiceTables = await InvoiceSystemService.getInvoiceTables(
+				Number(tenantId),
+				database.id,
 			);
-		}
+			
+	// Validate that all required tables exist
+	if (!invoiceTables.invoices?.columns || !invoiceTables.invoice_items?.columns) {
+		console.error("Invoice system tables not properly initialized");
+		return NextResponse.json(
+			{ error: "Invoice system tables not properly initialized" },
+			{ status: 500 },
+		);
+	}
+
+	// Fix: Ensure customer_id column has referenceTableId set
+	const customerIdColumn = invoiceTables.invoices.columns.find(
+		(col: any) => col.name === "customer_id"
+	);
+	if (customerIdColumn && !customerIdColumn.referenceTableId && invoiceTables.customers) {
+		console.log('🔧 Fixing customer_id column - adding referenceTableId');
+		await prisma.column.update({
+			where: { id: customerIdColumn.id },
+			data: { referenceTableId: invoiceTables.customers.id }
+		});
+		// Refresh tables after fix
+		invoiceTables = await InvoiceSystemService.getInvoiceTables(
+			Number(tenantId),
+			database.id,
+		);
+	}
 
 		// Get tenant settings for invoice numbering
 		const tenant = await prisma.tenant.findUnique({
@@ -251,10 +270,17 @@ export async function POST(
 				case SemanticColumnType.INVOICE_DUE_DATE:
 					value = parsedData.due_date;
 					break;
-				case SemanticColumnType.INVOICE_CUSTOMER_ID:
-					// Reference columns require array values
-					value = [parsedData.customer_id];
-					break;
+			case SemanticColumnType.INVOICE_CUSTOMER_ID:
+				// Reference columns require array values
+				value = [parsedData.customer_id];
+				console.log('🔍 Setting customer_id cell:', {
+					columnId: column.id,
+					columnName: column.name,
+					columnType: column.type,
+					rawCustomerId: parsedData.customer_id,
+					arrayValue: value
+				});
+				break;
 				case SemanticColumnType.INVOICE_STATUS:
 						value = parsedData.status || "draft";
 						break;
@@ -330,15 +356,20 @@ export async function POST(
 			}
 		}
 
-		// Remove duplicate cells before creating
-		const uniqueInvoiceCells = invoiceCells.filter((cell, index, self) => 
-			index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
-		);
+	// Remove duplicate cells before creating
+	const uniqueInvoiceCells = invoiceCells.filter((cell, index, self) => 
+		index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
+	);
 
-			// Create all invoice cells
-			await tx.cell.createMany({
-				data: uniqueInvoiceCells,
-			});
+	console.log('📋 Invoice cells to be created:', uniqueInvoiceCells.length);
+	console.log('📋 Invoice cells with customer_id:', uniqueInvoiceCells.filter(c => 
+		invoiceTables.invoices!.columns!.find((col:any) => col.id === c.columnId && col.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID)
+	));
+
+		// Create all invoice cells
+		await tx.cell.createMany({
+			data: uniqueInvoiceCells,
+		});
 
 			// Create invoice items
 			const invoiceItemRows: any[] = [];

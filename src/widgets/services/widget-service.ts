@@ -135,7 +135,7 @@ export class WidgetService {
       tenantId,
       dashboardId,
       // Only add kind filter if kinds array has items
-      kind: kinds && kinds.length > 0 ? { in: kinds } : undefined,
+      ...(kinds && kinds.length > 0 ? { kind: { in: kinds } } : {}),
     };
 
     console.log('[WidgetService.list] Where clause:', where);
