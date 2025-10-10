@@ -292,14 +292,17 @@ export async function POST(
 			case SemanticColumnType.INVOICE_CUSTOMER_ID:
 				// Reference columns require array values
 				value = [parsedData.customer_id];
-				console.log('🔍 Setting customer_id cell:', {
+				console.log('🔍 Setting customer_id cell INSIDE switch case:', {
 					columnId: column.id,
 					columnName: column.name,
 					columnType: column.type,
 					semanticType: column.semanticType,
 					rawCustomerId: parsedData.customer_id,
 					arrayValue: value,
-					willBeAdded: value !== null && value !== undefined && value !== ""
+					isArray: Array.isArray(value),
+					arrayLength: value.length,
+					firstElement: value[0],
+					willPassLengthCheck: value.length > 0
 				});
 				break;
 				case SemanticColumnType.INVOICE_STATUS:
@@ -364,35 +367,50 @@ export async function POST(
 						break;
 				}
 
-				// Only add if we have a meaningful value
-				// For arrays (reference columns), check if array has at least one element
-				// For other values, check if not null/undefined/empty string
-				const shouldAddCell = Array.isArray(value) 
-					? value.length > 0 
-					: (value !== null && value !== undefined && value !== "");
+			// Only add if we have a meaningful value
+			// For arrays (reference columns), check if array has at least one element
+			// For other values, check if not null/undefined/empty string
+			const shouldAddCell = Array.isArray(value) 
+				? value.length > 0 
+				: (value !== null && value !== undefined && value !== "");
+			
+			if (column.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID) {
+				console.log('🔍 INVOICE_CUSTOMER_ID shouldAddCell check:', {
+					value,
+					isArray: Array.isArray(value),
+					arrayLength: Array.isArray(value) ? value.length : 'N/A',
+					shouldAddCell,
+					columnId: column.id,
+					columnName: column.name
+				});
+			}
+			
+			if (shouldAddCell) {
+				invoiceCells.push({
+					rowId: invoiceRow.id,
+					columnId: column.id,
+					value,
+				});
 				
-				if (shouldAddCell) {
-					invoiceCells.push({
-						rowId: invoiceRow.id,
-						columnId: column.id,
-						value,
-					});
-					
-					console.log(`✅ Adding cell for ${column.name} (${column.semanticType}):`, value);
+				console.log(`✅ Adding cell for ${column.name} (${column.semanticType}):`, value);
+			} else {
+				if (column.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID) {
+					console.log(`❌ NOT adding cell for ${column.name} - shouldAddCell is false`);
+				}
 			}
 		}
 
-	// Remove duplicate cells before creating
-	const uniqueInvoiceCells = invoiceCells.filter((cell, index, self) => 
-		index === self.findIndex(c => c.rowId === cell.rowId && c.columnId === cell.columnId)
-	);
+		// Remove duplicate cells before creating
+		const uniqueInvoiceCells = invoiceCells.filter((cell: any, index: any, self: any) => 
+			index === self.findIndex((c: any) => c.rowId === cell.rowId && c.columnId === cell.columnId)
+		);
 
-	console.log('📋 Invoice cells to be created:', uniqueInvoiceCells.length);
-	const customerIdCells = uniqueInvoiceCells.filter(c => 
-		invoiceTables.invoices!.columns!.find((col:any) => col.id === c.columnId && col.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID)
-	);
-	console.log('📋 Invoice cells with customer_id:', customerIdCells);
-	console.log('📋 All invoice cells detail:', uniqueInvoiceCells.map(c => ({
+		console.log('📋 Invoice cells to be created:', uniqueInvoiceCells.length);
+		const customerIdCells = uniqueInvoiceCells.filter((c: any) => 
+			invoiceTables.invoices!.columns!.find((col:any) => col.id === c.columnId && col.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID)
+		);
+		console.log('📋 Invoice cells with customer_id:', customerIdCells);
+		console.log('📋 All invoice cells detail:', uniqueInvoiceCells.map((c: any) => ({
 		columnId: c.columnId,
 		value: c.value,
 		columnName: invoiceTables.invoices!.columns!.find((col:any) => col.id === c.columnId)?.name,

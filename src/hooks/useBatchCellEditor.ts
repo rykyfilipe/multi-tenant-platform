@@ -338,14 +338,25 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 				const allOperations: any[] = [];
 				changesByRow.forEach((rowChanges) => {
 					rowChanges.forEach((change) => {
+						// Determină dacă e o celulă nouă (virtual) sau existentă
+						const isNewCell = change.cellId === "virtual" || change.cellId.startsWith("temp_cell_");
+						
 						allOperations.push({
-							operation: "update",
+							operation: isNewCell ? "create" : "update",
 							data: {
 								rowId: change.rowId,
 								columnId: change.columnId,
-								cellId: change.cellId,
+								cellId: isNewCell ? undefined : change.cellId, // Nu trimite cellId pentru create
 								value: change.newValue,
 							},
+						});
+						
+						console.log(`📝 [savePendingChanges] Adding ${isNewCell ? 'CREATE' : 'UPDATE'} operation for cell`, {
+							rowId: change.rowId,
+							columnId: change.columnId,
+							cellId: change.cellId,
+							isNewCell,
+							value: change.newValue
 						});
 					});
 				});
