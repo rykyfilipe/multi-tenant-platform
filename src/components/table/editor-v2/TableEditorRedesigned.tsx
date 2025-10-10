@@ -41,6 +41,16 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 	const [isImporting, setIsImporting] = useState(false);
 	const [importFile, setImportFile] = useState<File | null>(null);
 	const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+	const [importProgress, setImportProgress] = useState({
+		show: false,
+		status: 'idle' as 'idle' | 'parsing' | 'importing' | 'success' | 'error',
+		message: '',
+		current: 0,
+		total: 0,
+		percentage: 0,
+		warnings: [] as string[],
+		errors: [] as string[],
+	});
 
 	// Permissions
 	const { permissions: userPermissions, loading: permissionsLoading } = useCurrentUserPermissions();
@@ -655,6 +665,19 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 		}
 
 		setIsImporting(true);
+		setImportProgress({
+			show: true,
+			status: 'parsing',
+			message: 'Reading CSV file...',
+			current: 0,
+			total: 0,
+			percentage: 0,
+			warnings: [],
+			errors: [],
+		});
+
+		let progressInterval: NodeJS.Timeout | null = null;
+
 		try {
 			// Parse CSV file
 			const text = await file.text();
@@ -791,6 +814,34 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 
 			console.log(`✅ Parsed ${rows.length} rows for import`);
 
+			// Update progress: Parsed successfully
+			setImportProgress(prev => ({
+				...prev,
+				status: 'importing',
+				message: `Importing ${rows.length} rows...`,
+				total: rows.length,
+				current: 0,
+				percentage: 0,
+			}));
+
+			// Simulate progress updates during import (for better UX)
+			progressInterval = setInterval(() => {
+				setImportProgress(prev => {
+					if (prev.percentage >= 90) {
+						if (progressInterval) clearInterval(progressInterval);
+						return prev;
+					}
+					const increment = Math.random() * 15 + 5; // Random increment between 5-20%
+					const newPercentage = Math.min(prev.percentage + increment, 90);
+					const estimatedCurrent = Math.floor((newPercentage / 100) * prev.total);
+					return {
+						...prev,
+						percentage: newPercentage,
+						current: estimatedCurrent,
+					};
+				});
+			}, 500); // Update every 500ms
+
 			// Send import request
 			const response = await fetch(
 				`/api/tenants/${tenantId}/databases/${table.databaseId}/tables/${table.id}/rows/import`,
@@ -806,9 +857,31 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 
 			const result = await response.json();
 
+			// Stop progress simulation
+			if (progressInterval) clearInterval(progressInterval);
+
 			if (!response.ok) {
-				throw new Error(result.error || "Failed to import data");
+				setImportProgress(prev => ({
+					...prev,
+					status: 'error',
+					message: result.error || "Failed to import data",
+					percentage: 0,
+					errors: result.details || [result.error || "Unknown error"],
+				}));
+				return;
 			}
+
+			// Update progress: Import completed
+			setImportProgress(prev => ({
+				...prev,
+				status: 'success',
+				message: `Successfully imported ${result.importedRows || 0} rows!`,
+				current: result.importedRows || 0,
+				total: result.importedRows || 0,
+				percentage: 100,
+				warnings: result.warnings || [],
+				errors: result.errors || [],
+			}));
 
 			// Update local state with imported rows (optimistic update only)
 			if (result.importedRowsData && result.importedRowsData.length > 0) {
@@ -824,15 +897,23 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				fileInput.value = "";
 			}
 
-			showAlert(
-				`Successfully imported ${result.importedRows || 0} rows!${
-					result.warnings?.length > 0 ? ` (${result.warnings.length} warnings)` : ""
-				}`,
-				"success",
-			);
+			// Auto-close success dialog after 3 seconds
+			setTimeout(() => {
+				setImportProgress(prev => ({ ...prev, show: false }));
+			}, 3000);
+
 		} catch (error: any) {
 			console.error("Import error:", error);
-			showAlert(error.message || "Failed to import data", "error");
+			// Make sure to clear progress interval on error
+			if (progressInterval) clearInterval(progressInterval);
+			
+			setImportProgress(prev => ({
+				...prev,
+				status: 'error',
+				message: error.message || "Failed to import data",
+				percentage: 0,
+				errors: [error.message || "Unknown error"],
+			}));
 		} finally {
 			setIsImporting(false);
 		}
@@ -1100,6 +1181,154 @@ export function TableEditorRedesigned({ table, columns, setColumns, refreshTable
 				onSaveAll={savePendingChanges}
 				isSaving={isSaving}
 			/>
+
+			{/* Import Progress Dialog */}
+			<AnimatePresence>
+				{importProgress.show && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						className='fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50'
+						onClick={(e) => {
+							if (importProgress.status === 'success' || importProgress.status === 'error') {
+								if (e.target === e.currentTarget) {
+									setImportProgress(prev => ({ ...prev, show: false }));
+								}
+							}
+						}}>
+						<motion.div
+							initial={{ scale: 0.9, opacity: 0, y: 20 }}
+							animate={{ scale: 1, opacity: 1, y: 0 }}
+							exit={{ scale: 0.9, opacity: 0, y: 20 }}
+							transition={{ type: "spring", duration: 0.5 }}
+							className='bg-card border border-border rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4'>
+							
+							{/* Status Icon */}
+							<div className='flex flex-col items-center mb-6'>
+								{importProgress.status === 'parsing' && (
+									<div className='w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4'>
+										<svg className='w-8 h-8 text-primary animate-spin' fill='none' viewBox='0 0 24 24'>
+											<circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4' />
+											<path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z' />
+										</svg>
+									</div>
+								)}
+								{importProgress.status === 'importing' && (
+									<div className='w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mb-4'>
+										<svg className='w-8 h-8 text-blue-600 dark:text-blue-500 animate-pulse' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+											<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' />
+										</svg>
+									</div>
+								)}
+								{importProgress.status === 'success' && (
+									<div className='w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4'>
+										<svg className='w-8 h-8 text-green-600 dark:text-green-500' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+											<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+										</svg>
+									</div>
+								)}
+								{importProgress.status === 'error' && (
+									<div className='w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center mb-4'>
+										<svg className='w-8 h-8 text-destructive' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+											<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+										</svg>
+									</div>
+								)}
+
+								<h3 className='text-xl font-bold text-foreground text-center'>
+									{importProgress.status === 'parsing' && 'Parsing CSV File'}
+									{importProgress.status === 'importing' && 'Importing Data'}
+									{importProgress.status === 'success' && 'Import Successful!'}
+									{importProgress.status === 'error' && 'Import Failed'}
+								</h3>
+								<p className='text-sm text-muted-foreground text-center mt-2'>
+									{importProgress.message}
+								</p>
+							</div>
+
+							{/* Progress Bar */}
+							{(importProgress.status === 'parsing' || importProgress.status === 'importing') && (
+								<div className='mb-6'>
+									<div className='w-full h-2 bg-muted rounded-full overflow-hidden'>
+										<motion.div
+											className='h-full bg-primary'
+											initial={{ width: 0 }}
+											animate={{ width: `${importProgress.percentage}%` }}
+											transition={{ duration: 0.3 }}
+										/>
+									</div>
+									{importProgress.total > 0 && (
+										<p className='text-xs text-muted-foreground text-center mt-2'>
+											{importProgress.current} / {importProgress.total} rows
+										</p>
+									)}
+								</div>
+							)}
+
+							{/* Warnings */}
+							{importProgress.warnings.length > 0 && (
+								<div className='mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg'>
+									<h4 className='text-sm font-semibold text-yellow-600 dark:text-yellow-500 mb-2 flex items-center gap-2'>
+										<svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+											<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
+										</svg>
+										Warnings ({importProgress.warnings.length})
+									</h4>
+									<div className='max-h-32 overflow-y-auto space-y-1'>
+										{importProgress.warnings.slice(0, 5).map((warning, idx) => (
+											<p key={idx} className='text-xs text-yellow-600 dark:text-yellow-500/80'>
+												• {warning}
+											</p>
+										))}
+										{importProgress.warnings.length > 5 && (
+											<p className='text-xs text-yellow-600 dark:text-yellow-500/60 italic'>
+												... and {importProgress.warnings.length - 5} more
+											</p>
+										)}
+									</div>
+								</div>
+							)}
+
+							{/* Errors */}
+							{importProgress.errors.length > 0 && (
+								<div className='mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg'>
+									<h4 className='text-sm font-semibold text-destructive mb-2 flex items-center gap-2'>
+										<svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+											<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
+										</svg>
+										Errors ({importProgress.errors.length})
+									</h4>
+									<div className='max-h-32 overflow-y-auto space-y-1'>
+										{importProgress.errors.slice(0, 5).map((error, idx) => (
+											<p key={idx} className='text-xs text-destructive/80'>
+												• {error}
+											</p>
+										))}
+										{importProgress.errors.length > 5 && (
+											<p className='text-xs text-destructive/60 italic'>
+												... and {importProgress.errors.length - 5} more
+											</p>
+										)}
+									</div>
+								</div>
+							)}
+
+							{/* Action Buttons */}
+							{(importProgress.status === 'success' || importProgress.status === 'error') && (
+								<div className='flex gap-3 justify-end'>
+									<Button
+										onClick={() => setImportProgress(prev => ({ ...prev, show: false }))}
+										variant={importProgress.status === 'success' ? 'default' : 'destructive'}
+										className='min-w-24'>
+										{importProgress.status === 'success' ? 'Done' : 'Close'}
+									</Button>
+								</div>
+							)}
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }

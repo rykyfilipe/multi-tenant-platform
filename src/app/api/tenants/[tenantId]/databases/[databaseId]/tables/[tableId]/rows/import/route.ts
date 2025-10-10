@@ -522,87 +522,72 @@ export async function POST(
 			);
 		}
 
-		// Import rânduri în baza de date - folosim tranzacție pentru consistență
+		// Import rânduri în baza de date - procesăm fără tranzacții pentru a evita timeout-uri
 		const importedRows: any[] = [];
 		const importErrors: string[] = [];
 
 		try {
-			// Pentru importuri mari, folosim batch processing cu batch-uri mai mici pentru a încăpea în limita de 15s a Prisma Accelerate
-			const batchSize = 50; // Reduced from 100 to fit within 15s timeout
-			const batches = [];
-			
-			for (let i = 0; i < validRows.length; i += batchSize) {
-				batches.push(validRows.slice(i, i + batchSize));
-			}
+			// Procesăm rândurile individual pentru a evita timeout-uri
+			for (let i = 0; i < validRows.length; i++) {
+				const rowData = validRows[i];
+				const rowIndex = i + 1;
 
-			for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-				const batch = batches[batchIndex];
-				
-				await prisma.$transaction(async (tx: any) => {
-					for (let i = 0; i < batch.length; i++) {
-						const rowData = batch[i];
-						const rowIndex = (batchIndex * batchSize) + i + 1;
+				try {
+					// Creare rând nou (fără tranzacție)
+					const newRow = await prisma.row.create({
+						data: {
+							tableId: Number(tableId),
+						},
+						select: {
+							id: true,
+						},
+					});
 
-						try {
-							// Creare rând nou
-							const newRow = await tx.row.create({
-								data: {
-									tableId: Number(tableId),
-								},
-								select: {
-									id: true,
-								},
-							});
-
-							// Creare celule pentru rând
-							const createdCells = [];
-							for (const cell of rowData.cells) {
-								const column = tableColumns.find(
-									(col: any) => Number(col.id) === Number(cell.columnId),
-								);
-								
-								let cellValue = cell.value;
-								
-								// Pentru referințe, procesează valorile pentru a crea rândurile referențiate
-								if (column?.type === "reference" && column?.referenceTableId) {
-									cellValue = await processReferenceValue(
-										cell.value,
-										column,
-										column.referenceTableId,
-										tx
-									);
-								}
-								
-								const createdCell = await tx.cell.create({
-									data: {
-										rowId: newRow.id,
-										columnId: Number(cell.columnId),
-										value: cellValue,
-									},
-								});
-								createdCells.push(createdCell);
-							}
-
-							// Obține rândul complet cu celulele create
-							const completeRow = await tx.row.findUnique({
-								where: { id: newRow.id },
-								include: {
-									cells: true,
-								},
-							});
-
-							importedRows.push(completeRow);
-						} catch (error) {
-							importErrors.push(`Row ${rowIndex}: Failed to import - ${error}`);
-							throw error; // Rollback tranzacția pentru acest batch
+					// Creare celule pentru rând
+					const createdCells = [];
+					for (const cell of rowData.cells) {
+						const column = tableColumns.find(
+							(col: any) => Number(col.id) === Number(cell.columnId),
+						);
+						
+						let cellValue = cell.value;
+						
+						// Pentru referințe, salvăm valoarea ca string direct
+						// Nu mai procesăm automat referințele la import pentru a evita timeout-uri
+						// Utilizatorul poate edita manual referințele după import
+						if (column?.type === "reference") {
+							// Salvăm valoarea ca string pentru a putea fi editată manual
+							cellValue = typeof cell.value === "string" ? cell.value : String(cell.value);
 						}
+						
+						const createdCell = await prisma.cell.create({
+							data: {
+								rowId: newRow.id,
+								columnId: Number(cell.columnId),
+								value: cellValue,
+							},
+						});
+						createdCells.push(createdCell);
 					}
-				}, {
-					timeout: 14000, // 14 seconds - within Prisma Accelerate's 15s limit with safety margin
-				});
+
+					// Obține rândul complet cu celulele create
+					const completeRow = await prisma.row.findUnique({
+						where: { id: newRow.id },
+						include: {
+							cells: true,
+						},
+					});
+
+					importedRows.push(completeRow);
+				} catch (error) {
+					importErrors.push(`Row ${rowIndex}: Failed to import - ${error}`);
+					console.error(`Failed to import row ${rowIndex}:`, error);
+					// Continuăm cu următorul rând în loc să oprim tot importul
+					continue;
+				}
 			}
 		} catch (error) {
-			console.error("Transaction failed:", error);
+			console.error("Import failed:", error);
 			return NextResponse.json(
 				{
 					error: "Failed to import data",
@@ -615,6 +600,14 @@ export async function POST(
 					},
 				},
 				{ status: 500 },
+			);
+		}
+
+		// Verificăm dacă există coloane de tip reference pentru a adăuga un warning
+		const hasReferenceColumns = tableColumns.some((col: any) => col.type === "reference");
+		if (hasReferenceColumns) {
+			warnings.push(
+				"Reference columns were imported as text values. Please edit them manually to link to the correct records."
 			);
 		}
 
