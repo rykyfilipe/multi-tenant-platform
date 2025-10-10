@@ -205,23 +205,22 @@ export function InvoiceHTMLPreview({
 
   return (
     <div 
-      className="bg-white shadow-2xl border border-gray-200 mx-auto"
+      className="invoice-preview-container mx-auto"
       style={{ 
         width: `${zoom}%`,
         maxWidth: '100%',
-        transition: 'width 0.3s ease',
-        // A4 aspect ratio: 210mm x 297mm = 0.707 (width/height)
-        aspectRatio: '210/297',
-        minHeight: '600px',
-        fontFamily: 'Arial, sans-serif'
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        minHeight: '800px',
       }}
     >
       <div 
         dangerouslySetInnerHTML={{ __html: htmlContent }}
+        className="invoice-preview-content"
         style={{ 
           width: '100%',
           height: '100%',
-          overflow: 'hidden'
+          overflow: 'auto',
+          borderRadius: '12px',
         }}
       />
     </div>
