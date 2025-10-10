@@ -178,21 +178,69 @@ export async function POST(
 		);
 	}
 
-	// Fix: Ensure customer_id column has referenceTableId set
+	// Fix: Ensure customer_id column has correct semanticType and referenceTableId
 	const customerIdColumn = invoiceTables.invoices.columns.find(
 		(col: any) => col.name === "customer_id"
 	);
-	if (customerIdColumn && !customerIdColumn.referenceTableId && invoiceTables.customers) {
-		console.log('🔧 Fixing customer_id column - adding referenceTableId');
-		await prisma.column.update({
-			where: { id: customerIdColumn.id },
-			data: { referenceTableId: invoiceTables.customers.id }
-		});
-		// Refresh tables after fix
+	if (customerIdColumn) {
+		let needsUpdate = false;
+		const updates: any = {};
+		
+		if (customerIdColumn.semanticType !== 'invoice_customer_id') {
+			console.log('🔧 Fixing customer_id column - setting semanticType to invoice_customer_id');
+			updates.semanticType = 'invoice_customer_id';
+			needsUpdate = true;
+		}
+		
+		if (!customerIdColumn.referenceTableId && invoiceTables.customers) {
+			console.log('🔧 Fixing customer_id column - adding referenceTableId');
+			updates.referenceTableId = invoiceTables.customers.id;
+			needsUpdate = true;
+		}
+		
+		if (needsUpdate) {
+			await prisma.column.update({
+				where: { id: customerIdColumn.id },
+				data: updates
+			});
+		}
+	}
+	
+	// Fix: Batch update all invoice columns with correct semanticTypes
+	const columnFixes = [
+		{ name: 'total_amount', semanticType: 'invoice_total_amount' },
+		{ name: 'invoice_series', semanticType: 'invoice_series' },
+		{ name: 'payment_terms', semanticType: 'invoice_payment_terms' },
+		{ name: 'payment_method', semanticType: 'invoice_payment_method' },
+		{ name: 'notes', semanticType: 'invoice_notes' },
+		{ name: 'base_currency', semanticType: 'invoice_base_currency' },
+		{ name: 'subtotal', semanticType: 'invoice_subtotal' },
+		{ name: 'tax_total', semanticType: 'invoice_tax_total' },
+		{ name: 'late_fee', semanticType: 'invoice_late_fee' },
+		{ name: 'discount_amount', semanticType: 'invoice_discount_amount' },
+		{ name: 'discount_rate', semanticType: 'invoice_discount_rate' },
+	];
+	
+	for (const fix of columnFixes) {
+		const column = invoiceTables.invoices.columns.find((col: any) => col.name === fix.name);
+		if (column && column.semanticType !== fix.semanticType) {
+			console.log(`🔧 Fixing ${fix.name} column - setting semanticType to ${fix.semanticType}`);
+			await prisma.column.update({
+				where: { id: column.id },
+				data: { semanticType: fix.semanticType }
+			});
+		}
+	}
+	
+	// Refresh tables after all fixes
+	if (columnFixes.some(fix => 
+		invoiceTables.invoices.columns.find((col: any) => col.name === fix.name && col.semanticType !== fix.semanticType)
+	) || (customerIdColumn && (customerIdColumn.semanticType !== 'invoice_customer_id' || !customerIdColumn.referenceTableId))) {
 		invoiceTables = await InvoiceSystemService.getInvoiceTables(
 			Number(tenantId),
 			database.id,
 		);
+		console.log('✅ Invoice columns fixed and refreshed');
 	}
 
 		// Get tenant settings for invoice numbering
