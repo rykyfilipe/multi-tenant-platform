@@ -51,54 +51,33 @@ export async function GET(
       sum + db.tables.reduce((tableSum, table) => tableSum + table._count.rows, 0), 0
     );
 
-    // Calculate real storage usage using PostgreSQL functions for tenant's tables only
-    let totalStorageBytes = 0;
-    
-    // Get all table names for this tenant
-    const tenantTables = await prisma.table.findMany({
+    // Calculate storage usage by estimating based on rows and cells count
+    // Since all data is stored in Prisma's Row and Cell tables, we estimate based on count
+    const totalCellsCount = await prisma.cell.count({
       where: {
-        database: {
-          tenantId: tenantId
+        row: {
+          table: {
+            database: {
+              tenantId
+            }
+          }
         }
-      },
-      select: {
-        id: true,
-        name: true
       }
     });
 
-    // Calculate storage for each table using pg_total_relation_size
-    for (const table of tenantTables) {
-      try {
-        const tableSizeResult = await prisma.$queryRaw`
-          SELECT pg_total_relation_size(${table.name}::regclass) as table_size_bytes
-        ` as any[];
-        
-        const tableSizeBytes = Number(tableSizeResult[0]?.table_size_bytes || 0);
-        totalStorageBytes += tableSizeBytes;
-        
-        console.log(`Table ${table.name} (${table.id}): ${tableSizeBytes} bytes`);
-      } catch (error) {
-        console.warn(`Could not get size for table ${table.name}:`, error);
-        // Fallback: estimate based on row count
-        const tableRowCount = await prisma.row.count({
-          where: { tableId: table.id }
-        });
-        totalStorageBytes += tableRowCount * 100; // Estimate 100 bytes per row
-      }
-    }
-
+    // Estimate: ~100 bytes per cell (includes overhead for row structure, indexes, etc.)
+    const totalStorageBytes = totalCellsCount * 100;
     const storageUsedGB = totalStorageBytes / (1024 * 1024 * 1024); // Convert bytes to GB
     
     // Debug log to check calculation
     console.log('Storage calculation debug:', {
       tenantId,
-      totalTables: tenantTables.length,
+      totalTables,
       totalRows,
+      totalCellsCount,
       totalStorageBytes,
       storageUsedGB,
-      storageUsedGBFormatted: storageUsedGB.toFixed(6),
-      tenantTables: tenantTables.map(t => ({ id: t.id, name: t.name }))
+      storageUsedGBFormatted: storageUsedGB.toFixed(6)
     });
     
     // Convert to appropriate unit based on size
@@ -122,8 +101,9 @@ export async function GET(
     // Debug log for final result
     console.log('Storage conversion result:', {
       tenantId,
-      totalTables: tenantTables.length,
+      totalTables,
       totalRows,
+      totalCellsCount,
       totalStorageBytes,
       storageUsed,
       storageUnit,
@@ -144,22 +124,26 @@ export async function GET(
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    // User growth (last 30 days vs previous 30 days)
-    const usersLast30Days = await prisma.user.count({
+    // User growth - based on UserActivity (first time users appeared in activity)
+    const uniqueUsersLast30Days = await prisma.userActivity.findMany({
       where: { 
         tenantId,
         createdAt: { gte: thirtyDaysAgo }
-      }
+      },
+      select: { userId: true },
+      distinct: ['userId']
     });
-    const usersPrevious30Days = await prisma.user.count({
+    const uniqueUsersPrevious30Days = await prisma.userActivity.findMany({
       where: { 
         tenantId,
         createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo }
-      }
+      },
+      select: { userId: true },
+      distinct: ['userId']
     });
-    const userGrowth = usersPrevious30Days > 0 
-      ? Math.round(((usersLast30Days - usersPrevious30Days) / usersPrevious30Days) * 100)
-      : usersLast30Days > 0 ? 100 : 0;
+    const userGrowth = uniqueUsersPrevious30Days.length > 0 
+      ? Math.round(((uniqueUsersLast30Days.length - uniqueUsersPrevious30Days.length) / uniqueUsersPrevious30Days.length) * 100)
+      : uniqueUsersLast30Days.length > 0 ? 100 : 0;
 
     // Database growth
     const databasesLast30Days = await prisma.database.count({
@@ -233,17 +217,7 @@ export async function GET(
       totalDatabases,
       totalTables,
       totalRows,
-      totalCells: await prisma.cell.count({
-        where: {
-          row: {
-            table: {
-              database: {
-                tenantId
-              }
-            }
-          }
-        }
-      }),
+      totalCells: totalCellsCount,
       storageUsed: storageUsed,
       storageUnit: storageUnit,
       storageUsedGB, // Keep for backward compatibility
@@ -293,19 +267,20 @@ export async function GET(
     // Calculate REAL database activity with size and last accessed time
     const databaseActivity = await Promise.all(
       databases.map(async db => {
-        // Calculate real size for this database by summing all its tables
-        let dbSizeBytes = 0;
-        for (const table of db.tables) {
-          try {
-            const tableSizeResult = await prisma.$queryRaw`
-              SELECT pg_total_relation_size(${table.name}::regclass) as table_size_bytes
-            ` as any[];
-            dbSizeBytes += Number(tableSizeResult[0]?.table_size_bytes || 0);
-          } catch (error) {
-            // Fallback: estimate based on row count
-            dbSizeBytes += table._count.rows * 100; // Estimate 100 bytes per row
+        // Calculate estimated size for this database
+        // Count cells for all tables in this database
+        const dbCellsCount = await prisma.cell.count({
+          where: {
+            row: {
+              table: {
+                databaseId: db.id
+              }
+            }
           }
-        }
+        });
+        
+        // Estimate: ~100 bytes per cell
+        const dbSizeBytes = dbCellsCount * 100;
         const dbSizeMB = dbSizeBytes / (1024 * 1024);
 
         // Get real last accessed time from UserActivity

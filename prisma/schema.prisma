@@ -85,6 +85,8 @@ model User {
   subscriptionPlan             String?
   subscriptionStatus           String?
   profileImage                 String?
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @default(now()) @updatedAt
   accounts                     Account[]
   columnPermissions            ColumnPermission[]
   sessions                     Session[]
@@ -133,6 +135,8 @@ model Table {
   protectedType       String?
   moduleType          String?
   isModuleTable       Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @default(now()) @updatedAt
   referencedByColumns Column[]           @relation("ReferenceColumnTable")
   columns             Column[]
   columnPermissions   ColumnPermission[]

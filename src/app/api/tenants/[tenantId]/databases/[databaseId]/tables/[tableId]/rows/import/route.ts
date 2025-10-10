@@ -460,6 +460,32 @@ export async function POST(
 					rowHasValidData = true;
 				}
 
+				// Auto-completează coloanele created_at și updated_at dacă există
+				const createdAtColumn = tableColumns.find(
+					(col: any) => col.name.toLowerCase() === 'created_at' && (col.type === 'date' || col.type === 'datetime')
+				);
+				const updatedAtColumn = tableColumns.find(
+					(col: any) => col.name.toLowerCase() === 'updated_at' && (col.type === 'date' || col.type === 'datetime')
+				);
+
+				const now = new Date();
+				
+				if (createdAtColumn && !validCells.some(c => Number(c.columnId) === Number(createdAtColumn.id))) {
+					validCells.push({
+						columnId: Number(createdAtColumn.id),
+						value: now,
+					});
+					rowHasValidData = true;
+				}
+				
+				if (updatedAtColumn && !validCells.some(c => Number(c.columnId) === Number(updatedAtColumn.id))) {
+					validCells.push({
+						columnId: Number(updatedAtColumn.id),
+						value: now,
+					});
+					rowHasValidData = true;
+				}
+
 				// Doar adăugăm rândul dacă are cel puțin o celulă validă cu date
 				if (rowHasValidData && validCells.length > 0) {
 					validRows.push({ cells: validCells });
@@ -522,69 +548,91 @@ export async function POST(
 			);
 		}
 
-		// Import rânduri în baza de date - procesăm fără tranzacții pentru a evita timeout-uri
+		// Import rânduri în baza de date - folosim batch processing optimizat
 		const importedRows: any[] = [];
 		const importErrors: string[] = [];
 
 		try {
-			// Procesăm rândurile individual pentru a evita timeout-uri
-			for (let i = 0; i < validRows.length; i++) {
-				const rowData = validRows[i];
-				const rowIndex = i + 1;
+			// Procesăm în batch-uri pentru performanță mai bună
+			const batchSize = 10; // Batch mai mic pentru a evita timeout-uri
+			const totalBatches = Math.ceil(validRows.length / batchSize);
 
-				try {
-					// Creare rând nou (fără tranzacție)
-					const newRow = await prisma.row.create({
-						data: {
-							tableId: Number(tableId),
-						},
-						select: {
-							id: true,
-						},
-					});
+			for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+				const batchStart = batchIndex * batchSize;
+				const batchEnd = Math.min(batchStart + batchSize, validRows.length);
+				const batch = validRows.slice(batchStart, batchEnd);
 
-					// Creare celule pentru rând
-					const createdCells = [];
-					for (const cell of rowData.cells) {
-						const column = tableColumns.find(
-							(col: any) => Number(col.id) === Number(cell.columnId),
-						);
-						
-						let cellValue = cell.value;
-						
-						// Pentru referințe, salvăm valoarea ca string direct
-						// Nu mai procesăm automat referințele la import pentru a evita timeout-uri
-						// Utilizatorul poate edita manual referințele după import
-						if (column?.type === "reference") {
-							// Salvăm valoarea ca string pentru a putea fi editată manual
-							cellValue = typeof cell.value === "string" ? cell.value : String(cell.value);
-						}
-						
-						const createdCell = await prisma.cell.create({
+				console.log(`Processing batch ${batchIndex + 1}/${totalBatches} (rows ${batchStart + 1}-${batchEnd})`);
+
+				// Procesăm batch-ul în paralel pentru viteză
+				const batchPromises = batch.map(async (rowData, batchRowIndex) => {
+					const rowIndex = batchStart + batchRowIndex + 1;
+
+					try {
+						// Creare rând nou
+						const newRow = await prisma.row.create({
 							data: {
-								rowId: newRow.id,
-								columnId: Number(cell.columnId),
-								value: cellValue,
+								tableId: Number(tableId),
+							},
+							select: {
+								id: true,
+								createdAt: true,
 							},
 						});
-						createdCells.push(createdCell);
+
+						// Creare celule în paralel
+						const cellPromises = rowData.cells.map(async (cell: any) => {
+							const column = tableColumns.find(
+								(col: any) => Number(col.id) === Number(cell.columnId),
+							);
+							
+							let cellValue = cell.value;
+							
+							// Pentru referințe, salvăm valoarea ca string direct
+							if (column?.type === "reference") {
+								cellValue = typeof cell.value === "string" ? cell.value : String(cell.value);
+							}
+							
+							return await prisma.cell.create({
+								data: {
+									rowId: newRow.id,
+									columnId: Number(cell.columnId),
+									value: cellValue,
+								},
+							});
+						});
+
+						await Promise.all(cellPromises);
+
+						// Obține rândul complet cu celulele create
+						const completeRow = await prisma.row.findUnique({
+							where: { id: newRow.id },
+							include: {
+								cells: true,
+							},
+						});
+
+						return { success: true, row: completeRow };
+					} catch (error) {
+						const errorMsg = `Row ${rowIndex}: Failed to import - ${error}`;
+						importErrors.push(errorMsg);
+						console.error(errorMsg);
+						return { success: false, error: errorMsg };
 					}
+				});
 
-					// Obține rândul complet cu celulele create
-					const completeRow = await prisma.row.findUnique({
-						where: { id: newRow.id },
-						include: {
-							cells: true,
-						},
-					});
+				// Așteaptă finalizarea batch-ului
+				const batchResults = await Promise.all(batchPromises);
+				
+				// Colectează rândurile importate cu succes
+				batchResults.forEach(result => {
+					if (result.success && result.row) {
+						importedRows.push(result.row);
+					}
+				});
 
-					importedRows.push(completeRow);
-				} catch (error) {
-					importErrors.push(`Row ${rowIndex}: Failed to import - ${error}`);
-					console.error(`Failed to import row ${rowIndex}:`, error);
-					// Continuăm cu următorul rând în loc să oprim tot importul
-					continue;
-				}
+				// Log progres
+				console.log(`Batch ${batchIndex + 1}/${totalBatches} completed. Total imported: ${importedRows.length}/${validRows.length}`);
 			}
 		} catch (error) {
 			console.error("Import failed:", error);

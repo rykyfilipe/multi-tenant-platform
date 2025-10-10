@@ -327,9 +327,9 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                         config.style?.summaryRowStyle?.fontWeight === "bold" ? "font-bold" : ""
                       )}
                     >
-                      {processedData.summary[column.name] ? 
+                      {processedData?.summary?.[column.name] ? 
                         formatValue(
-                          processedData.summary[column.name].sum || processedData.summary[column.name].avg || "-",
+                          processedData?.summary[column.name].sum || processedData?.summary[column.name].avg || "-",
                           column.format
                         ) : "-"
                       }
