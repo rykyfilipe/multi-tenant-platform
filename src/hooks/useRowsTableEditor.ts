@@ -101,10 +101,29 @@ function useRowsTableEditor(
 		);
 		const originalValue = existingCell?.value ?? null;
 		
+		console.log('🔍 [handleSaveCell] Row structure:', {
+			currentRow: currentRow ? {
+				id: currentRow.id,
+				cellsCount: currentRow.cells?.length || 0,
+				cells: currentRow.cells?.map(c => ({
+					id: c.id,
+					columnId: c.columnId,
+					value: c.value,
+					valueType: typeof c.value
+				}))
+			} : 'not found',
+			lookingForColumnId: columnId,
+			cellIdParam: cellId
+		});
+		
 		console.log('🔍 [handleSaveCell] Original value:', {
 			originalValue,
 			originalValueType: typeof originalValue,
-			existingCell: existingCell ? 'found' : 'not found',
+			existingCell: existingCell ? {
+				id: existingCell.id,
+				columnId: existingCell.columnId,
+				value: existingCell.value
+			} : 'not found',
 			currentRow: currentRow ? 'found' : 'not found'
 		});
 

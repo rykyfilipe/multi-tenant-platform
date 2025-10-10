@@ -253,12 +253,31 @@ export async function POST(
 			value: string | number;
 		}> = [];
 
-			// Map payload data to invoice columns using semantic types
-			for (const column of invoiceTables.invoices!.columns!) {
-				let value: any = null;
+		// Map payload data to invoice columns using semantic types
+		console.log('📋 Processing invoice columns:', invoiceTables.invoices!.columns!.map((c: any) => ({
+			id: c.id,
+			name: c.name,
+			type: c.type,
+			semanticType: c.semanticType,
+			referenceTableId: c.referenceTableId
+		})));
+		
+		for (const column of invoiceTables.invoices!.columns!) {
+			let value: any = null;
+			
+			if (column.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID) {
+				console.log('🔍 Processing INVOICE_CUSTOMER_ID column BEFORE switch:', {
+					columnId: column.id,
+					columnName: column.name,
+					columnType: column.type,
+					semanticType: column.semanticType,
+					referenceTableId: column.referenceTableId,
+					customerId: parsedData.customer_id
+				});
+			}
 
-				switch (column.semanticType) {
-					case SemanticColumnType.INVOICE_NUMBER:
+			switch (column.semanticType) {
+				case SemanticColumnType.INVOICE_NUMBER:
 						value = invoiceNumber;
 						break;
 					case SemanticColumnType.INVOICE_SERIES:
