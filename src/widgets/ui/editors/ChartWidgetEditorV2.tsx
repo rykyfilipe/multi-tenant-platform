@@ -484,7 +484,14 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                         const removeYColumnAggregation = (column: string, aggIndex: number) => {
                           const current = value.settings.yColumnAggregations || {};
                           const columnAggs = current[column] || [];
-                          if (columnAggs.length > 1) {
+                          
+                          // Allow deleting even if it's the last step - remove the entire aggregation
+                          if (columnAggs.length === 1) {
+                            const { [column]: _, ...rest } = current;
+                            updateSettings({
+                              yColumnAggregations: Object.keys(rest).length > 0 ? rest : undefined
+                            });
+                          } else {
                             updateSettings({
                               yColumnAggregations: {
                                 ...current,
@@ -506,11 +513,42 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                           });
                         };
 
+                        const updateYColumnColor = (column: string, color: string) => {
+                          const current = value.settings.yColumnColors || {};
+                          updateSettings({
+                            yColumnColors: {
+                              ...current,
+                              [column]: color
+                            }
+                          });
+                        };
+
+                        const currentColor = value.settings.yColumnColors?.[yColumn] || (
+                          yIndex === 0 ? '#3b82f6' : 
+                          yIndex === 1 ? '#10b981' : 
+                          yIndex === 2 ? '#f59e0b' :
+                          yIndex === 3 ? '#ef4444' :
+                          yIndex === 4 ? '#8b5cf6' :
+                          '#6b7280'
+                        );
+
                         return (
                           <Card key={yColumn} className="border-2 border-blue-100">
                             <CardHeader className="pb-3">
-                              <div className="flex items-center justify-between">
-                                <Badge variant="outline">{yColumn}</Badge>
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline">{yColumn}</Badge>
+                                  <div className="flex items-center gap-1.5">
+                                    <Label className="text-xs text-muted-foreground">Color:</Label>
+                                    <Input
+                                      type="color"
+                                      value={currentColor}
+                                      onChange={(e) => updateYColumnColor(yColumn, e.target.value)}
+                                      className="h-8 w-16 p-1 cursor-pointer"
+                                      title={`Color for ${yColumn}`}
+                                    />
+                                  </div>
+                                </div>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -551,16 +589,15 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                                       placeholder="Label"
                                       className="flex-1"
                                     />
-                                    {currentAggregations.length > 1 && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeYColumnAggregation(yColumn, aggIndex)}
-                                        className="text-red-600 hover:text-red-700"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeYColumnAggregation(yColumn, aggIndex)}
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      title={currentAggregations.length === 1 ? "Remove all aggregations for this column" : "Remove this step"}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 ))
                               ) : (

@@ -13,6 +13,11 @@ export const chartSettingsSchema = z.object({
       label: z.string().min(1, "Aggregation label is required"),
     }))
   ).optional(),
+  // Colors for each Y column
+  yColumnColors: z.record(
+    z.string(), // column name
+    z.string() // hex color
+  ).optional(),
   // Top N - simplified (auto-sort by default)
   enableTopN: z.boolean().default(false),
   topNCount: z.number().int().positive().max(100).default(10),

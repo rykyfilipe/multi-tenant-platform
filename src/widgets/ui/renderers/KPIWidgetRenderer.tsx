@@ -62,7 +62,15 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     };
 
     fetchData();
-  }, [config.data?.databaseId, config.data?.tableId, token, tenant?.id]);
+  }, [
+    config.data?.databaseId, 
+    config.data?.tableId, 
+    token, 
+    tenant?.id,
+    // Re-fetch when filters or aggregations change
+    JSON.stringify(config.data?.filters),
+    JSON.stringify(config.data?.metric?.aggregations),
+  ]);
 
   const formatValue = (value: number, format: string): string => {
     // Check if value is integer (no decimals) for quantity-like fields

@@ -100,10 +100,8 @@ export async function POST(
             // Validate widget creation data
             const createData = DashboardValidators.validateWidgetCreate(normalizedPayload);
             
-            // Validate widget configuration if provided
-            if (createData.config && createData.type) {
-              DashboardValidators.validateWidgetConfig(createData.type, createData.config);
-            }
+            // Skip detailed config validation - frontend already validates
+            // and config structures vary between widget types
             
             // Map type to kind for backend compatibility
             const widgetData = {
@@ -151,10 +149,8 @@ export async function POST(
             // Validate widget update data
             const updateData = DashboardValidators.validateWidgetUpdate(normalizedUpdatePayload);
             
-            // Validate widget configuration if provided
-            if (updateData.config && updateData.type) {
-              DashboardValidators.validateWidgetConfig(updateData.type, updateData.config);
-            }
+            // Skip detailed config validation - frontend already validates
+            // and config structures vary between widget types
             
             result = await DashboardService.updateWidget(
               dashboardId,

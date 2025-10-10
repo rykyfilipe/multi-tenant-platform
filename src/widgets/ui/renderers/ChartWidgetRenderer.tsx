@@ -56,6 +56,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Data processing configuration - SIMPLIFIED (auto-grouping by X axis)
   const yColumnAggregations = config?.settings?.yColumnAggregations;
+  const yColumnColors = config?.settings?.yColumnColors || {};
   const enableTopN = config?.settings?.enableTopN || false;
   const topNCount = config?.settings?.topNCount || 10;
 
@@ -141,7 +142,9 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Generate data keys for multi-series charts - simplified
   const dataKeys = useMemo(() => {
-    if (!processedData.length) return [{ key: "value", name: "Value", color: premiumColors[0] }];
+    const defaultColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6b7280'];
+    
+    if (!processedData.length) return [{ key: "value", name: "Value", color: yColumnColors['value'] || premiumColors[0] }];
     
     const yColumns = Array.isArray(mappings.y) ? mappings.y : (mappings.y ? [mappings.y] : []);
     
@@ -150,7 +153,8 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       return yColumns.map((column: string, index: number) => ({
         key: column,
         name: column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, ' '),
-        color: Object.values(premiumColors)[index % Object.values(premiumColors).length]
+        // Use custom color if set, otherwise use default colors, fallback to premium colors
+        color: yColumnColors[column] || defaultColors[index % defaultColors.length] || Object.values(premiumColors)[index % Object.values(premiumColors).length]
       }));
     }
     
@@ -165,15 +169,16 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     });
     
     if (keys.size === 0) {
-      return [{ key: "value", name: "Value", color: premiumColors[0] }];
+      return [{ key: "value", name: "Value", color: yColumnColors['value'] || premiumColors[0] }];
     }
     
     return Array.from(keys).map((key: string, index: number) => ({
       key,
       name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-      color: premiumColors[index % premiumColors.length]
+      // Use custom color if set, otherwise use default colors
+      color: yColumnColors[key] || defaultColors[index % defaultColors.length] || premiumColors[index % premiumColors.length]
     }));
-  }, [processedData, mappings, premiumColors]);
+  }, [processedData, mappings, premiumColors, yColumnColors]);
 
   // Style configuration
   const styleConfig = config?.style || {};
