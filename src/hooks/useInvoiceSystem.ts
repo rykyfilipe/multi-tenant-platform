@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
+import { useDatabase } from "@/contexts/DatabaseContext";
 import { InvoiceProduct } from "@/lib/invoice-system";
 
 export interface Customer {
@@ -42,6 +43,7 @@ export interface InvoiceDetails {
 
 export function useInvoiceSystem() {
 	const { token, user, tenant } = useApp();
+	const { invalidateTablesCache } = useDatabase();
 	const [customers, setCustomers] = useState<Customer[]>([]);
 	const [invoices, setInvoices] = useState<Invoice[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -147,12 +149,15 @@ export function useInvoiceSystem() {
 					throw new Error(errorData.error || "Failed to create customer");
 				}
 
-				const data = await response.json();
+			const data = await response.json();
 
-				// Add to local state immediately
-				setCustomers((prev) => [...prev, data.customer]);
+			// Add to local state immediately
+			setCustomers((prev) => [...prev, data.customer]);
+			
+			// Invalidate database tables cache to refresh row counts
+			invalidateTablesCache();
 
-				return data.customer;
+			return data.customer;
 			} catch (err) {
 				console.error("Error creating customer:", err);
 				setError(
@@ -240,10 +245,13 @@ export function useInvoiceSystem() {
 						// Add other fields that might be needed
 					};
 
-					console.log("✅ Adding invoice to local state:", newInvoice);
-					setInvoices((prev) => [newInvoice, ...prev]);
+				console.log("✅ Adding invoice to local state:", newInvoice);
+				setInvoices((prev) => [newInvoice, ...prev]);
+				
+				// Invalidate database tables cache to refresh row counts
+				invalidateTablesCache();
 
-					return data.data.invoice;
+				return data.data.invoice;
 				} else {
 					// Fallback for unexpected response structure
 					console.warn("Unexpected response structure:", data);
@@ -364,12 +372,15 @@ export function useInvoiceSystem() {
 					throw new Error(errorData.error || "Failed to delete invoice");
 				}
 
-				// Remove from local state immediately
-				setInvoices((prev) =>
-					prev.filter((invoice) => invoice.id !== invoiceId),
-				);
+			// Remove from local state immediately
+			setInvoices((prev) =>
+				prev.filter((invoice) => invoice.id !== invoiceId),
+			);
+			
+			// Invalidate database tables cache to refresh row counts
+			invalidateTablesCache();
 
-				return true;
+			return true;
 			} catch (err) {
 				console.error("Error deleting invoice:", err);
 				setError(

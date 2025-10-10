@@ -248,13 +248,14 @@ export async function POST(
 					case SemanticColumnType.INVOICE_DATE:
 						value = new Date().toISOString();
 						break;
-					case SemanticColumnType.INVOICE_DUE_DATE:
-						value = parsedData.due_date;
-						break;
-					case SemanticColumnType.INVOICE_CUSTOMER_ID:
-						value = parsedData.customer_id;
-						break;
-					case SemanticColumnType.INVOICE_STATUS:
+				case SemanticColumnType.INVOICE_DUE_DATE:
+					value = parsedData.due_date;
+					break;
+				case SemanticColumnType.INVOICE_CUSTOMER_ID:
+					// Reference columns require array values
+					value = [parsedData.customer_id];
+					break;
+				case SemanticColumnType.INVOICE_STATUS:
 						value = parsedData.status || "draft";
 						break;
 					case SemanticColumnType.INVOICE_PAYMENT_TERMS:

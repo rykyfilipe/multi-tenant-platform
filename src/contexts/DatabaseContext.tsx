@@ -48,6 +48,9 @@ interface DatabaseContextType {
 
 	// New method to refresh current database data
 	refreshSelectedDatabase: () => Promise<void>;
+	
+	// Invalidate tables cache and force refresh
+	invalidateTablesCache: () => void;
 
 	loading: boolean;
 
@@ -179,6 +182,13 @@ export const DatabaseProvider = ({
 		// Note: This will also be triggered by the useEffect, but calling it here
 		// ensures immediate response for better UX
 	};
+
+	// Global function to invalidate and refresh tables
+	// This can be called from anywhere when tables data might be stale
+	const invalidateTablesCache = useCallback(() => {
+		console.log('[DatabaseContext] Invalidating tables cache and refreshing...');
+		fetchTables();
+	}, [fetchTables]);
 
 	const refreshSelectedDatabase = useCallback(async () => {
 		if (!selectedDatabase || !token || !tenantId) return;
@@ -508,16 +518,17 @@ export const DatabaseProvider = ({
 				handleAddTable,
 				handleDeleteTable,
 				handleAddDatabase,
-				handleDeleteDatabase,
-				handleSelectDatabase,
-				refreshSelectedDatabase,
-				loading,
-				validateTableName,
-				validateDatabaseName,
-				fetchTables,
-			}}>
-			{children}
-		</DatabaseContext.Provider>
+			handleDeleteDatabase,
+			handleSelectDatabase,
+			refreshSelectedDatabase,
+			invalidateTablesCache,
+			loading,
+			validateTableName,
+			validateDatabaseName,
+			fetchTables,
+		}}>
+		{children}
+	</DatabaseContext.Provider>
 	);
 };
 
