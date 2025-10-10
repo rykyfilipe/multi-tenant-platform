@@ -148,11 +148,22 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 			newValue: any,
 			originalValue: any,
 		) => {
+			console.log('🔍 [addPendingChange] Called with:', {
+				rowId,
+				columnId,
+				cellId,
+				newValue,
+				originalValue,
+				newValueType: typeof newValue,
+				originalValueType: typeof originalValue
+			});
+			
 			// Verifică dacă este un rând local (cu ID temporar)
 			const isLocalRow = rowId.startsWith('temp_') || cellId.startsWith('temp_cell_');
 			
 			// Pentru rândurile locale, actualizează direct în pendingNewRows
 			if (isLocalRow) {
+				console.log('✅ [addPendingChange] Updating local row cell');
 				updateLocalRowCell(rowId, columnId, newValue);
 				return;
 			}
@@ -199,8 +210,17 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 					return newValue === originalValue;
 				})();
 
+				console.log('🔍 [addPendingChange] Comparison result:', {
+					areEqual,
+					cellKey,
+					currentMapSize: prev.size,
+					willBeDeleted: areEqual,
+					willBeAdded: !areEqual
+				});
+				
 				// Dacă valoarea este aceeași cu originalul, eliminăm din pending
 				if (areEqual) {
+					console.log('⚠️ [addPendingChange] Values are equal - removing from pending changes');
 					newMap.delete(cellKey);
 				} else {
 					// Adăugăm modificarea în pending changes
@@ -212,8 +232,11 @@ export function useBatchCellEditor(options: BatchCellEditorOptions) {
 						originalValue,
 						timestamp: Date.now(),
 					};
+					console.log('✅ [addPendingChange] Adding to pending changes:', pendingChange);
 					newMap.set(cellKey, pendingChange);
 				}
+				
+				console.log('📊 [addPendingChange] Final map size:', newMap.size);
 				return newMap;
 			});
 

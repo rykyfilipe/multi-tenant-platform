@@ -277,8 +277,10 @@ export async function POST(
 					columnId: column.id,
 					columnName: column.name,
 					columnType: column.type,
+					semanticType: column.semanticType,
 					rawCustomerId: parsedData.customer_id,
-					arrayValue: value
+					arrayValue: value,
+					willBeAdded: value !== null && value !== undefined && value !== ""
 				});
 				break;
 				case SemanticColumnType.INVOICE_STATUS:
@@ -297,17 +299,14 @@ export async function POST(
 						value = parsedData.base_currency;
 						break;
 					case SemanticColumnType.INVOICE_TOTAL_AMOUNT:
-						// Will be calculated later
-						value = 0;
-						break;
+						// Skip - will be added after calculation
+						continue;
 					case SemanticColumnType.INVOICE_SUBTOTAL:
-						// Will be calculated later
-						value = 0;
-						break;
+						// Skip - will be added after calculation
+						continue;
 					case SemanticColumnType.INVOICE_TAX_TOTAL:
-						// Will be calculated later
-						value = 0;
-						break;
+						// Skip - will be added after calculation
+						continue;
 					case SemanticColumnType.INVOICE_DISCOUNT_AMOUNT:
 						value = (parsedData as any).discount_amount || 0;
 						break;
@@ -346,13 +345,21 @@ export async function POST(
 						break;
 				}
 
-				// Only add if we have a value
-				if (value !== null && value !== undefined && value !== "") {
+				// Only add if we have a meaningful value
+				// For arrays (reference columns), check if array has at least one element
+				// For other values, check if not null/undefined/empty string
+				const shouldAddCell = Array.isArray(value) 
+					? value.length > 0 
+					: (value !== null && value !== undefined && value !== "");
+				
+				if (shouldAddCell) {
 					invoiceCells.push({
 						rowId: invoiceRow.id,
 						columnId: column.id,
 						value,
 					});
+					
+					console.log(`✅ Adding cell for ${column.name} (${column.semanticType}):`, value);
 			}
 		}
 
@@ -362,14 +369,23 @@ export async function POST(
 	);
 
 	console.log('📋 Invoice cells to be created:', uniqueInvoiceCells.length);
-	console.log('📋 Invoice cells with customer_id:', uniqueInvoiceCells.filter(c => 
+	const customerIdCells = uniqueInvoiceCells.filter(c => 
 		invoiceTables.invoices!.columns!.find((col:any) => col.id === c.columnId && col.semanticType === SemanticColumnType.INVOICE_CUSTOMER_ID)
-	));
+	);
+	console.log('📋 Invoice cells with customer_id:', customerIdCells);
+	console.log('📋 All invoice cells detail:', uniqueInvoiceCells.map(c => ({
+		columnId: c.columnId,
+		value: c.value,
+		columnName: invoiceTables.invoices!.columns!.find((col:any) => col.id === c.columnId)?.name,
+		semanticType: invoiceTables.invoices!.columns!.find((col:any) => col.id === c.columnId)?.semanticType
+	})));
 
 		// Create all invoice cells
-		await tx.cell.createMany({
+		const createdCells = await tx.cell.createMany({
 			data: uniqueInvoiceCells,
 		});
+		
+		console.log(`✅ Created ${createdCells.count} invoice cells`);
 
 			// Create invoice items
 			const invoiceItemRows: any[] = [];
@@ -620,55 +636,52 @@ export async function POST(
 		// Debug: Log the calculated totals
 		console.log("Calculated totals:", JSON.stringify(totals, null, 2));
 
-			// Update total_amount in invoice (cell was already created with value 0)
+			// Create total amount cells after calculation
 			const totalAmountColumn = invoiceTables.invoices!.columns!.find(
 				(c: any) => c.semanticType === SemanticColumnType.INVOICE_TOTAL_AMOUNT,
 			);
 
 			if (totalAmountColumn) {
-				await tx.cell.updateMany({
-					where: {
+				await tx.cell.create({
+					data: {
 						rowId: invoiceRow.id,
 						columnId: totalAmountColumn.id,
-					},
-					data: {
-						value: totals.grandTotal.toString(),
+						value: totals.grandTotal,
 					},
 				});
+				console.log('✅ Created total_amount cell:', totals.grandTotal);
 			}
 
-			// Update subtotal in invoice
+			// Create subtotal cell
 			const subtotalColumn = invoiceTables.invoices!.columns!.find(
 				(c: any) => c.semanticType === SemanticColumnType.INVOICE_SUBTOTAL,
 			);
 
 			if (subtotalColumn) {
-				await tx.cell.updateMany({
-					where: {
+				await tx.cell.create({
+					data: {
 						rowId: invoiceRow.id,
 						columnId: subtotalColumn.id,
-					},
-					data: {
-						value: totals.subtotal.toString(),
+						value: totals.subtotal,
 					},
 				});
+				console.log('✅ Created subtotal cell:', totals.subtotal);
 			}
 
-			// Update tax_total in invoice
+			// Create tax_total cell
 			const taxTotalColumn = invoiceTables.invoices!.columns!.find(
 				(c: any) => c.semanticType === SemanticColumnType.INVOICE_TAX_TOTAL,
 			);
 
 			if (taxTotalColumn) {
-				await tx.cell.updateMany({
-					where: {
+				await tx.cell.create({
+					data: {
 						rowId: invoiceRow.id,
 						columnId: taxTotalColumn.id,
-					},
-					data: {
-						value: totals.vatTotal.toString(),
+						value: totals.vatTotal,
 					},
 				});
+				console.log('✅ Created tax_total cell:', totals.vatTotal);
 			}
 
 			console.log("✅ Invoice creation completed:");
@@ -682,9 +695,18 @@ export async function POST(
 					id: invoiceRow.id,
 					invoice_number: invoiceNumber,
 					invoice_series: invoiceSeries,
+					customer_id: parsedData.customer_id,
+					date: new Date().toISOString(),
+					due_date: parsedData.due_date,
+					status: parsedData.status || "draft",
+					base_currency: parsedData.base_currency,
+					payment_terms: parsedData.payment_terms,
+					payment_method: parsedData.payment_method,
+					notes: parsedData.notes,
 					total_amount: totals.grandTotal,
 					subtotal: totals.subtotal,
 					tax_total: totals.vatTotal,
+					vat_total: totals.vatTotal,
 					items_count: invoiceItemRows.length,
 				},
 				items: invoiceItemRows,

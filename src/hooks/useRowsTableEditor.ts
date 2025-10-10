@@ -85,12 +85,28 @@ function useRowsTableEditor(
 		) => void, // Nu mai folosim showAlert din parametri, îl avem în context
 		options?: { keepEditing?: boolean }, // New optional parameter to control editing behavior
 	) => {
+		console.log('🔍 [handleSaveCell] Called with:', {
+			columnId,
+			rowId,
+			cellId,
+			value,
+			valueType: typeof value,
+			rowsCount: rows.length
+		});
+		
 		// Găsim celula existentă pentru a obține valoarea originală
 		const currentRow = rows.find((row) => row.id.toString() === rowId);
 		const existingCell = currentRow?.cells?.find(
 			(cell) => cell.columnId.toString() === columnId,
 		);
 		const originalValue = existingCell?.value ?? null;
+		
+		console.log('🔍 [handleSaveCell] Original value:', {
+			originalValue,
+			originalValueType: typeof originalValue,
+			existingCell: existingCell ? 'found' : 'not found',
+			currentRow: currentRow ? 'found' : 'not found'
+		});
 
 		// Adăugăm modificarea la batch-ul pending
 		addPendingChange(rowId, columnId, cellId, value, originalValue);
