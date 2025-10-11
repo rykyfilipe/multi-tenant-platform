@@ -114,12 +114,12 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
 
   // Container styles
   const containerStyle: React.CSSProperties = {
-    background: bgGradient.enabled 
-      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})`
+    background: bgGradient?.enabled 
+      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})` 
       : backgroundColor,
     borderRadius: `${borderRadius}px`,
-    border: border.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
-    padding: `${padding.y}px ${padding.x}px`,
+    border: border?.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
+    padding: `${padding?.y || 24}px ${padding?.x || 32}px`,
   };
 
   // Time display style
@@ -127,12 +127,12 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
     fontSize: `${timeFontSize}px`,
     fontFamily: timeFontFamily,
     fontWeight: timeFontWeight,
-    color: timeGradient.enabled ? 'transparent' : timeColor,
-    background: timeGradient.enabled 
+    color: timeGradient?.enabled ? 'transparent' : timeColor,
+    background: timeGradient?.enabled 
       ? `linear-gradient(to right, ${timeGradient.from}, ${timeGradient.to})`
       : undefined,
-    backgroundClip: timeGradient.enabled ? 'text' : undefined,
-    WebkitBackgroundClip: timeGradient.enabled ? 'text' : undefined,
+    backgroundClip: timeGradient?.enabled ? 'text' : undefined,
+    WebkitBackgroundClip: timeGradient?.enabled ? 'text' : undefined,
     letterSpacing: `${timeLetterSpacing}px`,
   };
 
@@ -161,7 +161,7 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
         <div 
           className={cn(
             "flex h-full flex-col items-center justify-center",
-            shadow.enabled && getShadowClass(shadow.size),
+            shadow?.enabled && getShadowClass(shadow?.size || "md"),
             alignment === "left" && "items-start",
             alignment === "center" && "items-center",
             alignment === "right" && "items-end"

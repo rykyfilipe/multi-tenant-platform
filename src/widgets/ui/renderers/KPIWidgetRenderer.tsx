@@ -267,13 +267,13 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
 
   // Generate card styles
   const cardStyle: React.CSSProperties = {
-    background: bgGradient.enabled 
-      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})`
+    background: bgGradient?.enabled 
+      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})` 
       : backgroundColor,
     borderRadius: `${borderRadius}px`,
-    border: border.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
-    padding: `${padding.y}px ${padding.x}px`,
-    transition: hoverStyleConfig.enabled ? `all ${hoverStyleConfig.transition}ms ease` : undefined,
+    border: border?.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
+    padding: `${padding?.y || 20}px ${padding?.x || 24}px`,
+    transition: hoverStyleConfig?.enabled ? `all ${hoverStyleConfig.transition}ms ease` : undefined,
   };
 
   // Value text style
@@ -281,12 +281,12 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     fontSize: `${valueFontSize}px`,
     fontFamily: valueFontFamily,
     fontWeight: valueFontWeight,
-    color: valueGradient.enabled ? 'transparent' : valueColor,
-    background: valueGradient.enabled 
+    color: valueGradient?.enabled ? 'transparent' : valueColor,
+    background: valueGradient?.enabled 
       ? `linear-gradient(to right, ${valueGradient.from}, ${valueGradient.to})`
       : undefined,
-    backgroundClip: valueGradient.enabled ? 'text' : undefined,
-    WebkitBackgroundClip: valueGradient.enabled ? 'text' : undefined,
+    backgroundClip: valueGradient?.enabled ? 'text' : undefined,
+    WebkitBackgroundClip: valueGradient?.enabled ? 'text' : undefined,
   };
 
   // Label text style
@@ -326,7 +326,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         <Card 
           className={cn(
             "h-full border-0",
-            shadow.enabled && getShadowClass(shadow.size)
+            shadow?.enabled && getShadowClass(shadow.size)
           )}
           style={cardStyle}
         >

@@ -180,12 +180,12 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
 
   // Container styles
   const containerStyle: React.CSSProperties = {
-    background: bgGradient.enabled 
-      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})`
+    background: bgGradient?.enabled 
+      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})` 
       : backgroundColor,
     borderRadius: `${borderRadius}px`,
-    border: border.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
-    padding: `${padding.y}px ${padding.x}px`,
+    border: border?.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
+    padding: `${padding?.y || 20}px ${padding?.x || 24}px`,
   };
 
   // Temperature style
@@ -193,12 +193,12 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
     fontSize: `${tempFontSize}px`,
     fontFamily: tempFontFamily,
     fontWeight: tempFontWeight,
-    color: tempGradient.enabled ? 'transparent' : tempColor,
-    background: tempGradient.enabled 
+    color: tempGradient?.enabled ? 'transparent' : tempColor,
+    background: tempGradient?.enabled 
       ? `linear-gradient(to right, ${tempGradient.from}, ${tempGradient.to})`
       : undefined,
-    backgroundClip: tempGradient.enabled ? 'text' : undefined,
-    WebkitBackgroundClip: tempGradient.enabled ? 'text' : undefined,
+    backgroundClip: tempGradient?.enabled ? 'text' : undefined,
+    WebkitBackgroundClip: tempGradient?.enabled ? 'text' : undefined,
   };
 
   return (
@@ -212,7 +212,7 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
         <div 
           className={cn(
             "flex h-full flex-col items-center justify-center",
-            shadow.enabled && getShadowClass(shadow.size)
+            shadow?.enabled && getShadowClass(shadow?.size || "md")
           )}
           style={containerStyle}
         >

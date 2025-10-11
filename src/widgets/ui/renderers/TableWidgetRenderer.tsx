@@ -372,14 +372,14 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                     className={hoverEffect ? "hover:opacity-90" : ""}
                     onMouseEnter={(e) => {
                       if (hoverEffect) {
-                        e.currentTarget.style.backgroundColor = hoverConfig.backgroundColor;
+                        e.currentTarget.style.backgroundColor = hoverConfig?.backgroundColor || "#F3F4F6";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (hoverEffect) {
                         e.currentTarget.style.backgroundColor = stripedRows && rowIndex % 2 === 1 
-                          ? alternateColors.odd 
-                          : alternateColors.even;
+                          ? (alternateColors?.odd || "#F9FAFB")
+                          : (alternateColors?.even || "#FFFFFF");
                       }
                     }}
                   >
