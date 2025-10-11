@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
@@ -75,12 +75,20 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   
   // Get tasks from widget data or use default
   const [tasks, setTasks] = useState<Task[]>(() => {
+    console.log('[TasksWidget] Initializing tasks from config:', config);
+    console.log('[TasksWidget] config.data:', config?.data);
+    console.log('[TasksWidget] config.data.tasks:', config?.data?.tasks);
+    
     if (config?.data?.tasks && Array.isArray(config.data.tasks)) {
-      return config.data.tasks.map((task: any) => ({
+      const loadedTasks = config.data.tasks.map((task: any) => ({
         ...task,
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined
       }));
+      console.log('[TasksWidget] Loaded tasks from config:', loadedTasks);
+      return loadedTasks;
     }
+    
+    console.log('[TasksWidget] No tasks in config, using default tasks');
     return [
       {
         id: '1',
@@ -118,6 +126,19 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
     ];
   });
 
+  // Update tasks when widget.config changes (e.g., after save or refresh)
+  useEffect(() => {
+    console.log('[TasksWidget] useEffect - widget.config changed');
+    if (config?.data?.tasks && Array.isArray(config.data.tasks)) {
+      const loadedTasks = config.data.tasks.map((task: any) => ({
+        ...task,
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined
+      }));
+      console.log('[TasksWidget] Syncing tasks from updated config:', loadedTasks);
+      setTasks(loadedTasks);
+    }
+  }, [widget.config, config]);
+
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,27 +157,28 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
 
     setIsSaving(true);
     try {
+      console.log('[TasksWidget] saveTasksToApi called with newTasks:', newTasks);
+      
       // Convert tasks to serializable format (Date → ISO string)
       const serializableTasks = newTasks.map(task => ({
         ...task,
         dueDate: task.dueDate ? task.dueDate.toISOString() : undefined,
       }));
       
-      // Get current widget config
-      const currentWidget = useWidgetsStore.getState().widgets[widget.id];
-      const currentConfig = currentWidget?.config || widget.config;
+      console.log('[TasksWidget] Serializable tasks:', serializableTasks);
       
+      // IMPORTANT: Use widget.config directly, not from store (which may be stale)
       const updatedConfig = {
-        ...currentConfig,
+        ...widget.config,
         data: {
-          ...(currentConfig as any)?.data,
-          tasks: serializableTasks
+          ...(widget.config as any)?.data,
+          tasks: serializableTasks  // Use the NEW tasks passed as parameter
         }
       };
 
       console.log('[TasksWidget] Saving tasks via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
       console.log('[TasksWidget] Updated config being sent:', updatedConfig);
-      console.log('[TasksWidget] Payload:', { config: updatedConfig });
+      console.log('[TasksWidget] Number of tasks in payload:', serializableTasks.length);
       
       const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
         method: 'PATCH',
@@ -174,10 +196,14 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
       }
 
       const updatedWidget = await response.json();
-      console.log('[TasksWidget] PATCH successful');
+      console.log('[TasksWidget] PATCH successful, response:', updatedWidget);
+      console.log('[TasksWidget] Response config.data.tasks:', updatedWidget.config?.data?.tasks);
       
       // Update local store with the response from server
       updateLocal(widget.id, { config: updatedWidget.config });
+      
+      // Also update local state to match what was saved
+      console.log('[TasksWidget] Updated local store with new config');
       
     } catch (error) {
       console.error('[TasksWidget] Save failed:', error);
@@ -189,7 +215,7 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
     } finally {
       setIsSaving(false);
     }
-  }, [isEditMode, token, widget.dashboardId, widget.id, updateLocal, toast]);
+  }, [isEditMode, token, widget.dashboardId, widget.id, widget.config, updateLocal, toast]);
 
   // CRUD operations - each one directly calls the API
   const addTask = useCallback(async (task: Omit<Task, 'id'>) => {

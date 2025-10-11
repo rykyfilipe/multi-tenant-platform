@@ -544,10 +544,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         </div>
       </div>
     }>
-      <div className="h-screen w-full relative overflow-hidden flex flex-col">
+      <div className="h-full w-full relative">
         {/* Floating Toolbar - Only in Edit Mode */}
         {isEditMode && (
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-background/90 backdrop-blur-xl border border-border/30 rounded-2xl shadow-2xl px-4 py-2">
             <div className="flex items-center space-x-2">
               {/* Widget Types */}
@@ -807,14 +807,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       {/* Main Grid Area */}
       <div 
-        className="flex-1 w-full p-6 overflow-y-auto"
+        className="h-full w-full p-6 overflow-y-auto pb-24"
         onClick={handleCanvasClick}
       >
         <style jsx global>{`
           .react-grid-layout {
             width: 100% !important;
             height: auto !important;
-            min-height: 100vh;
+            min-height: calc(100vh - 3rem);
+            position: relative;
           }
           .react-grid-item {
             transition: all 200ms ease;
