@@ -1,6 +1,6 @@
 /** @format */
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Table, Row } from "@/types/database";
 import { useApp } from "@/contexts/AppContext";
 import { useDatabase } from "@/contexts/DatabaseContext";
@@ -30,52 +30,134 @@ export const useOptimizedReferenceData = (
 	>({});
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+	// Stable reference for tables using useMemo with deep comparison
+	const stableTables = useMemo(() => {
+		if (!tables) return null;
+		return tables.map(t => ({
+			id: t.id,
+			name: t.name,
+			columns: t.columns
+		}));
+	}, [tables?.length, tables?.map(t => t.id).join(',')]);
+
+	// Helper to process rows to reference data
+	const processRowsToReferenceData = useCallback((
+		rowsData: Row[],
+		tableId: number,
+	): ReferenceDataItem[] => {
+		const options: ReferenceDataItem[] = [];
+
+		// Find the table to access columns
+		const referenceTable = stableTables?.find((t) => t.id === tableId);
+		if (!referenceTable?.columns) {
+			return options;
+		}
+
+		rowsData.forEach((row) => {
+			if (
+				row &&
+				row.id &&
+				row.cells &&
+				Array.isArray(row.cells) &&
+				row.cells.length > 0
+			) {
+				const displayParts: string[] = [];
+				let addedColumns = 0;
+				const maxColumns = 5;
+				const rowData: any = {};
+
+				// Process columns for display and rowData
+				referenceTable.columns?.forEach((column) => {
+					if (!column || !column.id || addedColumns >= maxColumns) return;
+
+					const cell = row.cells?.find(
+						(c: any) => c && c.columnId === column.id,
+					);
+					if (cell?.value != null && cell.value.toString().trim() !== "") {
+						let formattedValue = cell.value.toString().trim();
+
+						// Store full row data
+						rowData[column.name] = cell.value;
+
+						if (formattedValue.length > 20) {
+							formattedValue = formattedValue.substring(0, 20) + "...";
+						}
+
+						if (column.type === "date") {
+							try {
+								formattedValue = new Date(formattedValue).toLocaleDateString(
+									"ro-RO",
+								);
+							} catch {
+								// fallback to raw value
+							}
+						} else if (column.type === "boolean") {
+							formattedValue = formattedValue === "true" ? "✓" : "✗";
+						}
+
+						displayParts.push(formattedValue);
+						addedColumns++;
+					}
+				});
+
+				const displayValue = displayParts.length
+					? displayParts.join(" • ")
+					: `Row #${row.id || "unknown"}`;
+
+				options.push({
+					id: typeof row.id === 'string' ? parseInt(row.id) : (row.id || 0),
+					displayValue,
+					rowData,
+				});
+			}
+		});
+
+		return options;
+	}, [stableTables]);
 
 	// Function to manually refresh reference data
 	const refresh = useCallback(() => {
-		fetchReferenceData();
+		setRefreshTrigger(prev => prev + 1);
 	}, []);
 
 	useEffect(() => {
+		let isMounted = true;
+
 		const fetchReferenceData = async () => {
-			// Debug log pentru reference data loading
-			console.log('useOptimizedReferenceData fetchReferenceData called:', {
-				tenantId: tenant?.id,
-				selectedDatabaseId: selectedDatabase?.id,
-				referenceTableId,
-				tablesCount: tables?.length,
-				tables: tables?.map(t => ({ id: t.id, name: t.name }))
-			});
+			// Guard clauses
+			if (!tenant?.id || !selectedDatabase?.id || !token) {
+				return;
+			}
 
 			setIsLoading(true);
 			setError(null);
 
 			try {
-				// Verificăm că avem toate datele necesare
-				if (!tenant?.id || !selectedDatabase?.id || !token) {
-					throw new Error("Missing tenant, database, or token information");
-				}
-
 				if (referenceTableId) {
-					// Fetch pentru un singur tabel specific
+					// Fetch for specific table
 					await fetchSingleTableData(referenceTableId);
-				} else if (tables && Array.isArray(tables)) {
-					// Fetch doar pentru tabelele care sunt referențiate de coloane
-					await fetchReferencedTablesData(tables);
+				} else if (stableTables && Array.isArray(stableTables)) {
+					// Fetch for referenced tables
+					await fetchReferencedTablesData(stableTables);
 				}
 			} catch (err) {
 				console.error("Error fetching reference data:", err);
-				setError(
-					err instanceof Error ? err.message : "Failed to fetch reference data",
-				);
-				setReferenceData({});
+				if (isMounted) {
+					setError(
+						err instanceof Error ? err.message : "Failed to fetch reference data",
+					);
+					setReferenceData({});
+				}
 			} finally {
-				setIsLoading(false);
+				if (isMounted) {
+					setIsLoading(false);
+				}
 			}
 		};
 
 		const fetchSingleTableData = async (tableId: number) => {
-
 			const response = await fetch(
 				`/api/tenants/${tenant!.id}/databases/${
 					selectedDatabase!.id
@@ -97,10 +179,8 @@ export const useOptimizedReferenceData = (
 			// Extract rows from the API response
 			let rowsData: Row[] = [];
 			if (Array.isArray(responseData)) {
-				// Direct array of rows
 				rowsData = responseData;
 			} else if (responseData && typeof responseData === "object") {
-				// Object with data property (standard API format)
 				if (Array.isArray(responseData.data)) {
 					rowsData = responseData.data;
 				} else if (Array.isArray(responseData.rows)) {
@@ -108,24 +188,20 @@ export const useOptimizedReferenceData = (
 				}
 			}
 
-			// Verificăm că avem rânduri valide
-			if (Array.isArray(rowsData) && rowsData.length > 0) {
-				const options = processRowsToReferenceData(rowsData, tableId);
-				const newReferenceData: Record<number, ReferenceDataItem[]> = {};
-				newReferenceData[tableId] = options;
-				setReferenceData(newReferenceData);
-			} else {
-				// Dacă nu avem rânduri, setăm un array gol
-				const newReferenceData: Record<number, ReferenceDataItem[]> = {};
-				newReferenceData[tableId] = [];
-				setReferenceData(newReferenceData);
+			if (isMounted) {
+				if (Array.isArray(rowsData) && rowsData.length > 0) {
+					const options = processRowsToReferenceData(rowsData, tableId);
+					setReferenceData({ [tableId]: options });
+				} else {
+					setReferenceData({ [tableId]: [] });
+				}
 			}
 		};
 
 		const fetchReferencedTablesData = async (tablesToProcess: Table[]) => {
 			const allReferenceData: Record<number, ReferenceDataItem[]> = {};
 
-			// Găsim doar tabelele care sunt referențiate de coloane
+			// Find only tables that are referenced by columns
 			const referencedTableIds = new Set<number>();
 
 			tablesToProcess.forEach((table) => {
@@ -141,7 +217,7 @@ export const useOptimizedReferenceData = (
 				}
 			});
 
-			// Fetch doar pentru tabelele referențiate
+			// Fetch only for referenced tables
 			const fetchPromises = Array.from(referencedTableIds).map(
 				async (tableId) => {
 					try {
@@ -172,12 +248,10 @@ export const useOptimizedReferenceData = (
 								}
 							}
 
-							// Verificăm că avem rânduri valide
 							if (Array.isArray(rowsData) && rowsData.length > 0) {
 								const options = processRowsToReferenceData(rowsData, tableId);
 								allReferenceData[tableId] = options;
 							} else {
-								// Dacă nu avem rânduri, setăm un array gol
 								allReferenceData[tableId] = [];
 							}
 						}
@@ -189,87 +263,17 @@ export const useOptimizedReferenceData = (
 			);
 
 			await Promise.all(fetchPromises);
-			setReferenceData(allReferenceData);
-		};
-
-		const processRowsToReferenceData = (
-			rowsData: Row[],
-			tableId: number,
-		): ReferenceDataItem[] => {
-
-			const options: ReferenceDataItem[] = [];
-
-			// Find the table to access columns
-			const referenceTable = tables?.find((t) => t.id === tableId);
-			if (!referenceTable?.columns) {
-				return options;
+			if (isMounted) {
+				setReferenceData(allReferenceData);
 			}
-
-			rowsData.forEach((row) => {
-				if (
-					row &&
-					row.id &&
-					row.cells &&
-					Array.isArray(row.cells) &&
-					row.cells.length > 0
-				) {
-					const displayParts: string[] = [];
-					let addedColumns = 0;
-					const maxColumns = 5; // Increased to show more columns
-					const rowData: any = {};
-
-					// Procesăm coloanele pentru display și rowData
-					referenceTable.columns?.forEach((column) => {
-						if (!column || !column.id || addedColumns >= maxColumns) return;
-
-						const cell = row.cells?.find(
-							(c: any) => c && c.columnId === column.id,
-						);
-						if (cell?.value != null && cell.value.toString().trim() !== "") {
-							let formattedValue = cell.value.toString().trim();
-
-							// Store full row data for export/hover
-							rowData[column.name] = cell.value;
-
-							if (formattedValue.length > 20) {
-								formattedValue = formattedValue.substring(0, 20) + "...";
-							}
-
-							if (column.type === "date") {
-								try {
-									formattedValue = new Date(formattedValue).toLocaleDateString(
-										"ro-RO",
-									);
-								} catch {
-									// fallback la valoarea brută
-								}
-							} else if (column.type === "boolean") {
-								formattedValue = formattedValue === "true" ? "✓" : "✗";
-							}
-
-							displayParts.push(formattedValue);
-							addedColumns++;
-						}
-					});
-
-					const displayValue = displayParts.length
-						? displayParts.join(" • ")
-						: `Row #${row.id || "unknown"}`;
-
-					options.push({
-						id: typeof row.id === 'string' ? parseInt(row.id) : (row.id || 0),
-						displayValue,
-						rowData,
-					});
-				}
-			});
-
-
-			return options;
 		};
 
 		fetchReferenceData();
-	}, [referenceTableId, tables, tenant?.id, selectedDatabase?.id, token]);
+
+		return () => {
+			isMounted = false;
+		};
+	}, [referenceTableId, stableTables, tenant?.id, selectedDatabase?.id, token, processRowsToReferenceData, refreshTrigger]);
 
 	return {
 		referenceData,

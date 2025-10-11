@@ -64,12 +64,14 @@ export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSave, onClose]);
 
+  // Only sync when widget ID changes, not on every config update
+  // to avoid infinite loop with handleConfigChange
   useEffect(() => {
-    if (widget) {
+    if (widget && widget.id) {
       setDraftConfig(widget.config || {});
       setDraftTitle(widget.title ?? "");
     }
-  }, [widget?.id, widget?.config, widget?.title]);
+  }, [widget?.id]); // Only depend on ID, not config or title
 
   // Keyboard shortcuts
   useEffect(() => {
