@@ -4,7 +4,8 @@ import React, { useMemo, useState } from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
-import { TableWidgetProcessor } from "@/widgets/processors/TableWidgetProcessor";
+import { useTableRows } from "@/hooks/useDatabaseTables";
+import { WidgetLoadingState, WidgetErrorState } from "../components/WidgetStates";
 import { 
   Table, 
   TableBody, 
@@ -54,87 +55,80 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   const rowTextColor = style.rowTextColor || 'foreground';
   const alternateRowBg = style.alternateRowBg || 'muted/50';
 
-  // Mock data for demonstration
-  const mockData = useMemo(() => {
-    return [
-      {
-        cells: [
-          { column: { name: "region" }, value: "North" },
-          { column: { name: "sales" }, value: 125000 },
-          { column: { name: "profit" }, value: 25000 },
-          { column: { name: "orders" }, value: 150 },
-        ]
-      },
-      {
-        cells: [
-          { column: { name: "region" }, value: "South" },
-          { column: { name: "sales" }, value: 98000 },
-          { column: { name: "profit" }, value: 18000 },
-          { column: { name: "orders" }, value: 120 },
-        ]
-      },
-      {
-        cells: [
-          { column: { name: "region" }, value: "East" },
-          { column: { name: "sales" }, value: 156000 },
-          { column: { name: "profit" }, value: 32000 },
-          { column: { name: "orders" }, value: 180 },
-        ]
-      },
-      {
-        cells: [
-          { column: { name: "region" }, value: "West" },
-          { column: { name: "sales" }, value: 89000 },
-          { column: { name: "profit" }, value: 15000 },
-          { column: { name: "orders" }, value: 110 },
-        ]
-      },
-    ];
-  }, []);
+  // Fetch real data from API
+  const databaseId = config?.data?.databaseId;
+  const tableId = config?.data?.tableId;
+  const filters = config?.data?.filters || [];
+  
+  const validFilters = filters.filter((f: any) => f.column && f.operator && f.value !== undefined);
+  const filterString = validFilters.map((f: any) => `${f.column}${f.operator}${f.value}`).join(',');
+  
+  const { data: rawData, isLoading, error } = useTableRows(
+    widget.tenantId,
+    databaseId || 0,
+    Number(tableId) || 0,
+    {
+      pageSize: 1000,
+      filters: filterString
+    }
+  );
 
-  // Process data using TableWidgetProcessor
+  // Process data - convert raw data to table format
   const processedData = useMemo(() => {
     if (!config.data?.columns || config.data.columns.length === 0) {
       return { data: [], summary: undefined, totalRows: 0 };
     }
 
-    const tableConfig = {
-      dataSource: {
-        databaseId: config.data.databaseId || 0,
-        tableId: config.data.tableId || "",
-      },
-      aggregation: config.settings?.aggregation || {
-        enabled: false,
-        columns: [],
-        showSummaryRow: false,
-        showGroupTotals: false,
-      },
-      filters: config.data.filters || [],
-    };
+    if (!rawData?.data || rawData.data.length === 0) {
+      return { data: [], summary: undefined, totalRows: 0 };
+    }
 
-    return TableWidgetProcessor.process(mockData, tableConfig);
-  }, [config.data, config.settings?.aggregation, mockData]);
+    // Raw data is already in the format we need (array of objects with column names as keys)
+    // Just return it with proper structure
+    return { 
+      data: rawData.data,
+      summary: undefined, 
+      totalRows: rawData.pagination?.total || rawData.data.length 
+    };
+  }, [config.data, config.settings?.aggregation, rawData]);
 
   // Apply sorting
   const sortedData = useMemo(() => {
     if (!sortColumn) return processedData.data;
     
-    return TableWidgetProcessor.applySorting(
-      processedData.data,
-      sortColumn,
-      sortDirection
-    );
+    const sorted = [...processedData.data].sort((a, b) => {
+      const aVal = a[sortColumn];
+      const bVal = b[sortColumn];
+      
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      
+      if (sortDirection === 'asc') {
+        return aStr < bStr ? -1 : aStr > bStr ? 1 : 0;
+      } else {
+        return aStr > bStr ? -1 : aStr < bStr ? 1 : 0;
+      }
+    });
+    
+    return sorted;
   }, [processedData.data, sortColumn, sortDirection]);
 
   // Apply pagination
   const paginatedData = useMemo(() => {
     if (!config.settings?.pagination?.enabled) return sortedData;
     
-    return TableWidgetProcessor.applyPagination(
-      sortedData,
-      currentPage,
-      config.settings.pagination.pageSize || 50
-    );
+    const pageSize = config.settings.pagination.pageSize || 50;
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    
+    return sortedData.slice(startIndex, endIndex);
   }, [sortedData, currentPage, config.settings?.pagination]);
 
   const formatValue = (value: any, format: string): string => {
@@ -207,6 +201,32 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return <WidgetLoadingState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      variant="table"
+    />;
+  }
+
+  // Error state
+  if (error) {
+    return <WidgetErrorState 
+      widget={widget} 
+      onEdit={onEdit} 
+      onDelete={onDelete} 
+      onDuplicate={onDuplicate} 
+      isEditMode={isEditMode}
+      error={error}
+      title="Error loading table data"
+    />;
+  }
+
+  // No columns configured
   if (!config.data?.columns || config.data.columns.length === 0) {
     return (
       <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
