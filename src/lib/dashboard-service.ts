@@ -3,7 +3,7 @@
  * Business logic for dashboard and widget operations
  */
 
-import  prisma  from '@/lib/prisma';
+import  prisma, { invalidateCacheByTags }  from '@/lib/prisma';
 import { errorTracker } from '@/lib/error-tracker';
 import { usageAnalytics } from '@/lib/usage-analytics';
 import { DashboardValidators, WidgetType } from './dashboard-validators';
@@ -686,6 +686,9 @@ export class DashboardService {
         { dashboardId, widgetId: widget.id, type: widget.type }
       );
 
+      // Invalidate cache to ensure fresh data on next query
+      invalidateCacheByTags(['widget', 'dashboard']);
+
       return this.serializeBigInt(widget);
     } catch (error) {
       console.error('Error creating widget:', error);
@@ -778,6 +781,9 @@ export class DashboardService {
         { dashboardId, widgetId, updatedFields: Object.keys(validatedData) }
       );
 
+      // Invalidate cache to ensure fresh data on next query
+      invalidateCacheByTags(['widget', 'dashboard']);
+
       return this.serializeBigInt(updatedWidget);
     } catch (error) {
       console.error('Error updating widget:', error);
@@ -841,6 +847,9 @@ export class DashboardService {
         undefined,
         { dashboardId, widgetId, type: existingWidget.type }
       );
+
+      // Invalidate cache to ensure fresh data on next query
+      invalidateCacheByTags(['widget', 'dashboard']);
     } catch (error) {
       console.error('Error deleting widget:', error);
       errorTracker.trackError(

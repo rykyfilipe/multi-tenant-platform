@@ -271,9 +271,14 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
       } else {
         console.log('[savePending] No conflicts, clearing conflicts state');
         setConflicts([]);
-        // After successful save, just clear pending operations but keep widgets
+        // After successful save, clear pending operations
         clearPendingOperations();
         console.log('[savePending] Save successful, cleared pending operations');
+        
+        // Reload widgets from DB to get correct IDs for newly created widgets
+        console.log('[savePending] Reloading widgets from DB to sync IDs...');
+        await loadWidgets();
+        console.log('[savePending] Widgets reloaded successfully');
       }
 
       return response;
