@@ -255,8 +255,8 @@ export class InvoiceSystemService {
 	 */
 	private static async createColumnsEfficiently(tableId: number, columns: any[]) {
 		// Split columns into two groups
-		const columnsWithCustomOptions = columns.filter(col => 'customArrayOptions' in col || 'referenceTableId' in col);
-		const columnsWithoutCustomOptions = columns.filter(col => !('customArrayOptions' in col) && !('referenceTableId' in col));
+		const columnsWithCustomOptions = columns.filter(col => 'customOptions' in col || 'referenceTableId' in col);
+		const columnsWithoutCustomOptions = columns.filter(col => !('customOptions' in col) && !('referenceTableId' in col));
 
 		// Use createMany for columns without custom options (much faster)
 		if (columnsWithoutCustomOptions.length > 0) {
@@ -265,12 +265,14 @@ export class InvoiceSystemService {
 					...column,
 					tableId,
 				})),
+				skipDuplicates: true, // Skip if column already exists
 			});
 		}
 
 		// Create columns with custom options individually
 		if (columnsWithCustomOptions.length > 0) {
-			await Promise.all(
+			// Use Promise.allSettled to continue even if some columns already exist
+			const results = await Promise.allSettled(
 				columnsWithCustomOptions.map(column =>
 					prisma.column.create({
 						data: {
@@ -280,6 +282,13 @@ export class InvoiceSystemService {
 					})
 				)
 			);
+			
+			// Log any failures (likely duplicates)
+			results.forEach((result, index) => {
+				if (result.status === 'rejected') {
+					console.log(`Column ${columnsWithCustomOptions[index].name} already exists, skipping`);
+				}
+			});
 		}
 	}
 
@@ -307,7 +316,7 @@ export class InvoiceSystemService {
 				primary: false,
 				order: 2,
 				isLocked: true,
-				customArrayOptions: ["Persoană fizică", "Persoană juridică"],
+				customOptions: ["Persoană fizică", "Persoană juridică"],
 			},
 			{
 				name: "customer_email",
