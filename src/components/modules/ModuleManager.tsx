@@ -122,6 +122,12 @@ export default function ModuleManager() {
 		try {
 			setUpdating(moduleId);
 			
+			// Show loading message with clear feedback
+			const loadingMessage = action === "enable" 
+				? `Enabling ${moduleId} module and creating tables...`
+				: `Disabling ${moduleId} module and removing tables...`;
+			showAlert(loadingMessage, "info");
+			
 			// Optimistic update - update local state immediately
 			setModulesStatus(prevStatus => 
 				prevStatus.map(status => {

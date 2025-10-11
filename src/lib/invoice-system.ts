@@ -42,65 +42,68 @@ export class InvoiceSystemService {
 
 	/**
 	 * Create the three required tables for invoices
+	 * Optimized with transaction for faster atomic operations
 	 */
 	private static async createInvoiceTables(
 		tenantId: number,
 		databaseId: number,
 	) {
-		// Create customers table
-		const customersTable = await prisma.table.create({
-			data: {
-				name: "customers",
-				description: "Customer information for invoices",
-				databaseId,
-				isProtected: true,
-				protectedType: "customers",
-			},
+		// Use transaction for atomic and faster operations
+		return await prisma.$transaction(async (tx) => {
+			// Create all three tables in parallel
+			const [customersTable, invoicesTable, invoiceItemsTable] = await Promise.all([
+				tx.table.create({
+					data: {
+						name: "customers",
+						description: "Customer information for invoices",
+						databaseId,
+						isProtected: true,
+						protectedType: "customers",
+					},
+				}),
+				tx.table.create({
+					data: {
+						name: "invoices",
+						description: "Invoice headers",
+						databaseId,
+						isProtected: true,
+						protectedType: "invoices",
+					},
+				}),
+				tx.table.create({
+					data: {
+						name: "invoice_items",
+						description: "Invoice line items",
+						databaseId,
+						isProtected: true,
+						protectedType: "invoice_items",
+					},
+				}),
+			]);
+
+			// Create all columns in parallel for maximum speed
+			await Promise.all([
+				this.createCustomerColumns(customersTable.id),
+				this.createInvoiceColumns(invoicesTable.id, customersTable.id),
+				this.createInvoiceItemColumns(
+					invoiceItemsTable.id,
+					invoicesTable.id,
+					customersTable.id,
+				),
+			]);
+
+			return {
+				customers: customersTable,
+				invoices: invoicesTable,
+				invoice_items: invoiceItemsTable,
+			};
 		});
-
-		// Create invoices table
-		const invoicesTable = await prisma.table.create({
-			data: {
-				name: "invoices",
-				description: "Invoice headers",
-				databaseId,
-				isProtected: true,
-				protectedType: "invoices",
-			},
-		});
-
-		// Create invoice_items table
-		const invoiceItemsTable = await prisma.table.create({
-			data: {
-				name: "invoice_items",
-				description: "Invoice line items",
-				databaseId,
-				isProtected: true,
-				protectedType: "invoice_items",
-			},
-		});
-
-	// Create predefined columns for customers table
-	await this.createCustomerColumns(customersTable.id);
-
-	// Create predefined columns for invoices table
-	await this.createInvoiceColumns(invoicesTable.id, customersTable.id);
-
-		// Create predefined columns for invoice_items table
-		await this.createInvoiceItemColumns(
-			invoiceItemsTable.id,
-			invoicesTable.id,
-			customersTable.id,
-		);
-
-		return {
-			customers: customersTable,
-			invoices: invoicesTable,
-			invoice_items: invoiceItemsTable,
-		};
 	}
 
 	/**
+	 * DEPRECATED: Company information is stored in Tenant model, not as table columns
+	 * This function should NOT be used. Company details are retrieved from tenant settings.
+	 * 
 	 * Create predefined columns for company information
 	 */
 	private static async createCompanyColumns(tableId: number) {
@@ -206,18 +209,18 @@ export class InvoiceSystemService {
 			},
 		];
 
-		for (const column of columns) {
-			await prisma.column.create({
-				data: {
-					...column,
-					tableId,
-				},
-			});
-		}
+		// Use createMany for much faster bulk insertion
+		await prisma.column.createMany({
+			data: columns.map(column => ({
+				...column,
+				tableId,
+			})),
+		});
 	}
 
 	/**
 	 * Create predefined columns for customers table
+	 * Optimized to use createMany for faster bulk insertion
 	 */
 	private static async createCustomerColumns(tableId: number) {
 		const columns = [
@@ -415,18 +418,18 @@ export class InvoiceSystemService {
 			},
 		];
 
-		for (const column of columns) {
-			await prisma.column.create({
-				data: {
-					...column,
-					tableId,
-				},
-			});
-		}
+		// Use createMany for much faster bulk insertion
+		await prisma.column.createMany({
+			data: columns.map(column => ({
+				...column,
+				tableId,
+			})),
+		});
 	}
 
 	/**
 	 * Create predefined columns for invoices table
+	 * Optimized to use createMany for faster bulk insertion
 	 */
 	private static async createInvoiceColumns(tableId: number, customerTableId: number) {
 		const columns = [
@@ -649,18 +652,18 @@ export class InvoiceSystemService {
 			},
 		];
 
-		for (const column of columns) {
-			await prisma.column.create({
-				data: {
-					...column,
-					tableId,
-				},
-			});
-		}
+		// Use createMany for much faster bulk insertion
+		await prisma.column.createMany({
+			data: columns.map(column => ({
+				...column,
+				tableId,
+			})),
+		});
 	}
 
 	/**
 	 * Create predefined columns for invoice_items table
+	 * Optimized to use createMany for faster bulk insertion
 	 */
 	private static async createInvoiceItemColumns(
 		tableId: number,
@@ -889,14 +892,13 @@ export class InvoiceSystemService {
 			},
 		];
 
-		for (const column of columns) {
-			await prisma.column.create({
-				data: {
-					...column,
-					tableId,
-				},
-			});
-		}
+		// Use createMany for much faster bulk insertion
+		await prisma.column.createMany({
+			data: columns.map(column => ({
+				...column,
+				tableId,
+			})),
+		});
 	}
 
 	/**

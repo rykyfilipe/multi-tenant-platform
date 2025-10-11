@@ -122,6 +122,7 @@ async function createModuleTableColumns(
 
 /**
  * Removes all tables for a specific module from a database
+ * Optimized with transaction and batch operations for faster deletion
  * @param databaseId - The database ID where tables will be removed
  * @param moduleId - The module ID (e.g., 'billing')
  */
@@ -129,69 +130,57 @@ export async function removeModuleTables(databaseId: number, moduleId: string) {
 	try {
 		// For billing module, remove invoice system tables
 		if (moduleId === "billing") {
-			// Find invoice system tables (customers, invoices, invoice_items)
-			const invoiceTables = await prisma.table.findMany({
-				where: {
-					databaseId,
-					isProtected: true,
-					protectedType: { in: ["customers", "invoices", "invoice_items"] },
-				},
-				include: {
-					columns: true,
-					rows: true,
-				},
-			});
-
-			// Delete invoice system tables (this will cascade delete columns and rows)
-			for (const table of invoiceTables) {
-				await prisma.table.delete({
-					where: { id: table.id },
+			// Use transaction for atomic and faster operations
+			await prisma.$transaction(async (tx : any) => {
+				// Get tenant ID first
+				const database = await tx.database.findUnique({
+					where: { id: databaseId },
+					select: { tenantId: true },
 				});
-			}
 
-			console.log(
-				`✅ Removed ${invoiceTables.length} invoice system tables for billing module`,
-			);
+				if (!database) {
+					throw new Error(`Database ${databaseId} not found`);
+				}
 
-			// Also remove invoice series settings from tenant
-			await prisma.tenant.update({
-				where: {
-					id: (await prisma.database.findUnique({
-						where: { id: databaseId },
-						select: { tenantId: true },
-					}))?.tenantId,
-				},
-				data: {
-					invoiceSeriesPrefix: null,
-					invoiceIncludeYear: null,
-					invoiceStartNumber: null,
-				},
+				// Find and delete all invoice tables in parallel
+				const [deletedCount, _] = await Promise.all([
+					// Delete all invoice tables using deleteMany for faster batch operation
+					tx.table.deleteMany({
+						where: {
+							databaseId,
+							isProtected: true,
+							protectedType: { in: ["customers", "invoices", "invoice_items"] },
+						},
+					}),
+					// Update tenant settings in parallel
+					tx.tenant.update({
+						where: { id: database.tenantId },
+						data: {
+							invoiceSeriesPrefix: null,
+							invoiceIncludeYear: null,
+							invoiceStartNumber: null,
+						},
+					}),
+				]);
+
+				console.log(
+					`✅ Removed ${deletedCount.count} invoice system tables for billing module`,
+				);
 			});
 
 			console.log("✅ Removed invoice series settings from tenant");
 		} else {
-			// For other modules, find tables with moduleType
-			const moduleTables = await prisma.table.findMany({
+			// For other modules, use deleteMany for faster batch operation
+			const deletedCount = await prisma.table.deleteMany({
 				where: {
 					databaseId,
 					moduleType: moduleId,
 					isModuleTable: true,
 				},
-				include: {
-					columns: true,
-					rows: true,
-				},
 			});
 
-			// Delete tables (this will cascade delete columns and rows)
-			for (const table of moduleTables) {
-				await prisma.table.delete({
-					where: { id: table.id },
-				});
-			}
-
 			console.log(
-				`✅ Removed ${moduleTables.length} tables for module '${moduleId}'`,
+				`✅ Removed ${deletedCount.count} tables for module '${moduleId}'`,
 			);
 		}
 	} catch (error) {
