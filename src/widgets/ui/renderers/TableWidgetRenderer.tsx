@@ -79,8 +79,15 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   
   // Backward compatibility
   const showHeader = config.settings?.showColumnHeaders ?? true;
+  const showFooter = config.settings?.showFooter ?? true;
   const stripedRows = alternateColors.enabled;
   const hoverEffect = hoverConfig.enabled;
+  const transparentBackground = backgroundColor === "transparent" || styleConfig?.backgroundOpacity === 0;
+  
+  // Old style properties (for backward compatibility with helper functions)
+  const cellPadding = compactMode ? 'compact' : (styleConfig.padding === 'sm' ? 'compact' : 'comfortable');
+  const fontSize = styleConfig.fontSize || 'sm';
+  const fontWeight = styleConfig.fontWeight || 'normal';
 
   // Fetch real data from API
   const databaseId = config?.data?.databaseId;
@@ -278,7 +285,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
 
   const headerRowStyle: React.CSSProperties = {
     backgroundColor: headerBg,
-    borderBottom: headerBorderBottom.enabled ? `${headerBorderBottom.width}px solid ${headerBorderBottom.color}` : undefined,
+    borderBottom: headerBorderBottom?.enabled ? `${headerBorderBottom.width}px solid ${headerBorderBottom.color}` : undefined,
   };
 
   const headerCellStyle: React.CSSProperties = {
@@ -287,7 +294,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     fontFamily: headerFontFamily,
     fontWeight: headerFontWeight,
     textAlign: headerTextAlign,
-    padding: `${headerPadding.y}px ${headerPadding.x}px`,
+    padding: `${headerPadding?.y || 12}px ${headerPadding?.x || 16}px`,
   };
 
   const bodyCellStyle: React.CSSProperties = {
@@ -296,9 +303,9 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     fontFamily: rowFontFamily,
     fontWeight: rowFontWeight,
     textAlign: rowTextAlign,
-    padding: `${rowPadding.y}px ${rowPadding.x}px`,
+    padding: `${rowPadding?.y || 12}px ${rowPadding?.x || 16}px`,
     minHeight: `${rowMinHeight}px`,
-    borderRight: verticalBorder.enabled ? `${verticalBorder.width}px solid ${verticalBorder.color}` : undefined,
+    borderRight: verticalBorder?.enabled ? `${verticalBorder?.width || 1}px solid ${verticalBorder?.color || 'rgba(0,0,0,0.05)'}` : undefined,
   };
 
   return (
@@ -357,12 +364,12 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
               {paginatedData.map((row: any, rowIndex: number) => {
                 const rowStyle: React.CSSProperties = {
                   backgroundColor: stripedRows && rowIndex % 2 === 1 
-                    ? alternateColors.odd 
-                    : alternateColors.even,
-                  borderBottom: rowBorderBottom.enabled 
-                    ? `${rowBorderBottom.width}px ${rowBorderBottom.style} ${rowBorderBottom.color}` 
+                    ? (alternateColors?.odd || "#F9FAFB")
+                    : (alternateColors?.even || "#FFFFFF"),
+                  borderBottom: rowBorderBottom?.enabled 
+                    ? `${rowBorderBottom?.width || 1}px ${rowBorderBottom?.style || 'solid'} ${rowBorderBottom?.color || 'rgba(0,0,0,0.05)'}` 
                     : undefined,
-                  transition: hoverEffect ? `all ${hoverConfig.transition}ms` : undefined,
+                  transition: hoverEffect ? `all ${hoverConfig?.transition || 150}ms` : undefined,
                 };
 
                 return (

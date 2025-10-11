@@ -274,14 +274,24 @@ export class KPIWidgetProcessor {
           const maxValue = Math.max(...(currentValue as number[]));
           const maxIndex = (currentValue as number[]).indexOf(maxValue);
           resultRow = normalizedData[maxIndex];
+          console.log(`   → Found MAX value: ${maxValue} at index ${maxIndex}`);
+          console.log(`   → Result row:`, resultRow);
         } else if (aggregation.function === 'min') {
           const minValue = Math.min(...(currentValue as number[]));
           const minIndex = (currentValue as number[]).indexOf(minValue);
           resultRow = normalizedData[minIndex];
+          console.log(`   → Found MIN value: ${minValue} at index ${minIndex}`);
+          console.log(`   → Result row:`, resultRow);
         } else if (aggregation.function === 'first') {
           resultRow = normalizedData[0];
+          console.log(`   → Result row (first):`, resultRow);
         } else if (aggregation.function === 'last') {
           resultRow = normalizedData[normalizedData.length - 1];
+          console.log(`   → Result row (last):`, resultRow);
+        }
+        
+        if (resultRow) {
+          console.log(`   → Display column value: ${resultRow[config.metric.displayColumn]}`);
         }
       }
       
@@ -306,6 +316,15 @@ export class KPIWidgetProcessor {
     // Use the last aggregation result as the primary display value
     const finalAggregation = aggregationResults[aggregationResults.length - 1];
     
+    // Extract display value from resultRow if displayColumn is configured
+    const displayValue = resultRow && config.metric.displayColumn ? resultRow[config.metric.displayColumn] : undefined;
+    
+    if (config.metric.displayColumn) {
+      console.log(`🎨 [Display Column] ${config.metric.displayColumn}:`, displayValue);
+      console.log(`   → resultRow exists:`, !!resultRow);
+      console.log(`   → resultRow keys:`, resultRow ? Object.keys(resultRow) : 'N/A');
+    }
+    
     const result: KPIResult = {
       metric: config.metric.field,
       label: config.metric.label,
@@ -317,7 +336,7 @@ export class KPIWidgetProcessor {
       // Store result row if available
       resultRow: resultRow,
       // Extract display value from resultRow if displayColumn is configured
-      displayValue: resultRow && config.metric.displayColumn ? resultRow[config.metric.displayColumn] : undefined,
+      displayValue: displayValue,
       displayFormat: config.metric.displayFormat,
     };
 

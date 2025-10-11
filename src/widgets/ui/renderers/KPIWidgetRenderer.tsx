@@ -151,12 +151,26 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       filters: config.data.filters || [],
     };
 
-    return KPIWidgetProcessor.process(realData, kpiConfig);
+    const result = KPIWidgetProcessor.process(realData, kpiConfig);
+    
+    // Debug log for displayValue
+    if (metric.displayColumn) {
+      console.log(`🎨 [KPI Renderer] Received result:`, {
+        value: result.value,
+        displayValue: result.displayValue,
+        displayColumn: metric.displayColumn,
+        hasResultRow: !!result.resultRow
+      });
+    }
+    
+    return result;
   }, [
     config.data?.databaseId, 
     config.data?.tableId, 
     metric?.field,
     metric?.groupBy,  // ✅ Added groupBy to dependencies
+    metric?.displayColumn,  // ✅ Added displayColumn to dependencies
+    metric?.displayFormat,  // ✅ Added displayFormat to dependencies
     metric?.label,
     metric?.format,
     metric?.showTrend,
