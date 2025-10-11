@@ -444,11 +444,21 @@ export class KPIWidgetProcessor {
       if (!groups[groupKey]) {
         groups[groupKey] = [];
       }
-      groups[groupKey].push(row);
+      
+      // CRITICAL FIX: Ensure the GROUP BY column exists in the row
+      // If it's missing (NULL in DB), add it explicitly
+      const enrichedRow = {
+        ...row,
+        [groupByField]: row[groupByField] !== undefined ? row[groupByField] : null
+      };
+      
+      groups[groupKey].push(enrichedRow);
       
       if (idx < 3) {
         console.log(`   🔀 Row ${idx + 1}: ${groupByField} = "${row[groupByField]}" → Group: "${groupKey}"`);
-        console.log(`      → Row keys:`, Object.keys(row));
+        console.log(`      → Original row keys:`, Object.keys(row));
+        console.log(`      → Enriched row keys:`, Object.keys(enrichedRow));
+        console.log(`      → Enriched row[${groupByField}]:`, enrichedRow[groupByField]);
       }
     });
 
