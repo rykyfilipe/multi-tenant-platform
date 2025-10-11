@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { getModuleDefinition } from "./modules";
+import { InvoiceSystemService } from "./invoice-system";
 
 /**
  * Creates tables for a specific module in a database
@@ -11,6 +12,35 @@ import { getModuleDefinition } from "./modules";
  */
 export async function createModuleTables(databaseId: number, moduleId: string) {
 	try {
+		// For billing module, use InvoiceSystemService to create tables
+		if (moduleId === "billing") {
+			// Get tenant ID from database
+			const database = await prisma.database.findUnique({
+				where: { id: databaseId },
+				select: { tenantId: true },
+			});
+
+			if (!database) {
+				throw new Error(`Database with ID ${databaseId} not found`);
+			}
+
+			// Use InvoiceSystemService to create invoice tables
+			const invoiceTables = await InvoiceSystemService.initializeInvoiceTables(
+				database.tenantId,
+				databaseId
+			);
+
+			// Convert to the expected format
+			const createdTables: Record<string, any> = {
+				customers: invoiceTables.customers,
+				invoices: invoiceTables.invoices,
+				invoice_items: invoiceTables.invoice_items,
+			};
+
+			return createdTables;
+		}
+
+		// For other modules, use the module definition
 		const moduleDefinition = getModuleDefinition(moduleId);
 
 		if (!moduleDefinition) {

@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
-import prisma from "@/lib/prisma";
+import prisma, { invalidateCacheByTags } from "@/lib/prisma";
 import {
 	createModuleTables,
 	removeModuleTables,
@@ -212,6 +212,9 @@ export async function POST(
 			// Create module tables
 			const createdTablesMap = await createModuleTables(parseInt(databaseId), moduleId);
 
+			// Invalidate cache for database and table operations
+			invalidateCacheByTags(["database", "table", "tableList", "databaseList"]);
+
 			// Get the created tables with full details
 			const tableIds = Object.values(createdTablesMap).map((table: any) => table.id);
 			const createdTables = await prisma.table.findMany({
@@ -266,6 +269,9 @@ export async function POST(
 
 			// Remove module tables
 			await removeModuleTables(parseInt(databaseId), moduleId);
+
+			// Invalidate cache for database and table operations
+			invalidateCacheByTags(["database", "table", "tableList", "databaseList"]);
 
 			// Check if module is still used in other databases
 			const otherDatabases = await prisma.database.findMany({

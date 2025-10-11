@@ -86,6 +86,7 @@ export interface InvoiceData {
 		shippingCost?: number;
 		lateFee?: number;
 		currency: string;
+		vatRate?: number;
 	};
 	translations: Record<string, string>;
 }
@@ -218,11 +219,30 @@ export class InvoiceTemplate {
       margin-bottom: 10px;
     }
     
+    .company-logo {
+      max-width: 80px;
+      max-height: 80px;
+      margin-bottom: 10px;
+      object-fit: contain;
+    }
+    
     .company-name {
       font-size: 18px;
       font-weight: 600;
       color: #000;
+      margin-bottom: 10px;
+    }
+    
+    .company-details {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.4;
       margin-bottom: 15px;
+      text-align: right;
+    }
+    
+    .company-details p {
+      margin-bottom: 3px;
     }
     
     .total-due {
@@ -312,6 +332,13 @@ export class InvoiceTemplate {
       font-size: 12px;
       color: #666;
       margin-top: 3px;
+    }
+    
+    .item-sku {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+      font-style: italic;
     }
     
     .amount-column {
@@ -459,14 +486,24 @@ export class InvoiceTemplate {
         <div class="invoice-details">
           <p><strong>Invoice Date:</strong> ${formatDate(data.invoice.date)}</p>
           <p><strong>Invoice No:</strong> ${data.invoice.invoice_series ? data.invoice.invoice_series + '-' : ''}${data.invoice.invoice_number}</p>
+          ${data.invoice.due_date ? `<p><strong>Due Date:</strong> ${formatDate(data.invoice.due_date)}</p>` : ''}
         </div>
       </div>
       
       <div class="logo-section">
-        <div class="logo-circle"></div>
-        <div class="company-name">${data.company.company_name || 'Logo Company'}</div>
+        ${data.company.logo_url ? `<img src="${data.company.logo_url}" alt="Company Logo" class="company-logo">` : '<div class="logo-circle"></div>'}
+        <div class="company-name">${data.company.company_name || 'Company Name'}</div>
+        <div class="company-details">
+          ${data.company.company_tax_id ? `<p><strong>CUI:</strong> ${data.company.company_tax_id}</p>` : ''}
+          ${data.company.company_registration_number ? `<p><strong>Nr. Reg:</strong> ${data.company.company_registration_number}</p>` : ''}
+          ${data.company.company_street && data.company.company_street_number ? `<p>${data.company.company_street} ${data.company.company_street_number}</p>` : ''}
+          ${data.company.company_city && data.company.company_postal_code ? `<p>${data.company.company_city}, ${data.company.company_postal_code}</p>` : ''}
+          ${data.company.company_country ? `<p>${data.company.company_country}</p>` : ''}
+          ${data.company.company_phone ? `<p><strong>Tel:</strong> ${data.company.company_phone}</p>` : ''}
+          ${data.company.company_email ? `<p><strong>Email:</strong> ${data.company.company_email}</p>` : ''}
+        </div>
         <div class="total-due">
-          <div class="total-due-label">Total Due :</div>
+          <div class="total-due-label">Total Due:</div>
           <div class="total-due-amount">${formatCurrency(data.totals.grandTotal, currency)}</div>
         </div>
       </div>
@@ -478,13 +515,15 @@ export class InvoiceTemplate {
       <div class="customer-name">${data.customer.customer_name}</div>
       ${data.customer.customer_type ? `<div class="customer-title">${data.customer.customer_type === 'Persoană fizică' ? 'Individual Customer' : 'Business Customer'}</div>` : ''}
       <div class="customer-address">
-        ${data.customer.customer_type === 'Persoană fizică' && data.customer.customer_cnp ? `CNP: ${data.customer.customer_cnp}<br>` : ''}
-        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_cui ? `CUI: ${data.customer.customer_cui}<br>` : ''}
-        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_company_registration_number ? `Nr. Reg: ${data.customer.customer_company_registration_number}<br>` : ''}
-        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_vat_number ? `Nr. TVA: ${data.customer.customer_vat_number}<br>` : ''}
-        ${data.customer.customer_street && data.customer.customer_street_number ? `${data.customer.customer_street} ${data.customer.customer_street_number}<br>` : ''}
-        ${data.customer.customer_city && data.customer.customer_postal_code ? `${data.customer.customer_city}, ${data.customer.customer_postal_code}<br>` : ''}
-        ${data.customer.customer_country || ''}
+        ${data.customer.customer_type === 'Persoană fizică' && data.customer.customer_cnp ? `<p><strong>CNP:</strong> ${data.customer.customer_cnp}</p>` : ''}
+        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_cui ? `<p><strong>CUI:</strong> ${data.customer.customer_cui}</p>` : ''}
+        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_company_registration_number ? `<p><strong>Nr. Reg:</strong> ${data.customer.customer_company_registration_number}</p>` : ''}
+        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_vat_number ? `<p><strong>Nr. TVA:</strong> ${data.customer.customer_vat_number}</p>` : ''}
+        ${data.customer.customer_email ? `<p><strong>Email:</strong> ${data.customer.customer_email}</p>` : ''}
+        ${data.customer.customer_phone ? `<p><strong>Tel:</strong> ${data.customer.customer_phone}</p>` : ''}
+        ${data.customer.customer_street && data.customer.customer_street_number ? `<p>${data.customer.customer_street} ${data.customer.customer_street_number}</p>` : ''}
+        ${data.customer.customer_city && data.customer.customer_postal_code ? `<p>${data.customer.customer_city}, ${data.customer.customer_postal_code}</p>` : ''}
+        ${data.customer.customer_country ? `<p>${data.customer.customer_country}</p>` : ''}
       </div>
     </div>
 
@@ -496,6 +535,9 @@ export class InvoiceTemplate {
           <th>NAME DESCRIPTION</th>
           <th style="text-align: right;">PRICE</th>
           <th style="text-align: right;">QUANTITY</th>
+          <th style="text-align: right;">UNIT</th>
+          <th style="text-align: right;">CURRENCY</th>
+          <th style="text-align: right;">VAT %</th>
           <th style="text-align: right;">AMOUNT</th>
         </tr>
       </thead>
@@ -506,9 +548,13 @@ export class InvoiceTemplate {
             <td class="item-name">
               ${item.product_name}
               ${item.product_description ? `<div class="item-description">${item.product_description}</div>` : ''}
+              ${item.product_sku ? `<div class="item-sku">SKU: ${item.product_sku}</div>` : ''}
             </td>
-            <td style="text-align: right;">${formatCurrency(item.unit_price, currency)}</td>
+            <td style="text-align: right;">${formatCurrency(item.unit_price, item.currency || currency)}</td>
             <td style="text-align: right;">${item.quantity}</td>
+            <td style="text-align: right;">${item.unit_of_measure || 'pcs'}</td>
+            <td style="text-align: right;">${item.currency || currency}</td>
+            <td style="text-align: right;">${item.tax_rate || 0}%</td>
             <td class="amount-column">${formatCurrency(item.total, currency)}</td>
           </tr>
         `).join('')}
@@ -519,12 +565,12 @@ export class InvoiceTemplate {
     <div class="summary-section">
       <table class="summary-table">
         <tr>
-          <td class="summary-label">Sub Total:</td>
+          <td class="summary-label">Subtotal:</td>
           <td class="summary-value">${formatCurrency(data.totals.subtotal, currency)}</td>
         </tr>
         ${data.totals.taxTotal > 0 ? `
         <tr>
-          <td class="summary-label">Tax:</td>
+          <td class="summary-label">VAT:</td>
           <td class="summary-value">${formatCurrency(data.totals.taxTotal, currency)}</td>
         </tr>
         ` : ''}
@@ -534,8 +580,20 @@ export class InvoiceTemplate {
           <td class="summary-value">-${formatCurrency(data.totals.discountAmount || 0, currency)}</td>
         </tr>
         ` : ''}
+        ${(data.totals.shippingCost || 0) > 0 ? `
+        <tr>
+          <td class="summary-label">Shipping:</td>
+          <td class="summary-value">${formatCurrency(data.totals.shippingCost || 0, currency)}</td>
+        </tr>
+        ` : ''}
+        ${(data.totals.lateFee || 0) > 0 ? `
+        <tr>
+          <td class="summary-label">Late Fee:</td>
+          <td class="summary-value">${formatCurrency(data.totals.lateFee || 0, currency)}</td>
+        </tr>
+        ` : ''}
         <tr class="grand-total">
-          <td class="summary-label">GRAND TOTAL:</td>
+          <td class="summary-label">TOTAL:</td>
           <td class="summary-value">${formatCurrency(data.totals.grandTotal, currency)}</td>
         </tr>
       </table>
@@ -544,10 +602,13 @@ export class InvoiceTemplate {
     <!-- Payment Method and Contact -->
     <div class="payment-contact-section">
       <div class="payment-method">
-        <h3>Payment Method</h3>
-        ${data.company.company_iban ? `<p><strong>Account ID:</strong> ${data.company.company_iban}</p>` : ''}
+        <h3>Payment Information</h3>
+        ${data.company.company_iban ? `<p><strong>IBAN:</strong> ${data.company.company_iban}</p>` : ''}
+        ${data.company.company_swift ? `<p><strong>SWIFT:</strong> ${data.company.company_swift}</p>` : ''}
+        ${data.company.company_bank ? `<p><strong>Bank:</strong> ${data.company.company_bank}</p>` : ''}
         ${data.company.company_name ? `<p><strong>Account Name:</strong> ${data.company.company_name}</p>` : ''}
-        ${data.invoice.payment_method ? `<p>${data.invoice.payment_method}</p>` : ''}
+        ${data.invoice.payment_method ? `<p><strong>Payment Method:</strong> ${data.invoice.payment_method}</p>` : ''}
+        ${data.invoice.payment_terms ? `<p><strong>Payment Terms:</strong> ${data.invoice.payment_terms}</p>` : ''}
       </div>
       
       <div class="contact-info">
@@ -558,19 +619,26 @@ export class InvoiceTemplate {
             <span>${data.company.company_phone}</span>
           </div>
         ` : ''}
-        ${data.company.company_street && data.company.company_street_number ? `
-          <div class="contact-item">
-            <span class="contact-icon">📍</span>
-            <span>${data.company.company_street} ${data.company.company_street_number}</span>
-          </div>
-        ` : ''}
-        ${data.company.company_city ? `<p>${data.company.company_city}</p>` : ''}
         ${data.company.company_email ? `
           <div class="contact-item">
             <span class="contact-icon">✉️</span>
             <span>${data.company.company_email}</span>
           </div>
         ` : ''}
+        ${data.company.website ? `
+          <div class="contact-item">
+            <span class="contact-icon">🌐</span>
+            <span>${data.company.website}</span>
+          </div>
+        ` : ''}
+        ${data.company.company_street && data.company.company_street_number ? `
+          <div class="contact-item">
+            <span class="contact-icon">📍</span>
+            <span>${data.company.company_street} ${data.company.company_street_number}</span>
+          </div>
+        ` : ''}
+        ${data.company.company_city && data.company.company_postal_code ? `<p>${data.company.company_city}, ${data.company.company_postal_code}</p>` : ''}
+        ${data.company.company_country ? `<p>${data.company.company_country}</p>` : ''}
       </div>
     </div>
 

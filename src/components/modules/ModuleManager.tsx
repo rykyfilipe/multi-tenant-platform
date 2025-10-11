@@ -54,7 +54,7 @@ interface ModulesResponse {
 export default function ModuleManager() {
 	const { token, tenant, showAlert, setTenant } = useApp();
 	const { t } = useLanguage();
-	const { setTables, selectedDatabase, setSelectedDatabase } = useDatabase();
+	const { setTables, selectedDatabase, setSelectedDatabase, invalidateTablesCache } = useDatabase();
 	const [modules, setModules] = useState<ModuleDefinition[]>([]);
 	const [modulesStatus, setModulesStatus] = useState<ModuleStatus[]>([]);
 	const [enabledModules, setEnabledModules] = useState<string[]>([]);
@@ -220,6 +220,9 @@ export default function ModuleManager() {
 							});
 						}
 					}
+
+					// Force refresh tables cache to ensure database page shows updated state
+					invalidateTablesCache();
 				}
 
 				// Refresh modules status to ensure consistency

@@ -293,6 +293,7 @@ export class PuppeteerPDFGenerator {
 				shippingCost: invoiceData.totals.shippingCost,
 				lateFee: invoiceData.totals.lateFee,
 				currency: invoiceData.totals.currency || invoiceData.invoice.base_currency || 'USD',
+				vatRate: invoiceData.totals.vatRate,
 			},
 			translations,
 		};
@@ -582,18 +583,26 @@ export class PuppeteerPDFGenerator {
 			const enhancedItems = items.map((item: any) => {
 				const quantity = Number(item.quantity) || 0;
 				const unitPrice = Number(item.unit_price || item.price) || 0;
-				const calculatedTotal = unitPrice * quantity;
 				const vatRate = Number(item.product_vat) || 0;
-				const vatAmount = (calculatedTotal * vatRate) / 100;
+				
+				// Calculate total with currency conversion if needed
+				let calculatedTotal = unitPrice * quantity;
+				let displayCurrency = item.currency || baseCurrency;
+				
+				// If item currency is different from base currency, show both
+				if (item.currency && item.currency !== baseCurrency) {
+					// The total will be converted in the calculation service
+					// Here we keep the original currency for display
+					displayCurrency = item.currency;
+				}
 				
 				return {
 					...item,
 					unit_price: unitPrice,
-					total_price: calculatedTotal,
-					total: calculatedTotal, // For compatibility
-					vat_rate: vatRate,
-					vat_amount: vatAmount,
-					total_with_vat: calculatedTotal + vatAmount
+					total: calculatedTotal,
+					currency: displayCurrency,
+					tax_rate: vatRate,
+					unit_of_measure: item.unit_of_measure || item.unit || item.product_unit || 'pcs'
 				};
 			});
 

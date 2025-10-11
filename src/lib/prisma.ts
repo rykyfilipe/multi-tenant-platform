@@ -552,5 +552,10 @@ export async function forceReconnect(): Promise<void> {
 	return await trackedPrisma.forceReconnect();
 }
 
+// Utility function to invalidate cache by tags
+export function invalidateCacheByTags(tags: string[]): void {
+	trackedPrisma.invalidateCacheByTags(tags);
+}
+
 // Export the enhanced client
 export default trackedPrisma;

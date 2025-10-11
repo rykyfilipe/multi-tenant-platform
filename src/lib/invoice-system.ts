@@ -86,9 +86,6 @@ export class InvoiceSystemService {
 	// Create predefined columns for invoices table
 	await this.createInvoiceColumns(invoicesTable.id, customersTable.id);
 
-		// Create company information table
-		await this.createCompanyColumns(customersTable.id);
-
 		// Create predefined columns for invoice_items table
 		await this.createInvoiceItemColumns(
 			invoiceItemsTable.id,

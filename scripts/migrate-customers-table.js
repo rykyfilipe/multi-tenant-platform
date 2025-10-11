@@ -6,11 +6,23 @@
  * to existing customers tables that were created before the update
  */
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../src/generated/prisma');
 const prisma = new PrismaClient();
 
-// Import semantic types
-const { SemanticColumnType } = require('../src/lib/semantic-types.ts');
+// Define semantic types directly to avoid TypeScript import issues
+const SemanticColumnType = {
+    CUSTOMER_TYPE: "customer_type",
+    CUSTOMER_CNP: "customer_cnp",
+    CUSTOMER_CUI: "customer_cui",
+    CUSTOMER_COMPANY_REGISTRATION_NUMBER: "customer_company_registration_number",
+    CUSTOMER_VAT_NUMBER: "customer_vat_number",
+    CUSTOMER_BANK_ACCOUNT: "customer_bank_account",
+    CUSTOMER_STREET: "customer_street",
+    CUSTOMER_STREET_NUMBER: "customer_street_number",
+    CUSTOMER_CITY: "customer_city",
+    CUSTOMER_COUNTRY: "customer_country",
+    CUSTOMER_POSTAL_CODE: "customer_postal_code"
+};
 
 async function migrateCustomersTables() {
     console.log('🚀 Starting migration of customers tables...');
