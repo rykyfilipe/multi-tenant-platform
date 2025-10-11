@@ -20,13 +20,16 @@ export interface MetricConfig {
   label: string; // Display name
   groupBy?: string; // Optional group by field for complex aggregations
   aggregations: Array<{
-    function: 'sum' | 'avg' | 'count' | 'min' | 'max';
+    function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last';
     label: string; // Display name for this aggregation
   }>;
-  format?: 'number' | 'currency' | 'percentage' | 'decimal';
+  format?: 'number' | 'currency' | 'percentage' | 'decimal' | 'text';
   showTrend?: boolean;
   showComparison?: boolean;
   target?: number; // Optional target value
+  // Display column - when last aggregation returns single row (max/min/first/last)
+  displayColumn?: string; // Column to display from the result row
+  displayFormat?: 'text' | 'number' | 'currency' | 'date';
 }
 
 /**
@@ -86,6 +89,10 @@ export interface KPIResult {
   value: number;
   aggregation: string;
   format: string;
+  // Display value - when displayColumn is set and last aggregation returns single row
+  displayValue?: string | number; // Value from displayColumn
+  displayFormat?: 'text' | 'number' | 'currency' | 'date';
+  resultRow?: any; // Complete row when aggregation returns single row
   // All aggregation results (chained sequence: each step uses result from previous)
   allAggregations?: Array<{
     function: string;
@@ -247,18 +254,40 @@ export class KPIWidgetProcessor {
     // Each aggregation is applied to the RESULT of the previous one
     const aggregationResults: Array<{ function: string; label: string; value: number }> = [];
     let currentValue: number | number[] = columnValues; // Start with array of values
+    let resultRow: any = null; // Store result row for max/min/first/last
 
     config.metric.aggregations.forEach((aggregation, aggIndex) => {
       const isFirstStep = aggIndex === 0;
+      const isLastStep = aggIndex === config.metric.aggregations.length - 1;
       const inputDescription = isFirstStep 
         ? `${columnValues.length} original values` 
         : `result from previous step`;
       
       console.log(`🔗 [Step ${aggIndex + 1}] Applying ${aggregation.function.toUpperCase()} on ${inputDescription}`);
       
+      // For last step with max/min/first/last, find and return the complete row
+      if (isFirstStep && isLastStep && ['max', 'min', 'first', 'last'].includes(aggregation.function) && config.metric.displayColumn) {
+        console.log(`🎯 [KPI] Detecting single-row aggregation with displayColumn: ${config.metric.displayColumn}`);
+        
+        // Find the row with max/min value
+        if (aggregation.function === 'max') {
+          const maxValue = Math.max(...(currentValue as number[]));
+          const maxIndex = (currentValue as number[]).indexOf(maxValue);
+          resultRow = normalizedData[maxIndex];
+        } else if (aggregation.function === 'min') {
+          const minValue = Math.min(...(currentValue as number[]));
+          const minIndex = (currentValue as number[]).indexOf(minValue);
+          resultRow = normalizedData[minIndex];
+        } else if (aggregation.function === 'first') {
+          resultRow = normalizedData[0];
+        } else if (aggregation.function === 'last') {
+          resultRow = normalizedData[normalizedData.length - 1];
+        }
+      }
+      
       // Apply aggregation to current value(s)
       const aggregatedValue = Array.isArray(currentValue)
-        ? this.calculateAggregationOnArray(currentValue, aggregation.function)
+        ? this.calculateAggregationOnArray(currentValue, aggregation.function as any)
         : currentValue; // If already a single value, return as-is
       
       console.log(`   ↳ Input: ${Array.isArray(currentValue) ? `[${currentValue.length} values]` : currentValue}`);
@@ -285,6 +314,11 @@ export class KPIWidgetProcessor {
       format: config.metric.format || 'number',
       // Store all aggregation results for display
       allAggregations: aggregationResults,
+      // Store result row if available
+      resultRow: resultRow,
+      // Extract display value from resultRow if displayColumn is configured
+      displayValue: resultRow && config.metric.displayColumn ? resultRow[config.metric.displayColumn] : undefined,
+      displayFormat: config.metric.displayFormat,
     };
 
     // Calculate trend if enabled - using FULL PIPELINE not just first aggregation
@@ -365,7 +399,7 @@ export class KPIWidgetProcessor {
       let currentValue: number | number[] = groupValues;
       config.metric.aggregations.forEach(agg => {
         currentValue = Array.isArray(currentValue)
-          ? this.calculateAggregationOnArray(currentValue, agg.function)
+          ? this.calculateAggregationOnArray(currentValue, agg.function as any)
           : currentValue;
       });
       
@@ -380,7 +414,7 @@ export class KPIWidgetProcessor {
     
     console.log(`🎯 [GROUP BY] Applying ${finalAgg.function.toUpperCase()} to ${groupResults.length} group results:`, groupValues);
     
-    const finalValue = this.calculateAggregationOnArray(groupValues, finalAgg.function);
+    const finalValue = this.calculateAggregationOnArray(groupValues, finalAgg.function as any);
     console.log(`   → Final aggregated value: ${finalValue}`);
 
     return {
@@ -460,7 +494,7 @@ export class KPIWidgetProcessor {
   private static calculateTrendWithPipeline(
     data: NormalizedRow[], 
     field: string, 
-    aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max'; label: string }>
+    aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last'; label: string }>
   ): { value: number; percentage: number; direction: 'up' | 'down' | 'stable' } {
     if (data.length < 4) {
       return { value: 0, percentage: 0, direction: 'stable' };
@@ -495,7 +529,7 @@ export class KPIWidgetProcessor {
     let olderValue: number | number[] = olderHalfValues;
     aggregations.forEach(agg => {
       olderValue = Array.isArray(olderValue)
-        ? this.calculateAggregationOnArray(olderValue, agg.function)
+        ? this.calculateAggregationOnArray(olderValue, agg.function as any)
         : olderValue;
     });
 
@@ -503,7 +537,7 @@ export class KPIWidgetProcessor {
     let newerValue: number | number[] = newerHalfValues;
     aggregations.forEach(agg => {
       newerValue = Array.isArray(newerValue)
-        ? this.calculateAggregationOnArray(newerValue, agg.function)
+        ? this.calculateAggregationOnArray(newerValue, agg.function as any)
         : newerValue;
     });
 

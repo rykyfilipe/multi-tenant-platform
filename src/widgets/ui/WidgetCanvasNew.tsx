@@ -419,13 +419,58 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
 
-      // Place new widget in top-right corner (x: cols - width = 24 - 6 = 18, y: 0)
+      // Find first available position starting from top-left
       const widgets = Object.values(widgetsRecord);
       const newWidth = 6;
       const newHeight = 8;
       const cols = 24; // Must match GridLayout cols
       
-      console.log('📍 [DEBUG] Next position (top-right):', { x: cols - newWidth, y: 0, w: newWidth, h: newHeight });
+      // Function to check if position is available (no collision with existing widgets)
+      const isPositionAvailable = (x: number, y: number, w: number, h: number): boolean => {
+        // Check if within bounds
+        if (x < 0 || y < 0 || x + w > cols) {
+          return false;
+        }
+        
+        // Check collision with existing widgets
+        for (const widget of widgets) {
+          const pos = widget.position;
+          if (!pos) continue;
+          
+          // Check if rectangles overlap
+          const overlap = !(
+            x + w <= pos.x || // New widget is completely to the left
+            x >= pos.x + pos.w || // New widget is completely to the right
+            y + h <= pos.y || // New widget is completely above
+            y >= pos.y + pos.h // New widget is completely below
+          );
+          
+          if (overlap) {
+            return false; // Collision detected
+          }
+        }
+        
+        return true; // No collision, position is available
+      };
+      
+      // Find first available position (scan left-to-right, top-to-bottom)
+      let foundPosition = { x: cols - newWidth, y: 0 }; // Default: top-right
+      let found = false;
+      
+      // Scan grid from top to bottom, left to right
+      for (let y = 0; y < 100 && !found; y++) { // Max 100 rows
+        for (let x = 0; x <= cols - newWidth && !found; x++) {
+          if (isPositionAvailable(x, y, newWidth, newHeight)) {
+            foundPosition = { x, y };
+            found = true;
+            console.log('📍 [DEBUG] Found available position:', foundPosition);
+          }
+        }
+      }
+      
+      if (!found) {
+        console.warn('⚠️ [DEBUG] No available position found, using default top-right');
+      }
 
       // Create widget locally with temporary ID (compatible with INT4)
       const tempId = Math.floor(Math.random() * 1000000) + 1000000; // 7-digit random ID
@@ -436,7 +481,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         type,
         title: `${type} Widget`,
         description: null,
-        position: { x: cols - newWidth, y: 0, w: newWidth, h: newHeight },
+        position: { x: foundPosition.x, y: foundPosition.y, w: newWidth, h: newHeight },
         config: defaultConfig,
         isVisible: true,
         sortOrder: 0,

@@ -7,13 +7,17 @@ export const kpiMetricSchema = z.object({
   // Group by field for complex aggregations (e.g., group by product, then sum quantity)
   groupBy: z.string().optional(),
   aggregations: z.array(z.object({
-    function: z.enum(["sum", "avg", "count", "min", "max"]),
+    function: z.enum(["sum", "avg", "count", "min", "max", "first", "last"]),
     label: z.string().min(1, "Aggregation label is required"),
   })).min(1, "At least one aggregation is required"),
-  format: z.enum(["number", "currency", "percentage", "decimal"]).default("number"),
+  format: z.enum(["number", "currency", "percentage", "decimal", "text"]).default("number"),
   showTrend: z.boolean().default(true),
   showComparison: z.boolean().default(false),
   target: z.number().optional(),
+  // Display column - when last aggregation returns single row (max/min/first/last)
+  // Instead of showing the aggregation result, show this column from the result row
+  displayColumn: z.string().optional(),
+  displayFormat: z.enum(["text", "number", "currency", "date"]).default("text").optional(),
 });
 
 export const kpiSettingsSchema = z.object({

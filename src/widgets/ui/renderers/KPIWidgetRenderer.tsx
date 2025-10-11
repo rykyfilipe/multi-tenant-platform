@@ -98,6 +98,22 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     }
   };
 
+  const formatDisplayValue = (value: string | number, format?: string): string => {
+    if (format === 'currency' && typeof value === 'number') {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(value);
+    }
+    if (format === 'date' && value) {
+      return new Date(value).toLocaleDateString();
+    }
+    if (format === 'number' && typeof value === 'number') {
+      return new Intl.NumberFormat("en-US").format(value);
+    }
+    return String(value || '');
+  };
+
   // Single metric display - MUST be before any return statements (Rules of Hooks)
   const metric = config.data?.metric;
   const processedKPI = useMemo(() => {
@@ -342,11 +358,15 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
             {/* Main Value */}
             <div className="text-center space-y-3">
               <div style={valueTextStyle}>
-                {formatValue(processedKPI.value, metric.format)}
+                {processedKPI.displayValue !== undefined && metric.displayColumn
+                  ? formatDisplayValue(processedKPI.displayValue, metric.displayFormat)
+                  : formatValue(processedKPI.value, metric.format)}
               </div>
               
               <p style={labelTextStyle}>
-                {metric.label || metric.field}
+                {metric.displayColumn && processedKPI.displayValue !== undefined 
+                  ? metric.displayColumn 
+                  : (metric.label || metric.field)}
               </p>
             </div>
 

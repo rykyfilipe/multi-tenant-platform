@@ -600,6 +600,8 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                                       <SelectItem value="count">COUNT</SelectItem>
                                       <SelectItem value="min">MIN</SelectItem>
                                       <SelectItem value="max">MAX</SelectItem>
+                                      <SelectItem value="first">FIRST</SelectItem>
+                                      <SelectItem value="last">LAST</SelectItem>
                                     </SelectContent>
                                   </Select>
                                   <Input
@@ -639,6 +641,82 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                         )}
                       </div>
 
+                      {/* Display Column (for single-row aggregations: max/min/first/last) */}
+                      {value.data.metric?.aggregations?.length === 1 && 
+                       ['max', 'min', 'first', 'last'].includes(value.data.metric.aggregations[0].function) && (
+                        <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Info className="h-4 w-4 text-purple-600" />
+                            <Label className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                              Display Alternative Column (Optional)
+                            </Label>
+                          </div>
+                          <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">
+                            Since your aggregation returns a single row ({value.data.metric.aggregations[0].function.toUpperCase()}), 
+                            you can display a different column from that row instead of the aggregated value.
+                          </p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium">Display Column</Label>
+                              <Select
+                                value={value.data.metric?.displayColumn || "none"}
+                                onValueChange={(val) => updateMetric({ 
+                                  displayColumn: val === "none" ? undefined : val,
+                                  format: val === "none" ? value.data.metric?.format : 'text'
+                                })}
+                              >
+                                <SelectTrigger className="mt-1 bg-white dark:bg-gray-900">
+                                  <SelectValue placeholder="Use aggregated value" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">
+                                    <span className="text-muted-foreground italic">Use aggregated value</span>
+                                  </SelectItem>
+                                  {availableColumns
+                                    .filter(col => col.name !== value.data.metric?.field)
+                                    .map((column) => (
+                                      <SelectItem key={column.id} value={column.name}>
+                                        {column.name} ({column.type})
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {value.data.metric?.displayColumn && (
+                              <div>
+                                <Label className="text-sm font-medium">Display Format</Label>
+                                <Select
+                                  value={value.data.metric?.displayFormat || "text"}
+                                  onValueChange={(val) => updateMetric({ displayFormat: val as any })}
+                                >
+                                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-900">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="text">Text</SelectItem>
+                                    <SelectItem value="number">Number</SelectItem>
+                                    <SelectItem value="currency">Currency</SelectItem>
+                                    <SelectItem value="date">Date</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </div>
+
+                          {value.data.metric?.displayColumn && (
+                            <Alert className="mt-3">
+                              <Info className="h-4 w-4" />
+                              <AlertDescription className="text-xs">
+                                <strong>Example:</strong> If MAX(quantity) returns the row with quantity=100, 
+                                and you select "product_name" as display column, 
+                                it will show the product name from that row instead of "100".
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
+
                       {/* Format and Options */}
                       <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                         <div>
@@ -646,6 +724,7 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                           <Select
                             value={value.data.metric?.format || "number"}
                             onValueChange={(val) => updateMetric({ format: val as any })}
+                            disabled={!!value.data.metric?.displayColumn}
                           >
                             <SelectTrigger className="mt-1">
                               <SelectValue />
@@ -655,6 +734,7 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                               <SelectItem value="currency">Currency</SelectItem>
                               <SelectItem value="percentage">Percentage</SelectItem>
                               <SelectItem value="decimal">Decimal</SelectItem>
+                              <SelectItem value="text">Text</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

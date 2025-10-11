@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
 import { isWidgetsV2Enabled } from '@/lib/featureFlag';
 import { WidgetCanvasNew } from '@/widgets/ui/WidgetCanvasNew';
-import { Plus, LayoutDashboard, Edit3, Eye, Settings, Trash2, Edit, AlertCircle, Sparkles } from 'lucide-react';
+import { Plus, LayoutDashboard, Edit3, Eye, Settings, Trash2, Edit, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 
 interface DashboardSummary {
   id: number;
@@ -35,6 +35,7 @@ export default function DashboardsPage() {
   const loadingRef = useRef(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
   const [editForm, setEditForm] = useState({ name: '', description: '', isPublic: false });
   const [isEditMode, setIsEditMode] = useState(false);
@@ -196,9 +197,11 @@ export default function DashboardsPage() {
   };
 
   const handleDeleteDashboard = async () => {
-    if (!selectedDashboardId) return;
+    if (!selectedDashboardId || isDeleting) return;
 
     try {
+      setIsDeleting(true);
+      
       const res = await fetch(`/api/dashboards/${selectedDashboardId}`, {
         method: 'DELETE',
       });
@@ -228,6 +231,8 @@ export default function DashboardsPage() {
         description: 'Failed to delete dashboard.',
         variant: 'destructive',
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -525,7 +530,7 @@ export default function DashboardsPage() {
       </Dialog>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+      <Dialog open={isDeleteModalOpen} onOpenChange={(open) => !isDeleting && setIsDeleteModalOpen(open)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Dashboard</DialogTitle>
@@ -534,16 +539,30 @@ export default function DashboardsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
             <Button 
               variant="destructive" 
               onClick={handleDeleteDashboard}
+              disabled={isDeleting}
               className="gap-2"
             >
-              <Trash2 className="h-4 w-4" />
-              Delete Dashboard
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Dashboard
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
