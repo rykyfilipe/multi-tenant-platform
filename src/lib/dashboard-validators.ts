@@ -155,7 +155,7 @@ export const WidgetValidation = {
     isVisible: z
       .boolean()
       .default(true),
-    order: z
+    sortOrder: z
       .number()
       .int('Order must be an integer')
       .min(0, 'Order must be non-negative')
@@ -210,7 +210,7 @@ export const WidgetValidation = {
     isVisible: z
       .boolean()
       .optional(),
-    order: z
+    sortOrder: z
       .number()
       .int('Order must be an integer')
       .min(0, 'Order must be non-negative')

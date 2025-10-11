@@ -54,7 +54,7 @@ export interface DashboardWithWidgets {
       metadata?: Record<string, unknown>;
     };
     isVisible: boolean;
-    order: number;
+    sortOrder: number;
   }>;
   _count: {
     widgets: number;
