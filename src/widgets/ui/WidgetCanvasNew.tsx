@@ -277,7 +277,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     if (tenantId && dashboardId) {
       loadInitialWidgets();
     }
-  }, [tenantId, dashboardId]); // Remove api and toast from dependencies to prevent loops
+  }, [tenantId, dashboardId, api]); // Added api back - now stable with useMemo
 
   // Cleanup old IDs on component mount
   useEffect(() => {

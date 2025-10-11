@@ -195,9 +195,17 @@ export class WidgetsApiClient {
   }
 }
 
+// Import useMemo and useCallback for stable API client
+import { useMemo, useCallback } from 'react';
+
 // Hook-based wrapper for React components
 export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
-  const apiClient = new WidgetsApiClient(tenantId, dashboardId);
+  // Create stable API client instance
+  const apiClient = useMemo(
+    () => new WidgetsApiClient(tenantId, dashboardId),
+    [tenantId, dashboardId]
+  );
+  
   const setWidgets = useWidgetsStore((state) => state.setWidgets);
   const setConflicts = useWidgetsStore((state) => state.setConflicts);
   const setDrafts = useWidgetsStore((state) => state.setDrafts);
@@ -206,7 +214,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
   const clearPending = useWidgetsStore((state) => state.clearPending);
   const clearPendingOperations = useWidgetsStore((state) => state.clearPendingOperations);
 
-  const loadWidgets = async (includeConfig = false) => {
+  const loadWidgets = useCallback(async (includeConfig = false) => {
     try {
       console.log('[loadWidgets] Fetching widgets from API...');
       const data = await apiClient.fetchWidgets(includeConfig);
@@ -232,7 +240,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
       console.error("Failed to load widgets:", error);
       throw error;
     }
-  };
+  }, [apiClient, setWidgets, clearPending]);
 
 
   const createWidget = async (payload: {
@@ -418,7 +426,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     }
   };
 
-  return {
+  return useMemo(() => ({
     loadWidgets,
     createWidget,
     savePending,
@@ -427,5 +435,5 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
     applyDraft,
     deleteDraft,
     resolveDraftConflict,
-  };
+  }), [loadWidgets]); // Only loadWidgets needs to be stable, rest use apiClient
 };
