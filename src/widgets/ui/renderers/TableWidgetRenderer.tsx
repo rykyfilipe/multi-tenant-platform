@@ -15,8 +15,9 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown, Minus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronUp, ChevronDown, Minus, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface TableWidgetRendererProps {
   widget: WidgetEntity;
@@ -38,6 +39,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // NEW ADVANCED TABLE STYLING
   const backgroundColor = styleConfig.backgroundColor || "#FFFFFF";
@@ -176,16 +178,34 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     return sorted;
   }, [processedData.data, sortColumn, sortDirection]);
 
+  // Get visible columns for search
+  const visibleColumns = config.data?.columns?.filter((col: any) => col.visible !== false) || [];
+
+  // Apply search filter
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return sortedData;
+    
+    const query = searchQuery.toLowerCase();
+    return sortedData.filter((row: any) => {
+      // Search across all visible columns
+      return visibleColumns.some((col: any) => {
+        const value = row[col.name];
+        if (value === null || value === undefined) return false;
+        return String(value).toLowerCase().includes(query);
+      });
+    });
+  }, [sortedData, searchQuery, visibleColumns]);
+
   // Apply pagination
   const paginatedData = useMemo(() => {
-    if (!config.settings?.pagination?.enabled) return sortedData;
+    if (!config.settings?.pagination?.enabled) return filteredData;
     
     const pageSize = config.settings.pagination.pageSize || 50;
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     
-    return sortedData.slice(startIndex, endIndex);
-  }, [sortedData, currentPage, config.settings?.pagination]);
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, currentPage, config.settings?.pagination]);
 
   const formatValue = (value: any, format: string): string => {
     if (value === null || value === undefined) return "-";
@@ -225,8 +245,6 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
       setSortDirection("asc");
     }
   };
-
-  const visibleColumns = config.data?.columns?.filter((col: any) => col.visible !== false) || [];
 
   const getCellPaddingClass = () => {
     switch (cellPadding) {
@@ -337,11 +355,42 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
       <PremiumWidgetContainer 
         style={styleConfig} 
-        className="h-full overflow-hidden transition-all duration-300 hover:shadow-xl"
+        className="h-full overflow-hidden transition-all duration-300 hover:shadow-xl relative"
       >
+        {/* Search Bar - Fixed Top */}
+        <div className="px-4 py-3 border-b flex items-center gap-2 bg-card/50 backdrop-blur-sm">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search across all columns..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1); // Reset to first page on search
+            }}
+            className="h-8 text-sm border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchQuery("")}
+              className="h-6 w-6 p-0"
+            >
+              ✕
+            </Button>
+          )}
+        </div>
+
+        {/* Table Container - Scrollable with padding for fixed pagination */}
         <div 
-          className="h-full overflow-auto"
-          style={tableContainerStyle}
+          className="overflow-auto"
+          style={{
+            ...tableContainerStyle,
+            height: showFooter && config.settings?.pagination?.enabled 
+              ? 'calc(100% - 110px)' // Search bar (48px) + Pagination (62px)
+              : 'calc(100% - 48px)' // Just search bar
+          }}
         >
           <Table className="w-full">
             {/* Header */}
@@ -469,21 +518,25 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
           </Table>
         </div>
 
-        {/* Pagination Controls */}
+        {/* Pagination Controls - Absolute Fixed Bottom */}
         {showFooter && config.settings?.pagination?.enabled && (() => {
           const pageSize = config.settings.pagination.pageSize || 50;
-          const totalPages = Math.ceil(processedData.totalRows / pageSize);
-          const startEntry = Math.min((currentPage - 1) * pageSize + 1, processedData.totalRows);
-          const endEntry = Math.min(currentPage * pageSize, processedData.totalRows);
+          const totalFilteredRows = filteredData.length;
+          const totalPages = Math.ceil(totalFilteredRows / pageSize);
+          const startEntry = Math.min((currentPage - 1) * pageSize + 1, totalFilteredRows);
+          const endEntry = Math.min(currentPage * pageSize, totalFilteredRows);
           
           return (
             <div className={cn(
-              "px-4 py-3 border-t text-sm flex justify-between items-center gap-4",
+              "absolute bottom-0 left-0 right-0 px-4 py-3 border-t text-sm flex justify-between items-center gap-4 bg-card/95 backdrop-blur-sm z-10",
               transparentBackground && "bg-transparent backdrop-blur-sm"
             )}>
               {/* Info Text */}
               <span className="text-muted-foreground whitespace-nowrap">
-                Showing {startEntry} to {endEntry} of {processedData.totalRows} entries
+                Showing {startEntry} to {endEntry} of {totalFilteredRows} entries
+                {searchQuery && totalFilteredRows < processedData.totalRows && (
+                  <span className="text-xs ml-1">(filtered from {processedData.totalRows})</span>
+                )}
               </span>
 
               {/* Pagination Buttons */}

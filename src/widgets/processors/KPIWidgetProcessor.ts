@@ -474,16 +474,18 @@ export class KPIWidgetProcessor {
         }
         
         if (resultRow) {
-          // Check if displayColumn is the GROUP BY field itself
-          if (config.metric.displayColumn === config.metric.groupBy) {
-            // Use the group value directly
-            displayValue = winningGroup.group === '__NULL__' ? undefined : winningGroup.group;
-            console.log(`   → Display column IS group by field - using group value: ${displayValue}`);
-          } else {
-            // Try to get value from the result row
-            displayValue = resultRow[config.metric.displayColumn];
-            console.log(`   → Display value from row[${config.metric.displayColumn}]: ${displayValue}`);
-            console.log(`   → Full row keys:`, Object.keys(resultRow).slice(0, 10));
+          // Extract display value from the complete row
+          // The row contains ALL columns, including the one we want to display
+          displayValue = resultRow[config.metric.displayColumn];
+          
+          console.log(`   → Extracting "${config.metric.displayColumn}" from result row`);
+          console.log(`   → Display value: ${displayValue}`);
+          console.log(`   → Full row keys:`, Object.keys(resultRow).slice(0, 15));
+          
+          // If still undefined or null, it means the column value is NULL in the database
+          if (displayValue === undefined || displayValue === null) {
+            console.log(`   ⚠️ Column "${config.metric.displayColumn}" is NULL or doesn't exist in result row`);
+            // Keep displayValue as undefined to show "N/A" in renderer
           }
         } else {
           console.log(`   ⚠️ No matching row found in winning group`);

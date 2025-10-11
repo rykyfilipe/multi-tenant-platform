@@ -584,8 +584,8 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <PremiumWidgetContainer style={style} className="h-full w-full">
-        <div className="space-y-4">
+      <PremiumWidgetContainer style={style} className="h-full w-full flex flex-col">
+        <div className="flex-shrink-0 space-y-4">
         {/* Controls */}
         <div className="space-y-3">
           {/* Progress Overview */}
@@ -677,18 +677,20 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
           </div>
         </div>
 
-        {/* Tasks List/Grid */}
-        <AnimatePresence mode="popLayout">
-          {layout === 'card' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredTasks.map(renderTaskCard)}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filteredTasks.map((task, index) => renderTaskList(task, index))}
-            </div>
-          )}
-        </AnimatePresence>
+        {/* Tasks List/Grid - Scrollable Container */}
+        <div className="flex-1 overflow-auto pr-2">
+          <AnimatePresence mode="popLayout">
+            {layout === 'card' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredTasks.map(renderTaskCard)}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredTasks.map((task, index) => renderTaskList(task, index))}
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {filteredTasks.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
