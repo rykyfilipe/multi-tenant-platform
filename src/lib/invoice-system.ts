@@ -49,7 +49,7 @@ export class InvoiceSystemService {
 		databaseId: number,
 	) {
 		// Use transaction for atomic and faster operations
-		return await prisma.$transaction(async (tx) => {
+		return await prisma.$transaction(async (tx:any) => {
 			// Create all three tables in parallel
 			const [customersTable, invoicesTable, invoiceItemsTable] = await Promise.all([
 				tx.table.create({
@@ -209,13 +209,42 @@ export class InvoiceSystemService {
 			},
 		];
 
-		// Use createMany for much faster bulk insertion
-		await prisma.column.createMany({
-			data: columns.map(column => ({
-				...column,
-				tableId,
-			})),
-		});
+		// Use efficient column creation helper
+		await this.createColumnsEfficiently(tableId, columns);
+	}
+
+	/**
+	 * Helper to create columns efficiently
+	 * Handles both regular columns (createMany) and columns with custom options (individual create)
+	 */
+	private static async createColumnsEfficiently(tableId: number, columns: any[]) {
+		// Split columns into two groups
+		const columnsWithCustomOptions = columns.filter(col => 'customArrayOptions' in col || 'referenceTableId' in col);
+		const columnsWithoutCustomOptions = columns.filter(col => !('customArrayOptions' in col) && !('referenceTableId' in col));
+
+		// Use createMany for columns without custom options (much faster)
+		if (columnsWithoutCustomOptions.length > 0) {
+			await prisma.column.createMany({
+				data: columnsWithoutCustomOptions.map(column => ({
+					...column,
+					tableId,
+				})),
+			});
+		}
+
+		// Create columns with custom options individually
+		if (columnsWithCustomOptions.length > 0) {
+			await Promise.all(
+				columnsWithCustomOptions.map(column =>
+					prisma.column.create({
+						data: {
+							...column,
+							tableId,
+						},
+					})
+				)
+			);
+		}
 	}
 
 	/**
@@ -418,13 +447,8 @@ export class InvoiceSystemService {
 			},
 		];
 
-		// Use createMany for much faster bulk insertion
-		await prisma.column.createMany({
-			data: columns.map(column => ({
-				...column,
-				tableId,
-			})),
-		});
+		// Use efficient column creation helper
+		await this.createColumnsEfficiently(tableId, columns);
 	}
 
 	/**
@@ -652,13 +676,8 @@ export class InvoiceSystemService {
 			},
 		];
 
-		// Use createMany for much faster bulk insertion
-		await prisma.column.createMany({
-			data: columns.map(column => ({
-				...column,
-				tableId,
-			})),
-		});
+		// Use efficient column creation helper
+		await this.createColumnsEfficiently(tableId, columns);
 	}
 
 	/**
@@ -892,13 +911,8 @@ export class InvoiceSystemService {
 			},
 		];
 
-		// Use createMany for much faster bulk insertion
-		await prisma.column.createMany({
-			data: columns.map(column => ({
-				...column,
-				tableId,
-			})),
-		});
+		// Use efficient column creation helper
+		await this.createColumnsEfficiently(tableId, columns);
 	}
 
 	/**

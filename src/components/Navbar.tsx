@@ -82,17 +82,12 @@ const getNavigationItems = (
 		icon: Database,
 		description: t("nav.database.description"),
 	},
-	// Only show invoices if billing module is enabled
-	...(tenant?.enabledModules?.includes("billing")
-		? [
-				{
-					title: t("nav.invoices"),
-					url: "/home/invoices",
-					icon: FileText,
-					description: t("nav.invoices.description"),
-				},
-		  ]
-		: []),
+	{
+		title: t("nav.invoices"),
+		url: "/home/invoices",
+		icon: FileText,
+		description: t("nav.invoices.description"),
+	},
 	{
 		title: t("nav.settings"),
 		url: "/home/settings",
@@ -141,6 +136,11 @@ const getMobileNavigationItems = (
 		icon: Database,
 	},
 	{
+		title: t("nav.invoices"),
+		url: "/home/invoices",
+		icon: FileText,
+	},
+	{
 		title: t("nav.organization"),
 		url: "/home/tenant",
 		icon: Building2,
@@ -150,16 +150,6 @@ const getMobileNavigationItems = (
 		url: "/home/users",
 		icon: Users,
 	},
-	// Only show invoices if billing module is enabled
-	...(tenant?.enabledModules?.includes("billing")
-		? [
-				{
-					title: t("nav.invoices"),
-					url: "/home/invoices",
-					icon: FileText,
-				},
-		  ]
-		: []),
 	// Development tools for admins
 	...(user?.role === "ADMIN" && process.env.NODE_ENV === "development"
 		? [
