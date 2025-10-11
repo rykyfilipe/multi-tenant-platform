@@ -580,31 +580,42 @@ export class PuppeteerPDFGenerator {
 			console.log('🔍 PDF DEBUG: Calculated totals using unified service:', totals);
 
 			// Enhance items with calculated totals for display
-			const enhancedItems = items.map((item: any) => {
-				const quantity = Number(item.quantity) || 0;
-				const unitPrice = Number(item.unit_price || item.price) || 0;
-				const vatRate = Number(item.product_vat) || 0;
+			// Use totals from InvoiceCalculationService instead of recalculating
+			const enhancedItems = await Promise.all(mappedItems.map(async (mappedItem: any, index: number) => {
+				const item = items[index];
+				const quantity = mappedItem.quantity;
+				const unitPrice = mappedItem.price;
+				const vatRate = mappedItem.product_vat;
+				const itemCurrency = mappedItem.currency;
 				
-				// Calculate total with currency conversion if needed
-				let calculatedTotal = unitPrice * quantity;
-				let displayCurrency = item.currency || baseCurrency;
+				// Calculate total in item currency
+				const totalInItemCurrency = unitPrice * quantity;
 				
-				// If item currency is different from base currency, show both
-				if (item.currency && item.currency !== baseCurrency) {
-					// The total will be converted in the calculation service
-					// Here we keep the original currency for display
-					displayCurrency = item.currency;
+				// Convert to base currency if needed
+				let totalInBaseCurrency = totalInItemCurrency;
+				let conversionRate = 1;
+				
+				if (itemCurrency !== baseCurrency) {
+					conversionRate = await this.getExchangeRate(itemCurrency, baseCurrency);
+					totalInBaseCurrency = totalInItemCurrency * conversionRate;
+					console.log(`🔄 Currency conversion: ${totalInItemCurrency} ${itemCurrency} = ${totalInBaseCurrency} ${baseCurrency} (rate: ${conversionRate})`);
 				}
 				
 				return {
 					...item,
+					product_name: item.product_name || item.name || 'Product',
+					product_description: item.description || item.product_description || '',
+					product_sku: item.product_sku || item.sku || '',
+					quantity: quantity,
 					unit_price: unitPrice,
-					total: calculatedTotal,
-					currency: displayCurrency,
+					unit_of_measure: mappedItem.unit_of_measure,
+					currency: itemCurrency,
 					tax_rate: vatRate,
-					unit_of_measure: item.unit_of_measure || item.unit || item.product_unit || 'pcs'
+					total: totalInBaseCurrency, // Amount in base currency for totals
+					totalInItemCurrency: totalInItemCurrency, // Original amount
+					conversionRate: conversionRate, // For display if needed
 				};
-			});
+			}));
 
 			return {
 				invoice,
@@ -791,6 +802,23 @@ export class PuppeteerPDFGenerator {
 			discountRate: discountAmount > 0 && discountRate === 0 ? (discountAmount / subtotal) * 100 : discountRate,
 			vatRate,
 		};
+	}
+
+	/**
+	 * Get exchange rate between two currencies
+	 */
+	private static async getExchangeRate(fromCurrency: string, toCurrency: string): Promise<number> {
+		if (fromCurrency === toCurrency) return 1;
+
+		try {
+			const { getExchangeRateProvider } = await import('./currency-exchange-client');
+			const provider = getExchangeRateProvider();
+			const rate = await provider.getExchangeRate(fromCurrency, toCurrency);
+			return rate.rate;
+		} catch (error) {
+			console.warn(`Failed to get exchange rate for ${fromCurrency} to ${toCurrency}:`, error);
+			return 1; // Default fallback
+		}
 	}
 
 	/**

@@ -69,6 +69,8 @@ export interface InvoiceData {
 		unit_of_measure?: string;
 		unit_price: number;
 		total: number;
+		totalInItemCurrency?: number;
+		conversionRate?: number;
 		tax_rate?: number;
 		tax_amount?: number;
 		discount_rate?: number;
@@ -122,8 +124,22 @@ export class InvoiceTemplate {
 	 * Generate HTML template matching the design from the image
 	 */
 	static generateHTML(data: InvoiceData): string {
+		// Debug logging
+		console.log('📄 INVOICE TEMPLATE DEBUG:', {
+			items: data.items.map(item => ({
+				name: item.product_name,
+				price: item.unit_price,
+				quantity: item.quantity,
+				currency: item.currency,
+				total: item.total,
+				totalInItemCurrency: item.totalInItemCurrency,
+			})),
+			totals: data.totals,
+		});
+		
 		const formatCurrency = (amount: number, currency = data.totals.currency || 'USD') => {
 			if (isNaN(amount) || amount === null || amount === undefined) {
+				console.warn('⚠️ Invalid amount for formatting:', { amount, currency });
 				return '$0.00';
 			}
 			
@@ -163,8 +179,8 @@ export class InvoiceTemplate {
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background-color: #f5f5f5;
-      padding: 20px;
-      line-height: 1.4;
+      padding: 15px;
+      line-height: 1.3;
       color: #333;
     }
     
@@ -172,7 +188,7 @@ export class InvoiceTemplate {
       max-width: 800px;
       margin: 0 auto;
       background: white;
-      padding: 40px;
+      padding: 30px;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
@@ -181,190 +197,189 @@ export class InvoiceTemplate {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 40px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #e0e0e0;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #000;
     }
     
-    .invoice-title {
-      font-size: 42px;
-      font-weight: 900;
-      color: #000;
-      margin-bottom: 15px;
-      letter-spacing: -1px;
-    }
-    
-    .invoice-details {
-      color: #666;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    
-    .invoice-details p {
-      margin-bottom: 5px;
-    }
-    
-    .logo-section {
-      text-align: right;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-    
-    .logo-circle {
-      width: 50px;
-      height: 50px;
-      background-color: #000;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    
-    .company-logo {
-      max-width: 80px;
-      max-height: 80px;
-      margin-bottom: 10px;
-      object-fit: contain;
+    .company-section {
+      flex: 1;
     }
     
     .company-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: #000;
-      margin-bottom: 10px;
-    }
-    
-    .company-details {
-      font-size: 12px;
-      color: #666;
-      line-height: 1.4;
-      margin-bottom: 15px;
-      text-align: right;
-    }
-    
-    .company-details p {
-      margin-bottom: 3px;
-    }
-    
-    .total-due {
-      text-align: right;
-    }
-    
-    .total-due-label {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 5px;
-    }
-    
-    .total-due-amount {
-      font-size: 24px;
+      font-size: 16px;
       font-weight: 700;
       color: #000;
+      margin-bottom: 4px;
+    }
+    
+    .company-info {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    
+    .company-info span {
+      margin-right: 12px;
+    }
+    
+    .company-address {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+    
+    .company-address p {
+      margin: 0;
+    }
+    
+    .company-contact {
+      font-size: 11px;
+      color: #666;
+    }
+    
+    .company-contact span {
+      margin-right: 12px;
+    }
+    
+    .invoice-header-right {
+      text-align: right;
+    }
+    
+    .invoice-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #000;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+    
+    .invoice-meta {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.5;
+    }
+    
+    .invoice-meta p {
+      margin: 2px 0;
     }
     
     .customer-section {
-      margin-bottom: 40px;
+      margin-bottom: 20px;
     }
     
     .invoice-to {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 10px;
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      font-weight: 600;
     }
     
     .customer-name {
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       color: #000;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
     }
     
     .customer-title {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 15px;
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 6px;
     }
     
     .customer-address {
-      font-size: 14px;
+      font-size: 11px;
       color: #666;
-      line-height: 1.6;
-      max-width: 300px;
+      line-height: 1.5;
+    }
+    
+    .customer-address p {
+      margin: 2px 0;
     }
     
     .services-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
     
     .services-table th {
-      background-color: #f8f8f8;
-      padding: 15px 10px;
+      background-color: #000;
+      color: #fff;
+      padding: 8px 6px;
       text-align: left;
       font-weight: 600;
-      color: #333;
-      font-size: 14px;
-      border-bottom: 1px solid #ddd;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .services-table td {
-      padding: 15px 10px;
-      border-bottom: 1px solid #f0f0f0;
-      font-size: 14px;
+      padding: 8px 6px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 11px;
     }
     
-    .services-table tr:hover {
-      background-color: #f9f9f9;
+    .services-table tr:last-child td {
+      border-bottom: 2px solid #000;
     }
     
     .item-number {
-      width: 50px;
+      width: 35px;
       text-align: center;
       font-weight: 600;
+      color: #666;
     }
     
     .item-name {
       font-weight: 600;
       color: #000;
+      font-size: 12px;
     }
     
     .item-description {
-      font-size: 12px;
+      font-size: 10px;
       color: #666;
-      margin-top: 3px;
+      margin-top: 2px;
+      line-height: 1.3;
     }
     
     .item-sku {
-      font-size: 11px;
-      color: #888;
-      margin-top: 2px;
+      font-size: 9px;
+      color: #999;
+      margin-top: 1px;
       font-style: italic;
     }
     
     .amount-column {
       text-align: right;
-      font-weight: 600;
+      font-weight: 700;
+      color: #000;
     }
     
     .summary-section {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 40px;
+      margin-bottom: 25px;
     }
     
     .summary-table {
-      width: 250px;
+      width: 220px;
       border-collapse: collapse;
     }
     
     .summary-table td {
-      padding: 8px 0;
-      font-size: 14px;
+      padding: 5px 0;
+      font-size: 11px;
     }
     
     .summary-table .summary-label {
       text-align: right;
-      padding-right: 20px;
+      padding-right: 15px;
       color: #666;
     }
     
@@ -376,91 +391,97 @@ export class InvoiceTemplate {
     
     .grand-total {
       border-top: 2px solid #000;
-      padding-top: 10px;
-      margin-top: 10px;
+      padding-top: 6px;
+      margin-top: 6px;
     }
     
     .grand-total .summary-label {
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 700;
     }
     
     .grand-total .summary-value {
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 700;
     }
     
     .payment-contact-section {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      margin-bottom: 40px;
+      gap: 20px;
+      margin-bottom: 25px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
     }
     
     .payment-method h3,
     .contact-info h3 {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       color: #000;
-      margin-bottom: 15px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
     }
     
     .payment-method p,
     .contact-info p {
-      font-size: 14px;
+      font-size: 10px;
       color: #666;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
+      line-height: 1.4;
     }
     
     .contact-item {
       display: flex;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
     
     .contact-icon {
-      margin-right: 10px;
-      font-size: 14px;
+      margin-right: 6px;
+      font-size: 12px;
     }
     
     .footer {
       text-align: center;
-      margin-top: 40px;
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
     }
     
     .footer-message {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       color: #000;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
     }
     
     .footer-subtitle {
-      font-size: 12px;
+      font-size: 10px;
       color: #666;
     }
     
     .signature-section {
       text-align: right;
-      margin-top: 40px;
+      margin-top: 20px;
     }
     
     .signature-line {
-      width: 150px;
-      height: 2px;
+      width: 120px;
+      height: 1px;
       background-color: #000;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       margin-left: auto;
     }
     
     .signature-name {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       color: #000;
     }
     
     .signature-title {
-      font-size: 12px;
+      font-size: 10px;
       color: #666;
     }
     
@@ -481,30 +502,28 @@ export class InvoiceTemplate {
     
     <!-- Header -->
     <div class="header">
-      <div class="invoice-info">
-        <h1 class="invoice-title">INVOICE</h1>
-        <div class="invoice-details">
-          <p><strong>Invoice Date:</strong> ${formatDate(data.invoice.date)}</p>
-          <p><strong>Invoice No:</strong> ${data.invoice.invoice_series ? data.invoice.invoice_series + '-' : ''}${data.invoice.invoice_number}</p>
-          ${data.invoice.due_date ? `<p><strong>Due Date:</strong> ${formatDate(data.invoice.due_date)}</p>` : ''}
+      <div class="company-section">
+        <h2 class="company-name">${data.company.company_name || 'Company Name'}</h2>
+        <div class="company-info">
+          ${data.company.company_tax_id ? `<span>CUI: ${data.company.company_tax_id}</span>` : ''}
+          ${data.company.company_registration_number ? `<span>Nr. Reg: ${data.company.company_registration_number}</span>` : ''}
+        </div>
+        <div class="company-address">
+          ${data.company.company_street && data.company.company_street_number ? `<p>${data.company.company_street} ${data.company.company_street_number}</p>` : ''}
+          ${data.company.company_city && data.company.company_postal_code ? `<p>${data.company.company_city}, ${data.company.company_postal_code}, ${data.company.company_country || ''}</p>` : ''}
+        </div>
+        <div class="company-contact">
+          ${data.company.company_phone ? `<span>Tel: ${data.company.company_phone}</span>` : ''}
+          ${data.company.company_email ? `<span>Email: ${data.company.company_email}</span>` : ''}
         </div>
       </div>
       
-      <div class="logo-section">
-        ${data.company.logo_url ? `<img src="${data.company.logo_url}" alt="Company Logo" class="company-logo">` : '<div class="logo-circle"></div>'}
-        <div class="company-name">${data.company.company_name || 'Company Name'}</div>
-        <div class="company-details">
-          ${data.company.company_tax_id ? `<p><strong>CUI:</strong> ${data.company.company_tax_id}</p>` : ''}
-          ${data.company.company_registration_number ? `<p><strong>Nr. Reg:</strong> ${data.company.company_registration_number}</p>` : ''}
-          ${data.company.company_street && data.company.company_street_number ? `<p>${data.company.company_street} ${data.company.company_street_number}</p>` : ''}
-          ${data.company.company_city && data.company.company_postal_code ? `<p>${data.company.company_city}, ${data.company.company_postal_code}</p>` : ''}
-          ${data.company.company_country ? `<p>${data.company.company_country}</p>` : ''}
-          ${data.company.company_phone ? `<p><strong>Tel:</strong> ${data.company.company_phone}</p>` : ''}
-          ${data.company.company_email ? `<p><strong>Email:</strong> ${data.company.company_email}</p>` : ''}
-        </div>
-        <div class="total-due">
-          <div class="total-due-label">Total Due:</div>
-          <div class="total-due-amount">${formatCurrency(data.totals.grandTotal, currency)}</div>
+      <div class="invoice-header-right">
+        <h1 class="invoice-title">INVOICE</h1>
+        <div class="invoice-meta">
+          <p><strong>No:</strong> ${data.invoice.invoice_series ? data.invoice.invoice_series + '-' : ''}${data.invoice.invoice_number}</p>
+          <p><strong>Date:</strong> ${formatDate(data.invoice.date)}</p>
+          ${data.invoice.due_date ? `<p><strong>Due:</strong> ${formatDate(data.invoice.due_date)}</p>` : ''}
         </div>
       </div>
     </div>
@@ -513,17 +532,13 @@ export class InvoiceTemplate {
     <div class="customer-section">
       <div class="invoice-to">Invoice to:</div>
       <div class="customer-name">${data.customer.customer_name}</div>
-      ${data.customer.customer_type ? `<div class="customer-title">${data.customer.customer_type === 'Persoană fizică' ? 'Individual Customer' : 'Business Customer'}</div>` : ''}
+      ${data.customer.customer_type ? `<div class="customer-title">${data.customer.customer_type}</div>` : ''}
       <div class="customer-address">
-        ${data.customer.customer_type === 'Persoană fizică' && data.customer.customer_cnp ? `<p><strong>CNP:</strong> ${data.customer.customer_cnp}</p>` : ''}
-        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_cui ? `<p><strong>CUI:</strong> ${data.customer.customer_cui}</p>` : ''}
-        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_company_registration_number ? `<p><strong>Nr. Reg:</strong> ${data.customer.customer_company_registration_number}</p>` : ''}
-        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_vat_number ? `<p><strong>Nr. TVA:</strong> ${data.customer.customer_vat_number}</p>` : ''}
-        ${data.customer.customer_email ? `<p><strong>Email:</strong> ${data.customer.customer_email}</p>` : ''}
-        ${data.customer.customer_phone ? `<p><strong>Tel:</strong> ${data.customer.customer_phone}</p>` : ''}
-        ${data.customer.customer_street && data.customer.customer_street_number ? `<p>${data.customer.customer_street} ${data.customer.customer_street_number}</p>` : ''}
-        ${data.customer.customer_city && data.customer.customer_postal_code ? `<p>${data.customer.customer_city}, ${data.customer.customer_postal_code}</p>` : ''}
+        ${data.customer.customer_type === 'Persoană fizică' && data.customer.customer_cnp ? `<p>CNP: ${data.customer.customer_cnp}</p>` : ''}
+        ${data.customer.customer_type === 'Persoană juridică' && data.customer.customer_cui ? `<p>CUI: ${data.customer.customer_cui} ${data.customer.customer_company_registration_number ? `• Nr. Reg: ${data.customer.customer_company_registration_number}` : ''} ${data.customer.customer_vat_number ? `• Nr. TVA: ${data.customer.customer_vat_number}` : ''}</p>` : ''}
+        ${data.customer.customer_street && data.customer.customer_street_number ? `<p>${data.customer.customer_street} ${data.customer.customer_street_number}, ${data.customer.customer_city || ''} ${data.customer.customer_postal_code || ''}</p>` : ''}
         ${data.customer.customer_country ? `<p>${data.customer.customer_country}</p>` : ''}
+        ${data.customer.customer_email || data.customer.customer_phone ? `<p>${data.customer.customer_email || ''} ${data.customer.customer_email && data.customer.customer_phone ? '•' : ''} ${data.customer.customer_phone || ''}</p>` : ''}
       </div>
     </div>
 
@@ -542,7 +557,12 @@ export class InvoiceTemplate {
         </tr>
       </thead>
       <tbody>
-        ${data.items.map((item, index) => `
+        ${data.items.map((item, index) => {
+          const itemCurrency = item.currency || currency;
+          const baseCurrency = currency;
+          const needsConversion = itemCurrency !== baseCurrency;
+          
+          return `
           <tr>
             <td class="item-number">${String(index + 1).padStart(2, '0')}</td>
             <td class="item-name">
@@ -550,14 +570,18 @@ export class InvoiceTemplate {
               ${item.product_description ? `<div class="item-description">${item.product_description}</div>` : ''}
               ${item.product_sku ? `<div class="item-sku">SKU: ${item.product_sku}</div>` : ''}
             </td>
-            <td style="text-align: right;">${formatCurrency(item.unit_price, item.currency || currency)}</td>
+            <td style="text-align: right;">${formatCurrency(item.unit_price, itemCurrency)}</td>
             <td style="text-align: right;">${item.quantity}</td>
             <td style="text-align: right;">${item.unit_of_measure || 'pcs'}</td>
-            <td style="text-align: right;">${item.currency || currency}</td>
+            <td style="text-align: right;">${itemCurrency}</td>
             <td style="text-align: right;">${item.tax_rate || 0}%</td>
-            <td class="amount-column">${formatCurrency(item.total, currency)}</td>
+            <td class="amount-column">
+              ${formatCurrency(item.total, baseCurrency)}
+              ${needsConversion && item.totalInItemCurrency ? `<div class="item-description">(${formatCurrency(item.totalInItemCurrency, itemCurrency)})</div>` : ''}
+            </td>
           </tr>
-        `).join('')}
+        `;
+        }).join('')}
       </tbody>
     </table>
 

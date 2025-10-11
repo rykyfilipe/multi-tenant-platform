@@ -55,6 +55,10 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+  
+  // Temporary color states to avoid updating on every onChange
+  const [tempColors, setTempColors] = useState<Partial<typeof value.style>>({});
+  const [tempYColumnColor, setTempYColumnColor] = useState<Record<string, string>>({});
 
   // Wizard steps configuration
   const wizardSteps: WizardStep[] = [
@@ -521,9 +525,15 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                               [column]: color
                             }
                           });
+                          // Clear temp state after saving
+                          setTempYColumnColor(prev => {
+                            const updated = { ...prev };
+                            delete updated[column];
+                            return updated;
+                          });
                         };
 
-                        const currentColor = value.settings.yColumnColors?.[yColumn] || (
+                        const currentColor = tempYColumnColor[yColumn] || value.settings.yColumnColors?.[yColumn] || (
                           yIndex === 0 ? '#3b82f6' : 
                           yIndex === 1 ? '#10b981' : 
                           yIndex === 2 ? '#f59e0b' :
@@ -543,7 +553,9 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                                     <Input
                                       type="color"
                                       value={currentColor}
-                                      onChange={(e) => updateYColumnColor(yColumn, e.target.value)}
+                                      onChange={(e) => setTempYColumnColor(prev => ({ ...prev, [yColumn]: e.target.value }))}
+                                      onBlur={(e) => updateYColumnColor(yColumn, e.target.value)}
+                                      onMouseUp={(e) => updateYColumnColor(yColumn, (e.target as HTMLInputElement).value)}
                                       className="h-8 w-16 p-1 cursor-pointer"
                                       title={`Color for ${yColumn}`}
                                     />
@@ -729,8 +741,10 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                   <Label className="text-xs">Background</Label>
                   <Input
                     type="color"
-                    value={value.style.backgroundColor}
-                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
+                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -738,8 +752,10 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                   <Label className="text-xs">Text</Label>
                   <Input
                     type="color"
-                    value={value.style.textColor}
-                    onChange={(e) => updateStyle({ textColor: e.target.value })}
+                    value={tempColors.textColor ?? value.style.textColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -747,8 +763,10 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                   <Label className="text-xs">Grid</Label>
                   <Input
                     type="color"
-                    value={value.style.gridColor || "#E5E5E5"}
-                    onChange={(e) => updateStyle({ gridColor: e.target.value })}
+                    value={tempColors.gridColor ?? value.style.gridColor ?? "#E5E5E5"}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, gridColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ gridColor: e.target.value }); setTempColors(prev => ({ ...prev, gridColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ gridColor: val }); setTempColors(prev => ({ ...prev, gridColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -756,8 +774,10 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                   <Label className="text-xs">Border</Label>
                   <Input
                     type="color"
-                    value={value.style.borderColor || "#E5E5E5"}
-                    onChange={(e) => updateStyle({ borderColor: e.target.value })}
+                    value={tempColors.borderColor ?? value.style.borderColor ?? "#E5E5E5"}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, borderColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ borderColor: e.target.value }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ borderColor: val }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>

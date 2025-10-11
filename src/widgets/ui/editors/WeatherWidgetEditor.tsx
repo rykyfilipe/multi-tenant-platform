@@ -54,6 +54,9 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
   onChange,
   tenantId,
 }) => {
+  // Temporary color states to avoid updating on every onChange
+  const [tempColors, setTempColors] = React.useState<Partial<WeatherConfig["style"]>>({});
+
   const updateSettings = (updates: Partial<WeatherConfig["settings"]>) => {
     onChange({
       ...value,
@@ -274,8 +277,10 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                   <Input
                     id="backgroundColor"
                     type="color"
-                    value={value.style.backgroundColor}
-                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
+                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
                     className="h-10"
                   />
                 </div>
@@ -285,8 +290,10 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                   <Input
                     id="textColor"
                     type="color"
-                    value={value.style.textColor}
-                    onChange={(e) => updateStyle({ textColor: e.target.value })}
+                    value={tempColors.textColor ?? value.style.textColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
                     className="h-10"
                   />
                 </div>
@@ -298,8 +305,10 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                   <Input
                     id="accentColor"
                     type="color"
-                    value={value.style.accentColor}
-                    onChange={(e) => updateStyle({ accentColor: e.target.value })}
+                    value={tempColors.accentColor ?? value.style.accentColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, accentColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ accentColor: e.target.value }); setTempColors(prev => ({ ...prev, accentColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ accentColor: val }); setTempColors(prev => ({ ...prev, accentColor: undefined })); }}
                     className="h-10"
                   />
                 </div>
@@ -309,8 +318,10 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
                   <Input
                     id="borderColor"
                     type="color"
-                    value={value.style.borderColor}
-                    onChange={(e) => updateStyle({ borderColor: e.target.value })}
+                    value={tempColors.borderColor ?? value.style.borderColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, borderColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ borderColor: e.target.value }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ borderColor: val }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
                     className="h-10"
                   />
                 </div>

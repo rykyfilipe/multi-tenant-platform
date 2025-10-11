@@ -57,6 +57,9 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+  
+  // Temporary color states to avoid updating on every onChange
+  const [tempColors, setTempColors] = useState<Partial<typeof value.style>>({});
 
   // Wizard steps configuration
   const wizardSteps: WizardStep[] = [
@@ -807,8 +810,10 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                   <Label className="text-xs">Background</Label>
                   <Input
                     type="color"
-                    value={value.style.backgroundColor}
-                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
+                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -816,8 +821,10 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                   <Label className="text-xs">Text</Label>
                   <Input
                     type="color"
-                    value={value.style.textColor}
-                    onChange={(e) => updateStyle({ textColor: e.target.value })}
+                    value={tempColors.textColor ?? value.style.textColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -825,8 +832,10 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                   <Label className="text-xs">Positive</Label>
                   <Input
                     type="color"
-                    value={value.style.positiveColor}
-                    onChange={(e) => updateStyle({ positiveColor: e.target.value })}
+                    value={tempColors.positiveColor ?? value.style.positiveColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, positiveColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ positiveColor: e.target.value }); setTempColors(prev => ({ ...prev, positiveColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ positiveColor: val }); setTempColors(prev => ({ ...prev, positiveColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -834,8 +843,10 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                   <Label className="text-xs">Negative</Label>
                   <Input
                     type="color"
-                    value={value.style.negativeColor}
-                    onChange={(e) => updateStyle({ negativeColor: e.target.value })}
+                    value={tempColors.negativeColor ?? value.style.negativeColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, negativeColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ negativeColor: e.target.value }); setTempColors(prev => ({ ...prev, negativeColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ negativeColor: val }); setTempColors(prev => ({ ...prev, negativeColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>

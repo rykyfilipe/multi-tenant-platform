@@ -62,6 +62,9 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+  
+  // Temporary color states to avoid updating on every onChange
+  const [tempColors, setTempColors] = useState<Partial<typeof value.style>>({});
 
   // Wizard steps configuration
   const wizardSteps: WizardStep[] = [
@@ -898,8 +901,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Background</Label>
                   <Input
                     type="color"
-                    value={value.style.backgroundColor}
-                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
+                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -907,8 +912,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Text</Label>
                   <Input
                     type="color"
-                    value={value.style.textColor}
-                    onChange={(e) => updateStyle({ textColor: e.target.value })}
+                    value={tempColors.textColor ?? value.style.textColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -916,8 +923,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Border</Label>
                   <Input
                     type="color"
-                    value={value.style.borderColor}
-                    onChange={(e) => updateStyle({ borderColor: e.target.value })}
+                    value={tempColors.borderColor ?? value.style.borderColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, borderColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ borderColor: e.target.value }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ borderColor: val }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -925,8 +934,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Header Background</Label>
                   <Input
                     type="color"
-                    value={value.style.headerBackgroundColor}
-                    onChange={(e) => updateStyle({ headerBackgroundColor: e.target.value })}
+                    value={tempColors.headerBackgroundColor ?? value.style.headerBackgroundColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, headerBackgroundColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ headerBackgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, headerBackgroundColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ headerBackgroundColor: val }); setTempColors(prev => ({ ...prev, headerBackgroundColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -941,8 +952,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Even Rows</Label>
                   <Input
                     type="color"
-                    value={value.style.evenRowColor}
-                    onChange={(e) => updateStyle({ evenRowColor: e.target.value })}
+                    value={tempColors.evenRowColor ?? value.style.evenRowColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, evenRowColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ evenRowColor: e.target.value }); setTempColors(prev => ({ ...prev, evenRowColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ evenRowColor: val }); setTempColors(prev => ({ ...prev, evenRowColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -950,8 +963,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Odd Rows</Label>
                   <Input
                     type="color"
-                    value={value.style.oddRowColor}
-                    onChange={(e) => updateStyle({ oddRowColor: e.target.value })}
+                    value={tempColors.oddRowColor ?? value.style.oddRowColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, oddRowColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ oddRowColor: e.target.value }); setTempColors(prev => ({ ...prev, oddRowColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ oddRowColor: val }); setTempColors(prev => ({ ...prev, oddRowColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -959,8 +974,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Hover</Label>
                   <Input
                     type="color"
-                    value={value.style.hoverRowColor}
-                    onChange={(e) => updateStyle({ hoverRowColor: e.target.value })}
+                    value={tempColors.hoverRowColor ?? value.style.hoverRowColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, hoverRowColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ hoverRowColor: e.target.value }); setTempColors(prev => ({ ...prev, hoverRowColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ hoverRowColor: val }); setTempColors(prev => ({ ...prev, hoverRowColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
@@ -968,8 +985,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                   <Label className="text-xs">Selected</Label>
                   <Input
                     type="color"
-                    value={value.style.selectedRowColor}
-                    onChange={(e) => updateStyle({ selectedRowColor: e.target.value })}
+                    value={tempColors.selectedRowColor ?? value.style.selectedRowColor}
+                    onChange={(e) => setTempColors(prev => ({ ...prev, selectedRowColor: e.target.value }))}
+                    onBlur={(e) => { updateStyle({ selectedRowColor: e.target.value }); setTempColors(prev => ({ ...prev, selectedRowColor: undefined })); }}
+                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ selectedRowColor: val }); setTempColors(prev => ({ ...prev, selectedRowColor: undefined })); }}
                     className="h-10 mt-1"
                   />
                 </div>
