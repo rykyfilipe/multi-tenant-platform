@@ -415,13 +415,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
 
-      // Find next available position (compact layout)
+      // Place new widget in top-right corner (x: cols - width = 24 - 6 = 18, y: 0)
       const widgets = Object.values(widgetsRecord);
-      const maxY = widgets.length > 0 
-        ? Math.max(...widgets.map(w => w.position.y + w.position.h + 1), 0)
-        : 0;
+      const newWidth = 6;
+      const newHeight = 8;
+      const cols = 24; // Must match GridLayout cols
       
-      console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 6, h: 8 });
+      console.log('📍 [DEBUG] Next position (top-right):', { x: cols - newWidth, y: 0, w: newWidth, h: newHeight });
 
       // Create widget locally with temporary ID (compatible with INT4)
       const tempId = Math.floor(Math.random() * 1000000) + 1000000; // 7-digit random ID
@@ -432,7 +432,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         type,
         title: `${type} Widget`,
         description: null,
-        position: { x: 0, y: maxY, w: 6, h: 8 },
+        position: { x: cols - newWidth, y: 0, w: newWidth, h: newHeight },
         config: defaultConfig,
         isVisible: true,
         sortOrder: 0,
@@ -813,7 +813,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         <style jsx global>{`
           .react-grid-layout {
             width: 100% !important;
-            height: 100% !important;
+            height: auto !important;
             min-height: 100vh;
           }
           .react-grid-item {
@@ -915,10 +915,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         `}</style>
         <WidgetErrorBoundary>
           <GridLayout 
-            className="layout h-full" 
+            className="layout" 
             layout={layout} 
             cols={24} 
-            rowHeight={30} 
+            rowHeight={50} 
             width={containerWidth || 1200}
             isDraggable={isEditMode}
             isResizable={isEditMode}

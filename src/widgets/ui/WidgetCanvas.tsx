@@ -185,9 +185,12 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
       
-      // Find next available position
-      const maxY = Math.max(...widgetList.map(w => w.position.y + w.position.h), 0);
-      console.log('📍 [DEBUG] Next position:', { x: 0, y: maxY, w: 4, h: 4 });
+      // Place new widget in top-right corner (x: cols - width = 12 - 4 = 8, y: 0)
+      const newWidth = 4;
+      const newHeight = 4;
+      const cols = 12; // Must match GridLayout cols
+      
+      console.log('📍 [DEBUG] Next position (top-right):', { x: cols - newWidth, y: 0, w: newWidth, h: newHeight });
       
       // Create widget locally with temporary ID
       const tempId = Date.now();
@@ -198,7 +201,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
         type,
         title: `${type} Widget`,
         description: null,
-        position: { x: 0, y: maxY, w: 4, h: 4 },
+        position: { x: cols - newWidth, y: 0, w: newWidth, h: newHeight },
         config: defaultConfig,
         isVisible: true,
         sortOrder: 0,
