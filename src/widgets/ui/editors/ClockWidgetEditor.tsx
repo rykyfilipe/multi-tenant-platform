@@ -7,10 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
-// Clock-specific configuration schema
+// Clock-specific configuration schema - SIMPLIFIED
 const clockConfigSchema = z.object({
   settings: z.object({
     timezone: z.string().default("local"),
@@ -23,15 +21,7 @@ const clockConfigSchema = z.object({
   }),
   style: z.object({
     theme: z.enum(["premium-light", "premium-dark", "minimal", "luxury", "platinum", "obsidian", "pearl"]).default("premium-light"),
-    fontSize: z.enum(["sm", "md", "lg", "xl", "2xl"]).default("xl"),
     fontFamily: z.enum(["sans", "serif", "mono"]).default("mono"),
-    backgroundColor: z.string().default("#ffffff"),
-    textColor: z.string().default("#000000"),
-    borderColor: z.string().default("#e5e7eb"),
-    borderRadius: z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]).default("md"),
-    shadow: z.enum(["none", "sm", "md", "lg", "medium", "subtle", "bold"]).default("sm"),
-    padding: z.enum(["tight", "comfortable", "spacious", "lg", "md", "sm"]).default("comfortable"),
-    alignment: z.enum(["left", "center", "right"]).default("center"),
   }),
   refresh: z.object({
     enabled: z.boolean().default(true),
@@ -52,9 +42,6 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
   onChange,
   tenantId,
 }) => {
-  // Temporary color states to avoid updating on every onChange
-  const [tempColors, setTempColors] = React.useState<Partial<ClockConfig["style"]>>({});
-
   const updateSettings = (updates: Partial<ClockConfig["settings"]>) => {
     onChange({
       ...value,
@@ -103,8 +90,10 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                   <SelectContent>
                     <SelectItem value="local">Local Time</SelectItem>
                     <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="America/New_York">New York</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Los Angeles</SelectItem>
+                    <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                    <SelectItem value="America/Chicago">Central Time</SelectItem>
+                    <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
                     <SelectItem value="Europe/London">London</SelectItem>
                     <SelectItem value="Europe/Paris">Paris</SelectItem>
                     <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
@@ -122,51 +111,49 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="12h">12 Hour (AM/PM)</SelectItem>
+                    <SelectItem value="12h">12 Hour</SelectItem>
                     <SelectItem value="24h">24 Hour</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="clockType">Clock Type</Label>
-              <Select
-                value={value.settings.clockType}
-                onValueChange={(clockType: "digital" | "analog") => updateSettings({ clockType })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="digital">Digital</SelectItem>
-                  <SelectItem value="analog">Analog</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clockType">Clock Type</Label>
+                <Select
+                  value={value.settings.clockType}
+                  onValueChange={(clockType: "digital" | "analog") => updateSettings({ clockType })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="digital">Digital</SelectItem>
+                    <SelectItem value="analog">Analog</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dateFormat">Date Format</Label>
+                <Select
+                  value={value.settings.dateFormat}
+                  onValueChange={(dateFormat: any) => updateSettings({ dateFormat })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                    <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                    <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="dateFormat">Date Format</Label>
-              <Select
-                value={value.settings.dateFormat}
-                onValueChange={(dateFormat: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD") => updateSettings({ dateFormat })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                  <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                  <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Display Options</h4>
-              
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label htmlFor="showDate">Show Date</Label>
                 <Switch
@@ -197,17 +184,17 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
           </div>
         </TabsContent>
 
-        {/* Style Tab */}
+        {/* Style Tab - Simplified */}
         <TabsContent value="style" className="space-y-4">
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Visual Style</h3>
+            <h4 className="text-sm font-medium">Theme & Font</h4>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="theme">Theme</Label>
                 <Select
                   value={value.style.theme}
-                  onValueChange={(theme: "premium-light" | "premium-dark" | "minimal" | "luxury") => updateStyle({ theme })}
+                  onValueChange={(theme: any) => updateStyle({ theme })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -217,31 +204,13 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                     <SelectItem value="premium-dark">Premium Dark</SelectItem>
                     <SelectItem value="minimal">Minimal</SelectItem>
                     <SelectItem value="luxury">Luxury</SelectItem>
+                    <SelectItem value="platinum">Platinum</SelectItem>
+                    <SelectItem value="obsidian">Obsidian</SelectItem>
+                    <SelectItem value="pearl">Pearl</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="fontSize">Font Size</Label>
-                <Select
-                  value={value.style.fontSize}
-                  onValueChange={(fontSize: "sm" | "md" | "lg" | "xl" | "2xl") => updateStyle({ fontSize })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sm">Small</SelectItem>
-                    <SelectItem value="md">Medium</SelectItem>
-                    <SelectItem value="lg">Large</SelectItem>
-                    <SelectItem value="xl">Extra Large</SelectItem>
-                    <SelectItem value="2xl">2X Large</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="fontFamily">Font Family</Label>
                 <Select
@@ -255,132 +224,6 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
                     <SelectItem value="sans">Sans Serif</SelectItem>
                     <SelectItem value="serif">Serif</SelectItem>
                     <SelectItem value="mono">Monospace</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="alignment">Alignment</Label>
-                <Select
-                  value={value.style.alignment}
-                  onValueChange={(alignment: "left" | "center" | "right") => updateStyle({ alignment })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="center">Center</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Colors</h4>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="backgroundColor">Background Color</Label>
-                  <Input
-                    id="backgroundColor"
-                    type="color"
-                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    className="h-10"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="textColor">Text Color</Label>
-                  <Input
-                    id="textColor"
-                    type="color"
-                    value={tempColors.textColor ?? value.style.textColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    className="h-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="borderColor">Border Color</Label>
-                <Input
-                  id="borderColor"
-                  type="color"
-                  value={tempColors.borderColor ?? value.style.borderColor}
-                  onChange={(e) => setTempColors(prev => ({ ...prev, borderColor: e.target.value }))}
-                  onBlur={(e) => { updateStyle({ borderColor: e.target.value }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                  onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ borderColor: val }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                  className="h-10"
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Layout</h4>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="borderRadius">Border Radius</Label>
-                  <Select
-                    value={value.style.borderRadius}
-                    onValueChange={(borderRadius: "none" | "sm" | "md" | "lg" | "full") => updateStyle({ borderRadius })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="sm">Small</SelectItem>
-                      <SelectItem value="md">Medium</SelectItem>
-                      <SelectItem value="lg">Large</SelectItem>
-                      <SelectItem value="full">Full</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="shadow">Shadow</Label>
-                  <Select
-                    value={value.style.shadow}
-                    onValueChange={(shadow: "none" | "sm" | "md" | "lg") => updateStyle({ shadow })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="sm">Small</SelectItem>
-                      <SelectItem value="md">Medium</SelectItem>
-                      <SelectItem value="lg">Large</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="padding">Padding</Label>
-                <Select
-                  value={value.style.padding}
-                  onValueChange={(padding: "tight" | "comfortable" | "spacious") => updateStyle({ padding })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tight">Tight</SelectItem>
-                    <SelectItem value="comfortable">Comfortable</SelectItem>
-                    <SelectItem value="spacious">Spacious</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

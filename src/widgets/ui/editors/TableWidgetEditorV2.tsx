@@ -62,9 +62,6 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
-  
-  // Temporary color states to avoid updating on every onChange
-  const [tempColors, setTempColors] = useState<Partial<typeof value.style>>({});
 
   // Wizard steps configuration
   const wizardSteps: WizardStep[] = [
@@ -389,14 +386,10 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
       {renderValidationAlerts()}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="data" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             Data
-          </TabsTrigger>
-          <TabsTrigger value="style" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            Style
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -867,221 +860,7 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
           </div>
         </TabsContent>
 
-        {/* Tab 2: Style */}
-        <TabsContent value="style" className="space-y-4 max-h-[600px] overflow-y-auto">
-          <div className="space-y-6">
-            {/* Theme Selection */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                Premium Theme
-              </h3>
-              <Select
-                value={value.style.theme}
-                onValueChange={(val) => updateStyle({ theme: val as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="platinum">💎 Platinum (Bright White)</SelectItem>
-                  <SelectItem value="onyx">⬛ Onyx (Deep Black)</SelectItem>
-                  <SelectItem value="pearl">🤍 Pearl (Warm White)</SelectItem>
-                  <SelectItem value="obsidian">⚫ Obsidian (Cool Black)</SelectItem>
-                  <SelectItem value="custom">🎨 Custom</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Colors */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold mb-3">Colors</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Background</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Text</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.textColor ?? value.style.textColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Border</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.borderColor ?? value.style.borderColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, borderColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ borderColor: e.target.value }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ borderColor: val }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Header Background</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.headerBackgroundColor ?? value.style.headerBackgroundColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, headerBackgroundColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ headerBackgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, headerBackgroundColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ headerBackgroundColor: val }); setTempColors(prev => ({ ...prev, headerBackgroundColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Row Colors */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold mb-3">Row Colors</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Even Rows</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.evenRowColor ?? value.style.evenRowColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, evenRowColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ evenRowColor: e.target.value }); setTempColors(prev => ({ ...prev, evenRowColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ evenRowColor: val }); setTempColors(prev => ({ ...prev, evenRowColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Odd Rows</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.oddRowColor ?? value.style.oddRowColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, oddRowColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ oddRowColor: e.target.value }); setTempColors(prev => ({ ...prev, oddRowColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ oddRowColor: val }); setTempColors(prev => ({ ...prev, oddRowColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Hover</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.hoverRowColor ?? value.style.hoverRowColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, hoverRowColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ hoverRowColor: e.target.value }); setTempColors(prev => ({ ...prev, hoverRowColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ hoverRowColor: val }); setTempColors(prev => ({ ...prev, hoverRowColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Selected</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.selectedRowColor ?? value.style.selectedRowColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, selectedRowColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ selectedRowColor: e.target.value }); setTempColors(prev => ({ ...prev, selectedRowColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ selectedRowColor: val }); setTempColors(prev => ({ ...prev, selectedRowColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Typography */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold mb-3">Typography</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Font Size</Label>
-                  <Select
-                    value={value.style.fontSize}
-                    onValueChange={(val) => updateStyle({ fontSize: val as any })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="xs">Extra Small</SelectItem>
-                      <SelectItem value="sm">Small</SelectItem>
-                      <SelectItem value="base">Base</SelectItem>
-                      <SelectItem value="lg">Large</SelectItem>
-                      <SelectItem value="xl">Extra Large</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-xs">Header Font Size</Label>
-                  <Select
-                    value={value.style.headerFontSize}
-                    onValueChange={(val) => updateStyle({ headerFontSize: val as any })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="xs">Extra Small</SelectItem>
-                      <SelectItem value="sm">Small</SelectItem>
-                      <SelectItem value="base">Base</SelectItem>
-                      <SelectItem value="lg">Large</SelectItem>
-                      <SelectItem value="xl">Extra Large</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Effects */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold mb-3">Effects</h3>
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs">Shadow</Label>
-                  <Select
-                    value={value.style.shadow}
-                    onValueChange={(val) => updateStyle({ shadow: val as any })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="subtle">Subtle</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="bold">Bold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Striped Rows</Label>
-                  <Switch
-                    checked={value.style.stripedRows}
-                    onCheckedChange={(checked) => updateStyle({ stripedRows: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Hover Effects</Label>
-                  <Switch
-                    checked={value.style.hoverEffects}
-                    onCheckedChange={(checked) => updateStyle({ hoverEffects: checked })}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Tab 3: Settings */}
+        {/* Tab 2: Settings */}
         <TabsContent value="settings" className="space-y-4">
           <div className="space-y-4">
             {/* Pagination */}

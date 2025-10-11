@@ -42,47 +42,8 @@ export const tableSettingsSchema = z.object({
 });
 
 export const tableStyleSchema = z.object({
-  // Theme & Colors
-  theme: z.enum(["platinum", "onyx", "pearl", "obsidian", "custom"]).default("platinum"),
-  backgroundColor: z.string().default("#FFFFFF"),
-  textColor: z.string().default("#000000"),
-  borderColor: z.string().default("#E5E7EB"),
-  headerBackgroundColor: z.string().default("#F9FAFB"),
-  headerTextColor: z.string().default("#374151"),
-  
-  // Row colors
-  evenRowColor: z.string().default("#FFFFFF"),
-  oddRowColor: z.string().default("#F9FAFB"),
-  hoverRowColor: z.string().default("#F3F4F6"),
-  selectedRowColor: z.string().default("#EBF4FF"),
-  
-  // Typography
-  fontSize: z.enum(["xs", "sm", "base", "lg", "xl"]).default("sm"),
-  headerFontSize: z.enum(["xs", "sm", "base", "lg", "xl"]).default("base"),
-  fontWeight: z.enum(["light", "normal", "medium", "semibold", "bold"]).default("normal"),
-  headerFontWeight: z.enum(["light", "normal", "medium", "semibold", "bold"]).default("semibold"),
-  
-  // Layout
-  padding: z.enum(["xs", "sm", "md", "lg", "xl"]).default("sm"),
-  borderWidth: z.enum(["0", "1", "2", "4"]).default("1"),
-  borderRadius: z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]).default("md"),
-  
-  // Column settings
-  columnMinWidth: z.number().int().min(50).max(500).default(100),
-  columnMaxWidth: z.number().int().min(100).max(1000).default(300),
-  
-  // Effects
-  shadow: z.enum(["none", "subtle", "medium", "bold", "sm", "md", "lg"]).default("subtle"),
-  stripedRows: z.boolean().default(true),
-  hoverEffects: z.boolean().default(true),
-  
-  // Summary row styling
-  summaryRowStyle: z.object({
-    backgroundColor: z.string().default("#F3F4F6"),
-    textColor: z.string().default("#374151"),
-    fontWeight: z.enum(["normal", "medium", "semibold", "bold"]).default("semibold"),
-    borderTop: z.boolean().default(true),
-  }),
+  // Simplified - most properties not used in renderer
+  // Using UI component defaults instead
 });
 
 export const tableDataSchema = z.object({

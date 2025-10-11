@@ -273,27 +273,56 @@ export class ChartDataProcessor {
   }
 
   /**
-   * Step 3a: Process raw data (simple pass-through)
+   * Step 3a: Process raw data (simple pass-through with numeric conversion)
    */
   private static processRawData(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
-    console.log('📊 [Raw Mode] Simple pass-through...');
+    console.log('📊 [Raw Mode] Simple pass-through with numeric conversion...');
+    console.log(`   Processing ${data.length} rows with Y columns:`, config.mappings.y);
 
-    return data.map((row, index) => {
+    const result = data.map((row, index) => {
       const chartPoint: ChartDataPoint = {
         name: row[config.mappings.x] !== undefined 
           ? String(row[config.mappings.x])
           : `Row ${index + 1}`,
       };
 
-      // Add all Y-axis columns as-is
+      // Add all Y-axis columns with numeric conversion
       config.mappings.y.forEach(yColumn => {
-        if (row[yColumn] !== undefined) {
-          chartPoint[yColumn] = row[yColumn];
+        if (row[yColumn] !== undefined && row[yColumn] !== null) {
+          const value = row[yColumn];
+          
+          // Convert to number if it's a string
+          if (typeof value === 'number') {
+            chartPoint[yColumn] = value;
+          } else if (typeof value === 'string') {
+            const numericValue = parseFloat(value);
+            // Only use if it's a valid number, otherwise set to 0
+            chartPoint[yColumn] = !isNaN(numericValue) ? numericValue : 0;
+            
+            if (isNaN(numericValue)) {
+              console.warn(`⚠️ [Raw Mode] Non-numeric value for column "${yColumn}": "${value}" - using 0`);
+            }
+          } else {
+            // Try to coerce to number
+            const numericValue = Number(value);
+            chartPoint[yColumn] = !isNaN(numericValue) ? numericValue : 0;
+          }
+        } else {
+          // Set to 0 if value is undefined or null
+          chartPoint[yColumn] = 0;
         }
       });
 
       return chartPoint;
     });
+
+    // Log sample of processed data for debugging
+    if (result.length > 0) {
+      console.log('   Sample processed row:', result[0]);
+      console.log(`   Total ${result.length} data points created`);
+    }
+
+    return result;
   }
 
   /**
@@ -301,6 +330,7 @@ export class ChartDataProcessor {
    */
   private static processWithAggregations(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
     console.log('📊 [Auto-Aggregation] Grouping by X axis and applying pipelines...');
+    console.log(`   Y columns to aggregate:`, config.mappings.y);
 
     // AUTOMATIC grouping by X axis column
     const groupByColumn = config.mappings.x;
@@ -346,6 +376,12 @@ export class ChartDataProcessor {
 
       aggregated.push(chartPoint);
     });
+
+    // Log sample of aggregated data for debugging
+    if (aggregated.length > 0) {
+      console.log('   Sample aggregated row:', aggregated[0]);
+      console.log(`   Total ${aggregated.length} aggregated data points`);
+    }
 
     return aggregated;
   }

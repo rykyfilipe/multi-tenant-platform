@@ -31,36 +31,8 @@ export const kpiSettingsSchema = z.object({
 });
 
 export const kpiStyleSchema = z.object({
-  // Theme & Colors
-  theme: z.enum(["platinum", "onyx", "pearl", "obsidian", "custom"]).default("platinum"),
+  // Only property actually used in renderer
   backgroundColor: z.string().default("#FFFFFF"),
-  textColor: z.string().default("#000000"),
-  accentColor: z.string().optional(),
-  
-  // Typography
-  fontSize: z.enum(["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl"]).default("2xl"),
-  fontWeight: z.enum(["light", "normal", "medium", "semibold", "bold"]).default("bold"),
-  
-  // Layout
-  padding: z.enum(["none", "xs", "sm", "md", "lg", "xl", "2xl"]).default("lg"),
-  borderRadius: z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]).default("xl"),
-  gap: z.enum(["xs", "sm", "md", "lg", "xl"]).default("md"),
-  
-  // KPI specific styling
-  valueSize: z.enum(["sm", "md", "lg", "xl", "2xl", "3xl", "4xl"]).default("3xl"),
-  labelSize: z.enum(["xs", "sm", "base", "lg"]).default("sm"),
-  trendSize: z.enum(["xs", "sm", "base"]).default("xs"),
-  
-  // Effects
-  shadow: z.enum(["none", "subtle", "medium", "bold", "glow"]).default("medium"),
-  glassEffect: z.boolean().default(false),
-  shine: z.boolean().default(false),
-  glow: z.boolean().default(false),
-  
-  // Color coding
-  positiveColor: z.string().default("#16a34a"), // Green
-  negativeColor: z.string().default("#dc2626"), // Red
-  neutralColor: z.string().default("#6b7280"), // Gray
 });
 
 export const kpiDataSchema = z.object({

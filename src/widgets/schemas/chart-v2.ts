@@ -24,35 +24,17 @@ export const chartSettingsSchema = z.object({
 });
 
 export const chartStyleSchema = z.object({
-  // Theme & Colors
+  // Theme & Colors (used)
   theme: z.enum(["platinum", "onyx", "pearl", "obsidian", "custom"]).default("platinum"),
   backgroundColor: z.string().default("#FFFFFF"),
   textColor: z.string().default("#000000"),
-  accentColor: z.string().optional(),
   gridColor: z.string().optional(),
   borderColor: z.string().optional(),
   
-  // Typography
-  fontSize: z.enum(["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl"]).default("sm"),
-  fontWeight: z.enum(["light", "normal", "medium", "semibold", "bold"]).default("normal"),
-  
-  // Layout
-  padding: z.enum(["none", "xs", "sm", "md", "lg", "xl", "2xl"]).default("md"),
-  borderRadius: z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]).default("xl"),
-  borderWidth: z.number().int().min(0).max(4).default(1),
-  
-  // Chart specific styling
+  // Chart specific styling (used)
   showLegend: z.boolean().default(true),
   showGrid: z.boolean().default(true),
   legendPosition: z.enum(["top", "bottom", "left", "right"]).default("bottom"),
-  chartOpacity: z.number().min(0).max(1).default(1),
-  
-  // Effects
-  shadow: z.enum(["none", "subtle", "medium", "bold", "glow"]).default("medium"),
-  glassEffect: z.boolean().default(false),
-  backdropBlur: z.enum(["none", "sm", "md", "lg"]).default("none"),
-  shine: z.boolean().default(false),
-  glow: z.boolean().default(false),
 });
 
 export const chartDataSchema = z.object({

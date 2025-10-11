@@ -7,10 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
-// Tasks-specific configuration schema
+// Tasks-specific configuration schema - SIMPLIFIED
 const tasksConfigSchema = z.object({
   settings: z.object({
     title: z.string().default("My Tasks"),
@@ -23,18 +21,7 @@ const tasksConfigSchema = z.object({
     maxTasks: z.number().min(1).max(100).default(50),
   }),
   style: z.object({
-    theme: z.enum(["premium-light", "premium-dark", "minimal", "luxury", "platinum", "obsidian", "pearl"]).default("premium-light"),
-    layout: z.enum(["list", "card", "kanban"]).default("list"),
-    density: z.enum(["compact", "comfortable", "spacious"]).default("comfortable"),
-    backgroundColor: z.string().default("#ffffff"),
-    textColor: z.string().default("#000000"),
-    accentColor: z.string().default("#3b82f6"),
-    borderColor: z.string().default("#e5e7eb"),
-    borderRadius: z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]).default("md"),
-    shadow: z.enum(["none", "sm", "md", "lg", "medium", "subtle", "bold"]).default("sm"),
-    padding: z.enum(["tight", "comfortable", "spacious", "lg", "md", "sm"]).default("comfortable"),
-    showPriorityColors: z.boolean().default(true),
-    showDueDates: z.boolean().default(true),
+    // Simplified - renderer uses UI component defaults
   }),
   refresh: z.object({
     enabled: z.boolean().default(false), // Tasks don't need auto-refresh
@@ -55,20 +42,10 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
   onChange,
   tenantId,
 }) => {
-  // Temporary color states to avoid updating on every onChange
-  const [tempColors, setTempColors] = React.useState<Partial<TasksConfig["style"]>>({});
-
   const updateSettings = (updates: Partial<TasksConfig["settings"]>) => {
     onChange({
       ...value,
       settings: { ...value.settings, ...updates },
-    });
-  };
-
-  const updateStyle = (updates: Partial<TasksConfig["style"]>) => {
-    onChange({
-      ...value,
-      style: { ...value.style, ...updates },
     });
   };
 
@@ -82,9 +59,8 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="style">Style</TabsTrigger>
           <TabsTrigger value="refresh">Refresh</TabsTrigger>
         </TabsList>
 
@@ -104,312 +80,91 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="layout">Layout Style</Label>
-                  <Select
-                    value={value.style.layout}
-                    onValueChange={(layout: "list" | "card" | "kanban") => updateStyle({ layout })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="list">List</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="kanban">Kanban</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="maxTasks">Maximum Tasks</Label>
-                  <Select
-                    value={value.settings.maxTasks.toString()}
-                    onValueChange={(max) => updateSettings({ maxTasks: parseInt(max) })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10 Tasks</SelectItem>
-                      <SelectItem value="25">25 Tasks</SelectItem>
-                      <SelectItem value="50">50 Tasks</SelectItem>
-                      <SelectItem value="100">100 Tasks</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="defaultPriority">Default Priority</Label>
-                  <Select
-                    value={value.settings.defaultPriority}
-                    onValueChange={(priority) => updateSettings({ defaultPriority: priority as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dateFormat">Date Format</Label>
-                  <Select
-                    value={value.settings.dateFormat}
-                    onValueChange={(format) => updateSettings({ dateFormat: format as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium">Display Options</h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="showCompleted">Show Completed Tasks</Label>
-                    <Switch
-                      id="showCompleted"
-                      checked={value.settings.showCompleted}
-                      onCheckedChange={(showCompleted) => updateSettings({ showCompleted })}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="showProgress">Show Progress Bar</Label>
-                    <Switch
-                      id="showProgress"
-                      checked={value.settings.showProgress}
-                      onCheckedChange={(showProgress) => updateSettings({ showProgress })}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="allowInlineEdit">Allow Inline Editing</Label>
-                    <Switch
-                      id="allowInlineEdit"
-                      checked={value.settings.allowInlineEdit}
-                      onCheckedChange={(allowInlineEdit) => updateSettings({ allowInlineEdit })}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="allowDragReorder">Allow Drag & Drop Reorder</Label>
-                    <Switch
-                      id="allowDragReorder"
-                      checked={value.settings.allowDragReorder}
-                      onCheckedChange={(allowDragReorder) => updateSettings({ allowDragReorder })}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Style Tab */}
-        <TabsContent value="style" className="space-y-4">
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">Visual Style</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="theme">Theme</Label>
+                <Label htmlFor="defaultPriority">Default Priority</Label>
                 <Select
-                  value={value.style.theme}
-                  onValueChange={(theme: "premium-light" | "premium-dark" | "minimal" | "luxury") => updateStyle({ theme })}
+                  value={value.settings.defaultPriority}
+                  onValueChange={(defaultPriority: any) => updateSettings({ defaultPriority })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="premium-light">Premium Light</SelectItem>
-                    <SelectItem value="premium-dark">Premium Dark</SelectItem>
-                    <SelectItem value="minimal">Minimal</SelectItem>
-                    <SelectItem value="luxury">Luxury</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="density">Density</Label>
+                <Label htmlFor="dateFormat">Date Format</Label>
                 <Select
-                  value={value.style.density}
-                  onValueChange={(density: "compact" | "comfortable" | "spacious") => updateStyle({ density })}
+                  value={value.settings.dateFormat}
+                  onValueChange={(dateFormat: any) => updateSettings({ dateFormat })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="compact">Compact</SelectItem>
-                    <SelectItem value="comfortable">Comfortable</SelectItem>
-                    <SelectItem value="spacious">Spacious</SelectItem>
+                    <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                    <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                    <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Colors</h4>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="backgroundColor">Background Color</Label>
-                  <Input
-                    id="backgroundColor"
-                    type="color"
-                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    className="h-10"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="textColor">Text Color</Label>
-                  <Input
-                    id="textColor"
-                    type="color"
-                    value={tempColors.textColor ?? value.style.textColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    className="h-10"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="accentColor">Accent Color</Label>
-                  <Input
-                    id="accentColor"
-                    type="color"
-                    value={tempColors.accentColor ?? value.style.accentColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, accentColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ accentColor: e.target.value }); setTempColors(prev => ({ ...prev, accentColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ accentColor: val }); setTempColors(prev => ({ ...prev, accentColor: undefined })); }}
-                    className="h-10"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="borderColor">Border Color</Label>
-                  <Input
-                    id="borderColor"
-                    type="color"
-                    value={tempColors.borderColor ?? value.style.borderColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, borderColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ borderColor: e.target.value }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ borderColor: val }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                    className="h-10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Layout & Effects</h4>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="borderRadius">Border Radius</Label>
-                  <Select
-                    value={value.style.borderRadius}
-                    onValueChange={(borderRadius: "none" | "sm" | "md" | "lg" | "full") => updateStyle({ borderRadius })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="sm">Small</SelectItem>
-                      <SelectItem value="md">Medium</SelectItem>
-                      <SelectItem value="lg">Large</SelectItem>
-                      <SelectItem value="full">Full</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="shadow">Shadow</Label>
-                  <Select
-                    value={value.style.shadow}
-                    onValueChange={(shadow: "none" | "sm" | "md" | "lg") => updateStyle({ shadow })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="sm">Small</SelectItem>
-                      <SelectItem value="md">Medium</SelectItem>
-                      <SelectItem value="lg">Large</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="padding">Padding</Label>
-                <Select
-                  value={value.style.padding}
-                  onValueChange={(padding: "tight" | "comfortable" | "spacious") => updateStyle({ padding })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tight">Tight</SelectItem>
-                    <SelectItem value="comfortable">Comfortable</SelectItem>
-                    <SelectItem value="spacious">Spacious</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="maxTasks">Maximum Tasks</Label>
+                <Input
+                  id="maxTasks"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={value.settings.maxTasks}
+                  onChange={(e) => updateSettings({ maxTasks: parseInt(e.target.value) || 50 })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Display Options</h4>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="showCompleted">Show Completed</Label>
+                <Switch
+                  id="showCompleted"
+                  checked={value.settings.showCompleted}
+                  onCheckedChange={(showCompleted) => updateSettings({ showCompleted })}
+                />
               </div>
 
-              <Separator />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="showProgress">Show Progress</Label>
+                <Switch
+                  id="showProgress"
+                  checked={value.settings.showProgress}
+                  onCheckedChange={(showProgress) => updateSettings({ showProgress })}
+                />
+              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showPriorityColors">Show Priority Colors</Label>
-                  <Switch
-                    id="showPriorityColors"
-                    checked={value.style.showPriorityColors}
-                    onCheckedChange={(showPriorityColors) => updateStyle({ showPriorityColors })}
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="allowInlineEdit">Allow Inline Edit</Label>
+                <Switch
+                  id="allowInlineEdit"
+                  checked={value.settings.allowInlineEdit}
+                  onCheckedChange={(allowInlineEdit) => updateSettings({ allowInlineEdit })}
+                />
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showDueDates">Show Due Dates</Label>
-                  <Switch
-                    id="showDueDates"
-                    checked={value.style.showDueDates}
-                    onCheckedChange={(showDueDates) => updateStyle({ showDueDates })}
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="allowDragReorder">Allow Drag Reorder</Label>
+                <Switch
+                  id="allowDragReorder"
+                  checked={value.settings.allowDragReorder}
+                  onCheckedChange={(allowDragReorder) => updateSettings({ allowDragReorder })}
+                />
               </div>
             </div>
           </div>
@@ -452,7 +207,7 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Tasks will refresh every {Math.round(value.refresh.interval / 60000)} minutes
+                  Tasks refresh every {Math.round(value.refresh.interval / 60000)} minute(s)
                 </p>
               </div>
             )}
