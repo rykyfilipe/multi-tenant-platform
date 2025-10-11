@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 import { DraftOperation } from "@/widgets/domain/entities";
 
 interface WidgetCanvasProps {
@@ -54,7 +54,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     const widgets = Object.values(widgetsRecord);
     console.log('🎨 [DEBUG] Widget list updated:', {
       count: widgets.length,
-      widgets: widgets.map(w => ({ id: w.id, kind: w.kind, title: w.title }))
+      widgets: widgets.map(w => ({ id: w.id, type: w.type, title: w.title }))
     });
     return widgets;
   }, [widgetsRecord]);
@@ -117,7 +117,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     if (!operations.length) return;
     await api.createDraft({
       actorId,
-      kind: WidgetKind.CHART,
+      type: WidgetType.CHART,
       config: { settings: {}, style: {}, data: {} },
       title: "Draft from pending",
       operations,
@@ -153,7 +153,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const closeEditor = () => setEditorWidgetId(null);
 
   const handleDuplicate = (widget: WidgetEntity) => {
-    const definition = getWidgetDefinition(widget.kind);
+    const definition = getWidgetDefinition(widget.type);
     createLocal({
       ...widget,
       id: Math.floor(Math.random() * 1000000) + 1000000,
@@ -172,14 +172,14 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const handleCreateDraft = async () => {
     await api.createDraft({
       actorId,
-      kind: WidgetKind.CHART,
+      type: WidgetType.CHART,
       config: { settings: {}, style: {}, data: {} },
       title: "New Draft",
     });
     setActiveTab("drafts");
   };
 
-  const handleAddWidget = (kind: WidgetKind) => {
+  const handleAddWidget = (type: WidgetType) => {
     try {
       console.log('🎯 [DEBUG] Adding widget locally:', kind);
       const definition = getWidgetDefinition(kind);
@@ -294,7 +294,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       id: Math.floor(Math.random() * 1000000) + 1000000,
       tenantId,
       dashboardId,
-      kind: template.kind,
+      type: template.type,
       title: template.name,
       description: template.description,
       position: { x: 0, y: 0, w: 4, h: 4 },
@@ -394,7 +394,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
               {hasConflicts && <Badge variant="destructive">Needs merge</Badge>}
             </div>
             <div className="flex items-center flex-wrap gap-3 text-muted-foreground">
-              <span>Kind: {draft.kind}</span>
+              <span>Type: {draft.type}</span>
               <span>Widget: {draft.widgetId ?? "(new)"}</span>
               <span>Version: {draft.version}</span>
               <span>Updated: {new Date(draft.updatedAt).toLocaleString()}</span>
@@ -640,7 +640,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                       return null;
                     }
 
-                    const definition = getWidgetDefinition(widget.kind);
+                    const definition = getWidgetDefinition(widget.type);
                     const Renderer = definition.renderer;
                     const isSelected = selectedWidgets.has(widget.id);
 

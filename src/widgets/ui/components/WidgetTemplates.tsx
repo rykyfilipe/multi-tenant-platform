@@ -26,13 +26,13 @@ import {
   Download,
   Upload,
 } from "lucide-react";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 
 interface WidgetTemplate {
   id: string;
   name: string;
   description: string;
-  kind: WidgetKind;
+  type: WidgetType;
   config: any;
   category: "dashboard" | "analytics" | "monitoring" | "custom";
   isPremium: boolean;
@@ -45,7 +45,7 @@ const templates: WidgetTemplate[] = [
     id: "executive-dashboard",
     name: "Executive Dashboard",
     description: "High-level KPIs and metrics for executives",
-    kind: WidgetKind.KPI,
+    type: WidgetType.KPI,
     config: {
       settings: { showTrend: true, showComparison: true },
       style: { theme: "premium-light", size: "large" },
@@ -59,7 +59,7 @@ const templates: WidgetTemplate[] = [
     id: "sales-analytics",
     name: "Sales Analytics",
     description: "Comprehensive sales performance tracking",
-    kind: WidgetKind.CHART,
+    type: WidgetType.CHART,
     config: {
       settings: { chartType: "line", showForecast: true },
       style: { theme: "premium-light", colors: ["#1f2937", "#374151"] },
@@ -73,7 +73,7 @@ const templates: WidgetTemplate[] = [
     id: "user-activity",
     name: "User Activity Monitor",
     description: "Real-time user engagement metrics",
-    kind: WidgetKind.TABLE,
+    type: WidgetType.TABLE,
     config: {
       settings: { 
         columns: ["user", "activity", "duration", "status"],
@@ -91,7 +91,7 @@ const templates: WidgetTemplate[] = [
     id: "weather-widget",
     name: "Weather Display",
     description: "Current weather conditions and forecast",
-    kind: WidgetKind.WEATHER,
+    type: WidgetType.WEATHER,
     config: {
       settings: { 
         location: "auto",
@@ -109,7 +109,7 @@ const templates: WidgetTemplate[] = [
     id: "clock-widget",
     name: "World Clock",
     description: "Multiple timezone clock display",
-    kind: WidgetKind.CLOCK,
+    type: WidgetType.CLOCK,
     config: {
       settings: { 
         timezones: ["UTC", "EST", "PST"],
@@ -145,14 +145,14 @@ export const WidgetTemplates: React.FC<WidgetTemplatesProps> = ({ onSelectTempla
     ? templates 
     : templates.filter(t => t.category === selectedCategory);
 
-  const getKindIcon = (kind: WidgetKind) => {
+  const getTypeIcon = (type: WidgetType) => {
     switch (kind) {
-      case WidgetKind.CHART: return BarChart3;
-      case WidgetKind.TABLE: return Table;
-      case WidgetKind.KPI: return Target;
-      case WidgetKind.CLOCK: return Clock;
-      case WidgetKind.WEATHER: return CloudSun;
-      case WidgetKind.CHART: return BarChart3;
+      case WidgetType.CHART: return BarChart3;
+      case WidgetType.TABLE: return Table;
+      case WidgetType.KPI: return Target;
+      case WidgetType.CLOCK: return Clock;
+      case WidgetType.WEATHER: return CloudSun;
+      case WidgetType.CHART: return BarChart3;
       default: return Settings;
     }
   };
@@ -189,7 +189,7 @@ export const WidgetTemplates: React.FC<WidgetTemplatesProps> = ({ onSelectTempla
           <TabsContent value={selectedCategory} className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTemplates.map((template) => {
-                const KindIcon = getKindIcon(template.kind);
+                const KindIcon = getTypeIcon(template.type);
                 return (
                   <Card key={template.id} className="group hover:shadow-md transition-shadow">
                     <CardHeader className="pb-3">

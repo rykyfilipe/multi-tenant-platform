@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
@@ -409,7 +409,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     console.log('🎯 [DEBUG] Layout compacted');
   }, [widgetsRecord, updateLocal]);
 
-  const handleAddWidget = (kind: WidgetKind) => {
+  const handleAddWidget = (type: WidgetType) => {
     try {
       console.log('🎯 [DEBUG] Adding widget locally:', kind);
       const definition = getWidgetDefinition(kind);
@@ -555,7 +555,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.CHART)}
+                  onClick={() => handleAddWidget(WidgetType.CHART)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
                   title="Add Chart Widget"
                 >
@@ -564,7 +564,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.TABLE)}
+                  onClick={() => handleAddWidget(WidgetType.TABLE)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
                   title="Add Table Widget"
                 >
@@ -573,7 +573,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.KPI)}
+                  onClick={() => handleAddWidget(WidgetType.KPI)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
                   title="Add KPI Widget"
                 >
@@ -582,7 +582,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.CLOCK)}
+                  onClick={() => handleAddWidget(WidgetType.CLOCK)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
                   title="Add Clock Widget"
                 >
@@ -591,7 +591,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.WEATHER)}
+                  onClick={() => handleAddWidget(WidgetType.WEATHER)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
                   title="Add Weather Widget"
                 >
@@ -600,7 +600,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleAddWidget(WidgetKind.TASKS)}
+                  onClick={() => handleAddWidget(WidgetType.TASKS)}
                   className="h-8 w-8 p-0 hover:bg-primary/10"
                   title="Add Tasks Widget"
                 >
@@ -966,7 +966,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 widgetsRecord[widget.id] // Ensure widget still exists in record
               )
               .map((widget) => {
-                const definition = getWidgetDefinition(widget.kind);
+                const definition = getWidgetDefinition(widget.type);
                 const Renderer = definition.renderer as React.ComponentType<{
                   widget: WidgetEntity;
                   onEdit?: () => void;

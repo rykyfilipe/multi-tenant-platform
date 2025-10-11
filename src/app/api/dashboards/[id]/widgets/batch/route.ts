@@ -5,24 +5,15 @@ import { DashboardService } from '@/lib/dashboard-service';
 import { DashboardValidators, handleValidationError } from '@/lib/dashboard-validators';
 import { z } from 'zod';
 
-// Batch operation schema - supports both frontend format (kind) and backend format (type)
-const BatchOperationSchema = z.union([
-  // Frontend format (DraftOperation)
-  z.object({
-    id: z.string(),
-    kind: z.enum(['create', 'update', 'delete']),
-    widget: z.any().optional(),
-    widgetId: z.number().optional(),
-    expectedVersion: z.number().optional(),
-    patch: z.any().optional(),
-  }),
-  // Legacy backend format
-  z.object({
-    type: z.enum(['create', 'update', 'delete']),
-    widgetId: z.union([z.number(), z.string()]).optional(),
-    data: z.any().optional(),
-  })
-]);
+// Batch operation schema - unified to use 'kind' for operation type
+const BatchOperationSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['create', 'update', 'delete']),
+  widget: z.any().optional(),
+  widgetId: z.number().optional(),
+  expectedVersion: z.number().optional(),
+  patch: z.any().optional(),
+});
 
 const BatchRequestSchema = z.object({
   operations: z.array(BatchOperationSchema).min(1, 'At least one operation is required'),
@@ -56,101 +47,51 @@ export async function POST(
     // Process each operation
     for (let i = 0; i < validatedData.operations.length; i++) {
       const operation = validatedData.operations[i];
-      
-      // Determine operation type - support both frontend (kind) and backend (type) formats
-      const operationType = 'kind' in operation ? operation.kind : operation.type;
+      const operationType = operation.kind;
       
       try {
         let result;
         
         switch (operationType) {
           case 'create':
-            // Support both frontend format (widget) and backend format (data)
-            const createPayload = 'widget' in operation ? operation.widget : operation.data;
+            const createPayload = operation.widget;
             if (!createPayload) {
               throw new Error('Widget data is required for create operation');
             }
             
             console.log('[batch] Create payload received:', JSON.stringify(createPayload, null, 2));
             
-            // Normalize widget type from uppercase to lowercase for validation
-            let widgetType = createPayload.kind?.toLowerCase() || createPayload.type?.toLowerCase() || createPayload.type;
-            
-            // If we still don't have a type, try to infer from kind
-            if (!widgetType && createPayload.kind) {
-              widgetType = createPayload.kind.toLowerCase();
-            }
+            // Get widget type - should already be uppercase WidgetType enum
+            const widgetType = createPayload.type;
             
             if (!widgetType) {
-              console.error('[batch] No valid widget type found in payload:', {
-                kind: createPayload.kind,
-                type: createPayload.type,
-                payload: createPayload
-              });
+              console.error('[batch] No valid widget type found in payload:', createPayload);
               throw new Error('Widget type is required but not found in payload');
             }
             
-            const normalizedPayload = {
-              ...createPayload,
-              type: widgetType
-            };
+            console.log('[batch] Widget type:', widgetType);
             
-            console.log('[batch] Normalized payload:', JSON.stringify(normalizedPayload, null, 2));
-            
-            // Validate widget creation data
-            const createData = DashboardValidators.validateWidgetCreate(normalizedPayload);
-            
-            // Skip detailed config validation - frontend already validates
-            // and config structures vary between widget types
-            
-            // Map type to kind for backend compatibility
-            const widgetData = {
-              ...createData,
-              kind: createData.type.toUpperCase() as any, // Convert to WidgetKind enum
-              type: undefined // Remove type field
-            };
+            // Validate widget creation data  
+            const createData = DashboardValidators.validateWidgetCreate(createPayload);
             
             result = await DashboardService.createWidget(
               dashboardId,
-              widgetData as any,
+              createData as any,
               Number(session.user.tenantId),
               Number(session.user.id)
             );
             break;
             
           case 'update':
-            // Support both frontend format (patch) and backend format (data)
-            const updateWidgetId = 'patch' in operation ? operation.widgetId : operation.widgetId;
-            const updatePayload = 'patch' in operation ? operation.patch : operation.data;
+            const updateWidgetId = operation.widgetId;
+            const updatePayload = operation.patch;
             
             if (!updateWidgetId || !updatePayload) {
               throw new Error('Widget ID and update data are required for update operation');
             }
             
-            // Normalize widget type from uppercase to lowercase for validation (if type is being updated)
-            let normalizedUpdatePayload = { ...updatePayload };
-            
-            // Only normalize type if it's being updated
-            if (updatePayload.kind !== undefined || updatePayload.type !== undefined) {
-              const widgetType = updatePayload.kind?.toLowerCase() || updatePayload.type?.toLowerCase() || updatePayload.type;
-              
-              if (!widgetType) {
-                console.error('[batch] No valid widget type found in update payload:', {
-                  kind: updatePayload.kind,
-                  type: updatePayload.type,
-                  payload: updatePayload
-                });
-                throw new Error('Widget type is required but not found in update payload');
-              }
-              
-              normalizedUpdatePayload.type = widgetType;
-            }
-            
             // Validate widget update data
-            const updateData = DashboardValidators.validateWidgetUpdate(normalizedUpdatePayload);
-            
-            // Skip detailed config validation - frontend already validates
-            // and config structures vary between widget types
+            const updateData = DashboardValidators.validateWidgetUpdate(updatePayload);
             
             result = await DashboardService.updateWidget(
               dashboardId,

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getWidgetService } from "@/widgets/services/factory";
 import { assertWidgetsV2Enabled } from "@/lib/featureFlag";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 import {
   createWidgetPayloadSchema,
   updateWidgetPatchSchema,
@@ -72,7 +72,7 @@ export async function GET(
   const kindsParam = request.nextUrl.searchParams
     .getAll("kind")
     .map((value) => value.toUpperCase())
-    .filter((value) => value in WidgetKind) as (keyof typeof WidgetKind)[];
+    .filter((value) => value in WidgetType) as (keyof typeof WidgetType)[];
 
   console.log('🔍 [DEBUG] Parsing listWidgetsParamsSchema...');
   const searchParams = listWidgetsParamsSchema.partial({ tenantId: true, dashboardId: true }).parse({
@@ -83,7 +83,7 @@ export async function GET(
       ? Number(request.nextUrl.searchParams.get("limit"))
       : undefined,
     includeConfig: request.nextUrl.searchParams.get("includeConfig") === "true",
-    kinds: kindsParam.map((value) => WidgetKind[value]),
+    types: kindsParam.map((value) => WidgetType[value]),
   });
   console.log('✅ [DEBUG] searchParams parsed:', searchParams);
 
@@ -106,7 +106,7 @@ export async function GET(
     cursor: searchParams.cursor,
     limit: searchParams.limit,
     includeConfig: searchParams.includeConfig,
-    kinds: searchParams.kinds,
+    types: searchParams.types,
   });
   
   console.log('🔍 [DEBUG] Calling widgetService.list...');
@@ -116,7 +116,7 @@ export async function GET(
     cursor: searchParams.cursor,
     limit: searchParams.limit,
     includeConfig: searchParams.includeConfig,
-    kinds: searchParams.kinds,
+    types: searchParams.types,
   });
   
   console.log('✅ [DEBUG] widgets result:', typeof widgets, widgets);
@@ -221,7 +221,7 @@ export async function POST(
   console.log('✅ [DEBUG] createWidgetPayloadSchema parsed:', data);
   
   console.log('🔍 [DEBUG] Getting widget definition...');
-  const definition = getWidgetDefinition(data.kind || WidgetKind.CHART);
+  const definition = getWidgetDefinition(data.kind || WidgetType.CHART);
   console.log('✅ [DEBUG] Widget definition:', definition);
 
   const actorId = getActorId(request);
@@ -239,7 +239,7 @@ export async function POST(
         widget: {
           tenantId,
           dashboardId,
-          kind: definition.kind,
+          kind: definition.type,
           title: data.title ?? null,
           description: data.description ?? null,
           position: data.position ?? { x: 0, y: 0, w: 4, h: 4 },

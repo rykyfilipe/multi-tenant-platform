@@ -93,7 +93,7 @@ export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({
     return null;
   }
 
-  const definition = widgetRegistry[widget.kind];
+  const definition = widgetRegistry[widget.type];
 
   type EditorValue = z.infer<typeof definition.schema>;
   const EditorComponent = useMemo(
@@ -146,7 +146,7 @@ export const WidgetEditorSheet: React.FC<WidgetEditorSheetProps> = ({
               id="widget-editor-title" 
               className="text-base font-semibold text-foreground truncate"
             >
-              Edit {widget.kind} Widget
+              Edit {widget.type} Widget
             </h2>
             {hasChanges && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">

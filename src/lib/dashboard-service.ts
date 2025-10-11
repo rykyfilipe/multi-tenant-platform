@@ -160,7 +160,7 @@ export class DashboardService {
               select: { id: true, firstName: true, lastName: true, email: true },
             },
             widgets: {
-              select: { id: true, kind: true, title: true, position: true, isVisible: true, sortOrder: true, config: true },
+              select: { id: true, type: true, title: true, position: true, isVisible: true, sortOrder: true, config: true },
               orderBy: { sortOrder: 'asc' },
             },
             _count: {
@@ -254,7 +254,7 @@ export class DashboardService {
             orderBy: { sortOrder: 'asc' },
             select: {
               id: true,
-              kind: true,
+              type: true,
               title: true,
               position: true,
               isVisible: true,

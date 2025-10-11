@@ -29,14 +29,14 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 
 interface MarketplaceWidget {
   id: string;
   name: string;
   description: string;
   author: string;
-  kind: WidgetKind;
+  type: WidgetType;
   version: string;
   downloads: number;
   rating: number;
@@ -56,7 +56,7 @@ const marketplaceWidgets: MarketplaceWidget[] = [
     name: "Advanced Charts Pro",
     description: "Professional charting widget with 20+ chart types and advanced analytics",
     author: "ChartMaster",
-    kind: WidgetKind.CHART,
+    type: WidgetType.CHART,
     version: "2.1.0",
     downloads: 15420,
     rating: 4.8,
@@ -74,7 +74,7 @@ const marketplaceWidgets: MarketplaceWidget[] = [
     name: "Social Media Feed",
     description: "Display social media posts from multiple platforms in one widget",
     author: "SocialWidgets",
-    kind: WidgetKind.CHART,
+    type: WidgetType.CHART,
     version: "1.5.2",
     downloads: 8930,
     rating: 4.6,
@@ -92,7 +92,7 @@ const marketplaceWidgets: MarketplaceWidget[] = [
     name: "Weather Pro",
     description: "Advanced weather widget with forecasts, alerts, and multiple locations",
     author: "WeatherGuru",
-    kind: WidgetKind.WEATHER,
+    type: WidgetType.WEATHER,
     version: "3.0.1",
     downloads: 22340,
     rating: 4.9,
@@ -110,7 +110,7 @@ const marketplaceWidgets: MarketplaceWidget[] = [
     name: "Task Manager Plus",
     description: "Complete task management with projects, deadlines, and team collaboration",
     author: "TaskMaster",
-    kind: WidgetKind.TABLE,
+    type: WidgetType.TABLE,
     version: "1.8.0",
     downloads: 18750,
     rating: 4.7,
@@ -128,7 +128,7 @@ const marketplaceWidgets: MarketplaceWidget[] = [
     name: "Crypto Tracker",
     description: "Real-time cryptocurrency prices and portfolio tracking",
     author: "CryptoWidgets",
-    kind: WidgetKind.KPI,
+    type: WidgetType.KPI,
     version: "2.3.0",
     downloads: 12560,
     rating: 4.5,
@@ -189,14 +189,14 @@ export const WidgetMarketplace: React.FC<WidgetMarketplaceProps> = ({
       }
     });
 
-  const getKindIcon = (kind: WidgetKind) => {
+  const getTypeIcon = (type: WidgetType) => {
     switch (kind) {
-      case WidgetKind.CHART: return TrendingUp;
-      case WidgetKind.TABLE: return TrendingUp;
-      case WidgetKind.KPI: return TrendingUp;
-      case WidgetKind.CLOCK: return Clock;
-      case WidgetKind.WEATHER: return TrendingUp;
-      case WidgetKind.CHART: return BarChart3;
+      case WidgetType.CHART: return TrendingUp;
+      case WidgetType.TABLE: return TrendingUp;
+      case WidgetType.KPI: return TrendingUp;
+      case WidgetType.CLOCK: return Clock;
+      case WidgetType.WEATHER: return TrendingUp;
+      case WidgetType.CHART: return BarChart3;
       default: return TrendingUp;
     }
   };
@@ -256,7 +256,7 @@ export const WidgetMarketplace: React.FC<WidgetMarketplaceProps> = ({
             <TabsContent value={selectedCategory} className="mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredWidgets.map((widget) => {
-                  const KindIcon = getKindIcon(widget.kind);
+                  const KindIcon = getTypeIcon(widget.type);
                   return (
                     <Card key={widget.id} className="group hover:shadow-md transition-shadow">
                       <CardHeader className="pb-3">

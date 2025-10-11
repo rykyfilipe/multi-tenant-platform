@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, X, Calendar, Tag } from "lucide-react";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 import { WidgetEntity } from "@/widgets/domain/entities";
 
 interface WidgetSearchProps {
@@ -32,7 +32,7 @@ export const WidgetSearch: React.FC<WidgetSearchProps> = ({
   onSearchFocus,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedKind, setSelectedKind] = useState<WidgetKind | "all">("all");
+  const [selectedKind, setSelectedKind] = useState<WidgetType | "all">("all");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -46,13 +46,13 @@ export const WidgetSearch: React.FC<WidgetSearchProps> = ({
         (widget) =>
           widget.title?.toLowerCase().includes(query) ||
           widget.description?.toLowerCase().includes(query) ||
-          widget.kind.toLowerCase().includes(query)
+          widget.type.toLowerCase().includes(query)
       );
     }
 
     // Filter by widget kind
     if (selectedKind !== "all") {
-      filtered = filtered.filter((widget) => widget.kind === selectedKind);
+      filtered = filtered.filter((widget) => widget.type === selectedKind);
     }
 
     // Filter by date
@@ -92,12 +92,12 @@ export const WidgetSearch: React.FC<WidgetSearchProps> = ({
 
   const widgetKindOptions = [
     { value: "all", label: "All Types" },
-    { value: WidgetKind.CHART, label: "Chart" },
-    { value: WidgetKind.TABLE, label: "Table" },
-    { value: WidgetKind.KPI, label: "KPI" },
-    { value: WidgetKind.WEATHER, label: "Weather" },
-    { value: WidgetKind.CLOCK, label: "Clock" },
-    { value: WidgetKind.CHART, label: "Chart" },
+    { value: WidgetType.CHART, label: "Chart" },
+    { value: WidgetType.TABLE, label: "Table" },
+    { value: WidgetType.KPI, label: "KPI" },
+    { value: WidgetType.WEATHER, label: "Weather" },
+    { value: WidgetType.CLOCK, label: "Clock" },
+    { value: WidgetType.CHART, label: "Chart" },
   ];
 
   return (
@@ -152,7 +152,7 @@ export const WidgetSearch: React.FC<WidgetSearchProps> = ({
                   <Tag className="h-4 w-4" />
                   Widget Type
                 </label>
-                <Select value={selectedKind} onValueChange={(value) => setSelectedKind(value as WidgetKind | "all")}>
+                <Select value={selectedKind} onValueChange={(value) => setSelectedKind(value as WidgetType | "all")}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

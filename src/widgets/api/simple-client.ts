@@ -6,7 +6,7 @@ import type {
   UpdateDraftParams,
   DraftListResponse,
 } from "@/widgets/domain/dto";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 
 export type WidgetsListResponse = {
@@ -142,7 +142,7 @@ export class WidgetsApiClient {
 
   async createWidget(
     payload: {
-      kind: WidgetKind;
+      type: WidgetType;
       title?: string;
       description?: string;
       position?: { x: number; y: number; w: number; h: number };
@@ -159,7 +159,7 @@ export class WidgetsApiClient {
           "x-user-id": payload.actorId.toString(),
         },
         body: JSON.stringify({
-          kind: payload.kind,
+          type: payload.type,
           title: payload.title,
           description: payload.description,
           position: payload.position,
@@ -236,7 +236,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
 
 
   const createWidget = async (payload: {
-    kind: WidgetKind;
+    type: WidgetType;
     title?: string;
     description?: string;
     position?: { x: number; y: number; w: number; h: number };

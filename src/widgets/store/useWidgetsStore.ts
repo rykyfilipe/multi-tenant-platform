@@ -113,7 +113,7 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           }
         };
 
-        const definition = getWidgetDefinition(widget.kind);
+        const definition = getWidgetDefinition(widget.type);
         try {
           definition.schema.parse(widgetWithRefresh.config);
         } catch (error) {
@@ -193,7 +193,7 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           };
         }
 
-        const definition = getWidgetDefinition(updated.kind);
+        const definition = getWidgetDefinition(updated.type);
         try {
           definition.schema.parse(updated.config);
         } catch (error) {

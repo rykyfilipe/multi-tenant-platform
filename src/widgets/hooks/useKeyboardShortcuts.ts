@@ -1,8 +1,8 @@
 import { useEffect, useCallback } from 'react';
-import { WidgetKind } from '@/generated/prisma';
+import { WidgetType } from '@/generated/prisma';
 
 export interface KeyboardShortcutsConfig {
-  onAddWidget?: (kind: WidgetKind) => void;
+  onAddWidget?: (type: WidgetType) => void;
   onSave?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
@@ -39,37 +39,37 @@ export const useKeyboardShortcuts = (config: KeyboardShortcutsConfig) => {
       case 'c':
         if (isModifierPressed && shiftKey) {
           preventDefault();
-          config.onAddWidget?.(WidgetKind.CHART);
+          config.onAddWidget?.(WidgetType.CHART);
         }
         break;
       case 't':
         if (isModifierPressed && shiftKey) {
           preventDefault();
-          config.onAddWidget?.(WidgetKind.TABLE);
+          config.onAddWidget?.(WidgetType.TABLE);
         }
         break;
       case 'k':
         if (isModifierPressed && shiftKey) {
           preventDefault();
-          config.onAddWidget?.(WidgetKind.KPI);
+          config.onAddWidget?.(WidgetType.KPI);
         }
         break;
       case 'w':
         if (isModifierPressed && shiftKey) {
           preventDefault();
-          config.onAddWidget?.(WidgetKind.WEATHER);
+          config.onAddWidget?.(WidgetType.WEATHER);
         }
         break;
       case 'l':
         if (isModifierPressed && shiftKey) {
           preventDefault();
-          config.onAddWidget?.(WidgetKind.CLOCK);
+          config.onAddWidget?.(WidgetType.CLOCK);
         }
         break;
       case 'u':
         if (isModifierPressed && shiftKey) {
           preventDefault();
-          config.onAddWidget?.(WidgetKind.CHART);
+          config.onAddWidget?.(WidgetType.CHART);
         }
         break;
 

@@ -1,4 +1,4 @@
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 import { chartWidgetConfigSchema } from "../schemas/chart-v2";
 import { tableWidgetConfigSchemaV2 } from "../schemas/table-v2";
 import { kpiWidgetConfigSchemaV2 } from "../schemas/kpi-v2";
@@ -34,16 +34,16 @@ type RendererComponent = React.ComponentType<{
 }>;
 
 export interface WidgetDefinition<TConfigSchema extends z.ZodTypeAny> {
-  kind: WidgetKind;
+  type: WidgetType;
   schema: TConfigSchema;
   defaultConfig: ConfigFromSchema<TConfigSchema>;
   editor: EditorComponent<TConfigSchema>;
   renderer: RendererComponent;
 }
 
-const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
-  [WidgetKind.CHART]: {
-    kind: WidgetKind.CHART,
+const definitions: Record<WidgetType, WidgetDefinition<z.ZodTypeAny>> = {
+  [WidgetType.CHART]: {
+    type: WidgetType.CHART,
     schema: chartWidgetConfigSchema,
     defaultConfig: {
       settings: {
@@ -90,8 +90,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     editor: ChartWidgetEditor,
     renderer: ChartWidgetRenderer,
   },
-  [WidgetKind.TABLE]: {
-    kind: WidgetKind.TABLE,
+  [WidgetType.TABLE]: {
+    type: WidgetType.TABLE,
     schema: tableWidgetConfigSchemaV2,
     defaultConfig: {
       settings: {
@@ -161,8 +161,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     editor: TableWidgetEditor,
     renderer: TableWidgetRenderer,
   },
-  [WidgetKind.TASKS]: {
-    kind: WidgetKind.TASKS,
+  [WidgetType.TASKS]: {
+    type: WidgetType.TASKS,
     schema: z.object({
       settings: z.object({
         title: z.string().default("My Tasks"),
@@ -242,8 +242,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     editor: TasksWidgetEditor,
     renderer: TasksWidgetRenderer,
   },
-  [WidgetKind.CLOCK]: {
-    kind: WidgetKind.CLOCK,
+  [WidgetType.CLOCK]: {
+    type: WidgetType.CLOCK,
     schema: z.object({
       settings: z.object({
         timezone: z.string().default("local"),
@@ -301,8 +301,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     editor: ClockWidgetEditor,
     renderer: ClockWidgetRenderer,
   },
-  [WidgetKind.WEATHER]: {
-    kind: WidgetKind.WEATHER,
+  [WidgetType.WEATHER]: {
+    type: WidgetType.WEATHER,
     schema: z.object({
       settings: z.object({
         location: z.string().default(""),
@@ -364,8 +364,8 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
     editor: WeatherWidgetEditor,
     renderer: WeatherWidgetRenderer,
   },
-  [WidgetKind.KPI]: {
-    kind: WidgetKind.KPI,
+  [WidgetType.KPI]: {
+    type: WidgetType.KPI,
     schema: kpiWidgetConfigSchemaV2,
     defaultConfig: {
       settings: {
@@ -421,9 +421,9 @@ const definitions: Record<WidgetKind, WidgetDefinition<z.ZodTypeAny>> = {
   },
 };
 
-export const widgetKindEnum = WidgetKind;
+export const widgetTypeEnum = WidgetType;
 
-export const getWidgetDefinition = (kind: WidgetKind) => definitions[kind];
+export const getWidgetDefinition = (type: WidgetType) => definitions[type];
 
 export const widgetRegistry = definitions;
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 
 export const widgetPositionSchema = z.object({
   x: z.coerce.number().int().nonnegative(),
@@ -29,13 +29,13 @@ export const baseWidgetConfigSchema = z.object({
   metadata: widgetMetadataSchema.optional(),
 });
 
-export const widgetKindSchema = z.nativeEnum(WidgetKind);
+export const widgetTypeSchema = z.nativeEnum(WidgetType);
 
 export const baseWidgetSchema = z.object({
   id: z.number().int().positive(),
   tenantId: z.number().int().positive(),
   dashboardId: z.number().int().positive(),
-  kind: widgetKindSchema,
+  type: widgetTypeSchema,
   title: z.string().max(255).nullable(),
   description: z.string().max(1024).nullable(),
   position: widgetPositionSchema,
@@ -53,7 +53,7 @@ export const baseWidgetSchema = z.object({
 export const createWidgetPayloadSchema = z.object({
   tenantId: z.number().int().positive().optional(),
   dashboardId: z.number().int().positive().optional(),
-  kind: widgetKindSchema.optional(),
+  type: widgetTypeSchema.optional(),
   title: z.string().max(255).nullable().optional(),
   description: z.string().max(1024).nullable().optional(),
   position: widgetPositionSchema.optional(),

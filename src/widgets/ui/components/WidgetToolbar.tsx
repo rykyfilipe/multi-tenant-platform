@@ -20,51 +20,51 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { WidgetKind } from "@/generated/prisma";
+import { WidgetType } from "@/generated/prisma";
 
 interface WidgetToolbarProps {
-  onAddWidget: (kind: WidgetKind) => void;
+  onAddWidget: (type: WidgetType) => void;
   className?: string;
 }
 
 const widgetTypes = [
   {
-    kind: WidgetKind.CHART,
+    type: WidgetType.CHART,
     label: "Chart",
     description: "Visualize data with charts",
     icon: BarChart3,
     color: "bg-blue-500",
   },
   {
-    kind: WidgetKind.TABLE,
+    type: WidgetType.TABLE,
     label: "Table",
     description: "Display data in tables",
     icon: Table,
     color: "bg-green-500",
   },
   {
-    kind: WidgetKind.KPI,
+    type: WidgetType.KPI,
     label: "KPI",
     description: "Key performance indicators",
     icon: Target,
     color: "bg-purple-500",
   },
   {
-    kind: WidgetKind.CLOCK,
+    type: WidgetType.CLOCK,
     label: "Clock",
     description: "Display current time",
     icon: Clock,
     color: "bg-orange-500",
   },
   {
-    kind: WidgetKind.WEATHER,
+    type: WidgetType.WEATHER,
     label: "Weather",
     description: "Weather information",
     icon: Sun,
     color: "bg-yellow-500",
   },
   {
-    kind: WidgetKind.CHART,
+    type: WidgetType.CHART,
     label: "Chart",
     description: "Chart widget",
     icon: Settings,
@@ -113,9 +113,9 @@ export const WidgetToolbar: React.FC<WidgetToolbarProps> = ({
                 const Icon = widgetType.icon;
                 return (
                   <DropdownMenuItem
-                    key={widgetType.kind}
+                    key={widgetType.type}
                     onClick={() => {
-                      onAddWidget(widgetType.kind);
+                      onAddWidget(widgetType.type);
                       setIsOpen(false);
                     }}
                     className="flex items-center space-x-3 p-3 cursor-pointer"
@@ -143,9 +143,9 @@ export const WidgetToolbar: React.FC<WidgetToolbarProps> = ({
           const Icon = widgetType.icon;
           return (
             <Card
-              key={widgetType.kind}
+              key={widgetType.type}
               className="p-3 cursor-pointer hover:shadow-md transition-all duration-200 border-border/30 hover:border-primary/50 group"
-              onClick={() => onAddWidget(widgetType.kind)}
+              onClick={() => onAddWidget(widgetType.type)}
             >
               <div className="flex flex-col items-center space-y-2">
                 <div className={`p-3 rounded-lg ${widgetType.color} text-white group-hover:scale-110 transition-transform duration-200`}>

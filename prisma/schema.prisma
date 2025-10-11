@@ -607,7 +607,7 @@ model Widget {
   id            Int              @id @default(autoincrement())
   tenantId      Int
   dashboardId   Int
-  kind          WidgetKind
+  type          WidgetType
   title         String?
   description   String?
   position      Json
@@ -631,8 +631,8 @@ model Widget {
   @@index([tenantId])
   @@index([dashboardId])
   @@index([tenantId, dashboardId])
-  @@index([kind])
-  @@index([tenantId, kind])
+  @@index([type])
+  @@index([tenantId, type])
   @@index([sortOrder])
   @@index([createdBy])
   @@index([updatedBy])
@@ -645,7 +645,7 @@ model WidgetSnapshot {
   tenantId    Int
   dashboardId Int
   version     Int
-  kind        WidgetKind
+  type        WidgetType
   title       String?
   description String?
   position    Json
@@ -666,7 +666,7 @@ model WidgetDraft {
   tenantId      Int
   dashboardId   Int
   widgetId      Int?
-  kind          WidgetKind
+  type          WidgetType
   title         String?
   description   String?
   position      Json?
@@ -724,7 +724,7 @@ model WidgetAudit {
   @@index([createdAt])
 }
 
-enum WidgetKind {
+enum WidgetType {
   CHART
   TABLE
   TASKS

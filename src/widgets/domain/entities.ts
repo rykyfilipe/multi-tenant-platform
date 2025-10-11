@@ -1,4 +1,4 @@
-import { WidgetAuditOperation, WidgetDraftStatus, WidgetKind } from "@/generated/prisma";
+import { WidgetAuditOperation, WidgetDraftStatus, WidgetType } from "@/generated/prisma";
 
 export interface WidgetPosition {
   x: number;
@@ -28,7 +28,7 @@ export interface WidgetEntity<TConfig extends WidgetConfig = WidgetConfig> {
   id: number;
   tenantId: number;
   dashboardId: number;
-  kind: WidgetKind;
+  type: WidgetType;
   title: string | null;
   description: string | null;
   position: WidgetPosition;
@@ -48,7 +48,7 @@ export interface WidgetDraftEntity<TConfig extends WidgetConfig = WidgetConfig> 
   tenantId: number;
   dashboardId: number;
   widgetId: number | null;
-  kind: WidgetKind;
+  type: WidgetType;
   title: string | null;
   description: string | null;
   position: WidgetPosition | null;

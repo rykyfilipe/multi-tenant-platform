@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, WidgetDraft, Widget, WidgetKind } from "@/generated/prisma";
+import { Prisma, PrismaClient, WidgetDraft, Widget, WidgetType } from "@/generated/prisma";
 import type {
   ConflictMetadata,
   DraftCreateOperation,
@@ -86,7 +86,7 @@ export class WidgetService {
         throw new Error("mergedConfig is required for manual conflict resolution");
       }
 
-      const definition = getWidgetDefinition(widget.kind);
+      const definition = getWidgetDefinition(widget.type);
       definition.schema.parse(mergedConfig);
 
       const updated = await this.prisma.widget.update({
@@ -127,15 +127,15 @@ export class WidgetService {
   }
 
   async list<TConfig extends WidgetConfig = WidgetConfig>(params: ListWidgetsParams): Promise<ListWidgetsResponse<TConfig>> {
-    const { tenantId, dashboardId, limit = 50, cursor, includeConfig = false, kinds } = params;
+    const { tenantId, dashboardId, limit = 50, cursor, includeConfig = false, types } = params;
 
-    console.log('[WidgetService.list] Query params:', { tenantId, dashboardId, limit, cursor, includeConfig, kinds });
+    console.log('[WidgetService.list] Query params:', { tenantId, dashboardId, limit, cursor, includeConfig, types });
 
     const where: Prisma.WidgetWhereInput = {
       tenantId,
       dashboardId,
-      // Only add kind filter if kinds array has items
-      ...(kinds && kinds.length > 0 ? { kind: { in: kinds } } : {}),
+      // Only add type filter if types array has items
+      ...(types && types.length > 0 ? { type: { in: types } } : {}),
     };
 
     console.log('[WidgetService.list] Where clause:', where);
@@ -215,7 +215,7 @@ export class WidgetService {
       tenantId: draft.tenantId,
       dashboardId: draft.dashboardId,
       widgetId: draft.widgetId,
-      kind: draft.kind,
+      type: draft.type,
       title: draft.title,
       description: draft.description,
       position: (draft.position as unknown as WidgetPosition | null) ?? null,
@@ -341,7 +341,7 @@ export class WidgetService {
     }
 
     if (patch.config) {
-      const definition = getWidgetDefinition(draft.kind as WidgetKind);
+      const definition = getWidgetDefinition(draft.type as WidgetType);
       definition.schema.parse(patch.config as TConfig);
     }
 
@@ -424,7 +424,7 @@ export class WidgetService {
       throw new Error(`Draft ${draftId} not found`);
     }
 
-    const definition = getWidgetDefinition(draft.kind as WidgetKind);
+    const definition = getWidgetDefinition(draft.type as WidgetType);
     if (merge.config) {
       definition.schema.parse(merge.config as TConfig);
     }
@@ -566,7 +566,7 @@ export class WidgetService {
       id: true,
       tenantId: true,
       dashboardId: true,
-      kind: true,
+      type: true,
       title: true,
       description: true,
       position: true,
@@ -595,14 +595,14 @@ export class WidgetService {
       updatedBy: request.actorId,
     });
 
-    const definition = getWidgetDefinition(validated.kind || WidgetKind.CHART);
+    const definition = getWidgetDefinition(validated.type || WidgetType.CHART);
     definition.schema.parse(validated.config as TConfig);
 
     const widget = await tx.widget.create({
       data: {
         tenantId: validated.tenantId!,
         dashboardId: validated.dashboardId!,
-        kind: validated.kind || WidgetKind.CHART,
+        type: validated.type || WidgetType.CHART,
         title: validated.title ?? null,
         description: validated.description ?? null,
         position: validated.position as unknown as Prisma.InputJsonValue,
@@ -648,11 +648,11 @@ export class WidgetService {
           id: op.widgetId,
           tenantId: request.tenantId,
           dashboardId: request.dashboardId,
-          kind: WidgetKind.CHART,
+          type: WidgetType.CHART,
           title: null,
           description: null,
           position: { x: 0, y: 0, w: 4, h: 4 },
-          config: getWidgetDefinition(WidgetKind.CHART).defaultConfig as TConfig,
+          config: getWidgetDefinition(WidgetType.CHART).defaultConfig as TConfig,
           isVisible: true,
           sortOrder: 0,
           version: 1,
@@ -670,11 +670,11 @@ export class WidgetService {
             id: op.widgetId,
             tenantId: request.tenantId,
             dashboardId: request.dashboardId,
-            kind: WidgetKind.CHART,
+            type: WidgetType.CHART,
             title: null,
             description: null,
             position: { x: 0, y: 0, w: 4, h: 4 },
-            config: getWidgetDefinition(WidgetKind.CHART).defaultConfig as TConfig,
+            config: getWidgetDefinition(WidgetType.CHART).defaultConfig as TConfig,
             isVisible: true,
             sortOrder: 0,
             version: 1,
@@ -709,7 +709,7 @@ export class WidgetService {
     const validatedPatch = updateWidgetPatchSchema.parse(op.patch ?? {});
 
     if (validatedPatch.config) {
-      const definition = getWidgetDefinition(widget.kind as WidgetKind);
+      const definition = getWidgetDefinition(widget.type as WidgetType);
       definition.schema.parse(validatedPatch.config as TConfig);
     }
 
@@ -802,7 +802,7 @@ export class WidgetService {
 
     if (patch.title !== undefined) data.title = patch.title;
     if (patch.description !== undefined) data.description = patch.description;
-    if (patch.kind !== undefined) data.kind = patch.kind;
+    if (patch.type !== undefined) data.type = patch.type;
     if (patch.position !== undefined) {
       data.position = patch.position ? (patch.position as unknown as Prisma.InputJsonValue) : Prisma.JsonNull;
     }
@@ -834,7 +834,7 @@ export class WidgetService {
 
     if (patch.title !== undefined) data.title = patch.title;
     if (patch.description !== undefined) data.description = patch.description;
-    if (patch.kind !== undefined) data.kind = patch.kind;
+    if (patch.type !== undefined) data.type = patch.type;
     if (patch.position !== undefined) {
       data.position = patch.position ? (patch.position as unknown as Prisma.InputJsonValue) : Prisma.JsonNull;
     }

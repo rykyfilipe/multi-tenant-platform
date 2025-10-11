@@ -1,4 +1,4 @@
-import { WidgetKind, WidgetDraftStatus } from "@/generated/prisma";
+import { WidgetType, WidgetDraftStatus } from "@/generated/prisma";
 import {
   ConflictMetadata,
   DraftOperation,
@@ -21,7 +21,7 @@ export interface ListWidgetsParams {
   cursor?: number;
   limit?: number;
   includeConfig?: boolean;
-  kinds?: WidgetKind[];
+  types?: WidgetType[];
 }
 
 export interface ListWidgetsResponse<TConfig extends WidgetConfig = WidgetConfig> {
@@ -54,7 +54,7 @@ export const listWidgetsParamsSchema = z.object({
   cursor: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
   includeConfig: z.boolean().optional(),
-  kinds: z.array(z.nativeEnum(WidgetKind)).optional(),
+  types: z.array(z.nativeEnum(WidgetType)).optional(),
 });
 
 export const getWidgetParamsSchema = listWidgetsParamsSchema.pick({ tenantId: true, dashboardId: true }).extend({
@@ -67,7 +67,7 @@ export const createDraftParamsSchema = z.object({
   dashboardId: z.number().int().positive().optional(),
   actorId: z.number().int().positive().optional(),
   widgetId: z.number().int().positive().optional(),
-  kind: z.nativeEnum(WidgetKind).optional(),
+  type: z.nativeEnum(WidgetType).optional(),
   position: widgetPositionSchema.optional(),
   config: baseWidgetConfigSchema.optional(),
   title: z.string().max(255).optional(),
@@ -127,7 +127,7 @@ export interface CreateDraftParams<TConfig extends WidgetConfig = WidgetConfig> 
   dashboardId: number;
   actorId: number;
   widgetId?: number;
-  kind: WidgetKind;
+  type: WidgetType;
   position?: WidgetPosition;
   config: TConfig;
   title?: string;
