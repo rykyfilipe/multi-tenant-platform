@@ -719,8 +719,12 @@ export class DashboardService {
     userId: number
   ): Promise<any> {
     try {
+      console.log('[DashboardService.updateWidget] Received data:', JSON.stringify(data, null, 2));
+      
       // Validate data
       const validatedData = DashboardValidators.validateWidgetUpdate(data);
+      
+      console.log('[DashboardService.updateWidget] Validated data:', JSON.stringify(validatedData, null, 2));
 
       // Verify dashboard exists and belongs to tenant
       const dashboard = await prisma.dashboard.findFirst({
@@ -752,6 +756,11 @@ export class DashboardService {
       }
 
       // Update widget
+      console.log('[DashboardService.updateWidget] Updating widget with data:', JSON.stringify({
+        ...validatedData,
+        updatedBy: userId,
+      }, null, 2));
+      
       const updatedWidget = await prisma.widget.update({
         where: { id: widgetId },
         data: {
@@ -767,6 +776,8 @@ export class DashboardService {
           },
         },
       });
+      
+      console.log('[DashboardService.updateWidget] Widget updated successfully, config:', JSON.stringify(updatedWidget.config, null, 2));
 
       // Track usage
       usageAnalytics.trackApiUsage(

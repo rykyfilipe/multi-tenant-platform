@@ -544,7 +544,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         </div>
       </div>
     }>
-      <div className="h-full w-full relative">
+      <div className="h-screen w-full relative overflow-hidden flex flex-col">
         {/* Floating Toolbar - Only in Edit Mode */}
         {isEditMode && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
@@ -807,7 +807,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       {/* Main Grid Area */}
       <div 
-        className="h-full w-full p-6 overflow-y-auto"
+        className="flex-1 w-full p-6 overflow-y-auto"
         onClick={handleCanvasClick}
       >
         <style jsx global>{`
@@ -998,16 +998,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                           // Single select: clear others and select this one
                           handleDeselectAll();
                           handleSelectWidget(widget.id);
-                          
-                          // Auto-open editor for the selected widget
-                          setEditorWidgetId(widget.id);
                         }
                       }}
                     >
                     <Renderer
                       widget={widget}
                       onEdit={undefined}
-                      onDelete={isEditMode ? () => deleteLocal(widget.id) : undefined}
+                      onDelete={undefined}
                       onDuplicate={isEditMode ? () => handleDuplicateWidget(widget) : undefined}
                       isEditMode={isEditMode}
                     />

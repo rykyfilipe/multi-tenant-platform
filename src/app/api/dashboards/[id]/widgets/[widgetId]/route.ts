@@ -123,6 +123,9 @@ export async function PATCH(
 
     const body = await request.json();
     
+    console.log('[PATCH Widget API] Received body:', JSON.stringify(body, null, 2));
+    console.log('[PATCH Widget API] Dashboard ID:', dashboardId, 'Widget ID:', widgetId);
+    
     // For PATCH, we allow partial updates without full validation
     // Common use case: updating just config.data for tasks widget
     const updatedWidget = await DashboardService.updateWidget(
@@ -133,6 +136,7 @@ export async function PATCH(
       Number(session.user.id)
     );
 
+    console.log('[PATCH Widget API] Updated widget:', JSON.stringify(updatedWidget, null, 2));
     return NextResponse.json(updatedWidget);
   } catch (error) {
     console.error('Error patching widget:', error);

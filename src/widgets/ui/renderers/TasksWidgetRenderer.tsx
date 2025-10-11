@@ -155,6 +155,8 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
       };
 
       console.log('[TasksWidget] Saving tasks via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
+      console.log('[TasksWidget] Updated config being sent:', updatedConfig);
+      console.log('[TasksWidget] Payload:', { config: updatedConfig });
       
       const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
         method: 'PATCH',
