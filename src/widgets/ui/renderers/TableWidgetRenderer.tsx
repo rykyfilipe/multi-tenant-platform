@@ -286,11 +286,14 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   if (!config.data?.columns || config.data.columns.length === 0) {
     return (
       <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <PremiumWidgetContainer style={styleConfig} className="h-full">
+        <PremiumWidgetContainer 
+          style={styleConfig} 
+          className="h-full transition-all duration-300 hover:shadow-xl"
+        >
           <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-            <div>
-              <p className="text-lg font-medium mb-2">No table columns configured</p>
-              <p className="text-sm">Configure columns in the editor to display data</p>
+            <div className="space-y-2">
+              <p className="text-lg font-semibold mb-2">No table columns configured</p>
+              <p className="text-sm opacity-80">Configure columns in the editor to display data</p>
             </div>
           </div>
         </PremiumWidgetContainer>
@@ -334,7 +337,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
       <PremiumWidgetContainer 
         style={styleConfig} 
-        className="h-full overflow-hidden"
+        className="h-full overflow-hidden transition-all duration-300 hover:shadow-xl"
       >
         <div 
           className="h-full overflow-auto"
@@ -454,7 +457,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                     >
                       {processedData?.summary?.[column.name] ? 
                         formatValue(
-                          processedData?.summary[column.name].sum || processedData?.summary[column.name].avg || "-",
+                          (processedData?.summary[column.name] as any)?.sum || (processedData?.summary[column.name] as any)?.avg || "-",
                           column.format
                         ) : "-"
                       }

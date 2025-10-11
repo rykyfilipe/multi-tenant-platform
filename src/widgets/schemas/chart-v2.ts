@@ -24,6 +24,9 @@ export const chartSettingsSchema = z.object({
 });
 
 export const chartStyleSchema = z.object({
+  // === THEME ===
+  themeName: z.string().optional(),
+  
   // === GENERAL STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
   backgroundOpacity: z.number().min(0).max(1).default(1).optional(),
@@ -254,7 +257,7 @@ export const chartStyleSchema = z.object({
   showLegend: z.boolean().optional(),
   showGrid: z.boolean().optional(),
   legendPosition: z.enum(["top", "bottom", "left", "right"]).optional(),
-  shadow: z.enum(["none", "sm", "md", "lg", "medium", "subtle", "bold"]).optional(),
+  shadow: z.enum(["none", "sm", "md", "lg", "xl", "medium", "subtle", "bold"]).optional(),
   fontSize: z.enum(["xs", "sm", "md", "lg", "xl", "2xl"]).optional(),
   fontWeight: z.enum(["normal", "medium", "semibold", "bold"]).optional(),
   transparentBackground: z.boolean().optional(),

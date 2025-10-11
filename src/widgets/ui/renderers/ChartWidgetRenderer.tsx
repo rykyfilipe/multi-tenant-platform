@@ -219,7 +219,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const gridColor = gridConfig.color || "rgba(0, 0, 0, 0.1)";
   const gridLineWidth = gridConfig.lineWidth ?? 1;
   const gridStyle = gridConfig.style || "solid";
-  const gridDashPattern = gridStyle === "dashed" ? [5, 5] : gridStyle === "dotted" ? [2, 2] : undefined;
+  const gridDashPattern = gridStyle === "dashed" ? "5 5" : gridStyle === "dotted" ? "2 2" : undefined;
   
   // Axes styling
   const axesConfig = styleConfig.axes || {};
@@ -315,16 +315,16 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       <PremiumWidgetContainer 
         style={styleConfig} 
         className={cn(
-          "h-full w-full",
+          "h-full w-full transition-all duration-300 hover:shadow-xl",
           transparentBackground && "bg-transparent backdrop-blur-none"
         )}
       >
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           className={cn(
-            "h-full",
+            "h-full relative overflow-hidden",
             transparentBackground && "bg-transparent"
           )}
         >
@@ -483,7 +483,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   paddingAngle={2}
                   label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                   labelLine={{
-                    stroke: textColor,
+                    stroke: styleConfig.textColor || "#333333",
                     strokeWidth: 1
                   }}
                 >

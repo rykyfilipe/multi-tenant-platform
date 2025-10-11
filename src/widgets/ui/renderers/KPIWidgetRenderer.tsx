@@ -328,18 +328,18 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         initial={animationConfig.enabled ? { opacity: 0, scale: 0.95 } : false}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ 
-          duration: animationConfig.duration / 1000, 
-          delay: animationConfig.delay / 1000 
+          duration: 0.4, 
+          ease: "easeOut"
         }}
-        whileHover={hoverStyleConfig.enabled ? { 
-          scale: hoverStyleConfig.scale,
-          boxShadow: hoverStyleConfig.shadow ? "0 10px 30px rgba(0, 0, 0, 0.15)" : undefined
-        } : undefined}
-        className="h-full"
+        whileHover={{ 
+          scale: 1.02,
+          transition: { duration: 0.2 }
+        }}
+        className="h-full transition-all duration-300"
       >
         <Card 
           className={cn(
-            "h-full border-0",
+            "h-full border-0 hover:shadow-xl transition-all duration-300",
             shadow?.enabled && getShadowClass(shadow.size)
           )}
           style={cardStyle}
@@ -372,13 +372,13 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
             {/* Main Value */}
             <div className="text-center space-y-3">
               <div style={valueTextStyle}>
-                {processedKPI.displayValue !== undefined && metric.displayColumn
-                  ? formatDisplayValue(processedKPI.displayValue, metric.displayFormat)
+                {(processedKPI as any).displayValue !== undefined && metric.displayColumn
+                  ? formatDisplayValue((processedKPI as any).displayValue, metric.displayFormat)
                   : formatValue(processedKPI.value, metric.format)}
               </div>
               
               <p style={labelTextStyle}>
-                {metric.displayColumn && processedKPI.displayValue !== undefined 
+                {metric.displayColumn && (processedKPI as any).displayValue !== undefined 
                   ? metric.displayColumn 
                   : (metric.label || metric.field)}
               </p>

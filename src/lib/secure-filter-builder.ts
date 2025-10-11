@@ -131,6 +131,24 @@ export class SecureFilterBuilder {
     const convertedSecondValue = secondValue ? 
       FilterValidator.convertFilterValue(secondValue, columnType as ColumnType) : null;
 
+    // Special handling for not_contains with text types
+    // Prisma doesn't support mode: 'insensitive' inside not operator
+    if (operator === 'not_contains' && ['text', 'string', 'email', 'url'].includes(columnType)) {
+      return {
+        NOT: {
+          cells: {
+            some: {
+              columnId: columnId,
+              stringValue: {
+                contains: convertedValue,
+                mode: 'insensitive'
+              }
+            }
+          }
+        }
+      };
+    }
+
     // Build cell filter condition
     const cellCondition = this.buildCellCondition(columnId, operator, convertedValue, convertedSecondValue, columnType);
     
@@ -291,11 +309,14 @@ export class SecureFilterBuilder {
       case 'contains':
         return { stringValue: { contains: value, mode: 'insensitive' } };
       case 'not_contains':
-        return { stringValue: { not: { contains: value, mode: 'insensitive' } } };
+        // This case is handled in buildColumnFilterCondition for NOT at cell level
+        // Should not reach here, but return null for safety
+        return null;
       case 'equals':
-        return { stringValue: { equals: value } };
+        return { stringValue: { equals: value, mode: 'insensitive' } };
       case 'not_equals':
-        return { stringValue: { not: { equals: value } } };
+        // Prisma supports mode in not for equals
+        return { stringValue: { not: { equals: value, mode: 'insensitive' } } };
       case 'starts_with':
         return { stringValue: { startsWith: value, mode: 'insensitive' } };
       case 'ends_with':

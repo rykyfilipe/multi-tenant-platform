@@ -114,14 +114,20 @@ export const SmartValueInput: React.FC<SmartValueInputProps> = ({
 						type="number"
 						placeholder="Min"
 						value={String(filter.value || "")}
-						onChange={(e) => onChange(e.target.value, false)}
+						onChange={(e) => {
+							const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
+							onChange(isNaN(numValue as number) ? null : numValue, false);
+						}}
 						className="flex-1"
 					/>
 					<Input
 						type="number"
 						placeholder="Max"
 						value={String(filter.secondValue || "")}
-						onChange={(e) => onChange(e.target.value, true)}
+						onChange={(e) => {
+							const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
+							onChange(isNaN(numValue as number) ? null : numValue, true);
+						}}
 						className="flex-1"
 					/>
 				</div>
@@ -133,7 +139,10 @@ export const SmartValueInput: React.FC<SmartValueInputProps> = ({
 				type="number"
 				placeholder="Enter number..."
 				value={String(filter.value || "")}
-				onChange={(e) => onChange(e.target.value)}
+				onChange={(e) => {
+					const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
+					onChange(isNaN(numValue as number) ? null : numValue);
+				}}
 				className={className}
 				step={column.type === "decimal" ? "0.01" : "1"}
 			/>
@@ -270,14 +279,16 @@ export const SmartValueInput: React.FC<SmartValueInputProps> = ({
 				<SelectTrigger className={cn("h-9", className)}>
 					<SelectValue
 						placeholder={
-							options.length === 0 ? "No options available" : "Select..."
+							options.length === 0 
+								? "No options available" 
+								: "Select reference..."
 						}
 					/>
 				</SelectTrigger>
 				<SelectContent>
 					{options.length === 0 ? (
 						<SelectItem value="__no_options__" disabled>
-							No options available
+							No options in referenced table
 						</SelectItem>
 					) : (
 						options.map((option: any) => (
@@ -285,7 +296,7 @@ export const SmartValueInput: React.FC<SmartValueInputProps> = ({
 								key={option.value || option.id}
 								value={String(option.value || option.id)}
 							>
-								{option.label || option.displayValue || String(option.value)}
+								{option.label || option.displayValue || String(option.value || option.id)}
 							</SelectItem>
 						))
 					)}

@@ -34,6 +34,8 @@ import { WidgetFilters } from "../components/WidgetFilters";
 import { KPIStyleEditor } from "./KPIStyleEditor";
 import { KPIWidgetProcessor, ValidationResult } from "@/widgets/processors/KPIWidgetProcessor";
 import { cn } from "@/lib/utils";
+import { useDatabaseTables } from "@/hooks/useDatabaseTables";
+import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 
 interface KPIWidgetEditorV2Props {
   value: z.infer<typeof kpiWidgetConfigSchemaV2>;
@@ -58,6 +60,13 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+
+  // Get all tables for reference data
+  const { data: databases } = useDatabaseTables(tenantId);
+  const allTables = databases?.flatMap(db => db.tables) || [];
+  
+  // Load reference data for filters
+  const { referenceData } = useOptimizedReferenceData(allTables as any);
   
   // Temporary color states to avoid updating on every onChange
   const [tempColors, setTempColors] = useState<Partial<typeof value.style>>({});
@@ -809,6 +818,8 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                     filters={value.data.filters}
                     availableColumns={availableColumns}
                     onChange={handleFiltersChange}
+                    referenceData={referenceData}
+                    tables={allTables}
                   />
                 </CardContent>
               </Card>

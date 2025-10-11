@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table as TableIcon, Type, Eye, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { Table as TableIcon, Type, Eye, Sparkles, ChevronDown, ChevronRight, Paintbrush } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeSelector } from "./ThemeSelector";
+import { ThemePreset } from "@/widgets/themes";
 
 type TableStyle = z.infer<typeof tableStyleSchema>;
 
@@ -157,8 +159,12 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+      <Tabs defaultValue="themes" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+          <TabsTrigger value="themes" className="text-xs">
+            <Paintbrush className="h-3 w-3 mr-1" />
+            Themes
+          </TabsTrigger>
           <TabsTrigger value="general" className="text-xs">
             <Sparkles className="h-3 w-3 mr-1" />
             General
@@ -177,6 +183,55 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
           </TabsTrigger>
         </TabsList>
 
+        {/* ===== THEMES TAB ===== */}
+        <TabsContent value="themes" className="space-y-4 mt-4">
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                <Paintbrush className="h-5 w-5" />
+                Choose a Theme
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Select a beautiful preset theme or customize your own styling
+              </p>
+            </div>
+            
+            <ThemeSelector
+              currentTheme={value?.themeName}
+              onThemeSelect={(themeName) => updateStyle({ themeName })}
+              onApplyTheme={(theme: ThemePreset) => {
+                const newStyle = {
+                  ...safeValue,
+                  themeName: theme.name,
+                  backgroundColor: theme.table.backgroundColor,
+                  textColor: theme.table.textColor,
+                  borderColor: theme.table.borderColor,
+                  borderRadius: theme.table.borderRadius,
+                  padding: theme.table.padding,
+                  shadow: theme.table.shadow.enabled ? theme.table.shadow.size : "none",
+                  header: {
+                    ...safeValue.header,
+                    backgroundColor: theme.table.header.backgroundColor,
+                    textColor: theme.table.header.textColor,
+                    fontWeight: theme.table.header.fontWeight === "bold" ? "800" : 
+                               theme.table.header.fontWeight === "semibold" ? "600" :
+                               theme.table.header.fontWeight === "medium" ? "500" : "400",
+                    fontSize: theme.table.header.fontSize,
+                  },
+                  row: {
+                    ...(safeValue.row || {}),
+                    hoverColor: theme.table.row.hoverColor,
+                    evenColor: theme.table.row.evenColor,
+                    oddColor: theme.table.row.oddColor,
+                  },
+                };
+                onChange(newStyle as any);
+              }}
+              widgetType="table"
+            />
+          </div>
+        </TabsContent>
+
         {/* ===== GENERAL TAB ===== */}
         <TabsContent value="general" className="space-y-4 mt-4">
           <CollapsibleSection 
@@ -191,7 +246,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             />
             <SliderInput
               label="Background Opacity"
-              value={safeValue.backgroundOpacity}
+              value={safeValue.backgroundOpacity || 1}
               onChange={(val) => updateStyle({ backgroundOpacity: val })}
               min={0}
               max={1}

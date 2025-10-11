@@ -1,0 +1,117 @@
+prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
+[36m
+================================================================================[0m
+[1m  🔍 COMPREHENSIVE FILTER SYSTEM TEST[0m
+[36m================================================================================[0m
+[36mℹ️  Using tenant: Bondor's tenant (ID: 1)[0m
+[36mℹ️  Using table: Products (ID: 2)[0m
+[36mℹ️  Columns: name:text, description:text, price:number, sku:text, category:text, brand:text, vat:number, unit_of_measure:text, currency:customArray, created_at:date[0m
+[34m
+------------------------------------------------------------[0m
+[34m  Testing TEXT filters[0m
+[34m------------------------------------------------------------[0m
+[36mℹ️  Column: name (ID: 3, Type: text)[0m
+[32m✅ name contains "Laptop" → 2 results in 159ms[0m
+[36mℹ️     Sample values: Suport laptop reglabil, Laptop Dell Latitude 7420[0m
+[31m❌ name not contains "xyz999" → FAILED[0m
+[31m❌    Expected >= 1 results, got 0[0m
+[31m❌    Error: 
+Invalid `prisma.row.findMany()` invocation:
+
+{
+  where: {
+    AND: [
+      {
+        tableId: 2
+      },
+      {
+        cells: {
+          some: {
+            columnId: 3,
+            stringValue: {
+              not: {
+                contains: "xyz999",
+                mode: "insensitive"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  include: {
+    cells: {
+      where: {
+        columnId: 3
+      },
+      include: {
+        column: true
+      }
+    }
+  },
+  take: 5
+}
+
+Unknown argument `mode`. Did you mean `lte`? Available options are marked with ?.[0m
+[32m✅ name equals "Laptop Pro" → 0 results in 135ms[0m
+[32m✅ name not equals "Nonexistent" → 5 results in 132ms[0m
+[36mℹ️     Sample values: Tabletă Samsung Galaxy Tab S9, Căști Sony WH-1000XM5, Boxe Logitech Z625, Webcam Logitech Brio 4K, Microfon Blue Yeti USB[0m
+[32m✅ name starts with "Lap" → 1 results in 137ms[0m
+[36mℹ️     Sample values: Laptop Dell Latitude 7420[0m
+[32m✅ name ends with "Pro" → 0 results in 115ms[0m
+[32m✅ name is empty → 0 results in 148ms[0m
+[32m✅ name is not empty → 5 results in 496ms[0m
+[36mℹ️     Sample values: Tabletă Samsung Galaxy Tab S9, Căști Sony WH-1000XM5, Boxe Logitech Z625, Webcam Logitech Brio 4K, Microfon Blue Yeti USB[0m
+[34m
+------------------------------------------------------------[0m
+[34m  Testing NUMBER filters[0m
+[34m------------------------------------------------------------[0m
+[36mℹ️  Column: price (ID: 5, Type: number)[0m
+[32m✅ price equals 100 → 0 results in 260ms[0m
+[32m✅ price not equals 9999999 → 5 results in 153ms[0m
+[36mℹ️     Sample values: 3499, 1799, 899, 899, 699[0m
+[32m✅ price > 50 → 5 results in 124ms[0m
+[36mℹ️     Sample values: 3499, 1799, 899, 899, 699[0m
+[32m✅ price >= 50 → 5 results in 117ms[0m
+[36mℹ️     Sample values: 3499, 1799, 899, 899, 699[0m
+[32m✅ price < 1000 → 5 results in 133ms[0m
+[36mℹ️     Sample values: 899, 899, 699, 599, 899[0m
+[32m✅ price <= 1000 → 5 results in 152ms[0m
+[36mℹ️     Sample values: 899, 899, 699, 599, 899[0m
+[32m✅ price between 50 and 500 → 5 results in 157ms[0m
+[36mℹ️     Sample values: 499, 149, 149, 99, 349[0m
+[32m✅ price not between 1000 and 2000 → 5 results in 139ms[0m
+[36mℹ️     Sample values: 3499, 899, 899, 699, 599[0m
+[32m✅ price is empty → 0 results in 565ms[0m
+[32m✅ price is not empty → 5 results in 153ms[0m
+[36mℹ️     Sample values: 3499, 1799, 899, 899, 699[0m
+[34m
+------------------------------------------------------------[0m
+[34m  Testing BOOLEAN filters[0m
+[34m------------------------------------------------------------[0m
+[33m⚠️  No boolean column found in table Products[0m
+[34m
+------------------------------------------------------------[0m
+[34m  Testing DATE filters[0m
+[34m------------------------------------------------------------[0m
+[36mℹ️  Column: created_at (ID: 2, Type: date)[0m
+[32m✅ created_at before 2025-12-31 → 5 results in 119ms[0m
+[36mℹ️     Sample values: Sat Oct 11 2025 16:43:10 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:12 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:15 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:16 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:19 GMT+0300 (Moscow Standard Time)[0m
+[32m✅ created_at after 2020-01-01 → 5 results in 144ms[0m
+[36mℹ️     Sample values: Sat Oct 11 2025 16:43:10 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:12 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:15 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:16 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:19 GMT+0300 (Moscow Standard Time)[0m
+[32m✅ created_at between 2020-2025 → 5 results in 157ms[0m
+[36mℹ️     Sample values: Sat Oct 11 2025 16:43:10 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:12 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:15 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:16 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:19 GMT+0300 (Moscow Standard Time)[0m
+[32m✅ created_at today → 5 results in 206ms[0m
+[36mℹ️     Sample values: Sat Oct 11 2025 16:43:10 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:12 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:15 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:16 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:19 GMT+0300 (Moscow Standard Time)[0m
+[32m✅ created_at is empty → 0 results in 170ms[0m
+[32m✅ created_at is not empty → 5 results in 138ms[0m
+[36mℹ️     Sample values: Sat Oct 11 2025 16:43:10 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:12 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:15 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:16 GMT+0300 (Moscow Standard Time), Sat Oct 11 2025 16:43:19 GMT+0300 (Moscow Standard Time)[0m
+[36m
+================================================================================[0m
+[1m  📊 TEST SUMMARY[0m
+[36m================================================================================[0m
+[32m✅ Passed:  23[0m
+[31m❌ Failed:  1[0m
+[33m⚠️  Skipped: 5[0m
+[36mℹ️  
+Success rate: 79.3%[0m

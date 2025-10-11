@@ -28,6 +28,7 @@ import {
   MoreHorizontal,
   CheckCircle,
   AlertCircle,
+  BarChart3,
 } from "lucide-react";
 import { WidgetType } from "@/generated/prisma";
 

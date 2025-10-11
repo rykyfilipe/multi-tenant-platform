@@ -43,6 +43,7 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
   const showSeconds = settings.showSeconds !== false;
   const showTimezone = settings.showTimezone || false;
   const clockType = settings.clockType || "digital";
+  const dateFormat = settings.dateFormat || "DD/MM/YYYY";
 
   // Extract ADVANCED styling from schema
   const backgroundColor = styleConfig.backgroundColor || "#FFFFFF";

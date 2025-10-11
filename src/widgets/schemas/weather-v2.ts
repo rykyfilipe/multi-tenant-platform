@@ -14,6 +14,9 @@ export const weatherSettingsSchema = z.object({
 });
 
 export const weatherStyleSchema = z.object({
+  // === THEME ===
+  themeName: z.string().optional(),
+  
   // === CONTAINER STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
   backgroundGradient: z.object({

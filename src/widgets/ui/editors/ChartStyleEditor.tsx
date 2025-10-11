@@ -10,8 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, Grid3x3, Type, Eye, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { Palette, Grid3x3, Type, Eye, Sparkles, ChevronDown, ChevronRight, Paintbrush } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeSelector } from "./ThemeSelector";
+import { ThemePreset } from "@/widgets/themes";
 
 type ChartStyle = z.infer<typeof chartStyleSchema>;
 
@@ -164,8 +166,12 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
+      <Tabs defaultValue="themes" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+          <TabsTrigger value="themes" className="text-xs">
+            <Paintbrush className="h-3 w-3 mr-1" />
+            Themes
+          </TabsTrigger>
           <TabsTrigger value="general" className="text-xs">
             <Sparkles className="h-3 w-3 mr-1" />
             General
@@ -187,6 +193,46 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             Tooltip
           </TabsTrigger>
         </TabsList>
+
+        {/* ===== THEMES TAB ===== */}
+        <TabsContent value="themes" className="space-y-4 mt-4">
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                <Paintbrush className="h-5 w-5" />
+                Choose a Theme
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Select a beautiful preset theme or customize your own styling
+              </p>
+            </div>
+            
+            <ThemeSelector
+              currentTheme={value?.themeName}
+              onThemeSelect={(themeName) => updateStyle({ themeName })}
+              onApplyTheme={(theme: ThemePreset) => {
+                // Apply all theme properties to the style
+                const newStyle = {
+                  ...safeValue,
+                  themeName: theme.name,
+                  backgroundColor: theme.chart.backgroundColor,
+                  textColor: theme.chart.textColor,
+                  borderColor: theme.chart.borderColor,
+                  borderWidth: theme.chart.borderWidth,
+                  borderRadius: theme.chart.borderRadius,
+                  padding: theme.chart.padding,
+                  shadow: theme.chart.shadow.enabled ? theme.chart.shadow.size : "none",
+                  backgroundGradient: theme.chart.backgroundGradient,
+                  line: { ...safeValue.line, color: theme.chart.line.color, width: theme.chart.line.width },
+                  grid: { ...safeValue.grid, enabled: theme.chart.grid.enabled, color: theme.chart.grid.color, opacity: theme.chart.grid.opacity },
+                  axes: { ...safeValue.axes, color: theme.chart.axes.color, fontSize: theme.chart.axes.fontSize, fontWeight: theme.chart.axes.fontWeight },
+                };
+                onChange(newStyle as any);
+              }}
+              widgetType="chart"
+            />
+          </div>
+        </TabsContent>
 
         {/* ===== GENERAL TAB ===== */}
         <TabsContent value="general" className="space-y-4 mt-4">

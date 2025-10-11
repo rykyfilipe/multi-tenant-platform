@@ -35,6 +35,9 @@ export const kpiSettingsSchema = z.object({
 });
 
 export const kpiStyleSchema = z.object({
+  // === THEME ===
+  themeName: z.string().optional(),
+  
   // === CARD STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
   borderRadius: z.union([

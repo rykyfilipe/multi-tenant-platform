@@ -197,8 +197,10 @@ export function TableFilters({
 
 		// Convert reference data to options format
 		return tableReferenceData.map((item, index) => ({
-			value: item.primaryKeyValue?.toString() || item.id?.toString() || `option_${index}`,
-			label: item.displayValue || `Option ${index + 1}`,
+			value: item.id?.toString() || `option_${index}`,
+			label: item.displayValue || `Row #${item.id || index + 1}`,
+			id: item.id,
+			displayValue: item.displayValue,
 		}));
 	};
 
@@ -853,8 +855,8 @@ export function TableFilters({
 					showSidebar ? "translate-x-0" : "translate-x-full",
 				)}>
 				<div className='flex flex-col h-full'>
-					{/* Header */}
-					<div className='flex items-center justify-between p-4 border-b border-border/50'>
+					{/* Header - Sticky */}
+					<div className='flex-shrink-0 flex items-center justify-between p-4 border-b border-border/50'>
 						<div className='flex items-center gap-2'>
 							<Filter className='w-5 h-5 text-muted-foreground' />
 							<h3 className='text-lg font-semibold'>Table Filters</h3>
@@ -868,8 +870,8 @@ export function TableFilters({
 						</Button>
 					</div>
 
-					{/* Content */}
-					<div className='flex-1 overflow-y-auto p-4 space-y-4'>
+					{/* Content - Scrollable */}
+					<div className='flex-1 overflow-y-auto p-4 space-y-4 min-h-0'>
 						{/* Global Search */}
 						<div className='relative'>
 							<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4' />
@@ -1083,34 +1085,34 @@ export function TableFilters({
 								</Button>
 							</div>
 						</div>
-
-						{/* Filter Actions */}
-						<div className='flex items-center gap-2 p-4 border-t border-border/20'>
-							<Button
-								onClick={applyFilters}
-								disabled={
-									!onApplyFilters ||
-									(filters.length === 0 && !globalSearch.trim()) ||
-									loading
-								}
-								className='flex-1 bg-primary hover:bg-primary/90'>
-								{loading ? (
-									<>
-										<div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2'></div>
-										Applying...
-									</>
-								) : (
-									<>
-										<Filter className='w-4 h-4 mr-2' />
-										Apply Filters
-									</>
-								)}
-							</Button>
-						</div>
 					</div>
 
-					{/* Footer */}
-					<div className='p-4 border-t border-border/50'>
+					{/* Filter Actions - Sticky Bottom */}
+					<div className='flex-shrink-0 p-4 border-t border-border/50 bg-background'>
+						<Button
+							onClick={applyFilters}
+							disabled={
+								!onApplyFilters ||
+								(filters.length === 0 && !globalSearch.trim()) ||
+								loading
+							}
+							className='w-full bg-primary hover:bg-primary/90'>
+							{loading ? (
+								<>
+									<div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2'></div>
+									Applying...
+								</>
+							) : (
+								<>
+									<Filter className='w-4 h-4 mr-2' />
+									Apply Filters
+								</>
+							)}
+						</Button>
+					</div>
+
+					{/* Footer - Info */}
+					<div className='flex-shrink-0 p-4 border-t border-border/50 bg-muted/20'>
 						{activeFiltersCount > 0 && (
 							<div className='text-sm text-muted-foreground text-center'>
 								Showing {filteredRows.length} of {rows.length} rows

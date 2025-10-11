@@ -6,6 +6,9 @@ import { z } from "zod";
  */
 
 export const tasksStyleSchema = z.object({
+  // === THEME ===
+  themeName: z.string().optional(),
+  
   // ============================================================================
   // CONTAINER STYLING
   // ============================================================================

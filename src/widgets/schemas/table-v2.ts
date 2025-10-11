@@ -42,6 +42,9 @@ export const tableSettingsSchema = z.object({
 });
 
 export const tableStyleSchema = z.object({
+  // === THEME ===
+  themeName: z.string().optional(),
+  
   // === GENERAL STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
   backgroundOpacity: z.number().min(0).max(1).default(1).optional(),

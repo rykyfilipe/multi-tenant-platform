@@ -32,6 +32,8 @@ import { WidgetFilters } from "../components/WidgetFilters";
 import { ChartDataProcessor, ValidationResult } from "@/widgets/processors/ChartDataProcessor";
 import { cn } from "@/lib/utils";
 import { ChartStyleEditor } from "./ChartStyleEditor";
+import { useDatabaseTables } from "@/hooks/useDatabaseTables";
+import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 
 interface ChartWidgetEditorV2Props {
   value: z.infer<typeof chartWidgetConfigSchema>;
@@ -56,6 +58,13 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+
+  // Get all tables for reference data
+  const { data: databases } = useDatabaseTables(tenantId);
+  const allTables = databases?.flatMap(db => db.tables) || [];
+  
+  // Load reference data for filters
+  const { referenceData } = useOptimizedReferenceData(allTables as any);
   
   // Temporary color states to avoid updating on every onChange
   const [tempColors, setTempColors] = useState<Partial<typeof value.style>>({});
@@ -653,6 +662,8 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                       filters={value.data.filters}
                       availableColumns={availableColumns}
                       onChange={handleFiltersChange}
+                      referenceData={referenceData}
+                      tables={allTables}
                     />
                   </CardContent>
                 </Card>

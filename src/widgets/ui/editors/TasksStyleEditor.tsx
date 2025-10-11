@@ -220,7 +220,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
   ) => {
     onChange({
       ...value,
-      [key]: { ...safeValue[key], ...updates },
+      [key]: { ...(safeValue[key] || {}), ...updates },
     });
   };
 
@@ -463,7 +463,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               <Switch
                 checked={safeValue.taskCard?.border?.enabled}
                 onCheckedChange={(enabled) => updateNested('taskCard', { 
-                  border: { ...safeValue.taskCard.border, enabled } 
+                  border: { ...(safeValue.taskCard?.border || {}), enabled } as any 
                 })}
               />
             </div>
@@ -471,9 +471,9 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               <>
                 <SliderInput
                   label="Width"
-                  value={safeValue.taskCard.border.width}
+                  value={safeValue.taskCard?.border?.width || 1}
                   onChange={(width) => updateNested('taskCard', {
-                    border: { ...safeValue.taskCard.border, width }
+                    border: { ...(safeValue.taskCard?.border || {}), width } as any
                   })}
                   min={0}
                   max={5}
@@ -481,9 +481,9 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                 />
                 <ColorPicker
                   label="Color"
-                  value={safeValue.taskCard.border.color}
+                  value={safeValue.taskCard?.border?.color || "#E5E7EB"}
                   onChange={(color) => updateNested('taskCard', {
-                    border: { ...safeValue.taskCard.border, color }
+                    border: { ...(safeValue.taskCard?.border || {}), color } as any
                   })}
                 />
               </>
@@ -495,7 +495,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Opacity"
               value={safeValue.taskCard?.completedStyle?.opacity || 0.6}
               onChange={(opacity) => updateNested('taskCard', {
-                completedStyle: { ...safeValue.taskCard.completedStyle, opacity }
+                completedStyle: { ...(safeValue.taskCard?.completedStyle || {}), opacity } as any
               })}
               min={0}
               max={1}
@@ -505,7 +505,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Background Color"
               value={safeValue.taskCard?.completedStyle?.backgroundColor || "#F9FAFB"}
               onChange={(backgroundColor) => updateNested('taskCard', {
-                completedStyle: { ...safeValue.taskCard.completedStyle, backgroundColor }
+                completedStyle: { ...(safeValue.taskCard?.completedStyle || {}), backgroundColor } as any
               })}
             />
             <div className="flex items-center justify-between">
@@ -513,7 +513,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               <Switch
                 checked={safeValue.taskCard?.completedStyle?.strikethrough}
                 onCheckedChange={(strikethrough) => updateNested('taskCard', {
-                  completedStyle: { ...safeValue.taskCard.completedStyle, strikethrough }
+                  completedStyle: { ...(safeValue.taskCard?.completedStyle || {}), strikethrough } as any
                 })}
               />
             </div>
@@ -525,7 +525,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               <Switch
                 checked={safeValue.taskCard?.hover?.enabled}
                 onCheckedChange={(enabled) => updateNested('taskCard', {
-                  hover: { ...safeValue.taskCard.hover, enabled }
+                  hover: { ...(safeValue.taskCard?.hover || {}), enabled } as any
                 })}
               />
             </div>
@@ -533,9 +533,9 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               <>
                 <SliderInput
                   label="Scale"
-                  value={safeValue.taskCard.hover.scale}
+                  value={safeValue.taskCard?.hover?.scale || 1.05}
                   onChange={(scale) => updateNested('taskCard', {
-                    hover: { ...safeValue.taskCard.hover, scale }
+                    hover: { ...(safeValue.taskCard?.hover || {}), scale } as any
                   })}
                   min={1}
                   max={1.1}
@@ -543,9 +543,9 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                 />
                 <SliderInput
                   label="Transition Duration"
-                  value={safeValue.taskCard.hover.transition}
+                  value={safeValue.taskCard?.hover?.transition || 200}
                   onChange={(transition) => updateNested('taskCard', {
-                    hover: { ...safeValue.taskCard.hover, transition }
+                    hover: { ...(safeValue.taskCard?.hover || {}), transition } as any
                   })}
                   min={0}
                   max={1000}
@@ -571,7 +571,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                 <div className="space-y-2">
                   <Label>Badge Style</Label>
                   <Select
-                    value={safeValue.priority.badgeStyle}
+                    value={safeValue.priority?.badgeStyle || "rounded"}
                     onValueChange={(badgeStyle: any) => updateNested('priority', { badgeStyle })}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -584,7 +584,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                 </div>
                 <SliderInput
                   label="Badge Radius"
-                  value={safeValue.priority.badgeRadius}
+                  value={safeValue.priority?.badgeRadius || 6}
                   onChange={(badgeRadius) => updateNested('priority', { badgeRadius })}
                   min={0}
                   max={20}
@@ -602,14 +602,14 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                   label="Background"
                   value={safeValue.priority?.colors?.low?.background || "#E0F2FE"}
                   onChange={(background) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, low: { ...safeValue.priority.colors.low, background } }
+                    colors: { ...(safeValue.priority?.colors || {}), low: { ...(safeValue.priority?.colors?.low || {}), background } } as any
                   })}
                 />
                 <ColorPicker
                   label="Text"
                   value={safeValue.priority?.colors?.low?.text || "#0369A1"}
                   onChange={(text) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, low: { ...safeValue.priority.colors.low, text } }
+                    colors: { ...(safeValue.priority?.colors || {}), low: { ...(safeValue.priority?.colors?.low || {}), text } } as any
                   })}
                 />
               </div>
@@ -620,14 +620,14 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                   label="Background"
                   value={safeValue.priority?.colors?.medium?.background || "#FEF3C7"}
                   onChange={(background) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, medium: { ...safeValue.priority.colors.medium, background } }
+                    colors: { ...(safeValue.priority?.colors || {}), medium: { ...(safeValue.priority?.colors?.medium || {}), background } } as any
                   })}
                 />
                 <ColorPicker
                   label="Text"
                   value={safeValue.priority?.colors?.medium?.text || "#92400E"}
                   onChange={(text) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, medium: { ...safeValue.priority.colors.medium, text } }
+                    colors: { ...(safeValue.priority?.colors || {}), medium: { ...(safeValue.priority?.colors?.medium || {}), text } } as any
                   })}
                 />
               </div>
@@ -638,14 +638,14 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                   label="Background"
                   value={safeValue.priority?.colors?.high?.background || "#FED7AA"}
                   onChange={(background) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, high: { ...safeValue.priority.colors.high, background } }
+                    colors: { ...(safeValue.priority?.colors || {}), high: { ...(safeValue.priority?.colors?.high || {}), background } } as any
                   })}
                 />
                 <ColorPicker
                   label="Text"
                   value={safeValue.priority?.colors?.high?.text || "#9A3412"}
                   onChange={(text) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, high: { ...safeValue.priority.colors.high, text } }
+                    colors: { ...(safeValue.priority?.colors || {}), high: { ...(safeValue.priority?.colors?.high || {}), text } } as any
                   })}
                 />
               </div>
@@ -656,14 +656,14 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
                   label="Background"
                   value={safeValue.priority?.colors?.urgent?.background || "#FEE2E2"}
                   onChange={(background) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, urgent: { ...safeValue.priority.colors.urgent, background } }
+                    colors: { ...(safeValue.priority?.colors || {}), urgent: { ...(safeValue.priority?.colors?.urgent || {}), background } } as any
                   })}
                 />
                 <ColorPicker
                   label="Text"
                   value={safeValue.priority?.colors?.urgent?.text || "#991B1B"}
                   onChange={(text) => updateNested('priority', {
-                    colors: { ...safeValue.priority.colors, urgent: { ...safeValue.priority.colors.urgent, text } }
+                    colors: { ...(safeValue.priority?.colors || {}), urgent: { ...(safeValue.priority?.colors?.urgent || {}), text } } as any
                   })}
                 />
               </div>
@@ -702,7 +702,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Font Size"
               value={safeValue.typography?.title?.fontSize || 16}
               onChange={(fontSize) => updateNested('typography', {
-                title: { ...safeValue.typography.title, fontSize }
+                title: { ...(safeValue.typography?.title || {}), fontSize } as any
               })}
               min={10}
               max={32}
@@ -713,7 +713,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               <Select
                 value={safeValue.typography?.title?.fontWeight || "500"}
                 onValueChange={(fontWeight: any) => updateNested('typography', {
-                  title: { ...safeValue.typography.title, fontWeight }
+                  title: { ...(safeValue.typography?.title || {}), fontWeight } as any
                 })}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -731,7 +731,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Color"
               value={safeValue.typography?.title?.color || "#111827"}
               onChange={(color) => updateNested('typography', {
-                title: { ...safeValue.typography.title, color }
+                title: { ...(safeValue.typography?.title || {}), color } as any
               })}
             />
           </CollapsibleSection>
@@ -741,7 +741,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Font Size"
               value={safeValue.typography?.description?.fontSize || 13}
               onChange={(fontSize) => updateNested('typography', {
-                description: { ...safeValue.typography.description, fontSize }
+                description: { ...(safeValue.typography?.description || {}), fontSize } as any
               })}
               min={10}
               max={24}
@@ -751,14 +751,14 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Color"
               value={safeValue.typography?.description?.color || "#6B7280"}
               onChange={(color) => updateNested('typography', {
-                description: { ...safeValue.typography.description, color }
+                description: { ...(safeValue.typography?.description || {}), color } as any
               })}
             />
             <SliderInput
               label="Max Lines"
               value={safeValue.typography?.description?.maxLines || 2}
               onChange={(maxLines) => updateNested('typography', {
-                description: { ...safeValue.typography.description, maxLines }
+                description: { ...(safeValue.typography?.description || {}), maxLines } as any
               })}
               min={1}
               max={10}
@@ -770,7 +770,7 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Font Size"
               value={safeValue.typography?.dueDate?.fontSize || 12}
               onChange={(fontSize) => updateNested('typography', {
-                dueDate: { ...safeValue.typography.dueDate, fontSize }
+                dueDate: { ...(safeValue.typography?.dueDate || {}), fontSize } as any
               })}
               min={10}
               max={20}
@@ -780,21 +780,21 @@ export const TasksStyleEditor: React.FC<TasksStyleEditorProps> = ({ value, onCha
               label="Normal Color"
               value={safeValue.typography?.dueDate?.color || "#9CA3AF"}
               onChange={(color) => updateNested('typography', {
-                dueDate: { ...safeValue.typography.dueDate, color }
+                dueDate: { ...(safeValue.typography?.dueDate || {}), color } as any
               })}
             />
             <ColorPicker
               label="Overdue Color"
               value={safeValue.typography?.dueDate?.overdueColor || "#EF4444"}
               onChange={(overdueColor) => updateNested('typography', {
-                dueDate: { ...safeValue.typography.dueDate, overdueColor }
+                dueDate: { ...(safeValue.typography?.dueDate || {}), overdueColor } as any
               })}
             />
             <ColorPicker
               label="Today Color"
               value={safeValue.typography?.dueDate?.todayColor || "#F59E0B"}
               onChange={(todayColor) => updateNested('typography', {
-                dueDate: { ...safeValue.typography.dueDate, todayColor }
+                dueDate: { ...(safeValue.typography?.dueDate || {}), todayColor } as any
               })}
             />
           </CollapsibleSection>

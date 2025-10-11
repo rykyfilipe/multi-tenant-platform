@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X, Save, Trash2 } from "lucide-react";
 import { Column } from "./types";
-import { ColumnType, FilterOperator, OPERATOR_COMPATIBILITY } from "@/types/filtering";
+import { ColumnType, FilterOperator, OPERATOR_COMPATIBILITY, FilterConfig } from "@/types/filtering";
+import { SmartValueInput } from "@/components/table/filters/SmartValueInput";
 
 interface WidgetFilter {
   id?: string;
@@ -21,12 +22,16 @@ interface WidgetFiltersProps {
   filters: WidgetFilter[];
   availableColumns: Column[];
   onChange: (filters: WidgetFilter[]) => void;
+  referenceData?: Record<number, any[]>;
+  tables?: any[];
 }
 
 export const WidgetFilters: React.FC<WidgetFiltersProps> = ({
   filters,
   availableColumns,
-  onChange
+  onChange,
+  referenceData = {},
+  tables = []
 }) => {
   // Ensure all filters have IDs
   const normalizedFilters = filters.map((filter, index) => ({
@@ -219,53 +224,41 @@ export const WidgetFilters: React.FC<WidgetFiltersProps> = ({
                   </SelectContent>
                 </Select>
 
-                {/* Value Input */}
-                {filter.column && filter.operator && (
-                  <>
-                    {!operatorRequiresValue(filter.operator) ? (
-                      <div className="flex-1 text-sm text-muted-foreground p-2 bg-muted/20 rounded border">
-                        No input required for this filter
-                      </div>
-                    ) : columnType === 'boolean' ? (
-                      <Select
-                        value={String(filter.value)}
-                        onValueChange={(val) => updateFilter(index, { value: val === 'true' })}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Value" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="true">True</SelectItem>
-                          <SelectItem value="false">False</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : operatorRequiresSecondValue(filter.operator) ? (
-                      <div className="flex-1 flex space-x-1">
-                        <Input
-                          placeholder="Min"
-                          value={String(filter.value || "")}
-                          onChange={(e) => updateFilter(index, { value: e.target.value })}
-                          className="flex-1"
-                          type={['number', 'integer', 'decimal'].includes(columnType) ? 'number' : columnType === 'date' ? 'date' : 'text'}
-                        />
-                        <Input
-                          placeholder="Max"
-                          value={String(filter.secondValue || "")}
-                          onChange={(e) => updateFilter(index, { secondValue: e.target.value })}
-                          className="flex-1"
-                          type={['number', 'integer', 'decimal'].includes(columnType) ? 'number' : columnType === 'date' ? 'date' : 'text'}
-                        />
-                      </div>
-                    ) : (
-                      <Input
-                        value={String(filter.value || "")}
-                        onChange={(e) => updateFilter(index, { value: e.target.value })}
-                        placeholder="Value"
-                        className="flex-1"
-                        type={['number', 'integer', 'decimal'].includes(columnType) ? 'number' : columnType === 'date' ? 'date' : 'text'}
-                      />
-                    )}
-                  </>
+                {/* Value Input - Use SmartValueInput for consistency */}
+                {filter.column && filter.operator && selectedColumn && (
+                  <div className="flex-1">
+                    <SmartValueInput
+                      filter={{
+                        id: filter.id || `filter-${index}`,
+                        columnId: selectedColumn.id,
+                        columnName: selectedColumn.name,
+                        columnType: selectedColumn.type as ColumnType,
+                        operator: filter.operator as FilterOperator,
+                        value: filter.value,
+                        secondValue: filter.secondValue,
+                      } as FilterConfig}
+                      column={{
+                        id: selectedColumn.id,
+                        name: selectedColumn.name,
+                        type: selectedColumn.type,
+                        customOptions: (selectedColumn as any).customOptions,
+                        referenceTableId: (selectedColumn as any).referenceTableId,
+                      } as any}
+                      onChange={(value: any, isSecondValue?: boolean) => {
+                        if (isSecondValue) {
+                          updateFilter(index, { secondValue: value });
+                        } else {
+                          updateFilter(index, { value });
+                        }
+                      }}
+                      referenceData={
+                        selectedColumn.type === "reference" && (selectedColumn as any).referenceTableId
+                          ? referenceData[(selectedColumn as any).referenceTableId]
+                          : undefined
+                      }
+                      className="w-full"
+                    />
+                  </div>
                 )}
 
                 {/* Remove Button */}

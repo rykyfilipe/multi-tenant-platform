@@ -39,6 +39,8 @@ import { WidgetFilters } from "../components/WidgetFilters";
 import { TableStyleEditor } from "./TableStyleEditor";
 import { TableWidgetProcessor, ValidationResult } from "@/widgets/processors/TableWidgetProcessor";
 import { cn } from "@/lib/utils";
+import { useDatabaseTables } from "@/hooks/useDatabaseTables";
+import { useOptimizedReferenceData } from "@/hooks/useOptimizedReferenceData";
 
 interface TableWidgetEditorV2Props {
   value: z.infer<typeof tableWidgetConfigSchemaV2>;
@@ -63,6 +65,13 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
   const [availableColumns, setAvailableColumns] = useState<Column[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+
+  // Get all tables for reference data
+  const { data: databases } = useDatabaseTables(tenantId);
+  const allTables = databases?.flatMap(db => db.tables) || [];
+  
+  // Load reference data for filters
+  const { referenceData } = useOptimizedReferenceData(allTables as any);
 
   // Wizard steps configuration
   const wizardSteps: WizardStep[] = [
@@ -858,6 +867,8 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
                     filters={value.data.filters}
                     availableColumns={availableColumns}
                     onChange={handleFiltersChange}
+                    referenceData={referenceData}
+                    tables={allTables}
                   />
                 </CardContent>
               </Card>

@@ -12,6 +12,9 @@ export const clockSettingsSchema = z.object({
 });
 
 export const clockStyleSchema = z.object({
+  // === THEME ===
+  themeName: z.string().optional(),
+  
   // === CONTAINER STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
   backgroundGradient: z.object({
