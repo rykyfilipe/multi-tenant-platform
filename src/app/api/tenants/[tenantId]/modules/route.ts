@@ -272,6 +272,9 @@ export async function POST(
 
 			// Invalidate cache for database and table operations
 			invalidateCacheByTags(["database", "table", "tableList", "databaseList"]);
+			
+			// Small delay to ensure cache invalidation propagates
+			await new Promise(resolve => setTimeout(resolve, 100));
 
 			// Check if module is still used in other databases
 			const otherDatabases = await prisma.database.findMany({
@@ -315,10 +318,25 @@ export async function POST(
 				{ status: 400 },
 			);
 		}
-	} catch (error) {
+	} catch (error: any) {
 		console.error("Error managing module:", error);
+		
+		// Handle specific error cases
+		if (error.message?.includes('Invoice tables already exist')) {
+			return NextResponse.json(
+				{ 
+					error: "Tables already exist", 
+					message: "Invoice tables are already created for this database. Please refresh the page." 
+				},
+				{ status: 409 }, // Conflict
+			);
+		}
+		
 		return NextResponse.json(
-			{ error: "Failed to manage module" },
+			{ 
+				error: "Failed to manage module",
+				details: error.message || "Unknown error occurred"
+			},
 			{ status: 500 },
 		);
 	}

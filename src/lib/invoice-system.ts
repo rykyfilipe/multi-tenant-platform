@@ -36,6 +36,26 @@ export class InvoiceSystemService {
 	 * Initialize invoice system tables for a tenant
 	 */
 	static async initializeInvoiceTables(tenantId: number, databaseId: number) {
+		// First, check if tables already exist
+		const existingTables = await this.getInvoiceTables(tenantId, databaseId);
+		
+		// If all tables exist with columns, return them instead of creating new ones
+		if (
+			existingTables.customers && 
+			existingTables.invoices && 
+			existingTables.invoice_items &&
+			existingTables.customers.columns &&
+			existingTables.invoices.columns &&
+			existingTables.invoice_items.columns &&
+			existingTables.customers.columns.length > 0 &&
+			existingTables.invoices.columns.length > 0 &&
+			existingTables.invoice_items.columns.length > 0
+		) {
+			console.log('✅ Invoice tables already exist, skipping creation');
+			return existingTables;
+		}
+		
+		// If tables don't exist or are incomplete, create them
 		const tables = await this.createInvoiceTables(tenantId, databaseId);
 		return tables;
 	}
@@ -50,6 +70,22 @@ export class InvoiceSystemService {
 	) {
 		// Use transaction for atomic and faster operations
 		return await prisma.$transaction(async (tx:any) => {
+			// Check if tables already exist in this transaction
+			const existingCustomers = await tx.table.findFirst({
+				where: { databaseId, name: "customers", isProtected: true },
+			});
+			const existingInvoices = await tx.table.findFirst({
+				where: { databaseId, name: "invoices", isProtected: true },
+			});
+			const existingInvoiceItems = await tx.table.findFirst({
+				where: { databaseId, name: "invoice_items", isProtected: true },
+			});
+
+			// If tables exist, throw error to prevent duplicate creation
+			if (existingCustomers || existingInvoices || existingInvoiceItems) {
+				throw new Error('Invoice tables already exist in this database');
+			}
+
 			// Create all three tables in parallel
 			const [customersTable, invoicesTable, invoiceItemsTable] = await Promise.all([
 				tx.table.create({

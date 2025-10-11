@@ -198,7 +198,7 @@ export async function POST(
 				customer_bank_account: parsedData.customer_bank_account,
 			},
 		});
-	} catch (error) {
+	} catch (error: any) {
 		console.error("Error creating customer:", error);
 		if (error instanceof z.ZodError) {
 			return NextResponse.json(
@@ -206,6 +206,18 @@ export async function POST(
 				{ status: 400 },
 			);
 		}
+		
+		// Handle specific invoice system errors
+		if (error.message?.includes('Invoice tables already exist')) {
+			return NextResponse.json(
+				{ 
+					error: "System conflict", 
+					message: "Invoice system is being initialized. Please try again in a moment." 
+				},
+				{ status: 409 },
+			);
+		}
+		
 		return NextResponse.json(
 			{ error: "Failed to create customer" },
 			{ status: 500 },

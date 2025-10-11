@@ -823,26 +823,37 @@ export async function POST(
 
 		// Handle specific error types
 		if (error.code === 'P2002') {
-				return NextResponse.json(
-					{ 
+			return NextResponse.json(
+				{ 
 					error: "Duplicate entry", 
 					message: "A record with this information already exists" 
-					},
+				},
 				{ status: 409 }
-				);
-			}
+			);
+		}
+		
+		// Handle invoice table initialization errors
+		if (error.message?.includes('Invoice tables already exist')) {
+			return NextResponse.json(
+				{ 
+					error: "System conflict", 
+					message: "Invoice system is being initialized. Please try again in a moment." 
+				},
+				{ status: 409 }
+			);
+		}
 
 		if (error instanceof z.ZodError) {
-				return NextResponse.json(
-					{ 
+			return NextResponse.json(
+				{ 
 					error: "Validation failed",
 					details: error.errors 
-					},
+				},
 				{ status: 400 }
-				);
-			}
+			);
+		}
 
-				return NextResponse.json(
+		return NextResponse.json(
 					{ 
 				error: "Internal server error",
 				message: error.message || "Failed to create invoice"
