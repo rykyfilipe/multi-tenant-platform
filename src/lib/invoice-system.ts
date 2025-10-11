@@ -235,12 +235,22 @@ export class InvoiceSystemService {
 				isLocked: true,
 			},
 			{
+				name: "customer_type",
+				type: "customArray",
+				semanticType: SemanticColumnType.CUSTOMER_TYPE,
+				required: true,
+				primary: false,
+				order: 2,
+				isLocked: true,
+				customArrayOptions: ["Persoană fizică", "Persoană juridică"],
+			},
+			{
 				name: "customer_email",
 				type: "string",
 				semanticType: SemanticColumnType.CUSTOMER_EMAIL,
 				required: true,
 				primary: false,
-				order: 2,
+				order: 3,
 				isLocked: true,
 			},
 			{
@@ -249,27 +259,38 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_PHONE,
 				required: false,
 				primary: false,
-				order: 3,
-				isLocked: true,
-			},
-			
-			// Tax and registration information
-			{
-				name: "customer_tax_id",
-				type: "string",
-				semanticType: SemanticColumnType.CUSTOMER_TAX_ID,
-				required: true,
-				primary: false,
 				order: 4,
 				isLocked: true,
 			},
+			
+			// Identification fields for physical persons
 			{
-				name: "customer_registration_number",
+				name: "customer_cnp",
 				type: "string",
-				semanticType: SemanticColumnType.CUSTOMER_REGISTRATION_NUMBER,
-				required: false,
+				semanticType: SemanticColumnType.CUSTOMER_CNP,
+				required: true,
 				primary: false,
 				order: 5,
+				isLocked: true,
+			},
+			
+			// Identification fields for legal entities (companies)
+			{
+				name: "customer_cui",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_CUI,
+				required: true,
+				primary: false,
+				order: 6,
+				isLocked: true,
+			},
+			{
+				name: "customer_company_registration_number",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_COMPANY_REGISTRATION_NUMBER,
+				required: true,
+				primary: false,
+				order: 7,
 				isLocked: true,
 			},
 			{
@@ -278,7 +299,36 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_VAT_NUMBER,
 				required: false,
 				primary: false,
-				order: 6,
+				order: 8,
+				isLocked: true,
+			},
+			{
+				name: "customer_bank_account",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_BANK_ACCOUNT,
+				required: false,
+				primary: false,
+				order: 9,
+				isLocked: true,
+			},
+			
+			// Tax and registration information
+			{
+				name: "customer_tax_id",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_TAX_ID,
+				required: false,
+				primary: false,
+				order: 10,
+				isLocked: true,
+			},
+			{
+				name: "customer_registration_number",
+				type: "string",
+				semanticType: SemanticColumnType.CUSTOMER_REGISTRATION_NUMBER,
+				required: false,
+				primary: false,
+				order: 11,
 				isLocked: true,
 			},
 			
@@ -289,7 +339,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_STREET,
 				required: true,
 				primary: false,
-				order: 7,
+				order: 12,
 				isLocked: true,
 			},
 			{
@@ -298,7 +348,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_STREET_NUMBER,
 				required: true,
 				primary: false,
-				order: 8,
+				order: 13,
 				isLocked: true,
 			},
 			{
@@ -307,7 +357,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_CITY,
 				required: true,
 				primary: false,
-				order: 9,
+				order: 14,
 				isLocked: true,
 			},
 			{
@@ -316,7 +366,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_STATE,
 				required: false,
 				primary: false,
-				order: 10,
+				order: 15,
 				isLocked: true,
 			},
 			{
@@ -325,7 +375,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_COUNTRY,
 				required: true,
 				primary: false,
-				order: 11,
+				order: 16,
 				isLocked: true,
 			},
 			{
@@ -334,7 +384,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_POSTAL_CODE,
 				required: true,
 				primary: false,
-				order: 12,
+				order: 17,
 				isLocked: true,
 			},
 			{
@@ -343,7 +393,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_ADDRESS,
 				required: false,
 				primary: false,
-				order: 13,
+				order: 18,
 				isLocked: true,
 			},
 			
@@ -354,7 +404,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_WEBSITE,
 				required: false,
 				primary: false,
-				order: 14,
+				order: 19,
 				isLocked: true,
 			},
 			{
@@ -363,25 +413,7 @@ export class InvoiceSystemService {
 				semanticType: SemanticColumnType.CUSTOMER_NOTES,
 				required: false,
 				primary: false,
-				order: 15,
-				isLocked: true,
-			},
-			{
-				name: "customer_vat_number",
-				type: "string",
-				semanticType: SemanticColumnType.CUSTOMER_VAT_NUMBER,
-				required: false,
-				primary: false,
-				order: 16,
-				isLocked: true,
-			},
-			{
-				name: "customer_state",
-				type: "string",
-				semanticType: SemanticColumnType.CUSTOMER_STATE,
-				required: false,
-				primary: false,
-				order: 17,
+				order: 20,
 				isLocked: true,
 			},
 		];

@@ -161,10 +161,11 @@ export async function PATCH(
 					});
 
 					if (existingSeries) {
-						// Update existing series with new settings
+						// Update existing series with all settings
 						await prisma.invoiceSeries.update({
 							where: { id: existingSeries.id },
 							data: {
+								prefix: cleanUpdateData.invoiceSeriesPrefix,
 								currentNumber: cleanUpdateData.invoiceStartNumber ? cleanUpdateData.invoiceStartNumber - 1 : existingSeries.currentNumber,
 								includeYear: cleanUpdateData.invoiceIncludeYear ?? existingSeries.includeYear,
 							},
@@ -182,8 +183,12 @@ export async function PATCH(
 									databaseId: defaultDatabase.id,
 									series: cleanUpdateData.invoiceSeriesPrefix,
 									prefix: cleanUpdateData.invoiceSeriesPrefix,
+									suffix: '',
+									separator: '-',
 									currentNumber: cleanUpdateData.invoiceStartNumber ? cleanUpdateData.invoiceStartNumber - 1 : 0,
 									includeYear: cleanUpdateData.invoiceIncludeYear ?? true,
+									includeMonth: false,
+									resetYearly: false,
 								},
 							});
 						}

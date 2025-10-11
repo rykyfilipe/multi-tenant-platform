@@ -35,6 +35,11 @@ export enum SemanticColumnType {
 	CUSTOMER_STREET_NUMBER = "customer_street_number",
 	CUSTOMER_WEBSITE = "customer_website",
 	CUSTOMER_NOTES = "customer_notes",
+	CUSTOMER_TYPE = "customer_type",
+	CUSTOMER_CNP = "customer_cnp",
+	CUSTOMER_CUI = "customer_cui",
+	CUSTOMER_COMPANY_REGISTRATION_NUMBER = "customer_company_registration_number",
+	CUSTOMER_BANK_ACCOUNT = "customer_bank_account",
 
 	// Invoice related
 	INVOICE_NUMBER = "invoice_number",
@@ -139,6 +144,11 @@ export const SEMANTIC_TYPE_LABELS: Record<SemanticColumnType, string> = {
 	[SemanticColumnType.CUSTOMER_NOTES]: "Customer Notes",
 	[SemanticColumnType.CUSTOMER_STREET]: "Customer Street",
 	[SemanticColumnType.CUSTOMER_STREET_NUMBER]: "Customer Street Number",
+	[SemanticColumnType.CUSTOMER_TYPE]: "Customer Type",
+	[SemanticColumnType.CUSTOMER_CNP]: "Customer CNP (Personal ID)",
+	[SemanticColumnType.CUSTOMER_CUI]: "Customer CUI (Tax ID)",
+	[SemanticColumnType.CUSTOMER_COMPANY_REGISTRATION_NUMBER]: "Company Registration Number",
+	[SemanticColumnType.CUSTOMER_BANK_ACCOUNT]: "Customer Bank Account",
 
 	// Invoice related
 	[SemanticColumnType.INVOICE_NUMBER]: "Invoice Number",
@@ -227,8 +237,12 @@ export const SEMANTIC_TYPE_GROUPS = {
 	],
 	Customers: [
 		SemanticColumnType.CUSTOMER_NAME,
+		SemanticColumnType.CUSTOMER_TYPE,
 		SemanticColumnType.CUSTOMER_EMAIL,
 		SemanticColumnType.CUSTOMER_PHONE,
+		SemanticColumnType.CUSTOMER_CNP,
+		SemanticColumnType.CUSTOMER_CUI,
+		SemanticColumnType.CUSTOMER_COMPANY_REGISTRATION_NUMBER,
 		SemanticColumnType.CUSTOMER_ADDRESS,
 		SemanticColumnType.CUSTOMER_CITY,
 		SemanticColumnType.CUSTOMER_STATE,
@@ -239,14 +253,9 @@ export const SEMANTIC_TYPE_GROUPS = {
 		SemanticColumnType.CUSTOMER_POSTAL_CODE,
 		SemanticColumnType.CUSTOMER_TAX_ID,
 		SemanticColumnType.CUSTOMER_REGISTRATION_NUMBER,
-		SemanticColumnType.CUSTOMER_VAT_NUMBER,
-		SemanticColumnType.CUSTOMER_WEBSITE,
-		SemanticColumnType.CUSTOMER_NOTES,
-		SemanticColumnType.CUSTOMER_CITY,
-		SemanticColumnType.CUSTOMER_STATE,
-		SemanticColumnType.CUSTOMER_COUNTRY,
 		SemanticColumnType.CUSTOMER_STREET,
 		SemanticColumnType.CUSTOMER_STREET_NUMBER,
+		SemanticColumnType.CUSTOMER_BANK_ACCOUNT,
 	],
 	Invoices: [
 		SemanticColumnType.INVOICE_NUMBER,

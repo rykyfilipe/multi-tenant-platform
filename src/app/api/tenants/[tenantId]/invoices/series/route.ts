@@ -1,61 +1,59 @@
 /** @format */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getServerSession } from 'next-auth';
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { requireAuthResponse, requireTenantAccess, getUserId } from "@/lib/session";
-import prisma from '@/lib/prisma';
+import { z } from "zod";
 
-const SeriesRequestSchema = z.object({
-	series: z.string().min(1).max(50),
-	prefix: z.string().max(20).optional(),
-	suffix: z.string().max(20).optional(),
-	separator: z.string().max(5).optional(),
-	includeYear: z.boolean().optional(),
-	includeMonth: z.boolean().optional(),
-	resetYearly: z.boolean().optional(),
-	startNumber: z.number().min(1).optional(),
+// Schema for creating/updating invoice series
+const invoiceSeriesSchema = z.object({
+	series: z.string().min(1, "Series name is required"),
+	prefix: z.string().default(""),
+	suffix: z.string().default(""),
+	separator: z.string().default("-"),
+	includeYear: z.boolean().default(false),
+	includeMonth: z.boolean().default(false),
+	resetYearly: z.boolean().default(false),
+	startNumber: z.number().int().min(1).default(1),
 });
 
+const updateSeriesSchema = invoiceSeriesSchema.extend({
+	id: z.number().int().positive(),
+});
+
+const deleteSeriesSchema = z.object({
+	id: z.number().int().positive(),
+});
+
+/**
+ * GET /api/tenants/[tenantId]/invoices/series
+ * List all invoice series for a tenant
+ */
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { tenantId: string } }
+	{ params }: { params: Promise<{ tenantId: string }> }
 ) {
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+
+	const { tenantId } = await params;
+	const userId = getUserId(sessionResult);
+
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
+
 	try {
-		// Check authentication
-			const sessionResult = await requireAuthResponse();
-		if (sessionResult instanceof NextResponse) {
-			return sessionResult;
-		}
-		const userId = getUserId(sessionResult);
-		if (!userId) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-		}
-
-		// Check tenant access
-		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (tenantAccessError) {
-			return tenantAccessError;
-		}
-
-		// Get database for tenant
-		const database = await prisma.database.findFirst({
-			where: { tenantId: Number(params.tenantId) },
-		});
-
-		if (!database) {
-			return NextResponse.json({ error: 'Database not found' }, { status: 404 });
-		}
-
-		// Get invoice series
+		// Get all invoice series for this tenant
 		const series = await prisma.invoiceSeries.findMany({
 			where: {
-				tenantId: Number(params.tenantId),
-				databaseId: database.id,
+				tenantId: Number(tenantId),
 			},
 			orderBy: {
-				series: 'asc',
+				createdAt: 'desc',
 			},
 		});
 
@@ -64,95 +62,104 @@ export async function GET(
 			series,
 		});
 	} catch (error) {
-		console.error('Error getting invoice series:', error);
+		console.error("Error fetching invoice series:", error);
 		return NextResponse.json(
-			{
-				error: 'Failed to get invoice series',
-				message: error instanceof Error ? error.message : 'Unknown error',
-			},
+			{ success: false, error: "Failed to fetch invoice series" },
 			{ status: 500 }
 		);
 	}
 }
 
+/**
+ * POST /api/tenants/[tenantId]/invoices/series
+ * Create a new invoice series
+ */
 export async function POST(
 	request: NextRequest,
-	{ params }: { params: { tenantId: string } }
+	{ params }: { params: Promise<{ tenantId: string }> }
 ) {
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+
+	const { tenantId } = await params;
+	const userId = getUserId(sessionResult);
+
+	// Only admins can create invoice series
+	if (sessionResult.user.role !== "ADMIN") {
+		return NextResponse.json(
+			{ success: false, error: "Only administrators can create invoice series" },
+			{ status: 403 }
+		);
+	}
+
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
+
 	try {
-		// Check authentication
-		const sessionResult = await requireAuthResponse();
-		if (sessionResult instanceof NextResponse) {
-			return sessionResult;
-		}
-		const userId = getUserId(sessionResult);
-		if (!userId) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-		}
-
-		// Check tenant access
-		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (tenantAccessError) {
-			return tenantAccessError;
-		}
-
-		// Parse request body
 		const body = await request.json();
-		const validatedData = SeriesRequestSchema.parse(body);
+		const validation = invoiceSeriesSchema.safeParse(body);
 
-		// Get database for tenant
+		if (!validation.success) {
+			return NextResponse.json(
+				{
+					success: false,
+					error: "Validation failed",
+					details: validation.error.errors,
+				},
+				{ status: 400 }
+			);
+		}
+
+		const data = validation.data;
+
+		// Find default database for this tenant
 		const database = await prisma.database.findFirst({
-			where: { tenantId: Number(params.tenantId) },
+			where: {
+				tenantId: Number(tenantId),
+				isDefault: true,
+			},
 		});
 
 		if (!database) {
-			return NextResponse.json({ error: 'Database not found' }, { status: 404 });
+			return NextResponse.json(
+				{ success: false, error: "No default database found for this tenant" },
+				{ status: 404 }
+			);
 		}
 
-		// Check if series already exists
+		// Check if series with this name already exists
 		const existingSeries = await prisma.invoiceSeries.findFirst({
 			where: {
-				tenantId: Number(params.tenantId),
+				tenantId: Number(tenantId),
 				databaseId: database.id,
-				series: validatedData.series,
+				series: data.series,
 			},
 		});
 
 		if (existingSeries) {
 			return NextResponse.json(
-				{ error: 'Series already exists' },
-				{ status: 409 }
+				{ success: false, error: `Series "${data.series}" already exists` },
+				{ status: 400 }
 			);
 		}
 
-		// Create new series
+		// Create new series with ALL fields from form
 		const newSeries = await prisma.invoiceSeries.create({
 			data: {
-				tenantId: Number(params.tenantId),
+				tenantId: Number(tenantId),
 				databaseId: database.id,
-				series: validatedData.series,
-				prefix: validatedData.prefix || '',
-				suffix: validatedData.suffix || '',
-				separator: validatedData.separator || '-',
-				includeYear: validatedData.includeYear || false,
-				includeMonth: validatedData.includeMonth || false,
-				resetYearly: validatedData.resetYearly || false,
-				currentNumber: validatedData.startNumber || 1,
-			},
-		});
-
-		// Log audit event
-		await prisma.invoiceAuditLog.create({
-			data: {
-				tenantId: Number(params.tenantId),
-				databaseId: database.id,
-				invoiceId: 0, // Use 0 for non-invoice operations
-				action: 'created',
-				metadata: {
-					resource: 'invoice_series',
-					resourceId: newSeries.id,
-					series: validatedData.series,
-				},
+				series: data.series,
+				prefix: data.prefix,
+				suffix: data.suffix,
+				separator: data.separator,
+				includeYear: data.includeYear,
+				includeMonth: data.includeMonth,
+				resetYearly: data.resetYearly,
+				currentNumber: data.startNumber - 1, // Start from startNumber - 1 so next invoice gets startNumber
 			},
 		});
 
@@ -161,104 +168,87 @@ export async function POST(
 			series: newSeries,
 		});
 	} catch (error) {
-		console.error('Error creating invoice series:', error);
-
-		if (error instanceof z.ZodError) {
-			return NextResponse.json(
-				{
-					error: 'Validation failed',
-					details: error.errors,
-				},
-				{ status: 400 }
-			);
-		}
-
+		console.error("Error creating invoice series:", error);
 		return NextResponse.json(
-			{
-				error: 'Failed to create invoice series',
-				message: error instanceof Error ? error.message : 'Unknown error',
-			},
+			{ success: false, error: "Failed to create invoice series" },
 			{ status: 500 }
 		);
 	}
 }
 
+/**
+ * PUT /api/tenants/[tenantId]/invoices/series
+ * Update an existing invoice series
+ */
 export async function PUT(
 	request: NextRequest,
-	{ params }: { params: { tenantId: string } }
+	{ params }: { params: Promise<{ tenantId: string }> }
 ) {
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+
+	const { tenantId } = await params;
+	const userId = getUserId(sessionResult);
+
+	// Only admins can update invoice series
+	if (sessionResult.user.role !== "ADMIN") {
+		return NextResponse.json(
+			{ success: false, error: "Only administrators can update invoice series" },
+			{ status: 403 }
+		);
+	}
+
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
+
 	try {
-		// Check authentication
-		const sessionResult = await requireAuthResponse();
-		if (sessionResult instanceof NextResponse) {
-			return sessionResult;
-		}
-		const userId = getUserId(sessionResult);
-		if (!userId) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-		}
-
-		// Check tenant access
-		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (tenantAccessError) {
-			return tenantAccessError;
-		}
-
-		// Parse request body
 		const body = await request.json();
-		const { id, ...updateData } = body;
-		const validatedData = SeriesRequestSchema.partial().parse(updateData);
+		const validation = updateSeriesSchema.safeParse(body);
 
-		if (!id) {
+		if (!validation.success) {
 			return NextResponse.json(
-				{ error: 'Series ID is required' },
+				{
+					success: false,
+					error: "Validation failed",
+					details: validation.error.errors,
+				},
 				{ status: 400 }
 			);
 		}
 
-		// Get database for tenant
-		const database = await prisma.database.findFirst({
-			where: { tenantId: Number(params.tenantId) },
-		});
+		const { id, ...data } = validation.data;
 
-		if (!database) {
-			return NextResponse.json({ error: 'Database not found' }, { status: 404 });
-		}
-
-		// Check if series exists
+		// Verify series belongs to this tenant
 		const existingSeries = await prisma.invoiceSeries.findFirst({
 			where: {
-				id: id,
-				tenantId: Number(params.tenantId),
-				databaseId: database.id,
+				id,
+				tenantId: Number(tenantId),
 			},
 		});
 
 		if (!existingSeries) {
 			return NextResponse.json(
-				{ error: 'Series not found' },
+				{ success: false, error: "Series not found" },
 				{ status: 404 }
 			);
 		}
 
-		// Update series
+		// Update series with ALL fields from form
 		const updatedSeries = await prisma.invoiceSeries.update({
-			where: { id: id },
-			data: validatedData,
-		});
-
-		// Log audit event
-		await prisma.invoiceAuditLog.create({
+			where: { id },
 			data: {
-				tenantId: Number(params.tenantId),
-				databaseId: database.id,
-				invoiceId: 0, // Use 0 for non-invoice operations
-				action: 'updated',
-				metadata: {
-					resource: 'invoice_series',
-					resourceId: id,
-					changes: validatedData,
-				},
+				series: data.series,
+				prefix: data.prefix,
+				suffix: data.suffix,
+				separator: data.separator,
+				includeYear: data.includeYear,
+				includeMonth: data.includeMonth,
+				resetYearly: data.resetYearly,
+				currentNumber: data.startNumber - 1, // Update to new start number
 			},
 		});
 
@@ -267,144 +257,88 @@ export async function PUT(
 			series: updatedSeries,
 		});
 	} catch (error) {
-		console.error('Error updating invoice series:', error);
-
-		if (error instanceof z.ZodError) {
-			return NextResponse.json(
-				{
-					error: 'Validation failed',
-					details: error.errors,
-				},
-				{ status: 400 }
-			);
-		}
-
+		console.error("Error updating invoice series:", error);
 		return NextResponse.json(
-			{
-				error: 'Failed to update invoice series',
-				message: error instanceof Error ? error.message : 'Unknown error',
-			},
+			{ success: false, error: "Failed to update invoice series" },
 			{ status: 500 }
 		);
 	}
 }
 
+/**
+ * DELETE /api/tenants/[tenantId]/invoices/series
+ * Delete an invoice series
+ */
 export async function DELETE(
 	request: NextRequest,
-	{ params }: { params: { tenantId: string } }
+	{ params }: { params: Promise<{ tenantId: string }> }
 ) {
+	const sessionResult = await requireAuthResponse();
+	if (sessionResult instanceof NextResponse) {
+		return sessionResult;
+	}
+
+	const { tenantId } = await params;
+	const userId = getUserId(sessionResult);
+
+	// Only admins can delete invoice series
+	if (sessionResult.user.role !== "ADMIN") {
+		return NextResponse.json(
+			{ success: false, error: "Only administrators can delete invoice series" },
+			{ status: 403 }
+		);
+	}
+
+	const tenantAccessError = requireTenantAccess(sessionResult, tenantId);
+	if (tenantAccessError) {
+		return tenantAccessError;
+	}
+
 	try {
-		// Check authentication
-		const sessionResult = await requireAuthResponse();
-		if (sessionResult instanceof NextResponse) {
-			return sessionResult;
-		}
-		const userId = getUserId(sessionResult);
-		if (!userId) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-		}
-
-		// Check tenant access
-		const tenantAccessError = requireTenantAccess(sessionResult, params.tenantId.toString());
-		if (tenantAccessError) {
-			return tenantAccessError;
-		}
-
-		// Parse request body
 		const body = await request.json();
-		const { id } = body;
+		const validation = deleteSeriesSchema.safeParse(body);
 
-		if (!id) {
+		if (!validation.success) {
 			return NextResponse.json(
-				{ error: 'Series ID is required' },
+				{
+					success: false,
+					error: "Validation failed",
+					details: validation.error.errors,
+				},
 				{ status: 400 }
 			);
 		}
 
-		// Get database for tenant
-		const database = await prisma.database.findFirst({
-			where: { tenantId: Number(params.tenantId) },
-		});
+		const { id } = validation.data;
 
-		if (!database) {
-			return NextResponse.json({ error: 'Database not found' }, { status: 404 });
-		}
-
-		// Check if series exists
+		// Verify series belongs to this tenant
 		const existingSeries = await prisma.invoiceSeries.findFirst({
 			where: {
-				id: id,
-				tenantId: Number(params.tenantId),
-				databaseId: database.id,
+				id,
+				tenantId: Number(tenantId),
 			},
 		});
 
 		if (!existingSeries) {
 			return NextResponse.json(
-				{ error: 'Series not found' },
+				{ success: false, error: "Series not found" },
 				{ status: 404 }
 			);
 		}
 
-		// Check if series is in use
-		const invoicesUsingSeries = await prisma.row.count({
-			where: {
-				tableId: {
-					in: await prisma.table
-						.findMany({
-							where: { databaseId: database.id, name: 'invoices' },
-						})
-						.then((tables : any) => tables.map((t : any) => t.id)),
-				},
-				cells: {
-					some: {
-						column: {
-							name: 'invoice_series',
-						},
-						value: existingSeries.series,
-					},
-				},
-			},
-		});
-
-		if (invoicesUsingSeries > 0) {
-			return NextResponse.json(
-				{ error: 'Cannot delete series that is in use by invoices' },
-				{ status: 409 }
-			);
-		}
-
-		// Delete series
+		// Delete the series
 		await prisma.invoiceSeries.delete({
-			where: { id: id },
-		});
-
-		// Log audit event
-		await prisma.invoiceAuditLog.create({
-			data: {
-				tenantId: Number(params.tenantId),
-				databaseId: database.id,
-				invoiceId: 0, // Use 0 for non-invoice operations
-				action: 'deleted',
-				metadata: {
-					resource: 'invoice_series',
-					resourceId: id,
-					series: existingSeries.series,
-				},
-			},
+			where: { id },
 		});
 
 		return NextResponse.json({
 			success: true,
-			message: 'Series deleted successfully',
+			message: "Series deleted successfully",
 		});
 	} catch (error) {
-		console.error('Error deleting invoice series:', error);
+		console.error("Error deleting invoice series:", error);
 		return NextResponse.json(
-			{
-				error: 'Failed to delete invoice series',
-				message: error instanceof Error ? error.message : 'Unknown error',
-			},
+			{ success: false, error: "Failed to delete invoice series" },
 			{ status: 500 }
 		);
 	}

@@ -43,16 +43,22 @@ export interface InvoiceData {
 	};
 	customer: {
 		customer_name: string;
+		customer_type?: string;
 		customer_address?: string;
 		customer_email?: string;
 		customer_phone?: string;
+		customer_cnp?: string;
+		customer_cui?: string;
+		customer_company_registration_number?: string;
 		customer_tax_id?: string;
 		customer_registration_number?: string;
+		customer_vat_number?: string;
 		customer_street?: string;
 		customer_street_number?: string;
 		customer_city?: string;
 		customer_country?: string;
 		customer_postal_code?: string;
+		customer_bank_account?: string;
 	};
 	items: Array<{
 		product_name: string;
@@ -226,16 +232,22 @@ export class PuppeteerPDFGenerator {
 			},
 			customer: {
 				customer_name: invoiceData.customer.customer_name,
+				customer_type: invoiceData.customer.customer_type,
 				customer_email: invoiceData.customer.customer_email,
 				customer_phone: invoiceData.customer.customer_phone,
+				customer_cnp: invoiceData.customer.customer_cnp,
+				customer_cui: invoiceData.customer.customer_cui,
+				customer_company_registration_number: invoiceData.customer.customer_company_registration_number,
 				customer_tax_id: invoiceData.customer.customer_tax_id,
 				customer_registration_number: invoiceData.customer.customer_registration_number,
+				customer_vat_number: invoiceData.customer.customer_vat_number,
 				customer_street: invoiceData.customer.customer_street,
 				customer_street_number: invoiceData.customer.customer_street_number,
 				customer_city: invoiceData.customer.customer_city,
 				customer_country: invoiceData.customer.customer_country,
 				customer_postal_code: invoiceData.customer.customer_postal_code,
 				customer_address: invoiceData.customer.customer_address,
+				customer_bank_account: invoiceData.customer.customer_bank_account,
 			},
 			company: {
 				company_name: tenantBranding.name,
@@ -383,7 +395,15 @@ export class PuppeteerPDFGenerator {
       <div>
         <h3 class="text-sm font-semibold text-gray-700 mb-2">${translations.customer || 'Bill To'}:</h3>
         <p class="font-semibold text-gray-900">${invoiceData.customer.customer_name}</p>
+        ${invoiceData.customer.customer_type ? `<p class="text-gray-600 text-xs font-medium uppercase">${invoiceData.customer.customer_type}</p>` : ''}
+        ${invoiceData.customer.customer_type === 'Persoană fizică' && invoiceData.customer.customer_cnp ? `<p class="text-gray-600 text-sm">CNP: ${invoiceData.customer.customer_cnp}</p>` : ''}
+        ${invoiceData.customer.customer_type === 'Persoană juridică' && invoiceData.customer.customer_cui ? `<p class="text-gray-600 text-sm">CUI: ${invoiceData.customer.customer_cui}</p>` : ''}
+        ${invoiceData.customer.customer_type === 'Persoană juridică' && invoiceData.customer.customer_company_registration_number ? `<p class="text-gray-600 text-sm">Nr. Reg: ${invoiceData.customer.customer_company_registration_number}</p>` : ''}
+        ${invoiceData.customer.customer_type === 'Persoană juridică' && invoiceData.customer.customer_vat_number ? `<p class="text-gray-600 text-sm">Nr. TVA: ${invoiceData.customer.customer_vat_number}</p>` : ''}
         ${invoiceData.customer.customer_address ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_address}</p>` : ''}
+        ${invoiceData.customer.customer_street && invoiceData.customer.customer_street_number ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_street} ${invoiceData.customer.customer_street_number}</p>` : ''}
+        ${invoiceData.customer.customer_city && invoiceData.customer.customer_postal_code ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_city}, ${invoiceData.customer.customer_postal_code}</p>` : ''}
+        ${invoiceData.customer.customer_country ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_country}</p>` : ''}
         ${invoiceData.customer.customer_email ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_email}</p>` : ''}
         ${invoiceData.customer.customer_phone ? `<p class="text-gray-600 text-sm">${invoiceData.customer.customer_phone}</p>` : ''}
       </div>

@@ -145,7 +145,18 @@ export function InvoiceForm({
 	const [showCustomerForm, setShowCustomerForm] = useState(false);
 	const [customerForm, setCustomerForm] = useState({
 		customer_name: "",
+		customer_type: "",
 		customer_email: "",
+		customer_phone: "",
+		customer_cnp: "",
+		customer_cui: "",
+		customer_company_registration_number: "",
+		customer_vat_number: "",
+		customer_street: "",
+		customer_street_number: "",
+		customer_city: "",
+		customer_country: "",
+		customer_postal_code: "",
 		customer_address: "",
 	});
 
@@ -602,7 +613,18 @@ export function InvoiceForm({
 			setShowCustomerForm(false);
 			setCustomerForm({
 				customer_name: "",
+				customer_type: "",
 				customer_email: "",
+				customer_phone: "",
+				customer_cnp: "",
+				customer_cui: "",
+				customer_company_registration_number: "",
+				customer_vat_number: "",
+				customer_street: "",
+				customer_street_number: "",
+				customer_city: "",
+				customer_country: "",
+				customer_postal_code: "",
 				customer_address: "",
 			});
 		} catch (error) {
@@ -2198,8 +2220,8 @@ export function InvoiceForm({
 
 			{/* Customer Creation Modal */}
 			{showCustomerForm && (
-				<div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-					<Card className='w-full max-w-md border border-border/50 shadow-2xl'>
+				<div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto'>
+					<Card className='w-full max-w-2xl border border-border/50 shadow-2xl my-8'>
 						<CardHeader className='pb-3'>
 							<CardTitle className='flex items-center gap-2 text-lg'>
 								<User className='w-4 h-4 text-primary' />
@@ -2207,77 +2229,302 @@ export function InvoiceForm({
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<form onSubmit={handleCreateCustomer} className='space-y-3'>
-								<div>
-									<Label
-										htmlFor='customer_name'
-										className='text-sm font-medium'>
-										{t("invoice.form.customerName")} *
-									</Label>
-									<Input
-										id='customer_name'
-										value={customerForm.customer_name}
-										onChange={(e) =>
-											setCustomerForm({
-												...customerForm,
-												customer_name: e.target.value,
-											})
-										}
-										required
-										className='w-full'
-									/>
+							<form onSubmit={handleCreateCustomer} className='space-y-4'>
+								{/* Basic Information */}
+								<div className='space-y-3'>
+									<h3 className='text-sm font-semibold text-foreground'>Informații de bază</h3>
+									<div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+										<div>
+											<Label htmlFor='customer_name' className='text-sm font-medium'>
+												Nume client *
+											</Label>
+											<Input
+												id='customer_name'
+												value={customerForm.customer_name}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_name: e.target.value,
+													})
+												}
+												required
+												className='w-full'
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_type' className='text-sm font-medium'>
+												Tip client *
+											</Label>
+											<Select
+												value={customerForm.customer_type}
+												onValueChange={(value) =>
+													setCustomerForm({
+														...customerForm,
+														customer_type: value,
+													})
+												}
+												required>
+												<SelectTrigger className='w-full'>
+													<SelectValue placeholder='Selectează tipul de client' />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value='Persoană fizică'>Persoană fizică</SelectItem>
+													<SelectItem value='Persoană juridică'>Persoană juridică</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_email' className='text-sm font-medium'>
+												Email *
+											</Label>
+											<Input
+												id='customer_email'
+												type='email'
+												value={customerForm.customer_email}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_email: e.target.value,
+													})
+												}
+												required
+												className='w-full'
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_phone' className='text-sm font-medium'>
+												Telefon
+											</Label>
+											<Input
+												id='customer_phone'
+												value={customerForm.customer_phone}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_phone: e.target.value,
+													})
+												}
+												className='w-full'
+											/>
+										</div>
+									</div>
 								</div>
 
-								<div>
-									<Label
-										htmlFor='customer_email'
-										className='text-sm font-medium'>
-										{t("invoice.form.email")} *
-									</Label>
-									<Input
-										id='customer_email'
-										type='email'
-										value={customerForm.customer_email}
-										onChange={(e) =>
-											setCustomerForm({
-												...customerForm,
-												customer_email: e.target.value,
-											})
-										}
-										required
-										className='w-full'
-									/>
+								{/* Identification Fields */}
+								<div className='space-y-3'>
+									<h3 className='text-sm font-semibold text-foreground'>Informații de identificare</h3>
+									<div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+										{customerForm.customer_type === 'Persoană fizică' && (
+											<div className='md:col-span-2'>
+												<Label htmlFor='customer_cnp' className='text-sm font-medium'>
+													CNP *
+												</Label>
+												<Input
+													id='customer_cnp'
+													value={customerForm.customer_cnp}
+													onChange={(e) =>
+														setCustomerForm({
+															...customerForm,
+															customer_cnp: e.target.value,
+														})
+													}
+													required={customerForm.customer_type === 'Persoană fizică'}
+													maxLength={13}
+													placeholder='1234567890123'
+													className='w-full'
+												/>
+											</div>
+										)}
+
+										{customerForm.customer_type === 'Persoană juridică' && (
+											<>
+												<div>
+													<Label htmlFor='customer_cui' className='text-sm font-medium'>
+														CUI *
+													</Label>
+													<Input
+														id='customer_cui'
+														value={customerForm.customer_cui}
+														onChange={(e) =>
+															setCustomerForm({
+																...customerForm,
+																customer_cui: e.target.value,
+															})
+														}
+														required={customerForm.customer_type === 'Persoană juridică'}
+														placeholder='RO12345678'
+														className='w-full'
+													/>
+												</div>
+
+												<div>
+													<Label htmlFor='customer_company_registration_number' className='text-sm font-medium'>
+														Nr. Înregistrare *
+													</Label>
+													<Input
+														id='customer_company_registration_number'
+														value={customerForm.customer_company_registration_number}
+														onChange={(e) =>
+															setCustomerForm({
+																...customerForm,
+																customer_company_registration_number: e.target.value,
+															})
+														}
+														required={customerForm.customer_type === 'Persoană juridică'}
+														placeholder='J40/1234/2020'
+														className='w-full'
+													/>
+												</div>
+
+												<div>
+													<Label htmlFor='customer_vat_number' className='text-sm font-medium'>
+														Nr. TVA
+													</Label>
+													<Input
+														id='customer_vat_number'
+														value={customerForm.customer_vat_number}
+														onChange={(e) =>
+															setCustomerForm({
+																...customerForm,
+																customer_vat_number: e.target.value,
+															})
+														}
+														placeholder='RO12345678'
+														className='w-full'
+													/>
+												</div>
+											</>
+										)}
+									</div>
 								</div>
 
-								<div>
-									<Label
-										htmlFor='customer_address'
-										className='text-sm font-medium'>
-										{t("invoice.form.address")}
-									</Label>
-									<Textarea
-										id='customer_address'
-										value={customerForm.customer_address}
-										onChange={(e) =>
-											setCustomerForm({
-												...customerForm,
-												customer_address: e.target.value,
-											})
-										}
-										className='w-full'
-									/>
+								{/* Address Information */}
+								<div className='space-y-3'>
+									<h3 className='text-sm font-semibold text-foreground'>Adresă</h3>
+									<div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+										<div>
+											<Label htmlFor='customer_street' className='text-sm font-medium'>
+												Stradă *
+											</Label>
+											<Input
+												id='customer_street'
+												value={customerForm.customer_street}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_street: e.target.value,
+													})
+												}
+												required
+												className='w-full'
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_street_number' className='text-sm font-medium'>
+												Număr *
+											</Label>
+											<Input
+												id='customer_street_number'
+												value={customerForm.customer_street_number}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_street_number: e.target.value,
+													})
+												}
+												required
+												className='w-full'
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_city' className='text-sm font-medium'>
+												Oraș *
+											</Label>
+											<Input
+												id='customer_city'
+												value={customerForm.customer_city}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_city: e.target.value,
+													})
+												}
+												required
+												className='w-full'
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_postal_code' className='text-sm font-medium'>
+												Cod poștal *
+											</Label>
+											<Input
+												id='customer_postal_code'
+												value={customerForm.customer_postal_code}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_postal_code: e.target.value,
+													})
+												}
+												required
+												className='w-full'
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_country' className='text-sm font-medium'>
+												Țară *
+											</Label>
+											<Input
+												id='customer_country'
+												value={customerForm.customer_country}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_country: e.target.value,
+													})
+												}
+												required
+												className='w-full'
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='customer_address' className='text-sm font-medium'>
+												Adresă completă
+											</Label>
+											<Textarea
+												id='customer_address'
+												value={customerForm.customer_address}
+												onChange={(e) =>
+													setCustomerForm({
+														...customerForm,
+														customer_address: e.target.value,
+													})
+												}
+												className='w-full'
+												rows={2}
+											/>
+										</div>
+									</div>
 								</div>
 
-								<div className='flex flex-col sm:flex-row gap-2 justify-end pt-3'>
+								<div className='flex flex-col sm:flex-row gap-2 justify-end pt-3 border-t'>
 									<Button
 										type='button'
 										variant='outline'
 										onClick={() => setShowCustomerForm(false)}
 										className='w-full sm:w-auto'>
-										{t("invoice.form.cancel")}
+										Anulează
 									</Button>
 									<Button type='submit' className='w-full sm:w-auto'>
-										{t("invoice.form.createCustomer")}
+										Creează client
 									</Button>
 								</div>
 							</form>

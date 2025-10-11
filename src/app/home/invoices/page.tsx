@@ -31,6 +31,7 @@ import { useANAF } from "@/hooks/useANAF";
 import { useSilentANAF } from "@/hooks/useSilentANAF";
 import { TourManager } from "@/components/tours/TourManager";
 import { allTours } from "@/tours";
+import { SeriesManager } from "@/components/invoice/SeriesManager";
 
 export default function InvoicesPage() {
 	const [activeTab, setActiveTab] = useState("list");
@@ -356,7 +357,7 @@ export default function InvoicesPage() {
 					value={activeTab}
 					onValueChange={setActiveTab}
 					className='space-y-6'>
-					<TabsList className='grid w-full sm:w-auto sm:inline-grid grid-cols-2 h-11 bg-muted/50 border border-border shadow-sm'>
+					<TabsList className='grid w-full sm:w-auto sm:inline-grid grid-cols-3 h-11 bg-muted/50 border border-border shadow-sm'>
 						<TabsTrigger
 							value='list'
 							className='gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all'>
@@ -371,6 +372,13 @@ export default function InvoicesPage() {
 							<Plus className='w-4 h-4' />
 							<span className='hidden sm:inline'>Create Invoice</span>
 							<span className='sm:hidden'>Create</span>
+						</TabsTrigger>
+						<TabsTrigger
+							value='series'
+							className='gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all'>
+							<Settings className='w-4 h-4' />
+							<span className='hidden sm:inline'>Series</span>
+							<span className='sm:hidden'>Series</span>
 						</TabsTrigger>
 					</TabsList>
 
@@ -388,25 +396,29 @@ export default function InvoicesPage() {
 						/>
 					</TabsContent>
 
-					<TabsContent value='create' className='mt-0'>
-						<InvoiceForm
-							open={activeTab === 'create'}
-							editInvoice={editingInvoice}
-							onInvoiceUpdated={handleInvoiceUpdated}
-							customers={customers}
-							createInvoice={createInvoice}
-							updateInvoice={updateInvoice}
-							createCustomer={createCustomer}
-							getInvoiceDetails={getInvoiceDetails}
-							loading={invoiceOperationLoading}
-							error={invoiceError}
-							isANAFAuthenticated={isANAFAuthenticated}
-							anafLoading={anafLoading}
-							onANAFAuthenticate={anafAuthenticate}
-							onANAFDisconnect={anafDisconnect}
-						/>
-					</TabsContent>
-				</Tabs>
+				<TabsContent value='create' className='mt-0'>
+					<InvoiceForm
+						open={activeTab === 'create'}
+						editInvoice={editingInvoice}
+						onInvoiceUpdated={handleInvoiceUpdated}
+						customers={customers}
+						createInvoice={createInvoice}
+						updateInvoice={updateInvoice}
+						createCustomer={createCustomer}
+						getInvoiceDetails={getInvoiceDetails}
+						loading={invoiceOperationLoading}
+						error={invoiceError}
+						isANAFAuthenticated={isANAFAuthenticated}
+						anafLoading={anafLoading}
+						onANAFAuthenticate={anafAuthenticate}
+						onANAFDisconnect={anafDisconnect}
+					/>
+				</TabsContent>
+				
+				<TabsContent value='series' className='mt-0'>
+					{tenant && <SeriesManager tenantId={tenant.id.toString()} />}
+				</TabsContent>
+			</Tabs>
 			</div>
 			
 			<TourManager
