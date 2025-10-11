@@ -132,8 +132,15 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
   // Ensure all nested objects exist with defaults (backward compatibility)
   const safeValue: TableStyle = {
     ...value,
+    // Top-level properties
+    backgroundColor: value.backgroundColor || "#FFFFFF",
+    backgroundOpacity: value.backgroundOpacity ?? 1,
+    textColor: value.textColor || "#111827",
     borderRadius: typeof value.borderRadius === 'string' ? 8 : (value.borderRadius ?? 8),
     border: value.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" },
+    shadow: value.shadow || "none",
+    padding: value.padding || { x: 16, y: 16 },
+    // Nested objects
     header: value.header || { backgroundColor: "#F9FAFB", textColor: "#111827", fontSize: 14, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "600", textAlign: "left", textTransform: "none", letterSpacing: 0, padding: { x: 16, y: 12 }, borderBottom: { enabled: true, width: 2, color: "rgba(0, 0, 0, 0.1)" }, sticky: true },
     rows: value.rows || { fontSize: 14, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "400", textColor: "#374151", textAlign: "left", padding: { x: 16, y: 12 }, minHeight: 48, alternateColors: { enabled: true, even: "#FFFFFF", odd: "#F9FAFB" }, hover: { enabled: true, backgroundColor: "#F3F4F6", transition: 150 }, borderBottom: { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.05)", style: "solid" } },
     cells: value.cells || { verticalBorder: { enabled: false, width: 1, color: "rgba(0, 0, 0, 0.05)" }, compact: false },
@@ -200,15 +207,18 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
               currentTheme={value?.themeName}
               onThemeSelect={(themeName) => updateStyle({ themeName })}
               onApplyTheme={(theme: ThemePreset) => {
+                // Apply ALL theme properties to completely transform the table
                 const newStyle = {
                   ...safeValue,
                   themeName: theme.name,
+                  // Container styling
                   backgroundColor: theme.table.backgroundColor,
                   textColor: theme.table.textColor,
                   borderColor: theme.table.borderColor,
                   borderRadius: theme.table.borderRadius,
                   padding: theme.table.padding,
                   shadow: theme.table.shadow.enabled ? theme.table.shadow.size : "none",
+                  // Header styling
                   header: {
                     ...safeValue.header,
                     backgroundColor: theme.table.header.backgroundColor,
@@ -218,12 +228,32 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
                                theme.table.header.fontWeight === "medium" ? "500" : "400",
                     fontSize: theme.table.header.fontSize,
                   },
+                  // Rows styling (keeping backward compat with "rows" and "row")
+                  rows: {
+                    ...(safeValue.rows || {}),
+                    textColor: theme.table.textColor,
+                    hover: {
+                      ...(safeValue.rows?.hover || {}),
+                      backgroundColor: theme.table.row.hoverColor
+                    },
+                    alternateColors: {
+                      ...(safeValue.rows?.alternateColors || {}),
+                      even: theme.table.row.evenColor,
+                      odd: theme.table.row.oddColor
+                    }
+                  },
                   row: {
                     ...(safeValue.row || {}),
                     hoverColor: theme.table.row.hoverColor,
                     evenColor: theme.table.row.evenColor,
                     oddColor: theme.table.row.oddColor,
                   },
+                  // Footer styling (match header)
+                  footer: {
+                    ...safeValue.footer,
+                    backgroundColor: theme.table.header.backgroundColor,
+                    textColor: theme.table.header.textColor,
+                  }
                 };
                 onChange(newStyle as any);
               }}

@@ -211,10 +211,11 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               currentTheme={value?.themeName}
               onThemeSelect={(themeName) => updateStyle({ themeName })}
               onApplyTheme={(theme: ThemePreset) => {
-                // Apply all theme properties to the style
+                // Apply ALL theme properties to completely transform the widget
                 const newStyle = {
                   ...safeValue,
                   themeName: theme.name,
+                  // Container
                   backgroundColor: theme.chart.backgroundColor,
                   textColor: theme.chart.textColor,
                   borderColor: theme.chart.borderColor,
@@ -223,9 +224,47 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                   padding: theme.chart.padding,
                   shadow: theme.chart.shadow.enabled ? theme.chart.shadow.size : "none",
                   backgroundGradient: theme.chart.backgroundGradient,
-                  line: { ...safeValue.line, color: theme.chart.line.color, width: theme.chart.line.width },
-                  grid: { ...safeValue.grid, enabled: theme.chart.grid.enabled, color: theme.chart.grid.color, opacity: theme.chart.grid.opacity },
-                  axes: { ...safeValue.axes, color: theme.chart.axes.color, fontSize: theme.chart.axes.fontSize, fontWeight: theme.chart.axes.fontWeight },
+                  // Line styling - preserve other properties
+                  line: { 
+                    ...safeValue.line, 
+                    color: theme.chart.line.color, 
+                    width: theme.chart.line.width 
+                  },
+                  // Grid styling
+                  grid: { 
+                    ...safeValue.grid, 
+                    enabled: theme.chart.grid.enabled, 
+                    color: theme.chart.grid.color, 
+                    opacity: theme.chart.grid.opacity 
+                  },
+                  // Axes styling
+                  axes: { 
+                    ...safeValue.axes, 
+                    x: {
+                      ...safeValue.axes?.x,
+                      color: theme.chart.axes.color,
+                      fontSize: theme.chart.axes.fontSize,
+                      fontWeight: theme.chart.axes.fontWeight
+                    },
+                    y: {
+                      ...safeValue.axes?.y,
+                      color: theme.chart.axes.color,
+                      fontSize: theme.chart.axes.fontSize,
+                      fontWeight: theme.chart.axes.fontWeight
+                    }
+                  },
+                  // Legend styling
+                  legend: {
+                    ...safeValue.legend,
+                    color: theme.chart.textColor,
+                    fontSize: theme.chart.axes.fontSize
+                  },
+                  // Tooltip styling
+                  tooltip: {
+                    ...safeValue.tooltip,
+                    titleColor: theme.chart.textColor,
+                    bodyColor: theme.chart.textColor
+                  }
                 };
                 onChange(newStyle as any);
               }}

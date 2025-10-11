@@ -98,7 +98,12 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     }
   };
 
-  const formatDisplayValue = (value: string | number, format?: string): string => {
+  const formatDisplayValue = (value: string | number | null, format?: string): string => {
+    // Handle null/undefined values
+    if (value === null || value === undefined) {
+      return 'N/A';
+    }
+    
     if (format === 'currency' && typeof value === 'number') {
       return new Intl.NumberFormat("en-US", {
         style: "currency",

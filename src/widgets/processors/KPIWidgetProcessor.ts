@@ -474,9 +474,17 @@ export class KPIWidgetProcessor {
         }
         
         if (resultRow) {
-          displayValue = resultRow[config.metric.displayColumn];
-          console.log(`   → Display value from row[${config.metric.displayColumn}]: ${displayValue}`);
-          console.log(`   → Full row keys:`, Object.keys(resultRow).slice(0, 10));
+          // Check if displayColumn is the GROUP BY field itself
+          if (config.metric.displayColumn === config.metric.groupBy) {
+            // Use the group value directly
+            displayValue = winningGroup.group === '__NULL__' ? undefined : winningGroup.group;
+            console.log(`   → Display column IS group by field - using group value: ${displayValue}`);
+          } else {
+            // Try to get value from the result row
+            displayValue = resultRow[config.metric.displayColumn];
+            console.log(`   → Display value from row[${config.metric.displayColumn}]: ${displayValue}`);
+            console.log(`   → Full row keys:`, Object.keys(resultRow).slice(0, 10));
+          }
         } else {
           console.log(`   ⚠️ No matching row found in winning group`);
         }

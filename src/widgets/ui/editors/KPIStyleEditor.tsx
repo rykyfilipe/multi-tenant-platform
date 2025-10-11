@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Type, TrendingUp, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { Target, Type, TrendingUp, Sparkles, ChevronDown, ChevronRight, Paintbrush } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeSelector } from "./ThemeSelector";
+import { ThemePreset } from "@/widgets/themes";
 
 type KPIStyle = z.infer<typeof kpiStyleSchema>;
 
@@ -159,8 +161,12 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="card" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+      <Tabs defaultValue="themes" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
+          <TabsTrigger value="themes" className="text-xs">
+            <Paintbrush className="h-3 w-3 mr-1" />
+            Themes
+          </TabsTrigger>
           <TabsTrigger value="card" className="text-xs">
             <Target className="h-3 w-3 mr-1" />
             Card
@@ -178,6 +184,68 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             Effects
           </TabsTrigger>
         </TabsList>
+
+        {/* ===== THEMES TAB ===== */}
+        <TabsContent value="themes" className="space-y-4 mt-4">
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                <Paintbrush className="h-5 w-5" />
+                Choose a Theme
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Select a beautiful preset theme to transform your KPI widget
+              </p>
+            </div>
+            
+            <ThemeSelector
+              currentTheme={value?.themeName}
+              onThemeSelect={(themeName) => updateStyle({ themeName })}
+              onApplyTheme={(theme: ThemePreset) => {
+                // Apply ALL theme properties
+                const newStyle = {
+                  ...safeValue,
+                  themeName: theme.name,
+                  // Container
+                  backgroundColor: theme.kpi.backgroundColor,
+                  textColor: theme.kpi.textColor,
+                  borderColor: theme.kpi.borderColor,
+                  borderRadius: theme.kpi.borderRadius,
+                  padding: theme.kpi.padding,
+                  shadow: theme.kpi.shadow.enabled ? { 
+                    enabled: true, 
+                    size: theme.kpi.shadow.size, 
+                    color: theme.kpi.shadow.color 
+                  } : { enabled: false, size: "md", color: "rgba(0, 0, 0, 0.1)" },
+                  // Value styling
+                  value: {
+                    ...safeValue.value,
+                    color: theme.kpi.value.color,
+                    fontSize: theme.kpi.value.fontSize,
+                    fontWeight: theme.kpi.value.fontWeight === "bold" ? "700" :
+                                theme.kpi.value.fontWeight === "semibold" ? "600" :
+                                theme.kpi.value.fontWeight === "medium" ? "500" : "400"
+                  },
+                  // Label styling
+                  label: {
+                    ...safeValue.label,
+                    color: theme.kpi.label.color,
+                    fontSize: theme.kpi.label.fontSize,
+                    fontWeight: theme.kpi.label.fontWeight === "medium" ? "500" : "400"
+                  },
+                  // Trend styling
+                  trend: {
+                    ...safeValue.trend,
+                    positiveColor: theme.kpi.trend.positiveColor,
+                    negativeColor: theme.kpi.trend.negativeColor
+                  }
+                };
+                onChange(newStyle as any);
+              }}
+              widgetType="kpi"
+            />
+          </div>
+        </TabsContent>
 
         {/* ===== CARD TAB ===== */}
         <TabsContent value="card" className="space-y-4 mt-4">
