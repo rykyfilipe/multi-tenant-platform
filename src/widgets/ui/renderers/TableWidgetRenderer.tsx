@@ -257,7 +257,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   if (!config.data?.columns || config.data.columns.length === 0) {
     return (
       <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <PremiumWidgetContainer style={style} className="h-full">
+        <PremiumWidgetContainer style={styleConfig} className="h-full">
           <div className="flex items-center justify-center h-full text-center text-muted-foreground">
             <div>
               <p className="text-lg font-medium mb-2">No table columns configured</p>

@@ -387,7 +387,7 @@ export class KPIWidgetProcessor {
     console.log(`   Created ${groupKeys.length} groups:`, groupKeys.slice(0, 10));
 
     // Step 2: Apply aggregation pipeline to each group
-    const groupResults: Array<{ group: string; value: number }> = [];
+    const groupResults: Array<{ group: string; value: number; rows: NormalizedRow[] }> = [];
     
     groupKeys.forEach((groupKey, groupIndex) => {
       const groupRows = groups[groupKey];
@@ -405,7 +405,7 @@ export class KPIWidgetProcessor {
       
       const groupFinalValue = typeof currentValue === 'number' ? currentValue : 0;
       console.log(`      → Pipeline result for "${groupKey}": ${groupFinalValue}`);
-      groupResults.push({ group: groupKey, value: groupFinalValue });
+      groupResults.push({ group: groupKey, value: groupFinalValue, rows: groupRows });
     });
 
     // Step 3: Aggregate all group results using the last aggregation function
@@ -417,12 +417,59 @@ export class KPIWidgetProcessor {
     const finalValue = this.calculateAggregationOnArray(groupValues, finalAgg.function as any);
     console.log(`   → Final aggregated value: ${finalValue}`);
 
+    // Find the winning group (the one that produced the final value)
+    let winningGroup: typeof groupResults[0] | null = null;
+    let resultRow: any = null;
+    let displayValue: string | number | undefined = undefined;
+
+    if (['max', 'min', 'first', 'last'].includes(finalAgg.function)) {
+      // Find which group produced the final value
+      if (finalAgg.function === 'max') {
+        winningGroup = groupResults.find(g => g.value === finalValue) || null;
+      } else if (finalAgg.function === 'min') {
+        winningGroup = groupResults.find(g => g.value === finalValue) || null;
+      } else if (finalAgg.function === 'first') {
+        winningGroup = groupResults[0] || null;
+      } else if (finalAgg.function === 'last') {
+        winningGroup = groupResults[groupResults.length - 1] || null;
+      }
+
+      if (winningGroup && config.metric.displayColumn) {
+        console.log(`🎯 [GROUP BY + displayColumn] Winning group: "${winningGroup.group}"`);
+        
+        // If displayColumn is the groupBy field, just use the group key
+        if (config.metric.displayColumn === groupByField) {
+          displayValue = winningGroup.group === '__NULL__' ? 'N/A' : winningGroup.group;
+          console.log(`   → Display value (from group key): ${displayValue}`);
+        } else {
+          // Otherwise, find the row from that group that matches the aggregation
+          // For MIN/MAX, find the row with that specific value
+          const groupField = config.metric.field;
+          if (finalAgg.function === 'min' || finalAgg.function === 'max') {
+            resultRow = winningGroup.rows.find(row => row[groupField] === finalValue);
+          } else if (finalAgg.function === 'first') {
+            resultRow = winningGroup.rows[0];
+          } else if (finalAgg.function === 'last') {
+            resultRow = winningGroup.rows[winningGroup.rows.length - 1];
+          }
+          
+          if (resultRow) {
+            displayValue = resultRow[config.metric.displayColumn];
+            console.log(`   → Display value (from row): ${displayValue}`);
+          }
+        }
+      }
+    }
+
     return {
       metric: config.metric.field,
       label: config.metric.label,
       value: finalValue,
       aggregation: `${finalAgg.label} (grouped by ${groupByField})`,
       format: config.metric.format || 'number',
+      resultRow: resultRow,
+      displayValue: displayValue,
+      displayFormat: config.metric.displayFormat,
       allAggregations: [{
         function: finalAgg.function,
         label: `${finalAgg.label} across ${groupResults.length} groups`,
