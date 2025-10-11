@@ -50,7 +50,7 @@ export const WidgetSearch: React.FC<WidgetSearchProps> = ({
       );
     }
 
-    // Filter by widget kind
+    // Filter by widget type
     if (selectedKind !== "all") {
       filtered = filtered.filter((widget) => widget.type === selectedKind);
     }

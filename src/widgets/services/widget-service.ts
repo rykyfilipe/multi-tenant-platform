@@ -289,10 +289,10 @@ export class WidgetService {
   async createDraft<TConfig extends WidgetConfig = WidgetConfig>(
     params: CreateDraftParams<TConfig>
   ): Promise<WidgetDraftEntity<TConfig>> {
-    const { tenantId, dashboardId, actorId, widgetId, kind, position, config, title, description, note, operations }
+    const { tenantId, dashboardId, actorId, widgetId, type, position, config, title, description, note, operations }
       = params;
 
-    const definition = getWidgetDefinition(kind);
+    const definition = getWidgetDefinition(type);
     definition.schema.parse(config);
 
     const draft = await this.prisma.widgetDraft.create({
@@ -300,7 +300,7 @@ export class WidgetService {
         tenantId,
         dashboardId,
         widgetId: widgetId ?? null,
-        kind,
+        type,
         position: position ? (position as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
         config: config as unknown as Prisma.InputJsonValue,
         title: title ?? null,

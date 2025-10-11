@@ -190,7 +190,7 @@ export const WidgetMarketplace: React.FC<WidgetMarketplaceProps> = ({
     });
 
   const getTypeIcon = (type: WidgetType) => {
-    switch (kind) {
+    switch (type) {
       case WidgetType.CHART: return TrendingUp;
       case WidgetType.TABLE: return TrendingUp;
       case WidgetType.KPI: return TrendingUp;

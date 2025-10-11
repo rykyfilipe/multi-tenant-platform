@@ -411,8 +411,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   const handleAddWidget = (type: WidgetType) => {
     try {
-      console.log('🎯 [DEBUG] Adding widget locally:', kind);
-      const definition = getWidgetDefinition(kind);
+      console.log('🎯 [DEBUG] Adding widget locally:', type);
+      const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
 
       // Find next available position (compact layout)
@@ -429,8 +429,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         id: tempId,
         tenantId,
         dashboardId,
-        kind,
-        title: `${kind} Widget`,
+        type,
+        title: `${type} Widget`,
         description: null,
         position: { x: 0, y: maxY, w: 6, h: 8 },
         config: defaultConfig,
@@ -453,7 +453,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       
       toast({
         title: "Widget added!",
-        description: `${kind} widget has been added to your dashboard.`,
+        description: `${type} widget has been added to your dashboard.`,
         variant: "success",
         duration: 4000,
       });

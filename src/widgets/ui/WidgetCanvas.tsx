@@ -181,8 +181,8 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
   const handleAddWidget = (type: WidgetType) => {
     try {
-      console.log('🎯 [DEBUG] Adding widget locally:', kind);
-      const definition = getWidgetDefinition(kind);
+      console.log('🎯 [DEBUG] Adding widget locally:', type);
+      const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
       
       // Find next available position
@@ -195,8 +195,8 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
         id: tempId,
         tenantId,
         dashboardId,
-        kind,
-        title: `${kind} Widget`,
+        type,
+        title: `${type} Widget`,
         description: null,
         position: { x: 0, y: maxY, w: 4, h: 4 },
         config: defaultConfig,

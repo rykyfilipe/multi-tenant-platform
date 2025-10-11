@@ -146,7 +146,7 @@ export const WidgetTemplates: React.FC<WidgetTemplatesProps> = ({ onSelectTempla
     : templates.filter(t => t.category === selectedCategory);
 
   const getTypeIcon = (type: WidgetType) => {
-    switch (kind) {
+    switch (type) {
       case WidgetType.CHART: return BarChart3;
       case WidgetType.TABLE: return Table;
       case WidgetType.KPI: return Target;
