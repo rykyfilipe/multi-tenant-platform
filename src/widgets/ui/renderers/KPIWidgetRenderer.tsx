@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { KPIWidgetProcessor } from "@/widgets/processors/KPIWidgetProcessor";
 import { TrendingUp, TrendingDown, Target, CheckCircle, XCircle, Minus, Loader2 } from "lucide-react";
@@ -173,6 +174,57 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     }
   };
 
+  // Extract ADVANCED styling from schema
+  const styleConfig = config.style || {};
+  
+  // Card styling
+  const backgroundColor = styleConfig.backgroundColor || "#FFFFFF";
+  const bgGradient = styleConfig.backgroundGradient || { enabled: false, from: "#FFFFFF", to: "#F3F4F6", direction: "to-br" };
+  const borderRadius = styleConfig.borderRadius ?? 12;
+  const border = styleConfig.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" };
+  const shadow = styleConfig.shadow || { enabled: true, size: "sm", color: "rgba(0, 0, 0, 0.1)" };
+  const padding = styleConfig.padding || { x: 24, y: 20 };
+  
+  // Value styling
+  const valueStyleConfig = styleConfig.value || {};
+  const valueFontSize = valueStyleConfig.fontSize ?? 36;
+  const valueFontFamily = valueStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const valueFontWeight = valueStyleConfig.fontWeight || "700";
+  const valueColor = valueStyleConfig.color || "#111827";
+  const valueGradient = valueStyleConfig.gradient || { enabled: false, from: "#3B82F6", to: "#8B5CF6" };
+  
+  // Label styling
+  const labelStyleConfig = styleConfig.label || {};
+  const labelFontSize = labelStyleConfig.fontSize ?? 14;
+  const labelFontFamily = labelStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const labelFontWeight = labelStyleConfig.fontWeight || "500";
+  const labelColor = labelStyleConfig.color || "#6B7280";
+  const labelTextTransform = labelStyleConfig.textTransform || "none";
+  const labelLetterSpacing = labelStyleConfig.letterSpacing ?? 0;
+  
+  // Trend styling
+  const trendStyleConfig = styleConfig.trend || {};
+  const trendPositive = trendStyleConfig.positive || { color: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.1)", iconSize: 16 };
+  const trendNegative = trendStyleConfig.negative || { color: "#EF4444", backgroundColor: "rgba(239, 68, 68, 0.1)", iconSize: 16 };
+  const trendFontSize = trendStyleConfig.fontSize ?? 12;
+  const trendFontWeight = trendStyleConfig.fontWeight || "600";
+  const trendShowIcon = trendStyleConfig.showIcon ?? true;
+  
+  // Hover & Animation
+  const hoverStyleConfig = styleConfig.hover || { enabled: true, scale: 1.02, shadow: true, transition: 200 };
+  const animationConfig = styleConfig.animation || { enabled: true, duration: 500, delay: 0 };
+  
+  // Shadow class mapping
+  const getShadowClass = (size: string) => {
+    const shadowMap: Record<string, string> = {
+      sm: "shadow-sm",
+      md: "shadow-md",
+      lg: "shadow-lg",
+      xl: "shadow-xl"
+    };
+    return shadowMap[size] || "shadow-sm";
+  };
+
   // Empty state content
   if (!config.data?.metric || !config.data?.metric?.field) {
     return (
@@ -197,6 +249,40 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     );
   }
 
+  // Generate card styles
+  const cardStyle: React.CSSProperties = {
+    background: bgGradient.enabled 
+      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})`
+      : backgroundColor,
+    borderRadius: `${borderRadius}px`,
+    border: border.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
+    padding: `${padding.y}px ${padding.x}px`,
+    transition: hoverStyleConfig.enabled ? `all ${hoverStyleConfig.transition}ms ease` : undefined,
+  };
+
+  // Value text style
+  const valueTextStyle: React.CSSProperties = {
+    fontSize: `${valueFontSize}px`,
+    fontFamily: valueFontFamily,
+    fontWeight: valueFontWeight,
+    color: valueGradient.enabled ? 'transparent' : valueColor,
+    background: valueGradient.enabled 
+      ? `linear-gradient(to right, ${valueGradient.from}, ${valueGradient.to})`
+      : undefined,
+    backgroundClip: valueGradient.enabled ? 'text' : undefined,
+    WebkitBackgroundClip: valueGradient.enabled ? 'text' : undefined,
+  };
+
+  // Label text style
+  const labelTextStyle: React.CSSProperties = {
+    fontSize: `${labelFontSize}px`,
+    fontFamily: labelFontFamily,
+    fontWeight: labelFontWeight,
+    color: labelColor,
+    textTransform: labelTextTransform as any,
+    letterSpacing: `${labelLetterSpacing}px`,
+  };
+
   return (
     <BaseWidget
       title={widget.title}
@@ -208,14 +294,27 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       onDelete={onDelete}
       onDuplicate={onDuplicate}
     >
-      <Card 
-        className="h-full border-0 shadow-none"
-        style={{
-          backgroundColor: config.style?.backgroundColor || "transparent",
-          color: config.style?.textColor || "inherit",
+      <motion.div
+        initial={animationConfig.enabled ? { opacity: 0, scale: 0.95 } : false}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ 
+          duration: animationConfig.duration / 1000, 
+          delay: animationConfig.delay / 1000 
         }}
+        whileHover={hoverStyleConfig.enabled ? { 
+          scale: hoverStyleConfig.scale,
+          boxShadow: hoverStyleConfig.shadow ? "0 10px 30px rgba(0, 0, 0, 0.15)" : undefined
+        } : undefined}
+        className="h-full"
       >
-        <CardContent className="p-6">
+        <Card 
+          className={cn(
+            "h-full border-0",
+            shadow.enabled && getShadowClass(shadow.size)
+          )}
+          style={cardStyle}
+        >
+          <CardContent className="p-0" style={{ padding: 0 }}>
           {isLoadingData ? (
             <div className="flex items-center justify-center h-full min-h-[200px]">
               <div className="text-center text-muted-foreground">
@@ -242,31 +341,11 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
 
             {/* Main Value */}
             <div className="text-center space-y-3">
-              <div 
-                className={cn(
-                  "font-bold text-foreground",
-                  config.style?.valueSize === "sm" ? "text-3xl" : "",
-                  config.style?.valueSize === "md" ? "text-4xl" : "",
-                  config.style?.valueSize === "lg" ? "text-5xl" : "",
-                  config.style?.valueSize === "xl" ? "text-6xl" : "",
-                  config.style?.valueSize === "2xl" ? "text-7xl" : "",
-                  config.style?.valueSize === "3xl" ? "text-8xl" : "",
-                  !config.style?.valueSize && "text-5xl"
-                )}
-              >
+              <div style={valueTextStyle}>
                 {formatValue(processedKPI.value, metric.format)}
               </div>
               
-              <p 
-                className={cn(
-                  "font-medium text-muted-foreground",
-                  config.style?.labelSize === "xs" ? "text-xs" : "",
-                  config.style?.labelSize === "sm" ? "text-sm" : "",
-                  config.style?.labelSize === "base" ? "text-base" : "",
-                  config.style?.labelSize === "lg" ? "text-lg" : "",
-                  !config.style?.labelSize && "text-sm"
-                )}
-              >
+              <p style={labelTextStyle}>
                 {metric.label || metric.field}
               </p>
             </div>
@@ -276,14 +355,35 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               {/* Trend */}
               {metric.showTrend && processedKPI.trend && (
                 <div className="flex items-center gap-2">
-                  {getTrendIcon(processedKPI.trend.direction)}
+                  {trendShowIcon && (
+                    <div 
+                      className="rounded-full p-1.5"
+                      style={{
+                        backgroundColor: processedKPI.trend.direction === "up" 
+                          ? trendPositive.backgroundColor 
+                          : processedKPI.trend.direction === "down"
+                          ? trendNegative.backgroundColor
+                          : "rgba(0, 0, 0, 0.05)"
+                      }}
+                    >
+                      {processedKPI.trend.direction === "up" 
+                        ? <TrendingUp style={{ width: `${trendPositive.iconSize}px`, height: `${trendPositive.iconSize}px`, color: trendPositive.color }} /> 
+                        : processedKPI.trend.direction === "down"
+                        ? <TrendingDown style={{ width: `${trendNegative.iconSize}px`, height: `${trendNegative.iconSize}px`, color: trendNegative.color }} />
+                        : <Minus style={{ width: `16px`, height: `16px`, color: "#6B7280" }} />
+                      }
+                    </div>
+                  )}
                   <span 
-                    className={cn(
-                      "text-sm font-semibold",
-                      processedKPI.trend.direction === "up" ? "text-green-600 dark:text-green-400" : "",
-                      processedKPI.trend.direction === "down" ? "text-red-600 dark:text-red-400" : "",
-                      processedKPI.trend.direction === "stable" ? "text-muted-foreground" : ""
-                    )}
+                    style={{
+                      fontSize: `${trendFontSize}px`,
+                      fontWeight: trendFontWeight,
+                      color: processedKPI.trend.direction === "up" 
+                        ? trendPositive.color 
+                        : processedKPI.trend.direction === "down"
+                        ? trendNegative.color
+                        : "#6B7280"
+                    }}
                   >
                     {processedKPI.trend.direction === "up" ? "+" : processedKPI.trend.direction === "down" ? "-" : ""}
                     {processedKPI.trend.percentage.toFixed(1)}%
@@ -319,6 +419,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
           )}
         </CardContent>
       </Card>
+      </motion.div>
     </BaseWidget>
   );
 };

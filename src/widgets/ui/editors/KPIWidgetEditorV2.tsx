@@ -31,6 +31,7 @@ import {
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
+import { KPIStyleEditor } from "./KPIStyleEditor";
 import { KPIWidgetProcessor, ValidationResult } from "@/widgets/processors/KPIWidgetProcessor";
 import { cn } from "@/lib/utils";
 
@@ -737,22 +738,10 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
 
         {/* Tab 2: Style */}
         <TabsContent value="style" className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium">Background Color</Label>
-              <Input
-                type="color"
-                value={tempColors.backgroundColor ?? value.style.backgroundColor}
-                onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                className="h-10 mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Card background color
-              </p>
-            </div>
-          </div>
+          <KPIStyleEditor 
+            value={value.style} 
+            onChange={(style) => onChange({ ...value, style })}
+          />
         </TabsContent>
 
         {/* Tab 3: Settings */}

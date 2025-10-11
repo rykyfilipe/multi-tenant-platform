@@ -42,8 +42,233 @@ export const tableSettingsSchema = z.object({
 });
 
 export const tableStyleSchema = z.object({
-  // Simplified - most properties not used in renderer
-  // Using UI component defaults instead
+  // === GENERAL STYLING ===
+  backgroundColor: z.string().default("#FFFFFF"),
+  backgroundOpacity: z.number().min(0).max(1).default(1),
+  borderRadius: z.number().min(0).max(50).default(8),
+  border: z.object({
+    enabled: z.boolean().default(true),
+    width: z.number().min(0).max(10).default(1),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+    style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
+  }).default({
+    enabled: true,
+    width: 1,
+    color: "rgba(0, 0, 0, 0.1)",
+    style: "solid",
+  }),
+  
+  // === HEADER STYLING ===
+  header: z.object({
+    backgroundColor: z.string().default("#F9FAFB"),
+    textColor: z.string().default("#111827"),
+    fontSize: z.number().min(8).max(24).default(14),
+    fontFamily: z.string().default("Inter, system-ui, sans-serif"),
+    fontWeight: z.enum(["300", "400", "500", "600", "700", "800"]).default("600"),
+    textAlign: z.enum(["left", "center", "right"]).default("left"),
+    textTransform: z.enum(["none", "uppercase", "lowercase", "capitalize"]).default("none"),
+    letterSpacing: z.number().min(-2).max(5).default(0),
+    padding: z.object({
+      x: z.number().min(0).max(50).default(16),
+      y: z.number().min(0).max(50).default(12),
+    }).default({ x: 16, y: 12 }),
+    borderBottom: z.object({
+      enabled: z.boolean().default(true),
+      width: z.number().min(0).max(10).default(2),
+      color: z.string().default("rgba(0, 0, 0, 0.1)"),
+    }).default({
+      enabled: true,
+      width: 2,
+      color: "rgba(0, 0, 0, 0.1)",
+    }),
+    sticky: z.boolean().default(true),
+  }).default({
+    backgroundColor: "#F9FAFB",
+    textColor: "#111827",
+    fontSize: 14,
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: "600",
+    textAlign: "left",
+    textTransform: "none",
+    letterSpacing: 0,
+    padding: { x: 16, y: 12 },
+    borderBottom: {
+      enabled: true,
+      width: 2,
+      color: "rgba(0, 0, 0, 0.1)",
+    },
+    sticky: true,
+  }),
+  
+  // === ROW STYLING ===
+  rows: z.object({
+    fontSize: z.number().min(8).max(24).default(14),
+    fontFamily: z.string().default("Inter, system-ui, sans-serif"),
+    fontWeight: z.enum(["300", "400", "500", "600", "700"]).default("400"),
+    textColor: z.string().default("#374151"),
+    textAlign: z.enum(["left", "center", "right"]).default("left"),
+    padding: z.object({
+      x: z.number().min(0).max(50).default(16),
+      y: z.number().min(0).max(50).default(12),
+    }).default({ x: 16, y: 12 }),
+    height: z.number().min(20).max(200).optional(),
+    minHeight: z.number().min(20).max(200).default(48),
+    
+    // Alternating row colors
+    alternateColors: z.object({
+      enabled: z.boolean().default(true),
+      even: z.string().default("#FFFFFF"),
+      odd: z.string().default("#F9FAFB"),
+    }).default({
+      enabled: true,
+      even: "#FFFFFF",
+      odd: "#F9FAFB",
+    }),
+    
+    // Hover effect
+    hover: z.object({
+      enabled: z.boolean().default(true),
+      backgroundColor: z.string().default("#F3F4F6"),
+      textColor: z.string().optional(),
+      transition: z.number().min(0).max(1000).default(150),
+    }).default({
+      enabled: true,
+      backgroundColor: "#F3F4F6",
+      transition: 150,
+    }),
+    
+    // Row borders
+    borderBottom: z.object({
+      enabled: z.boolean().default(true),
+      width: z.number().min(0).max(10).default(1),
+      color: z.string().default("rgba(0, 0, 0, 0.05)"),
+      style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
+    }).default({
+      enabled: true,
+      width: 1,
+      color: "rgba(0, 0, 0, 0.05)",
+      style: "solid",
+    }),
+  }).default({
+    fontSize: 14,
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: "400",
+    textColor: "#374151",
+    textAlign: "left",
+    padding: { x: 16, y: 12 },
+    minHeight: 48,
+    alternateColors: {
+      enabled: true,
+      even: "#FFFFFF",
+      odd: "#F9FAFB",
+    },
+    hover: {
+      enabled: true,
+      backgroundColor: "#F3F4F6",
+      transition: 150,
+    },
+    borderBottom: {
+      enabled: true,
+      width: 1,
+      color: "rgba(0, 0, 0, 0.05)",
+      style: "solid",
+    },
+  }),
+  
+  // === CELL STYLING ===
+  cells: z.object({
+    // Vertical borders between cells
+    verticalBorder: z.object({
+      enabled: z.boolean().default(false),
+      width: z.number().min(0).max(10).default(1),
+      color: z.string().default("rgba(0, 0, 0, 0.05)"),
+    }).default({
+      enabled: false,
+      width: 1,
+      color: "rgba(0, 0, 0, 0.05)",
+    }),
+    
+    // Compact mode
+    compact: z.boolean().default(false),
+  }).default({
+    verticalBorder: {
+      enabled: false,
+      width: 1,
+      color: "rgba(0, 0, 0, 0.05)",
+    },
+    compact: false,
+  }),
+  
+  // === SELECTION STYLING ===
+  selection: z.object({
+    enabled: z.boolean().default(true),
+    backgroundColor: z.string().default("rgba(59, 130, 246, 0.1)"),
+    borderColor: z.string().default("rgba(59, 130, 246, 0.5)"),
+    borderWidth: z.number().min(0).max(5).default(2),
+  }).default({
+    enabled: true,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.5)",
+    borderWidth: 2,
+  }),
+  
+  // === FOOTER STYLING (for summary row) ===
+  footer: z.object({
+    backgroundColor: z.string().default("#F9FAFB"),
+    textColor: z.string().default("#111827"),
+    fontSize: z.number().min(8).max(24).default(14),
+    fontFamily: z.string().default("Inter, system-ui, sans-serif"),
+    fontWeight: z.enum(["300", "400", "500", "600", "700", "800"]).default("600"),
+    padding: z.object({
+      x: z.number().min(0).max(50).default(16),
+      y: z.number().min(0).max(50).default(12),
+    }).default({ x: 16, y: 12 }),
+    borderTop: z.object({
+      enabled: z.boolean().default(true),
+      width: z.number().min(0).max(10).default(2),
+      color: z.string().default("rgba(0, 0, 0, 0.1)"),
+    }).default({
+      enabled: true,
+      width: 2,
+      color: "rgba(0, 0, 0, 0.1)",
+    }),
+  }).default({
+    backgroundColor: "#F9FAFB",
+    textColor: "#111827",
+    fontSize: 14,
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: "600",
+    padding: { x: 16, y: 12 },
+    borderTop: {
+      enabled: true,
+      width: 2,
+      color: "rgba(0, 0, 0, 0.1)",
+    },
+  }),
+  
+  // === SCROLLBAR STYLING ===
+  scrollbar: z.object({
+    width: z.number().min(4).max(20).default(8),
+    trackColor: z.string().default("rgba(0, 0, 0, 0.05)"),
+    thumbColor: z.string().default("rgba(0, 0, 0, 0.2)"),
+    thumbHoverColor: z.string().default("rgba(0, 0, 0, 0.3)"),
+  }).default({
+    width: 8,
+    trackColor: "rgba(0, 0, 0, 0.05)",
+    thumbColor: "rgba(0, 0, 0, 0.2)",
+    thumbHoverColor: "rgba(0, 0, 0, 0.3)",
+  }),
+  
+  // === EMPTY STATE ===
+  emptyState: z.object({
+    textColor: z.string().default("#9CA3AF"),
+    fontSize: z.number().min(10).max(24).default(14),
+    fontFamily: z.string().default("Inter, system-ui, sans-serif"),
+  }).default({
+    textColor: "#9CA3AF",
+    fontSize: 14,
+    fontFamily: "Inter, system-ui, sans-serif",
+  }),
 });
 
 export const tableDataSchema = z.object({

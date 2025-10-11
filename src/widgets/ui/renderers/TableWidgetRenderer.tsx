@@ -33,27 +33,54 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   isEditMode = false,
 }) => {
   const config = widget.config as any;
-  const style = config?.style || {};
+  const styleConfig = config?.style || {};
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // Table-specific premium styling
-  const transparentBackground = style.transparentBackground || false;
-  const showBorders = style.showBorders !== false;
-  const showHeader = style.showHeader !== false;
-  const showFooter = style.showFooter !== false;
-  const stripedRows = style.stripedRows || false;
-  const hoverEffect = style.hoverEffect !== false;
-  const headerStyle = style.headerStyle || 'solid'; // solid, transparent, gradient
-  const cellPadding = style.cellPadding || 'normal'; // compact, normal, comfortable
-  const fontSize = style.fontSize || 'sm'; // xs, sm, base, lg
-  const fontWeight = style.fontWeight || 'normal';
-  const borderColor = style.borderColor || 'border';
-  const headerBg = style.headerBg || 'muted';
-  const headerTextColor = style.headerTextColor || 'foreground';
-  const rowTextColor = style.rowTextColor || 'foreground';
-  const alternateRowBg = style.alternateRowBg || 'muted/50';
+  // NEW ADVANCED TABLE STYLING
+  const backgroundColor = styleConfig.backgroundColor || "#FFFFFF";
+  const borderRadius = styleConfig.borderRadius ?? 8;
+  const borderConfig = styleConfig.border || {};
+  const showBorders = borderConfig.enabled ?? true;
+  const borderWidth = borderConfig.width ?? 1;
+  const borderColor = borderConfig.color || "rgba(0, 0, 0, 0.1)";
+  const borderStyle = borderConfig.style || "solid";
+  
+  // Header styling
+  const headerConfig = styleConfig.header || {};
+  const headerBg = headerConfig.backgroundColor || "#F9FAFB";
+  const headerTextColor = headerConfig.textColor || "#111827";
+  const headerFontSize = headerConfig.fontSize ?? 14;
+  const headerFontFamily = headerConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const headerFontWeight = headerConfig.fontWeight || "600";
+  const headerTextAlign = headerConfig.textAlign || "left";
+  const headerPadding = headerConfig.padding || { x: 16, y: 12 };
+  const headerBorderBottom = headerConfig.borderBottom || { enabled: true, width: 2, color: "rgba(0, 0, 0, 0.1)" };
+  const headerSticky = headerConfig.sticky ?? true;
+  
+  // Row styling
+  const rowsConfig = styleConfig.rows || {};
+  const rowFontSize = rowsConfig.fontSize ?? 14;
+  const rowFontFamily = rowsConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const rowFontWeight = rowsConfig.fontWeight || "400";
+  const rowTextColor = rowsConfig.textColor || "#374151";
+  const rowTextAlign = rowsConfig.textAlign || "left";
+  const rowPadding = rowsConfig.padding || { x: 16, y: 12 };
+  const rowMinHeight = rowsConfig.minHeight ?? 48;
+  const alternateColors = rowsConfig.alternateColors || { enabled: true, even: "#FFFFFF", odd: "#F9FAFB" };
+  const hoverConfig = rowsConfig.hover || { enabled: true, backgroundColor: "#F3F4F6", transition: 150 };
+  const rowBorderBottom = rowsConfig.borderBottom || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.05)", style: "solid" };
+  
+  // Cells styling
+  const cellsConfig = styleConfig.cells || {};
+  const verticalBorder = cellsConfig.verticalBorder || { enabled: false, width: 1, color: "rgba(0, 0, 0, 0.05)" };
+  const compactMode = cellsConfig.compact || false;
+  
+  // Backward compatibility
+  const showHeader = config.settings?.showColumnHeaders ?? true;
+  const stripedRows = alternateColors.enabled;
+  const hoverEffect = hoverConfig.enabled;
 
   // Fetch real data from API
   const databaseId = config?.data?.databaseId;
@@ -242,44 +269,61 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     );
   }
 
+  // Generate inline styles for advanced customization
+  const tableContainerStyle: React.CSSProperties = {
+    backgroundColor: backgroundColor,
+    borderRadius: `${borderRadius}px`,
+    border: showBorders ? `${borderWidth}px ${borderStyle} ${borderColor}` : 'none',
+  };
+
+  const headerRowStyle: React.CSSProperties = {
+    backgroundColor: headerBg,
+    borderBottom: headerBorderBottom.enabled ? `${headerBorderBottom.width}px solid ${headerBorderBottom.color}` : undefined,
+  };
+
+  const headerCellStyle: React.CSSProperties = {
+    color: headerTextColor,
+    fontSize: `${headerFontSize}px`,
+    fontFamily: headerFontFamily,
+    fontWeight: headerFontWeight,
+    textAlign: headerTextAlign,
+    padding: `${headerPadding.y}px ${headerPadding.x}px`,
+  };
+
+  const bodyCellStyle: React.CSSProperties = {
+    color: rowTextColor,
+    fontSize: `${rowFontSize}px`,
+    fontFamily: rowFontFamily,
+    fontWeight: rowFontWeight,
+    textAlign: rowTextAlign,
+    padding: `${rowPadding.y}px ${rowPadding.x}px`,
+    minHeight: `${rowMinHeight}px`,
+    borderRight: verticalBorder.enabled ? `${verticalBorder.width}px solid ${verticalBorder.color}` : undefined,
+  };
+
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
       <PremiumWidgetContainer 
-        style={style} 
-        className={cn(
-          "h-full overflow-hidden",
-          transparentBackground && "bg-transparent backdrop-blur-none"
-        )}
+        style={styleConfig} 
+        className="h-full overflow-hidden"
       >
-        <div className={cn(
-          "h-full overflow-auto rounded-lg",
-          transparentBackground ? "bg-transparent" : ""
-        )}>
-          <Table 
-            className={cn(
-              "w-full",
-              getFontSizeClass(),
-              getFontWeightClass(),
-              !showBorders && "border-0"
-            )}
-          >
+        <div 
+          className="h-full overflow-auto"
+          style={tableContainerStyle}
+        >
+          <Table className="w-full">
             {/* Header */}
             {showHeader && (
               <TableHeader 
-                className={cn(
-                  "sticky top-0 z-10",
-                  headerStyle === 'transparent' && "bg-transparent backdrop-blur-sm",
-                  headerStyle === 'solid' && `bg-${headerBg}`,
-                  headerStyle === 'gradient' && "bg-gradient-to-r from-primary/10 to-primary/5"
-                )}
+                className={headerSticky ? "sticky top-0 z-10" : ""}
+                style={headerRowStyle}
               >
-                <TableRow className={!showBorders ? "border-0" : ""}>
+                <TableRow style={{ borderBottom: 'none' }}>
                   {config.settings?.showRowNumbers && (
-                    <TableHead className={cn(
-                      getCellPaddingClass(),
-                      "w-12 text-center font-semibold",
-                      `text-${headerTextColor}`
-                    )}>
+                    <TableHead 
+                      className="w-12 text-center"
+                      style={headerCellStyle}
+                    >
                       #
                     </TableHead>
                   )}
@@ -287,13 +331,11 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                     <TableHead 
                       key={column.name}
                       className={cn(
-                        getCellPaddingClass(),
-                        "font-semibold",
-                        `text-${headerTextColor}`,
                         column.sortable && config.settings?.sorting?.enabled 
-                          ? "cursor-pointer select-none hover:bg-accent/50 transition-colors" 
+                          ? "cursor-pointer select-none hover:opacity-80 transition-opacity" 
                           : ""
                       )}
+                      style={headerCellStyle}
                       onClick={() => column.sortable && handleSort(column.name)}
                     >
                       <div className="flex items-center gap-2">
@@ -312,39 +354,54 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
 
             {/* Body */}
             <TableBody>
-              {paginatedData.map((row: any, rowIndex: number) => (
-                <TableRow 
-                  key={rowIndex}
-                  className={cn(
-                    stripedRows && rowIndex % 2 === 1 ? `bg-${alternateRowBg}` : "",
-                    hoverEffect ? "hover:bg-accent/30 transition-colors" : "",
-                    !showBorders && "border-0",
-                    transparentBackground && "bg-transparent"
-                  )}
-                >
-                  {config.settings?.showRowNumbers && (
-                    <TableCell 
-                      className={cn(
-                        getCellPaddingClass(),
-                        "text-center text-muted-foreground"
-                      )}
-                    >
-                      {(currentPage - 1) * (config.settings?.pagination?.pageSize || 50) + rowIndex + 1}
-                    </TableCell>
-                  )}
-                  {visibleColumns.map((column: any) => (
-                    <TableCell 
-                      key={column.name}
-                      className={cn(
-                        getCellPaddingClass(),
-                        `text-${rowTextColor}`
-                      )}
-                    >
-                      {formatValue(row[column.name], column.format)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
+              {paginatedData.map((row: any, rowIndex: number) => {
+                const rowStyle: React.CSSProperties = {
+                  backgroundColor: stripedRows && rowIndex % 2 === 1 
+                    ? alternateColors.odd 
+                    : alternateColors.even,
+                  borderBottom: rowBorderBottom.enabled 
+                    ? `${rowBorderBottom.width}px ${rowBorderBottom.style} ${rowBorderBottom.color}` 
+                    : undefined,
+                  transition: hoverEffect ? `all ${hoverConfig.transition}ms` : undefined,
+                };
+
+                return (
+                  <TableRow 
+                    key={rowIndex}
+                    style={rowStyle}
+                    className={hoverEffect ? "hover:opacity-90" : ""}
+                    onMouseEnter={(e) => {
+                      if (hoverEffect) {
+                        e.currentTarget.style.backgroundColor = hoverConfig.backgroundColor;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (hoverEffect) {
+                        e.currentTarget.style.backgroundColor = stripedRows && rowIndex % 2 === 1 
+                          ? alternateColors.odd 
+                          : alternateColors.even;
+                      }
+                    }}
+                  >
+                    {config.settings?.showRowNumbers && (
+                      <TableCell 
+                        className="text-center"
+                        style={{...bodyCellStyle, color: rowTextColor, opacity: 0.7}}
+                      >
+                        {(currentPage - 1) * (config.settings?.pagination?.pageSize || 50) + rowIndex + 1}
+                      </TableCell>
+                    )}
+                    {visibleColumns.map((column: any) => (
+                      <TableCell 
+                        key={column.name}
+                        style={bodyCellStyle}
+                      >
+                        {formatValue(row[column.name], column.format)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
             </TableBody>
 
             {/* Summary Row */}

@@ -122,6 +122,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     
     const success = undoLastChange(lastModifiedWidgetId);
     if (success) {
+      setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
       toast({
         title: "Undo successful",
         description: "Last change has been undone.",
@@ -153,6 +154,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     
     const success = redoLastChange(lastModifiedWidgetId);
     if (success) {
+      setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
       toast({
         title: "Redo successful",
         description: "Last change has been redone.",
@@ -173,6 +175,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     
     // Use discardAllChanges instead of clearPending to keep local widgets
     discardAllChanges();
+    setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
     
     toast({
       title: "All changes discarded",
@@ -215,6 +218,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [containerWidth, setContainerWidth] = useState(1200);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
+  const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
 
   // Handle exit confirmation dialog
   const handleExitConfirm = useCallback(() => {
@@ -916,6 +920,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         `}</style>
         <WidgetErrorBoundary>
           <GridLayout 
+            key={layoutKey}
             className="layout" 
             layout={layout} 
             cols={24} 

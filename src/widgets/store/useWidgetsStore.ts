@@ -240,12 +240,15 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
               originalConfig: originalWidget.config,
               updatedConfig: updated.config,
               originalTitle: originalWidget.title,
-              updatedTitle: updated.title
+              updatedTitle: updated.title,
+              originalPosition: originalWidget.position,
+              updatedPosition: updated.position
             });
             
             const isReverted = JSON.stringify(updated.config) === JSON.stringify(originalWidget.config) &&
                               updated.title === originalWidget.title &&
-                              updated.description === originalWidget.description;
+                              updated.description === originalWidget.description &&
+                              JSON.stringify(updated.position) === JSON.stringify(originalWidget.position);
             
             if (isReverted) {
               // Remove update operation if reverted to original
@@ -442,7 +445,8 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             const isBackToOriginal = originalWidget && 
                                    JSON.stringify(lastVersion.config) === JSON.stringify(originalWidget.config) &&
                                    lastVersion.title === originalWidget.title &&
-                                   lastVersion.description === originalWidget.description;
+                                   lastVersion.description === originalWidget.description &&
+                                   JSON.stringify(lastVersion.position) === JSON.stringify(originalWidget.position);
             
             if (isBackToOriginal) {
               // Remove update operation - back to original
@@ -461,7 +465,8 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
               const patch = {
                 config: lastVersion.config,
                 title: lastVersion.title,
-                description: lastVersion.description
+                description: lastVersion.description,
+                position: lastVersion.position
               };
               
               if (updateOpIndex >= 0) {
@@ -544,7 +549,8 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             const isBackToOriginal = originalWidget &&
                                    JSON.stringify(nextVersion.config) === JSON.stringify(originalWidget.config) &&
                                    nextVersion.title === originalWidget.title &&
-                                   nextVersion.description === originalWidget.description;
+                                   nextVersion.description === originalWidget.description &&
+                                   JSON.stringify(nextVersion.position) === JSON.stringify(originalWidget.position);
             
             if (isBackToOriginal) {
               // Remove update operation - back to original
@@ -563,7 +569,8 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
               const patch = {
                 config: nextVersion.config,
                 title: nextVersion.title,
-                description: nextVersion.description
+                description: nextVersion.description,
+                position: nextVersion.position
               };
               
               const newOperation = {
@@ -778,22 +785,6 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             }
           });
           
-          // Clean up history for non-existent widgets
-          const cleanedHistory: Record<number, WidgetEntity[]> = {};
-          Object.entries(state.history).forEach(([widgetId, history]) => {
-            if (restoredWidgets[Number(widgetId)]) {
-              cleanedHistory[Number(widgetId)] = history;
-            }
-          });
-
-          // Clean up redo history for non-existent widgets
-          const cleanedRedoHistory: Record<number, WidgetEntity[]> = {};
-          Object.entries(state.redoHistory).forEach(([widgetId, redoHistory]) => {
-            if (restoredWidgets[Number(widgetId)]) {
-              cleanedRedoHistory[Number(widgetId)] = redoHistory;
-            }
-          });
-
           console.log('[discardAllChanges] Discarded changes:', {
             restoredWidgets: Object.keys(restoredWidgets).length,
             keptLocalWidgets: Object.values(restoredWidgets).filter(w => isLocalWidget(w.id)).length
@@ -804,8 +795,8 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             lastModifiedWidgetId: null,
             pendingOperations: [],
             dirtyWidgetIds: new Set<number>(),
-            history: cleanedHistory,
-            redoHistory: cleanedRedoHistory,
+            history: {}, // Clear all history when discarding
+            redoHistory: {}, // Clear all redo history when discarding
             conflicts: [],
             activeConflict: null,
           };

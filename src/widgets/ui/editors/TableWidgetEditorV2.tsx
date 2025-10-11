@@ -36,6 +36,7 @@ import {
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
+import { TableStyleEditor } from "./TableStyleEditor";
 import { TableWidgetProcessor, ValidationResult } from "@/widgets/processors/TableWidgetProcessor";
 import { cn } from "@/lib/utils";
 
@@ -386,10 +387,14 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
       {renderValidationAlerts()}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="data" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             Data
+          </TabsTrigger>
+          <TabsTrigger value="style" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Style
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -860,7 +865,15 @@ export const TableWidgetEditorV2: React.FC<TableWidgetEditorV2Props> = ({
           </div>
         </TabsContent>
 
-        {/* Tab 2: Settings */}
+        {/* Tab 2: Style */}
+        <TabsContent value="style" className="space-y-4">
+          <TableStyleEditor 
+            value={value.style} 
+            onChange={(style) => onChange({ ...value, style })}
+          />
+        </TabsContent>
+
+        {/* Tab 3: Settings */}
         <TabsContent value="settings" className="space-y-4">
           <div className="space-y-4">
             {/* Pagination */}

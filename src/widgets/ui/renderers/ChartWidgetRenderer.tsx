@@ -180,19 +180,95 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     }));
   }, [processedData, mappings, premiumColors, yColumnColors]);
 
-  // Style configuration
+  // Style configuration - NEW ADVANCED PROPERTIES
   const styleConfig = config?.style || {};
-  const transparentBackground = styleConfig.transparentBackground || false;
-  const showGrid = styleConfig.showGrid !== false;
-  const showLegend = styleConfig.showLegend !== false;
-  const legendPosition = styleConfig.legendPosition || "bottom";
-  const showTooltip = true;
-  const gridColor = styleConfig.gridColor || (transparentBackground ? 'rgba(0,0,0,0.2)' : theme.colors.border);
-  const textColor = styleConfig.textColor || (transparentBackground ? '#000000' : theme.colors.foreground);
-  const accentColor = styleConfig.accentColor || theme.colors.accent;
-  const gridOpacity = styleConfig.gridOpacity || 0.2;
-  const smoothCurves = styleConfig.smoothCurves !== false;
-  const fillOpacity = styleConfig.fillOpacity || 0.6;
+  
+  // General styling
+  const backgroundColor = styleConfig.backgroundColor || "#FFFFFF";
+  const backgroundOpacity = styleConfig.backgroundOpacity ?? 1;
+  const borderRadius = styleConfig.borderRadius ?? 8;
+  const padding = styleConfig.padding || { top: 20, right: 20, bottom: 20, left: 20 };
+  
+  // Line styling
+  const lineConfig = styleConfig.line || {};
+  const lineWidth = lineConfig.width ?? 2;
+  const lineTension = lineConfig.tension ?? 0.4;
+  const lineStyle = lineConfig.style || "solid";
+  const lineGradient = lineConfig.gradient || { enabled: false, startOpacity: 0.8, endOpacity: 0.1 };
+  
+  // Points styling
+  const pointsConfig = styleConfig.points || {};
+  const showPoints = pointsConfig.show ?? true;
+  const pointRadius = pointsConfig.radius ?? 4;
+  const pointHoverRadius = pointsConfig.hoverRadius ?? 6;
+  const pointBorderWidth = pointsConfig.borderWidth ?? 2;
+  const pointBorderColor = pointsConfig.borderColor || "#FFFFFF";
+  const pointStyle = pointsConfig.style || "circle";
+  
+  // Bar styling
+  const barsConfig = styleConfig.bars || {};
+  const barBorderRadius = barsConfig.borderRadius ?? 4;
+  const barBorderWidth = barsConfig.borderWidth ?? 0;
+  const barBorderColor = barsConfig.borderColor;
+  const barPercentage = barsConfig.barPercentage ?? 0.8;
+  const barMaxThickness = barsConfig.maxBarThickness || 60;
+  
+  // Grid styling
+  const gridConfig = styleConfig.grid || {};
+  const showGrid = gridConfig.show ?? true;
+  const gridColor = gridConfig.color || "rgba(0, 0, 0, 0.1)";
+  const gridLineWidth = gridConfig.lineWidth ?? 1;
+  const gridStyle = gridConfig.style || "solid";
+  const gridDashPattern = gridStyle === "dashed" ? [5, 5] : gridStyle === "dotted" ? [2, 2] : undefined;
+  
+  // Axes styling
+  const axesConfig = styleConfig.axes || {};
+  const xAxisConfig = axesConfig.x || {};
+  const yAxisConfig = axesConfig.y || {};
+  const showXAxis = xAxisConfig.show ?? true;
+  const showYAxis = yAxisConfig.show ?? true;
+  const xAxisColor = xAxisConfig.color || "#666666";
+  const yAxisColor = yAxisConfig.color || "#666666";
+  const xAxisFontSize = xAxisConfig.fontSize ?? 12;
+  const yAxisFontSize = yAxisConfig.fontSize ?? 12;
+  const xAxisFontFamily = xAxisConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const yAxisFontFamily = yAxisConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const xAxisFontWeight = xAxisConfig.fontWeight || "400";
+  const yAxisFontWeight = yAxisConfig.fontWeight || "400";
+  const xAxisRotation = xAxisConfig.rotation ?? 0;
+  
+  // Legend styling
+  const legendConfig = styleConfig.legend || {};
+  const showLegend = legendConfig.show ?? true;
+  const legendPosition = legendConfig.position || "bottom";
+  const legendAlign = legendConfig.align || "center";
+  const legendFontSize = legendConfig.fontSize ?? 12;
+  const legendFontFamily = legendConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const legendFontWeight = legendConfig.fontWeight || "400";
+  const legendColor = legendConfig.color || "#333333";
+  const legendBoxWidth = legendConfig.boxWidth ?? 40;
+  
+  // Tooltip styling
+  const tooltipConfig = styleConfig.tooltip || {};
+  const showTooltip = tooltipConfig.enabled ?? true;
+  const tooltipBgColor = tooltipConfig.backgroundColor || "rgba(0, 0, 0, 0.8)";
+  const tooltipTitleColor = tooltipConfig.titleColor || "#FFFFFF";
+  const tooltipBodyColor = tooltipConfig.bodyColor || "#FFFFFF";
+  const tooltipBorderColor = tooltipConfig.borderColor || "rgba(255, 255, 255, 0.3)";
+  const tooltipBorderWidth = tooltipConfig.borderWidth ?? 1;
+  const tooltipBorderRadius = tooltipConfig.borderRadius ?? 6;
+  const tooltipPadding = tooltipConfig.padding ?? 12;
+  const tooltipFontSize = tooltipConfig.fontSize ?? 12;
+  const tooltipFontFamily = tooltipConfig.fontFamily || "Inter, system-ui, sans-serif";
+  
+  // Animation
+  const animationConfig = styleConfig.animation || {};
+  const animationEnabled = animationConfig.enabled ?? true;
+  const animationDuration = animationConfig.duration ?? 750;
+  
+  // Backward compatibility
+  const transparentBackground = backgroundOpacity < 1;
+  const smoothCurves = lineTension > 0;
 
   // Chart component selector
   const getChartComponent = () => {
@@ -256,100 +332,112 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
             <ChartComponent 
               data={processedData} 
               margin={{ 
-                top: legendPosition === "top" ? 30 : 10, 
-                right: legendPosition === "right" ? 100 : 20, 
-                left: legendPosition === "left" ? 100 : 10, 
-                bottom: legendPosition === "bottom" ? 30 : 10 
+                top: padding.top + (legendPosition === "top" ? 20 : 0),
+                right: padding.right + (legendPosition === "right" ? 80 : 0),
+                bottom: padding.bottom + (legendPosition === "bottom" ? 20 : 0),
+                left: padding.left + (legendPosition === "left" ? 80 : 0),
               }}
             >
               {showGrid && chartType !== "pie" && chartType !== "radar" && (
                 <CartesianGrid 
-                  strokeDasharray="3 3" 
+                  strokeDasharray={gridDashPattern}
                   stroke={gridColor}
-                  strokeOpacity={gridOpacity}
+                  strokeWidth={gridLineWidth}
                   vertical={false}
                 />
               )}
               
               {chartType === "radar" ? (
                 <>
-                  <PolarGrid stroke={gridColor} strokeOpacity={0.3} />
+                  <PolarGrid stroke={gridColor} strokeWidth={gridLineWidth} />
                   <PolarAngleAxis 
                     dataKey="name" 
-                    tick={{ fontSize: 10, fill: textColor, fontWeight: 500 }}
+                    tick={{ 
+                      fontSize: xAxisFontSize, 
+                      fill: xAxisColor,
+                      fontWeight: xAxisFontWeight,
+                      fontFamily: xAxisFontFamily
+                    }}
                   />
                   <PolarRadiusAxis 
-                    tick={{ fontSize: 10, fill: textColor, fontWeight: 500 }}
+                    tick={{ 
+                      fontSize: yAxisFontSize, 
+                      fill: yAxisColor,
+                      fontWeight: yAxisFontWeight,
+                      fontFamily: yAxisFontFamily
+                    }}
                     stroke={gridColor}
                   />
                 </>
               ) : chartType !== "pie" && (
                 <>
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ 
-                      fontSize: 10, 
-                      fill: textColor,
-                      fontWeight: 500,
-                      fontFamily: theme.typography.fontFamily
-                    }}
-                    tickLine={{ stroke: gridColor, strokeWidth: 1 }}
-                    axisLine={{ stroke: gridColor, strokeWidth: 1 }}
-                    tickMargin={8}
-                  />
-                  <YAxis 
-                    tick={{ 
-                      fontSize: 10, 
-                      fill: textColor,
-                      fontWeight: 500,
-                      fontFamily: theme.typography.fontFamily
-                    }}
-                    tickLine={{ stroke: gridColor, strokeWidth: 1 }}
-                    axisLine={{ stroke: gridColor, strokeWidth: 1 }}
-                    tickMargin={8}
-                  />
+                  {showXAxis && (
+                    <XAxis 
+                      dataKey="name" 
+                      angle={xAxisRotation}
+                      tick={{ 
+                        fontSize: xAxisFontSize, 
+                        fill: xAxisColor,
+                        fontWeight: xAxisFontWeight,
+                        fontFamily: xAxisFontFamily
+                      }}
+                      tickLine={{ stroke: gridColor, strokeWidth: gridLineWidth }}
+                      axisLine={{ stroke: gridColor, strokeWidth: gridLineWidth }}
+                      tickMargin={8}
+                    />
+                  )}
+                  {showYAxis && (
+                    <YAxis 
+                      tick={{ 
+                        fontSize: yAxisFontSize, 
+                        fill: yAxisColor,
+                        fontWeight: yAxisFontWeight,
+                        fontFamily: yAxisFontFamily
+                      }}
+                      tickLine={{ stroke: gridColor, strokeWidth: gridLineWidth }}
+                      axisLine={{ stroke: gridColor, strokeWidth: gridLineWidth }}
+                      tickMargin={8}
+                    />
+                  )}
                 </>
               )}
               
               {showTooltip && (
                 <Tooltip 
                   contentStyle={{
-                    backgroundColor: theme.colors.background,
-                    border: `1px solid ${theme.colors.border}`,
-                    borderRadius: "12px",
-                    boxShadow: theme.shadows.bold,
-                    backdropFilter: "blur(12px)",
-                    fontFamily: theme.typography.fontFamily,
-                    fontSize: "11px",
-                    fontWeight: theme.typography.fontWeight.medium,
-                    color: textColor,
-                    padding: "12px 16px"
+                    backgroundColor: tooltipBgColor,
+                    border: `${tooltipBorderWidth}px solid ${tooltipBorderColor}`,
+                    borderRadius: `${tooltipBorderRadius}px`,
+                    fontFamily: tooltipFontFamily,
+                    fontSize: `${tooltipFontSize}px`,
+                    color: tooltipBodyColor,
+                    padding: `${tooltipPadding}px`
                   }}
                   labelStyle={{
-                    fontWeight: theme.typography.fontWeight.semibold,
-                    color: textColor,
-                    fontSize: "12px",
-                    marginBottom: "6px",
-                    letterSpacing: "-0.01em"
+                    color: tooltipTitleColor,
+                    fontSize: `${tooltipFontSize + 1}px`,
+                    fontWeight: "600",
+                    marginBottom: "4px"
                   }}
-                  cursor={{ fill: theme.colors.muted, opacity: 0.1 }}
+                  cursor={{ fill: gridColor, opacity: 0.1 }}
+                  animationDuration={animationEnabled ? animationDuration / 2 : 0}
                 />
               )}
               
               {showLegend && dataKeys.length > 1 && (
                 <Legend 
                   verticalAlign={legendPosition === "top" || legendPosition === "bottom" ? legendPosition : "middle"}
-                  align={legendPosition === "left" || legendPosition === "right" ? legendPosition : "center"}
+                  align={legendAlign === "start" ? "left" : legendAlign === "end" ? "right" : "center"}
                   layout={legendPosition === "left" || legendPosition === "right" ? "vertical" : "horizontal"}
                   wrapperStyle={{
-                    fontFamily: theme.typography.fontFamily,
-                    fontSize: "10px",
-                    fontWeight: theme.typography.fontWeight.medium,
-                    color: textColor,
-                    letterSpacing: "0.02em"
+                    fontFamily: legendFontFamily,
+                    fontSize: `${legendFontSize}px`,
+                    fontWeight: legendFontWeight,
+                    color: legendColor,
+                    padding: `${legendConfig.padding ?? 10}px`
                   }}
                   iconType="circle"
-                  iconSize={8}
+                  iconSize={legendConfig.boxHeight ?? 12}
                 />
               )}
               
@@ -361,10 +449,11 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
                   fill={dataKey.color}
-                  fillOpacity={fillOpacity}
-                  strokeWidth={2.5}
+                  fillOpacity={lineGradient.enabled ? lineGradient.startOpacity : 0.6}
+                  strokeWidth={lineWidth}
                   strokeLinecap="round"
                   name={dataKey.name}
+                  animationDuration={animationEnabled ? animationDuration : 0}
                 />
               ))}
               
@@ -374,8 +463,11 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   dataKey={dataKey.key}
                   fill={dataKey.color}
                   name={dataKey.name}
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={60}
+                  radius={[barBorderRadius, barBorderRadius, 0, 0]}
+                  maxBarSize={barMaxThickness}
+                  stroke={barBorderColor}
+                  strokeWidth={barBorderWidth}
+                  animationDuration={animationEnabled ? animationDuration : 0}
                 />
               ))}
               
@@ -434,17 +526,24 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   type={smoothCurves ? "natural" : "monotone"}
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
-                  strokeWidth={2.5}
+                  strokeWidth={lineWidth}
                   strokeLinecap="round"
-                  dot={{ r: 0 }}
+                  strokeDasharray={lineStyle === "dashed" ? "5 5" : lineStyle === "dotted" ? "2 2" : undefined}
+                  dot={showPoints ? { 
+                    r: pointRadius,
+                    fill: pointBorderColor,
+                    stroke: dataKey.color,
+                    strokeWidth: pointBorderWidth
+                  } : false}
                   activeDot={{ 
-                    r: 5, 
-                    fill: transparentBackground ? 'rgba(255,255,255,0.9)' : theme.colors.background, 
+                    r: pointHoverRadius, 
+                    fill: pointBorderColor, 
                     stroke: dataKey.color, 
-                    strokeWidth: 2.5,
+                    strokeWidth: pointBorderWidth,
                     filter: `drop-shadow(0 2px 4px ${dataKey.color}40)`
                   }}
                   name={dataKey.name}
+                  animationDuration={animationEnabled ? animationDuration : 0}
                 />
               ))}
             </ChartComponent>

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClockStyleEditor } from "./ClockStyleEditor";
 
 // Clock-specific configuration schema - SIMPLIFIED
 const clockConfigSchema = z.object({
@@ -186,49 +187,11 @@ export const ClockWidgetEditor: React.FC<ClockWidgetEditorProps> = ({
 
         {/* Style Tab - Simplified */}
         <TabsContent value="style" className="space-y-4">
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Theme & Font</h4>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="theme">Theme</Label>
-                <Select
-                  value={value.style.theme}
-                  onValueChange={(theme: any) => updateStyle({ theme })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="premium-light">Premium Light</SelectItem>
-                    <SelectItem value="premium-dark">Premium Dark</SelectItem>
-                    <SelectItem value="minimal">Minimal</SelectItem>
-                    <SelectItem value="luxury">Luxury</SelectItem>
-                    <SelectItem value="platinum">Platinum</SelectItem>
-                    <SelectItem value="obsidian">Obsidian</SelectItem>
-                    <SelectItem value="pearl">Pearl</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fontFamily">Font Family</Label>
-                <Select
-                  value={value.style.fontFamily}
-                  onValueChange={(fontFamily: "sans" | "serif" | "mono") => updateStyle({ fontFamily })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sans">Sans Serif</SelectItem>
-                    <SelectItem value="serif">Serif</SelectItem>
-                    <SelectItem value="mono">Monospace</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+          <ClockStyleEditor 
+            value={value.style as any} 
+            onChange={(style) => onChange({ ...value, style: style as any })}
+            clockType={value.settings.clockType}
+          />
         </TabsContent>
 
         {/* Refresh Tab */}

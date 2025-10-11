@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WeatherStyleEditor } from "./WeatherStyleEditor";
 
 // Weather-specific configuration schema - SIMPLIFIED
 const weatherConfigSchema = z.object({
@@ -172,11 +173,10 @@ export const WeatherWidgetEditor: React.FC<WeatherWidgetEditorProps> = ({
 
         {/* Style Tab - Minimal */}
         <TabsContent value="style" className="space-y-4">
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Weather widget uses default UI component styling. No custom styles available.
-            </p>
-          </div>
+          <WeatherStyleEditor 
+            value={value.style as any} 
+            onChange={(style) => onChange({ ...value, style: style as any })}
+          />
         </TabsContent>
 
         {/* Refresh Tab */}

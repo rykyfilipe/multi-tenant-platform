@@ -31,8 +31,168 @@ export const kpiSettingsSchema = z.object({
 });
 
 export const kpiStyleSchema = z.object({
-  // Only property actually used in renderer
+  // === CARD STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
+  backgroundGradient: z.object({
+    enabled: z.boolean().default(false),
+    from: z.string().default("#FFFFFF"),
+    to: z.string().default("#F3F4F6"),
+    direction: z.enum(["to-r", "to-br", "to-b", "to-bl"]).default("to-br"),
+  }).default({
+    enabled: false,
+    from: "#FFFFFF",
+    to: "#F3F4F6",
+    direction: "to-br",
+  }),
+  borderRadius: z.number().min(0).max(50).default(12),
+  border: z.object({
+    enabled: z.boolean().default(true),
+    width: z.number().min(0).max(10).default(1),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+    style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
+  }).default({
+    enabled: true,
+    width: 1,
+    color: "rgba(0, 0, 0, 0.1)",
+    style: "solid",
+  }),
+  shadow: z.object({
+    enabled: z.boolean().default(true),
+    size: z.enum(["sm", "md", "lg", "xl"]).default("sm"),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+  }).default({
+    enabled: true,
+    size: "sm",
+    color: "rgba(0, 0, 0, 0.1)",
+  }),
+  padding: z.object({
+    x: z.number().min(0).max(100).default(24),
+    y: z.number().min(0).max(100).default(20),
+  }).default({ x: 24, y: 20 }),
+  
+  // === VALUE STYLING ===
+  value: z.object({
+    fontSize: z.number().min(16).max(80).default(36),
+    fontFamily: z.string().default("Inter, system-ui, sans-serif"),
+    fontWeight: z.enum(["400", "500", "600", "700", "800"]).default("700"),
+    color: z.string().default("#111827"),
+    gradient: z.object({
+      enabled: z.boolean().default(false),
+      from: z.string().default("#3B82F6"),
+      to: z.string().default("#8B5CF6"),
+    }).default({
+      enabled: false,
+      from: "#3B82F6",
+      to: "#8B5CF6",
+    }),
+  }).default({
+    fontSize: 36,
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: "700",
+    color: "#111827",
+    gradient: {
+      enabled: false,
+      from: "#3B82F6",
+      to: "#8B5CF6",
+    },
+  }),
+  
+  // === LABEL STYLING ===
+  label: z.object({
+    fontSize: z.number().min(8).max(24).default(14),
+    fontFamily: z.string().default("Inter, system-ui, sans-serif"),
+    fontWeight: z.enum(["300", "400", "500", "600", "700"]).default("500"),
+    color: z.string().default("#6B7280"),
+    textTransform: z.enum(["none", "uppercase", "lowercase", "capitalize"]).default("none"),
+    letterSpacing: z.number().min(-2).max(5).default(0),
+  }).default({
+    fontSize: 14,
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: "500",
+    color: "#6B7280",
+    textTransform: "none",
+    letterSpacing: 0,
+  }),
+  
+  // === TREND INDICATOR ===
+  trend: z.object({
+    positive: z.object({
+      color: z.string().default("#10B981"),
+      backgroundColor: z.string().default("rgba(16, 185, 129, 0.1)"),
+      iconSize: z.number().min(12).max(32).default(16),
+    }).default({
+      color: "#10B981",
+      backgroundColor: "rgba(16, 185, 129, 0.1)",
+      iconSize: 16,
+    }),
+    negative: z.object({
+      color: z.string().default("#EF4444"),
+      backgroundColor: z.string().default("rgba(239, 68, 68, 0.1)"),
+      iconSize: z.number().min(12).max(32).default(16),
+    }).default({
+      color: "#EF4444",
+      backgroundColor: "rgba(239, 68, 68, 0.1)",
+      iconSize: 16,
+    }),
+    fontSize: z.number().min(10).max(24).default(12),
+    fontWeight: z.enum(["400", "500", "600", "700"]).default("600"),
+    showIcon: z.boolean().default(true),
+    showPercentage: z.boolean().default(true),
+  }).default({
+    positive: {
+      color: "#10B981",
+      backgroundColor: "rgba(16, 185, 129, 0.1)",
+      iconSize: 16,
+    },
+    negative: {
+      color: "#EF4444",
+      backgroundColor: "rgba(239, 68, 68, 0.1)",
+      iconSize: 16,
+    },
+    fontSize: 12,
+    fontWeight: "600",
+    showIcon: true,
+    showPercentage: true,
+  }),
+  
+  // === ICON STYLING ===
+  icon: z.object({
+    enabled: z.boolean().default(false),
+    size: z.number().min(16).max(64).default(24),
+    color: z.string().default("#3B82F6"),
+    backgroundColor: z.string().default("rgba(59, 130, 246, 0.1)"),
+    position: z.enum(["top", "left", "right"]).default("left"),
+  }).default({
+    enabled: false,
+    size: 24,
+    color: "#3B82F6",
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    position: "left",
+  }),
+  
+  // === HOVER EFFECT ===
+  hover: z.object({
+    enabled: z.boolean().default(true),
+    scale: z.number().min(1).max(1.2).default(1.02),
+    shadow: z.boolean().default(true),
+    transition: z.number().min(0).max(1000).default(200),
+  }).default({
+    enabled: true,
+    scale: 1.02,
+    shadow: true,
+    transition: 200,
+  }),
+  
+  // === ANIMATION ===
+  animation: z.object({
+    enabled: z.boolean().default(true),
+    duration: z.number().min(0).max(2000).default(500),
+    delay: z.number().min(0).max(1000).default(0),
+  }).default({
+    enabled: true,
+    duration: 500,
+    delay: 0,
+  }),
 });
 
 export const kpiDataSchema = z.object({

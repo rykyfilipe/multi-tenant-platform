@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
+import { cn } from "@/lib/utils";
 
 interface ClockWidgetRendererProps {
   widget: WidgetEntity;
@@ -31,8 +33,7 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
 
   const config = widget.config as any;
   const settings = config?.settings || {};
-  const style = config?.style || {};
-  const refreshSettings = config?.refresh || { enabled: false, interval: 30000 };
+  const styleConfig = config?.style || {};
 
   const timezone = settings.timezone && settings.timezone !== "local"
     ? settings.timezone
@@ -41,8 +42,55 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
   const showDate = settings.showDate !== false;
   const showSeconds = settings.showSeconds !== false;
   const showTimezone = settings.showTimezone || false;
-  const dateFormat = settings.dateFormat || "DD/MM/YYYY";
   const clockType = settings.clockType || "digital";
+
+  // Extract ADVANCED styling from schema
+  const backgroundColor = styleConfig.backgroundColor || "#FFFFFF";
+  const bgGradient = styleConfig.backgroundGradient || { enabled: false, from: "#FFFFFF", to: "#F3F4F6", direction: "to-br" };
+  const borderRadius = styleConfig.borderRadius ?? 16;
+  const border = styleConfig.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" };
+  const shadow = styleConfig.shadow || { enabled: true, size: "md" };
+  const padding = styleConfig.padding || { x: 32, y: 24 };
+  const alignment = styleConfig.alignment || "center";
+  
+  // Time styling
+  const timeStyle = styleConfig.time || {};
+  const timeFontSize = timeStyle.fontSize ?? 64;
+  const timeFontFamily = timeStyle.fontFamily || "Courier New, monospace";
+  const timeFontWeight = timeStyle.fontWeight || "700";
+  const timeColor = timeStyle.color || "#111827";
+  const timeGradient = timeStyle.gradient || { enabled: false, from: "#3B82F6", to: "#8B5CF6" };
+  const timeLetterSpacing = timeStyle.letterSpacing ?? 2;
+  const showSeparatorBlink = timeStyle.showSeparatorBlink ?? true;
+  
+  // Date styling
+  const dateStyle = styleConfig.date || {};
+  const dateFontSize = dateStyle.fontSize ?? 16;
+  const dateFontFamily = dateStyle.fontFamily || "Inter, system-ui, sans-serif";
+  const dateFontWeight = dateStyle.fontWeight || "500";
+  const dateColor = dateStyle.color || "#6B7280";
+  const dateTextTransform = dateStyle.textTransform || "uppercase";
+  const dateLetterSpacing = dateStyle.letterSpacing ?? 1;
+  const dateMarginTop = dateStyle.marginTop ?? 8;
+  
+  // Seconds styling
+  const secondsStyle = styleConfig.seconds || {};
+  const secondsFontSize = secondsStyle.fontSize ?? 24;
+  const secondsColor = secondsStyle.color || "#9CA3AF";
+  const secondsOpacity = secondsStyle.opacity ?? 0.7;
+  
+  // Animation
+  const animationConfig = styleConfig.animation || { enabled: true, duration: 400, easing: "easeInOut" };
+  
+  const getShadowClass = (size: string) => {
+    const shadowMap: Record<string, string> = {
+      sm: "shadow-sm",
+      md: "shadow-md",
+      lg: "shadow-lg",
+      xl: "shadow-xl"
+    };
+    return shadowMap[size] || "shadow-md";
+  };
 
   const timeString = useMemo(() => {
     return time.toLocaleTimeString('en-US', {
@@ -173,62 +221,87 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
     }
   };
 
+  // Container styles
+  const containerStyle: React.CSSProperties = {
+    background: bgGradient.enabled 
+      ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})`
+      : backgroundColor,
+    borderRadius: `${borderRadius}px`,
+    border: border.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
+    padding: `${padding.y}px ${padding.x}px`,
+  };
+
+  // Time display style
+  const timeTextStyle: React.CSSProperties = {
+    fontSize: `${timeFontSize}px`,
+    fontFamily: timeFontFamily,
+    fontWeight: timeFontWeight,
+    color: timeGradient.enabled ? 'transparent' : timeColor,
+    background: timeGradient.enabled 
+      ? `linear-gradient(to right, ${timeGradient.from}, ${timeGradient.to})`
+      : undefined,
+    backgroundClip: timeGradient.enabled ? 'text' : undefined,
+    WebkitBackgroundClip: timeGradient.enabled ? 'text' : undefined,
+    letterSpacing: `${timeLetterSpacing}px`,
+  };
+
+  // Date display style
+  const dateTextStyle: React.CSSProperties = {
+    fontSize: `${dateFontSize}px`,
+    fontFamily: dateFontFamily,
+    fontWeight: dateFontWeight,
+    color: dateColor,
+    textTransform: dateTextTransform as any,
+    letterSpacing: `${dateLetterSpacing}px`,
+    marginTop: `${dateMarginTop}px`,
+  };
+
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div 
-        className={`
-          flex h-full flex-col items-center justify-center space-y-4
-          ${getThemeClasses(style.theme || 'premium-light')}
-          ${getBorderRadiusClass(style.borderRadius || 'md')}
-          ${getShadowClass(style.shadow || 'sm')}
-          ${getPaddingClass(style.padding || 'comfortable')}
-          border
-        `}
-        style={{
-          backgroundColor: style.backgroundColor || undefined,
-          borderColor: style.borderColor || undefined,
+      <motion.div
+        initial={animationConfig.enabled ? { opacity: 0, scale: 0.95 } : false}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ 
+          duration: animationConfig.duration / 1000,
+          ease: animationConfig.easing
         }}
+        className="h-full"
       >
-        <div className={`${getAlignmentClass(style.alignment || 'center')}`}>
-          <div 
-            className={`
-              ${getFontFamilyClass(style.fontFamily || 'mono')} 
-              font-bold
-              ${style.fontSize === 'xs' ? 'text-xs' :
-                style.fontSize === 'sm' ? 'text-sm' :
-                style.fontSize === 'lg' ? 'text-2xl' :
-                style.fontSize === 'xl' ? 'text-3xl' :
-                style.fontSize === '2xl' ? 'text-4xl' : 'text-3xl'
-              }
-            `}
-            style={{
-              color: style.textColor || undefined,
-            }}
-          >
-            {timeString}
+        <div 
+          className={cn(
+            "flex h-full flex-col items-center justify-center",
+            shadow.enabled && getShadowClass(shadow.size),
+            alignment === "left" && "items-start",
+            alignment === "center" && "items-center",
+            alignment === "right" && "items-end"
+          )}
+          style={containerStyle}
+        >
+          <div className="space-y-1">
+            <div style={timeTextStyle}>
+              {timeString}
+            </div>
+            {showDate && (
+              <div style={dateTextStyle}>
+                {dateString}
+              </div>
+            )}
+            {showTimezone && (
+              <div 
+                className="text-xs"
+                style={{
+                  color: dateColor,
+                  opacity: 0.6,
+                  fontFamily: dateFontFamily,
+                  marginTop: `${dateMarginTop / 2}px`,
+                }}
+              >
+                {timezone}
+              </div>
+            )}
           </div>
-          {showDate && (
-            <div 
-              className="text-sm mt-2 opacity-70"
-              style={{
-                color: style.textColor || undefined,
-              }}
-            >
-              {dateString}
-            </div>
-          )}
-          {showTimezone && (
-            <div 
-              className="text-xs mt-1 opacity-50"
-              style={{
-                color: style.textColor || undefined,
-              }}
-            >
-              {timezone}
-            </div>
-          )}
         </div>
-      </div>
+      </motion.div>
     </BaseWidget>
   );
 };

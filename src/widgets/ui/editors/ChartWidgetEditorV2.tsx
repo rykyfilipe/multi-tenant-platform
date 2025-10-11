@@ -31,6 +31,7 @@ import { Column } from "../components/types";
 import { WidgetFilters } from "../components/WidgetFilters";
 import { ChartDataProcessor, ValidationResult } from "@/widgets/processors/ChartDataProcessor";
 import { cn } from "@/lib/utils";
+import { ChartStyleEditor } from "./ChartStyleEditor";
 
 interface ChartWidgetEditorV2Props {
   value: z.infer<typeof chartWidgetConfigSchema>;
@@ -708,122 +709,12 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
         </TabsContent>
 
         {/* Tab 2: Style */}
-        <TabsContent value="style" className="space-y-4 max-h-[600px] overflow-y-auto">
-          <div className="space-y-6">
-            {/* Theme Selection */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                Premium Theme
-              </h3>
-              <Select
-                value={value.style.theme}
-                onValueChange={(val) => updateStyle({ theme: val as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="platinum">💎 Platinum (Bright White)</SelectItem>
-                  <SelectItem value="onyx">⬛ Onyx (Deep Black)</SelectItem>
-                  <SelectItem value="pearl">🤍 Pearl (Warm White)</SelectItem>
-                  <SelectItem value="obsidian">⚫ Obsidian (Cool Black)</SelectItem>
-                  <SelectItem value="custom">🎨 Custom</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Colors */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold mb-3">Colors</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Background</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.backgroundColor ?? value.style.backgroundColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ backgroundColor: e.target.value }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ backgroundColor: val }); setTempColors(prev => ({ ...prev, backgroundColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Text</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.textColor ?? value.style.textColor}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, textColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ textColor: e.target.value }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ textColor: val }); setTempColors(prev => ({ ...prev, textColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Grid</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.gridColor ?? value.style.gridColor ?? "#E5E5E5"}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, gridColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ gridColor: e.target.value }); setTempColors(prev => ({ ...prev, gridColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ gridColor: val }); setTempColors(prev => ({ ...prev, gridColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Border</Label>
-                  <Input
-                    type="color"
-                    value={tempColors.borderColor ?? value.style.borderColor ?? "#E5E5E5"}
-                    onChange={(e) => setTempColors(prev => ({ ...prev, borderColor: e.target.value }))}
-                    onBlur={(e) => { updateStyle({ borderColor: e.target.value }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                    onMouseUp={(e) => { const val = (e.target as HTMLInputElement).value; updateStyle({ borderColor: val }); setTempColors(prev => ({ ...prev, borderColor: undefined })); }}
-                    className="h-10 mt-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Chart Options */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold mb-3">Chart Options</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Show Legend</Label>
-                  <Switch
-                    checked={value.style.showLegend}
-                    onCheckedChange={(checked) => updateStyle({ showLegend: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Show Grid</Label>
-                  <Switch
-                    checked={value.style.showGrid}
-                    onCheckedChange={(checked) => updateStyle({ showGrid: checked })}
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs">Legend Position</Label>
-                  <Select
-                    value={value.style.legendPosition || "bottom"}
-                    onValueChange={(val) => updateStyle({ legendPosition: val as any })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="top">Top</SelectItem>
-                      <SelectItem value="bottom">Bottom</SelectItem>
-                      <SelectItem value="left">Left</SelectItem>
-                      <SelectItem value="right">Right</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </div>
+        <TabsContent value="style" className="space-y-4">
+          <ChartStyleEditor 
+            value={value.style} 
+            onChange={(style) => onChange({ ...value, style })}
+            chartType={value.settings.chartType}
+          />
         </TabsContent>
 
         {/* Tab 3: Settings */}

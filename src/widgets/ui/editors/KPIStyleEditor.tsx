@@ -1,0 +1,621 @@
+"use client";
+
+import React, { useState } from "react";
+import { z } from "zod";
+import { kpiStyleSchema } from "@/widgets/schemas/kpi-v2";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Target, Type, TrendingUp, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type KPIStyle = z.infer<typeof kpiStyleSchema>;
+
+interface KPIStyleEditorProps {
+  value: KPIStyle;
+  onChange: (value: KPIStyle) => void;
+}
+
+interface CollapsibleSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}
+
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
+  title, 
+  icon, 
+  children, 
+  defaultOpen = false 
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border border-border/60 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 bg-card hover:bg-accent/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="font-medium text-sm">{title}</span>
+        </div>
+        {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+      {isOpen && (
+        <div className="p-4 bg-card border-t border-border/60 space-y-4">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface ColorPickerProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  description?: string;
+}
+
+const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, description }) => {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
+      <div className="flex items-center gap-3">
+        <Input
+          type="color"
+          value={value || "#000000"}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-16 h-10 p-1 cursor-pointer"
+        />
+        <Input
+          type="text"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#000000"
+          className="flex-1 font-mono text-sm"
+        />
+      </div>
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    </div>
+  );
+};
+
+interface SliderInputProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+  unit?: string;
+  description?: string;
+}
+
+const SliderInput: React.FC<SliderInputProps> = ({ 
+  label, 
+  value, 
+  onChange, 
+  min, 
+  max, 
+  step = 1,
+  unit = "",
+  description 
+}) => {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">{label}</Label>
+        <span className="text-sm text-muted-foreground">{value}{unit}</span>
+      </div>
+      <Slider
+        value={[value]}
+        onValueChange={(vals) => onChange(vals[0])}
+        min={min}
+        max={max}
+        step={step}
+        className="w-full"
+      />
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    </div>
+  );
+};
+
+export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange }) => {
+  const updateStyle = (updates: Partial<KPIStyle>) => {
+    onChange({ ...value, ...updates });
+  };
+
+  const updateNestedStyle = <K extends keyof KPIStyle>(
+    key: K,
+    updates: Partial<KPIStyle[K]>
+  ) => {
+    onChange({
+      ...value,
+      [key]: { ...(value[key] as any), ...updates },
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <Tabs defaultValue="card" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+          <TabsTrigger value="card" className="text-xs">
+            <Target className="h-3 w-3 mr-1" />
+            Card
+          </TabsTrigger>
+          <TabsTrigger value="content" className="text-xs">
+            <Type className="h-3 w-3 mr-1" />
+            Content
+          </TabsTrigger>
+          <TabsTrigger value="trend" className="text-xs">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            Trend
+          </TabsTrigger>
+          <TabsTrigger value="effects" className="text-xs">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Effects
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ===== CARD TAB ===== */}
+        <TabsContent value="card" className="space-y-4 mt-4">
+          <CollapsibleSection 
+            title="Background" 
+            icon={<Sparkles className="h-4 w-4" />}
+            defaultOpen={true}
+          >
+            <ColorPicker
+              label="Background Color"
+              value={value.backgroundColor}
+              onChange={(val) => updateStyle({ backgroundColor: val })}
+            />
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <Label>Enable Gradient</Label>
+                <Switch
+                  checked={value.backgroundGradient.enabled}
+                  onCheckedChange={(val) => updateNestedStyle('backgroundGradient', { enabled: val })}
+                />
+              </div>
+              {value.backgroundGradient.enabled && (
+                <div className="space-y-3 pl-4">
+                  <ColorPicker
+                    label="From"
+                    value={value.backgroundGradient.from}
+                    onChange={(val) => updateNestedStyle('backgroundGradient', { from: val })}
+                  />
+                  <ColorPicker
+                    label="To"
+                    value={value.backgroundGradient.to}
+                    onChange={(val) => updateNestedStyle('backgroundGradient', { to: val })}
+                  />
+                  <div className="space-y-2">
+                    <Label>Direction</Label>
+                    <Select
+                      value={value.backgroundGradient.direction}
+                      onValueChange={(val: any) => updateNestedStyle('backgroundGradient', { direction: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="to-r">Left to Right</SelectItem>
+                        <SelectItem value="to-br">Top-Left to Bottom-Right</SelectItem>
+                        <SelectItem value="to-b">Top to Bottom</SelectItem>
+                        <SelectItem value="to-bl">Top-Right to Bottom-Left</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection 
+            title="Border & Shadow" 
+            icon={<Target className="h-4 w-4" />}
+          >
+            <SliderInput
+              label="Border Radius"
+              value={value.borderRadius}
+              onChange={(val) => updateStyle({ borderRadius: val })}
+              min={0}
+              max={50}
+              unit="px"
+            />
+            <div className="flex items-center justify-between">
+              <Label>Show Border</Label>
+              <Switch
+                checked={value.border.enabled}
+                onCheckedChange={(val) => updateNestedStyle('border', { enabled: val })}
+              />
+            </div>
+            {value.border.enabled && (
+              <>
+                <SliderInput
+                  label="Border Width"
+                  value={value.border.width}
+                  onChange={(val) => updateNestedStyle('border', { width: val })}
+                  min={0}
+                  max={10}
+                  unit="px"
+                />
+                <ColorPicker
+                  label="Border Color"
+                  value={value.border.color}
+                  onChange={(val) => updateNestedStyle('border', { color: val })}
+                />
+              </>
+            )}
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <Label>Show Shadow</Label>
+                <Switch
+                  checked={value.shadow.enabled}
+                  onCheckedChange={(val) => updateNestedStyle('shadow', { enabled: val })}
+                />
+              </div>
+              {value.shadow.enabled && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Shadow Size</Label>
+                    <Select
+                      value={value.shadow.size}
+                      onValueChange={(val: any) => updateNestedStyle('shadow', { size: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sm">Small</SelectItem>
+                        <SelectItem value="md">Medium</SelectItem>
+                        <SelectItem value="lg">Large</SelectItem>
+                        <SelectItem value="xl">Extra Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection 
+            title="Padding" 
+            icon={<Target className="h-4 w-4" />}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <SliderInput
+                label="Horizontal"
+                value={value.padding.x}
+                onChange={(val) => updateNestedStyle('padding', { x: val })}
+                min={0}
+                max={100}
+                unit="px"
+              />
+              <SliderInput
+                label="Vertical"
+                value={value.padding.y}
+                onChange={(val) => updateNestedStyle('padding', { y: val })}
+                min={0}
+                max={100}
+                unit="px"
+              />
+            </div>
+          </CollapsibleSection>
+        </TabsContent>
+
+        {/* ===== CONTENT TAB ===== */}
+        <TabsContent value="content" className="space-y-4 mt-4">
+          <CollapsibleSection 
+            title="Value Styling" 
+            icon={<Type className="h-4 w-4" />}
+            defaultOpen={true}
+          >
+            <SliderInput
+              label="Font Size"
+              value={value.value.fontSize}
+              onChange={(val) => updateNestedStyle('value', { fontSize: val })}
+              min={16}
+              max={80}
+              unit="px"
+            />
+            <div className="space-y-2">
+              <Label>Font Weight</Label>
+              <Select
+                value={value.value.fontWeight}
+                onValueChange={(val: any) => updateNestedStyle('value', { fontWeight: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="400">Regular</SelectItem>
+                  <SelectItem value="500">Medium</SelectItem>
+                  <SelectItem value="600">Semibold</SelectItem>
+                  <SelectItem value="700">Bold</SelectItem>
+                  <SelectItem value="800">Extra Bold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <ColorPicker
+              label="Text Color"
+              value={value.value.color}
+              onChange={(val) => updateNestedStyle('value', { color: val })}
+            />
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <Label>Gradient Text</Label>
+                <Switch
+                  checked={value.value.gradient.enabled}
+                  onCheckedChange={(val) => updateNestedStyle('value', { 
+                    gradient: { ...value.value.gradient, enabled: val }
+                  })}
+                />
+              </div>
+              {value.value.gradient.enabled && (
+                <div className="space-y-3 pl-4">
+                  <ColorPicker
+                    label="From"
+                    value={value.value.gradient.from}
+                    onChange={(val) => updateNestedStyle('value', { 
+                      gradient: { ...value.value.gradient, from: val }
+                    })}
+                  />
+                  <ColorPicker
+                    label="To"
+                    value={value.value.gradient.to}
+                    onChange={(val) => updateNestedStyle('value', { 
+                      gradient: { ...value.value.gradient, to: val }
+                    })}
+                  />
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection 
+            title="Label Styling" 
+            icon={<Type className="h-4 w-4" />}
+          >
+            <SliderInput
+              label="Font Size"
+              value={value.label.fontSize}
+              onChange={(val) => updateNestedStyle('label', { fontSize: val })}
+              min={8}
+              max={24}
+              unit="px"
+            />
+            <div className="space-y-2">
+              <Label>Font Weight</Label>
+              <Select
+                value={value.label.fontWeight}
+                onValueChange={(val: any) => updateNestedStyle('label', { fontWeight: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="300">Light</SelectItem>
+                  <SelectItem value="400">Regular</SelectItem>
+                  <SelectItem value="500">Medium</SelectItem>
+                  <SelectItem value="600">Semibold</SelectItem>
+                  <SelectItem value="700">Bold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <ColorPicker
+              label="Text Color"
+              value={value.label.color}
+              onChange={(val) => updateNestedStyle('label', { color: val })}
+            />
+            <div className="space-y-2">
+              <Label>Text Transform</Label>
+              <Select
+                value={value.label.textTransform}
+                onValueChange={(val: any) => updateNestedStyle('label', { textTransform: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="uppercase">UPPERCASE</SelectItem>
+                  <SelectItem value="lowercase">lowercase</SelectItem>
+                  <SelectItem value="capitalize">Capitalize</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <SliderInput
+              label="Letter Spacing"
+              value={value.label.letterSpacing}
+              onChange={(val) => updateNestedStyle('label', { letterSpacing: val })}
+              min={-2}
+              max={5}
+              step={0.1}
+              unit="px"
+            />
+          </CollapsibleSection>
+        </TabsContent>
+
+        {/* ===== TREND TAB ===== */}
+        <TabsContent value="trend" className="space-y-4 mt-4">
+          <CollapsibleSection 
+            title="Positive Trend" 
+            icon={<TrendingUp className="h-4 w-4" />}
+            defaultOpen={true}
+          >
+            <ColorPicker
+              label="Text Color"
+              value={value.trend.positive.color}
+              onChange={(val) => updateNestedStyle('trend', { 
+                positive: { ...value.trend.positive, color: val }
+              })}
+            />
+            <ColorPicker
+              label="Background Color"
+              value={value.trend.positive.backgroundColor}
+              onChange={(val) => updateNestedStyle('trend', { 
+                positive: { ...value.trend.positive, backgroundColor: val }
+              })}
+            />
+            <SliderInput
+              label="Icon Size"
+              value={value.trend.positive.iconSize}
+              onChange={(val) => updateNestedStyle('trend', { 
+                positive: { ...value.trend.positive, iconSize: val }
+              })}
+              min={12}
+              max={32}
+              unit="px"
+            />
+          </CollapsibleSection>
+
+          <CollapsibleSection 
+            title="Negative Trend" 
+            icon={<TrendingUp className="h-4 w-4 rotate-180" />}
+          >
+            <ColorPicker
+              label="Text Color"
+              value={value.trend.negative.color}
+              onChange={(val) => updateNestedStyle('trend', { 
+                negative: { ...value.trend.negative, color: val }
+              })}
+            />
+            <ColorPicker
+              label="Background Color"
+              value={value.trend.negative.backgroundColor}
+              onChange={(val) => updateNestedStyle('trend', { 
+                negative: { ...value.trend.negative, backgroundColor: val }
+              })}
+            />
+            <SliderInput
+              label="Icon Size"
+              value={value.trend.negative.iconSize}
+              onChange={(val) => updateNestedStyle('trend', { 
+                negative: { ...value.trend.negative, iconSize: val }
+              })}
+              min={12}
+              max={32}
+              unit="px"
+            />
+          </CollapsibleSection>
+
+          <CollapsibleSection 
+            title="Trend Options" 
+            icon={<Sparkles className="h-4 w-4" />}
+          >
+            <SliderInput
+              label="Font Size"
+              value={value.trend.fontSize}
+              onChange={(val) => updateNestedStyle('trend', { fontSize: val })}
+              min={10}
+              max={24}
+              unit="px"
+            />
+            <div className="flex items-center justify-between">
+              <Label>Show Icon</Label>
+              <Switch
+                checked={value.trend.showIcon}
+                onCheckedChange={(val) => updateNestedStyle('trend', { showIcon: val })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Show Percentage</Label>
+              <Switch
+                checked={value.trend.showPercentage}
+                onCheckedChange={(val) => updateNestedStyle('trend', { showPercentage: val })}
+              />
+            </div>
+          </CollapsibleSection>
+        </TabsContent>
+
+        {/* ===== EFFECTS TAB ===== */}
+        <TabsContent value="effects" className="space-y-4 mt-4">
+          <CollapsibleSection 
+            title="Hover Effect" 
+            icon={<Sparkles className="h-4 w-4" />}
+            defaultOpen={true}
+          >
+            <div className="flex items-center justify-between">
+              <Label>Enable Hover</Label>
+              <Switch
+                checked={value.hover.enabled}
+                onCheckedChange={(val) => updateNestedStyle('hover', { enabled: val })}
+              />
+            </div>
+            {value.hover.enabled && (
+              <>
+                <SliderInput
+                  label="Scale"
+                  value={value.hover.scale}
+                  onChange={(val) => updateNestedStyle('hover', { scale: val })}
+                  min={1}
+                  max={1.2}
+                  step={0.01}
+                />
+                <div className="flex items-center justify-between">
+                  <Label>Shadow on Hover</Label>
+                  <Switch
+                    checked={value.hover.shadow}
+                    onCheckedChange={(val) => updateNestedStyle('hover', { shadow: val })}
+                  />
+                </div>
+                <SliderInput
+                  label="Transition"
+                  value={value.hover.transition}
+                  onChange={(val) => updateNestedStyle('hover', { transition: val })}
+                  min={0}
+                  max={1000}
+                  step={50}
+                  unit="ms"
+                />
+              </>
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection 
+            title="Animation" 
+            icon={<Sparkles className="h-4 w-4" />}
+          >
+            <div className="flex items-center justify-between">
+              <Label>Enable Animation</Label>
+              <Switch
+                checked={value.animation.enabled}
+                onCheckedChange={(val) => updateNestedStyle('animation', { enabled: val })}
+              />
+            </div>
+            {value.animation.enabled && (
+              <>
+                <SliderInput
+                  label="Duration"
+                  value={value.animation.duration}
+                  onChange={(val) => updateNestedStyle('animation', { duration: val })}
+                  min={0}
+                  max={2000}
+                  step={50}
+                  unit="ms"
+                />
+                <SliderInput
+                  label="Delay"
+                  value={value.animation.delay}
+                  onChange={(val) => updateNestedStyle('animation', { delay: val })}
+                  min={0}
+                  max={1000}
+                  step={50}
+                  unit="ms"
+                />
+              </>
+            )}
+          </CollapsibleSection>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
