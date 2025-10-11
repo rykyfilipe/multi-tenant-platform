@@ -97,29 +97,73 @@ async function createModuleTableColumns(
  */
 export async function removeModuleTables(databaseId: number, moduleId: string) {
 	try {
-		// Find all tables for this module in the database
-		const moduleTables = await prisma.table.findMany({
-			where: {
-				databaseId,
-				moduleType: moduleId,
-				isModuleTable: true,
-			},
-			include: {
-				columns: true,
-				rows: true,
-			},
-		});
-
-		// Delete tables (this will cascade delete columns and rows)
-		for (const table of moduleTables) {
-			await prisma.table.delete({
-				where: { id: table.id },
+		// For billing module, remove invoice system tables
+		if (moduleId === "billing") {
+			// Find invoice system tables (customers, invoices, invoice_items)
+			const invoiceTables = await prisma.table.findMany({
+				where: {
+					databaseId,
+					isProtected: true,
+					protectedType: { in: ["customers", "invoices", "invoice_items"] },
+				},
+				include: {
+					columns: true,
+					rows: true,
+				},
 			});
-		}
 
-		console.log(
-			`✅ Removed ${moduleTables.length} tables for module '${moduleId}'`,
-		);
+			// Delete invoice system tables (this will cascade delete columns and rows)
+			for (const table of invoiceTables) {
+				await prisma.table.delete({
+					where: { id: table.id },
+				});
+			}
+
+			console.log(
+				`✅ Removed ${invoiceTables.length} invoice system tables for billing module`,
+			);
+
+			// Also remove invoice series settings from tenant
+			await prisma.tenant.update({
+				where: {
+					id: (await prisma.database.findUnique({
+						where: { id: databaseId },
+						select: { tenantId: true },
+					}))?.tenantId,
+				},
+				data: {
+					invoiceSeriesPrefix: null,
+					invoiceIncludeYear: null,
+					invoiceStartNumber: null,
+				},
+			});
+
+			console.log("✅ Removed invoice series settings from tenant");
+		} else {
+			// For other modules, find tables with moduleType
+			const moduleTables = await prisma.table.findMany({
+				where: {
+					databaseId,
+					moduleType: moduleId,
+					isModuleTable: true,
+				},
+				include: {
+					columns: true,
+					rows: true,
+				},
+			});
+
+			// Delete tables (this will cascade delete columns and rows)
+			for (const table of moduleTables) {
+				await prisma.table.delete({
+					where: { id: table.id },
+				});
+			}
+
+			console.log(
+				`✅ Removed ${moduleTables.length} tables for module '${moduleId}'`,
+			);
+		}
 	} catch (error) {
 		console.error(`❌ Error removing tables for module '${moduleId}':`, error);
 		throw error;
@@ -137,15 +181,29 @@ export async function hasModuleTables(
 	moduleId: string,
 ): Promise<boolean> {
 	try {
-		const tableCount = await prisma.table.count({
-			where: {
-				databaseId,
-				moduleType: moduleId,
-				isModuleTable: true,
-			},
-		});
+		if (moduleId === "billing") {
+			// For billing module, check invoice system tables
+			const tableCount = await prisma.table.count({
+				where: {
+					databaseId,
+					isProtected: true,
+					protectedType: { in: ["customers", "invoices", "invoice_items"] },
+				},
+			});
 
-		return tableCount > 0;
+			return tableCount > 0;
+		} else {
+			// For other modules, check tables with moduleType
+			const tableCount = await prisma.table.count({
+				where: {
+					databaseId,
+					moduleType: moduleId,
+					isModuleTable: true,
+				},
+			});
+
+			return tableCount > 0;
+		}
 	} catch (error) {
 		console.error(`❌ Error checking module tables for '${moduleId}':`, error);
 		return false;
@@ -160,16 +218,31 @@ export async function hasModuleTables(
  */
 export async function getModuleTables(databaseId: number, moduleId: string) {
 	try {
-		return await prisma.table.findMany({
-			where: {
-				databaseId,
-				moduleType: moduleId,
-				isModuleTable: true,
-			},
-			include: {
-				columns: true,
-			},
-		});
+		if (moduleId === "billing") {
+			// For billing module, get invoice system tables
+			return await prisma.table.findMany({
+				where: {
+					databaseId,
+					isProtected: true,
+					protectedType: { in: ["customers", "invoices", "invoice_items"] },
+				},
+				include: {
+					columns: true,
+				},
+			});
+		} else {
+			// For other modules, get tables with moduleType
+			return await prisma.table.findMany({
+				where: {
+					databaseId,
+					moduleType: moduleId,
+					isModuleTable: true,
+				},
+				include: {
+					columns: true,
+				},
+			});
+		}
 	} catch (error) {
 		console.error(`❌ Error getting module tables for '${moduleId}':`, error);
 		return [];

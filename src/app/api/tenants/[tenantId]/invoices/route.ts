@@ -232,15 +232,30 @@ export async function POST(
 		}
 	}
 	
-	// Refresh tables after all fixes
+	// Refresh tables after all fixes - force refresh without cache
 	if (columnFixes.some(fix => 
 		invoiceTables.invoices.columns.find((col: any) => col.name === fix.name && col.semanticType !== fix.semanticType)
 	) || (customerIdColumn && (customerIdColumn.semanticType !== 'invoice_customer_id' || !customerIdColumn.referenceTableId))) {
-		invoiceTables = await InvoiceSystemService.getInvoiceTables(
-			Number(tenantId),
-			database.id,
-		);
-		console.log('✅ Invoice columns fixed and refreshed');
+		// Force refresh by querying directly without cache
+		const refreshedTables = await prisma.table.findMany({
+			where: {
+				databaseId: database.id,
+				database: { tenantId: Number(tenantId) },
+				isProtected: true,
+				protectedType: { in: ["customers", "invoices", "invoice_items"] },
+			},
+			include: {
+				columns: true,
+			},
+		});
+
+		invoiceTables.customers = refreshedTables.find((t: any) => t.protectedType === "customers");
+		invoiceTables.invoices = refreshedTables.find((t: any) => t.protectedType === "invoices");
+		invoiceTables.invoice_items = refreshedTables.find((t: any) => t.protectedType === "invoice_items");
+		
+		console.log('✅ Invoice columns fixed and refreshed (forced refresh)');
+		console.log('🔍 Refreshed customer_id column:', invoiceTables.invoices.columns.find((c: any) => c.name === 'customer_id'));
+		console.log('🔍 Refreshed total_amount column:', invoiceTables.invoices.columns.find((c: any) => c.name === 'total_amount'));
 	}
 
 		// Get tenant settings for invoice numbering

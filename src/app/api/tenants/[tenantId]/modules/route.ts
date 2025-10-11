@@ -254,6 +254,16 @@ export async function POST(
 				);
 			}
 
+			// Get tables that will be removed before removing them
+			const tablesToRemove = await prisma.table.findMany({
+				where: {
+					databaseId: parseInt(databaseId),
+					isProtected: true,
+					protectedType: { in: ["customers", "invoices", "invoice_items"] },
+				},
+				select: { id: true, name: true },
+			});
+
 			// Remove module tables
 			await removeModuleTables(parseInt(databaseId), moduleId);
 
@@ -291,6 +301,7 @@ export async function POST(
 				message: `Module '${moduleId}' disabled successfully`,
 				moduleId,
 				databaseId: parseInt(databaseId),
+				removedTables: tablesToRemove, // Return removed tables for local state update
 			});
 		} else {
 			return NextResponse.json(

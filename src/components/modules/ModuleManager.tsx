@@ -198,6 +198,30 @@ export default function ModuleManager() {
 					}
 				}
 
+				// If module was disabled and tables were removed, update local state
+				if (action === "disable" && responseData.removedTables && responseData.removedTables.length > 0) {
+					console.log("Module disabled - removing tables from context...", responseData.removedTables);
+					
+					// Remove tables from local state
+					setTables((prevTables) => 
+						prevTables ? prevTables.filter(table => 
+							!responseData.removedTables.some((removedTable: any) => removedTable.id === table.id)
+						) : []
+					);
+
+					// Also update selectedDatabase if it matches the database where module was disabled
+					if (selectedDatabase && selectedDatabase.id === databaseId) {
+						if (selectedDatabase.tables) {
+							setSelectedDatabase({
+								...selectedDatabase,
+								tables: selectedDatabase.tables.filter(table => 
+									!responseData.removedTables.some((removedTable: any) => removedTable.id === table.id)
+								),
+							});
+						}
+					}
+				}
+
 				// Refresh modules status to ensure consistency
 				await fetchModulesStatus();
 				
