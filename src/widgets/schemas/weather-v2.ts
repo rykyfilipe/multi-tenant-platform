@@ -42,12 +42,29 @@ export const weatherStyleSchema = z.object({
     color: "rgba(0, 0, 0, 0.1)",
     style: "solid",
   }),
-  shadow: z.object({
-    enabled: z.boolean().default(true),
-    size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
-  }).optional().default({
+  shadow: z.union([
+    z.object({
+      enabled: z.boolean().default(true),
+      size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
+    }),
+    z.enum(["none", "sm", "md", "lg", "medium", "subtle", "bold"]) // Backward compatibility
+  ]).optional().default({
     enabled: true,
     size: "md",
+  }).transform((val) => {
+    if (typeof val === 'string') {
+      const shadowMap: Record<string, any> = {
+        none: { enabled: false, size: "sm" },
+        sm: { enabled: true, size: "sm" },
+        md: { enabled: true, size: "md" },
+        medium: { enabled: true, size: "md" },
+        lg: { enabled: true, size: "lg" },
+        subtle: { enabled: true, size: "sm" },
+        bold: { enabled: true, size: "xl" },
+      };
+      return shadowMap[val] || { enabled: true, size: "md" };
+    }
+    return val;
   }),
   padding: z.union([
     z.object({

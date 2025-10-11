@@ -127,8 +127,25 @@ const SliderInput: React.FC<SliderInputProps> = ({
 };
 
 export const ClockStyleEditor: React.FC<ClockStyleEditorProps> = ({ value, onChange, clockType }) => {
+  // Ensure all nested objects exist with defaults (backward compatibility)
+  const safeValue: ClockStyle = {
+    ...value,
+    borderRadius: typeof value.borderRadius === 'string' ? 16 : (value.borderRadius ?? 16),
+    backgroundGradient: value.backgroundGradient || { enabled: false, from: "#FFFFFF", to: "#F3F4F6", direction: "to-br" },
+    border: value.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" },
+    shadow: value.shadow || { enabled: true, size: "md", color: "rgba(0, 0, 0, 0.1)" },
+    padding: typeof value.padding === 'string' ? { x: 32, y: 24 } : (value.padding || { x: 32, y: 24 }),
+    alignment: value.alignment || "center",
+    time: value.time || { fontSize: 64, fontFamily: "Courier New, monospace", fontWeight: "700", color: "#111827", gradient: { enabled: false, from: "#3B82F6", to: "#8B5CF6" }, letterSpacing: 2, showSeparatorBlink: true },
+    date: value.date || { fontSize: 16, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "500", color: "#6B7280", textTransform: "uppercase", letterSpacing: 1, marginTop: 8 },
+    seconds: value.seconds || { fontSize: 24, color: "#9CA3AF", opacity: 0.7 },
+    analog: value.analog || { faceColor: "#FFFFFF", borderColor: "#E5E7EB", borderWidth: 8, numbersColor: "#374151", numbersSize: 14, showNumbers: true, hourHand: { color: "#111827", width: 6, length: 50 }, minuteHand: { color: "#374151", width: 4, length: 70 }, secondHand: { color: "#EF4444", width: 2, length: 75 }, centerDot: { color: "#111827", size: 12 } },
+    timezone: value.timezone || { fontSize: 12, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "400", color: "#9CA3AF", marginTop: 8 },
+    animation: value.animation || { enabled: true, duration: 400, easing: "easeInOut" },
+  };
+
   const updateStyle = (updates: Partial<ClockStyle>) => {
-    onChange({ ...value, ...updates });
+    onChange({ ...safeValue, ...updates });
   };
 
   const updateNestedStyle = <K extends keyof ClockStyle>(
@@ -136,8 +153,8 @@ export const ClockStyleEditor: React.FC<ClockStyleEditorProps> = ({ value, onCha
     updates: Partial<ClockStyle[K]>
   ) => {
     onChange({
-      ...value,
-      [key]: { ...(value[key] as any), ...updates },
+      ...safeValue,
+      [key]: { ...(safeValue[key] as any), ...updates },
     });
   };
 
@@ -170,33 +187,33 @@ export const ClockStyleEditor: React.FC<ClockStyleEditorProps> = ({ value, onCha
           >
             <ColorPicker
               label="Background Color"
-              value={value.backgroundColor}
+              value={safeValue.backgroundColor}
               onChange={(val) => updateStyle({ backgroundColor: val })}
             />
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between mb-3">
                 <Label>Enable Gradient</Label>
                 <Switch
-                  checked={value.backgroundGradient.enabled}
+                  checked={safeValue.backgroundGradient.enabled}
                   onCheckedChange={(val) => updateNestedStyle('backgroundGradient', { enabled: val })}
                 />
               </div>
-              {value.backgroundGradient.enabled && (
+              {safeValue.backgroundGradient.enabled && (
                 <div className="space-y-3 pl-4">
                   <ColorPicker
                     label="From"
-                    value={value.backgroundGradient.from}
+                    value={safeValue.backgroundGradient.from}
                     onChange={(val) => updateNestedStyle('backgroundGradient', { from: val })}
                   />
                   <ColorPicker
                     label="To"
-                    value={value.backgroundGradient.to}
+                    value={safeValue.backgroundGradient.to}
                     onChange={(val) => updateNestedStyle('backgroundGradient', { to: val })}
                   />
                   <div className="space-y-2">
                     <Label>Direction</Label>
                     <Select
-                      value={value.backgroundGradient.direction}
+                      value={safeValue.backgroundGradient.direction}
                       onValueChange={(val: any) => updateNestedStyle('backgroundGradient', { direction: val })}
                     >
                       <SelectTrigger>

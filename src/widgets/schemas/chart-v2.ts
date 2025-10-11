@@ -254,7 +254,19 @@ export const chartStyleSchema = z.object({
   showLegend: z.boolean().optional(),
   showGrid: z.boolean().optional(),
   legendPosition: z.enum(["top", "bottom", "left", "right"]).optional(),
-});
+  shadow: z.enum(["none", "sm", "md", "lg", "medium", "subtle", "bold"]).optional(),
+  fontSize: z.enum(["xs", "sm", "md", "lg", "xl", "2xl"]).optional(),
+  fontWeight: z.enum(["normal", "medium", "semibold", "bold"]).optional(),
+  transparentBackground: z.boolean().optional(),
+  gridOpacity: z.number().optional(),
+  smoothCurves: z.boolean().optional(),
+  fillOpacity: z.number().optional(),
+  accentColor: z.string().optional(),
+  shine: z.boolean().optional(),
+  glow: z.boolean().optional(),
+  glassEffect: z.boolean().optional(),
+  gap: z.enum(["none", "sm", "md", "lg"]).optional(),
+}).passthrough();
 
 export const chartDataSchema = z.object({
   databaseId: z.number().optional(),

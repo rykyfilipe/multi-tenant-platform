@@ -272,7 +272,26 @@ export const tableStyleSchema = z.object({
     fontSize: 14,
     fontFamily: "Inter, system-ui, sans-serif",
   }),
-});
+  
+  // Deprecated - kept for backward compatibility
+  theme: z.enum(["platinum", "onyx", "pearl", "obsidian", "custom"]).optional(),
+  shadow: z.enum(["none", "sm", "md", "lg", "medium", "subtle", "bold"]).optional(),
+  transparentBackground: z.boolean().optional(),
+  showBorders: z.boolean().optional(),
+  showHeader: z.boolean().optional(),
+  showFooter: z.boolean().optional(),
+  stripedRows: z.boolean().optional(),
+  hoverEffect: z.boolean().optional(),
+  headerStyle: z.enum(["solid", "transparent", "gradient"]).optional(),
+  cellPadding: z.enum(["compact", "normal", "comfortable"]).optional(),
+  fontSize: z.enum(["xs", "sm", "base", "lg"]).optional(),
+  fontWeight: z.enum(["normal", "medium", "semibold", "bold"]).optional(),
+  borderColor: z.string().optional(),
+  headerBg: z.string().optional(),
+  headerTextColor: z.string().optional(),
+  rowTextColor: z.string().optional(),
+  alternateRowBg: z.string().optional(),
+}).passthrough();
 
 export const tableDataSchema = z.object({
   databaseId: z.number().optional(),

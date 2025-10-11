@@ -129,8 +129,24 @@ const SliderInput: React.FC<SliderInputProps> = ({
 };
 
 export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onChange, chartType }) => {
+  // Ensure all nested objects exist with defaults (backward compatibility)
+  const safeValue: ChartStyle = {
+    ...value,
+    backgroundOpacity: value.backgroundOpacity ?? 1,
+    borderRadius: typeof value.borderRadius === 'string' ? 8 : (value.borderRadius ?? 8),
+    padding: typeof value.padding === 'string' ? { top: 20, right: 20, bottom: 20, left: 20 } : (value.padding || { top: 20, right: 20, bottom: 20, left: 20 }),
+    line: value.line || { width: 2, tension: 0.4, style: "solid", cap: "round", join: "round", gradient: { enabled: false, startOpacity: 0.8, endOpacity: 0.1 } },
+    points: value.points || { show: true, radius: 4, hoverRadius: 6, borderWidth: 2, borderColor: "#FFFFFF", style: "circle" },
+    bars: value.bars || { borderRadius: 4, borderWidth: 0, barPercentage: 0.8, categoryPercentage: 0.9 },
+    grid: value.grid || { show: true, color: "rgba(0, 0, 0, 0.1)", lineWidth: 1, drawBorder: true, drawOnChartArea: true, drawTicks: true, tickLength: 8, style: "solid", dashPattern: [5, 5] },
+    axes: value.axes || { x: { show: true, color: "#666666", fontSize: 12, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "400", rotation: 0, labelOffset: 10 }, y: { show: true, color: "#666666", fontSize: 12, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "400", labelOffset: 10 } },
+    legend: value.legend || { show: true, position: "bottom", align: "center", fontSize: 12, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "400", color: "#333333", padding: 10, boxWidth: 40, boxHeight: 12 },
+    tooltip: value.tooltip || { enabled: true, backgroundColor: "rgba(0, 0, 0, 0.8)", titleColor: "#FFFFFF", bodyColor: "#FFFFFF", borderColor: "rgba(255, 255, 255, 0.3)", borderWidth: 1, borderRadius: 6, padding: 12, fontSize: 12, fontFamily: "Inter, system-ui, sans-serif" },
+    animation: value.animation || { enabled: true, duration: 750, easing: "easeInOutQuad" },
+  };
+
   const updateStyle = (updates: Partial<ChartStyle>) => {
-    onChange({ ...value, ...updates });
+    onChange({ ...safeValue, ...updates });
   };
 
   const updateNestedStyle = <K extends keyof ChartStyle>(
@@ -138,8 +154,8 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
     updates: Partial<ChartStyle[K]>
   ) => {
     onChange({
-      ...value,
-      [key]: { ...(value[key] as any), ...updates },
+      ...safeValue,
+      [key]: { ...(safeValue[key] as any), ...updates },
     });
   };
 
@@ -181,12 +197,12 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
           >
             <ColorPicker
               label="Background Color"
-              value={value.backgroundColor}
+              value={safeValue.backgroundColor}
               onChange={(val) => updateStyle({ backgroundColor: val })}
             />
             <SliderInput
               label="Background Opacity"
-              value={value.backgroundOpacity}
+              value={value?.backgroundOpacity || 1}
               onChange={(val) => updateStyle({ backgroundOpacity: val })}
               min={0}
               max={1}
@@ -194,7 +210,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             />
             <SliderInput
               label="Border Radius"
-              value={value.borderRadius}
+              value={safeValue.borderRadius}
               onChange={(val) => updateStyle({ borderRadius: val })}
               min={0}
               max={50}
@@ -209,7 +225,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             <div className="grid grid-cols-2 gap-3">
               <SliderInput
                 label="Top"
-                value={value.padding.top}
+                value={safeValue.padding.top}
                 onChange={(val) => updateNestedStyle('padding', { top: val })}
                 min={0}
                 max={100}
@@ -217,7 +233,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               />
               <SliderInput
                 label="Right"
-                value={value.padding.right}
+                value={safeValue.padding.right}
                 onChange={(val) => updateNestedStyle('padding', { right: val })}
                 min={0}
                 max={100}
@@ -225,7 +241,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               />
               <SliderInput
                 label="Bottom"
-                value={value.padding.bottom}
+                value={safeValue.padding.bottom}
                 onChange={(val) => updateNestedStyle('padding', { bottom: val })}
                 min={0}
                 max={100}
@@ -233,7 +249,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               />
               <SliderInput
                 label="Left"
-                value={value.padding.left}
+                value={safeValue.padding.left}
                 onChange={(val) => updateNestedStyle('padding', { left: val })}
                 min={0}
                 max={100}
@@ -249,15 +265,15 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             <div className="flex items-center justify-between">
               <Label>Enable Animations</Label>
               <Switch
-                checked={value.animation.enabled}
+                checked={safeValue.animation.enabled}
                 onCheckedChange={(val) => updateNestedStyle('animation', { enabled: val })}
               />
             </div>
-            {value.animation.enabled && (
+            {safeValue.animation.enabled && (
               <>
                 <SliderInput
                   label="Duration"
-                  value={value.animation.duration}
+                  value={safeValue.animation.duration}
                   onChange={(val) => updateNestedStyle('animation', { duration: val })}
                   min={0}
                   max={5000}
@@ -267,7 +283,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 <div className="space-y-2">
                   <Label>Easing Function</Label>
                   <Select
-                    value={value.animation.easing}
+                    value={safeValue.animation.easing}
                     onValueChange={(val: any) => updateNestedStyle('animation', { easing: val })}
                   >
                     <SelectTrigger>
@@ -299,7 +315,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             >
               <SliderInput
                 label="Line Width"
-                value={value.line.width}
+                value={safeValue.line.width}
                 onChange={(val) => updateNestedStyle('line', { width: val })}
                 min={0.5}
                 max={10}
@@ -308,7 +324,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               />
               <SliderInput
                 label="Curve Tension"
-                value={value.line.tension}
+                value={safeValue.line.tension}
                 onChange={(val) => updateNestedStyle('line', { tension: val })}
                 min={0}
                 max={1}
@@ -318,7 +334,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               <div className="space-y-2">
                 <Label>Line Style</Label>
                 <Select
-                  value={value.line.style}
+                  value={safeValue.line.style}
                   onValueChange={(val: any) => updateNestedStyle('line', { style: val })}
                 >
                   <SelectTrigger>
@@ -336,19 +352,19 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 <div className="flex items-center justify-between mb-3">
                   <Label>Enable Gradient Fill</Label>
                   <Switch
-                    checked={value.line.gradient.enabled}
+                    checked={safeValue.line.gradient.enabled}
                     onCheckedChange={(val) => updateNestedStyle('line', { 
                       gradient: { ...value.line.gradient, enabled: val }
                     })}
                   />
                 </div>
-                {value.line.gradient.enabled && (
+                {safeValue.line.gradient.enabled && (
                   <div className="space-y-3 pl-4">
                     <SliderInput
                       label="Start Opacity"
-                      value={value.line.gradient.startOpacity}
+                      value={safeValue.line.gradient.startOpacity}
                       onChange={(val) => updateNestedStyle('line', { 
-                        gradient: { ...value.line.gradient, startOpacity: val }
+                        gradient: { ...safeValue.line.gradient, startOpacity: val }
                       })}
                       min={0}
                       max={1}
@@ -356,9 +372,9 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                     />
                     <SliderInput
                       label="End Opacity"
-                      value={value.line.gradient.endOpacity}
+                      value={safeValue.line.gradient.endOpacity}
                       onChange={(val) => updateNestedStyle('line', { 
-                        gradient: { ...value.line.gradient, endOpacity: val }
+                        gradient: { ...safeValue.line.gradient, endOpacity: val }
                       })}
                       min={0}
                       max={1}
@@ -378,15 +394,15 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               <div className="flex items-center justify-between">
                 <Label>Show Points</Label>
                 <Switch
-                  checked={value.points.show}
+                  checked={safeValue.points.show}
                   onCheckedChange={(val) => updateNestedStyle('points', { show: val })}
                 />
               </div>
-              {value.points.show && (
+              {safeValue.points.show && (
                 <>
                   <SliderInput
                     label="Point Radius"
-                    value={value.points.radius}
+                    value={safeValue.points.radius}
                     onChange={(val) => updateNestedStyle('points', { radius: val })}
                     min={0}
                     max={20}
@@ -394,7 +410,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                   />
                   <SliderInput
                     label="Hover Radius"
-                    value={value.points.hoverRadius}
+                    value={safeValue.points.hoverRadius}
                     onChange={(val) => updateNestedStyle('points', { hoverRadius: val })}
                     min={0}
                     max={30}
@@ -402,7 +418,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                   />
                   <SliderInput
                     label="Border Width"
-                    value={value.points.borderWidth}
+                    value={safeValue.points.borderWidth}
                     onChange={(val) => updateNestedStyle('points', { borderWidth: val })}
                     min={0}
                     max={10}
@@ -410,13 +426,13 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                   />
                   <ColorPicker
                     label="Border Color"
-                    value={value.points.borderColor}
+                    value={safeValue.points.borderColor}
                     onChange={(val) => updateNestedStyle('points', { borderColor: val })}
                   />
                   <div className="space-y-2">
                     <Label>Point Style</Label>
                     <Select
-                      value={value.points.style}
+                      value={safeValue.points.style}
                       onValueChange={(val: any) => updateNestedStyle('points', { style: val })}
                     >
                       <SelectTrigger>
@@ -444,7 +460,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             >
               <SliderInput
                 label="Border Radius"
-                value={value.bars.borderRadius}
+                value={safeValue.bars.borderRadius}
                 onChange={(val) => updateNestedStyle('bars', { borderRadius: val })}
                 min={0}
                 max={50}
@@ -452,22 +468,22 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               />
               <SliderInput
                 label="Border Width"
-                value={value.bars.borderWidth}
+                value={safeValue.bars.borderWidth}
                 onChange={(val) => updateNestedStyle('bars', { borderWidth: val })}
                 min={0}
                 max={10}
                 unit="px"
               />
-              {value.bars.borderWidth > 0 && (
+              {safeValue.bars.borderWidth > 0 && (
                 <ColorPicker
                   label="Border Color"
-                  value={value.bars.borderColor || "#000000"}
+                  value={safeValue.bars.borderColor || "#000000"}
                   onChange={(val) => updateNestedStyle('bars', { borderColor: val })}
                 />
               )}
               <SliderInput
                 label="Bar Percentage"
-                value={value.bars.barPercentage}
+                value={safeValue.bars.barPercentage}
                 onChange={(val) => updateNestedStyle('bars', { barPercentage: val })}
                 min={0.1}
                 max={1}
@@ -476,7 +492,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               />
               <SliderInput
                 label="Category Percentage"
-                value={value.bars.categoryPercentage}
+                value={safeValue.bars.categoryPercentage}
                 onChange={(val) => updateNestedStyle('bars', { categoryPercentage: val })}
                 min={0.1}
                 max={1}
@@ -493,20 +509,20 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             <div className="flex items-center justify-between">
               <Label>Show Grid</Label>
               <Switch
-                checked={value.grid.show}
+                checked={safeValue.grid.show}
                 onCheckedChange={(val) => updateNestedStyle('grid', { show: val })}
               />
             </div>
-            {value.grid.show && (
+            {safeValue.grid.show && (
               <>
                 <ColorPicker
                   label="Grid Color"
-                  value={value.grid.color}
+                  value={safeValue.grid.color}
                   onChange={(val) => updateNestedStyle('grid', { color: val })}
                 />
                 <SliderInput
                   label="Line Width"
-                  value={value.grid.lineWidth}
+                  value={safeValue.grid.lineWidth}
                   onChange={(val) => updateNestedStyle('grid', { lineWidth: val })}
                   min={0}
                   max={5}
@@ -516,7 +532,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 <div className="space-y-2">
                   <Label>Grid Style</Label>
                   <Select
-                    value={value.grid.style}
+                    value={safeValue.grid.style}
                     onValueChange={(val: any) => updateNestedStyle('grid', { style: val })}
                   >
                     <SelectTrigger>
@@ -544,26 +560,26 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             <div className="flex items-center justify-between">
               <Label>Show X Axis</Label>
               <Switch
-                checked={value.axes.x.show}
+                checked={safeValue.axes.x.show}
                 onCheckedChange={(val) => updateNestedStyle('axes', { 
                   x: { ...value.axes.x, show: val }
                 })}
               />
             </div>
-            {value.axes.x.show && (
+            {safeValue.axes.x.show && (
               <>
                 <ColorPicker
                   label="Text Color"
-                  value={value.axes.x.color}
+                  value={safeValue.axes.x.color}
                   onChange={(val) => updateNestedStyle('axes', { 
-                    x: { ...value.axes.x, color: val }
+                    x: { ...safeValue.axes.x, color: val }
                   })}
                 />
                 <SliderInput
                   label="Font Size"
-                  value={value.axes.x.fontSize}
+                  value={safeValue.axes.x.fontSize}
                   onChange={(val) => updateNestedStyle('axes', { 
-                    x: { ...value.axes.x, fontSize: val }
+                    x: { ...safeValue.axes.x, fontSize: val }
                   })}
                   min={8}
                   max={24}
@@ -572,9 +588,9 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 <div className="space-y-2">
                   <Label>Font Weight</Label>
                   <Select
-                    value={value.axes.x.fontWeight}
+                    value={safeValue.axes.x.fontWeight}
                     onValueChange={(val: any) => updateNestedStyle('axes', { 
-                      x: { ...value.axes.x, fontWeight: val }
+                      x: { ...safeValue.axes.x, fontWeight: val }
                     })}
                   >
                     <SelectTrigger>
@@ -591,9 +607,9 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 </div>
                 <SliderInput
                   label="Label Rotation"
-                  value={value.axes.x.rotation}
+                  value={safeValue.axes.x.rotation}
                   onChange={(val) => updateNestedStyle('axes', { 
-                    x: { ...value.axes.x, rotation: val }
+                    x: { ...safeValue.axes.x, rotation: val }
                   })}
                   min={-90}
                   max={90}
@@ -611,26 +627,26 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             <div className="flex items-center justify-between">
               <Label>Show Y Axis</Label>
               <Switch
-                checked={value.axes.y.show}
+                checked={safeValue.axes.y.show}
                 onCheckedChange={(val) => updateNestedStyle('axes', { 
                   y: { ...value.axes.y, show: val }
                 })}
               />
             </div>
-            {value.axes.y.show && (
+            {safeValue.axes.y.show && (
               <>
                 <ColorPicker
                   label="Text Color"
-                  value={value.axes.y.color}
+                  value={safeValue.axes.y.color}
                   onChange={(val) => updateNestedStyle('axes', { 
-                    y: { ...value.axes.y, color: val }
+                    y: { ...safeValue.axes.y, color: val }
                   })}
                 />
                 <SliderInput
                   label="Font Size"
-                  value={value.axes.y.fontSize}
+                  value={safeValue.axes.y.fontSize}
                   onChange={(val) => updateNestedStyle('axes', { 
-                    y: { ...value.axes.y, fontSize: val }
+                    y: { ...safeValue.axes.y, fontSize: val }
                   })}
                   min={8}
                   max={24}
@@ -639,9 +655,9 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 <div className="space-y-2">
                   <Label>Font Weight</Label>
                   <Select
-                    value={value.axes.y.fontWeight}
+                    value={safeValue.axes.y.fontWeight}
                     onValueChange={(val: any) => updateNestedStyle('axes', { 
-                      y: { ...value.axes.y, fontWeight: val }
+                      y: { ...safeValue.axes.y, fontWeight: val }
                     })}
                   >
                     <SelectTrigger>
@@ -671,16 +687,16 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             <div className="flex items-center justify-between">
               <Label>Show Legend</Label>
               <Switch
-                checked={value.legend.show}
+                checked={safeValue.legend.show}
                 onCheckedChange={(val) => updateNestedStyle('legend', { show: val })}
               />
             </div>
-            {value.legend.show && (
+            {safeValue.legend.show && (
               <>
                 <div className="space-y-2">
                   <Label>Position</Label>
                   <Select
-                    value={value.legend.position}
+                    value={safeValue.legend.position}
                     onValueChange={(val: any) => updateNestedStyle('legend', { position: val })}
                   >
                     <SelectTrigger>
@@ -697,7 +713,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 <div className="space-y-2">
                   <Label>Alignment</Label>
                   <Select
-                    value={value.legend.align}
+                    value={safeValue.legend.align}
                     onValueChange={(val: any) => updateNestedStyle('legend', { align: val })}
                   >
                     <SelectTrigger>
@@ -712,12 +728,12 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 </div>
                 <ColorPicker
                   label="Text Color"
-                  value={value.legend.color}
+                  value={safeValue.legend.color}
                   onChange={(val) => updateNestedStyle('legend', { color: val })}
                 />
                 <SliderInput
                   label="Font Size"
-                  value={value.legend.fontSize}
+                  value={safeValue.legend.fontSize}
                   onChange={(val) => updateNestedStyle('legend', { fontSize: val })}
                   min={8}
                   max={24}
@@ -726,7 +742,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 <div className="space-y-2">
                   <Label>Font Weight</Label>
                   <Select
-                    value={value.legend.fontWeight}
+                    value={safeValue.legend.fontWeight}
                     onValueChange={(val: any) => updateNestedStyle('legend', { fontWeight: val })}
                   >
                     <SelectTrigger>
@@ -756,30 +772,30 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
             <div className="flex items-center justify-between">
               <Label>Enable Tooltips</Label>
               <Switch
-                checked={value.tooltip.enabled}
+                checked={safeValue.tooltip.enabled}
                 onCheckedChange={(val) => updateNestedStyle('tooltip', { enabled: val })}
               />
             </div>
-            {value.tooltip.enabled && (
+            {safeValue.tooltip.enabled && (
               <>
                 <ColorPicker
                   label="Background Color"
-                  value={value.tooltip.backgroundColor}
+                  value={safeValue.tooltip.backgroundColor}
                   onChange={(val) => updateNestedStyle('tooltip', { backgroundColor: val })}
                 />
                 <ColorPicker
                   label="Title Color"
-                  value={value.tooltip.titleColor}
+                  value={safeValue.tooltip.titleColor}
                   onChange={(val) => updateNestedStyle('tooltip', { titleColor: val })}
                 />
                 <ColorPicker
                   label="Body Color"
-                  value={value.tooltip.bodyColor}
+                  value={safeValue.tooltip.bodyColor}
                   onChange={(val) => updateNestedStyle('tooltip', { bodyColor: val })}
                 />
                 <SliderInput
                   label="Border Radius"
-                  value={value.tooltip.borderRadius}
+                  value={safeValue.tooltip.borderRadius}
                   onChange={(val) => updateNestedStyle('tooltip', { borderRadius: val })}
                   min={0}
                   max={20}
@@ -787,7 +803,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 />
                 <SliderInput
                   label="Padding"
-                  value={value.tooltip.padding}
+                  value={safeValue.tooltip.padding}
                   onChange={(val) => updateNestedStyle('tooltip', { padding: val })}
                   min={0}
                   max={30}
@@ -795,7 +811,7 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                 />
                 <SliderInput
                   label="Font Size"
-                  value={value.tooltip.fontSize}
+                  value={safeValue.tooltip.fontSize}
                   onChange={(val) => updateNestedStyle('tooltip', { fontSize: val })}
                   min={8}
                   max={24}

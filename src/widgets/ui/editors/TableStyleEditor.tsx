@@ -127,8 +127,22 @@ const SliderInput: React.FC<SliderInputProps> = ({
 };
 
 export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onChange }) => {
+  // Ensure all nested objects exist with defaults (backward compatibility)
+  const safeValue: TableStyle = {
+    ...value,
+    borderRadius: typeof value.borderRadius === 'string' ? 8 : (value.borderRadius ?? 8),
+    border: value.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" },
+    header: value.header || { backgroundColor: "#F9FAFB", textColor: "#111827", fontSize: 14, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "600", textAlign: "left", textTransform: "none", letterSpacing: 0, padding: { x: 16, y: 12 }, borderBottom: { enabled: true, width: 2, color: "rgba(0, 0, 0, 0.1)" }, sticky: true },
+    rows: value.rows || { fontSize: 14, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "400", textColor: "#374151", textAlign: "left", padding: { x: 16, y: 12 }, minHeight: 48, alternateColors: { enabled: true, even: "#FFFFFF", odd: "#F9FAFB" }, hover: { enabled: true, backgroundColor: "#F3F4F6", transition: 150 }, borderBottom: { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.05)", style: "solid" } },
+    cells: value.cells || { verticalBorder: { enabled: false, width: 1, color: "rgba(0, 0, 0, 0.05)" }, compact: false },
+    selection: value.selection || { enabled: true, backgroundColor: "rgba(59, 130, 246, 0.1)", borderColor: "rgba(59, 130, 246, 0.5)", borderWidth: 2 },
+    footer: value.footer || { backgroundColor: "#F9FAFB", textColor: "#111827", fontSize: 14, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "600", padding: { x: 16, y: 12 }, borderTop: { enabled: true, width: 2, color: "rgba(0, 0, 0, 0.1)" } },
+    scrollbar: value.scrollbar || { width: 8, trackColor: "rgba(0, 0, 0, 0.05)", thumbColor: "rgba(0, 0, 0, 0.2)", thumbHoverColor: "rgba(0, 0, 0, 0.3)" },
+    emptyState: value.emptyState || { textColor: "#9CA3AF", fontSize: 14, fontFamily: "Inter, system-ui, sans-serif" },
+  };
+
   const updateStyle = (updates: Partial<TableStyle>) => {
-    onChange({ ...value, ...updates });
+    onChange({ ...safeValue, ...updates });
   };
 
   const updateNestedStyle = <K extends keyof TableStyle>(
@@ -136,8 +150,8 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
     updates: Partial<TableStyle[K]>
   ) => {
     onChange({
-      ...value,
-      [key]: { ...(value[key] as any), ...updates },
+      ...safeValue,
+      [key]: { ...(safeValue[key] as any), ...updates },
     });
   };
 
@@ -172,12 +186,12 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
           >
             <ColorPicker
               label="Background Color"
-              value={value.backgroundColor}
+              value={safeValue.backgroundColor}
               onChange={(val) => updateStyle({ backgroundColor: val })}
             />
             <SliderInput
               label="Background Opacity"
-              value={value.backgroundOpacity}
+              value={safeValue.backgroundOpacity}
               onChange={(val) => updateStyle({ backgroundOpacity: val })}
               min={0}
               max={1}
@@ -185,7 +199,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             />
             <SliderInput
               label="Border Radius"
-              value={value.borderRadius}
+              value={safeValue.borderRadius}
               onChange={(val) => updateStyle({ borderRadius: val })}
               min={0}
               max={50}
@@ -200,15 +214,15 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             <div className="flex items-center justify-between">
               <Label>Enable Border</Label>
               <Switch
-                checked={value.border.enabled}
+                checked={safeValue.border.enabled}
                 onCheckedChange={(val) => updateNestedStyle('border', { enabled: val })}
               />
             </div>
-            {value.border.enabled && (
+            {safeValue.border.enabled && (
               <>
                 <SliderInput
                   label="Border Width"
-                  value={value.border.width}
+                  value={safeValue.border.width}
                   onChange={(val) => updateNestedStyle('border', { width: val })}
                   min={0}
                   max={10}
@@ -216,13 +230,13 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
                 />
                 <ColorPicker
                   label="Border Color"
-                  value={value.border.color}
+                  value={safeValue.border.color}
                   onChange={(val) => updateNestedStyle('border', { color: val })}
                 />
                 <div className="space-y-2">
                   <Label>Border Style</Label>
                   <Select
-                    value={value.border.style}
+                    value={safeValue.border.style}
                     onValueChange={(val: any) => updateNestedStyle('border', { style: val })}
                   >
                     <SelectTrigger>
@@ -245,7 +259,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
           >
             <SliderInput
               label="Width"
-              value={value.scrollbar.width}
+                value={safeValue.scrollbar.width}
               onChange={(val) => updateNestedStyle('scrollbar', { width: val })}
               min={4}
               max={20}
@@ -253,17 +267,17 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             />
             <ColorPicker
               label="Track Color"
-              value={value.scrollbar.trackColor}
+                value={safeValue.scrollbar.trackColor}
               onChange={(val) => updateNestedStyle('scrollbar', { trackColor: val })}
             />
             <ColorPicker
               label="Thumb Color"
-              value={value.scrollbar.thumbColor}
+                value={safeValue.scrollbar.thumbColor}
               onChange={(val) => updateNestedStyle('scrollbar', { thumbColor: val })}
             />
             <ColorPicker
               label="Thumb Hover Color"
-              value={value.scrollbar.thumbHoverColor}
+                value={safeValue.scrollbar.thumbHoverColor}
               onChange={(val) => updateNestedStyle('scrollbar', { thumbHoverColor: val })}
             />
           </CollapsibleSection>
@@ -297,7 +311,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             <div className="space-y-2">
               <Label>Font Weight</Label>
               <Select
-                value={value.header.fontWeight}
+                value={safeValue.header.fontWeight}
                 onValueChange={(val: any) => updateNestedStyle('header', { fontWeight: val })}
               >
                 <SelectTrigger>
@@ -316,7 +330,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             <div className="space-y-2">
               <Label>Text Alignment</Label>
               <Select
-                value={value.header.textAlign}
+                value={safeValue.header.textAlign}
                 onValueChange={(val: any) => updateNestedStyle('header', { textAlign: val })}
               >
                 <SelectTrigger>
@@ -332,7 +346,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             <div className="space-y-2">
               <Label>Text Transform</Label>
               <Select
-                value={value.header.textTransform}
+                value={safeValue.header.textTransform}
                 onValueChange={(val: any) => updateNestedStyle('header', { textTransform: val })}
               >
                 <SelectTrigger>
@@ -364,7 +378,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
             <div className="grid grid-cols-2 gap-3">
               <SliderInput
                 label="Horizontal"
-                value={value.header.padding.x}
+                value={safeValue.header.padding.x}
                 onChange={(val) => updateNestedStyle('header', { 
                   padding: { ...value.header.padding, x: val }
                 })}
@@ -374,7 +388,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
               />
               <SliderInput
                 label="Vertical"
-                value={value.header.padding.y}
+                value={safeValue.header.padding.y}
                 onChange={(val) => updateNestedStyle('header', { 
                   padding: { ...value.header.padding, y: val }
                 })}
@@ -402,7 +416,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
               <>
                 <SliderInput
                   label="Border Width"
-                  value={value.header.borderBottom.width}
+                  value={safeValue.header.borderBottom.width}
                   onChange={(val) => updateNestedStyle('header', { 
                     borderBottom: { ...value.header.borderBottom, width: val }
                   })}
@@ -412,7 +426,7 @@ export const TableStyleEditor: React.FC<TableStyleEditorProps> = ({ value, onCha
                 />
                 <ColorPicker
                   label="Border Color"
-                  value={value.header.borderBottom.color}
+                  value={safeValue.header.borderBottom.color}
                   onChange={(val) => updateNestedStyle('header', { 
                     borderBottom: { ...value.header.borderBottom, color: val }
                   })}

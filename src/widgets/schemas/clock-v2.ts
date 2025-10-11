@@ -40,14 +40,31 @@ export const clockStyleSchema = z.object({
     color: "rgba(0, 0, 0, 0.1)",
     style: "solid",
   }),
-  shadow: z.object({
-    enabled: z.boolean().default(true),
-    size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
-    color: z.string().default("rgba(0, 0, 0, 0.1)"),
-  }).optional().default({
+  shadow: z.union([
+    z.object({
+      enabled: z.boolean().default(true),
+      size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
+      color: z.string().default("rgba(0, 0, 0, 0.1)"),
+    }),
+    z.enum(["none", "sm", "md", "lg", "medium", "subtle", "bold"]) // Backward compatibility
+  ]).optional().default({
     enabled: true,
     size: "md",
     color: "rgba(0, 0, 0, 0.1)",
+  }).transform((val) => {
+    if (typeof val === 'string') {
+      const shadowMap: Record<string, any> = {
+        none: { enabled: false, size: "sm", color: "rgba(0, 0, 0, 0.1)" },
+        sm: { enabled: true, size: "sm", color: "rgba(0, 0, 0, 0.1)" },
+        md: { enabled: true, size: "md", color: "rgba(0, 0, 0, 0.1)" },
+        medium: { enabled: true, size: "md", color: "rgba(0, 0, 0, 0.1)" },
+        lg: { enabled: true, size: "lg", color: "rgba(0, 0, 0, 0.1)" },
+        subtle: { enabled: true, size: "sm", color: "rgba(0, 0, 0, 0.05)" },
+        bold: { enabled: true, size: "xl", color: "rgba(0, 0, 0, 0.15)" },
+      };
+      return shadowMap[val] || { enabled: true, size: "md", color: "rgba(0, 0, 0, 0.1)" };
+    }
+    return val;
   }),
   padding: z.union([
     z.object({

@@ -126,8 +126,26 @@ const SliderInput: React.FC<SliderInputProps> = ({
 };
 
 export const WeatherStyleEditor: React.FC<WeatherStyleEditorProps> = ({ value, onChange }) => {
+  // Ensure all nested objects exist with defaults (backward compatibility)
+  const safeValue: WeatherStyle = {
+    ...value,
+    borderRadius: typeof value.borderRadius === 'string' ? 16 : (value.borderRadius ?? 16),
+    backgroundGradient: value.backgroundGradient || { enabled: false, from: "#FFFFFF", to: "#E0F2FE", direction: "to-b" },
+    border: value.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" },
+    shadow: value.shadow || { enabled: true, size: "md" },
+    padding: typeof value.padding === 'string' ? { x: 24, y: 20 } : (value.padding || { x: 24, y: 20 }),
+    layout: value.layout || "detailed",
+    temperature: value.temperature || { fontSize: 56, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "700", color: "#111827", gradient: { enabled: false, from: "#F59E0B", to: "#EF4444" }, showUnit: true, unitSize: 24 },
+    location: value.location || { fontSize: 18, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "600", color: "#374151" },
+    condition: value.condition || { fontSize: 14, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "500", color: "#6B7280", textTransform: "capitalize" },
+    icon: value.icon || { size: 80, color: "#3B82F6", style: "filled", gradient: { from: "#60A5FA", to: "#3B82F6" }, animation: true },
+    details: value.details || { fontSize: 13, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "400", color: "#6B7280", iconSize: 16, iconColor: "#9CA3AF", spacing: 12, labelColor: "#9CA3AF" },
+    forecast: value.forecast || { cardBackground: "#F9FAFB", cardBorderRadius: 8, cardPadding: 12, fontSize: 12, fontWeight: "500", dayColor: "#374151", tempColor: "#111827", iconSize: 32, spacing: 8 },
+    animation: value.animation || { enabled: true, duration: 500 },
+  };
+
   const updateStyle = (updates: Partial<WeatherStyle>) => {
-    onChange({ ...value, ...updates });
+    onChange({ ...safeValue, ...updates });
   };
 
   const updateNestedStyle = <K extends keyof WeatherStyle>(
@@ -135,8 +153,8 @@ export const WeatherStyleEditor: React.FC<WeatherStyleEditorProps> = ({ value, o
     updates: Partial<WeatherStyle[K]>
   ) => {
     onChange({
-      ...value,
-      [key]: { ...(value[key] as any), ...updates },
+      ...safeValue,
+      [key]: { ...(safeValue[key] as any), ...updates },
     });
   };
 
@@ -171,27 +189,27 @@ export const WeatherStyleEditor: React.FC<WeatherStyleEditorProps> = ({ value, o
           >
             <ColorPicker
               label="Background Color"
-              value={value.backgroundColor}
+              value={safeValue.backgroundColor}
               onChange={(val) => updateStyle({ backgroundColor: val })}
             />
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between mb-3">
                 <Label>Enable Gradient</Label>
                 <Switch
-                  checked={value.backgroundGradient.enabled}
+                  checked={safeValue.backgroundGradient.enabled}
                   onCheckedChange={(val) => updateNestedStyle('backgroundGradient', { enabled: val })}
                 />
               </div>
-              {value.backgroundGradient.enabled && (
+              {safeValue.backgroundGradient.enabled && (
                 <div className="space-y-3 pl-4">
                   <ColorPicker
                     label="From"
-                    value={value.backgroundGradient.from}
+                    value={safeValue.backgroundGradient.from}
                     onChange={(val) => updateNestedStyle('backgroundGradient', { from: val })}
                   />
                   <ColorPicker
                     label="To"
-                    value={value.backgroundGradient.to}
+                    value={safeValue.backgroundGradient.to}
                     onChange={(val) => updateNestedStyle('backgroundGradient', { to: val })}
                   />
                 </div>

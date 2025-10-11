@@ -127,8 +127,24 @@ const SliderInput: React.FC<SliderInputProps> = ({
 };
 
 export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange }) => {
+  // Ensure all nested objects exist with defaults
+  const safeValue: KPIStyle = {
+    backgroundColor: value.backgroundColor || "#FFFFFF",
+    borderRadius: typeof value.borderRadius === 'string' ? 12 : (value.borderRadius ?? 12),
+    backgroundGradient: value.backgroundGradient || { enabled: false, from: "#FFFFFF", to: "#F3F4F6", direction: "to-br" },
+    border: value.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" },
+    shadow: value.shadow || { enabled: true, size: "sm", color: "rgba(0, 0, 0, 0.1)" },
+    padding: typeof value.padding === 'string' ? { x: 24, y: 20 } : (value.padding || { x: 24, y: 20 }),
+    value: value.value || { fontSize: 36, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "700", color: "#111827", gradient: { enabled: false, from: "#3B82F6", to: "#8B5CF6" } },
+    label: value.label || { fontSize: 14, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "500", color: "#6B7280", textTransform: "none", letterSpacing: 0 },
+    trend: value.trend || { positive: { color: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.1)", iconSize: 16 }, negative: { color: "#EF4444", backgroundColor: "rgba(239, 68, 68, 0.1)", iconSize: 16 }, fontSize: 12, fontWeight: "600", showIcon: true, showPercentage: true },
+    icon: value.icon || { enabled: false, size: 24, color: "#3B82F6", backgroundColor: "rgba(59, 130, 246, 0.1)", position: "left" },
+    hover: value.hover || { enabled: true, scale: 1.02, shadow: true, transition: 200 },
+    animation: value.animation || { enabled: true, duration: 500, delay: 0 },
+  };
+
   const updateStyle = (updates: Partial<KPIStyle>) => {
-    onChange({ ...value, ...updates });
+    onChange({ ...safeValue, ...updates });
   };
 
   const updateNestedStyle = <K extends keyof KPIStyle>(
@@ -136,8 +152,8 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
     updates: Partial<KPIStyle[K]>
   ) => {
     onChange({
-      ...value,
-      [key]: { ...(value[key] as any), ...updates },
+      ...safeValue,
+      [key]: { ...(safeValue[key] as any), ...updates },
     });
   };
 
@@ -179,26 +195,26 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
               <div className="flex items-center justify-between mb-3">
                 <Label>Enable Gradient</Label>
                 <Switch
-                  checked={value.backgroundGradient.enabled}
+                  checked={safeValue.backgroundGradient.enabled}
                   onCheckedChange={(val) => updateNestedStyle('backgroundGradient', { enabled: val })}
                 />
               </div>
-              {value.backgroundGradient.enabled && (
+              {safeValue.backgroundGradient.enabled && (
                 <div className="space-y-3 pl-4">
                   <ColorPicker
                     label="From"
-                    value={value.backgroundGradient.from}
+                    value={safeValue.backgroundGradient.from}
                     onChange={(val) => updateNestedStyle('backgroundGradient', { from: val })}
                   />
                   <ColorPicker
                     label="To"
-                    value={value.backgroundGradient.to}
+                    value={safeValue.backgroundGradient.to}
                     onChange={(val) => updateNestedStyle('backgroundGradient', { to: val })}
                   />
                   <div className="space-y-2">
                     <Label>Direction</Label>
                     <Select
-                      value={value.backgroundGradient.direction}
+                      value={safeValue.backgroundGradient.direction}
                       onValueChange={(val: any) => updateNestedStyle('backgroundGradient', { direction: val })}
                     >
                       <SelectTrigger>
@@ -223,7 +239,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
           >
             <SliderInput
               label="Border Radius"
-              value={value.borderRadius}
+              value={safeValue.borderRadius}
               onChange={(val) => updateStyle({ borderRadius: val })}
               min={0}
               max={50}
@@ -232,15 +248,15 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             <div className="flex items-center justify-between">
               <Label>Show Border</Label>
               <Switch
-                checked={value.border.enabled}
+                checked={safeValue.border.enabled}
                 onCheckedChange={(val) => updateNestedStyle('border', { enabled: val })}
               />
             </div>
-            {value.border.enabled && (
+            {safeValue.border.enabled && (
               <>
                 <SliderInput
                   label="Border Width"
-                  value={value.border.width}
+                  value={safeValue.border.width}
                   onChange={(val) => updateNestedStyle('border', { width: val })}
                   min={0}
                   max={10}
@@ -248,7 +264,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
                 />
                 <ColorPicker
                   label="Border Color"
-                  value={value.border.color}
+                  value={safeValue.border.color}
                   onChange={(val) => updateNestedStyle('border', { color: val })}
                 />
               </>
@@ -257,16 +273,16 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
               <div className="flex items-center justify-between mb-3">
                 <Label>Show Shadow</Label>
                 <Switch
-                  checked={value.shadow.enabled}
+                  checked={safeValue.shadow.enabled}
                   onCheckedChange={(val) => updateNestedStyle('shadow', { enabled: val })}
                 />
               </div>
-              {value.shadow.enabled && (
+              {safeValue.shadow.enabled && (
                 <div className="space-y-3">
                   <div className="space-y-2">
                     <Label>Shadow Size</Label>
                     <Select
-                      value={value.shadow.size}
+                      value={safeValue.shadow.size}
                       onValueChange={(val: any) => updateNestedStyle('shadow', { size: val })}
                     >
                       <SelectTrigger>
@@ -292,7 +308,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             <div className="grid grid-cols-2 gap-3">
               <SliderInput
                 label="Horizontal"
-                value={value.padding.x}
+                value={safeValue.padding.x}
                 onChange={(val) => updateNestedStyle('padding', { x: val })}
                 min={0}
                 max={100}
@@ -300,7 +316,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
               />
               <SliderInput
                 label="Vertical"
-                value={value.padding.y}
+                value={safeValue.padding.y}
                 onChange={(val) => updateNestedStyle('padding', { y: val })}
                 min={0}
                 max={100}
@@ -319,7 +335,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
           >
             <SliderInput
               label="Font Size"
-              value={value.value.fontSize}
+              value={safeValue.value.fontSize}
               onChange={(val) => updateNestedStyle('value', { fontSize: val })}
               min={16}
               max={80}
@@ -328,7 +344,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             <div className="space-y-2">
               <Label>Font Weight</Label>
               <Select
-                value={value.value.fontWeight}
+                value={safeValue.value.fontWeight}
                 onValueChange={(val: any) => updateNestedStyle('value', { fontWeight: val })}
               >
                 <SelectTrigger>
@@ -345,33 +361,33 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             </div>
             <ColorPicker
               label="Text Color"
-              value={value.value.color}
+              value={safeValue.value.color}
               onChange={(val) => updateNestedStyle('value', { color: val })}
             />
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between mb-3">
                 <Label>Gradient Text</Label>
                 <Switch
-                  checked={value.value.gradient.enabled}
+                  checked={safeValue.value.gradient.enabled}
                   onCheckedChange={(val) => updateNestedStyle('value', { 
                     gradient: { ...value.value.gradient, enabled: val }
                   })}
                 />
               </div>
-              {value.value.gradient.enabled && (
+              {safeValue.value.gradient.enabled && (
                 <div className="space-y-3 pl-4">
                   <ColorPicker
                     label="From"
-                    value={value.value.gradient.from}
+                    value={safeValue.value.gradient.from}
                     onChange={(val) => updateNestedStyle('value', { 
-                      gradient: { ...value.value.gradient, from: val }
+                      gradient: { ...safeValue.value.gradient, from: val }
                     })}
                   />
                   <ColorPicker
                     label="To"
-                    value={value.value.gradient.to}
+                    value={safeValue.value.gradient.to}
                     onChange={(val) => updateNestedStyle('value', { 
-                      gradient: { ...value.value.gradient, to: val }
+                      gradient: { ...safeValue.value.gradient, to: val }
                     })}
                   />
                 </div>
@@ -385,7 +401,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
           >
             <SliderInput
               label="Font Size"
-              value={value.label.fontSize}
+              value={safeValue.label.fontSize}
               onChange={(val) => updateNestedStyle('label', { fontSize: val })}
               min={8}
               max={24}
@@ -394,7 +410,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             <div className="space-y-2">
               <Label>Font Weight</Label>
               <Select
-                value={value.label.fontWeight}
+                value={safeValue.label.fontWeight}
                 onValueChange={(val: any) => updateNestedStyle('label', { fontWeight: val })}
               >
                 <SelectTrigger>
@@ -411,13 +427,13 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             </div>
             <ColorPicker
               label="Text Color"
-              value={value.label.color}
+              value={safeValue.label.color}
               onChange={(val) => updateNestedStyle('label', { color: val })}
             />
             <div className="space-y-2">
               <Label>Text Transform</Label>
               <Select
-                value={value.label.textTransform}
+                value={safeValue.label.textTransform}
                 onValueChange={(val: any) => updateNestedStyle('label', { textTransform: val })}
               >
                 <SelectTrigger>
@@ -433,7 +449,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             </div>
             <SliderInput
               label="Letter Spacing"
-              value={value.label.letterSpacing}
+              value={safeValue.label.letterSpacing}
               onChange={(val) => updateNestedStyle('label', { letterSpacing: val })}
               min={-2}
               max={5}
@@ -452,21 +468,21 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
           >
             <ColorPicker
               label="Text Color"
-              value={value.trend.positive.color}
+              value={safeValue.trend.positive.color}
               onChange={(val) => updateNestedStyle('trend', { 
                 positive: { ...value.trend.positive, color: val }
               })}
             />
             <ColorPicker
               label="Background Color"
-              value={value.trend.positive.backgroundColor}
+              value={safeValue.trend.positive.backgroundColor}
               onChange={(val) => updateNestedStyle('trend', { 
                 positive: { ...value.trend.positive, backgroundColor: val }
               })}
             />
             <SliderInput
               label="Icon Size"
-              value={value.trend.positive.iconSize}
+              value={safeValue.trend.positive.iconSize}
               onChange={(val) => updateNestedStyle('trend', { 
                 positive: { ...value.trend.positive, iconSize: val }
               })}
@@ -482,21 +498,21 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
           >
             <ColorPicker
               label="Text Color"
-              value={value.trend.negative.color}
+              value={safeValue.trend.negative.color}
               onChange={(val) => updateNestedStyle('trend', { 
                 negative: { ...value.trend.negative, color: val }
               })}
             />
             <ColorPicker
               label="Background Color"
-              value={value.trend.negative.backgroundColor}
+              value={safeValue.trend.negative.backgroundColor}
               onChange={(val) => updateNestedStyle('trend', { 
                 negative: { ...value.trend.negative, backgroundColor: val }
               })}
             />
             <SliderInput
               label="Icon Size"
-              value={value.trend.negative.iconSize}
+              value={safeValue.trend.negative.iconSize}
               onChange={(val) => updateNestedStyle('trend', { 
                 negative: { ...value.trend.negative, iconSize: val }
               })}
@@ -512,7 +528,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
           >
             <SliderInput
               label="Font Size"
-              value={value.trend.fontSize}
+              value={safeValue.trend.fontSize}
               onChange={(val) => updateNestedStyle('trend', { fontSize: val })}
               min={10}
               max={24}
@@ -521,14 +537,14 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             <div className="flex items-center justify-between">
               <Label>Show Icon</Label>
               <Switch
-                checked={value.trend.showIcon}
+                checked={safeValue.trend.showIcon}
                 onCheckedChange={(val) => updateNestedStyle('trend', { showIcon: val })}
               />
             </div>
             <div className="flex items-center justify-between">
               <Label>Show Percentage</Label>
               <Switch
-                checked={value.trend.showPercentage}
+                checked={safeValue.trend.showPercentage}
                 onCheckedChange={(val) => updateNestedStyle('trend', { showPercentage: val })}
               />
             </div>
@@ -545,15 +561,15 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             <div className="flex items-center justify-between">
               <Label>Enable Hover</Label>
               <Switch
-                checked={value.hover.enabled}
+                checked={safeValue.hover.enabled}
                 onCheckedChange={(val) => updateNestedStyle('hover', { enabled: val })}
               />
             </div>
-            {value.hover.enabled && (
+              {safeValue.hover.enabled && (
               <>
                 <SliderInput
                   label="Scale"
-                  value={value.hover.scale}
+                  value={safeValue.hover.scale}
                   onChange={(val) => updateNestedStyle('hover', { scale: val })}
                   min={1}
                   max={1.2}
@@ -562,13 +578,13 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
                 <div className="flex items-center justify-between">
                   <Label>Shadow on Hover</Label>
                   <Switch
-                    checked={value.hover.shadow}
+                    checked={safeValue.hover.shadow}
                     onCheckedChange={(val) => updateNestedStyle('hover', { shadow: val })}
                   />
                 </div>
                 <SliderInput
                   label="Transition"
-                  value={value.hover.transition}
+                  value={safeValue.hover.transition}
                   onChange={(val) => updateNestedStyle('hover', { transition: val })}
                   min={0}
                   max={1000}
@@ -586,15 +602,15 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
             <div className="flex items-center justify-between">
               <Label>Enable Animation</Label>
               <Switch
-                checked={value.animation.enabled}
+                checked={safeValue.animation.enabled}
                 onCheckedChange={(val) => updateNestedStyle('animation', { enabled: val })}
               />
             </div>
-            {value.animation.enabled && (
+              {safeValue.animation.enabled && (
               <>
                 <SliderInput
                   label="Duration"
-                  value={value.animation.duration}
+                  value={safeValue.animation.duration}
                   onChange={(val) => updateNestedStyle('animation', { duration: val })}
                   min={0}
                   max={2000}
@@ -603,7 +619,7 @@ export const KPIStyleEditor: React.FC<KPIStyleEditorProps> = ({ value, onChange 
                 />
                 <SliderInput
                   label="Delay"
-                  value={value.animation.delay}
+                  value={safeValue.animation.delay}
                   onChange={(val) => updateNestedStyle('animation', { delay: val })}
                   min={0}
                   max={1000}
