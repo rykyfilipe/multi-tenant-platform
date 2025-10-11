@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TasksStyleEditor } from "./TasksStyleEditor";
+import { tasksStyleSchema } from "@/widgets/schemas/tasks-v2";
 
-// Tasks-specific configuration schema - SIMPLIFIED
+// Tasks-specific configuration schema
 const tasksConfigSchema = z.object({
   settings: z.object({
     title: z.string().default("My Tasks"),
@@ -20,9 +22,7 @@ const tasksConfigSchema = z.object({
     dateFormat: z.enum(["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]).default("DD/MM/YYYY"),
     maxTasks: z.number().min(1).max(100).default(50),
   }),
-  style: z.object({
-    // Simplified - renderer uses UI component defaults
-  }),
+  style: tasksStyleSchema,
   refresh: z.object({
     enabled: z.boolean().default(false), // Tasks don't need auto-refresh
     interval: z.number().default(300000), // 5 minutes if enabled
@@ -56,11 +56,19 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
     });
   };
 
+  const updateStyle = (style: TasksConfig["style"]) => {
+    onChange({
+      ...value,
+      style,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="style">Style</TabsTrigger>
           <TabsTrigger value="refresh">Refresh</TabsTrigger>
         </TabsList>
 
@@ -167,6 +175,20 @@ export const TasksWidgetEditor: React.FC<TasksWidgetEditorProps> = ({
                 />
               </div>
             </div>
+          </div>
+        </TabsContent>
+
+        {/* Style Tab */}
+        <TabsContent value="style" className="space-y-4">
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Widget Styling</h3>
+            <p className="text-sm text-muted-foreground">
+              Customize the appearance of your Tasks widget with advanced styling options.
+            </p>
+            <TasksStyleEditor
+              value={value.style}
+              onChange={updateStyle}
+            />
           </div>
         </TabsContent>
 

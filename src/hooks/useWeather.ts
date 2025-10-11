@@ -39,9 +39,10 @@ export const useWeather = (location: string, apiKey?: string) => {
         const weatherData = await mockResponse.json();
         setData(weatherData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        console.warn('Weather API failed, using mock data:', err instanceof Error ? err.message : 'An error occurred');
 
-        // Fallback to mock data if API fails
+        // Fallback to mock data if API fails (clear error so UI shows mock data)
+        setError(null);
         setData({
           temperature: 22,
           condition: 'Partly Cloudy',

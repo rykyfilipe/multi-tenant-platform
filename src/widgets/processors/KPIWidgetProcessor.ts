@@ -455,27 +455,30 @@ export class KPIWidgetProcessor {
 
       if (winningGroup && config.metric.displayColumn) {
         console.log(`🎯 [GROUP BY + displayColumn] Winning group: "${winningGroup.group}"`);
+        console.log(`   → Group has ${winningGroup.rows.length} rows`);
+        console.log(`   → Looking for row with ${config.metric.field} = ${finalValue}`);
         
-        // If displayColumn is the groupBy field, just use the group key
-        if (config.metric.displayColumn === groupByField) {
-          displayValue = winningGroup.group === '__NULL__' ? 'N/A' : winningGroup.group;
-          console.log(`   → Display value (from group key): ${displayValue}`);
+        // Find the specific row from the winning group that has the aggregated value
+        const groupField = config.metric.field;
+        if (finalAgg.function === 'min' || finalAgg.function === 'max') {
+          // Find the row with the specific min/max value
+          resultRow = winningGroup.rows.find(row => {
+            const rowValue = parseFloat(String(row[groupField]));
+            return rowValue === finalValue;
+          });
+          console.log(`   → Found row with ${groupField} = ${finalValue}:`, !!resultRow);
+        } else if (finalAgg.function === 'first') {
+          resultRow = winningGroup.rows[0];
+        } else if (finalAgg.function === 'last') {
+          resultRow = winningGroup.rows[winningGroup.rows.length - 1];
+        }
+        
+        if (resultRow) {
+          displayValue = resultRow[config.metric.displayColumn];
+          console.log(`   → Display value from row[${config.metric.displayColumn}]: ${displayValue}`);
+          console.log(`   → Full row keys:`, Object.keys(resultRow).slice(0, 10));
         } else {
-          // Otherwise, find the row from that group that matches the aggregation
-          // For MIN/MAX, find the row with that specific value
-          const groupField = config.metric.field;
-          if (finalAgg.function === 'min' || finalAgg.function === 'max') {
-            resultRow = winningGroup.rows.find(row => row[groupField] === finalValue);
-          } else if (finalAgg.function === 'first') {
-            resultRow = winningGroup.rows[0];
-          } else if (finalAgg.function === 'last') {
-            resultRow = winningGroup.rows[winningGroup.rows.length - 1];
-          }
-          
-          if (resultRow) {
-            displayValue = resultRow[config.metric.displayColumn];
-            console.log(`   → Display value (from row): ${displayValue}`);
-          }
+          console.log(`   ⚠️ No matching row found in winning group`);
         }
       }
     }

@@ -277,7 +277,7 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
         
         // Reload widgets from DB to get correct IDs for newly created widgets
         console.log('[savePending] Reloading widgets from DB to sync IDs...');
-        await loadWidgets();
+        await loadWidgets(true); // ✅ Include config when reloading
         console.log('[savePending] Widgets reloaded successfully');
       }
 

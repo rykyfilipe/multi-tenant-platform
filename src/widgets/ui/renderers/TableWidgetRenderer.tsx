@@ -15,7 +15,8 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { ChevronUp, ChevronDown, Minus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TableWidgetRendererProps {
   widget: WidgetEntity;
@@ -117,12 +118,33 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
       return { data: [], summary: undefined, totalRows: 0 };
     }
 
-    // Raw data is already in the format we need (array of objects with column names as keys)
-    // Just return it with proper structure
+    // Transform data from cells array format to flat object format
+    const transformedData = rawData.data.map((row: any) => {
+      // If row already has flat structure (no cells array), return as-is
+      if (!row.cells || !Array.isArray(row.cells)) {
+        return row;
+      }
+
+      // Transform cells array into flat object
+      const flatRow: any = {
+        id: row.id,
+        tableId: row.tableId,
+        createdAt: row.createdAt,
+      };
+
+      // Convert each cell to a key-value pair using column name
+      row.cells.forEach((cell: any) => {
+        const columnName = cell.column?.name || `column_${cell.columnId}`;
+        flatRow[columnName] = cell.value;
+      });
+
+      return flatRow;
+    });
+
     return { 
-      data: rawData.data,
+      data: transformedData,
       summary: undefined, 
-      totalRows: rawData.pagination?.total || rawData.data.length 
+      totalRows: rawData.pagination?.total || transformedData.length 
     };
   }, [config.data, config.settings?.aggregation, rawData]);
 
@@ -444,19 +466,80 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
           </Table>
         </div>
 
-        {/* Pagination Info */}
-        {showFooter && config.settings?.pagination?.enabled && (
-          <div className={cn(
-            "px-4 py-3 border-t text-sm text-muted-foreground flex justify-between items-center",
-            transparentBackground && "bg-transparent backdrop-blur-sm"
-          )}>
-            <span>
-              Showing {Math.min((currentPage - 1) * (config.settings.pagination.pageSize || 50) + 1, processedData.totalRows)} to{" "}
-              {Math.min(currentPage * (config.settings.pagination.pageSize || 50), processedData.totalRows)} of{" "}
-              {processedData.totalRows} entries
-            </span>
-          </div>
-        )}
+        {/* Pagination Controls */}
+        {showFooter && config.settings?.pagination?.enabled && (() => {
+          const pageSize = config.settings.pagination.pageSize || 50;
+          const totalPages = Math.ceil(processedData.totalRows / pageSize);
+          const startEntry = Math.min((currentPage - 1) * pageSize + 1, processedData.totalRows);
+          const endEntry = Math.min(currentPage * pageSize, processedData.totalRows);
+          
+          return (
+            <div className={cn(
+              "px-4 py-3 border-t text-sm flex justify-between items-center gap-4",
+              transparentBackground && "bg-transparent backdrop-blur-sm"
+            )}>
+              {/* Info Text */}
+              <span className="text-muted-foreground whitespace-nowrap">
+                Showing {startEntry} to {endEntry} of {processedData.totalRows} entries
+              </span>
+
+              {/* Pagination Buttons */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  {/* Previous Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </PremiumWidgetContainer>
     </BaseWidget>
   );
