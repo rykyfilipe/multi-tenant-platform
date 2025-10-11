@@ -26,14 +26,33 @@ export const chartSettingsSchema = z.object({
 export const chartStyleSchema = z.object({
   // === GENERAL STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
-  backgroundOpacity: z.number().min(0).max(1).default(1),
-  borderRadius: z.number().min(0).max(50).default(8),
-  padding: z.object({
-    top: z.number().min(0).max(100).default(20),
-    right: z.number().min(0).max(100).default(20),
-    bottom: z.number().min(0).max(100).default(20),
-    left: z.number().min(0).max(100).default(20),
-  }).default({ top: 20, right: 20, bottom: 20, left: 20 }),
+  backgroundOpacity: z.number().min(0).max(1).default(1).optional(),
+  borderRadius: z.union([
+    z.number().min(0).max(50),
+    z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]) // Backward compatibility
+  ]).default(8).transform((val) => typeof val === 'string' ? 8 : val),
+  padding: z.union([
+    z.object({
+      top: z.number().min(0).max(100).default(20),
+      right: z.number().min(0).max(100).default(20),
+      bottom: z.number().min(0).max(100).default(20),
+      left: z.number().min(0).max(100).default(20),
+    }),
+    z.enum(["tight", "comfortable", "spacious", "sm", "md", "lg"]) // Backward compatibility
+  ]).default({ top: 20, right: 20, bottom: 20, left: 20 }).transform((val) => {
+    if (typeof val === 'string') {
+      const paddingMap: Record<string, any> = {
+        tight: { top: 10, right: 10, bottom: 10, left: 10 },
+        sm: { top: 10, right: 10, bottom: 10, left: 10 },
+        comfortable: { top: 20, right: 20, bottom: 20, left: 20 },
+        md: { top: 20, right: 20, bottom: 20, left: 20 },
+        spacious: { top: 30, right: 30, bottom: 30, left: 30 },
+        lg: { top: 30, right: 30, bottom: 30, left: 30 },
+      };
+      return paddingMap[val] || { top: 20, right: 20, bottom: 20, left: 20 };
+    }
+    return val;
+  }),
   
   // === LINE STYLING (for line/area charts) ===
   line: z.object({
@@ -47,7 +66,7 @@ export const chartStyleSchema = z.object({
       startOpacity: z.number().min(0).max(1).default(0.8),
       endOpacity: z.number().min(0).max(1).default(0.1),
     }).default({ enabled: false, startOpacity: 0.8, endOpacity: 0.1 }),
-  }).default({
+  }).optional().default({
     width: 2,
     tension: 0.4,
     style: "solid",
@@ -64,7 +83,7 @@ export const chartStyleSchema = z.object({
     borderWidth: z.number().min(0).max(10).default(2),
     borderColor: z.string().default("#FFFFFF"),
     style: z.enum(["circle", "cross", "rect", "triangle", "star"]).default("circle"),
-  }).default({
+  }).optional().default({
     show: true,
     radius: 4,
     hoverRadius: 6,
@@ -82,7 +101,7 @@ export const chartStyleSchema = z.object({
     maxBarThickness: z.number().min(1).max(200).optional(),
     barPercentage: z.number().min(0.1).max(1).default(0.8),
     categoryPercentage: z.number().min(0.1).max(1).default(0.9),
-  }).default({
+  }).optional().default({
     borderRadius: 4,
     borderWidth: 0,
     barPercentage: 0.8,
@@ -100,7 +119,7 @@ export const chartStyleSchema = z.object({
     tickLength: z.number().min(0).max(20).default(8),
     style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
     dashPattern: z.array(z.number()).default([5, 5]),
-  }).default({
+  }).optional().default({
     show: true,
     color: "rgba(0, 0, 0, 0.1)",
     lineWidth: 1,
@@ -122,7 +141,7 @@ export const chartStyleSchema = z.object({
       fontWeight: z.enum(["300", "400", "500", "600", "700"]).default("400"),
       rotation: z.number().min(-90).max(90).default(0),
       labelOffset: z.number().min(0).max(50).default(10),
-    }).default({
+    }).optional().default({
       show: true,
       color: "#666666",
       fontSize: 12,
@@ -138,7 +157,7 @@ export const chartStyleSchema = z.object({
       fontFamily: z.string().default("Inter, system-ui, sans-serif"),
       fontWeight: z.enum(["300", "400", "500", "600", "700"]).default("400"),
       labelOffset: z.number().min(0).max(50).default(10),
-    }).default({
+    }).optional().default({
       show: true,
       color: "#666666",
       fontSize: 12,
@@ -146,7 +165,7 @@ export const chartStyleSchema = z.object({
       fontWeight: "400",
       labelOffset: 10,
     }),
-  }).default({
+  }).optional().default({
     x: {
       show: true,
       color: "#666666",
@@ -178,7 +197,7 @@ export const chartStyleSchema = z.object({
     padding: z.number().min(0).max(50).default(10),
     boxWidth: z.number().min(10).max(50).default(40),
     boxHeight: z.number().min(10).max(50).default(12),
-  }).default({
+  }).optional().default({
     show: true,
     position: "bottom",
     align: "center",
@@ -203,7 +222,7 @@ export const chartStyleSchema = z.object({
     padding: z.number().min(0).max(30).default(12),
     fontSize: z.number().min(8).max(24).default(12),
     fontFamily: z.string().default("Inter, system-ui, sans-serif"),
-  }).default({
+  }).optional().default({
     enabled: true,
     backgroundColor: "rgba(0, 0, 0, 0.8)",
     titleColor: "#FFFFFF",
@@ -221,7 +240,7 @@ export const chartStyleSchema = z.object({
     enabled: z.boolean().default(true),
     duration: z.number().min(0).max(5000).default(750),
     easing: z.enum(["linear", "easeInQuad", "easeOutQuad", "easeInOutQuad", "easeInCubic", "easeOutCubic", "easeInOutCubic"]).default("easeInOutQuad"),
-  }).default({
+  }).optional().default({
     enabled: true,
     duration: 750,
     easing: "easeInOutQuad",
@@ -257,7 +276,7 @@ export const chartDataSchema = z.object({
 
 export const chartWidgetConfigSchema = baseWidgetConfigSchema.extend({
   settings: chartSettingsSchema,
-  style: chartStyleSchema,
+  style: chartStyleSchema.passthrough(), // Allow extra properties for backward compatibility
   data: chartDataSchema,
 });
 

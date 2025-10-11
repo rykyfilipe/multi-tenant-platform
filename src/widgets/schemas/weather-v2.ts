@@ -21,19 +21,22 @@ export const weatherStyleSchema = z.object({
     from: z.string().default("#FFFFFF"),
     to: z.string().default("#E0F2FE"),
     direction: z.enum(["to-r", "to-br", "to-b", "to-bl"]).default("to-b"),
-  }).default({
+  }).optional().default({
     enabled: false,
     from: "#FFFFFF",
     to: "#E0F2FE",
     direction: "to-b",
   }),
-  borderRadius: z.number().min(0).max(50).default(16),
+  borderRadius: z.union([
+    z.number().min(0).max(50),
+    z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]) // Backward compatibility
+  ]).default(16).optional().transform((val) => typeof val === 'string' ? 16 : val ?? 16),
   border: z.object({
     enabled: z.boolean().default(true),
     width: z.number().min(0).max(10).default(1),
     color: z.string().default("rgba(0, 0, 0, 0.1)"),
     style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
-  }).default({
+  }).optional().default({
     enabled: true,
     width: 1,
     color: "rgba(0, 0, 0, 0.1)",
@@ -42,15 +45,31 @@ export const weatherStyleSchema = z.object({
   shadow: z.object({
     enabled: z.boolean().default(true),
     size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
-  }).default({
+  }).optional().default({
     enabled: true,
     size: "md",
   }),
-  padding: z.object({
-    x: z.number().min(0).max(100).default(24),
-    y: z.number().min(0).max(100).default(20),
-  }).default({ x: 24, y: 20 }),
-  layout: z.enum(["compact", "detailed", "forecast-focused"]).default("detailed"),
+  padding: z.union([
+    z.object({
+      x: z.number().min(0).max(100).default(24),
+      y: z.number().min(0).max(100).default(20),
+    }),
+    z.enum(["tight", "comfortable", "spacious", "sm", "md", "lg"]) // Backward compatibility
+  ]).optional().default({ x: 24, y: 20 }).transform((val) => {
+    if (typeof val === 'string') {
+      const paddingMap: Record<string, any> = {
+        tight: { x: 12, y: 10 },
+        sm: { x: 12, y: 10 },
+        comfortable: { x: 24, y: 20 },
+        md: { x: 24, y: 20 },
+        spacious: { x: 36, y: 30 },
+        lg: { x: 36, y: 30 },
+      };
+      return paddingMap[val] || { x: 24, y: 20 };
+    }
+    return val;
+  }),
+  layout: z.enum(["compact", "detailed", "forecast-focused"]).default("detailed").optional(),
   
   // === TEMPERATURE DISPLAY ===
   temperature: z.object({
@@ -199,7 +218,7 @@ export const weatherRefreshSchema = z.object({
 
 export const weatherWidgetConfigSchema = baseWidgetConfigSchema.extend({
   settings: weatherSettingsSchema,
-  style: weatherStyleSchema,
+  style: weatherStyleSchema.passthrough(), // Allow extra properties for backward compatibility
   refresh: weatherRefreshSchema,
 });
 

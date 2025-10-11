@@ -33,24 +33,27 @@ export const kpiSettingsSchema = z.object({
 export const kpiStyleSchema = z.object({
   // === CARD STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
+  borderRadius: z.union([
+    z.number().min(0).max(50),
+    z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]) // Backward compatibility
+  ]).default(12).optional().transform((val) => typeof val === 'string' ? 12 : val ?? 12),
   backgroundGradient: z.object({
     enabled: z.boolean().default(false),
     from: z.string().default("#FFFFFF"),
     to: z.string().default("#F3F4F6"),
     direction: z.enum(["to-r", "to-br", "to-b", "to-bl"]).default("to-br"),
-  }).default({
+  }).optional().default({
     enabled: false,
     from: "#FFFFFF",
     to: "#F3F4F6",
     direction: "to-br",
   }),
-  borderRadius: z.number().min(0).max(50).default(12),
   border: z.object({
     enabled: z.boolean().default(true),
     width: z.number().min(0).max(10).default(1),
     color: z.string().default("rgba(0, 0, 0, 0.1)"),
     style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
-  }).default({
+  }).optional().default({
     enabled: true,
     width: 1,
     color: "rgba(0, 0, 0, 0.1)",
@@ -60,15 +63,31 @@ export const kpiStyleSchema = z.object({
     enabled: z.boolean().default(true),
     size: z.enum(["sm", "md", "lg", "xl"]).default("sm"),
     color: z.string().default("rgba(0, 0, 0, 0.1)"),
-  }).default({
+  }).optional().default({
     enabled: true,
     size: "sm",
     color: "rgba(0, 0, 0, 0.1)",
   }),
-  padding: z.object({
-    x: z.number().min(0).max(100).default(24),
-    y: z.number().min(0).max(100).default(20),
-  }).default({ x: 24, y: 20 }),
+  padding: z.union([
+    z.object({
+      x: z.number().min(0).max(100).default(24),
+      y: z.number().min(0).max(100).default(20),
+    }),
+    z.enum(["tight", "comfortable", "spacious", "sm", "md", "lg"]) // Backward compatibility
+  ]).optional().default({ x: 24, y: 20 }).transform((val) => {
+    if (typeof val === 'string') {
+      const paddingMap: Record<string, any> = {
+        tight: { x: 12, y: 10 },
+        sm: { x: 12, y: 10 },
+        comfortable: { x: 24, y: 20 },
+        md: { x: 24, y: 20 },
+        spacious: { x: 36, y: 30 },
+        lg: { x: 36, y: 30 },
+      };
+      return paddingMap[val] || { x: 24, y: 20 };
+    }
+    return val;
+  }),
   
   // === VALUE STYLING ===
   value: z.object({
@@ -213,7 +232,7 @@ export const kpiDataSchema = z.object({
 
 export const kpiWidgetConfigSchemaV2 = baseWidgetConfigSchema.extend({
   settings: kpiSettingsSchema,
-  style: kpiStyleSchema,
+  style: kpiStyleSchema.passthrough(), // Allow extra properties for backward compatibility
   data: kpiDataSchema,
 });
 

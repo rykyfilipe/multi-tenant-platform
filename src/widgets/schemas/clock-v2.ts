@@ -19,19 +19,22 @@ export const clockStyleSchema = z.object({
     from: z.string().default("#FFFFFF"),
     to: z.string().default("#F3F4F6"),
     direction: z.enum(["to-r", "to-br", "to-b", "to-bl"]).default("to-br"),
-  }).default({
+  }).optional().default({
     enabled: false,
     from: "#FFFFFF",
     to: "#F3F4F6",
     direction: "to-br",
   }),
-  borderRadius: z.number().min(0).max(50).default(16),
+  borderRadius: z.union([
+    z.number().min(0).max(50),
+    z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]) // Backward compatibility
+  ]).default(16).optional().transform((val) => typeof val === 'string' ? 16 : val ?? 16),
   border: z.object({
     enabled: z.boolean().default(true),
     width: z.number().min(0).max(10).default(1),
     color: z.string().default("rgba(0, 0, 0, 0.1)"),
     style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
-  }).default({
+  }).optional().default({
     enabled: true,
     width: 1,
     color: "rgba(0, 0, 0, 0.1)",
@@ -41,16 +44,32 @@ export const clockStyleSchema = z.object({
     enabled: z.boolean().default(true),
     size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
     color: z.string().default("rgba(0, 0, 0, 0.1)"),
-  }).default({
+  }).optional().default({
     enabled: true,
     size: "md",
     color: "rgba(0, 0, 0, 0.1)",
   }),
-  padding: z.object({
-    x: z.number().min(0).max(100).default(32),
-    y: z.number().min(0).max(100).default(24),
-  }).default({ x: 32, y: 24 }),
-  alignment: z.enum(["left", "center", "right"]).default("center"),
+  padding: z.union([
+    z.object({
+      x: z.number().min(0).max(100).default(32),
+      y: z.number().min(0).max(100).default(24),
+    }),
+    z.enum(["tight", "comfortable", "spacious", "sm", "md", "lg"]) // Backward compatibility
+  ]).optional().default({ x: 32, y: 24 }).transform((val) => {
+    if (typeof val === 'string') {
+      const paddingMap: Record<string, any> = {
+        tight: { x: 16, y: 12 },
+        sm: { x: 16, y: 12 },
+        comfortable: { x: 32, y: 24 },
+        md: { x: 32, y: 24 },
+        spacious: { x: 48, y: 36 },
+        lg: { x: 48, y: 36 },
+      };
+      return paddingMap[val] || { x: 32, y: 24 };
+    }
+    return val;
+  }),
+  alignment: z.enum(["left", "center", "right"]).default("center").optional(),
   
   // === TIME DISPLAY STYLING ===
   time: z.object({
@@ -210,7 +229,7 @@ export const clockRefreshSchema = z.object({
 
 export const clockWidgetConfigSchema = baseWidgetConfigSchema.extend({
   settings: clockSettingsSchema,
-  style: clockStyleSchema,
+  style: clockStyleSchema.passthrough(), // Allow extra properties for backward compatibility
   refresh: clockRefreshSchema,
 });
 

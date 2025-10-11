@@ -44,8 +44,11 @@ export const tableSettingsSchema = z.object({
 export const tableStyleSchema = z.object({
   // === GENERAL STYLING ===
   backgroundColor: z.string().default("#FFFFFF"),
-  backgroundOpacity: z.number().min(0).max(1).default(1),
-  borderRadius: z.number().min(0).max(50).default(8),
+  backgroundOpacity: z.number().min(0).max(1).default(1).optional(),
+  borderRadius: z.union([
+    z.number().min(0).max(50),
+    z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]) // Backward compatibility
+  ]).default(8).transform((val) => typeof val === 'string' ? 8 : val),
   border: z.object({
     enabled: z.boolean().default(true),
     width: z.number().min(0).max(10).default(1),
@@ -298,7 +301,7 @@ export const tableDataSchema = z.object({
 
 export const tableWidgetConfigSchemaV2 = baseWidgetConfigSchema.extend({
   settings: tableSettingsSchema,
-  style: tableStyleSchema,
+  style: tableStyleSchema.passthrough(), // Allow extra properties for backward compatibility
   data: tableDataSchema,
 });
 
