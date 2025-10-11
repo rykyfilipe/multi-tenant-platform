@@ -221,7 +221,7 @@ export async function POST(
   console.log('✅ [DEBUG] createWidgetPayloadSchema parsed:', data);
   
   console.log('🔍 [DEBUG] Getting widget definition...');
-  const definition = getWidgetDefinition(data.kind || WidgetType.CHART);
+  const definition = getWidgetDefinition(data.type || WidgetType.CHART);
   console.log('✅ [DEBUG] Widget definition:', definition);
 
   const actorId = getActorId(request);
@@ -239,7 +239,7 @@ export async function POST(
         widget: {
           tenantId,
           dashboardId,
-          kind: definition.type,
+          type: definition.type,
           title: data.title ?? null,
           description: data.description ?? null,
           position: data.position ?? { x: 0, y: 0, w: 4, h: 4 },

@@ -315,7 +315,7 @@ const DataHubLandingPage = () => {
 										</span>
 									)}
 									<Button
-										onClick={() => router.push("home/analytics")}
+										onClick={() => router.push("home/dashboards")}
 										className='premium-hover-subtle text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2'>
 										<span className='hidden sm:inline'>
 											{t("landing.nav.goToApp")}
