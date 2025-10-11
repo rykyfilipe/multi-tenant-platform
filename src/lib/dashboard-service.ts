@@ -658,6 +658,7 @@ export class DashboardService {
       const widget = await prisma.widget.create({
         data: {
           ...validatedData,
+          tenantId,
           dashboardId,
           createdBy: userId,
           updatedBy: userId,

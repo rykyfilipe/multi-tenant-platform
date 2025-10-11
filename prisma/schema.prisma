@@ -62,11 +62,7 @@ model Tenant {
   invoiceSeries       InvoiceSeries[]
   invoiceAuditLogs    InvoiceAuditLog[]
   userPreferences     UserPreferences[]
-  pdfAnalytics        PDFAnalytics[]
-  pdfTemplateConfigs  PDFTemplateConfig[]
-  anafCredentials     ANAFCredentials[]
   anafSubmissionLogs  ANAFSubmissionLog[]
-  WidgetSnapshot      WidgetSnapshot[]
 
   @@index([adminId])
 }
@@ -97,7 +93,6 @@ model User {
   apiUsage                     ApiUsage[]
   errorLogs                    ErrorLog[]
   userPreferences              UserPreferences?
-  anafCredentials              ANAFCredentials[]
   createdDashboards            Dashboard[]        @relation("DashboardCreator")
   updatedDashboards            Dashboard[]        @relation("DashboardUpdater")
   createdWidgets               Widget[]           @relation("WidgetCreator")
@@ -504,55 +499,6 @@ model UserPreferences {
   @@index([userId])
 }
 
-model PDFAnalytics {
-  id             Int      @id @default(autoincrement())
-  tenantId       Int
-  templateId     String
-  generationTime Int
-  fileSize       Int
-  pageCount      Int
-  features       String[]
-  generatedAt    DateTime @default(now())
-  generatedBy    String
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([templateId])
-  @@index([generatedAt])
-}
-
-model PDFTemplateConfig {
-  id            Int      @id @default(autoincrement())
-  tenantId      Int
-  templateId    String
-  customization Json
-  isDefault     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, templateId])
-  @@index([tenantId])
-}
-
-model ANAFCredentials {
-  id             Int       @id @default(autoincrement())
-  userId         Int
-  tenantId       Int
-  accessToken    String?
-  refreshToken   String?
-  tokenExpiresAt DateTime?
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, tenantId])
-  @@index([tenantId])
-  @@index([userId])
-}
-
 model ANAFSubmissionLog {
   id             Int      @id @default(autoincrement())
   invoiceId      Int
@@ -592,7 +538,6 @@ model Dashboard {
   widgets         Widget[]
   widgetDrafts    WidgetDraft[]
   widgetAudits    WidgetAudit[]
-  widgetSnapshots WidgetSnapshot[]
   creator         User             @relation("DashboardCreator", fields: [createdBy], references: [id])
   updater         User             @relation("DashboardUpdater", fields: [updatedBy], references: [id])
 
@@ -626,7 +571,6 @@ model Widget {
   updater       User             @relation("WidgetUpdater", fields: [updatedBy], references: [id])
   drafts        WidgetDraft[]
   audits        WidgetAudit[]
-  snapshots     WidgetSnapshot[]
 
   @@index([tenantId])
   @@index([dashboardId])
@@ -637,28 +581,6 @@ model Widget {
   @@index([createdBy])
   @@index([updatedBy])
   @@index([config], type: Gin)
-}
-
-model WidgetSnapshot {
-  id          Int        @id @default(autoincrement())
-  widgetId    Int
-  tenantId    Int
-  dashboardId Int
-  version     Int
-  type        WidgetType
-  title       String?
-  description String?
-  position    Json
-  config      Json
-  createdAt   DateTime   @default(now())
-
-  widget    Widget    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-
-  @@index([widgetId, version])
-  @@index([tenantId])
-  @@index([dashboardId])
 }
 
 model WidgetDraft {
