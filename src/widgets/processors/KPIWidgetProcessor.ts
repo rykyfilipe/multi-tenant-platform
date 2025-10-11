@@ -226,6 +226,13 @@ export class KPIWidgetProcessor {
    */
   static process(rawData: RawDataRow[], config: KPIConfig): KPIResult {
     console.log('🚀 [KPIWidgetProcessor] Starting aggregation pipeline...');
+    console.log('📥 [RAW DATA] Received', rawData.length, 'rows from API');
+    console.log('📥 [RAW DATA] First row sample:', rawData[0]);
+    console.log('📥 [RAW DATA] First row cells:', rawData[0]?.cells?.slice(0, 5));
+    console.log('⚙️ [CONFIG] Full metric config:', JSON.stringify(config.metric, null, 2));
+    console.log('⚙️ [CONFIG] Aggregations:', config.metric.aggregations.map(a => `${a.function}(${config.metric.field})`).join(' → '));
+    console.log('⚙️ [CONFIG] GROUP BY:', config.metric.groupBy || 'NONE');
+    console.log('⚙️ [CONFIG] Display Column:', config.metric.displayColumn || 'NONE');
 
     // Step 1: Normalize data
     const normalizedData = this.normalizeData(rawData);
@@ -391,15 +398,22 @@ export class KPIWidgetProcessor {
   private static processWithGroupBy(normalizedData: NormalizedRow[], config: KPIConfig): KPIResult {
     const groupByField = config.metric.groupBy!;
     console.log(`🔀 [GROUP BY] Grouping ${normalizedData.length} rows by "${groupByField}"`);
+    console.log(`🔀 [GROUP BY] First row has these keys:`, Object.keys(normalizedData[0] || {}));
+    console.log(`🔀 [GROUP BY] First row[${groupByField}]:`, normalizedData[0]?.[groupByField]);
 
     // Step 1: Group rows by the groupBy field
     const groups: Record<string, NormalizedRow[]> = {};
-    normalizedData.forEach(row => {
+    normalizedData.forEach((row, idx) => {
       const groupKey = String(row[groupByField] ?? '__NULL__');
       if (!groups[groupKey]) {
         groups[groupKey] = [];
       }
       groups[groupKey].push(row);
+      
+      if (idx < 3) {
+        console.log(`   🔀 Row ${idx + 1}: ${groupByField} = "${row[groupByField]}" → Group: "${groupKey}"`);
+        console.log(`      → Row keys:`, Object.keys(row));
+      }
     });
 
     const groupKeys = Object.keys(groups);
@@ -412,7 +426,10 @@ export class KPIWidgetProcessor {
       const groupRows = groups[groupKey];
       const groupValues = this.extractNumericValues(groupRows, config.metric.field);
       
-      console.log(`   Group ${groupIndex + 1}/${groupKeys.length} "${groupKey}": ${groupValues.length} rows`);
+      console.log(`   Group ${groupIndex + 1}/${groupKeys.length} "${groupKey}": ${groupRows.length} rows, ${groupValues.length} numeric values`);
+      console.log(`      → First row in group keys:`, Object.keys(groupRows[0] || {}));
+      console.log(`      → First row in group:`, groupRows[0]);
+      console.log(`      → Numeric values:`, groupValues.slice(0, 5));
       
       // Apply chained aggregations to this group
       let currentValue: number | number[] = groupValues;
@@ -457,16 +474,25 @@ export class KPIWidgetProcessor {
         console.log(`🎯 [GROUP BY + displayColumn] Winning group: "${winningGroup.group}"`);
         console.log(`   → Group has ${winningGroup.rows.length} rows`);
         console.log(`   → Looking for row with ${config.metric.field} = ${finalValue}`);
+        console.log(`   → First row in winning group:`, winningGroup.rows[0]);
+        console.log(`   → First row keys:`, Object.keys(winningGroup.rows[0] || {}));
         
         // Find the specific row from the winning group that has the aggregated value
         const groupField = config.metric.field;
         if (finalAgg.function === 'min' || finalAgg.function === 'max') {
           // Find the row with the specific min/max value
+          console.log(`   → Searching for row with ${groupField} = ${finalValue}...`);
+          
           resultRow = winningGroup.rows.find(row => {
             const rowValue = parseFloat(String(row[groupField]));
+            console.log(`      → Checking row: ${groupField} = ${row[groupField]} (parsed: ${rowValue})`);
             return rowValue === finalValue;
           });
+          
           console.log(`   → Found row with ${groupField} = ${finalValue}:`, !!resultRow);
+          if (resultRow) {
+            console.log(`   → Result row:`, resultRow);
+          }
         } else if (finalAgg.function === 'first') {
           resultRow = winningGroup.rows[0];
         } else if (finalAgg.function === 'last') {
@@ -531,19 +557,35 @@ export class KPIWidgetProcessor {
       return [];
     }
 
-    return rawData.map((row, index) => {
-      const normalized: NormalizedRow = {};
+    const normalized = rawData.map((row, index) => {
+      const normalizedRow: NormalizedRow = {};
 
       if (row.cells && Array.isArray(row.cells)) {
+        console.log(`   📋 Row ${index + 1}/${rawData.length} has ${row.cells.length} cells`);
+        
         row.cells.forEach((cell) => {
           if (cell.column && cell.column.name) {
-            normalized[cell.column.name] = cell.value;
+            normalizedRow[cell.column.name] = cell.value;
+            
+            if (index === 0) {
+              console.log(`      → Cell: ${cell.column.name} = ${cell.value}`);
+            }
           }
         });
+        
+        if (index === 0) {
+          console.log(`   📋 First normalized row keys:`, Object.keys(normalizedRow));
+          console.log(`   📋 First normalized row:`, normalizedRow);
+        }
       }
 
-      return normalized;
+      return normalizedRow;
     });
+    
+    console.log('✅ [Step 1: Normalize] Converted', normalized.length, 'rows');
+    console.log('✅ [Step 1: Normalize] Sample columns:', Object.keys(normalized[0] || {}));
+    
+    return normalized;
   }
 
   /**
