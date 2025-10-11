@@ -16,8 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
 import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
-import { useTasksAutoSave } from "@/widgets/hooks/useTasksAutoSave";
 import { useAuth, useTenant } from "@/contexts/AppContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle,
   Circle,
@@ -65,8 +65,9 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   isEditMode = false
 }) => {
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { tenant } = useTenant();
+  const { toast } = useToast();
   
   const config = widget.config as any;
   const settings = config?.settings || {};
@@ -124,67 +125,100 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Auto-save for tasks widget - only in VIEW mode (not when editing dashboard layout)
-  useTasksAutoSave({
-    tenantId: tenant?.id || 0,
-    dashboardId: widget.dashboardId,
-    actorId: user?.id || 0,
-    widgetId: widget.id,
-    debounceMs: 1000, // 1 second debounce for tasks
-    enabled: !isEditMode, // Only auto-save when in view mode
-  });
+  // Save tasks directly to API via PATCH - no pending changes
+  const saveTasksToApi = useCallback(async (newTasks: Task[]) => {
+    if (isEditMode || !token) {
+      // Don't save while editing dashboard layout
+      return;
+    }
 
-  // Save tasks to widget data - only updates the data.tasks field
-  const saveTasks = useCallback((newTasks: Task[]) => {
-    // Convert tasks to serializable format (Date → ISO string)
-    const serializableTasks = newTasks.map(task => ({
-      ...task,
-      dueDate: task.dueDate ? task.dueDate.toISOString() : undefined,
-    }));
-    
-    // Get current widget config from store to avoid stale closure
-    const currentWidget = useWidgetsStore.getState().widgets[widget.id];
-    const currentConfig = currentWidget?.config || widget.config;
-    
-    const updatedConfig = {
-      ...currentConfig,
-      data: {
-        ...(currentConfig as any)?.data,
-        tasks: serializableTasks
+    setIsSaving(true);
+    try {
+      // Convert tasks to serializable format (Date → ISO string)
+      const serializableTasks = newTasks.map(task => ({
+        ...task,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : undefined,
+      }));
+      
+      // Get current widget config
+      const currentWidget = useWidgetsStore.getState().widgets[widget.id];
+      const currentConfig = currentWidget?.config || widget.config;
+      
+      const updatedConfig = {
+        ...currentConfig,
+        data: {
+          ...(currentConfig as any)?.data,
+          tasks: serializableTasks
+        }
+      };
+
+      console.log('[TasksWidget] Saving tasks via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
+      
+      const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          config: updatedConfig,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`PATCH failed: ${response.statusText}`);
       }
-    };
-    updateLocal(widget.id, { config: updatedConfig });
-    // Auto-save hook will detect this change and send to server in VIEW mode
-  }, [updateLocal, widget.id]);
 
-  // CRUD operations
-  const addTask = useCallback((task: Omit<Task, 'id'>) => {
+      const updatedWidget = await response.json();
+      console.log('[TasksWidget] PATCH successful');
+      
+      // Update local store with the response from server
+      updateLocal(widget.id, { config: updatedWidget.config });
+      
+    } catch (error) {
+      console.error('[TasksWidget] Save failed:', error);
+      toast({
+        title: "Save failed",
+        description: "Could not save task changes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isEditMode, token, widget.dashboardId, widget.id, updateLocal, toast]);
+
+  // CRUD operations - each one directly calls the API
+  const addTask = useCallback(async (task: Omit<Task, 'id'>) => {
     const newTask: Task = {
       ...task,
       id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
     const newTasks = [...tasks, newTask];
     setTasks(newTasks);
-    saveTasks(newTasks);
-  }, [tasks, saveTasks]);
+    await saveTasksToApi(newTasks);
+  }, [tasks, saveTasksToApi]);
 
-  const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
+  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     const newTasks = tasks.map(task => 
       task.id === taskId ? { ...task, ...updates } : task
     );
     setTasks(newTasks);
-    saveTasks(newTasks);
-  }, [tasks, saveTasks]);
+    await saveTasksToApi(newTasks);
+  }, [tasks, saveTasksToApi]);
 
-  const deleteTask = useCallback((taskId: string) => {
+  const deleteTask = useCallback(async (taskId: string) => {
     const newTasks = tasks.filter(task => task.id !== taskId);
     setTasks(newTasks);
-    saveTasks(newTasks);
-  }, [tasks, saveTasks]);
+    await saveTasksToApi(newTasks);
+  }, [tasks, saveTasksToApi]);
 
-  const toggleTask = useCallback((taskId: string) => {
-    updateTask(taskId, { completed: !tasks.find(t => t.id === taskId)?.completed });
+  const toggleTask = useCallback(async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      await updateTask(taskId, { completed: !task.completed });
+    }
   }, [tasks, updateTask]);
 
   const layout = settings.layout || 'list';

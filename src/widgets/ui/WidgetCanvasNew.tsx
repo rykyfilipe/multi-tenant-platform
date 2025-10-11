@@ -807,7 +807,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       {/* Main Grid Area */}
       <div 
-        className="h-full w-full p-6"
+        className="h-full w-full p-6 overflow-y-auto"
         onClick={handleCanvasClick}
       >
         <style jsx global>{`
@@ -918,7 +918,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             className="layout" 
             layout={layout} 
             cols={24} 
-            rowHeight={50} 
+            rowHeight={30} 
             width={containerWidth || 1200}
             isDraggable={isEditMode}
             isResizable={isEditMode}
