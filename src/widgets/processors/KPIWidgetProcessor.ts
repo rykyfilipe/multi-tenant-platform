@@ -393,6 +393,42 @@ export class KPIWidgetProcessor {
   }
 
   /**
+   * NEW: Find the complete row that contains a specific value for a field
+   * Returns the FULL NORMALIZED ROW with ALL columns
+   */
+  private static findRowWithValue(
+    rows: NormalizedRow[],
+    field: string,
+    targetValue: number,
+    aggregation: 'min' | 'max' | 'first' | 'last'
+  ): NormalizedRow | null {
+    console.log(`🔍 [findRowWithValue] Searching for row with ${field} = ${targetValue} using ${aggregation}`);
+    
+    if (aggregation === 'first') {
+      const row = rows[0] || null;
+      console.log(`   → FIRST row:`, row);
+      return row;
+    }
+    
+    if (aggregation === 'last') {
+      const row = rows[rows.length - 1] || null;
+      console.log(`   → LAST row:`, row);
+      return row;
+    }
+    
+    // For MIN/MAX, find the row with that exact value
+    const foundRow = rows.find(row => {
+      const rowValue = parseFloat(String(row[field]));
+      return rowValue === targetValue;
+    });
+    
+    console.log(`   → Found row:`, foundRow);
+    console.log(`   → Row has ALL columns:`, Object.keys(foundRow || {}));
+    
+    return foundRow || null;
+  }
+
+  /**
    * Process data with GROUP BY - groups rows, applies pipeline to each group, then aggregates results
    */
   private static processWithGroupBy(normalizedData: NormalizedRow[], config: KPIConfig): KPIResult {
@@ -477,27 +513,13 @@ export class KPIWidgetProcessor {
         console.log(`   → First row in winning group:`, winningGroup.rows[0]);
         console.log(`   → First row keys:`, Object.keys(winningGroup.rows[0] || {}));
         
-        // Find the specific row from the winning group that has the aggregated value
-        const groupField = config.metric.field;
-        if (finalAgg.function === 'min' || finalAgg.function === 'max') {
-          // Find the row with the specific min/max value
-          console.log(`   → Searching for row with ${groupField} = ${finalValue}...`);
-          
-          resultRow = winningGroup.rows.find(row => {
-            const rowValue = parseFloat(String(row[groupField]));
-            console.log(`      → Checking row: ${groupField} = ${row[groupField]} (parsed: ${rowValue})`);
-            return rowValue === finalValue;
-          });
-          
-          console.log(`   → Found row with ${groupField} = ${finalValue}:`, !!resultRow);
-          if (resultRow) {
-            console.log(`   → Result row:`, resultRow);
-          }
-        } else if (finalAgg.function === 'first') {
-          resultRow = winningGroup.rows[0];
-        } else if (finalAgg.function === 'last') {
-          resultRow = winningGroup.rows[winningGroup.rows.length - 1];
-        }
+        // Use the new helper to find the COMPLETE ROW with ALL columns
+        resultRow = this.findRowWithValue(
+          winningGroup.rows,
+          config.metric.field,
+          finalValue,
+          finalAgg.function as 'min' | 'max' | 'first' | 'last'
+        );
         
         if (resultRow) {
           console.log(`   → Extracting "${config.metric.displayColumn}" from result row`);
@@ -508,9 +530,15 @@ export class KPIWidgetProcessor {
           // We must use the group value directly!
           if (config.metric.displayColumn === config.metric.groupBy) {
             // Use the group value (which is the GROUP BY column value)
-            displayValue = winningGroup.group === '__NULL__' ? undefined : winningGroup.group;
             console.log(`   → Display column IS the GROUP BY field`);
-            console.log(`   → Using group value directly: "${displayValue}"`);
+            console.log(`   → winningGroup.group value:`, winningGroup.group);
+            console.log(`   → winningGroup.group type:`, typeof winningGroup.group);
+            console.log(`   → winningGroup.group === '__NULL__':`, winningGroup.group === '__NULL__');
+            
+            displayValue = winningGroup.group === '__NULL__' ? undefined : winningGroup.group;
+            
+            console.log(`   → Final displayValue:`, displayValue);
+            console.log(`   → Final displayValue type:`, typeof displayValue);
           } else {
             // Extract from row cells (different column than GROUP BY)
             displayValue = resultRow[config.metric.displayColumn];
