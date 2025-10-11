@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState } from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
+import { BaseWidget } from "../components/BaseWidget";
+import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
 import { TableWidgetProcessor } from "@/widgets/processors/TableWidgetProcessor";
 import { 
   Table, 
@@ -11,19 +13,15 @@ import {
   TableHeader, 
   TableRow
 } from "@/components/ui/table";
-import { 
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ChevronUp, ChevronDown, Minus } from "lucide-react";
 
 interface TableWidgetRendererProps {
   widget: WidgetEntity;
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  isEditMode?: boolean;
 }
 
 export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
@@ -31,11 +29,30 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
   onEdit,
   onDelete,
   onDuplicate,
+  isEditMode = false,
 }) => {
   const config = widget.config as any;
+  const style = config?.style || {};
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // Table-specific premium styling
+  const transparentBackground = style.transparentBackground || false;
+  const showBorders = style.showBorders !== false;
+  const showHeader = style.showHeader !== false;
+  const showFooter = style.showFooter !== false;
+  const stripedRows = style.stripedRows || false;
+  const hoverEffect = style.hoverEffect !== false;
+  const headerStyle = style.headerStyle || 'solid'; // solid, transparent, gradient
+  const cellPadding = style.cellPadding || 'normal'; // compact, normal, comfortable
+  const fontSize = style.fontSize || 'sm'; // xs, sm, base, lg
+  const fontWeight = style.fontWeight || 'normal';
+  const borderColor = style.borderColor || 'border';
+  const headerBg = style.headerBg || 'muted';
+  const headerTextColor = style.headerTextColor || 'foreground';
+  const rowTextColor = style.rowTextColor || 'foreground';
+  const alternateRowBg = style.alternateRowBg || 'muted/50';
 
   // Mock data for demonstration
   const mockData = useMemo(() => {
@@ -135,11 +152,9 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
       case "percentage":
         return `${numericValue.toFixed(1)}%`;
       case "number":
-        // For integers (quantity, count, id) - NO commas
         if (isInteger) {
           return numericValue.toString();
         }
-        // For decimals - use locale formatting
         return new Intl.NumberFormat("en-US").format(numericValue);
       case "date":
         return new Date(value).toLocaleDateString();
@@ -163,84 +178,112 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
 
   const visibleColumns = config.data?.columns?.filter((col: any) => col.visible !== false) || [];
 
+  const getCellPaddingClass = () => {
+    switch (cellPadding) {
+      case 'compact': return 'px-2 py-1';
+      case 'comfortable': return 'px-6 py-4';
+      default: return 'px-4 py-2';
+    }
+  };
+
+  const getFontSizeClass = () => {
+    switch (fontSize) {
+      case 'xs': return 'text-xs';
+      case 'sm': return 'text-sm';
+      case 'base': return 'text-base';
+      case 'lg': return 'text-lg';
+      default: return 'text-sm';
+    }
+  };
+
+  const getFontWeightClass = () => {
+    switch (fontWeight) {
+      case 'light': return 'font-light';
+      case 'normal': return 'font-normal';
+      case 'medium': return 'font-medium';
+      case 'semibold': return 'font-semibold';
+      case 'bold': return 'font-bold';
+      default: return 'font-normal';
+    }
+  };
+
   if (!config.data?.columns || config.data.columns.length === 0) {
     return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full">
-          <div className="text-center text-gray-500">
-            <Table className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No table columns configured</p>
-            <p className="text-sm">Configure columns to display data</p>
+      <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+        <PremiumWidgetContainer style={style} className="h-full">
+          <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+            <div>
+              <p className="text-lg font-medium mb-2">No table columns configured</p>
+              <p className="text-sm">Configure columns in the editor to display data</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </PremiumWidgetContainer>
+      </BaseWidget>
     );
   }
 
   return (
-    <Card 
-      className="h-full"
-      style={{
-        backgroundColor: config.style?.backgroundColor || "#FFFFFF",
-        color: config.style?.textColor || "#000000",
-      }}
-    >
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold">
-          {widget.title || "Data Table"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-auto">
+    <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
+      <PremiumWidgetContainer 
+        style={style} 
+        className={cn(
+          "h-full overflow-hidden",
+          transparentBackground && "bg-transparent backdrop-blur-none"
+        )}
+      >
+        <div className={cn(
+          "h-full overflow-auto rounded-lg",
+          transparentBackground ? "bg-transparent" : ""
+        )}>
           <Table 
             className={cn(
               "w-full",
-              config.style?.stripedRows ? "[&_tbody_tr:nth-child(even)]:bg-gray-50" : "",
-              config.style?.hoverEffects ? "[&_tbody_tr:hover]:bg-gray-100" : ""
+              getFontSizeClass(),
+              getFontWeightClass(),
+              !showBorders && "border-0"
             )}
           >
             {/* Header */}
-            {config.settings?.showColumnHeaders !== false && (
+            {showHeader && (
               <TableHeader 
-                style={{
-                  backgroundColor: config.style?.headerBackgroundColor || "#F9FAFB",
-                  color: config.style?.headerTextColor || "#374151",
-                }}
+                className={cn(
+                  "sticky top-0 z-10",
+                  headerStyle === 'transparent' && "bg-transparent backdrop-blur-sm",
+                  headerStyle === 'solid' && `bg-${headerBg}`,
+                  headerStyle === 'gradient' && "bg-gradient-to-r from-primary/10 to-primary/5"
+                )}
               >
-                <TableRow>
+                <TableRow className={!showBorders ? "border-0" : ""}>
                   {config.settings?.showRowNumbers && (
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className={cn(
+                      getCellPaddingClass(),
+                      "w-12 text-center font-semibold",
+                      `text-${headerTextColor}`
+                    )}>
+                      #
+                    </TableHead>
                   )}
                   {visibleColumns.map((column: any) => (
                     <TableHead 
                       key={column.name}
                       className={cn(
+                        getCellPaddingClass(),
+                        "font-semibold",
+                        `text-${headerTextColor}`,
                         column.sortable && config.settings?.sorting?.enabled 
-                          ? "cursor-pointer select-none hover:bg-gray-200" 
-                          : "",
-                        config.style?.headerFontSize === "xs" ? "text-xs" : "",
-                        config.style?.headerFontSize === "sm" ? "text-sm" : "",
-                        config.style?.headerFontSize === "base" ? "text-base" : "",
-                        config.style?.headerFontSize === "lg" ? "text-lg" : "",
-                        config.style?.headerFontSize === "xl" ? "text-xl" : "",
-                        config.style?.headerFontWeight === "light" ? "font-light" : "",
-                        config.style?.headerFontWeight === "normal" ? "font-normal" : "",
-                        config.style?.headerFontWeight === "medium" ? "font-medium" : "",
-                        config.style?.headerFontWeight === "semibold" ? "font-semibold" : "",
-                        config.style?.headerFontWeight === "bold" ? "font-bold" : ""
+                          ? "cursor-pointer select-none hover:bg-accent/50 transition-colors" 
+                          : ""
                       )}
-                      onClick={() => handleSort(column.name)}
-                      style={{
-                        minWidth: config.style?.columnMinWidth || 100,
-                        maxWidth: config.style?.columnMaxWidth || 300,
-                      }}
+                      onClick={() => column.sortable && handleSort(column.name)}
                     >
-                      {column.label || column.name}
-                      {sortColumn === column.name && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {column.label || column.name}
+                        {column.sortable && sortColumn === column.name && (
+                          sortDirection === "asc" 
+                            ? <ChevronUp className="w-4 h-4" />
+                            : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>
@@ -253,24 +296,17 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                 <TableRow 
                   key={rowIndex}
                   className={cn(
-                    config.style?.alternateRowColors && rowIndex % 2 === 1 ? "bg-gray-50" : "",
-                    config.style?.hoverEffects ? "hover:bg-gray-100" : ""
+                    stripedRows && rowIndex % 2 === 1 ? `bg-${alternateRowBg}` : "",
+                    hoverEffect ? "hover:bg-accent/30 transition-colors" : "",
+                    !showBorders && "border-0",
+                    transparentBackground && "bg-transparent"
                   )}
-                  style={{
-                    backgroundColor: config.style?.alternateRowColors && rowIndex % 2 === 1 
-                      ? config.style?.oddRowColor 
-                      : config.style?.evenRowColor,
-                  }}
                 >
                   {config.settings?.showRowNumbers && (
                     <TableCell 
                       className={cn(
-                        "text-center",
-                        config.style?.fontSize === "xs" ? "text-xs" : "",
-                        config.style?.fontSize === "sm" ? "text-sm" : "",
-                        config.style?.fontSize === "base" ? "text-base" : "",
-                        config.style?.fontSize === "lg" ? "text-lg" : "",
-                        config.style?.fontSize === "xl" ? "text-xl" : ""
+                        getCellPaddingClass(),
+                        "text-center text-muted-foreground"
                       )}
                     >
                       {(currentPage - 1) * (config.settings?.pagination?.pageSize || 50) + rowIndex + 1}
@@ -280,21 +316,9 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                     <TableCell 
                       key={column.name}
                       className={cn(
-                        config.style?.fontSize === "xs" ? "text-xs" : "",
-                        config.style?.fontSize === "sm" ? "text-sm" : "",
-                        config.style?.fontSize === "base" ? "text-base" : "",
-                        config.style?.fontSize === "lg" ? "text-lg" : "",
-                        config.style?.fontSize === "xl" ? "text-xl" : "",
-                        config.style?.fontWeight === "light" ? "font-light" : "",
-                        config.style?.fontWeight === "normal" ? "font-normal" : "",
-                        config.style?.fontWeight === "medium" ? "font-medium" : "",
-                        config.style?.fontWeight === "semibold" ? "font-semibold" : "",
-                        config.style?.fontWeight === "bold" ? "font-bold" : ""
+                        getCellPaddingClass(),
+                        `text-${rowTextColor}`
                       )}
-                      style={{
-                        minWidth: config.style?.columnMinWidth || 100,
-                        maxWidth: config.style?.columnMaxWidth || 300,
-                      }}
                     >
                       {formatValue(row[column.name], column.format)}
                     </TableCell>
@@ -307,25 +331,20 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
             {config.settings?.aggregation?.showSummaryRow && processedData.summary && (
               <TableBody>
                 <TableRow 
-                  className="border-t-2"
-                  style={{
-                    backgroundColor: config.style?.summaryRowStyle?.backgroundColor || "#F3F4F6",
-                    color: config.style?.summaryRowStyle?.textColor || "#374151",
-                  }}
+                  className={cn(
+                    "border-t-2 font-semibold bg-muted/80",
+                    !showBorders && "border-t-0"
+                  )}
                 >
                   {config.settings?.showRowNumbers && (
-                    <TableCell className="font-semibold">Total</TableCell>
+                    <TableCell className={getCellPaddingClass()}>
+                      Total
+                    </TableCell>
                   )}
                   {visibleColumns.map((column: any) => (
                     <TableCell 
                       key={column.name}
-                      className={cn(
-                        "font-semibold",
-                        config.style?.summaryRowStyle?.fontWeight === "normal" ? "font-normal" : "",
-                        config.style?.summaryRowStyle?.fontWeight === "medium" ? "font-medium" : "",
-                        config.style?.summaryRowStyle?.fontWeight === "semibold" ? "font-semibold" : "",
-                        config.style?.summaryRowStyle?.fontWeight === "bold" ? "font-bold" : ""
-                      )}
+                      className={getCellPaddingClass()}
                     >
                       {processedData?.summary?.[column.name] ? 
                         formatValue(
@@ -342,14 +361,19 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
         </div>
 
         {/* Pagination Info */}
-        {config.settings?.pagination?.enabled && (
-          <div className="px-6 py-3 border-t bg-gray-50 text-sm text-gray-600">
-            Showing {Math.min((currentPage - 1) * (config.settings.pagination.pageSize || 50) + 1, processedData.totalRows)} to{" "}
-            {Math.min(currentPage * (config.settings.pagination.pageSize || 50), processedData.totalRows)} of{" "}
-            {processedData.totalRows} entries
+        {showFooter && config.settings?.pagination?.enabled && (
+          <div className={cn(
+            "px-4 py-3 border-t text-sm text-muted-foreground flex justify-between items-center",
+            transparentBackground && "bg-transparent backdrop-blur-sm"
+          )}>
+            <span>
+              Showing {Math.min((currentPage - 1) * (config.settings.pagination.pageSize || 50) + 1, processedData.totalRows)} to{" "}
+              {Math.min(currentPage * (config.settings.pagination.pageSize || 50), processedData.totalRows)} of{" "}
+              {processedData.totalRows} entries
+            </span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PremiumWidgetContainer>
+    </BaseWidget>
   );
 };

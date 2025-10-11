@@ -182,13 +182,17 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Style configuration
   const styleConfig = config?.style || {};
+  const transparentBackground = styleConfig.transparentBackground || false;
   const showGrid = styleConfig.showGrid !== false;
   const showLegend = styleConfig.showLegend !== false;
   const legendPosition = styleConfig.legendPosition || "bottom";
   const showTooltip = true;
-  const gridColor = styleConfig.gridColor || theme.colors.border;
-  const textColor = styleConfig.textColor || theme.colors.foreground;
+  const gridColor = styleConfig.gridColor || (transparentBackground ? 'rgba(0,0,0,0.2)' : theme.colors.border);
+  const textColor = styleConfig.textColor || (transparentBackground ? '#000000' : theme.colors.foreground);
   const accentColor = styleConfig.accentColor || theme.colors.accent;
+  const gridOpacity = styleConfig.gridOpacity || 0.2;
+  const smoothCurves = styleConfig.smoothCurves !== false;
+  const fillOpacity = styleConfig.fillOpacity || 0.6;
 
   // Chart component selector
   const getChartComponent = () => {
@@ -232,12 +236,21 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Render chart
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <PremiumWidgetContainer style={styleConfig} className="h-full w-full">
+      <PremiumWidgetContainer 
+        style={styleConfig} 
+        className={cn(
+          "h-full w-full",
+          transparentBackground && "bg-transparent backdrop-blur-none"
+        )}
+      >
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="h-full"
+          className={cn(
+            "h-full",
+            transparentBackground && "bg-transparent"
+          )}
         >
           <ResponsiveContainer width="100%" height="100%">
             <ChartComponent 
@@ -251,9 +264,9 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
             >
               {showGrid && chartType !== "pie" && chartType !== "radar" && (
                 <CartesianGrid 
-                  strokeDasharray="1 1" 
+                  strokeDasharray="3 3" 
                   stroke={gridColor}
-                  strokeOpacity={0.2}
+                  strokeOpacity={gridOpacity}
                   vertical={false}
                 />
               )}
@@ -344,11 +357,11 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
               {chartType === "area" && dataKeys.map((dataKey: any, index: number) => (
                 <Area
                   key={dataKey.key}
-                  type="monotone"
+                  type={smoothCurves ? "natural" : "monotone"}
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
                   fill={dataKey.color}
-                  fillOpacity={0.12}
+                  fillOpacity={fillOpacity}
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   name={dataKey.name}
@@ -418,7 +431,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
               {(chartType === "line" || !["area", "bar", "pie", "scatter", "radar"].includes(chartType)) && dataKeys.map((dataKey: any, index: number) => (
                 <Line
                   key={dataKey.key}
-                  type="monotone"
+                  type={smoothCurves ? "natural" : "monotone"}
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
                   strokeWidth={2.5}
@@ -426,7 +439,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   dot={{ r: 0 }}
                   activeDot={{ 
                     r: 5, 
-                    fill: theme.colors.background, 
+                    fill: transparentBackground ? 'rgba(255,255,255,0.9)' : theme.colors.background, 
                     stroke: dataKey.color, 
                     strokeWidth: 2.5,
                     filter: `drop-shadow(0 2px 4px ${dataKey.color}40)`

@@ -4,7 +4,6 @@ import React, { PropsWithChildren, useRef, useState } from "react";
 import { GripVertical, Edit2, Copy, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { designTokens, widgetClasses } from "@/widgets/styles/designTokens";
-import { PremiumWidgetStyle, generateStyleCSS, getAnimationClass } from "@/widgets/styles/premiumStyles";
 
 interface BaseWidgetProps {
   title?: string | null;
@@ -16,8 +15,6 @@ interface BaseWidgetProps {
   isEditMode?: boolean;
   isSelected?: boolean;
   widgetId?: number;
-  premiumStyle?: PremiumWidgetStyle;
-  className?: string;
 }
 
 export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
@@ -30,29 +27,10 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
   isEditMode = false,
   isSelected = false,
   widgetId,
-  premiumStyle,
-  className,
   children,
 }) => {
   const [showActions, setShowActions] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
-  
-  // Generate inline styles from premiumStyle
-  const inlineStyles = premiumStyle ? {
-    style: {
-      background: premiumStyle.background,
-      ...(premiumStyle.backdropBlur && {
-        backdropFilter: premiumStyle.backdropBlur,
-        WebkitBackdropFilter: premiumStyle.backdropBlur,
-      }),
-      ...(premiumStyle.border && premiumStyle.border !== 'none' && { border: premiumStyle.border }),
-      borderRadius: premiumStyle.borderRadius,
-      ...(premiumStyle.shadow && premiumStyle.shadow !== 'none' && { boxShadow: premiumStyle.shadow }),
-      padding: isEditMode ? undefined : premiumStyle.padding,
-      ...(premiumStyle.opacity !== undefined && premiumStyle.opacity !== 1 && { opacity: premiumStyle.opacity }),
-      color: premiumStyle.textColor,
-    }
-  } : {};
 
   // Keyboard navigation handler
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -88,20 +66,17 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
       onKeyDown={handleKeyDown}
       onMouseEnter={() => isEditMode && setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
-      {...inlineStyles}
       className={cn(
         "flex h-full flex-col overflow-hidden group",
-        premiumStyle?.animation && getAnimationClass(premiumStyle.animation),
+        designTokens.transitions.base,
         isEditMode 
           ? cn(
               widgetClasses.card,
               widgetClasses.cardHover,
               "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-              isSelected && "ring-2 ring-primary/50 ring-offset-2 bg-primary/5",
-              "!p-0" // Remove padding for edit mode, let premium styles control it
+              isSelected && "ring-2 ring-primary/50 ring-offset-2 bg-primary/5"
             )
-          : "",
-        className
+          : "rounded-xl bg-transparent border-0"
       )}
     >
       {/* Enhanced header for edit mode with better affordance */}
@@ -206,7 +181,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
       {/* Content - Full space, premium and clean */}
       <div className={cn(
         "widget-content flex-1 overflow-hidden",
-        isEditMode ? "p-3" : ""
+        isEditMode ? "p-3" : "p-0"
       )}>
         {children}
       </div>
