@@ -84,18 +84,6 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Get premium theme
   const theme = getPremiumTheme(config?.style?.theme || 'platinum');
   
-  // Soft, professional color palette for data visualization
-  const softColors = [
-    '#3b82f6', // blue
-    '#10b981', // green  
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#8b5cf6', // purple
-    '#ec4899', // pink
-    '#14b8a6', // teal
-    '#f97316', // orange
-  ];
-  
   // Premium color palette for data visualization (fallback)
   const premiumColors = config?.style?.theme === 'onyx' || config?.style?.theme === 'obsidian'
     ? premiumDataColors.elegant
@@ -154,6 +142,18 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Generate data keys for multi-series charts - simplified
   const dataKeys = useMemo(() => {
+    // Soft, professional color palette for data visualization
+    const softColors = [
+      '#3b82f6', // blue
+      '#10b981', // green  
+      '#f59e0b', // amber
+      '#ef4444', // red
+      '#8b5cf6', // purple
+      '#ec4899', // pink
+      '#14b8a6', // teal
+      '#f97316', // orange
+    ];
+    
     if (!processedData.length) return [{ key: "value", name: "Value", color: yColumnColors['value'] || softColors[0] }];
     
     const yColumns = Array.isArray(mappings.y) ? mappings.y : (mappings.y ? [mappings.y] : []);
@@ -188,7 +188,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       // Use custom color if set, otherwise use soft colors
       color: yColumnColors[key] || softColors[index % softColors.length]
     }));
-  }, [processedData, mappings, softColors, yColumnColors]);
+  }, [processedData, mappings, yColumnColors]);
 
   // Style configuration - NEW ADVANCED PROPERTIES
   const styleConfig = config?.style || {};
@@ -507,14 +507,17 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   animationDuration={800}
                   animationEasing="ease-out"
                 >
-                  {processedData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={softColors[index % softColors.length]}
-                      stroke="hsl(var(--background))"
-                      strokeWidth={3}
-                    />
-                  ))}
+                  {processedData.map((entry, index) => {
+                    const pieColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+                    return (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={pieColors[index % pieColors.length]}
+                        stroke="hsl(var(--background))"
+                        strokeWidth={3}
+                      />
+                    );
+                  })}
                 </Pie>
               )}
               
