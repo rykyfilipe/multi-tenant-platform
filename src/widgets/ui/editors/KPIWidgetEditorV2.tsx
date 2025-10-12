@@ -203,6 +203,59 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
     });
   };
 
+  // Save current value as snapshot for trend comparison
+  const saveCurrentSnapshot = useCallback(async () => {
+    if (!value.data.databaseId || !value.data.tableId || !value.data.metric?.field) {
+      alert('Configurează mai întâi sursa de date și metrica KPI');
+      return;
+    }
+
+    try {
+      // Fetch current data from API
+      const response = await fetch(
+        `/api/tenants/${tenantId}/databases/${value.data.databaseId}/tables/${value.data.tableId}/rows?pageSize=10000&page=1&includeCells=true`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const result = await response.json();
+      const rawData = result.data || [];
+
+      if (rawData.length === 0) {
+        alert('Nu există date pentru a crea snapshot');
+        return;
+      }
+
+      // Process with KPIWidgetProcessor to get current value
+      const kpiConfig = {
+        dataSource: {
+          databaseId: value.data.databaseId,
+          tableId: value.data.tableId,
+        },
+        metric: value.data.metric,
+        filters: value.data.filters || [],
+      };
+
+      const kpiResult = KPIWidgetProcessor.process(rawData, kpiConfig);
+
+      // Save as snapshot
+      const snapshot = {
+        value: kpiResult.value,
+        timestamp: new Date().toISOString(),
+        label: `Snapshot ${new Date().toLocaleDateString('ro-RO')}`,
+      };
+
+      updateMetric({ previousSnapshot: snapshot });
+      
+      alert(`✅ Snapshot salvat!\nValoare: ${kpiResult.value.toLocaleString('ro-RO')}`);
+    } catch (error) {
+      console.error('Error saving snapshot:', error);
+      alert('❌ Eroare la salvarea snapshot-ului');
+    }
+  }, [tenantId, value.data, updateMetric]);
+
   // Aggregation pipeline management (chained)
   const addAggregation = () => {
     const currentAggregations = value.data.metric?.aggregations || [];
@@ -763,30 +816,102 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                       </div>
 
                       {/* Display Options */}
-                      <div className="flex items-center gap-6 pt-4 border-t">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="trend"
-                            checked={value.data.metric?.showTrend || false}
-                            onCheckedChange={(checked) => updateMetric({ showTrend: checked })}
-                          />
-                          <Label htmlFor="trend" className="text-sm flex items-center gap-1 cursor-pointer">
-                            <TrendingUp className="h-3 w-3" />
-                            Show Trend
-                          </Label>
+                      <div className="space-y-4 pt-4 border-t">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="trend"
+                              checked={value.data.metric?.showTrend || false}
+                              onCheckedChange={(checked) => updateMetric({ showTrend: checked })}
+                            />
+                            <Label htmlFor="trend" className="text-sm flex items-center gap-1 cursor-pointer">
+                              <TrendingUp className="h-3 w-3" />
+                              Show Trend
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="comparison"
+                              checked={value.data.metric?.showComparison || false}
+                              onCheckedChange={(checked) => updateMetric({ showComparison: checked })}
+                            />
+                            <Label htmlFor="comparison" className="text-sm flex items-center gap-1 cursor-pointer">
+                              <Target className="h-3 w-3" />
+                              Show Comparison
+                            </Label>
+                          </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="comparison"
-                            checked={value.data.metric?.showComparison || false}
-                            onCheckedChange={(checked) => updateMetric({ showComparison: checked })}
-                          />
-                          <Label htmlFor="comparison" className="text-sm flex items-center gap-1 cursor-pointer">
-                            <Target className="h-3 w-3" />
-                            Show Comparison
-                          </Label>
-                        </div>
+                        {/* Snapshot Management - Only visible when Trend is enabled */}
+                        {value.data.metric?.showTrend && (
+                          <Card className="bg-muted/30 border-dashed">
+                            <CardContent className="pt-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    Snapshot pentru Trend Comparison
+                                  </Label>
+                                  {value.data.metric?.previousSnapshot ? (
+                                    <div className="text-sm text-foreground">
+                                      <div className="font-semibold">
+                                        Valoare: {value.data.metric.previousSnapshot.value.toLocaleString('ro-RO')}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        Salvat: {new Date(value.data.metric.previousSnapshot.timestamp).toLocaleString('ro-RO', { 
+                                          year: 'numeric', 
+                                          month: 'long', 
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground">
+                                      Niciun snapshot salvat. Trendul se calculează împărțind datele în jumătăți.
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={saveCurrentSnapshot}
+                                    disabled={!value.data.databaseId || !value.data.tableId || !value.data.metric?.field}
+                                  >
+                                    <TrendingUp className="h-3 w-3 mr-1" />
+                                    Salvează Snapshot
+                                  </Button>
+                                  
+                                  {value.data.metric?.previousSnapshot && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        updateMetric({ previousSnapshot: undefined });
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Reset
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <Alert className="py-2">
+                                <Info className="h-3 w-3" />
+                                <AlertDescription className="text-xs">
+                                  <strong>Snapshot:</strong> Salvează valoarea curentă pentru comparație viitoare. 
+                                  Trendul va arăta % schimbarea față de acest snapshot, nu față de jumătatea anterioară a datelor.
+                                </AlertDescription>
+                              </Alert>
+                            </CardContent>
+                          </Card>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

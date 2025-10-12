@@ -182,6 +182,71 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	stroke: hsl(var(--border) / 0.3);
 }
 
+/* Widget Grid Layout Styling */
+.react-grid-layout {
+	position: relative;
+	transition: height 200ms ease;
+}
+
+.react-grid-item {
+	transition: all 200ms ease;
+	transition-property: left, top, width, height;
+}
+
+.react-grid-item img {
+	pointer-events: none;
+	user-select: none;
+}
+
+.react-grid-item > .react-resizable-handle {
+	position: absolute;
+	width: 20px;
+	height: 20px;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+	content: "";
+	position: absolute;
+	right: 3px;
+	bottom: 3px;
+	width: 5px;
+	height: 5px;
+	border-right: 2px solid hsl(var(--border));
+	border-bottom: 2px solid hsl(var(--border));
+}
+
+.react-resizable-hide > .react-resizable-handle {
+	display: none;
+}
+
+.react-grid-item.resizing {
+	z-index: 100;
+	will-change: width, height;
+}
+
+.react-grid-item.static {
+	background: transparent;
+}
+
+.react-grid-item.react-draggable-dragging {
+	transition: none;
+	z-index: 100;
+	will-change: transform;
+}
+
+.react-grid-item.dropping {
+	visibility: hidden;
+}
+
+.react-grid-item.react-grid-placeholder {
+	background: hsl(var(--primary) / 0.1);
+	opacity: 0.2;
+	transition-duration: 100ms;
+	z-index: 2;
+	border-radius: 8px;
+	border: 2px dashed hsl(var(--primary) / 0.5);
+}
+
 /* Chart Axis Styling */
 .recharts-xAxis .recharts-cartesian-axis-tick-value,
 .recharts-yAxis .recharts-cartesian-axis-tick-value {

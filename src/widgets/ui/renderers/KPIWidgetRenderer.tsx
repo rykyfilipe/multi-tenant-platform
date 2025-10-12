@@ -330,43 +330,49 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
       onDuplicate={onDuplicate}
     >
       <motion.div
-        initial={animationConfig.enabled ? { opacity: 0, scale: 0.95 } : false}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ 
-          duration: 0.4, 
-          ease: "easeOut"
+          duration: 0.5, 
+          ease: [0.25, 0.1, 0.25, 1.0] // Smooth easing
         }}
         whileHover={{ 
-          scale: 1.02,
-          transition: { duration: 0.2 }
+          y: -4,
+          transition: { duration: 0.2, ease: "easeOut" }
         }}
-        className="h-full transition-all duration-300"
+        className="h-full"
       >
         <Card 
           className={cn(
-            "h-full border-0 hover:shadow-xl transition-all duration-300",
-            shadow?.enabled && getShadowClass(shadow.size)
+            "h-full border border-border/40 bg-card transition-all duration-300",
+            "hover:shadow-lg hover:border-border/60",
+            "shadow-sm"
           )}
-          style={cardStyle}
+          style={{
+            background: bgGradient?.enabled 
+              ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})` 
+              : undefined,
+            borderRadius: `${borderRadius}px`,
+          }}
         >
-          <CardContent className="p-0" style={{ padding: 0 }}>
+          <CardContent className="p-6">
           {isLoadingData ? (
-            <div className="flex items-center justify-center h-full min-h-[200px]">
-              <div className="text-center text-muted-foreground">
-                <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
-                <p className="text-sm">Loading data...</p>
+            <div className="flex items-center justify-center h-full min-h-[160px]">
+              <div className="text-center">
+                <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin text-primary/60" />
+                <p className="text-sm text-muted-foreground">Loading...</p>
               </div>
             </div>
           ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Aggregation Pipeline - Shows chained functions */}
             {metric.aggregations && metric.aggregations.length > 1 && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-medium">Pipeline:</span>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pb-2">
+                <span className="font-medium opacity-70">Pipeline:</span>
                 {metric.aggregations.map((agg: { function: string; label?: string }, idx: number) => (
                   <React.Fragment key={idx}>
-                    {idx > 0 && <span>→</span>}
-                    <Badge variant="outline" className="text-xs">
+                    {idx > 0 && <span className="opacity-40">→</span>}
+                    <Badge variant="outline" className="text-[10px] font-medium px-1.5 py-0.5 bg-background/50">
                       {agg.label || agg.function.toUpperCase()}
                     </Badge>
                   </React.Fragment>
@@ -374,86 +380,101 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               </div>
             )}
 
-            {/* Main Value */}
-            <div className="text-center space-y-3">
-              <div style={valueTextStyle}>
-                {(processedKPI as any).displayValue !== undefined && metric.displayColumn
-                  ? formatDisplayValue((processedKPI as any).displayValue, metric.displayFormat)
-                  : formatValue(processedKPI.value, metric.format)}
-              </div>
-              
-              <p style={labelTextStyle}>
+            {/* Label (moved to top) */}
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">
                 {metric.displayColumn && (processedKPI as any).displayValue !== undefined 
                   ? metric.displayColumn 
                   : (metric.label || metric.field)}
               </p>
             </div>
 
-            {/* Stats Row */}
-            <div className="flex items-center justify-center gap-6 pt-4 border-t border-border/50">
-              {/* Trend */}
-              {metric.showTrend && processedKPI.trend && (
-                <div className="flex items-center gap-2">
-                  {trendShowIcon && (
+            {/* Main Value */}
+            <div className="space-y-1">
+              <div className="text-3xl font-bold text-foreground leading-none tracking-tight">
+                {(processedKPI as any).displayValue !== undefined && metric.displayColumn
+                  ? formatDisplayValue((processedKPI as any).displayValue, metric.displayFormat)
+                  : formatValue(processedKPI.value, metric.format)}
+              </div>
+            </div>
+
+            {/* Stats Row - Compact and clean */}
+            {(metric.showTrend && processedKPI.trend) || (metric.showComparison && processedKPI.comparison) ? (
+              <div className="flex items-center gap-4 pt-3">
+                {/* Trend */}
+                {metric.showTrend && processedKPI.trend && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
+                    className="flex items-center gap-1.5"
+                  >
                     <div 
-                      className="rounded-full p-1.5"
-                      style={{
-                        backgroundColor: processedKPI.trend.direction === "up" 
-                          ? trendPositive.backgroundColor 
-                          : processedKPI.trend.direction === "down"
-                          ? trendNegative.backgroundColor
-                          : "rgba(0, 0, 0, 0.05)"
-                      }}
+                      className={cn(
+                        "rounded-md p-1",
+                        processedKPI.trend.direction === "up" && "bg-green-50 dark:bg-green-950/30",
+                        processedKPI.trend.direction === "down" && "bg-red-50 dark:bg-red-950/30",
+                        processedKPI.trend.direction === "stable" && "bg-gray-50 dark:bg-gray-900/30"
+                      )}
                     >
                       {processedKPI.trend.direction === "up" 
-                        ? <TrendingUp style={{ width: `${trendPositive.iconSize}px`, height: `${trendPositive.iconSize}px`, color: trendPositive.color }} /> 
+                        ? <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> 
                         : processedKPI.trend.direction === "down"
-                        ? <TrendingDown style={{ width: `${trendNegative.iconSize}px`, height: `${trendNegative.iconSize}px`, color: trendNegative.color }} />
-                        : <Minus style={{ width: `16px`, height: `16px`, color: "#6B7280" }} />
+                        ? <TrendingDown className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                        : <Minus className="h-3.5 w-3.5 text-gray-500" />
                       }
                     </div>
-                  )}
-                  <span 
-                    style={{
-                      fontSize: `${trendFontSize}px`,
-                      fontWeight: trendFontWeight,
-                      color: processedKPI.trend.direction === "up" 
-                        ? trendPositive.color 
-                        : processedKPI.trend.direction === "down"
-                        ? trendNegative.color
-                        : "#6B7280"
-                    }}
-                  >
-                    {processedKPI.trend.direction === "up" ? "+" : processedKPI.trend.direction === "down" ? "-" : ""}
-                    {processedKPI.trend.percentage.toFixed(1)}%
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    vs previous
-                  </span>
-                </div>
-              )}
+                    <div className="flex items-baseline gap-1">
+                      <span 
+                        className={cn(
+                          "text-sm font-semibold",
+                          processedKPI.trend.direction === "up" && "text-green-600 dark:text-green-400",
+                          processedKPI.trend.direction === "down" && "text-red-600 dark:text-red-400",
+                          processedKPI.trend.direction === "stable" && "text-gray-500"
+                        )}
+                      >
+                        {processedKPI.trend.direction === "up" ? "+" : processedKPI.trend.direction === "down" ? "-" : ""}
+                        {processedKPI.trend.percentage.toFixed(1)}%
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {processedKPI.trend.comparisonType === 'snapshot' && processedKPI.trend.previousTimestamp
+                          ? `vs ${new Date(processedKPI.trend.previousTimestamp).toLocaleDateString('ro-RO', { month: 'short', day: 'numeric' })}`
+                          : 'vs prev'}
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
 
-              {/* Comparison */}
-              {metric.showComparison && processedKPI.comparison && (
-                <div className="flex items-center gap-2">
-                  {getComparisonIcon(processedKPI.comparison.status)}
-                  <span 
-                    className={cn(
-                      "text-sm font-semibold",
-                      processedKPI.comparison.status === "above" ? "text-green-600 dark:text-green-400" : "",
-                      processedKPI.comparison.status === "below" ? "text-red-600 dark:text-red-400" : "",
-                      processedKPI.comparison.status === "on-target" ? "text-blue-600 dark:text-blue-400" : ""
-                    )}
+                {/* Comparison */}
+                {metric.showComparison && processedKPI.comparison && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
+                    className="flex items-center gap-1.5"
                   >
-                    {processedKPI.comparison.status === "above" ? "Above" : 
-                     processedKPI.comparison.status === "below" ? "Below" : "On"} target
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    (target: {formatValue(processedKPI.comparison.target, metric.format)})
-                  </span>
-                </div>
-              )}
-            </div>
+                    <div 
+                      className={cn(
+                        "rounded-md p-1",
+                        processedKPI.comparison.status === "above" && "bg-green-50 dark:bg-green-950/30",
+                        processedKPI.comparison.status === "below" && "bg-red-50 dark:bg-red-950/30",
+                        processedKPI.comparison.status === "on-target" && "bg-blue-50 dark:bg-blue-950/30"
+                      )}
+                    >
+                      {processedKPI.comparison.status === "above" 
+                        ? <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                        : processedKPI.comparison.status === "below"
+                        ? <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                        : <Target className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                      }
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Target: {formatValue(processedKPI.comparison.target, metric.format)}
+                    </span>
+                  </motion.div>
+                )}
+              </div>
+            ) : null}
           </div>
           )}
         </CardContent>

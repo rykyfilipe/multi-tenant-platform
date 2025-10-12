@@ -13,6 +13,15 @@ export interface DataSourceConfig {
 }
 
 /**
+ * Previous snapshot for trend comparison
+ */
+export interface PreviousSnapshot {
+  value: number;
+  timestamp: string; // ISO date string
+  label?: string; // Optional label like "Last Week", "Last Month"
+}
+
+/**
  * Single metric configuration
  */
 export interface MetricConfig {
@@ -27,6 +36,8 @@ export interface MetricConfig {
   showTrend?: boolean;
   showComparison?: boolean;
   target?: number; // Optional target value
+  // Previous snapshot for REAL trend calculation
+  previousSnapshot?: PreviousSnapshot; // Stored previous value for comparison
   // Display column - when last aggregation returns single row (max/min/first/last)
   displayColumn?: string; // Column to display from the result row
   displayFormat?: 'text' | 'number' | 'currency' | 'date';
@@ -103,6 +114,9 @@ export interface KPIResult {
     value: number;
     percentage: number;
     direction: 'up' | 'down' | 'stable';
+    previousValue?: number; // Previous snapshot value
+    previousTimestamp?: string; // When was the snapshot taken
+    comparisonType: 'snapshot' | 'split-data'; // How was trend calculated
   };
   comparison?: {
     target: number;
@@ -349,11 +363,20 @@ export class KPIWidgetProcessor {
 
     // Calculate trend if enabled - using FULL PIPELINE not just first aggregation
     if (config.metric.showTrend) {
-      result.trend = this.calculateTrendWithPipeline(
-        normalizedData, 
-        config.metric.field, 
-        config.metric.aggregations
-      );
+      // If previousSnapshot exists, use it for REAL comparison
+      if (config.metric.previousSnapshot) {
+        result.trend = this.calculateTrendFromSnapshot(
+          finalAggregation.value,
+          config.metric.previousSnapshot
+        );
+      } else {
+        // Fallback to old method (split data)
+        result.trend = this.calculateTrendWithPipeline(
+          normalizedData, 
+          config.metric.field, 
+          config.metric.aggregations
+        );
+      }
     }
 
     // Calculate comparison if enabled and target provided
@@ -657,6 +680,36 @@ export class KPIWidgetProcessor {
   }
 
   /**
+   * Calculate trend from saved snapshot (REAL comparison)
+   */
+  private static calculateTrendFromSnapshot(
+    currentValue: number,
+    previousSnapshot: PreviousSnapshot
+  ): { 
+    value: number; 
+    percentage: number; 
+    direction: 'up' | 'down' | 'stable';
+    previousValue: number;
+    previousTimestamp: string;
+    comparisonType: 'snapshot';
+  } {
+    const previousValue = previousSnapshot.value;
+    const difference = currentValue - previousValue;
+    const percentage = previousValue !== 0 ? (difference / previousValue) * 100 : 0;
+
+    console.log(`📊 [Trend from Snapshot] Current: ${currentValue}, Previous: ${previousValue}, Change: ${percentage.toFixed(2)}%`);
+
+    return {
+      value: difference,
+      percentage: Math.abs(percentage),
+      direction: percentage > 1 ? 'up' : percentage < -1 ? 'down' : 'stable',
+      previousValue: previousValue,
+      previousTimestamp: previousSnapshot.timestamp,
+      comparisonType: 'snapshot'
+    };
+  }
+
+  /**
    * Calculate trend using FULL AGGREGATION PIPELINE based on created_at timestamp
    * Compares older half vs newer half (chronologically sorted)
    */
@@ -664,9 +717,9 @@ export class KPIWidgetProcessor {
     data: NormalizedRow[], 
     field: string, 
     aggregations: Array<{ function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'first' | 'last'; label: string }>
-  ): { value: number; percentage: number; direction: 'up' | 'down' | 'stable' } {
+  ): { value: number; percentage: number; direction: 'up' | 'down' | 'stable'; comparisonType: 'split-data' } {
     if (data.length < 4) {
-      return { value: 0, percentage: 0, direction: 'stable' };
+      return { value: 0, percentage: 0, direction: 'stable', comparisonType: 'split-data' };
     }
 
     // Try to sort by created_at for chronological comparison
@@ -716,12 +769,13 @@ export class KPIWidgetProcessor {
     const difference = newerNum - olderNum;
     const percentage = olderNum !== 0 ? (difference / olderNum) * 100 : 0;
 
-    console.log(`📈 [Trend Calculation] Older period: ${olderNum}, Newer period: ${newerNum}, Change: ${percentage.toFixed(2)}%`);
+    console.log(`📈 [Trend Calculation - Split Data] Older period: ${olderNum}, Newer period: ${newerNum}, Change: ${percentage.toFixed(2)}%`);
 
     return {
       value: difference,
       percentage: Math.abs(percentage),
-      direction: percentage > 1 ? 'up' : percentage < -1 ? 'down' : 'stable'
+      direction: percentage > 1 ? 'up' : percentage < -1 ? 'down' : 'stable',
+      comparisonType: 'split-data'
     };
   }
 

@@ -620,54 +620,72 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
           )}
               {/* Widget Grid */}
               <WidgetErrorBoundary>
-                <GridLayout className="layout" layout={layout} cols={12} rowHeight={30} width={1200}
-                  onLayoutChange={(newLayout) => {
-                    // Use setTimeout to ensure state updates are processed before layout changes
-                    setTimeout(() => {
-                      newLayout.forEach((item) => {
-                        const widgetId = Number(item.i);
-                        // Only update if widget still exists in the store
-                        if (widgetsRecord[widgetId]) {
-                          handleWidgetUpdate(widgetId, {
-                            position: { x: item.x, y: item.y, w: item.w, h: item.h },
-                          });
-                        }
-                      });
-                    }, 0);
-                  }}
-                >
-                  {(filteredWidgets.length > 0 ? filteredWidgets : widgetList).map((widget) => {
-                    // Add guard to ensure widget exists in current state
-                    if (!widgetsRecord[widget.id]) {
-                      console.warn(`⚠️ [WidgetCanvas] Widget ${widget.id} not found in current state, skipping render`);
-                      return null;
-                    }
+                <div className="w-full max-w-[1400px] mx-auto">
+                  <GridLayout 
+                    className="layout" 
+                    layout={layout} 
+                    cols={12} 
+                    rowHeight={30} 
+                    width={1400}
+                    margin={[16, 16]}
+                    containerPadding={[0, 0]}
+                    isDraggable={isEditMode}
+                    isResizable={isEditMode}
+                    compactType="vertical"
+                    preventCollision={false}
+                    onLayoutChange={(newLayout) => {
+                      // Use setTimeout to ensure state updates are processed before layout changes
+                      setTimeout(() => {
+                        newLayout.forEach((item) => {
+                          const widgetId = Number(item.i);
+                          // Only update if widget still exists in the store
+                          if (widgetsRecord[widgetId]) {
+                            handleWidgetUpdate(widgetId, {
+                              position: { x: item.x, y: item.y, w: item.w, h: item.h },
+                            });
+                          }
+                        });
+                      }, 0);
+                    }}
+                  >
+                    {(filteredWidgets.length > 0 ? filteredWidgets : widgetList).map((widget) => {
+                      // Add guard to ensure widget exists in current state
+                      if (!widgetsRecord[widget.id]) {
+                        console.warn(`⚠️ [WidgetCanvas] Widget ${widget.id} not found in current state, skipping render`);
+                        return null;
+                      }
 
-                    const definition = getWidgetDefinition(widget.type);
-                    const Renderer = definition.renderer;
-                    const isSelected = selectedWidgets.has(widget.id);
+                      const definition = getWidgetDefinition(widget.type);
+                      const Renderer = definition.renderer;
+                      const isSelected = selectedWidgets.has(widget.id);
 
-                    return (
-                      <div
-                        key={widget.id}
-                        className={`border border-dashed rounded transition-all ${
-                          isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectWidget(widget.id, !isSelected);
-                        }}
-                      >
-                        <Renderer
-                          widget={widget}
-                          onEdit={() => openEditor(widget.id)}
-                          onDelete={() => deleteLocal(widget.id)}
-                          onDuplicate={() => handleDuplicate(widget)}
-                        />
-                      </div>
-                    );
-                  }).filter(Boolean)}
-                </GridLayout>
+                      return (
+                        <div
+                          key={widget.id}
+                          className={`transition-all ${
+                            isSelected 
+                              ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' 
+                              : isEditMode 
+                              ? 'ring-1 ring-border/30' 
+                              : ''
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectWidget(widget.id, !isSelected);
+                          }}
+                        >
+                          <Renderer
+                            widget={widget}
+                            onEdit={() => openEditor(widget.id)}
+                            onDelete={() => deleteLocal(widget.id)}
+                            onDuplicate={() => handleDuplicate(widget)}
+                            isEditMode={isEditMode}
+                          />
+                        </div>
+                      );
+                    }).filter(Boolean)}
+                  </GridLayout>
+                </div>
               </WidgetErrorBoundary>
         </div>
       </TabsContent>

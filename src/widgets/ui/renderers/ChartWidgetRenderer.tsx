@@ -84,7 +84,19 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Get premium theme
   const theme = getPremiumTheme(config?.style?.theme || 'platinum');
   
-  // Premium color palette for data visualization
+  // Soft, professional color palette for data visualization
+  const softColors = [
+    '#3b82f6', // blue
+    '#10b981', // green  
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // purple
+    '#ec4899', // pink
+    '#14b8a6', // teal
+    '#f97316', // orange
+  ];
+  
+  // Premium color palette for data visualization (fallback)
   const premiumColors = config?.style?.theme === 'onyx' || config?.style?.theme === 'obsidian'
     ? premiumDataColors.elegant
     : premiumDataColors.professional;
@@ -142,9 +154,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
 
   // Generate data keys for multi-series charts - simplified
   const dataKeys = useMemo(() => {
-    const defaultColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6b7280'];
-    
-    if (!processedData.length) return [{ key: "value", name: "Value", color: yColumnColors['value'] || premiumColors[0] }];
+    if (!processedData.length) return [{ key: "value", name: "Value", color: yColumnColors['value'] || softColors[0] }];
     
     const yColumns = Array.isArray(mappings.y) ? mappings.y : (mappings.y ? [mappings.y] : []);
     
@@ -153,8 +163,8 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       return yColumns.map((column: string, index: number) => ({
         key: column,
         name: column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, ' '),
-        // Use custom color if set, otherwise use default colors, fallback to premium colors
-        color: yColumnColors[column] || defaultColors[index % defaultColors.length] || Object.values(premiumColors)[index % Object.values(premiumColors).length]
+        // Use custom color if set, otherwise use soft colors
+        color: yColumnColors[column] || softColors[index % softColors.length]
       }));
     }
     
@@ -169,16 +179,16 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     });
     
     if (keys.size === 0) {
-      return [{ key: "value", name: "Value", color: yColumnColors['value'] || premiumColors[0] }];
+      return [{ key: "value", name: "Value", color: yColumnColors['value'] || softColors[0] }];
     }
     
     return Array.from(keys).map((key: string, index: number) => ({
       key,
       name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-      // Use custom color if set, otherwise use default colors
-      color: yColumnColors[key] || defaultColors[index % defaultColors.length] || premiumColors[index % premiumColors.length]
+      // Use custom color if set, otherwise use soft colors
+      color: yColumnColors[key] || softColors[index % softColors.length]
     }));
-  }, [processedData, mappings, premiumColors, yColumnColors]);
+  }, [processedData, mappings, softColors, yColumnColors]);
 
   // Style configuration - NEW ADVANCED PROPERTIES
   const styleConfig = config?.style || {};
@@ -312,19 +322,23 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Render chart
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <PremiumWidgetContainer 
-        style={styleConfig} 
+      <div 
         className={cn(
-          "h-full w-full transition-all duration-300 hover:shadow-xl",
-          transparentBackground && "bg-transparent backdrop-blur-none"
+          "h-full w-full bg-card border border-border/40 rounded-xl",
+          "transition-all duration-300 hover:shadow-lg hover:border-border/60",
+          "shadow-sm",
+          transparentBackground && "bg-transparent backdrop-blur-none border-0"
         )}
       >
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ 
+            duration: 0.5, 
+            ease: [0.25, 0.1, 0.25, 1.0]
+          }}
           className={cn(
-            "h-full relative overflow-hidden",
+            "h-full relative overflow-hidden rounded-xl p-4",
             transparentBackground && "bg-transparent"
           )}
         >
@@ -340,10 +354,11 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
             >
               {showGrid && chartType !== "pie" && chartType !== "radar" && (
                 <CartesianGrid 
-                  strokeDasharray={gridDashPattern}
+                  strokeDasharray={gridDashPattern || "3 3"}
                   stroke={gridColor}
                   strokeWidth={gridLineWidth}
                   vertical={false}
+                  strokeOpacity={0.1}
                 />
               )}
               
@@ -405,22 +420,23 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
               {showTooltip && (
                 <Tooltip 
                   contentStyle={{
-                    backgroundColor: tooltipBgColor,
-                    border: `${tooltipBorderWidth}px solid ${tooltipBorderColor}`,
-                    borderRadius: `${tooltipBorderRadius}px`,
-                    fontFamily: tooltipFontFamily,
-                    fontSize: `${tooltipFontSize}px`,
-                    color: tooltipBodyColor,
-                    padding: `${tooltipPadding}px`
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    fontSize: '13px',
+                    color: 'hsl(var(--foreground))',
+                    padding: '10px 12px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                   }}
                   labelStyle={{
-                    color: tooltipTitleColor,
-                    fontSize: `${tooltipFontSize + 1}px`,
-                    fontWeight: "600",
-                    marginBottom: "4px"
+                    color: 'hsl(var(--foreground))',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    marginBottom: '6px'
                   }}
-                  cursor={{ fill: gridColor, opacity: 0.1 }}
-                  animationDuration={animationEnabled ? animationDuration / 2 : 0}
+                  cursor={{ fill: 'hsl(var(--primary))', opacity: 0.05 }}
+                  animationDuration={200}
                 />
               )}
               
@@ -445,15 +461,16 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
               {chartType === "area" && dataKeys.map((dataKey: any, index: number) => (
                 <Area
                   key={dataKey.key}
-                  type={smoothCurves ? "natural" : "monotone"}
+                  type="monotone"
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
-                  fill={dataKey.color}
-                  fillOpacity={lineGradient.enabled ? lineGradient.startOpacity : 0.6}
-                  strokeWidth={lineWidth}
+                  fill={`url(#gradient-${index})`}
+                  fillOpacity={1}
+                  strokeWidth={2.5}
                   strokeLinecap="round"
                   name={dataKey.name}
-                  animationDuration={animationEnabled ? animationDuration : 0}
+                  animationDuration={800}
+                  animationEasing="ease-in-out"
                 />
               ))}
               
@@ -463,11 +480,12 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   dataKey={dataKey.key}
                   fill={dataKey.color}
                   name={dataKey.name}
-                  radius={[barBorderRadius, barBorderRadius, 0, 0]}
-                  maxBarSize={barMaxThickness}
-                  stroke={barBorderColor}
-                  strokeWidth={barBorderWidth}
-                  animationDuration={animationEnabled ? animationDuration : 0}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={50}
+                  stroke="none"
+                  strokeWidth={0}
+                  animationDuration={800}
+                  animationEasing="ease-out"
                 />
               ))}
               
@@ -478,21 +496,23 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
-                  innerRadius={styleConfig.shine ? 20 : 0}
-                  paddingAngle={2}
-                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  innerRadius={60}
+                  paddingAngle={3}
+                  label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
                   labelLine={{
-                    stroke: styleConfig.textColor || "#333333",
+                    stroke: 'hsl(var(--muted-foreground))',
                     strokeWidth: 1
                   }}
+                  animationDuration={800}
+                  animationEasing="ease-out"
                 >
                   {processedData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={premiumColors[index % premiumColors.length]}
-                      stroke={theme.colors.background}
-                      strokeWidth={2}
+                      fill={softColors[index % softColors.length]}
+                      stroke="hsl(var(--background))"
+                      strokeWidth={3}
                     />
                   ))}
                 </Pie>
@@ -523,33 +543,45 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
               {(chartType === "line" || !["area", "bar", "pie", "scatter", "radar"].includes(chartType)) && dataKeys.map((dataKey: any, index: number) => (
                 <Line
                   key={dataKey.key}
-                  type={smoothCurves ? "natural" : "monotone"}
+                  type="monotone"
                   dataKey={dataKey.key}
                   stroke={dataKey.color}
-                  strokeWidth={lineWidth}
+                  strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeDasharray={lineStyle === "dashed" ? "5 5" : lineStyle === "dotted" ? "2 2" : undefined}
-                  dot={showPoints ? { 
-                    r: pointRadius,
-                    fill: pointBorderColor,
+                  dot={{ 
+                    r: 4,
+                    fill: 'hsl(var(--background))',
                     stroke: dataKey.color,
-                    strokeWidth: pointBorderWidth
-                  } : false}
+                    strokeWidth: 2.5
+                  }}
                   activeDot={{ 
-                    r: pointHoverRadius, 
-                    fill: pointBorderColor, 
-                    stroke: dataKey.color, 
-                    strokeWidth: pointBorderWidth,
-                    filter: `drop-shadow(0 2px 4px ${dataKey.color}40)`
+                    r: 6, 
+                    fill: dataKey.color, 
+                    stroke: 'hsl(var(--background))', 
+                    strokeWidth: 3,
+                    filter: `drop-shadow(0 2px 6px ${dataKey.color}60)`
                   }}
                   name={dataKey.name}
-                  animationDuration={animationEnabled ? animationDuration : 0}
+                  animationDuration={800}
+                  animationEasing="ease-out"
                 />
               ))}
+              {/* Gradient definitions for area charts */}
+              {chartType === "area" && (
+                <defs>
+                  {dataKeys.map((dataKey: any, index: number) => (
+                    <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={dataKey.color} stopOpacity={0.3} />
+                      <stop offset="100%" stopColor={dataKey.color} stopOpacity={0.05} />
+                    </linearGradient>
+                  ))}
+                </defs>
+              )}
             </ChartComponent>
           </ResponsiveContainer>
         </motion.div>
-      </PremiumWidgetContainer>
+      </div>
     </BaseWidget>
   );
 };
