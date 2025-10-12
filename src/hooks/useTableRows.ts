@@ -117,11 +117,11 @@ function useTableRows(
 		[],
 	);
 
-	// Cache management - RE-ENABLED pentru performanță
+	// Cache management - DISABLED pentru widgets (instant updates)
 	const getCachedData = useCallback((cacheKey: string) => {
 		const cached = cacheRef.current.get(cacheKey);
-		if (cached && Date.now() - cached.timestamp < 2 * 60 * 1000) {
-			// 2 minute cache pentru performanță
+		// ⚡ Cache reduced to 5 seconds for instant updates in widgets/dashboard
+		if (cached && Date.now() - cached.timestamp < 5 * 1000) {
 			return cached.data;
 		}
 		return null;
@@ -243,8 +243,10 @@ function useTableRows(
 					method: "GET",
 					headers: {
 						Authorization: `Bearer ${token}`,
-						"Cache-Control": "no-cache",
+						"Cache-Control": "no-cache, no-store, must-revalidate",
+						"Pragma": "no-cache",
 					},
+					cache: 'no-store', // ⚡ Disable browser cache completely
 					signal: controller.signal, // 🔧 FIX: Add abort signal
 				});
 
@@ -539,7 +541,10 @@ function useTableRows(
 						method: 'GET',
 						headers: {
 							'Content-Type': 'application/json',
+							'Cache-Control': 'no-cache, no-store, must-revalidate',
+							'Pragma': 'no-cache',
 						},
+						cache: 'no-store', // ⚡ Disable browser cache
 					}
 				);
 

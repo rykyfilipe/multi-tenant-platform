@@ -30,7 +30,13 @@ export class WidgetsApiClient {
     const url = `/api/v1/tenants/${this.tenantId}/dashboards/${this.dashboardId}/widgets?${searchParams.toString()}`;
     console.log('[fetchWidgets] Fetching from URL:', url);
     
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      cache: 'no-store', // ⚡ Disable browser cache
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    });
     if (!res.ok) {
       console.error('[fetchWidgets] Fetch failed:', res.status, res.statusText);
       throw new Error("Failed to fetch widgets");

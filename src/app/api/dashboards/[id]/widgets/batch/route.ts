@@ -5,6 +5,10 @@ import { DashboardService } from '@/lib/dashboard-service';
 import { DashboardValidators, handleValidationError } from '@/lib/dashboard-validators';
 import { z } from 'zod';
 
+// ⚡ DISABLE ALL CACHING - Force dynamic rendering for instant updates
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Batch operation schema - unified to use 'kind' for operation type
 const BatchOperationSchema = z.object({
   id: z.string(),

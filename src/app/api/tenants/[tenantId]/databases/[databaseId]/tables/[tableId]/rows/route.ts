@@ -27,6 +27,10 @@ import { FilterValidator } from "@/lib/filter-validator";
 import { PrismaFilterBuilder } from "@/lib/prisma-filter-builder";
 import { logger } from "@/lib/error-logger";
 
+// ⚡ DISABLE ALL CACHING - Force dynamic rendering for instant updates in widgets
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const RowSchema = z.object({
 	cells: z.array(
 		z.object({

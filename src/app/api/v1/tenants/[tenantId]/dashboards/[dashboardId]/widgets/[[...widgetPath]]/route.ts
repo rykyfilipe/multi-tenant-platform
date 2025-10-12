@@ -19,6 +19,10 @@ import {
 } from "@/widgets/domain/dto";
 import type { DraftOperation } from "@/widgets/domain/entities";
 
+// ⚡ DISABLE ALL CACHING - Force dynamic rendering for instant updates
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const widgetPathSchema = z.array(z.coerce.number().int().min(0)).max(2).optional();
 
 const tenantDashboardSchema = z.object({

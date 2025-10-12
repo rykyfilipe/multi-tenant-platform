@@ -4,6 +4,10 @@ import { authOptions } from '@/lib/auth';
 import { DashboardService } from '@/lib/dashboard-service';
 import { DashboardValidators, handleValidationError } from '@/lib/dashboard-validators';
 
+// ⚡ DISABLE ALL CACHING - Force dynamic rendering for instant updates
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * GET /api/dashboards/[id]/widgets/[widgetId]
  * Get a specific widget

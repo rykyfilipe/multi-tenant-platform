@@ -4,6 +4,10 @@ import { assertWidgetsV2Enabled } from "@/lib/featureFlag";
 import { getWidgetService } from "@/widgets/services/factory";
 import { resolveConflictSchema } from "@/widgets/schemas/base";
 
+// ⚡ DISABLE ALL CACHING - Force dynamic rendering for instant updates
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const paramsSchema = z.object({
   tenantId: z.coerce.number().int().positive(),
   dashboardId: z.coerce.number().int().positive(),
