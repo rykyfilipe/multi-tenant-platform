@@ -300,8 +300,9 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
           if (result.type === 'create' && result.result) {
             // Find the temp widget and update it with real ID
             const operation = payload.operations[result.index];
-            if (operation.kind === 'create') {
-              const tempId = operation.widget.id;
+            if (operation.kind === 'create' && 'widget' in operation) {
+              // Widget has temp ID in runtime (type doesn't reflect this)
+              const tempId = (operation.widget as any).id as number;
               const realId = result.result.id;
               const realVersion = result.result.version;
               

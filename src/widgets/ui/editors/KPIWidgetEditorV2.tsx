@@ -240,16 +240,23 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
 
       const kpiResult = KPIWidgetProcessor.process(rawData, kpiConfig);
 
-      // Save as snapshot
+      const frequency = value.data.metric?.autoSnapshotFrequency || 'manual';
+      const isManual = frequency === 'manual';
+
+      // Save as snapshot with appropriate settings
       const snapshot = {
         value: kpiResult.value,
         timestamp: new Date().toISOString(),
-        label: `Snapshot ${new Date().toLocaleDateString('ro-RO')}`,
+        label: isManual 
+          ? `Manual: ${new Date().toLocaleDateString('ro-RO', { year: 'numeric', month: 'long', day: 'numeric' })}`
+          : KPIWidgetProcessor.generateSnapshotLabel(frequency),
+        isAuto: !isManual,
+        frequency: frequency,
       };
 
       updateMetric({ previousSnapshot: snapshot });
       
-      alert(`✅ Snapshot salvat!\nValoare: ${kpiResult.value.toLocaleString('ro-RO')}`);
+      alert(`✅ Snapshot salvat!\nValoare: ${kpiResult.value.toLocaleString('ro-RO')}\nTip: ${isManual ? 'Manual' : 'Automat (' + frequency + ')'}`);
     } catch (error) {
       console.error('Error saving snapshot:', error);
       alert('❌ Eroare la salvarea snapshot-ului');
@@ -847,29 +854,61 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                         {value.data.metric?.showTrend && (
                           <Card className="bg-muted/30 border-dashed">
                             <CardContent className="pt-4 space-y-3">
-                              <div className="flex items-center justify-between">
+                              {/* Auto-Snapshot Frequency Selector */}
+                              <div className="space-y-2">
+                                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                  Frecvență Auto-Snapshot
+                                </Label>
+                                <Select
+                                  value={value.data.metric?.autoSnapshotFrequency || 'weekly'}
+                                  onValueChange={(val) => updateMetric({ autoSnapshotFrequency: val as any })}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="manual">Manual (doar la click)</SelectItem>
+                                    <SelectItem value="daily">Zilnic</SelectItem>
+                                    <SelectItem value="weekly">Săptămânal (recomandat)</SelectItem>
+                                    <SelectItem value="monthly">Lunar</SelectItem>
+                                    <SelectItem value="quarterly">Trimestrial</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex items-center justify-between border-t pt-3">
                                 <div className="space-y-1">
                                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                    Snapshot pentru Trend Comparison
+                                    Snapshot Curent
                                   </Label>
                                   {value.data.metric?.previousSnapshot ? (
                                     <div className="text-sm text-foreground">
-                                      <div className="font-semibold">
-                                        Valoare: {value.data.metric.previousSnapshot.value.toLocaleString('ro-RO')}
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold">
+                                          {value.data.metric.previousSnapshot.value.toLocaleString('ro-RO')}
+                                        </span>
+                                        {value.data.metric.previousSnapshot.isAuto && (
+                                          <Badge variant="outline" className="text-[10px] bg-blue-50 dark:bg-blue-950/30">
+                                            AUTO
+                                          </Badge>
+                                        )}
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        Salvat: {new Date(value.data.metric.previousSnapshot.timestamp).toLocaleString('ro-RO', { 
-                                          year: 'numeric', 
-                                          month: 'long', 
-                                          day: 'numeric',
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        })}
+                                        {value.data.metric.previousSnapshot.label || 
+                                          new Date(value.data.metric.previousSnapshot.timestamp).toLocaleString('ro-RO', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
                                       </div>
                                     </div>
                                   ) : (
                                     <p className="text-xs text-muted-foreground">
-                                      Niciun snapshot salvat. Trendul se calculează împărțind datele în jumătăți.
+                                      Niciun snapshot salvat. {value.data.metric?.autoSnapshotFrequency !== 'manual' 
+                                        ? 'Se va crea automat la următoarea perioadă.' 
+                                        : 'Trendul se calculează împărțind datele în jumătăți.'}
                                     </p>
                                   )}
                                 </div>
@@ -905,8 +944,17 @@ export const KPIWidgetEditorV2: React.FC<KPIWidgetEditorV2Props> = ({
                               <Alert className="py-2">
                                 <Info className="h-3 w-3" />
                                 <AlertDescription className="text-xs">
-                                  <strong>Snapshot:</strong> Salvează valoarea curentă pentru comparație viitoare. 
-                                  Trendul va arăta % schimbarea față de acest snapshot, nu față de jumătatea anterioară a datelor.
+                                  <strong>Snapshot Auto:</strong> {
+                                    value.data.metric?.autoSnapshotFrequency === 'manual' 
+                                      ? 'Dezactivat - Salvează manual când vrei să fixezi un punct de referință.'
+                                      : value.data.metric?.autoSnapshotFrequency === 'daily'
+                                      ? 'Snapshot-ul se actualizează automat în fiecare zi.'
+                                      : value.data.metric?.autoSnapshotFrequency === 'weekly'
+                                      ? 'Snapshot-ul se actualizează automat în fiecare săptămână.'
+                                      : value.data.metric?.autoSnapshotFrequency === 'monthly'
+                                      ? 'Snapshot-ul se actualizează automat la început de lună.'
+                                      : 'Snapshot-ul se actualizează automat la început de trimestru.'
+                                  } Trendul arată % schimbarea față de ultimul snapshot.
                                 </AlertDescription>
                               </Alert>
                             </CardContent>

@@ -13,12 +13,19 @@ export interface DataSourceConfig {
 }
 
 /**
+ * Auto-snapshot frequency options
+ */
+export type SnapshotFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'manual';
+
+/**
  * Previous snapshot for trend comparison
  */
 export interface PreviousSnapshot {
   value: number;
   timestamp: string; // ISO date string
   label?: string; // Optional label like "Last Week", "Last Month"
+  isAuto?: boolean; // True if automatically generated
+  frequency?: SnapshotFrequency; // How often to auto-update
 }
 
 /**
@@ -38,6 +45,7 @@ export interface MetricConfig {
   target?: number; // Optional target value
   // Previous snapshot for REAL trend calculation
   previousSnapshot?: PreviousSnapshot; // Stored previous value for comparison
+  autoSnapshotFrequency?: SnapshotFrequency; // Auto-update frequency (default: weekly)
   // Display column - when last aggregation returns single row (max/min/first/last)
   displayColumn?: string; // Column to display from the result row
   displayFormat?: 'text' | 'number' | 'currency' | 'date';
@@ -676,6 +684,59 @@ export class KPIWidgetProcessor {
         return Math.max(...values);
       default:
         return 0;
+    }
+  }
+
+  /**
+   * Check if snapshot needs auto-update based on frequency
+   */
+  static shouldUpdateSnapshot(snapshot: PreviousSnapshot | undefined, frequency: SnapshotFrequency = 'weekly'): boolean {
+    if (!snapshot) return true; // No snapshot exists
+    if (frequency === 'manual') return false; // Manual only
+    if (!snapshot.isAuto) return false; // Don't auto-update manual snapshots
+
+    const now = new Date();
+    const snapshotDate = new Date(snapshot.timestamp);
+    const daysDiff = Math.floor((now.getTime() - snapshotDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    switch (frequency) {
+      case 'daily':
+        return daysDiff >= 1;
+      case 'weekly':
+        return daysDiff >= 7;
+      case 'monthly':
+        // Check if we're in a different month
+        return now.getMonth() !== snapshotDate.getMonth() || now.getFullYear() !== snapshotDate.getFullYear();
+      case 'quarterly':
+        // Check if we're in a different quarter
+        const nowQuarter = Math.floor(now.getMonth() / 3);
+        const snapshotQuarter = Math.floor(snapshotDate.getMonth() / 3);
+        return nowQuarter !== snapshotQuarter || now.getFullYear() !== snapshotDate.getFullYear();
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Generate auto-snapshot label based on frequency
+   */
+  static generateSnapshotLabel(frequency: SnapshotFrequency, date: Date = new Date()): string {
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStr = date.toLocaleDateString('ro-RO', options);
+
+    switch (frequency) {
+      case 'daily':
+        return `Auto: ${dateStr}`;
+      case 'weekly':
+        const weekNum = Math.ceil((date.getDate() - date.getDay() + 1) / 7);
+        return `Auto: Săptămâna ${weekNum} - ${date.toLocaleDateString('ro-RO', { month: 'short', year: 'numeric' })}`;
+      case 'monthly':
+        return `Auto: ${date.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}`;
+      case 'quarterly':
+        const quarter = Math.floor(date.getMonth() / 3) + 1;
+        return `Auto: Q${quarter} ${date.getFullYear()}`;
+      default:
+        return `Snapshot ${dateStr}`;
     }
   }
 

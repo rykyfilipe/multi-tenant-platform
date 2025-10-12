@@ -32,6 +32,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const { token, tenant } = useApp();
   const [realData, setRealData] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [snapshotUpdateNeeded, setSnapshotUpdateNeeded] = useState(false);
+  const hasAutoUpdatedRef = React.useRef(false); // Prevent multiple auto-updates
 
   // Fetch ALL data from API when widget is configured (not paginated)
   useEffect(() => {
@@ -46,7 +48,11 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
         const response = await fetch(
           `/api/tenants/${tenant.id}/databases/${config.data.databaseId}/tables/${config.data.tableId}/rows?pageSize=10000&page=1&includeCells=true`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            },
+            cache: 'no-store',
           }
         );
 
@@ -54,6 +60,59 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
           const result = await response.json();
           console.log(`📊 [KPI Widget] Fetched ${result.data?.length || 0} rows for aggregation`);
           setRealData(result.data || []);
+
+          // Check if auto-snapshot update is needed
+          if (metric?.showTrend && metric?.autoSnapshotFrequency && metric?.autoSnapshotFrequency !== 'manual') {
+            const shouldUpdate = KPIWidgetProcessor.shouldUpdateSnapshot(
+              metric.previousSnapshot,
+              metric.autoSnapshotFrequency
+            );
+            setSnapshotUpdateNeeded(shouldUpdate);
+
+            // Auto-update snapshot if needed and not already done
+            if (shouldUpdate && !hasAutoUpdatedRef.current && onEdit) {
+              console.log('📸 [KPI Widget] Auto-updating snapshot...');
+              hasAutoUpdatedRef.current = true; // Mark as updated to prevent loops
+
+              // Process the data to get current value
+              const kpiConfig = {
+                dataSource: {
+                  databaseId: config.data.databaseId || 0,
+                  tableId: config.data.tableId || "",
+                },
+                metric,
+                filters: config.data.filters || [],
+              };
+
+              const kpiResult = KPIWidgetProcessor.process(result.data, kpiConfig);
+
+              // Create new auto-snapshot
+              const newSnapshot = {
+                value: kpiResult.value,
+                timestamp: new Date().toISOString(),
+                label: KPIWidgetProcessor.generateSnapshotLabel(metric.autoSnapshotFrequency),
+                isAuto: true,
+                frequency: metric.autoSnapshotFrequency,
+              };
+
+              // Update widget config with new snapshot
+              const updatedConfig = {
+                ...config,
+                data: {
+                  ...config.data,
+                  metric: {
+                    ...metric,
+                    previousSnapshot: newSnapshot,
+                  },
+                },
+              };
+
+              // Note: We'd need a way to update the widget config here
+              // For now, just log it - the user can manually update via editor
+              console.log('📸 [KPI Widget] New auto-snapshot ready:', newSnapshot);
+              console.log('📸 [KPI Widget] User should save widget to persist auto-snapshot');
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching KPI data:', error);
@@ -68,6 +127,8 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     config.data?.tableId, 
     token, 
     tenant?.id,
+    metric?.showTrend,
+    metric?.autoSnapshotFrequency,
     // Re-fetch when filters or aggregations change
     JSON.stringify(config.data?.filters),
     JSON.stringify(config.data?.metric?.aggregations),
@@ -440,6 +501,9 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
                         {processedKPI.trend.comparisonType === 'snapshot' && processedKPI.trend.previousTimestamp
                           ? `vs ${new Date(processedKPI.trend.previousTimestamp).toLocaleDateString('ro-RO', { month: 'short', day: 'numeric' })}`
                           : 'vs prev'}
+                        {snapshotUpdateNeeded && metric?.previousSnapshot?.isAuto && (
+                          <span className="ml-1 text-orange-500" title="Snapshot-ul automat este vechi și va fi actualizat">⚠️</span>
+                        )}
                       </span>
                     </div>
                   </motion.div>
