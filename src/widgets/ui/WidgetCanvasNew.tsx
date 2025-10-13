@@ -219,6 +219,16 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
+  const [isResponsiveResize, setIsResponsiveResize] = useState(false); // Track responsive resizes
+  
+  // Responsive breakpoints - determine grid columns based on screen width
+  const getResponsiveCols = useCallback(() => {
+    if (containerWidth < 640) return 6;  // Mobile: 6 columns
+    if (containerWidth < 1024) return 12; // Tablet: 12 columns
+    return 24; // Desktop: 24 columns
+  }, [containerWidth]);
+  
+  const gridCols = useMemo(() => getResponsiveCols(), [getResponsiveCols]);
 
   // Handle exit confirmation dialog
   const handleExitConfirm = useCallback(() => {
@@ -287,6 +297,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   // Update container width on resize
   useEffect(() => {
     const updateWidth = () => {
+      // Mark as responsive resize to prevent pending changes
+      setIsResponsiveResize(true);
+      
       // Use the parent container instead of .layout which might not exist yet
       const container = document.querySelector('.h-full.w-full.p-6');
       if (container) {
@@ -299,6 +312,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         console.log('🎯 [DEBUG] Fallback width:', fallbackWidth);
         setContainerWidth(fallbackWidth);
       }
+      
+      // Reset responsive flag after layout has time to update
+      setTimeout(() => setIsResponsiveResize(false), 300);
     };
 
     updateWidth();
@@ -355,10 +371,24 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       )
       .map((widget) => {
         // Ensure position values are valid numbers, default to 0 if NaN/undefined
-        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        let x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
         const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
-        const w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
+        let w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
         const h = Number.isFinite(widget.position.h) ? widget.position.h : 4;
+        
+        // Responsive adjustments (don't modify original widget data)
+        // On mobile/tablet, scale down positions and sizes proportionally
+        if (gridCols < 24) {
+          const scale = gridCols / 24;
+          x = Math.floor(x * scale);
+          w = Math.max(Math.floor(w * scale), 1); // Minimum width of 1
+          
+          // On mobile, force full width for better UX
+          if (gridCols === 6) {
+            x = 0;
+            w = 6;
+          }
+        }
         
         // Double-check ID is valid before converting to string
         const widgetId = widget.id;
@@ -377,9 +407,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       })
       .filter(item => item !== null) as Layout[]; // Remove null items
       
-    console.log('🎯 [DEBUG] Layout:', layoutItems);
+    console.log('🎯 [DEBUG] Layout (responsive cols:', gridCols, '):', layoutItems);
     return layoutItems;
-  }, [widgetList, widgetsRecord]);
+  }, [widgetList, widgetsRecord, gridCols]);
 
   const closeEditor = () => setEditorWidgetId(null);
 
@@ -421,9 +451,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       // Find first available position starting from top-left
       const widgets = Object.values(widgetsRecord);
-      const newWidth = 6;
+      // Responsive widget size based on grid columns
+      const newWidth = gridCols === 6 ? 6 : (gridCols === 12 ? 6 : 6); // Full width on mobile
       const newHeight = 8;
-      const cols = 24; // Must match GridLayout cols
+      const cols = gridCols; // Use responsive column count
       
       // Function to check if position is available (no collision with existing widgets)
       const isPositionAvailable = (x: number, y: number, w: number, h: number): boolean => {
@@ -874,6 +905,17 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             max-width: none;
             max-height: none;
           }
+          
+          /* Mobile responsive adjustments */
+          @media (max-width: 640px) {
+            .react-grid-item {
+              min-width: 100px;
+              min-height: 100px;
+            }
+            .react-grid-layout {
+              min-height: auto;
+            }
+          }
           .react-grid-item.cssTransforms {
             transition-property: transform, width, height;
           }
@@ -968,7 +1010,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             key={layoutKey}
             className="layout" 
             layout={layout} 
-            cols={24} 
+            cols={gridCols}
             rowHeight={30} 
             width={containerWidth || 1200}
             isDraggable={isEditMode}
@@ -982,8 +1024,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             resizeHandles={['se']}
             draggableHandle=".widget-header"
             onLayoutChange={(newLayout) => {
-              if (!isEditMode) return;
-              console.log('🎯 [DEBUG] Layout changed:', newLayout);
+              // Skip updates if:
+              // 1. Not in edit mode
+              // 2. It's a responsive resize (container width changed)
+              if (!isEditMode || isResponsiveResize) return;
+              
+              console.log('🎯 [DEBUG] Layout changed (user interaction):', newLayout);
               newLayout.forEach((item) => {
                 const widgetId = Number(item.i);
                 updateLocal(widgetId, {
@@ -992,16 +1038,20 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
               });
             }}
             onResize={(layout, oldItem, newItem, placeholder, e, element) => {
-              if (!isEditMode) return;
-              console.log('🎯 [DEBUG] Widget resized:', { oldItem, newItem });
+              // Skip updates if not in edit mode or responsive resize
+              if (!isEditMode || isResponsiveResize) return;
+              
+              console.log('🎯 [DEBUG] Widget resized (user interaction):', { oldItem, newItem });
               const widgetId = Number(newItem.i);
               updateLocal(widgetId, {
                 position: { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h },
               });
             }}
             onResizeStop={(layout, oldItem, newItem, placeholder, e, element) => {
-              if (!isEditMode) return;
-              console.log('🎯 [DEBUG] Resize stopped:', { oldItem, newItem });
+              // Skip updates if not in edit mode or responsive resize
+              if (!isEditMode || isResponsiveResize) return;
+              
+              console.log('🎯 [DEBUG] Resize stopped (user interaction):', { oldItem, newItem });
               const widgetId = Number(newItem.i);
               updateLocal(widgetId, {
                 position: { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h },

@@ -107,13 +107,14 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     }
 
     // Build SIMPLIFIED configuration for ChartDataProcessor
+    const xAxisColumn = mappings.x;
     const chartConfig = {
       dataSource: {
         databaseId: databaseId || 0,
         tableId: tableId || "",
       },
       mappings: {
-        x: mappings.x,
+        x: xAxisColumn,
         y: yColumns,
       },
       processing: {
@@ -233,19 +234,19 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   
   // Axes styling
   const axesConfig = styleConfig.axes || {};
-  const xAxisConfig = axesConfig.x || {};
-  const yAxisConfig = axesConfig.y || {};
-  const showXAxis = xAxisConfig.show ?? true;
-  const showYAxis = yAxisConfig.show ?? true;
-  const xAxisColor = xAxisConfig.color || "#666666";
-  const yAxisColor = yAxisConfig.color || "#666666";
-  const xAxisFontSize = xAxisConfig.fontSize ?? 12;
-  const yAxisFontSize = yAxisConfig.fontSize ?? 12;
-  const xAxisFontFamily = xAxisConfig.fontFamily || "Inter, system-ui, sans-serif";
-  const yAxisFontFamily = yAxisConfig.fontFamily || "Inter, system-ui, sans-serif";
-  const xAxisFontWeight = xAxisConfig.fontWeight || "400";
-  const yAxisFontWeight = yAxisConfig.fontWeight || "400";
-  const xAxisRotation = xAxisConfig.rotation ?? 0;
+  const xAxisStyleConfig = axesConfig.x || {};
+  const yAxisStyleConfig = axesConfig.y || {};
+  const showXAxis = xAxisStyleConfig.show ?? true;
+  const showYAxis = yAxisStyleConfig.show ?? true;
+  const xAxisColor = xAxisStyleConfig.color || "#666666";
+  const yAxisColor = yAxisStyleConfig.color || "#666666";
+  const xAxisFontSize = xAxisStyleConfig.fontSize ?? 12;
+  const yAxisFontSize = yAxisStyleConfig.fontSize ?? 12;
+  const xAxisFontFamily = xAxisStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const yAxisFontFamily = yAxisStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const xAxisFontWeight = xAxisStyleConfig.fontWeight || "400";
+  const yAxisFontWeight = yAxisStyleConfig.fontWeight || "400";
+  const xAxisRotation = xAxisStyleConfig.rotation ?? 0;
   
   // Legend styling
   const legendConfig = styleConfig.legend || {};
