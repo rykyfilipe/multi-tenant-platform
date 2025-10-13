@@ -598,7 +598,7 @@ export class KPIWidgetProcessor {
       }
     }
 
-    return {
+    const result: KPIResult = {
       metric: config.metric.field,
       label: config.metric.label,
       value: finalValue,
@@ -613,6 +613,31 @@ export class KPIWidgetProcessor {
         value: finalValue,
       }],
     };
+
+    // Calculate trend if enabled (same as normal processing)
+    if (config.metric.showTrend) {
+      // If previousSnapshot exists, use it for REAL comparison
+      if (config.metric.previousSnapshot) {
+        result.trend = this.calculateTrendFromSnapshot(
+          finalValue,
+          config.metric.previousSnapshot
+        );
+      } else {
+        // Fallback to old method (split data)
+        result.trend = this.calculateTrendWithPipeline(
+          normalizedData, 
+          config.metric.field, 
+          config.metric.aggregations
+        );
+      }
+    }
+
+    // Calculate comparison if enabled and target provided
+    if (config.metric.showComparison && config.metric.target !== undefined) {
+      result.comparison = this.calculateComparison(finalValue, config.metric.target);
+    }
+
+    return result;
   }
 
   /**
