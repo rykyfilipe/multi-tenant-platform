@@ -279,24 +279,24 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const borderRadius = styleConfig.borderRadius ?? 12;
   const border = styleConfig.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" };
   const shadow = styleConfig.shadow || { enabled: true, size: "sm", color: "rgba(0, 0, 0, 0.1)" };
-  const padding = styleConfig.padding || { x: 24, y: 20 };
+  const paddingConfig = styleConfig.padding || { x: 24, y: 20 };
   
   // Value styling
-  const valueStyleConfig = styleConfig.value || {};
-  const valueFontSize = valueStyleConfig.fontSize ?? 36;
-  const valueFontFamily = valueStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
-  const valueFontWeight = valueStyleConfig.fontWeight || "700";
-  const valueColor = valueStyleConfig.color || "#111827";
-  const valueGradient = valueStyleConfig.gradient || { enabled: false, from: "#3B82F6", to: "#8B5CF6" };
+  const kpiValueStyleConfig = styleConfig.value || {};
+  const valueFontSize = kpiValueStyleConfig.fontSize ?? 36;
+  const valueFontFamily = kpiValueStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const valueFontWeight = kpiValueStyleConfig.fontWeight || "700";
+  const valueColor = kpiValueStyleConfig.color || "#111827";
+  const valueGradient = kpiValueStyleConfig.gradient || { enabled: false, from: "#3B82F6", to: "#8B5CF6" };
   
   // Label styling
-  const labelStyleConfig = styleConfig.label || {};
-  const labelFontSize = labelStyleConfig.fontSize ?? 14;
-  const labelFontFamily = labelStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
-  const labelFontWeight = labelStyleConfig.fontWeight || "500";
-  const labelColor = labelStyleConfig.color || "#6B7280";
-  const labelTextTransform = labelStyleConfig.textTransform || "none";
-  const labelLetterSpacing = labelStyleConfig.letterSpacing ?? 0;
+  const kpiLabelStyleConfig = styleConfig.label || {};
+  const labelFontSize = kpiLabelStyleConfig.fontSize ?? 14;
+  const labelFontFamily = kpiLabelStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
+  const labelFontWeight = kpiLabelStyleConfig.fontWeight || "500";
+  const labelColor = kpiLabelStyleConfig.color || "#6B7280";
+  const labelTextTransform = kpiLabelStyleConfig.textTransform || "none";
+  const labelLetterSpacing = kpiLabelStyleConfig.letterSpacing ?? 0;
   
   // Trend styling
   const trendStyleConfig = styleConfig.trend || {};
@@ -346,13 +346,15 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   }
 
   // Generate card styles
+  const paddingY = paddingConfig?.y || 20;
+  const paddingX = paddingConfig?.x || 24;
   const cardStyle: React.CSSProperties = {
     background: bgGradient?.enabled 
       ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})` 
       : backgroundColor,
     borderRadius: `${borderRadius}px`,
     border: border?.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
-    padding: `${padding?.y || 20}px ${padding?.x || 24}px`,
+    padding: `${paddingY}px ${paddingX}px`,
     transition: hoverStyleConfig?.enabled ? `all ${hoverStyleConfig.transition}ms ease` : undefined,
   };
 
