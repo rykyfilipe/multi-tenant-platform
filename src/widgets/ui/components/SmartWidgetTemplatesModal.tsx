@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   TrendingUp, 
   ShoppingCart, 
@@ -84,6 +83,42 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
     });
   };
 
+  // Find next available position in grid (to the right)
+  const findNextPosition = () => {
+    const widgets = useWidgetsStore.getState().widgets;
+    const widgetsArray = Object.values(widgets).filter(w => w.dashboardId === dashboardId);
+    
+    if (widgetsArray.length === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    // Find rightmost widget
+    let maxX = 0;
+    let maxXWidget = widgetsArray[0];
+    
+    widgetsArray.forEach(widget => {
+      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 4);
+      if (rightEdge > maxX) {
+        maxX = rightEdge;
+        maxXWidget = widget;
+      }
+    });
+
+    // Place new widget to the right of the rightmost widget
+    const newX = maxX;
+    const newY = maxXWidget.position?.y || 0;
+    
+    // If exceeds grid width (12 columns), wrap to next row
+    const GRID_COLS = 12;
+    if (newX >= GRID_COLS) {
+      // Find the max Y position and add new widget below
+      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 4)));
+      return { x: 0, y: maxY };
+    }
+    
+    return { x: newX, y: newY };
+  };
+
   // Create widget from template
   const createWidgetFromTemplate = (template: any) => {
     if (!tenant?.id) {
@@ -95,6 +130,7 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
     try {
       const tempId = Math.floor(Math.random() * 1000000) + 1000000;
       const targetDashboardId = dashboardId || 1;
+      const nextPosition = findNextPosition();
       
       const newWidget = {
         id: tempId,
@@ -105,8 +141,8 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
         tenantId: tenant.id,
         dashboardId: targetDashboardId,
         position: {
-          x: 0,
-          y: 0,
+          x: nextPosition.x,
+          y: nextPosition.y,
           w: template.type === "KPI" ? 4 : template.type === "TABLE" ? 8 : 6,
           h: template.type === "KPI" ? 4 : template.type === "TABLE" ? 8 : 6,
         },
@@ -725,25 +761,49 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
     : smartTemplates.filter(t => t.category === selectedCategory);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <>
+      {/* Trigger Button */}
+      <div onClick={() => setOpen(true)}>
         {children || (
           <Button variant="outline" className="gap-2">
             <Sparkles className="h-4 w-4" />
             Smart Templates
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-2xl">
-            <Zap className="h-6 w-6 text-primary" />
-            Smart Widget Templates
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Pre-configured widgets automatically adapted to your data
-          </p>
-        </DialogHeader>
+      </div>
+
+      {/* Custom Modal Overlay */}
+      {open && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div 
+            className="bg-background border rounded-lg shadow-2xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="flex items-center gap-3 text-2xl font-bold">
+                    <Zap className="h-6 w-6 text-primary" />
+                    Smart Widget Templates
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pre-configured widgets automatically adapted to your data
+                  </p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setOpen(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -857,8 +917,10 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
             </TabsContent>
           </Tabs>
         )}
-      </DialogContent>
-    </Dialog>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

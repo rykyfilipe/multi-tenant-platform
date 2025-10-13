@@ -941,20 +941,35 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           .react-grid-item {
             transition: all 200ms ease;
             transition-property: left, top, width, height;
-            min-width: 200px;
+            min-width: 0;
             min-height: 120px;
-            max-width: none;
+            max-width: 100%;
             max-height: none;
           }
           
           /* Mobile responsive adjustments */
           @media (max-width: 640px) {
             .react-grid-item {
-              min-width: 100px;
-              min-height: 100px;
+              width: 100% !important;
+              min-width: 0;
+              min-height: 150px;
             }
             .react-grid-layout {
               min-height: auto;
+            }
+            /* On mobile, override grid positioning to stack vertically */
+            .react-grid-item {
+              position: relative !important;
+              transform: none !important;
+              left: 0 !important;
+              margin-bottom: 10px;
+            }
+          }
+          
+          /* Tablet adjustments */
+          @media (min-width: 641px) and (max-width: 768px) {
+            .react-grid-item {
+              max-width: 100%;
             }
           }
           .react-grid-item.cssTransforms {

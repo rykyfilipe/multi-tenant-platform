@@ -427,79 +427,143 @@ export default function DashboardsPage() {
             </div>
           </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-2 h-9">
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">New</span>
-                </Button>
-              </DialogTrigger>
-              <DashboardFormModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                title="Create New Dashboard"
-                description="Design your custom analytics workspace"
-                form={createForm}
-                setForm={setCreateForm}
-                onSubmit={handleCreateDashboard}
-                submitLabel="Create Dashboard"
-              />
-            </Dialog>
-
-            {/* Smart Templates Button */}
-            {selectedDashboardId && (
-              <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
-                <Button variant="outline" size="sm" className="gap-2 h-9">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="hidden sm:inline">Templates</span>
-                </Button>
-              </SmartWidgetTemplatesModal>
-            )}
-
-            <Button
-              variant={isEditMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsEditMode(!isEditMode)}
-              className="gap-2 h-9"
-            >
-              {isEditMode ? (
-                <>
-                  <Eye className="h-4 w-4" />
-                  <span className="hidden sm:inline">View</span>
-                </>
-              ) : (
-                <>
-                  <Edit3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Edit</span>
-                </>
-              )}
-            </Button>
-
-            {selectedDashboardId && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 w-9 p-0">
-                    <Settings className="h-4 w-4" />
+          {/* Right: Actions - Responsive */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+            {/* Mobile: Compact Buttons */}
+            <div className="flex items-center gap-1.5 sm:hidden">
+              <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-8 px-2">
+                    <Plus className="h-4 w-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleEditDashboard}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Dashboard
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setIsDeleteModalOpen(true)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Dashboard
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                </DialogTrigger>
+                <DashboardFormModal
+                  isOpen={isCreateModalOpen}
+                  onClose={() => setIsCreateModalOpen(false)}
+                  title="Create New Dashboard"
+                  description="Design your custom analytics workspace"
+                  form={createForm}
+                  setForm={setCreateForm}
+                  onSubmit={handleCreateDashboard}
+                  submitLabel="Create Dashboard"
+                />
+              </Dialog>
+
+              {selectedDashboardId && (
+                <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
+                  <Button variant="outline" size="sm" className="h-8 px-2">
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                </SmartWidgetTemplatesModal>
+              )}
+
+              <Button
+                variant={isEditMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsEditMode(!isEditMode)}
+                className="h-8 px-2"
+              >
+                {isEditMode ? <Eye className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+              </Button>
+
+              {selectedDashboardId && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleEditDashboard}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Dashboard
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+
+            {/* Desktop: Normal Buttons */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-2 h-9">
+                    <Plus className="h-4 w-4" />
+                    <span>New</span>
+                  </Button>
+                </DialogTrigger>
+                <DashboardFormModal
+                  isOpen={isCreateModalOpen}
+                  onClose={() => setIsCreateModalOpen(false)}
+                  title="Create New Dashboard"
+                  description="Design your custom analytics workspace"
+                  form={createForm}
+                  setForm={setCreateForm}
+                  onSubmit={handleCreateDashboard}
+                  submitLabel="Create Dashboard"
+                />
+              </Dialog>
+
+              {selectedDashboardId && (
+                <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
+                  <Button variant="outline" size="sm" className="gap-2 h-9">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Templates</span>
+                  </Button>
+                </SmartWidgetTemplatesModal>
+              )}
+
+              <Button
+                variant={isEditMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsEditMode(!isEditMode)}
+                className="gap-2 h-9"
+              >
+                {isEditMode ? (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    <span>View</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="h-4 w-4" />
+                    <span>Edit</span>
+                  </>
+                )}
+              </Button>
+
+              {selectedDashboardId && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 w-9 p-0">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleEditDashboard}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Dashboard
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
         </div>
       </div>
