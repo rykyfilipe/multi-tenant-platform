@@ -35,6 +35,9 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const [snapshotUpdateNeeded, setSnapshotUpdateNeeded] = useState(false);
   const hasAutoUpdatedRef = React.useRef(false); // Prevent multiple auto-updates
 
+  // Extract metric BEFORE using it in useEffect to avoid TDZ
+  const metric = config.data?.metric;
+
   // Fetch ALL data from API when widget is configured (not paginated)
   useEffect(() => {
     const fetchData = async () => {
@@ -181,7 +184,6 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   };
 
   // Single metric display - MUST be before any return statements (Rules of Hooks)
-  const metric = config.data?.metric;
   const processedKPI = useMemo(() => {
     if (!metric) {
       return {
@@ -279,7 +281,12 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   const borderRadius = styleConfig.borderRadius ?? 12;
   const border = styleConfig.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" };
   const shadow = styleConfig.shadow || { enabled: true, size: "sm", color: "rgba(0, 0, 0, 0.1)" };
-  const paddingConfig = styleConfig.padding || { x: 24, y: 20 };
+  
+  // Extract padding config and its x/y values immediately to avoid TDZ
+  const paddingConfigFromStyle = styleConfig.padding;
+  const paddingConfig = paddingConfigFromStyle || { x: 24, y: 20 };
+  const paddingY = paddingConfig.y || 20;
+  const paddingX = paddingConfig.x || 24;
   
   // Value styling - Extract value config first to avoid TDZ
   const valueConfigFromStyle = styleConfig.value;
@@ -353,8 +360,6 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   }
 
   // Generate card styles
-  const paddingY = paddingConfig?.y || 20;
-  const paddingX = paddingConfig?.x || 24;
   const cardStyle: React.CSSProperties = {
     background: bgGradient?.enabled 
       ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})` 
