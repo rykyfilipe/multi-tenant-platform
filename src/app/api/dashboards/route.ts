@@ -5,6 +5,11 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { DashboardService } from '@/lib/dashboard-service';
 import { DashboardValidators, handleValidationError } from '@/lib/dashboard-validators';
+import { revalidatePath } from 'next/cache';
+
+// ⚡ DISABLE ALL CACHING - Force dynamic rendering for instant updates
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 /**
  * GET /api/dashboards
@@ -171,6 +176,14 @@ export async function POST(request: NextRequest) {
       tenantId!,
       userId!
     );
+
+    // Revalidate dashboard-related paths to clear cache
+    try {
+      revalidatePath('/home/dashboards');
+      revalidatePath('/api/dashboards');
+    } catch (error) {
+      console.warn('Cache revalidation failed:', error);
+    }
 
     return NextResponse.json(dashboard, { status: 201 });
   } catch (error) {

@@ -220,6 +220,29 @@ export async function POST(
 				cells.map((cell: any) => [cell.columnId, cell.value])
 			);
 
+			// AUTO-COMPLETE created_at - Verificăm dacă există coloana created_at și o completăm automat
+			const createdAtColumn = table.columns.find((col: any) => 
+				col.name.toLowerCase() === 'created_at' || 
+				col.name.toLowerCase() === 'createdat' ||
+				col.semanticType === 'created_date' ||
+				col.semanticType === 'customer_created_at' ||
+				col.semanticType === 'order_created_at' ||
+				col.semanticType === 'product_created_at' ||
+				col.semanticType === 'invoice_created_at' ||
+				col.semanticType === 'timestamp'
+			);
+
+			if (createdAtColumn && !providedCellsMap.has(createdAtColumn.id)) {
+				// Auto-generate timestamp DINAMIC pentru created_at
+				const currentTimestamp = new Date().toISOString();
+				cells.push({
+					columnId: createdAtColumn.id,
+					value: currentTimestamp
+				});
+				providedCellsMap.set(createdAtColumn.id, currentTimestamp);
+				console.log(`✅ Auto-completed created_at for row with timestamp: ${currentTimestamp}`);
+			}
+
 			// Pentru fiecare coloană din tabel, verificăm dacă există o celulă
 			// Dacă nu există și coloana are defaultValue, o adăugăm
 			for (const column of table.columns) {

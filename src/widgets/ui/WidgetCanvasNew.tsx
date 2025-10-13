@@ -270,6 +270,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       try {
         console.log('🔄 [WidgetCanvasNew] Loading widgets for dashboard:', dashboardId);
         setIsInitialLoad(true);
+        
+        // CRITICAL: Clear widgets store BEFORE loading new dashboard widgets
+        // This prevents showing stale widgets from previous dashboard
+        console.log('[WidgetCanvasNew] Clearing store before loading new dashboard');
+        clearPending(); // Clear widgets and pending operations
+        
         await api.loadWidgets(true); // Load with config
         console.log('✅ [WidgetCanvasNew] Widgets loaded successfully');
       } catch (error) {
@@ -287,7 +293,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     if (tenantId && dashboardId) {
       loadInitialWidgets();
     }
-  }, [tenantId, dashboardId, api]); // Added api back - now stable with useMemo
+    
+    // Cleanup when component unmounts or dashboard changes
+    return () => {
+      console.log('[WidgetCanvasNew] Cleaning up for dashboard:', dashboardId);
+    };
+  }, [tenantId, dashboardId, api, clearPending]); // Added clearPending to deps
 
   // Cleanup old IDs on component mount
   useEffect(() => {

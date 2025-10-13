@@ -105,6 +105,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
   const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
+  const clearPending = useWidgetsStore((state) => state.clearPending);
 
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"canvas" | "drafts">("canvas");
@@ -122,6 +123,12 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     const loadData = async () => {
       try {
         setIsLoading(true);
+        
+        // CRITICAL: Clear widgets store BEFORE loading new dashboard widgets
+        // This prevents showing stale widgets from previous dashboard
+        console.log('[WidgetCanvas] Clearing store before loading dashboard:', dashboardId);
+        clearPending();
+        
         await Promise.all([
           api.loadWidgets(true),
           api.loadDrafts()
@@ -133,8 +140,15 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       }
     };
 
-    loadData();
-  }, [tenantId, dashboardId]);
+    if (tenantId && dashboardId) {
+      loadData();
+    }
+    
+    // Cleanup when component unmounts or dashboard changes
+    return () => {
+      console.log('[WidgetCanvas] Cleaning up for dashboard:', dashboardId);
+    };
+  }, [tenantId, dashboardId, clearPending]);
 
   const handleSaveLocalAsDraft = async () => {
     const operations = getPending();

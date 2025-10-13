@@ -136,6 +136,10 @@ export async function POST(
 			}
 		};
 
+		// Auto-completare created_at
+		addCell("created_at", new Date().toISOString());
+		console.log(`✅ Auto-completed created_at for customer: ${new Date().toISOString()}`);
+
 		// Add all customer fields
 		addCell("customer_name", parsedData.customer_name);
 		addCell("customer_type", parsedData.customer_type);

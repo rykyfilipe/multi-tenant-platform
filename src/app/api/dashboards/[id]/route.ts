@@ -3,6 +3,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DashboardService } from '@/lib/dashboard-service';
 import { DashboardValidators, handleValidationError } from '@/lib/dashboard-validators';
+import { revalidatePath } from 'next/cache';
+
+// ⚡ DISABLE ALL CACHING - Force dynamic rendering for instant updates
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 /**
  * GET /api/dashboards/[id]
@@ -117,6 +122,15 @@ export async function DELETE(
       Number(session.user.tenantId),
       Number(session.user.id)       
     );
+
+    // Revalidate dashboard-related paths to clear cache
+    try {
+      revalidatePath('/home/dashboards');
+      revalidatePath('/api/dashboards');
+      revalidatePath(`/api/dashboards/${dashboardId}`);
+    } catch (error) {
+      console.warn('Cache revalidation failed:', error);
+    }
 
     return NextResponse.json({ message: 'Dashboard deleted successfully' });
   } catch (error) {

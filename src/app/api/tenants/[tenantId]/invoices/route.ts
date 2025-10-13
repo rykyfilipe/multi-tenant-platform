@@ -349,6 +349,12 @@ export async function POST(
 					case SemanticColumnType.INVOICE_DATE:
 						value = new Date().toISOString();
 						break;
+					case 'created_date': // Auto-completare created_at pentru invoices
+					case 'timestamp':
+					case 'invoice_created_at':
+						value = new Date().toISOString();
+						console.log(`✅ Auto-completed created_at for invoice: ${value}`);
+						break;
 				case SemanticColumnType.INVOICE_DUE_DATE:
 					value = parsedData.due_date;
 					break;
@@ -567,6 +573,12 @@ export async function POST(
 			} else {
 						// Map product data to invoice item columns using semantic types
 						switch (column.semanticType) {
+							case 'created_date': // Auto-completare created_at pentru invoice_items
+							case 'timestamp':
+							case 'invoice_item_created_at':
+								value = new Date().toISOString();
+								console.log(`✅ Auto-completed created_at for invoice_item: ${value}`);
+								break;
 							case SemanticColumnType.PRODUCT_REF_TABLE:
 								value = product.product_ref_table;
 								break;

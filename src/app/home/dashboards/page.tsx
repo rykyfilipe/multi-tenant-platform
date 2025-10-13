@@ -200,33 +200,68 @@ export default function DashboardsPage() {
   const handleDeleteDashboard = async () => {
     if (!selectedDashboardId || isDeleting) return;
 
+    const dashboardToDelete = selectedDashboardId;
+
     try {
       setIsDeleting(true);
       
-      const res = await fetch(`/api/dashboards/${selectedDashboardId}`, {
+      // Calculate next dashboard BEFORE deletion
+      const remainingDashboards = dashboards.filter(d => d.id !== dashboardToDelete);
+      const nextDashboard = remainingDashboards.length > 0 ? remainingDashboards[0] : null;
+      
+      console.log('[Delete Dashboard] Deleting dashboard:', dashboardToDelete);
+      console.log('[Delete Dashboard] Next dashboard will be:', nextDashboard?.id);
+      
+      const res = await fetch(`/api/dashboards/${dashboardToDelete}`, {
         method: 'DELETE',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
       });
 
       if (!res.ok) {
         throw new Error(`Failed to delete dashboard: ${res.status} ${res.statusText}`);
       }
       
-      setDashboards(prev => prev.filter(d => d.id !== selectedDashboardId));
+      // OPTIMISTIC UPDATE: Update local state immediately
+      setDashboards(prev => prev.filter(d => d.id !== dashboardToDelete));
       
-      const remainingDashboards = dashboards.filter(d => d.id !== selectedDashboardId);
-      if (remainingDashboards.length > 0) {
-        setSelectedDashboardId(remainingDashboards[0].id);
+      // Navigate to next dashboard or clear selection
+      if (nextDashboard) {
+        console.log('[Delete Dashboard] Switching to dashboard:', nextDashboard.id);
+        setSelectedDashboardId(nextDashboard.id);
       } else {
+        console.log('[Delete Dashboard] No more dashboards, clearing selection');
         setSelectedDashboardId(null);
       }
       
       setIsDeleteModalOpen(false);
+      
+      // Refresh dashboards list from server to ensure sync
+      setTimeout(async () => {
+        try {
+          const refreshRes = await fetch('/api/dashboards', {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            },
+          });
+          if (refreshRes.ok) {
+            const refreshedDashboards = await refreshRes.json();
+            setDashboards(refreshedDashboards);
+            console.log('[Delete Dashboard] Refreshed dashboards:', refreshedDashboards.length);
+          }
+        } catch (error) {
+          console.warn('[Delete Dashboard] Failed to refresh dashboards:', error);
+        }
+      }, 100);
       
       toast({
         title: 'Success',
         description: 'Dashboard deleted successfully.',
       });
     } catch (error) {
+      console.error('[Delete Dashboard] Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete dashboard.',
