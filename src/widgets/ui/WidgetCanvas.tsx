@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import GridLayout, { type Layout } from "react-grid-layout";
+import { Responsive as ResponsiveGridLayout, type Layout, type Layouts } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { hasWidgetId } from "@/widgets/utils/pendingHelpers";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
@@ -14,7 +14,7 @@ import { WidgetToolbar } from "./components/WidgetToolbar";
 import { KeyboardShortcutsDialog } from "./components/KeyboardShortcutsDialog";
 import { WidgetSearch } from "./components/WidgetSearch";
 import { BulkOperations } from "./components/BulkOperations";
-import { UndoRedo } from "./components/UndoRedo";
+import { OptimisticUndoRedo } from "./components/OptimisticUndoRedo";
 import { WidgetTemplates } from "./components/WidgetTemplates";
 import { WidgetMarketplace } from "./components/WidgetMarketplace";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
@@ -59,16 +59,40 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     return widgets;
   }, [widgetsRecord]);
 
-  // Create a stable layout reference to avoid unnecessary re-renders
-  const layout = useMemo(() =>
-    widgetList.map((widget) => ({
+  // Create responsive layouts for all breakpoints
+  const layouts = useMemo(() => {
+    const baseLayout = widgetList.map((widget) => ({
       i: widget.id.toString(),
       x: widget.position.x,
       y: widget.position.y,
       w: widget.position.w,
       h: widget.position.h,
-    })), [widgetList]
-  );
+      minW: 2,
+      minH: 2,
+    }));
+
+    // Define responsive layouts for different screen sizes
+    return {
+      xxl: baseLayout, // 1600px+: 12 columns
+      xl: baseLayout,  // 1200px+: 10 columns
+      lg: baseLayout,  // 996px+: 8 columns
+      md: baseLayout.map(item => ({ // 768px+: 6 columns (tablet)
+        ...item,
+        w: Math.min(item.w, 6),
+        x: item.x >= 6 ? item.x - 6 : item.x,
+      })),
+      sm: baseLayout.map(item => ({ // 480px+: 4 columns (mobile landscape)
+        ...item,
+        w: Math.min(item.w, 4),
+        x: item.x >= 4 ? 0 : item.x,
+      })),
+      xs: baseLayout.map(item => ({ // <480px: 2 columns (mobile portrait)
+        ...item,
+        w: 2,
+        x: 0,
+      })),
+    };
+  }, [widgetList]);
   const draftsList = useMemo(() => Object.values(draftsRecord), [draftsRecord]);
   const conflicts = useWidgetsStore((state) => state.conflicts);
   const activeConflict = useWidgetsStore((state) => state.activeConflict);
@@ -322,21 +346,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     console.log('Uninstall widget:', widgetId);
   };
 
-  // Restore state function for undo/redo
-  const handleRestoreState = useCallback((restoredWidgets: Record<number, WidgetEntity>) => {
-    // Update the store with restored widgets
-    Object.values(restoredWidgets).forEach(widget => {
-      upsertWidget(widget);
-    });
-
-    // Remove widgets that are not in the restored state
-    const restoredIds = new Set(Object.keys(restoredWidgets).map(Number));
-    Object.keys(widgetsRecord).forEach(id => {
-      if (!restoredIds.has(Number(id))) {
-        deleteLocal(Number(id));
-      }
-    });
-  }, [upsertWidget, deleteLocal, widgetsRecord]);
+  // Note: Restore state function removed - now using store's built-in undo/redo
 
   // Enhanced widget update function that triggers undo/redo history
   const handleWidgetUpdate = useCallback((widgetId: number, updates: Partial<WidgetEntity>) => {
@@ -363,7 +373,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
   const handleApplyDraft = async (draftId: number) => {
     const response = await api.applyDraft(draftId, actorId);
-    if (response.conflicts.length === 0) {
+    if (!response.conflicts || response.conflicts.length === 0) {
       removeDraft(draftId);
     }
   };
@@ -533,10 +543,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               <PendingChangesBadge />
-              <UndoRedo
-                widgets={widgetsRecord}
-                onRestoreState={handleRestoreState}
-                onAction={(action) => console.log('Action:', action)}
+              <OptimisticUndoRedo
                 undoRef={undoRef}
                 redoRef={redoRef}
               />
@@ -618,25 +625,28 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
               }}
             />
           )}
-              {/* Widget Grid */}
+              {/* Widget Grid - Responsive */}
               <WidgetErrorBoundary>
-                <div className="w-full max-w-[1400px] mx-auto">
-                  <GridLayout 
+                <div className="w-full mx-auto px-2 sm:px-4">
+                  <ResponsiveGridLayout 
                     className="layout" 
-                    layout={layout} 
-                    cols={12} 
+                    layouts={layouts}
+                    breakpoints={{ xxl: 1600, xl: 1200, lg: 996, md: 768, sm: 480, xs: 0 }}
+                    cols={{ xxl: 12, xl: 10, lg: 8, md: 6, sm: 4, xs: 2 }}
                     rowHeight={30} 
-                    width={1400}
                     margin={[16, 16]}
-                    containerPadding={[0, 0]}
+                    containerPadding={[8, 8]}
                     isDraggable={isEditMode}
                     isResizable={isEditMode}
                     compactType="vertical"
                     preventCollision={false}
-                    onLayoutChange={(newLayout) => {
+                    onLayoutChange={(currentLayout, allLayouts) => {
+                      // Only update positions in edit mode
+                      if (!isEditMode) return;
+                      
                       // Use setTimeout to ensure state updates are processed before layout changes
                       setTimeout(() => {
-                        newLayout.forEach((item) => {
+                        currentLayout.forEach((item) => {
                           const widgetId = Number(item.i);
                           // Only update if widget still exists in the store
                           if (widgetsRecord[widgetId]) {
@@ -649,19 +659,21 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                     }}
                   >
                     {(filteredWidgets.length > 0 ? filteredWidgets : widgetList).map((widget) => {
-                      // Add guard to ensure widget exists in current state
-                      if (!widgetsRecord[widget.id]) {
+                      // CRITICAL FIX: Always get the latest widget from the store to ensure config changes are reflected
+                      const currentWidget = widgetsRecord[widget.id];
+                      
+                      if (!currentWidget) {
                         console.warn(`⚠️ [WidgetCanvas] Widget ${widget.id} not found in current state, skipping render`);
                         return null;
                       }
 
-                      const definition = getWidgetDefinition(widget.type);
+                      const definition = getWidgetDefinition(currentWidget.type);
                       const Renderer = definition.renderer;
-                      const isSelected = selectedWidgets.has(widget.id);
+                      const isSelected = selectedWidgets.has(currentWidget.id);
 
                       return (
                         <div
-                          key={widget.id}
+                          key={currentWidget.id}
                           className={`transition-all ${
                             isSelected 
                               ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' 
@@ -671,20 +683,20 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                           }`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSelectWidget(widget.id, !isSelected);
+                            handleSelectWidget(currentWidget.id, !isSelected);
                           }}
                         >
                           <Renderer
-                            widget={widget}
-                            onEdit={() => openEditor(widget.id)}
-                            onDelete={() => deleteLocal(widget.id)}
-                            onDuplicate={() => handleDuplicate(widget)}
+                            widget={currentWidget}
+                            onEdit={() => openEditor(currentWidget.id)}
+                            onDelete={() => deleteLocal(currentWidget.id)}
+                            onDuplicate={() => handleDuplicate(currentWidget)}
                             isEditMode={isEditMode}
                           />
                         </div>
                       );
                     }).filter(Boolean)}
-                  </GridLayout>
+                  </ResponsiveGridLayout>
                 </div>
               </WidgetErrorBoundary>
         </div>

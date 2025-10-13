@@ -33,6 +33,8 @@ type RendererComponent = React.ComponentType<{
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  isEditMode?: boolean;
+  isSelected?: boolean;
 }>;
 
 export interface WidgetDefinition<TConfigSchema extends z.ZodTypeAny> {

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
 import { isWidgetsV2Enabled } from '@/lib/featureFlag';
 import { WidgetCanvasNew } from '@/widgets/ui/WidgetCanvasNew';
+import { SmartWidgetTemplatesModal } from '@/widgets/ui/components/SmartWidgetTemplatesModal';
 import { Plus, LayoutDashboard, Edit3, Eye, Settings, Trash2, Edit, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 
 interface DashboardSummary {
@@ -446,6 +447,16 @@ export default function DashboardsPage() {
                 submitLabel="Create Dashboard"
               />
             </Dialog>
+
+            {/* Smart Templates Button */}
+            {selectedDashboardId && (
+              <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
+                <Button variant="outline" size="sm" className="gap-2 h-9">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="hidden sm:inline">Templates</span>
+                </Button>
+              </SmartWidgetTemplatesModal>
+            )}
 
             <Button
               variant={isEditMode ? "default" : "outline"}

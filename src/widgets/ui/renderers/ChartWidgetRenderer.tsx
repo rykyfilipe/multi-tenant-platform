@@ -131,6 +131,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     // Execute the simplified pipeline (auto-groups by X axis when aggregations configured)
     return ChartDataProcessor.process(rawData.data, chartConfig);
   }, [
+    widget.id, // Add widget.id to force re-computation when widget changes
     rawData,
     mappings,
     databaseId,
@@ -189,7 +190,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       // Use custom color if set, otherwise use soft colors
       color: yColumnColors[key] || softColors[index % softColors.length]
     }));
-  }, [processedData, mappings, yColumnColors]);
+  }, [widget.id, processedData, mappings, yColumnColors]);
 
   // Style configuration - NEW ADVANCED PROPERTIES
   const styleConfig = config?.style || {};

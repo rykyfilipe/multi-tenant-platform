@@ -118,8 +118,15 @@ export interface SavePendingOperationResult<TConfig extends WidgetConfig = Widge
 }
 
 export interface SavePendingResponse<TConfig extends WidgetConfig = WidgetConfig> {
+  success: boolean;
   results: SavePendingOperationResult<TConfig>[];
-  conflicts: ConflictMetadata<TConfig>[];
+  errors?: any[]; // Errors from batch operations
+  conflicts?: ConflictMetadata<TConfig>[]; // Optional conflicts (not used in batch API)
+  summary?: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
 }
 
 export interface CreateDraftParams<TConfig extends WidgetConfig = WidgetConfig> {

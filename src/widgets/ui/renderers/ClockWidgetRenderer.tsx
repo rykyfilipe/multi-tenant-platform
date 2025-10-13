@@ -101,7 +101,7 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
       minute: '2-digit',
       second: showSeconds ? '2-digit' : undefined
     });
-  }, [time, timezone, format24h, showSeconds]);
+  }, [widget.id, time, timezone, format24h, showSeconds]);
 
   const dateString = useMemo(() => {
     return showDate ? time.toLocaleDateString('en-US', {
@@ -111,7 +111,7 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
       month: 'long',
       day: 'numeric'
     }) : '';
-  }, [time, timezone, showDate, dateFormat]);
+  }, [widget.id, time, timezone, showDate, dateFormat]);
 
   // Container styles
   const containerStyle: React.CSSProperties = {

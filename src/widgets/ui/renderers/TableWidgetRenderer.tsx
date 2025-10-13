@@ -148,7 +148,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
       summary: undefined, 
       totalRows: rawData.pagination?.total || transformedData.length 
     };
-  }, [config.data, config.settings?.aggregation, rawData]);
+  }, [widget.id, config.data, config.settings?.aggregation, rawData]);
 
   // Apply sorting
   const sortedData = useMemo(() => {
@@ -176,7 +176,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     });
     
     return sorted;
-  }, [processedData.data, sortColumn, sortDirection]);
+  }, [widget.id, processedData.data, sortColumn, sortDirection]);
 
   // Get visible columns for search
   const visibleColumns = config.data?.columns?.filter((col: any) => col.visible !== false) || [];
@@ -194,7 +194,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
         return String(value).toLowerCase().includes(query);
       });
     });
-  }, [sortedData, searchQuery, visibleColumns]);
+  }, [widget.id, sortedData, searchQuery, visibleColumns]);
 
   // Apply pagination
   const paginatedData = useMemo(() => {
@@ -205,7 +205,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     const endIndex = startIndex + pageSize;
     
     return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, currentPage, config.settings?.pagination]);
+  }, [widget.id, filteredData, currentPage, config.settings?.pagination]);
 
   const formatValue = (value: any, format: string): string => {
     if (value === null || value === undefined) return "-";
@@ -300,6 +300,29 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     />;
   }
 
+  // Show "No data available" when filters return no results
+  if (!isLoading && processedData.data.length === 0 && filters.length > 0) {
+    return (
+      <BaseWidget
+        title={widget.title}
+        widgetType="TABLE"
+        widgetId={widget.id}
+        isEditMode={isEditMode}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+      >
+        <div className="flex items-center justify-center h-full min-h-[200px]">
+          <div className="text-center text-muted-foreground">
+            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="font-medium">No data available</p>
+            <p className="text-sm mt-1">Try adjusting your filters</p>
+          </div>
+        </div>
+      </BaseWidget>
+    );
+  }
+
   // No columns configured
   if (!config.data?.columns || config.data.columns.length === 0) {
     return (
@@ -368,6 +391,10 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
               setSearchQuery(e.target.value);
               setCurrentPage(1); // Reset to first page on search
             }}
+            onKeyDown={(e) => {
+              // Ensure backspace and all other keys work properly
+              e.stopPropagation();
+            }}
             className="h-8 text-sm border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
           />
           {searchQuery && (
@@ -376,6 +403,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
               size="sm"
               onClick={() => setSearchQuery("")}
               className="h-6 w-6 p-0"
+              aria-label="Clear search"
             >
               ✕
             </Button>
@@ -389,10 +417,12 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
             ...tableContainerStyle,
             height: showFooter && config.settings?.pagination?.enabled 
               ? 'calc(100% - 110px)' // Search bar (48px) + Pagination (62px)
-              : 'calc(100% - 48px)' // Just search bar
+              : 'calc(100% - 48px)', // Just search bar
+            overflowX: 'auto', // Enable horizontal scroll for many columns
+            overflowY: 'auto', // Enable vertical scroll for many rows
           }}
         >
-          <Table className="w-full">
+          <Table className="w-full min-w-max">{/* min-w-max ensures table doesn't shrink below content width */}
             {/* Header */}
             {showHeader && (
               <TableHeader 
@@ -402,19 +432,20 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                 <TableRow style={{ borderBottom: 'none' }}>
                   {config.settings?.showRowNumbers && (
                     <TableHead 
-                      className="w-12 text-center"
+                      className="w-12 text-center sticky left-0 z-20 bg-inherit"
                       style={headerCellStyle}
                     >
                       #
                     </TableHead>
                   )}
-                  {visibleColumns.map((column: any) => (
+                  {visibleColumns.map((column: any, index: number) => (
                     <TableHead 
                       key={column.name}
                       className={cn(
                         column.sortable && config.settings?.sorting?.enabled 
                           ? "cursor-pointer select-none hover:opacity-80 transition-opacity" 
-                          : ""
+                          : "",
+                        "min-w-[150px] whitespace-nowrap" // Min width for responsive columns
                       )}
                       style={headerCellStyle}
                       onClick={() => column.sortable && handleSort(column.name)}
@@ -466,7 +497,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                   >
                     {config.settings?.showRowNumbers && (
                       <TableCell 
-                        className="text-center"
+                        className="text-center sticky left-0 z-10 bg-inherit"
                         style={{...bodyCellStyle, color: rowTextColor, opacity: 0.7}}
                       >
                         {(currentPage - 1) * (config.settings?.pagination?.pageSize || 50) + rowIndex + 1}
@@ -475,6 +506,7 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                     {visibleColumns.map((column: any) => (
                       <TableCell 
                         key={column.name}
+                        className="min-w-[150px]" // Min width for responsive cells
                         style={bodyCellStyle}
                       >
                         {formatValue(row[column.name], column.format)}
@@ -495,14 +527,14 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
                   )}
                 >
                   {config.settings?.showRowNumbers && (
-                    <TableCell className={getCellPaddingClass()}>
+                    <TableCell className={cn(getCellPaddingClass(), "sticky left-0 z-10 bg-inherit")}>
                       Total
                     </TableCell>
                   )}
                   {visibleColumns.map((column: any) => (
                     <TableCell 
                       key={column.name}
-                      className={getCellPaddingClass()}
+                      className={cn(getCellPaddingClass(), "min-w-[150px]")}
                     >
                       {processedData?.summary?.[column.name] ? 
                         formatValue(

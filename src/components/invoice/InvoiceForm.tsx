@@ -8,6 +8,7 @@ import {
 	useInvoiceCurrency,
 	ProductWithConversion,
 } from "@/hooks/useInvoiceCurrency";
+import { useInfiniteTableRows } from "@/hooks/useInfiniteTableRows";
 
 import { InvoiceProduct } from "@/lib/invoice-system";
 import {
@@ -33,6 +34,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { InfiniteScrollSelect } from "@/components/ui/infinite-scroll-select";
 // TODO: Add Command component for searchable dropdowns
 // import {
 // 	Command,
@@ -133,8 +135,19 @@ export function InvoiceForm({
 	const [availableTables, setAvailableTables] = useState<any[]>([]);
 	const [availableTablesLoading, setAvailableTablesLoading] = useState(false);
 	const [selectedTable, setSelectedTable] = useState<string>("");
+	const [selectedTableDatabaseId, setSelectedTableDatabaseId] = useState<number | null>(null);
+	const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
 	const [tableRows, setTableRows] = useState<any[]>([]);
 	const [tableRowsLoading, setTableRowsLoading] = useState(false);
+
+	// Use infinite scroll hook for table rows
+	const {
+		data: infiniteRows,
+		isLoading: infiniteRowsLoading,
+		hasMore: hasMoreRows,
+		loadMore: loadMoreRows,
+		search: searchRows,
+	} = useInfiniteTableRows(selectedTableDatabaseId, selectedTableId, selectedTable);
 	const [availableSeries, setAvailableSeries] = useState<any[]>([]);
 	const [availableSeriesLoading, setAvailableSeriesLoading] = useState(false);
 	const [tableValidation, setTableValidation] = useState<{
@@ -1508,6 +1521,14 @@ export function InvoiceForm({
 													onValueChange={(value) => {
 														if (value === "no-table") return;
 														setSelectedTable(value);
+														
+														// Find table object to get database ID and table ID
+														const tableObj = availableTables.find(t => t.name === value);
+														if (tableObj) {
+															setSelectedTableDatabaseId(tableObj.database.id);
+															setSelectedTableId(tableObj.id);
+														}
+														
 														// Reset product selection
 														setProductForm((prev) => ({
 															...prev,
@@ -1578,80 +1599,48 @@ export function InvoiceForm({
 											<Label className='text-sm font-medium'>
 												{t("invoice.form.product")}
 											</Label>
-											{loading || tableRowsLoading ? (
+											{loading ? (
 												<div className='w-full h-10 bg-muted/30 rounded-md flex items-center px-3'>
 													<Skeleton className='h-4 w-40' />
 												</div>
 											) : (
-												<Select
+												<InfiniteScrollSelect
 													value={
 														productForm.product_ref_id > 0
 															? productForm.product_ref_id.toString()
-															: "no-product"
+															: ""
 													}
 													onValueChange={(value) => {
-														if (value === "no-product") return;
+														if (!value) return;
+														// Find the row from infiniteRows to get full data
+														const selectedRow = infiniteRows.find(r => r.value === value);
+														if (selectedRow) {
+															// Add to tableRows if not already there (for compatibility with existing code)
+															setTableRows(prev => {
+																const exists = prev.find(r => r.id === Number(value));
+																if (!exists && selectedRow.row) {
+																	return [...prev, selectedRow.row];
+																}
+																return prev;
+															});
+														}
 														setProductForm((prev) => ({
 															...prev,
 															product_ref_id: Number(value),
 														}));
 													}}
-													disabled={!selectedTable}>
-													<SelectTrigger className='w-full'>
-														<SelectValue
-															placeholder={t("invoice.form.selectProduct")}
-														/>
-													</SelectTrigger>
-													<SelectContent className='max-h-80'>
-														{tableRows.length > 0 ? (
-															tableRows.map((row: any) => {
-																const productDetails = extractProductDetails(
-																	selectedTable,
-																	row,
-																);
-																return (
-																	<SelectItem
-																		key={row.id}
-																		value={row.id.toString()}
-																		className='py-2'>
-																		<div className='flex items-center justify-between w-full'>
-																			<div className='flex-1 min-w-0'>
-																				<div className='font-medium text-sm truncate'>
-																					{productDetails.name ||
-																						`Product #${row.id}`}
-																				</div>
-																				{productDetails.sku && (
-																					<div className='text-xs text-muted-foreground'>
-																						SKU: {productDetails.sku}
-																					</div>
-																				)}
-																			</div>
-																			{productDetails.price &&
-																				productDetails.currency && (
-																					<div className='ml-2 text-right'>
-																						<div className='text-sm font-semibold text-green-600 dark:text-green-400'>
-																							{productDetails.price} {productDetails.currency}
-																						</div>
-																						{productDetails.category && (
-																							<div className='text-xs text-muted-foreground'>
-																								{productDetails.category}
-																							</div>
-																						)}
-																					</div>
-																				)}
-																		</div>
-																	</SelectItem>
-																);
-															})
-														) : (
-															<SelectItem value='no-rows' disabled>
-																{selectedTable
-																	? t("invoice.form.noRowsAvailable")
-																	: t("invoice.form.selectTableFirst")}
-															</SelectItem>
-														)}
-													</SelectContent>
-												</Select>
+													options={infiniteRows}
+													placeholder={t("invoice.form.selectProduct")}
+													searchPlaceholder="Search products..."
+													disabled={!selectedTable}
+													isLoading={infiniteRowsLoading}
+													hasMore={hasMoreRows}
+													onLoadMore={loadMoreRows}
+													onSearch={searchRows}
+													emptyMessage={selectedTable
+														? t("invoice.form.noRowsAvailable")
+														: t("invoice.form.selectTableFirst")}
+												/>
 											)}
 										</div>
 

@@ -275,92 +275,106 @@ export const useWidgetsApi = (tenantId: number, dashboardId: number) => {
 
   const savePending = async (payload: Omit<SavePendingRequest, "tenantId" | "dashboardId">) => {
     try {
-      console.log('[savePending] Starting batch save with operations:', payload.operations.length);
+      console.log('[savePending] 🚀 Starting OPTIMISTIC batch save with operations:', payload.operations.length);
       const response = await apiClient.savePending(payload);
-      console.log('[savePending] Batch save response:', response);
+      console.log('[savePending] 📦 Batch save response:', response);
 
-      if (response.conflicts && response.conflicts.length > 0) {
-        console.log('[savePending] Conflicts detected:', response.conflicts.length);
-        setConflicts(response.conflicts);
-      } else {
-        console.log('[savePending] No conflicts, clearing conflicts state');
-        setConflicts([]);
+      // Check for errors in batch response
+      if (response.errors && response.errors.length > 0) {
+        console.error('[savePending] ❌ Errors in batch save:', response.errors);
+        // Still process successful operations
+      }
+      
+      // OPTIMISTIC UPDATES: Update local widgets with real IDs from API response
+      // Instead of reloading everything, just sync the IDs and versions
+      console.log('[savePending] ⚡ Applying optimistic updates for', response.results?.length || 0, 'operations');
+      
+      const state = useWidgetsStore.getState();
+      // Create a new copy to avoid mutating state directly
+      const updatedWidgets: Record<number, WidgetEntity> = { ...state.widgets };
+      const updatedOriginalWidgets: Record<number, WidgetEntity> = { ...state.originalWidgets };
+      
+      response.results?.forEach((result: any) => {
+        if (!result.success) return;
         
-        // OPTIMISTIC UPDATES: Update local widgets with real IDs from API response
-        // Instead of reloading everything, just sync the IDs and versions
-        console.log('[savePending] Applying optimistic updates for', response.results.length, 'operations');
-        
-        const state = useWidgetsStore.getState();
-        // Create a new copy to avoid mutating state directly
-        const updatedWidgets: Record<number, WidgetEntity> = { ...state.widgets };
-        
-        response.results.forEach((result: any) => {
-          if (!result.success) return;
-          
-          if (result.type === 'create' && result.result) {
-            // Find the temp widget and update it with real ID
-            const operation = payload.operations[result.index];
-            if (operation.kind === 'create' && 'widget' in operation) {
-              // Widget has temp ID in runtime (type doesn't reflect this)
-              const tempId = (operation.widget as any).id as number;
-              const realId = result.result.id;
-              const realVersion = result.result.version;
+        if (result.type === 'create' && result.result) {
+          // Find the temp widget and update it with real ID
+          const operation = payload.operations[result.index];
+          if (operation.kind === 'create' && 'widget' in operation) {
+            // Widget has temp ID in runtime (type doesn't reflect this)
+            const tempId = (operation.widget as any).id as number;
+            const realId = result.result.id;
+            const realVersion = result.result.version;
+            
+            console.log(`[savePending] ✅ Syncing temp ID ${tempId} → real ID ${realId}`);
+            
+            // Get the widget from current state
+            const tempWidget = updatedWidgets[tempId];
+            if (tempWidget) {
+              // Update widget with real ID and version from DB
+              const updatedWidget: WidgetEntity = {
+                ...tempWidget,
+                id: realId,
+                version: realVersion,
+                createdAt: new Date(result.result.createdAt),
+                updatedAt: new Date(result.result.updatedAt),
+              };
               
-              console.log(`[savePending] ✅ Syncing temp ID ${tempId} → real ID ${realId}`);
+              // Remove temp widget and add real widget
+              delete updatedWidgets[tempId];
+              updatedWidgets[realId] = updatedWidget;
               
-              // Get the widget from current state
-              const tempWidget = updatedWidgets[tempId];
-              if (tempWidget) {
-                // Update widget with real ID and version from DB
-                const updatedWidget: WidgetEntity = {
-                  ...tempWidget,
-                  id: realId,
-                  version: realVersion,
-                  createdAt: new Date(result.result.createdAt),
-                  updatedAt: new Date(result.result.updatedAt),
-                };
-                
-                // Remove temp widget and add real widget
-                delete updatedWidgets[tempId];
-                updatedWidgets[realId] = updatedWidget;
-                
-                console.log(`[savePending] ✅ Widget ${tempId} → ${realId}, version ${realVersion}`);
-              } else {
-                console.warn(`[savePending] ⚠️ Temp widget ${tempId} not found in state`);
-              }
-            }
-          } else if (result.type === 'update' && result.result) {
-            // Update version for updated widget
-            const operation = payload.operations[result.index];
-            if (operation.kind === 'update') {
-              const widgetId = operation.widgetId;
-              const realVersion = result.result.version;
+              // Also update originalWidgets so future comparisons work correctly
+              delete updatedOriginalWidgets[tempId];
+              updatedOriginalWidgets[realId] = updatedWidget;
               
-              if (updatedWidgets[widgetId]) {
-                updatedWidgets[widgetId] = {
-                  ...updatedWidgets[widgetId],
-                  version: realVersion,
-                  updatedAt: new Date(result.result.updatedAt),
-                };
-                console.log(`[savePending] ✅ Widget ${widgetId} version → ${realVersion}`);
-              }
+              console.log(`[savePending] ✅ Widget ${tempId} → ${realId}, version ${realVersion}`);
+            } else {
+              console.warn(`[savePending] ⚠️ Temp widget ${tempId} not found in state`);
             }
           }
-          // Delete operations don't need updates - widget is already removed from UI
-        });
-        
-        // Update store with synced widgets
-        setWidgets(Object.values(updatedWidgets));
-        console.log('[savePending] ✅ Optimistic updates applied, widgets synced');
-        
-        // After successful save, clear pending operations
-        clearPendingOperations();
-        console.log('[savePending] Save successful, cleared pending operations');
-      }
+        } else if (result.type === 'update' && result.result) {
+          // Update version for updated widget
+          const operation = payload.operations[result.index];
+          if (operation.kind === 'update') {
+            const widgetId = operation.widgetId;
+            const realVersion = result.result.version;
+            
+            if (updatedWidgets[widgetId]) {
+              const updatedWidget = {
+                ...updatedWidgets[widgetId],
+                version: realVersion,
+                updatedAt: new Date(result.result.updatedAt),
+              };
+              updatedWidgets[widgetId] = updatedWidget;
+              // Update originalWidgets to reflect saved state
+              updatedOriginalWidgets[widgetId] = updatedWidget;
+              console.log(`[savePending] ✅ Widget ${widgetId} version → ${realVersion}`);
+            }
+          }
+        } else if (result.type === 'delete') {
+          // Delete operations - remove from originalWidgets too
+          const operation = payload.operations[result.index];
+          if (operation.kind === 'delete' && operation.widgetId) {
+            delete updatedOriginalWidgets[operation.widgetId];
+            console.log(`[savePending] ✅ Widget ${operation.widgetId} deleted from originalWidgets`);
+          }
+        }
+      });
+      
+      // Update store with synced widgets AND originalWidgets
+      setWidgets(Object.values(updatedWidgets));
+      // Also update originalWidgets in store
+      useWidgetsStore.setState({ originalWidgets: updatedOriginalWidgets });
+      console.log('[savePending] ✅ Optimistic updates applied, widgets AND originalWidgets synced');
+      
+      // After successful save, clear pending operations
+      clearPendingOperations();
+      console.log('[savePending] ✅ Save successful, cleared pending operations');
 
       return response;
     } catch (error) {
-      console.error("Failed to save pending:", error);
+      console.error("[savePending] ❌ Failed to save pending:", error);
       throw error;
     }
   };

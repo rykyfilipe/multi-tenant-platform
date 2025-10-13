@@ -137,7 +137,7 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
       console.log('[TasksWidget] Syncing tasks from updated config:', loadedTasks);
       setTasks(loadedTasks);
     }
-  }, [widget.config, config]);
+  }, [widget.id, widget.config, config]);
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
@@ -318,7 +318,7 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
     });
 
     return filtered.slice(0, maxTasks);
-  }, [tasks, filter, showCompleted, searchTerm, sortBy, sortOrder, maxTasks]);
+  }, [widget.id, tasks, filter, showCompleted, searchTerm, sortBy, sortOrder, maxTasks]);
 
 
   const getPriorityColor = (priority: string) => {

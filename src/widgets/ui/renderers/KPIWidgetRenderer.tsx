@@ -125,7 +125,10 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     };
 
     fetchData();
+    // Reset auto-update ref when config changes
+    hasAutoUpdatedRef.current = false;
   }, [
+    widget.id, // Add widget.id to force re-fetch when widget changes
     config.data?.databaseId, 
     config.data?.tableId, 
     token, 
@@ -233,6 +236,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     
     return result;
   }, [
+    widget.id, // Add widget.id to force re-computation when widget changes
     config.data?.databaseId, 
     config.data?.tableId, 
     metric?.field,
@@ -436,6 +440,14 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
               <div className="text-center">
                 <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin text-primary/60" />
                 <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
+            </div>
+          ) : realData.length === 0 && (config.data?.filters || []).length > 0 ? (
+            <div className="flex items-center justify-center h-full min-h-[160px]">
+              <div className="text-center text-muted-foreground">
+                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="font-medium">No data available</p>
+                <p className="text-sm mt-1">Try adjusting your filters</p>
               </div>
             </div>
           ) : (

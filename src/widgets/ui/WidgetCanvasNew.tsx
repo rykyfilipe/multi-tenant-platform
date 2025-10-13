@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import GridLayout, { type Layout } from "react-grid-layout";
+import { Responsive as ResponsiveGridLayout, type Layout, type Layouts } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
 import { useWidgetsApi } from "@/widgets/api/simple-client";
@@ -360,6 +360,63 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     };
   }, [pendingOperations]);
 
+  // Create responsive layouts
+  const layouts: Layouts = useMemo(() => {
+    const baseLayout = widgetList
+      .filter(widget => 
+        widget && // Ensure widget exists
+        widget.id && // Ensure widget has valid ID
+        typeof widget.id === 'number' && // Ensure ID is a number
+        !isNaN(widget.id) && // Ensure ID is not NaN
+        widgetsRecord[widget.id] // Double-check widget still exists in record
+      )
+      .map((widget) => {
+        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
+        const w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
+        const h = Number.isFinite(widget.position.h) ? widget.position.h : 4;
+        
+        const widgetId = widget.id;
+        if (!widgetId || typeof widgetId !== 'number' || isNaN(widgetId)) {
+          console.error('[Layout] Invalid widget ID:', widgetId, 'for widget:', widget);
+          return null;
+        }
+        
+        return {
+          i: widgetId.toString(),
+          x,
+          y,
+          w,
+          h,
+          minW: 2,
+          minH: 2,
+        };
+      })
+      .filter(item => item !== null) as Layout[];
+    
+    // Create responsive variations
+    return {
+      xxl: baseLayout, // 1600px+: Use base layout
+      xl: baseLayout,  // 1200px+: Use base layout
+      lg: baseLayout,  // 996px+: Use base layout
+      md: baseLayout.map(item => ({ // 768px+: Tablet - 12 columns
+        ...item,
+        w: Math.min(item.w, 12),
+        x: item.x >= 12 ? 0 : Math.min(item.x, 12 - item.w),
+      })),
+      sm: baseLayout.map(item => ({ // 480px+: Mobile landscape - 6 columns
+        ...item,
+        w: Math.min(item.w, 6),
+        x: item.x >= 6 ? 0 : Math.min(item.x, 6 - item.w),
+      })),
+      xs: baseLayout.map(item => ({ // <480px: Mobile portrait - 4 columns, full width
+        ...item,
+        w: 4,
+        x: 0,
+      })),
+    };
+  }, [widgetList, widgetsRecord]);
+  
   const layout: Layout[] = useMemo(() => {
     const layoutItems = widgetList
       .filter(widget => 
@@ -370,27 +427,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         widgetsRecord[widget.id] // Double-check widget still exists in record
       )
       .map((widget) => {
-        // Ensure position values are valid numbers, default to 0 if NaN/undefined
-        let x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
         const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
-        let w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
+        const w = Number.isFinite(widget.position.w) ? widget.position.w : 4;
         const h = Number.isFinite(widget.position.h) ? widget.position.h : 4;
         
-        // Responsive adjustments (don't modify original widget data)
-        // On mobile/tablet, scale down positions and sizes proportionally
-        if (gridCols < 24) {
-          const scale = gridCols / 24;
-          x = Math.floor(x * scale);
-          w = Math.max(Math.floor(w * scale), 1); // Minimum width of 1
-          
-          // On mobile, force full width for better UX
-          if (gridCols === 6) {
-            x = 0;
-            w = 6;
-          }
-        }
-        
-        // Double-check ID is valid before converting to string
         const widgetId = widget.id;
         if (!widgetId || typeof widgetId !== 'number' || isNaN(widgetId)) {
           console.error('[Layout] Invalid widget ID:', widgetId, 'for widget:', widget);
@@ -1006,16 +1047,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           }
         `}</style>
         <WidgetErrorBoundary>
-          <GridLayout 
+          <ResponsiveGridLayout 
             key={layoutKey}
             className="layout" 
-            layout={layout} 
-            cols={gridCols}
+            layouts={layouts}
+            breakpoints={{ xxl: 1600, xl: 1200, lg: 996, md: 768, sm: 480, xs: 0 }}
+            cols={{ xxl: 24, xl: 24, lg: 24, md: 12, sm: 6, xs: 4 }}
             rowHeight={30} 
-            width={containerWidth || 1200}
             isDraggable={isEditMode}
             isResizable={isEditMode}
-            allowOverlap={false}
             compactType="vertical"
             preventCollision={false}
             useCSSTransforms={true}
@@ -1023,14 +1063,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             containerPadding={[10, 10]}
             resizeHandles={['se']}
             draggableHandle=".widget-header"
-            onLayoutChange={(newLayout) => {
+            onLayoutChange={(currentLayout, allLayouts) => {
               // Skip updates if:
               // 1. Not in edit mode
               // 2. It's a responsive resize (container width changed)
               if (!isEditMode || isResponsiveResize) return;
               
-              console.log('🎯 [DEBUG] Layout changed (user interaction):', newLayout);
-              newLayout.forEach((item) => {
+              console.log('🎯 [DEBUG] Layout changed (user interaction):', currentLayout);
+              currentLayout.forEach((item) => {
                 const widgetId = Number(item.i);
                 updateLocal(widgetId, {
                   position: { x: item.x, y: item.y, w: item.w, h: item.h },
@@ -1067,7 +1107,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 widgetsRecord[widget.id] // Ensure widget still exists in record
               )
               .map((widget) => {
-                const definition = getWidgetDefinition(widget.type);
+                // CRITICAL FIX: Always get the latest widget from the store to ensure config changes are reflected
+                const currentWidget = widgetsRecord[widget.id];
+                
+                if (!currentWidget) {
+                  console.warn(`⚠️ [WidgetCanvasNew] Widget ${widget.id} not found in current state, skipping render`);
+                  return null;
+                }
+                
+                const definition = getWidgetDefinition(currentWidget.type);
                 const Renderer = definition.renderer as React.ComponentType<{
                   widget: WidgetEntity;
                   onEdit?: () => void;
@@ -1078,11 +1126,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   onApplyDraft?: () => void;
                   onDeleteDraft?: () => void;
                 }>;
-                const isSelected = selectedWidgets.has(widget.id);
+                const isSelected = selectedWidgets.has(currentWidget.id);
 
                 return (
                     <div 
-                      key={widget.id} 
+                      key={currentWidget.id} 
                       className={`border border-dashed rounded transition-all cursor-pointer ${
                         isEditMode 
                           ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
@@ -1094,25 +1142,25 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                         e.stopPropagation();
                         if (e.ctrlKey || e.metaKey) {
                           // Multi-select: add to selection
-                          handleSelectWidget(widget.id);
+                          handleSelectWidget(currentWidget.id);
                         } else {
                           // Single select: clear others and select this one
                           handleDeselectAll();
-                          handleSelectWidget(widget.id);
+                          handleSelectWidget(currentWidget.id);
                         }
                       }}
                     >
                     <Renderer
-                      widget={widget}
+                      widget={currentWidget}
                       onEdit={undefined}
                       onDelete={undefined}
-                      onDuplicate={isEditMode ? () => handleDuplicateWidget(widget) : undefined}
+                      onDuplicate={isEditMode ? () => handleDuplicateWidget(currentWidget) : undefined}
                       isEditMode={isEditMode}
                     />
                   </div>
                 );
-              })}
-          </GridLayout>
+              }).filter(Boolean)}
+          </ResponsiveGridLayout>
         </WidgetErrorBoundary>
       </div>
 

@@ -9,6 +9,7 @@ import { Plus, X, Save, Trash2 } from "lucide-react";
 import { Column } from "./types";
 import { ColumnType, FilterOperator, OPERATOR_COMPATIBILITY, FilterConfig } from "@/types/filtering";
 import { SmartValueInput } from "@/components/table/filters/SmartValueInput";
+import { convertFiltersToFrontend } from "@/widgets/utils/operatorMapping";
 
 interface WidgetFilter {
   id?: string;
@@ -148,7 +149,10 @@ export const WidgetFilters: React.FC<WidgetFiltersProps> = ({
       (!operatorRequiresValue(filter.operator || "") || filter.value !== undefined)
     );
     
-    onChange(validFilters);
+    // Convert operators from backend format (less_than) to frontend format (<)
+    const convertedFilters = convertFiltersToFrontend(validFilters);
+    
+    onChange(convertedFilters);
     setHasUnsavedChanges(false);
   };
 

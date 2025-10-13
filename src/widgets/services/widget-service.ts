@@ -552,7 +552,7 @@ export class WidgetService {
       }
     }
 
-    return { results, conflicts };
+    return { success: conflicts.length === 0, results, conflicts };
   }
 
   async applyPendingChanges<TConfig extends WidgetConfig = WidgetConfig>(

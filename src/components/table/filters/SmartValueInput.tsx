@@ -23,6 +23,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { operatorRequiresValue, requiresSecondValue } from "./utils/filterValidation";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { InfiniteScrollSelect } from "@/components/ui/infinite-scroll-select";
+import { useInfiniteReferenceData } from "@/hooks/useInfiniteReferenceData";
 
 interface SmartValueInputProps {
 	filter: FilterConfig;
@@ -269,39 +271,36 @@ export const SmartValueInput: React.FC<SmartValueInputProps> = ({
 	}
 
 	function renderReferenceInput() {
-		const options = referenceData || [];
+		// Use infinite scroll hook for reference data
+		const referenceTableId = column.referenceTableId;
+		const {
+			data: infiniteData,
+			isLoading,
+			hasMore,
+			loadMore,
+			search,
+		} = useInfiniteReferenceData(referenceTableId, column.referenceTableColumns);
+
+		// Map data to InfiniteScrollSelect format
+		const options = infiniteData.map((item) => ({
+			value: item.value,
+			label: item.label,
+		}));
 
 		return (
-			<Select
+			<InfiniteScrollSelect
 				value={filter.value?.toString() || ""}
 				onValueChange={(value) => onChange(value)}
-			>
-				<SelectTrigger className={cn("h-9", className)}>
-					<SelectValue
-						placeholder={
-							options.length === 0 
-								? "No options available" 
-								: "Select reference..."
-						}
-					/>
-				</SelectTrigger>
-				<SelectContent>
-					{options.length === 0 ? (
-						<SelectItem value="__no_options__" disabled>
-							No options in referenced table
-						</SelectItem>
-					) : (
-						options.map((option: any) => (
-							<SelectItem
-								key={option.value || option.id}
-								value={String(option.value || option.id)}
-							>
-								{option.label || option.displayValue || String(option.value || option.id)}
-							</SelectItem>
-						))
-					)}
-				</SelectContent>
-			</Select>
+				options={options}
+				placeholder="Select reference..."
+				searchPlaceholder="Search rows..."
+				className={className}
+				isLoading={isLoading}
+				hasMore={hasMore}
+				onLoadMore={loadMore}
+				onSearch={search}
+				emptyMessage="No rows found in referenced table"
+			/>
 		);
 	}
 

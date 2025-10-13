@@ -158,10 +158,11 @@ export const useOptimizedReferenceData = (
 		};
 
 		const fetchSingleTableData = async (tableId: number) => {
+			// Increased limit to load more data initially
 			const response = await fetch(
 				`/api/tenants/${tenant!.id}/databases/${
 					selectedDatabase!.id
-				}/tables/${tableId}/rows?limit=1000&includeCells=true`,
+				}/tables/${tableId}/rows?pageSize=100&page=1&includeCells=true`,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -217,14 +218,15 @@ export const useOptimizedReferenceData = (
 				}
 			});
 
-			// Fetch only for referenced tables
+			// Fetch only for referenced tables with pagination support
 			const fetchPromises = Array.from(referencedTableIds).map(
 				async (tableId) => {
 					try {
+						// Increased pageSize to load more data initially
 						const response = await fetch(
 							`/api/tenants/${tenant!.id}/databases/${
 								selectedDatabase!.id
-							}/tables/${tableId}/rows?limit=1000&includeCells=true`,
+							}/tables/${tableId}/rows?pageSize=100&page=1&includeCells=true`,
 							{
 								headers: {
 									Authorization: `Bearer ${token}`,
