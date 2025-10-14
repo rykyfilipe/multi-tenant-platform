@@ -24,6 +24,8 @@ import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
 import { HydrationBoundary } from "./components/HydrationBoundary";
+import { TemplateSelector } from "./components/TemplateSelector";
+import { getTemplateById, type WidgetTemplate } from "@/widgets/templates/widget-templates";
 import { cn } from "@/lib/utils";
 import { 
   BarChart3, 
@@ -438,6 +440,53 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     console.log('🎯 [DEBUG] Layout compacted');
   }, [widgetsRecord, updateLocal]);
 
+  // Add widget from template
+  const handleAddFromTemplate = useCallback((template: WidgetTemplate) => {
+    try {
+      console.log('✨ [TEMPLATE] Adding widget from template:', template.name);
+      
+      const nextPos = findNextPosition();
+      const tempId = Math.floor(Math.random() * 1000000) + 1000000;
+      
+      const newWidget: WidgetEntity = {
+        id: tempId,
+        tenantId,
+        dashboardId,
+        type: template.widgetType,
+        title: template.name,
+        description: template.description,
+        position: { x: nextPos.x, y: nextPos.y, w: 8, h: 6 },
+        config: template.config,
+        isVisible: true,
+        sortOrder: 0,
+        version: 1,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: actorId,
+        updatedBy: actorId,
+      };
+
+      console.log('✨ [TEMPLATE] Creating widget from template:', newWidget);
+      createLocal(newWidget);
+
+      toast({
+        title: "Template applied!",
+        description: `${template.name} has been added to your dashboard.`,
+        variant: "success",
+        duration: 4000,
+      });
+    } catch (error) {
+      console.error("Failed to add widget from template:", error);
+      toast({
+        title: "Failed to add template",
+        description: "An error occurred while adding the template.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  }, [tenantId, dashboardId, actorId, createLocal, toast, findNextPosition]);
+
   const handleAddWidget = (type: WidgetType) => {
     try {
       console.log('🎯 [DEBUG] Adding widget locally:', type);
@@ -630,6 +679,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-background/90 backdrop-blur-xl border border-border/30 rounded-2xl shadow-2xl px-4 py-2">
             <div className="flex items-center space-x-2">
+              {/* Template Selector - FIRST! */}
+              <TemplateSelector onSelectTemplate={handleAddFromTemplate} />
+              
+              {/* Separator */}
+              <div className="w-px h-6 bg-border/30 mx-2" />
+              
               {/* Widget Types */}
               <div className="flex items-center space-x-1">
                 <Button
