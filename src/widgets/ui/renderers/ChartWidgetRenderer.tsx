@@ -393,13 +393,14 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
                 <>
                   <PolarGrid stroke={gridColor} strokeWidth={gridLineWidth} />
                   <PolarAngleAxis 
-                    dataKey="name" 
-                    tick={{ 
-                      fontSize: xAxisFontSize, 
+                    dataKey="name"
+                    // Hide labels if > 10 items (too crowded), use legend instead
+                    tick={processedData.length <= 10 ? { 
+                      fontSize: Math.max(xAxisFontSize - 2, 10), // Slightly smaller for radar
                       fill: xAxisColor,
                       fontWeight: xAxisFontWeight,
                       fontFamily: xAxisFontFamily
-                    }}
+                    } : false}
                   />
                   <PolarRadiusAxis 
                     tick={{ 
@@ -467,20 +468,28 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
                 />
               )}
               
-              {showLegend && dataKeys.length > 1 && (
+              {/* Show legend when: multiple series OR pie/radar with many items (labels hidden) */}
+              {(showLegend && (
+                dataKeys.length > 1 || 
+                (chartType === "pie" && processedData.length > 6) ||
+                (chartType === "radar" && processedData.length > 10)
+              )) && (
                 <Legend 
-                  verticalAlign={legendPosition === "top" || legendPosition === "bottom" ? legendPosition : "middle"}
-                  align={legendAlign === "start" ? "left" : legendAlign === "end" ? "right" : "center"}
-                  layout={legendPosition === "left" || legendPosition === "right" ? "vertical" : "horizontal"}
+                  verticalAlign={chartType === "pie" || chartType === "radar" ? "middle" : (legendPosition === "top" || legendPosition === "bottom" ? legendPosition : "middle")}
+                  align={chartType === "pie" || chartType === "radar" ? "right" : (legendAlign === "start" ? "left" : legendAlign === "end" ? "right" : "center")}
+                  layout="vertical"
                   wrapperStyle={{
                     fontFamily: legendFontFamily,
-                    fontSize: `${legendFontSize}px`,
+                    fontSize: `${Math.max(legendFontSize - 2, 9)}px`, // Smaller for many items
                     fontWeight: legendFontWeight,
                     color: legendColor,
-                    padding: `${legendConfig.padding ?? 10}px`
+                    padding: `${legendConfig.padding ?? 8}px`,
+                    maxHeight: chartType === "pie" || chartType === "radar" ? '250px' : 'auto',
+                    overflowY: chartType === "pie" || chartType === "radar" ? 'auto' : 'visible',
+                    paddingRight: '10px'
                   }}
                   iconType="circle"
-                  iconSize={legendConfig.boxHeight ?? 12}
+                  iconSize={legendConfig.boxHeight ?? 8}
                 />
               )}
               
@@ -521,16 +530,20 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
                   data={processedData}
                   dataKey={dataKeys[0]?.key || "value"}
                   nameKey="name"
-                  cx="50%"
+                  cx={processedData.length > 6 ? "40%" : "50%"} // Shift left if legend on right
                   cy="50%"
-                  outerRadius={100}
-                  innerRadius={60}
-                  paddingAngle={3}
-                  label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  labelLine={{
+                  outerRadius={processedData.length > 15 ? 80 : 100} // Smaller if many slices
+                  innerRadius={processedData.length > 15 ? 50 : 60}
+                  paddingAngle={processedData.length > 15 ? 1 : 3} // Less padding for many slices
+                  // Only show labels if <= 6 slices (otherwise too crowded)
+                  label={processedData.length <= 6 ? ({ name, percent }: any) => {
+                    // Only show label if percentage > 5%
+                    return percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : '';
+                  } : false}
+                  labelLine={processedData.length <= 6 ? {
                     stroke: 'hsl(var(--muted-foreground))',
                     strokeWidth: 1
-                  }}
+                  } : false}
                   animationDuration={800}
                   animationEasing="ease-out"
                 >
@@ -541,7 +554,7 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
                         key={`cell-${index}`} 
                         fill={pieColors[index % pieColors.length]}
                         stroke="hsl(var(--background))"
-                        strokeWidth={3}
+                        strokeWidth={processedData.length > 15 ? 2 : 3} // Thinner stroke for many slices
                       />
                     );
                   })}
