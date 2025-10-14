@@ -825,6 +825,14 @@ export async function POST(
 			};
 		});
 
+		// Update the currentNumber in the invoice series
+		await InvoiceSystemService.updateSeriesCurrentNumber(
+			Number(tenantId),
+			database.id,
+			invoiceData.series,
+			invoiceData.breakdown.nextNumber
+		);
+
 		return NextResponse.json({
 			success: true,
 			data: result,

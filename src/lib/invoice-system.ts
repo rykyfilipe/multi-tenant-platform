@@ -1180,107 +1180,34 @@ export class InvoiceSystemService {
 
 		const seriesIdentifier = seriesParts.join(defaultConfig.separator);
 
-		// Get the last invoice number for this series
-		const invoicesTable = await prisma.findFirstWithCache(
-			prisma.table,
-			{
-				where: {
-					databaseId,
-					database: { tenantId },
-					protectedType: "invoices",
-				},
-			},
-			DEFAULT_CACHE_STRATEGIES.table,
-		);
-
-		if (!invoicesTable) {
-			throw new Error("Invoices table not found");
-		}
-
-		// Use database transaction with locking to prevent race conditions
-		// This ensures only one process can generate the next invoice number at a time
-		const lastInvoice = await prisma.$transaction(async (tx: any) => {
-			// Lock the invoices table to prevent concurrent access
-			await tx.$executeRaw`SELECT * FROM "Row" WHERE "tableId" = ${invoicesTable.id} FOR UPDATE`;
-			
-			// Get the most recent invoice
-			return await tx.row.findFirst({
-				where: { tableId: invoicesTable.id },
-				include: {
-					cells: {
-						include: {
-							column: true,
-						},
-					},
-				},
-				orderBy: { createdAt: "desc" },
-			});
-		});
-
+		// Get the current number from the invoice series configuration
 		let lastNumber = defaultConfig.startNumber - 1;
-		console.log("🔍 DEBUG: Starting invoice number generation", {
-			seriesIdentifier,
-			startNumber: defaultConfig.startNumber,
-			hasLastInvoice: !!lastInvoice
-		});
 
-		if (lastInvoice && lastInvoice.cells) {
-			const invoiceNumberCell = lastInvoice.cells.find(
-				(cell: any) => cell.column.name === "invoice_number",
-			);
-			const seriesCell = lastInvoice.cells.find(
-				(cell: any) => cell.column.name === "invoice_series",
-			);
-
-			console.log("🔍 DEBUG: Found cells", {
-				invoiceNumber: invoiceNumberCell?.value,
-				invoiceSeries: seriesCell?.value,
-				expectedSeries: seriesIdentifier,
-				seriesMatch: seriesCell?.value === seriesIdentifier
+		try {
+			// Try to find an existing invoice series configuration
+			const invoiceSeries = await prisma.invoiceSeries.findFirst({
+				where: {
+					tenantId,
+					databaseId,
+					series: defaultConfig.series,
+				},
 			});
 
-			if (invoiceNumberCell?.value) {
-				// First try to match with exact series
-				if (seriesCell?.value === seriesIdentifier) {
-					const regexPattern =
-						seriesIdentifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-						defaultConfig.separator.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-						"(\\d+)";
-					
-					console.log("🔍 DEBUG: Exact series regex pattern", regexPattern);
-					
-					const match = invoiceNumberCell.value
-						.toString()
-						.match(new RegExp(regexPattern));
-					
-					console.log("🔍 DEBUG: Exact series regex match", match);
-					
-					if (match) {
-						lastNumber = parseInt(match[1]);
-						console.log("🔍 DEBUG: Extracted last number from exact series", lastNumber);
-					}
-				} else {
-					// Fallback: try to extract any number from the invoice number
-					// This handles cases where series might not match exactly
-					const generalRegex = new RegExp(`(\\d{6,})`, 'g');
-					const matches = invoiceNumberCell.value.toString().match(generalRegex);
-					
-					console.log("🔍 DEBUG: General number extraction", {
-						invoiceNumber: invoiceNumberCell.value,
-						matches
-					});
-					
-					if (matches && matches.length > 0) {
-						// Get the largest number found (should be the main invoice number)
-						const numbers = matches.map((m: any) => parseInt(m));
-						const maxNumber = Math.max(...numbers);
-						lastNumber = Math.max(lastNumber, maxNumber);
-						console.log("🔍 DEBUG: Using max number from general extraction", maxNumber);
-					}
-				}
+			if (invoiceSeries) {
+				lastNumber = invoiceSeries.currentNumber;
+				console.log("🔍 DEBUG: Using currentNumber from series config", {
+					series: defaultConfig.series,
+					currentNumber: invoiceSeries.currentNumber,
+					lastNumber
+				});
 			} else {
-				console.log("🔍 DEBUG: No invoice number cell found");
+				console.log("🔍 DEBUG: No series config found, using startNumber", {
+					startNumber: defaultConfig.startNumber,
+					lastNumber
+				});
 			}
+		} catch (error) {
+			console.warn("🔍 DEBUG: Error fetching series config, falling back to startNumber", error);
 		}
 
 		const nextNumber = lastNumber + 1;
@@ -1322,6 +1249,37 @@ export class InvoiceSystemService {
 				nextNumber: nextNumber,
 			},
 		};
+	}
+
+	/**
+	 * Update the currentNumber in the invoice series after creating an invoice
+	 */
+	static async updateSeriesCurrentNumber(
+		tenantId: number,
+		databaseId: number,
+		series: string,
+		newCurrentNumber: number
+	): Promise<void> {
+		try {
+			await prisma.invoiceSeries.updateMany({
+				where: {
+					tenantId,
+					databaseId,
+					series,
+				},
+				data: {
+					currentNumber: newCurrentNumber,
+				},
+			});
+			console.log("🔍 DEBUG: Updated series currentNumber", {
+				tenantId,
+				databaseId,
+				series,
+				newCurrentNumber
+			});
+		} catch (error) {
+			console.warn("🔍 DEBUG: Error updating series currentNumber", error);
+		}
 	}
 
 	/**

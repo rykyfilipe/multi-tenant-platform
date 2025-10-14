@@ -16,8 +16,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useEditMode } from '@/contexts/EditModeContext';
 import { isWidgetsV2Enabled } from '@/lib/featureFlag';
 import { WidgetCanvasNew } from '@/widgets/ui/WidgetCanvasNew';
-import { SmartWidgetTemplatesModal } from '@/widgets/ui/components/SmartWidgetTemplatesModal';
-import { Plus, LayoutDashboard, Edit3, Eye, EyeOff, Settings, Trash2, Edit, AlertCircle, Sparkles, Loader2, Maximize2, Minimize2 } from 'lucide-react';
+import { Plus, LayoutDashboard, Edit3, Eye, EyeOff, Settings, Trash2, Edit, AlertCircle, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 
 interface DashboardSummary {
   id: number;
@@ -39,7 +38,6 @@ export default function DashboardsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
   const [editForm, setEditForm] = useState({ name: '', description: '', isPublic: false });
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
@@ -384,7 +382,7 @@ export default function DashboardsPage() {
                 className="w-full gap-2 h-11 shadow-sm"
                 size="lg"
               >
-                <Sparkles className="h-4 w-4" />
+                <LayoutDashboard className="h-4 w-4" />
                 Create Default Dashboard
               </Button>
               
@@ -487,19 +485,6 @@ export default function DashboardsPage() {
                   submitLabel="Create Dashboard"
                 />
               </Dialog>
-
-              {/* Templates Button */}
-              {selectedDashboardId && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsTemplatesModalOpen(true)}
-                  className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
-                >
-                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Templates</span>
-                </Button>
-              )}
 
               {/* Edit/View Mode Toggle */}
               <Button
@@ -622,15 +607,6 @@ export default function DashboardsPage() {
           submitLabel="Update Dashboard"
         />
       </Dialog>
-
-      {/* Templates Modal - Rendered in Main Container */}
-      {selectedDashboardId && (
-        <SmartWidgetTemplatesModal 
-          dashboardId={selectedDashboardId}
-          isOpen={isTemplatesModalOpen}
-          onOpenChange={setIsTemplatesModalOpen}
-        />
-      )}
 
       {/* Delete Confirmation Modal */}
       <Dialog open={isDeleteModalOpen} onOpenChange={(open) => !isDeleting && setIsDeleteModalOpen(open)}>

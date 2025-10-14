@@ -57,9 +57,95 @@ export async function GET(
 			},
 		});
 
+		// Sync currentNumber with actual invoice count for each series
+		const syncedSeries = await Promise.all(series.map(async (seriesItem) => {
+			try {
+				// Get the default database for this tenant
+				const database = await prisma.database.findFirst({
+					where: {
+						tenantId: Number(tenantId),
+						isDefault: true,
+					},
+				});
+
+				if (!database) {
+					return seriesItem; // Return original if no database found
+				}
+
+				// Get invoices table
+				const invoicesTable = await prisma.table.findFirst({
+					where: {
+						databaseId: database.id,
+						protectedType: "invoices",
+					},
+				});
+
+				if (!invoicesTable) {
+					return seriesItem; // Return original if no invoices table found
+				}
+
+				// Count invoices that match this series
+				const seriesPattern = seriesItem.prefix + 
+					(seriesItem.includeYear ? new Date().getFullYear().toString() : '') +
+					(seriesItem.includeMonth ? String(new Date().getMonth() + 1).padStart(2, '0') : '') +
+					seriesItem.separator;
+
+				// Get all invoices and count those matching this series
+				const allInvoices = await prisma.row.findMany({
+					where: { tableId: invoicesTable.id },
+					include: {
+						cells: {
+							include: {
+								column: true,
+							},
+						},
+					},
+				});
+
+				let maxInvoiceNumber = 0;
+				let matchingInvoiceCount = 0;
+
+				for (const invoice of allInvoices) {
+					const invoiceNumberCell = invoice.cells.find(
+						(cell: any) => cell.column.name === "invoice_number"
+					);
+					const seriesCell = invoice.cells.find(
+						(cell: any) => cell.column.name === "invoice_series"
+					);
+
+					if (invoiceNumberCell?.value && seriesCell?.value === seriesItem.series) {
+						matchingInvoiceCount++;
+						
+						// Extract number from invoice number
+						const invoiceNumber = invoiceNumberCell.value.toString();
+						const numberMatch = invoiceNumber.match(/(\d{6,})/);
+						if (numberMatch) {
+							const number = parseInt(numberMatch[1]);
+							maxInvoiceNumber = Math.max(maxInvoiceNumber, number);
+						}
+					}
+				}
+
+				// Update currentNumber if it doesn't match the actual count
+				if (seriesItem.currentNumber !== maxInvoiceNumber) {
+					await prisma.invoiceSeries.update({
+						where: { id: seriesItem.id },
+						data: { currentNumber: maxInvoiceNumber },
+					});
+					
+					return { ...seriesItem, currentNumber: maxInvoiceNumber };
+				}
+
+				return seriesItem;
+			} catch (error) {
+				console.error(`Error syncing series ${seriesItem.series}:`, error);
+				return seriesItem; // Return original on error
+			}
+		}));
+
 		return NextResponse.json({
 			success: true,
-			series,
+			series: syncedSeries,
 		});
 	} catch (error) {
 		console.error("Error fetching invoice series:", error);

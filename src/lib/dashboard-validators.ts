@@ -26,6 +26,7 @@ export const WIDGET_TYPES = [
   'clock', 'CLOCK',
   'tasks', 'TASKS',
   'weather', 'WEATHER',
+  'notes', 'NOTES',
 ] as const;
 
 export type WidgetType = typeof WIDGET_TYPES[number];
@@ -427,6 +428,41 @@ export const WidgetConfigValidation = {
       showLocation: z.boolean().default(false),
     }).optional(),
   }),
+
+  notes: z.object({
+    settings: z.object({
+      showDates: z.boolean().default(true),
+      dateFormat: z.enum(['relative', 'absolute']).default('relative'),
+      layout: z.enum(['grid', 'list']).default('grid'),
+      columns: z.number().int().min(1).max(4).default(2),
+      allowInlineEdit: z.boolean().default(true),
+      allowDelete: z.boolean().default(true),
+      maxNotes: z.number().int().min(1).max(1000).default(20),
+      defaultColor: z.enum(['yellow', 'blue', 'green', 'red', 'purple', 'gray']).default('yellow'),
+      enableSearch: z.boolean().default(true),
+      enableTags: z.boolean().default(true),
+      enablePinning: z.boolean().default(true),
+      enableChecklists: z.boolean().default(true),
+      showPinnedFirst: z.boolean().default(true),
+      enableMarkdown: z.boolean().default(false),
+      enableReminders: z.boolean().default(false),
+      enableLinking: z.boolean().default(false),
+    }).optional(),
+    style: z.object({
+      backgroundColor: z.string().default('transparent'),
+      padding: z.enum(['sm', 'md', 'lg']).default('md'),
+      cardBorderRadius: z.number().default(12),
+      cardShadow: z.enum(['none', 'sm', 'md', 'lg']).default('md'),
+      cardPadding: z.number().default(16),
+      titleFontSize: z.number().default(16),
+      contentFontSize: z.number().default(14),
+      fontFamily: z.string().default('Inter, system-ui, sans-serif'),
+      gap: z.number().default(12),
+    }).optional(),
+    data: z.object({
+      notes: z.array(z.any()).default([]),
+    }).optional(),
+  }),
 };
 
 // Validation helper functions
@@ -498,6 +534,8 @@ export class DashboardValidators {
         return WidgetConfigValidation.weather.parse(config);
       case 'calendar':
         return WidgetConfigValidation.calendar.parse(config);
+      case 'notes':
+        return WidgetConfigValidation.notes.parse(config);
       default:
         return z.record(z.any()).parse(config);
     }
