@@ -18,7 +18,7 @@ interface WeatherWidgetRendererProps {
   isEditMode?: boolean;
 }
 
-export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
+const WeatherWidgetRendererComponent: React.FC<WeatherWidgetRendererProps> = ({
   widget,
   onEdit,
   onDelete,
@@ -361,3 +361,37 @@ export const WeatherWidgetRenderer: React.FC<WeatherWidgetRendererProps> = ({
     </BaseWidget>
   );
 };
+
+// OPTIMISTIC RENDERING: Only re-render when location/units change, NOT style
+export const WeatherWidgetRenderer = React.memo(
+  WeatherWidgetRendererComponent,
+  (prevProps, nextProps) => {
+    const prevConfig = prevProps.widget.config as any;
+    const nextConfig = nextProps.widget.config as any;
+    
+    if (prevProps.widget.id !== nextProps.widget.id) {
+      console.log('🔄 [WeatherWidget] Re-render: widget ID changed');
+      return false;
+    }
+    
+    // Settings changed (location, units) - refetch weather
+    if (JSON.stringify(prevConfig?.settings) !== JSON.stringify(nextConfig?.settings)) {
+      console.log('🔄 [WeatherWidget] Re-render: settings changed (location/units)');
+      return false;
+    }
+    
+    if (prevProps.isEditMode !== nextProps.isEditMode) {
+      console.log('🔄 [WeatherWidget] Re-render: edit mode changed');
+      return false;
+    }
+    
+    // Style-only change? Optimistic
+    if (JSON.stringify(prevConfig?.style) !== JSON.stringify(nextConfig?.style)) {
+      console.log('✨ [WeatherWidget] Style-only change - optimistic');
+      return false;
+    }
+    
+    console.log('⚡ [WeatherWidget] Props equal - SKIP re-render');
+    return true;
+  }
+);

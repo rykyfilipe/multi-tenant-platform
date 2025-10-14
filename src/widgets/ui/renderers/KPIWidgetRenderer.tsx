@@ -20,7 +20,7 @@ interface KPIWidgetRendererProps {
   isSelected?: boolean;
 }
 
-export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
+const KPIWidgetRendererComponent: React.FC<KPIWidgetRendererProps> = ({
   widget,
   onEdit,
   onDelete,
@@ -38,13 +38,14 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
   // Extract metric BEFORE using it in useEffect to avoid TDZ
   const metric = config.data?.metric;
 
-  // Fetch ALL data from API when widget is configured (not paginated)
+  // OPTIMISTIC: Fetch data ONLY when DATA config changes (not style!)
   useEffect(() => {
     const fetchData = async () => {
       if (!config.data?.databaseId || !config.data?.tableId || !token || !tenant?.id) {
         return;
       }
 
+      console.log('📊 [KPIWidget] Fetching data (data config changed)');
       setIsLoadingData(true);
       try {
         // Fetch ALL rows by using a large pageSize
@@ -571,3 +572,45 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
     </BaseWidget>
   );
 };
+
+// OPTIMISTIC RENDERING: Only re-render when DATA config changes, NOT style
+export const KPIWidgetRenderer = React.memo(
+  KPIWidgetRendererComponent,
+  (prevProps, nextProps) => {
+    const prevConfig = prevProps.widget.config as any;
+    const nextConfig = nextProps.widget.config as any;
+    
+    // Widget ID changed
+    if (prevProps.widget.id !== nextProps.widget.id) {
+      console.log('🔄 [KPIWidget] Re-render: widget ID changed');
+      return false;
+    }
+    
+    // Data config changed (triggers refetch)
+    if (JSON.stringify(prevConfig?.data) !== JSON.stringify(nextConfig?.data)) {
+      console.log('🔄 [KPIWidget] Re-render: data config changed');
+      return false;
+    }
+    
+    // Edit mode changed
+    if (prevProps.isEditMode !== nextProps.isEditMode) {
+      console.log('🔄 [KPIWidget] Re-render: edit mode changed');
+      return false;
+    }
+    
+    // Selection changed
+    if (prevProps.isSelected !== nextProps.isSelected) {
+      console.log('🔄 [KPIWidget] Re-render: selection changed');
+      return false;
+    }
+    
+    // Style-only change? Allow re-render but won't refetch
+    if (JSON.stringify(prevConfig?.style) !== JSON.stringify(nextConfig?.style)) {
+      console.log('✨ [KPIWidget] Style-only change - optimistic');
+      return false;
+    }
+    
+    console.log('⚡ [KPIWidget] Props equal - SKIP re-render');
+    return true;
+  }
+);

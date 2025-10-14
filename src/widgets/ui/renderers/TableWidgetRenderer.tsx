@@ -27,7 +27,7 @@ interface TableWidgetRendererProps {
   isEditMode?: boolean;
 }
 
-export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
+const TableWidgetRendererComponent: React.FC<TableWidgetRendererProps> = ({
   widget,
   onEdit,
   onDelete,
@@ -632,3 +632,35 @@ export const TableWidgetRenderer: React.FC<TableWidgetRendererProps> = ({
     </BaseWidget>
   );
 };
+
+// OPTIMISTIC RENDERING: Only re-render when DATA config changes, NOT style
+export const TableWidgetRenderer = React.memo(
+  TableWidgetRendererComponent,
+  (prevProps, nextProps) => {
+    const prevConfig = prevProps.widget.config as any;
+    const nextConfig = nextProps.widget.config as any;
+    
+    if (prevProps.widget.id !== nextProps.widget.id) {
+      console.log('🔄 [TableWidget] Re-render: widget ID changed');
+      return false;
+    }
+    
+    if (JSON.stringify(prevConfig?.data) !== JSON.stringify(nextConfig?.data)) {
+      console.log('🔄 [TableWidget] Re-render: data config changed');
+      return false;
+    }
+    
+    if (prevProps.isEditMode !== nextProps.isEditMode) {
+      console.log('🔄 [TableWidget] Re-render: edit mode changed');
+      return false;
+    }
+    
+    if (JSON.stringify(prevConfig?.style) !== JSON.stringify(nextConfig?.style)) {
+      console.log('✨ [TableWidget] Style-only change - optimistic');
+      return false;
+    }
+    
+    console.log('⚡ [TableWidget] Props equal - SKIP re-render');
+    return true;
+  }
+);

@@ -14,7 +14,7 @@ interface ClockWidgetRendererProps {
   isEditMode?: boolean;
 }
 
-export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({ 
+const ClockWidgetRendererComponent: React.FC<ClockWidgetRendererProps> = ({ 
   widget, 
   onEdit, 
   onDelete, 
@@ -197,3 +197,28 @@ export const ClockWidgetRenderer: React.FC<ClockWidgetRendererProps> = ({
     </BaseWidget>
   );
 };
+
+// OPTIMISTIC RENDERING: Clock has no external data, only style changes
+export const ClockWidgetRenderer = React.memo(
+  ClockWidgetRendererComponent,
+  (prevProps, nextProps) => {
+    if (prevProps.widget.id !== nextProps.widget.id) {
+      console.log('🔄 [ClockWidget] Re-render: widget ID changed');
+      return false;
+    }
+    
+    if (prevProps.isEditMode !== nextProps.isEditMode) {
+      console.log('🔄 [ClockWidget] Re-render: edit mode changed');
+      return false;
+    }
+    
+    // Config changed? Re-render (style or settings)
+    if (JSON.stringify(prevProps.widget.config) !== JSON.stringify(nextProps.widget.config)) {
+      console.log('✨ [ClockWidget] Config changed - optimistic re-render');
+      return false;
+    }
+    
+    console.log('⚡ [ClockWidget] Props equal - SKIP re-render');
+    return true;
+  }
+);

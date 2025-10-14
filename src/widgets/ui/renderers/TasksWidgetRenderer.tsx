@@ -57,7 +57,7 @@ interface Task {
   tags?: string[];
 }
 
-export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
+const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
   widget,
   onEdit,
   onDelete,
@@ -723,6 +723,46 @@ export const TasksWidgetRenderer: React.FC<TasksWidgetRendererProps> = ({
     </BaseWidget>
   );
 };
+
+// OPTIMISTIC RENDERING: Tasks widget stores data in config, re-render only on data change
+export const TasksWidgetRenderer = React.memo(
+  TasksWidgetRendererComponent,
+  (prevProps, nextProps) => {
+    const prevConfig = prevProps.widget.config as any;
+    const nextConfig = nextProps.widget.config as any;
+    
+    if (prevProps.widget.id !== nextProps.widget.id) {
+      console.log('🔄 [TasksWidget] Re-render: widget ID changed');
+      return false;
+    }
+    
+    // Tasks data changed (stored in config.data.tasks)
+    if (JSON.stringify(prevConfig?.data?.tasks) !== JSON.stringify(nextConfig?.data?.tasks)) {
+      console.log('🔄 [TasksWidget] Re-render: tasks data changed');
+      return false;
+    }
+    
+    // Settings changed (filters, sorting)
+    if (JSON.stringify(prevConfig?.settings) !== JSON.stringify(nextConfig?.settings)) {
+      console.log('🔄 [TasksWidget] Re-render: settings changed');
+      return false;
+    }
+    
+    if (prevProps.isEditMode !== nextProps.isEditMode) {
+      console.log('🔄 [TasksWidget] Re-render: edit mode changed');
+      return false;
+    }
+    
+    // Style-only change? Optimistic
+    if (JSON.stringify(prevConfig?.style) !== JSON.stringify(nextConfig?.style)) {
+      console.log('✨ [TasksWidget] Style-only change - optimistic');
+      return false;
+    }
+    
+    console.log('⚡ [TasksWidget] Props equal - SKIP re-render');
+    return true;
+  }
+);
 
 // Task Form Component
 interface TaskFormProps {
