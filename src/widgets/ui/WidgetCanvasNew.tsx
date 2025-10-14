@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
@@ -114,15 +114,27 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   // Undo function - now global, no need for widgetId
   const handleUndo = useCallback(() => {
+    console.log('⏪ [UNDO] Setting internal update flag');
+    isInternalUpdate.current = true; // Prevent cascade updates
+    
     const success = undoLastChange(); // No widgetId needed - global stack
+    
     if (success) {
       setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
+      
+      // Reset flag after layout updates
+      setTimeout(() => {
+        isInternalUpdate.current = false;
+        console.log('⏪ [UNDO] Cleared internal update flag');
+      }, 100);
+      
       toast({
         title: "⏪ Undo successful",
         description: "Last change has been undone.",
         variant: "default",
       });
     } else {
+      isInternalUpdate.current = false;
       toast({
         title: "Nothing to undo",
         description: "No changes in history.",
@@ -133,15 +145,27 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   // Redo function - now global, no need for widgetId
   const handleRedo = useCallback(() => {
+    console.log('⏩ [REDO] Setting internal update flag');
+    isInternalUpdate.current = true; // Prevent cascade updates
+    
     const success = redoLastChange(); // No widgetId needed - global stack
+    
     if (success) {
       setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
+      
+      // Reset flag after layout updates
+      setTimeout(() => {
+        isInternalUpdate.current = false;
+        console.log('⏩ [REDO] Cleared internal update flag');
+      }, 100);
+      
       toast({
         title: "⏩ Redo successful",
         description: "Last change has been redone.",
         variant: "default",
       });
     } else {
+      isInternalUpdate.current = false;
       toast({
         title: "Nothing to redo",
         description: "No changes to redo.",
@@ -237,6 +261,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
+  const isInternalUpdate = useRef(false); // Flag to prevent cascade updates from undo/redo
 
   // Handle exit confirmation dialog
   const handleExitConfirm = useCallback(() => {
@@ -1085,6 +1110,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             onLayoutChange={(currentLayout: Layout[]) => {
               if (!isEditMode) return;
               
+              // PREVENT cascade updates from undo/redo
+              if (isInternalUpdate.current) {
+                console.log('⚡ [LAYOUT] Skipping onLayoutChange - internal update (undo/redo)');
+                return;
+              }
+              
               console.log('🎯 [DEBUG] Layout changed:', currentLayout);
               currentLayout.forEach((item) => {
                 const widgetId = Number(item.i);
@@ -1095,6 +1126,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
             onResize={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
               if (!isEditMode) return;
+              if (isInternalUpdate.current) return; // Skip during undo/redo
               
               console.log('🎯 [DEBUG] Widget resized:', { oldItem, newItem });
               const widgetId = Number(newItem.i);
@@ -1104,6 +1136,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
             onResizeStop={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
               if (!isEditMode) return;
+              if (isInternalUpdate.current) return; // Skip during undo/redo
               
               console.log('🎯 [DEBUG] Resize stopped:', { oldItem, newItem });
               const widgetId = Number(newItem.i);

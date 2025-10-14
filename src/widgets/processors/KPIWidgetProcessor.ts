@@ -503,10 +503,13 @@ export class KPIWidgetProcessor {
       const groupRows = groups[groupKey];
       const groupValues = this.extractNumericValues(groupRows, config.metric.field);
       
-      console.log(`   Group ${groupIndex + 1}/${groupKeys.length} "${groupKey}": ${groupRows.length} rows, ${groupValues.length} numeric values`);
-      console.log(`      → First row in group keys:`, Object.keys(groupRows[0] || {}));
-      console.log(`      → First row in group:`, groupRows[0]);
-      console.log(`      → Numeric values:`, groupValues.slice(0, 5));
+      // Only log first 3 groups for debugging (not all 50!)
+      if (groupIndex < 3) {
+        console.log(`   Group ${groupIndex + 1}/${groupKeys.length} "${groupKey}": ${groupRows.length} rows, ${groupValues.length} numeric values`);
+        console.log(`      → First row in group keys:`, Object.keys(groupRows[0] || {}));
+        console.log(`      → First row in group:`, groupRows[0]);
+        console.log(`      → Numeric values:`, groupValues.slice(0, 5));
+      }
       
       // Apply chained aggregations to this group
       let currentValue: number | number[] = groupValues;
@@ -517,7 +520,9 @@ export class KPIWidgetProcessor {
       });
       
       const groupFinalValue = typeof currentValue === 'number' ? currentValue : 0;
-      console.log(`      → Pipeline result for "${groupKey}": ${groupFinalValue}`);
+      if (groupIndex < 3) {
+        console.log(`      → Pipeline result for "${groupKey}": ${groupFinalValue}`);
+      }
       groupResults.push({ group: groupKey, value: groupFinalValue, rows: groupRows });
     });
 
@@ -655,7 +660,10 @@ export class KPIWidgetProcessor {
       const normalizedRow: NormalizedRow = {};
 
       if (row.cells && Array.isArray(row.cells)) {
-        console.log(`   📋 Row ${index + 1}/${rawData.length} has ${row.cells.length} cells`);
+        // Only log first 3 rows for debugging (not all 100!)
+        if (index < 3) {
+          console.log(`   📋 Row ${index + 1}/${rawData.length} has ${row.cells.length} cells`);
+        }
         
         row.cells.forEach((cell) => {
           if (cell.column && cell.column.name) {
