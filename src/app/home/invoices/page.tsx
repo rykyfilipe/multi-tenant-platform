@@ -241,33 +241,23 @@ export default function InvoicesPage() {
 			<div className='max-w-[1600px] mx-auto p-4 md:p-6 space-y-6'>
 				{/* Header */}
 				<div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>
-					<div className='flex items-start gap-4'>
-						<div className='p-3 rounded-2xl bg-primary/10 border border-primary/20'>
-							<FileText className='w-7 h-7 text-primary' />
+					<div className='flex items-start gap-3 sm:gap-4'>
+						<div className='p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-primary/10 border border-primary/20'>
+							<FileText className='w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-primary' />
 						</div>
 						<div>
-							<h1 className='text-2xl md:text-3xl font-bold text-foreground tracking-tight'>
+							<h1 className='text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight'>
 								Invoice Management
 							</h1>
-							<p className='text-sm text-muted-foreground mt-1'>
+							<p className='text-xs sm:text-sm text-muted-foreground mt-1'>
 								Create professional invoices and manage customer relationships
 							</p>
-							<div className='flex items-center gap-3 mt-2'>
-								<Badge variant="outline" className='bg-primary/10 text-primary border-primary/20 font-semibold'>
-									<FileText className='w-3 h-3 mr-1.5' />
-									{stats.totalInvoices} {stats.totalInvoices === 1 ? 'Invoice' : 'Invoices'}
-								</Badge>
-								<Badge variant="outline" className='bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-semibold'>
-									<Users className='w-3 h-3 mr-1.5' />
-									{customers?.length || 0} {customers?.length === 1 ? 'Customer' : 'Customers'}
-								</Badge>
-							</div>
 						</div>
 					</div>
 
 					<div className="flex items-center gap-2">
 						{isANAFAuthenticated && (
-							<Badge variant="outline" className='bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-semibold'>
+							<Badge variant="outline" className='bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 font-semibold text-xs'>
 								<CheckCircle2 className='w-3 h-3 mr-1.5' />
 								ANAF Connected
 							</Badge>
@@ -277,36 +267,57 @@ export default function InvoicesPage() {
 
 				{/* Quick Stats */}
 				{stats.totalInvoices > 0 && (
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+					<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+						{/* Total Invoices */}
 						<Card className="bg-card border-border shadow-sm hover:shadow-md transition-shadow">
-							<CardContent className="p-5">
-								<div className="flex items-start justify-between gap-3">
-									<div className="flex-1">
-										<div className="flex items-center gap-2 mb-3">
-											<div className="p-2 rounded-lg bg-primary/10">
-												<DollarSign className="h-4 w-4 text-primary" />
+							<CardContent className="p-3 sm:p-4 lg:p-5">
+								<div className="flex items-start justify-between gap-2">
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+											<div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0">
+												<FileText className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
 											</div>
-											<p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Revenue</p>
+											<p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground truncate">Invoices</p>
 										</div>
-										<div className="text-2xl font-bold text-foreground tabular-nums">
-											${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+										<div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
+											{stats.totalInvoices}
 										</div>
 									</div>
 								</div>
 							</CardContent>
 						</Card>
 
-						<Card className="bg-card border-green-500/20 shadow-sm hover:shadow-md transition-shadow">
-							<CardContent className="p-5">
-								<div className="flex items-start justify-between gap-3">
-									<div className="flex-1">
-										<div className="flex items-center gap-2 mb-3">
-											<div className="p-2 rounded-lg bg-green-500/10">
-												<CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+						{/* Total Revenue */}
+						<Card className="bg-card border-border shadow-sm hover:shadow-md transition-shadow">
+							<CardContent className="p-3 sm:p-4 lg:p-5">
+								<div className="flex items-start justify-between gap-2">
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+											<div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0">
+												<DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
 											</div>
-											<p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Paid</p>
+											<p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground truncate">Revenue</p>
 										</div>
-										<div className="text-2xl font-bold text-foreground tabular-nums">
+										<div className="text-base sm:text-xl lg:text-2xl font-bold text-foreground tabular-nums truncate">
+											${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+										</div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Paid */}
+						<Card className="bg-card border-green-500/20 shadow-sm hover:shadow-md transition-shadow">
+							<CardContent className="p-3 sm:p-4 lg:p-5">
+								<div className="flex items-start justify-between gap-2">
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+											<div className="p-1.5 sm:p-2 rounded-lg bg-green-500/10 flex-shrink-0">
+												<CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
+											</div>
+											<p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground truncate">Paid</p>
+										</div>
+										<div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
 											{stats.paidCount}
 										</div>
 									</div>
@@ -314,17 +325,18 @@ export default function InvoicesPage() {
 							</CardContent>
 						</Card>
 
+						{/* Pending */}
 						<Card className="bg-card border-amber-500/20 shadow-sm hover:shadow-md transition-shadow">
-							<CardContent className="p-5">
-								<div className="flex items-start justify-between gap-3">
-									<div className="flex-1">
-										<div className="flex items-center gap-2 mb-3">
-											<div className="p-2 rounded-lg bg-amber-500/10">
-												<Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+							<CardContent className="p-3 sm:p-4 lg:p-5">
+								<div className="flex items-start justify-between gap-2">
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+											<div className="p-1.5 sm:p-2 rounded-lg bg-amber-500/10 flex-shrink-0">
+												<Clock className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600 dark:text-amber-400" />
 											</div>
-											<p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pending</p>
+											<p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground truncate">Pending</p>
 										</div>
-										<div className="text-2xl font-bold text-foreground tabular-nums">
+										<div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
 											{stats.pendingCount}
 										</div>
 									</div>
@@ -332,17 +344,18 @@ export default function InvoicesPage() {
 							</CardContent>
 						</Card>
 
+						{/* Overdue */}
 						<Card className="bg-card border-destructive/20 shadow-sm hover:shadow-md transition-shadow">
-							<CardContent className="p-5">
-								<div className="flex items-start justify-between gap-3">
-									<div className="flex-1">
-										<div className="flex items-center gap-2 mb-3">
-											<div className="p-2 rounded-lg bg-destructive/10">
-												<AlertCircle className="h-4 w-4 text-destructive" />
+							<CardContent className="p-3 sm:p-4 lg:p-5">
+								<div className="flex items-start justify-between gap-2">
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+											<div className="p-1.5 sm:p-2 rounded-lg bg-destructive/10 flex-shrink-0">
+												<AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
 											</div>
-											<p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overdue</p>
+											<p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground truncate">Overdue</p>
 										</div>
-										<div className="text-2xl font-bold text-foreground tabular-nums">
+										<div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
 											{stats.overdueCount}
 										</div>
 									</div>

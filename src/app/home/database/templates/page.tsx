@@ -208,45 +208,45 @@ export default function TemplatesPage() {
 			{/* Modern Header */}
 			<div className="relative">
 				<div className='absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5' />
-				<div className="relative sticky top-0 z-40 border-b border-border/20 bg-background/80 backdrop-blur-xl shadow-sm">
-					<div className="px-4 sm:px-6 lg:px-8 py-8">
+				<div className="relative sticky top-0 z-[60] border-b border-border/20 bg-background/80 backdrop-blur-xl shadow-sm">
+					<div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
 						<div className="max-w-7xl mx-auto">
 							{/* Hero Section */}
-							<div className="text-center mb-8">
-								<div className='inline-flex items-center gap-3 mb-4'>
+							<div className="text-center mb-4 sm:mb-6">
+								<div className='inline-flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3'>
 							<Button
 								variant="ghost"
 								size="sm"
 								onClick={() => router.push("/home/database")}
-										className="p-2 rounded-xl hover:bg-primary/10 transition-colors">
-										<ArrowLeft className="w-5 h-5" />
+										className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl hover:bg-primary/10 transition-colors">
+										<ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
 							</Button>
-									<div className='p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg'>
-										<Sparkles className="w-8 h-8 text-primary" />
+									<div className='p-2 sm:p-3 rounded-lg sm:rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg'>
+										<Sparkles className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-primary" />
 									</div>
-									<h1 className='text-3xl sm:text-4xl font-bold text-foreground tracking-tight'>
+									<h1 className='text-lg sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight'>
 										Table Templates
 									</h1>
 								</div>
-								<p className='text-lg text-muted-foreground max-w-2xl mx-auto mb-6'>
+								<p className='text-xs sm:text-sm lg:text-base text-muted-foreground max-w-2xl mx-auto mb-3 sm:mb-4 px-2'>
 									Choose from professionally designed table templates for{" "}
-									<span className="font-semibold text-foreground bg-primary/10 px-3 py-1 rounded-lg">
+									<span className="font-semibold text-foreground bg-primary/10 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg">
 										{selectedDatabase.name}
 									</span>
 								</p>
-								<div className='flex items-center justify-center gap-2'>
+								<div className='flex items-center justify-center gap-1.5 sm:gap-2'>
 									<Badge 
 										variant="outline" 
-										className="bg-green-500/10 text-green-700 dark:text-green-500 border-green-500/30 px-4 py-2 text-sm font-semibold"
+										className="bg-green-500/10 text-green-700 dark:text-green-500 border-green-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold"
 									>
-										<div className='w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse' />
+										<div className='w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 mr-1 sm:mr-1.5 animate-pulse' />
 										{selectedCount} Selected
 									</Badge>
 									<Badge 
 										variant="outline" 
-										className="bg-blue-500/10 text-blue-700 dark:text-blue-500 border-blue-500/30 px-4 py-2 text-sm font-semibold"
+										className="bg-blue-500/10 text-blue-700 dark:text-blue-500 border-blue-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold"
 									>
-										<Zap className='w-3 h-3 mr-2' />
+										<Zap className='w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5' />
 										Instant Setup
 									</Badge>
 								</div>
@@ -254,21 +254,21 @@ export default function TemplatesPage() {
 
 							{/* Action Bar */}
 						{selectedCount > 0 && (
-								<div className='flex items-center justify-center p-6 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-sm'>
+								<div className='flex items-center justify-center p-3 sm:p-4 lg:p-6 bg-card/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-border/50 shadow-sm'>
 								<Button
 									onClick={handleCreateTables}
 									disabled={isCreating || selectedCount === 0}
-										className="shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary px-8 py-4 text-lg"
-										size="lg">
+										size="sm"
+										className="shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary px-4 sm:px-6 lg:px-8">
 									{isCreating ? (
 										<>
-												<div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-3" />
-												<span className="font-semibold">Creating Tables...</span>
+												<div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+												<span className="font-semibold text-xs sm:text-sm">Creating Tables...</span>
 										</>
 									) : (
 										<>
-												<CheckCircle className="w-5 h-5 mr-3" />
-												<span className="font-semibold">Create {selectedCount} Table{selectedCount !== 1 ? 's' : ''}</span>
+												<CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
+												<span className="font-semibold text-xs sm:text-sm">Create {selectedCount} Table{selectedCount !== 1 ? 's' : ''}</span>
 										</>
 									)}
 								</Button>
@@ -515,30 +515,30 @@ export default function TemplatesPage() {
 				)}
 
 			{previewTemplate && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+				<div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
 					<div 
 						className="fixed inset-0 bg-black/60 backdrop-blur-md"
 						onClick={() => setPreviewTemplate(null)}
 					/>
 					
-					<div className="relative w-full max-w-5xl max-h-[90vh] bg-background border border-border/50 rounded-3xl shadow-2xl overflow-hidden">
+					<div className="relative w-full max-w-[95vw] sm:max-w-4xl lg:max-w-5xl max-h-[95vh] sm:max-h-[90vh] bg-background border border-border/50 rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
 						{/* Modal Header */}
-						<div className="p-8 border-b border-border/20 bg-gradient-to-r from-background to-muted/10">
-							<div className="flex items-start justify-between">
-								<div className="flex items-center gap-6">
-									<div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg flex items-center justify-center">
-										{previewTemplate?.icon && React.createElement(previewTemplate.icon, { className: "w-10 h-10 text-primary" })}
+						<div className="p-3 sm:p-6 lg:p-8 border-b border-border/20 bg-gradient-to-r from-background to-muted/10 flex-shrink-0">
+							<div className="flex items-start justify-between gap-2 sm:gap-3">
+								<div className="flex items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0">
+									<div className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg sm:rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg flex items-center justify-center flex-shrink-0">
+										{previewTemplate?.icon && React.createElement(previewTemplate.icon, { className: "w-5 h-5 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-primary" })}
 									</div>
-									<div>
-										<h2 className="text-3xl font-bold text-foreground mb-2">{previewTemplate?.name}</h2>
-										<div className="flex items-center gap-3">
-											<Badge variant="outline" className="px-4 py-2 text-sm font-medium">
+									<div className="flex-1 min-w-0">
+										<h2 className="text-base sm:text-xl lg:text-2xl font-bold text-foreground mb-1 sm:mb-2 truncate">{previewTemplate?.name}</h2>
+										<div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+											<Badge variant="outline" className="px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium">
 												{previewTemplate?.category}
 											</Badge>
 											{previewTemplate && previewTemplate.dependencies.length > 0 && (
-												<Badge variant="secondary" className="px-4 py-2 text-sm font-medium">
-													<Layers className="w-4 h-4 mr-2" />
-													{previewTemplate?.dependencies.length} Dependencies
+												<Badge variant="secondary" className="px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium">
+													<Layers className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
+													{previewTemplate?.dependencies.length} Dep{previewTemplate?.dependencies.length !== 1 ? 's' : ''}
 												</Badge>
 											)}
 										</div>
@@ -548,55 +548,55 @@ export default function TemplatesPage() {
 									variant="ghost"
 									size="sm"
 									onClick={() => setPreviewTemplate(null)}
-									className="p-3 rounded-xl hover:bg-muted/50 transition-colors">
-									<X className="w-5 h-5" />
+									className="p-1.5 sm:p-2 rounded-lg hover:bg-muted/50 transition-colors flex-shrink-0">
+									<X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
 								</Button>
 							</div>
-							<p className="text-lg text-muted-foreground mt-6 leading-relaxed max-w-3xl">
+							<p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-2 sm:mt-3 lg:mt-4 leading-relaxed">
 								{previewTemplate?.description}
 							</p>
 						</div>
 
 						{/* Modal Content */}
-						<div className="p-8 max-h-[60vh] overflow-y-auto">
-							<div className="space-y-8">
+						<div className="p-3 sm:p-6 lg:p-8 overflow-y-auto flex-1">
+							<div className="space-y-4 sm:space-y-6">
 								{/* Enhanced Table Structure */}
 								<div>
-									<h3 className="text-xl font-bold text-foreground mb-6 flex items-center gap-3">
-										<div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-											<Table className="w-5 h-5 text-primary" />
+									<h3 className="text-sm sm:text-base lg:text-lg font-bold text-foreground mb-3 sm:mb-4 flex items-center gap-2">
+										<div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+											<Table className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
 										</div>
 										Table Structure
 									</h3>
-									<div className="grid gap-4">
+									<div className="grid gap-2 sm:gap-3">
 										{previewTemplate?.columns.map((column, index) => (
 											<div
 												key={index}
-												className="p-6 bg-gradient-to-r from-card/50 to-card/30 rounded-2xl border border-border/30 hover:border-primary/30 transition-all duration-200">
-												<div className="flex items-center gap-4">
-													<div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+												className="p-2.5 sm:p-3 lg:p-4 bg-gradient-to-r from-card/50 to-card/30 rounded-lg sm:rounded-xl border border-border/30 hover:border-primary/30 transition-all duration-200">
+												<div className="flex items-start sm:items-center gap-2 sm:gap-3">
+													<div className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-[10px] sm:text-xs font-bold text-primary flex-shrink-0">
 														{index + 1}
 													</div>
 													<div className="flex-1 min-w-0">
-														<h4 className="font-bold text-foreground text-lg mb-2">
+														<h4 className="font-bold text-foreground text-xs sm:text-sm lg:text-base mb-1 truncate">
 															{column.name}
 														</h4>
-														<div className="flex gap-2 flex-wrap">
+														<div className="flex gap-1 sm:gap-1.5 flex-wrap">
 															{column.primary && (
-																<Badge variant="default" className="text-xs px-3 py-1 bg-primary">
-																	Primary Key
+																<Badge variant="default" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 bg-primary">
+																	Primary
 																</Badge>
 															)}
 															{column.required && (
-																<Badge variant="secondary" className="text-xs px-3 py-1">
+																<Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
 																	Required
 																</Badge>
 															)}
-															<Badge variant="outline" className="text-xs px-3 py-1">
+															<Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
 																{column.type}
 															</Badge>
 															{column.semanticType && (
-																<Badge variant="outline" className="text-xs px-3 py-1">
+																<Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
 																	{column.semanticType}
 																</Badge>
 															)}
@@ -611,40 +611,40 @@ export default function TemplatesPage() {
 								{/* Enhanced Dependencies */}
 								{previewTemplate && previewTemplate?.dependencies.length > 0 && (
 									<div>
-										<h3 className="text-xl font-bold text-foreground mb-6 flex items-center gap-3">
-											<div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/10 flex items-center justify-center">
-												<AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+										<h3 className="text-sm sm:text-base lg:text-lg font-bold text-foreground mb-3 sm:mb-4 flex items-center gap-2">
+											<div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/10 flex items-center justify-center flex-shrink-0">
+												<AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />
 											</div>
 											Dependencies
 										</h3>
-										<div className="grid gap-4">
+										<div className="grid gap-2 sm:gap-3">
 											{previewTemplate?.dependencies.map((depId) => {
 												const depTemplate = TABLE_TEMPLATES.find((t) => t.id === depId);
 												const isSelected = selectedTemplates.has(depId);
 												return (
 													<div
 														key={depId}
-														className={`p-6 rounded-2xl border transition-all duration-200 ${
+														className={`p-2.5 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl border transition-all duration-200 ${
 															isSelected
 																? "bg-gradient-to-r from-green-500/10 to-green-500/5 border-green-500/30"
 																: "bg-gradient-to-r from-red-500/10 to-red-500/5 border-red-500/30"
 														}`}>
-														<div className="flex items-center gap-4">
+														<div className="flex items-start sm:items-center gap-2 sm:gap-3">
 														{isSelected ? (
-																<CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400 flex-shrink-0" />
+																<CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400 flex-shrink-0" />
 														) : (
-																<AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400 flex-shrink-0" />
+																<AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
 														)}
 														<div className="flex-1 min-w-0">
 																<h4
-																	className={`font-bold text-lg mb-2 ${
+																	className={`font-bold text-xs sm:text-sm lg:text-base mb-1 ${
 																	isSelected
 																		? "text-green-800 dark:text-green-200"
 																		: "text-red-800 dark:text-red-200"
 																}`}>
 																{depTemplate?.name || depId}
 																</h4>
-																<p className="text-sm text-muted-foreground leading-relaxed">
+																<p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
 																{depTemplate?.description}
 															</p>
 															</div>
@@ -659,26 +659,27 @@ export default function TemplatesPage() {
 						</div>
 
 						{/* Enhanced Modal Footer */}
-						<div className="p-8 border-t border-border/20 bg-gradient-to-r from-muted/20 to-muted/10">
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-3">
+						<div className="p-3 sm:p-4 lg:p-6 border-t border-border/20 bg-gradient-to-r from-muted/20 to-muted/10 flex-shrink-0">
+							<div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
+								<div className="flex items-center gap-1.5 sm:gap-2 justify-center sm:justify-start">
 									{previewTemplate && selectedTemplates.has(previewTemplate?.id) ? (
-										<div className="flex items-center gap-3">
-											<CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
-											<span className="text-lg font-medium text-green-800 dark:text-green-200">Template Selected</span>
-										</div>
+										<>
+											<CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+											<span className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-200">Template Selected</span>
+										</>
 									) : (
-										<div className="flex items-center gap-3">
-											<div className="w-6 h-6 rounded-full border-2 border-muted-foreground/30" />
-											<span className="text-lg text-muted-foreground">Click to select this template</span>
-										</div>
+										<>
+											<div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
+											<span className="text-xs sm:text-sm text-muted-foreground">Click to select this template</span>
+										</>
 									)}
 								</div>
-								<div className="flex gap-4">
+								<div className="flex gap-2">
 									<Button
 										variant="outline"
 										onClick={() => setPreviewTemplate(null)}
-										className="px-6 py-3 rounded-xl font-medium">
+										size="sm"
+										className="flex-1 sm:flex-none px-3 sm:px-4 rounded-lg font-medium text-xs sm:text-sm">
 										Close
 									</Button>
 									<Button
@@ -689,10 +690,11 @@ export default function TemplatesPage() {
 											}
 										}}
 										disabled={!previewTemplate || (previewTemplate && !canSelectTemplate(previewTemplate))}
-										className="px-6 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300">
+										size="sm"
+										className="flex-1 sm:flex-none px-3 sm:px-4 rounded-lg font-medium text-xs sm:text-sm bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300">
 										{previewTemplate && selectedTemplates.has(previewTemplate?.id)
-											? "Deselect Template"
-											: "Select Template"}
+											? "Deselect"
+											: "Select"}
 									</Button>
 								</div>
 							</div>

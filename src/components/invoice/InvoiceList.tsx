@@ -45,7 +45,6 @@ import { format } from 'date-fns';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { convertCurrency } from '@/lib/currency-exchange-client';
-import { SeriesManager } from './SeriesManager';
 import { PDFPreviewModal } from './PDFPreviewModal';
 import { ANAFInvoiceActions } from '@/components/anaf/ANAFInvoiceActions';
 
@@ -79,7 +78,6 @@ export function EnhancedInvoiceList({
 	const [componentError, setComponentError] = useState<string | null>(null);
 	
 	// Modal states
-	const [showSeriesManager, setShowSeriesManager] = useState(false);
 	const [viewingInvoice, setViewingInvoice] = useState<any>(null);
 	
 	// Delete confirmation dialog
@@ -441,20 +439,14 @@ export function EnhancedInvoiceList({
 	return (
 		<div className="space-y-6">
 			{/* Header with Actions */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-				<div>
-					<h1 className="text-3xl font-bold text-foreground">Invoices</h1>
-					<p className="text-muted-foreground">
-						Manage your invoices and generate PDF documents
-					</p>
-				</div>
-				<div className="flex flex-wrap gap-2" data-tour-id="series-management">
-					<Button variant="outline" onClick={() => setShowSeriesManager(true)}>
-						<SettingsIcon className="mr-2 h-4 w-4" />
-						Series
-					</Button>
-				</div>
+		<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+			<div>
+				<h1 className="text-3xl font-bold text-foreground">Invoices</h1>
+				<p className="text-muted-foreground">
+					Manage your invoices and generate PDF documents
+				</p>
 			</div>
+		</div>
 
 			{/* Status Overview */}
 			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -805,22 +797,6 @@ export function EnhancedInvoiceList({
 				</Card>
 			)}
 
-
-			{showSeriesManager && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-background rounded-lg shadow-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-						<div className="p-6">
-							<div className="flex items-center justify-between mb-6">
-								<h2 className="text-2xl font-bold text-foreground">Invoice Series Manager</h2>
-								<Button variant="ghost" size="sm" onClick={() => setShowSeriesManager(false)}>
-									×
-								</Button>
-							</div>
-							<SeriesManager tenantId={tenant?.id?.toString() || ''} />
-						</div>
-					</div>
-				</div>
-			)}
 
 			{/* Invoice Details Modal */}
 			{viewingInvoice && (

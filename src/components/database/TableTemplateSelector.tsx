@@ -14,10 +14,14 @@ export function TableTemplateSelector() {
 	return (
 		<Button
 			variant="outline"
-			className="gap-2 shadow-sm hover:shadow-md transition-all duration-200"
+			size="sm"
+			className="gap-1.5 sm:gap-2 shadow-sm hover:shadow-md transition-all duration-200"
 			onClick={() => router.push("/home/database/templates")}>
-			<Table className="w-4 h-4" />
-			{t("database.templates.addFromTemplates") || "Add from Templates"}
+			<Table className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+			<span className="hidden sm:inline text-xs sm:text-sm">
+				{t("database.templates.addFromTemplates") || "Add from Templates"}
+			</span>
+			<span className="sm:hidden text-xs">Templates</span>
 		</Button>
 	);
 }

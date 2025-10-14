@@ -83,38 +83,38 @@ export function DatabaseContent() {
 				{/* Modern Header */}
 				<div className='relative'>
 					<div className='relative border-b border-border bg-background sticky top-0 z-50'>
-						<div className='px-4 sm:px-6 lg:px-8 py-4'>
+						<div className='px-3 sm:px-6 lg:px-8 py-3 sm:py-4'>
 							<div className='max-w-7xl mx-auto'>
 								{/* Hero Section */}
-								<div className='text-center mb-6'>
-									<div className='inline-flex items-center gap-3 mb-3'>
-										<div className='p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10'>
-											<DatabaseIcon className="w-6 h-6 text-primary" />
+								<div className='text-center mb-3 sm:mb-6'>
+									<div className='inline-flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3'>
+										<div className='p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary/20 to-primary/10'>
+											<DatabaseIcon className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
 										</div>
-										<h1 className='text-2xl sm:text-3xl font-bold text-foreground'>
+										<h1 className='text-lg sm:text-2xl lg:text-3xl font-bold text-foreground'>
 											Database Management
 										</h1>
 									</div>
-									<p className='text-sm text-muted-foreground max-w-xl mx-auto'>
+									<p className='text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto px-2'>
 										Organize and manage your data infrastructure
 									</p>
 								</div>
 
 								{/* Controls Section */}
-								<div className='flex flex-col lg:flex-row items-center gap-3'>
+								<div className='flex flex-col lg:flex-row items-center gap-2 sm:gap-3'>
 									<div className='flex-1 w-full lg:max-w-md'>
 										<DatabaseSelector />
 									</div>
 
 									{selectedDatabase && (
-										<div className='flex items-center gap-2 w-full lg:w-auto'>
+										<div className='flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto'>
 											<TableTemplateSelector />
 											<Button
 												onClick={() => setShowAddTableModal(true)}
 												className='add-table-button flex-1 lg:flex-none'
-												size="default">
-												<Plus className='w-4 h-4 mr-2' />
-												Create Table
+												size="sm">
+												<Plus className='w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2' />
+												<span className='text-xs sm:text-sm'>Create Table</span>
 											</Button>
 										</div>
 									)}

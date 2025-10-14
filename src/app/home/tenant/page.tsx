@@ -6,15 +6,12 @@ import { useState } from "react";
 import {
 	Building2,
 	Settings,
-	Users,
-	Database,
 	Globe,
 	Mail,
 	Phone,
 	MapPin,
 	ExternalLink,
 	Plus,
-	Zap,
 	Receipt,
 	CreditCard,
 	FileText,
@@ -487,94 +484,8 @@ function Page() {
 						<CardContent className='p-6'>
 							<ModuleManager />
 						</CardContent>
-					</Card>
-				)}
-				
-				{/* Quick Actions */}
-				<Card className='border border-border bg-card shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden group'>
-					<CardHeader className='pb-5 bg-muted/30 border-b border-border'>
-						<CardTitle className='flex items-center gap-3 text-lg font-bold'>
-							<div className='w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
-								<Zap className='w-5 h-5 text-primary' />
-							</div>
-							{t("tenant.management.enterpriseActions.title")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent className='p-6'>
-						<div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-							<Link href='/home/users'>
-								<Button
-									variant='outline'
-									className='h-auto p-8 flex flex-col items-center justify-center gap-4 w-full shadow-md hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/50 hover:bg-muted/30 group'>
-									<div className='w-14 h-14 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-sm'>
-										<Users className='w-7 h-7 text-primary' />
-									</div>
-									<div className='space-y-2'>
-										<span className='font-bold text-base text-foreground block'>
-											{user?.role === "ADMIN"
-												? t("tenant.management.enterpriseActions.manageTeam")
-												: t("tenant.management.enterpriseActions.viewTeam")}
-										</span>
-										<span className='text-xs text-muted-foreground text-center leading-relaxed block'>
-											{user?.role === "ADMIN"
-												? t("tenant.management.enterpriseActions.commandWorkforce")
-												: t("tenant.management.enterpriseActions.monitorTeam")}
-										</span>
-									</div>
-								</Button>
-							</Link>
-							<Link href='/home/database'>
-								<Button
-									variant='outline'
-									className='h-auto p-8 flex flex-col items-center justify-center gap-4 w-full shadow-md hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/50 hover:bg-muted/30 group'>
-									<div className='w-14 h-14 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-sm'>
-										<Database className='w-7 h-7 text-primary' />
-									</div>
-									<div className='space-y-2'>
-										<span className='font-bold text-base text-foreground block'>
-											{t("tenant.management.enterpriseActions.dataCommandCenter")}
-										</span>
-										<span className='text-xs text-muted-foreground text-center leading-relaxed block'>
-											{t("tenant.management.enterpriseActions.accessDataInfrastructure")}
-										</span>
-									</div>
-								</Button>
-							</Link>
-							{user?.role === "ADMIN" ? (
-								<Button
-									variant='outline'
-									className='h-auto p-8 flex flex-col items-center justify-center gap-4 shadow-md hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/50 hover:bg-muted/30 group'
-									onClick={() => setShowSettings(true)}>
-									<div className='w-14 h-14 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-sm'>
-										<Settings className='w-7 h-7 text-primary' />
-									</div>
-									<div className='space-y-2'>
-										<span className='font-bold text-base text-foreground block'>
-											{t("tenant.management.enterpriseActions.enterpriseSettings")}
-										</span>
-										<span className='text-xs text-muted-foreground text-center leading-relaxed block'>
-											{t("tenant.management.enterpriseActions.configurePreferences")}
-										</span>
-									</div>
-								</Button>
-							) : (
-								<div className='h-auto p-8 flex flex-col items-center justify-center gap-4 border border-dashed border-border rounded-xl bg-muted/20'>
-									<div className='w-14 h-14 bg-muted/50 rounded-2xl flex items-center justify-center shadow-sm'>
-										<Settings className='w-7 h-7 text-muted-foreground' />
-									</div>
-									<div className='space-y-2'>
-										<span className='text-muted-foreground font-bold text-base block'>
-											{t("tenant.management.enterpriseActions.enterpriseSettings")}
-										</span>
-										<span className='text-xs text-muted-foreground text-center leading-relaxed block'>
-											{t("tenant.management.enterpriseActions.adminPrivilegesRequired")}
-										</span>
-									</div>
-								</div>
-							)}
-						</div>
-					</CardContent>
-				</Card>
+			</Card>
+			)}
 			</div>
 
 			{showForm && <AddTenantForm setShowForm={setShowForm} />}
