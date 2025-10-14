@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { baseWidgetConfigSchema } from "./base";
 
+// Checklist item schema
+export const checklistItemSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  checked: z.boolean().default(false),
+});
+
 // Individual note schema
 export const noteItemSchema = z.object({
   id: z.string(),
@@ -9,9 +16,27 @@ export const noteItemSchema = z.object({
   color: z.enum(["yellow", "blue", "green", "pink", "purple", "gray", "orange"]).default("yellow"),
   createdAt: z.string().or(z.date()).optional(),
   updatedAt: z.string().or(z.date()).optional(),
+  
+  // Level 2 features
+  tags: z.array(z.string()).default([]),
+  isPinned: z.boolean().default(false),
+  isChecklist: z.boolean().default(false),
+  checklistItems: z.array(checklistItemSchema).default([]),
+  
+  // Rich text formatting (stored as markdown)
+  isMarkdown: z.boolean().default(false),
+  
+  // Level 3 features
+  linkedWidgetIds: z.array(z.number()).default([]),
+  reminder: z.object({
+    enabled: z.boolean().default(false),
+    date: z.string().or(z.date()).optional(),
+    notified: z.boolean().default(false),
+  }).optional(),
 });
 
 export type NoteItem = z.infer<typeof noteItemSchema>;
+export type ChecklistItem = z.infer<typeof checklistItemSchema>;
 
 export const notesSettingsSchema = z.object({
   // Display settings
@@ -31,6 +56,18 @@ export const notesSettingsSchema = z.object({
   
   // Default color for new notes
   defaultColor: z.enum(["yellow", "blue", "green", "pink", "purple", "gray", "orange"]).default("yellow"),
+  
+  // Level 2 features
+  enableSearch: z.boolean().default(true),
+  enableTags: z.boolean().default(true),
+  enablePinning: z.boolean().default(true),
+  enableChecklists: z.boolean().default(true),
+  showPinnedFirst: z.boolean().default(true),
+  
+  // Level 3 features
+  enableMarkdown: z.boolean().default(false),
+  enableReminders: z.boolean().default(false),
+  enableLinking: z.boolean().default(false),
 });
 
 export const notesStyleSchema = z.object({

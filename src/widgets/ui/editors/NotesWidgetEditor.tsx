@@ -9,12 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Settings as SettingsIcon, 
   Palette,
-  Layout
+  Layout,
+  Zap,
+  Info
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface NotesWidgetEditorProps {
   value: z.infer<typeof notesWidgetConfigSchemaV1>;
@@ -43,10 +45,14 @@ export const NotesWidgetEditor: React.FC<NotesWidgetEditorProps> = ({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="settings">
             <SettingsIcon className="h-4 w-4 mr-2" />
             Settings
+          </TabsTrigger>
+          <TabsTrigger value="features">
+            <Zap className="h-4 w-4 mr-2" />
+            Features
           </TabsTrigger>
           <TabsTrigger value="layout">
             <Layout className="h-4 w-4 mr-2" />
@@ -91,6 +97,15 @@ export const NotesWidgetEditor: React.FC<NotesWidgetEditorProps> = ({
                     <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="showPinnedFirst">Show Pinned First</Label>
+                <Switch
+                  id="showPinnedFirst"
+                  checked={value.settings.showPinnedFirst}
+                  onCheckedChange={(checked) => updateSettings({ showPinnedFirst: checked })}
+                />
               </div>
             </CardContent>
           </Card>
@@ -149,15 +164,127 @@ export const NotesWidgetEditor: React.FC<NotesWidgetEditorProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="yellow">Yellow (Classic)</SelectItem>
-                    <SelectItem value="blue">Blue</SelectItem>
-                    <SelectItem value="green">Green</SelectItem>
-                    <SelectItem value="pink">Pink</SelectItem>
-                    <SelectItem value="purple">Purple</SelectItem>
-                    <SelectItem value="gray">Gray</SelectItem>
-                    <SelectItem value="orange">Orange</SelectItem>
+                    <SelectItem value="yellow">🟡 Yellow (Classic)</SelectItem>
+                    <SelectItem value="blue">🔵 Blue</SelectItem>
+                    <SelectItem value="green">🟢 Green</SelectItem>
+                    <SelectItem value="pink">🩷 Pink</SelectItem>
+                    <SelectItem value="purple">🟣 Purple</SelectItem>
+                    <SelectItem value="gray">⚪ Gray</SelectItem>
+                    <SelectItem value="orange">🟠 Orange</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Features Tab - Level 2 & 3 */}
+        <TabsContent value="features" className="space-y-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Enable advanced features for your notes widget
+            </AlertDescription>
+          </Alert>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Level 2 Features</CardTitle>
+              <CardDescription>Intermediate functionality</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enableSearch">Search Notes</Label>
+                  <p className="text-xs text-muted-foreground">Enable search bar for filtering notes</p>
+                </div>
+                <Switch
+                  id="enableSearch"
+                  checked={value.settings.enableSearch}
+                  onCheckedChange={(checked) => updateSettings({ enableSearch: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enableTags">Tags & Categories</Label>
+                  <p className="text-xs text-muted-foreground">Allow tagging notes with #tags</p>
+                </div>
+                <Switch
+                  id="enableTags"
+                  checked={value.settings.enableTags}
+                  onCheckedChange={(checked) => updateSettings({ enableTags: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enablePinning">Pin Notes</Label>
+                  <p className="text-xs text-muted-foreground">Pin important notes to the top</p>
+                </div>
+                <Switch
+                  id="enablePinning"
+                  checked={value.settings.enablePinning}
+                  onCheckedChange={(checked) => updateSettings({ enablePinning: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enableChecklists">Checklists</Label>
+                  <p className="text-xs text-muted-foreground">Create task lists with checkboxes</p>
+                </div>
+                <Switch
+                  id="enableChecklists"
+                  checked={value.settings.enableChecklists}
+                  onCheckedChange={(checked) => updateSettings({ enableChecklists: checked })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Level 3 Features</CardTitle>
+              <CardDescription>Advanced functionality</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enableMarkdown">Markdown Support</Label>
+                  <p className="text-xs text-muted-foreground">Write notes in Markdown format</p>
+                </div>
+                <Switch
+                  id="enableMarkdown"
+                  checked={value.settings.enableMarkdown}
+                  onCheckedChange={(checked) => updateSettings({ enableMarkdown: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enableReminders" className="opacity-50">Reminders (Coming Soon)</Label>
+                  <p className="text-xs text-muted-foreground opacity-50">Set reminders for notes</p>
+                </div>
+                <Switch
+                  id="enableReminders"
+                  checked={value.settings.enableReminders}
+                  onCheckedChange={(checked) => updateSettings({ enableReminders: checked })}
+                  disabled
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enableLinking" className="opacity-50">Link Widgets (Coming Soon)</Label>
+                  <p className="text-xs text-muted-foreground opacity-50">Link notes to other widgets</p>
+                </div>
+                <Switch
+                  id="enableLinking"
+                  checked={value.settings.enableLinking}
+                  onCheckedChange={(checked) => updateSettings({ enableLinking: checked })}
+                  disabled
+                />
               </div>
             </CardContent>
           </Card>
@@ -327,4 +454,3 @@ export const NotesWidgetEditor: React.FC<NotesWidgetEditorProps> = ({
     </div>
   );
 };
-

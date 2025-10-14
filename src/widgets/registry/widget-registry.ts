@@ -529,6 +529,16 @@ const definitions: Record<WidgetType, WidgetDefinition<z.ZodTypeAny>> = {
         allowDelete: true,
         maxNotes: 20,
         defaultColor: "yellow",
+        // Level 2 features
+        enableSearch: true,
+        enableTags: true,
+        enablePinning: true,
+        enableChecklists: true,
+        showPinnedFirst: true,
+        // Level 3 features
+        enableMarkdown: false,
+        enableReminders: false,
+        enableLinking: false,
       },
       style: {
         backgroundColor: "transparent",
