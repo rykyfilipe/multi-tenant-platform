@@ -211,6 +211,18 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
               currentTheme={value?.themeName}
               onThemeSelect={(themeName) => updateStyle({ themeName })}
               onApplyTheme={(theme: ThemePreset) => {
+                // Helper: Convert CSS font weight to numeric string
+                const convertFontWeight = (weight: string): "300" | "400" | "500" | "600" | "700" => {
+                  const mapping: Record<string, "300" | "400" | "500" | "600" | "700"> = {
+                    "light": "300",
+                    "normal": "400",
+                    "medium": "500",
+                    "semibold": "600",
+                    "bold": "700"
+                  };
+                  return mapping[weight] || "400";
+                };
+
                 // Apply ALL theme properties to completely transform the widget
                 const newStyle = {
                   ...safeValue,
@@ -237,27 +249,28 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                     color: theme.chart.grid.color, 
                     opacity: theme.chart.grid.opacity 
                   },
-                  // Axes styling
+                  // Axes styling - CONVERT fontWeight to numeric string
                   axes: { 
                     ...safeValue.axes, 
                     x: {
                       ...safeValue.axes?.x,
                       color: theme.chart.axes.color,
                       fontSize: theme.chart.axes.fontSize,
-                      fontWeight: theme.chart.axes.fontWeight
+                      fontWeight: convertFontWeight(theme.chart.axes.fontWeight)
                     },
                     y: {
                       ...safeValue.axes?.y,
                       color: theme.chart.axes.color,
                       fontSize: theme.chart.axes.fontSize,
-                      fontWeight: theme.chart.axes.fontWeight
+                      fontWeight: convertFontWeight(theme.chart.axes.fontWeight)
                     }
                   },
-                  // Legend styling
+                  // Legend styling - CONVERT fontWeight to numeric string
                   legend: {
                     ...safeValue.legend,
                     color: theme.chart.textColor,
-                    fontSize: theme.chart.axes.fontSize
+                    fontSize: theme.chart.axes.fontSize,
+                    fontWeight: convertFontWeight(theme.chart.axes.fontWeight)
                   },
                   // Tooltip styling
                   tooltip: {
@@ -266,6 +279,12 @@ export const ChartStyleEditor: React.FC<ChartStyleEditorProps> = ({ value, onCha
                     bodyColor: theme.chart.textColor
                   }
                 };
+                
+                console.log('🎨 [Theme Apply] Converted fontWeight:', {
+                  original: theme.chart.axes.fontWeight,
+                  converted: convertFontWeight(theme.chart.axes.fontWeight)
+                });
+                
                 onChange(newStyle as any);
               }}
               widgetType="chart"

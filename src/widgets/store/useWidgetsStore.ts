@@ -224,9 +224,13 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
         });
         
         set((state) => {
-          // Record EACH property change in global history
+          // Record EACH property change in global history (EXCLUDE version, updatedAt - technical fields)
           const changes: WidgetChange[] = [];
+          const excludedProperties = ['version', 'updatedAt']; // Don't track these in history
+          
           Object.entries(patch).forEach(([key, newValue]) => {
+            if (excludedProperties.includes(key)) return; // Skip technical fields
+            
             const property = key as keyof WidgetEntity;
             const oldValue = existing[property];
             
@@ -239,8 +243,15 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
                 newValue,
                 timestamp: Date.now()
               });
+              console.log(`📝 [History] Recording change: ${property}`, {
+                widgetId,
+                oldValue: typeof oldValue === 'object' ? 'object' : oldValue,
+                newValue: typeof newValue === 'object' ? 'object' : newValue
+              });
             }
           });
+          
+          console.log(`📚 [History] Changes: ${changes.length} new, ${state.changeHistory.length} total in stack`);
           
           const newState = {
             widgets: { ...state.widgets, [widgetId]: updated },
