@@ -1,14 +1,13 @@
 import React from "react";
 import { THEME_PRESETS, ThemePreset, getThemesByCategory } from "@/widgets/themes";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Palette, Monitor, Moon, Sun, Sparkles } from "lucide-react";
+import { Monitor, Moon, Sun, Sparkles } from "lucide-react";
 
 interface ThemeSelectorProps {
   currentTheme?: string;
-  onThemeSelect: (themeName: string) => void;
+  onThemeSelect?: (themeName: string) => void; // Optional, deprecated - use onApplyTheme instead
   onApplyTheme: (theme: ThemePreset) => void;
   widgetType: 'chart' | 'table' | 'kpi' | 'clock' | 'weather' | 'tasks';
 }
@@ -29,23 +28,15 @@ const categoryColors = {
 
 export function ThemeSelector({ currentTheme, onThemeSelect, onApplyTheme, widgetType }: ThemeSelectorProps) {
   const [selectedCategory, setSelectedCategory] = React.useState<ThemePreset['category']>('modern');
-  const [previewTheme, setPreviewTheme] = React.useState<ThemePreset | null>(null);
 
   const categories = Array.from(new Set(THEME_PRESETS.map(t => t.category))) as ThemePreset['category'][];
   const filteredThemes = getThemesByCategory(selectedCategory);
 
   const handleThemeSelect = (themeName: string) => {
-    onThemeSelect(themeName);
     const theme = THEME_PRESETS.find(t => t.name === themeName);
     if (theme) {
-      setPreviewTheme(theme);
-    }
-  };
-
-  const handleApplyTheme = () => {
-    if (previewTheme) {
-      onApplyTheme(previewTheme);
-      setPreviewTheme(null);
+      // Apply theme immediately when selected
+      onApplyTheme(theme);
     }
   };
 
@@ -245,26 +236,6 @@ export function ThemeSelector({ currentTheme, onThemeSelect, onApplyTheme, widge
         })}
       </div>
 
-      {/* Apply Button */}
-      {previewTheme && (
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setPreviewTheme(null)}
-          >
-            Cancel
-          </Button>
-          <Button 
-            size="sm"
-            onClick={handleApplyTheme}
-            className="flex items-center gap-2"
-          >
-            <Palette className="h-3 w-3" />
-            Apply {previewTheme.name}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
