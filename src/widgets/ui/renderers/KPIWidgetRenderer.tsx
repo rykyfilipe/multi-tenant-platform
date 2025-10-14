@@ -470,9 +470,7 @@ export const KPIWidgetRenderer: React.FC<KPIWidgetRendererProps> = ({
             {/* Label (moved to top) */}
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">
-                {metric.displayColumn && (processedKPI as any).displayValue !== undefined 
-                  ? metric.displayColumn 
-                  : (metric.label || metric.field)}
+                {metric.label || metric.field}
               </p>
             </div>
 

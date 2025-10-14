@@ -198,7 +198,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     let maxXWidget = widgetsArray[0];
     
     widgetsArray.forEach(widget => {
-      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 4);
+      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 8);
       if (rightEdge > maxX) {
         maxX = rightEdge;
         maxXWidget = widget;
@@ -213,7 +213,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const GRID_COLS = 24;
     if (newX >= GRID_COLS) {
       // Find the max Y position and add new widget below
-      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 4)));
+      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
       return { x: 0, y: maxY };
     }
     
@@ -442,24 +442,24 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       })
       .filter(item => item !== null) as Layout[];
     
-    // Create responsive variations
+    // Create responsive variations - scale width proportionally to column count
     return {
-      xxl: baseLayout, // 1600px+: Use base layout
-      xl: baseLayout,  // 1200px+: Use base layout
-      lg: baseLayout,  // 996px+: Use base layout
-      md: baseLayout.map(item => ({ // 768px+: Tablet - 12 columns
+      xxl: baseLayout, // 1600px+: 24 columns - use base layout as-is
+      xl: baseLayout,  // 1200px+: 24 columns - use base layout as-is
+      lg: baseLayout,  // 996px+: 24 columns - use base layout as-is
+      md: baseLayout.map(item => ({ // 768px+: Tablet - 12 columns (half of 24)
         ...item,
-        w: Math.min(item.w, 12),
-        x: item.x >= 12 ? 0 : Math.min(item.x, 12 - item.w),
+        w: Math.min(Math.round(item.w / 2), 12), // Scale width by half (24→12 cols)
+        x: Math.min(Math.round(item.x / 2), 12 - Math.round(item.w / 2)),
       })),
-      sm: baseLayout.map(item => ({ // 480px+: Mobile landscape - 6 columns
+      sm: baseLayout.map(item => ({ // 480px+: Mobile landscape - 6 columns (quarter of 24)
         ...item,
-        w: Math.min(item.w, 6),
-        x: item.x >= 6 ? 0 : Math.min(item.x, 6 - item.w),
+        w: Math.min(Math.round(item.w / 4), 6), // Scale width by quarter (24→6 cols)
+        x: 0, // Stack vertically on mobile
       })),
       xs: baseLayout.map(item => ({ // <480px: Mobile portrait - 4 columns, full width
         ...item,
-        w: 4,
+        w: 4, // Full width on xs
         x: 0,
       })),
     };

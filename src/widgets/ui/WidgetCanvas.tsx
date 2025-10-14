@@ -226,8 +226,8 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       
       // Find next available position
       const nextPos = findNextPosition();
-      const newWidth = 4;
-      const newHeight = 4;
+      const newWidth = 8; // 8 out of 24 cols = 33% width on desktop
+      const newHeight = 6; // Taller default height
       
       console.log('📍 [DEBUG] Next position:', { x: nextPos.x, y: nextPos.y, w: newWidth, h: newHeight });
       
@@ -346,7 +346,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     let maxXWidget = widgetsArray[0];
     
     widgetsArray.forEach(widget => {
-      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 4);
+      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 8);
       if (rightEdge > maxX) {
         maxX = rightEdge;
         maxXWidget = widget;
@@ -361,7 +361,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     const GRID_COLS = 24;
     if (newX >= GRID_COLS) {
       // Find the max Y position and add new widget below
-      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 4)));
+      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
       return { x: 0, y: maxY };
     }
     
@@ -377,7 +377,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       type: template.type,
       title: template.name,
       description: template.description,
-      position: { x: nextPos.x, y: nextPos.y, w: 4, h: 4 },
+      position: { x: nextPos.x, y: nextPos.y, w: 8, h: 6 }, // 33% width on desktop
       config: template.config,
       isVisible: true,
       sortOrder: 0,

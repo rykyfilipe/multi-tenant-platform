@@ -105,7 +105,7 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
     let maxXWidget = widgetsArray[0];
     
     widgetsArray.forEach(widget => {
-      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 4);
+      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 8);
       if (rightEdge > maxX) {
         maxX = rightEdge;
         maxXWidget = widget;
@@ -116,11 +116,11 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
     const newX = maxX;
     const newY = maxXWidget.position?.y || 0;
     
-    // If exceeds grid width (12 columns), wrap to next row
-    const GRID_COLS = 12;
+    // If exceeds grid width (24 columns), wrap to next row
+    const GRID_COLS = 24; // Desktop uses 24 columns
     if (newX >= GRID_COLS) {
       // Find the max Y position and add new widget below
-      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 4)));
+      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
       return { x: 0, y: maxY };
     }
     
@@ -151,8 +151,8 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
         position: {
           x: nextPosition.x,
           y: nextPosition.y,
-          w: template.type === "KPI" ? 4 : template.type === "TABLE" ? 8 : 6,
-          h: template.type === "KPI" ? 4 : template.type === "TABLE" ? 8 : 6,
+          w: template.type === "KPI" ? 6 : template.type === "TABLE" ? 12 : 8, // KPI=25%, TABLE=50%, Chart=33%
+          h: template.type === "KPI" ? 5 : template.type === "TABLE" ? 10 : 7,
         },
         isVisible: true,
         sortOrder: 0,
