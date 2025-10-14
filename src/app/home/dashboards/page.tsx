@@ -425,36 +425,34 @@ export default function DashboardsPage() {
   // Main dashboard view
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Header */}
+      {/* Header - Responsive Toolbar */}
       <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 md:px-6 py-4">
-          {/* Left: Dashboard Info */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 flex-shrink-0">
-              <LayoutDashboard className="h-5 w-5 text-primary" />
+        <div className="flex flex-col gap-3 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          {/* Top Row: Dashboard Info */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10 border border-primary/20 flex-shrink-0">
+              <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-3">
-                <Select value={selectedDashboardId?.toString() || ''} onValueChange={(value) => setSelectedDashboardId(parseInt(value))}>
-                  <SelectTrigger className="w-full sm:w-64 h-10 bg-card border-border">
-                    <SelectValue placeholder="Select dashboard" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dashboards.map((dashboard) => (
-                      <SelectItem key={dashboard.id} value={dashboard.id.toString()}>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{dashboard.name}</span>
-                          {dashboard.isDefault && (
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                              Default
-                            </Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={selectedDashboardId?.toString() || ''} onValueChange={(value) => setSelectedDashboardId(parseInt(value))}>
+                <SelectTrigger className="w-full h-9 sm:h-10 bg-card border-border text-sm sm:text-base">
+                  <SelectValue placeholder="Select dashboard" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dashboards.map((dashboard) => (
+                    <SelectItem key={dashboard.id} value={dashboard.id.toString()}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{dashboard.name}</span>
+                        {dashboard.isDefault && (
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                            Default
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {dashboardName && (
                 <p className="text-xs text-muted-foreground mt-1 truncate hidden sm:block">
                   {dashboards.find(d => d.id === selectedDashboardId)?.description || 'Dashboard workspace'}
@@ -463,14 +461,16 @@ export default function DashboardsPage() {
             </div>
           </div>
 
-          {/* Right: Actions - Responsive */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
-            {/* Mobile: Compact Buttons */}
-            <div className="flex items-center gap-1.5 sm:hidden">
+          {/* Bottom Row: Action Buttons - Full Width on Mobile */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Left Side: Main Actions */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-1">
+              {/* New Dashboard Button */}
               <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="h-8 px-2">
-                    <Plus className="h-4 w-4" />
+                  <Button size="sm" className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
+                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">New</span>
                   </Button>
                 </DialogTrigger>
                 <DashboardFormModal
@@ -485,128 +485,67 @@ export default function DashboardsPage() {
                 />
               </Dialog>
 
-              
-
-              <Button
-                variant={isEditMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIsEditMode(!isEditMode)}
-                className="h-8 px-2"
-              >
-                {isEditMode ? <Eye className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
-              </Button>
-
-              {selectedDashboardId && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleEditDashboard}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={() => setIsDeleteModalOpen(true)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Dashboard
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-
-            {/* Desktop: Normal Buttons */}
-            <div className="hidden sm:flex items-center gap-2">
-              <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-2 h-9">
-                    <Plus className="h-4 w-4" />
-                    <span>New</span>
-                  </Button>
-                </DialogTrigger>
-                <DashboardFormModal
-                  isOpen={isCreateModalOpen}
-                  onClose={() => setIsCreateModalOpen(false)}
-                  title="Create New Dashboard"
-                  description="Design your custom analytics workspace"
-                  form={createForm}
-                  setForm={setCreateForm}
-                  onSubmit={handleCreateDashboard}
-                  submitLabel="Create Dashboard"
-                />
-              </Dialog>
-
+              {/* Templates Button */}
               {selectedDashboardId && (
                 <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
-                  <Button variant="outline" size="sm" className="gap-2 h-9">
-                    <Sparkles className="h-4 w-4" />
-                    <span>Templates</span>
+                  <Button variant="outline" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
+                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Templates</span>
                   </Button>
                 </SmartWidgetTemplatesModal>
               )}
 
+              {/* Edit/View Mode Toggle */}
               <Button
                 variant={isEditMode ? "default" : "outline"}
                 size="sm"
                 onClick={() => setIsEditMode(!isEditMode)}
-                className="gap-2 h-9"
+                className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
               >
                 {isEditMode ? (
                   <>
-                    <Eye className="h-4 w-4" />
-                    <span>View</span>
+                    <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">View</span>
                   </>
                 ) : (
                   <>
-                    <Edit3 className="h-4 w-4" />
-                    <span>Edit</span>
+                    <Edit3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Edit</span>
                   </>
                 )}
               </Button>
-
-              {selectedDashboardId && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 w-9 p-0">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleEditDashboard}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={() => setIsDeleteModalOpen(true)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Dashboard
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
             </div>
+
+            {/* Right Side: Settings */}
+            {selectedDashboardId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 sm:h-9 w-8 sm:w-9 p-0">
+                    <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleEditDashboard}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Dashboard
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-      {selectedDashboardId && (
-                <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
-                  <Button variant="outline" size="sm" className="h-8 px-2">
-                    <Sparkles className="h-4 w-4" />
-                  </Button>
-                </SmartWidgetTemplatesModal>
-              )}
         {selectedDashboardId && actorId ? (
           <WidgetCanvasNew 
             tenantId={tenant?.id ?? 0} 

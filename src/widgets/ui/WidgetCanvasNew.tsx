@@ -1098,6 +1098,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             rowHeight={30} 
             isDraggable={isEditMode}
             isResizable={isEditMode}
+            isBounded={false}
             compactType="vertical"
             preventCollision={false}
             useCSSTransforms={true}
@@ -1105,6 +1106,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             containerPadding={[10, 10]}
             resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
             draggableHandle=".widget-header"
+            allowOverlap={false}
             onLayoutChange={(currentLayout, allLayouts) => {
               // Skip updates if:
               // 1. Not in edit mode
