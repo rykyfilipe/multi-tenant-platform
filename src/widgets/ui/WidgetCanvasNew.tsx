@@ -65,6 +65,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const deleteLocal = useWidgetsStore((state) => state.deleteLocal);
   const createLocal = useWidgetsStore((state) => state.createLocal);
   const upsertWidget = useWidgetsStore((state) => state.upsertWidget);
+  
+  // Get global history state
+  const changeHistory = useWidgetsStore((state) => state.changeHistory);
+  const redoHistory = useWidgetsStore((state) => state.redoHistory);
 
   const api = useWidgetsApi(tenantId, dashboardId);
   
@@ -106,65 +110,39 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     }
   }, [api, actorId, pendingOperations, toast]);
 
-  // Undo function
+  // Undo function - now global, no need for widgetId
   const handleUndo = useCallback(() => {
-    const state = useWidgetsStore.getState();
-    const lastModifiedWidgetId = state.lastModifiedWidgetId;
-    
-    if (!lastModifiedWidgetId) {
-      console.log('[handleUndo] No widget to undo');
-      toast({
-        title: "Nothing to undo",
-        description: "No recent changes to undo.",
-        variant: "default",
-      });
-      return;
-    }
-    
-    const success = undoLastChange(lastModifiedWidgetId);
+    const success = undoLastChange(); // No widgetId needed - global stack
     if (success) {
       setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
       toast({
-        title: "Undo successful",
+        title: "⏪ Undo successful",
         description: "Last change has been undone.",
         variant: "default",
       });
     } else {
       toast({
-        title: "Cannot undo",
-        description: "No more changes to undo for this widget.",
+        title: "Nothing to undo",
+        description: "No changes in history.",
         variant: "default",
       });
     }
   }, [undoLastChange, toast]);
 
-  // Redo function
+  // Redo function - now global, no need for widgetId
   const handleRedo = useCallback(() => {
-    const state = useWidgetsStore.getState();
-    const lastModifiedWidgetId = state.lastModifiedWidgetId;
-    
-    if (!lastModifiedWidgetId) {
-      console.log('[handleRedo] No widget to redo');
-      toast({
-        title: "Nothing to redo",
-        description: "No changes to redo.",
-        variant: "default",
-      });
-      return;
-    }
-    
-    const success = redoLastChange(lastModifiedWidgetId);
+    const success = redoLastChange(); // No widgetId needed - global stack
     if (success) {
       setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
       toast({
-        title: "Redo successful",
+        title: "⏩ Redo successful",
         description: "Last change has been redone.",
         variant: "default",
       });
     } else {
       toast({
-        title: "Cannot redo",
-        description: "No more changes to redo for this widget.",
+        title: "Nothing to redo",
+        description: "No changes to redo.",
         variant: "default",
       });
     }
@@ -877,23 +855,33 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={handleUndo}
-                  disabled={pendingOperations.length === 0}
+                  disabled={changeHistory.length === 0}
                   className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
-                  title="Undo"
+                  title={`Undo (${changeHistory.length} changes)`}
                 >
                   <Undo2 className="h-3 w-3 mr-1" />
                   Undo
+                  {changeHistory.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                      {changeHistory.length}
+                    </Badge>
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleRedo}
-                  disabled={pendingOperations.length === 0}
+                  disabled={redoHistory.length === 0}
                   className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
-                  title="Redo"
+                  title={`Redo (${redoHistory.length} changes)`}
                 >
                   <Redo2 className="h-3 w-3 mr-1" />
                   Redo
+                  {redoHistory.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                      {redoHistory.length}
+                    </Badge>
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
