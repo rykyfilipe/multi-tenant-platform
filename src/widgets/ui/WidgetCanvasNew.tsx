@@ -1173,27 +1173,23 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 const isSelected = selectedWidgets.has(currentWidget.id);
 
                 return (
-                    <div 
-                      key={currentWidget.id} 
-                      className={`border border-dashed rounded transition-all cursor-pointer ${
-                        isEditMode 
-                          ? (isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-gray-300 hover:border-gray-400')
-                          : 'border-transparent'
-                      }`}
-                      onClick={(e) => {
-                        if (!isEditMode) return;
-                        
-                        e.stopPropagation();
-                        if (e.ctrlKey || e.metaKey) {
-                          // Multi-select: add to selection
-                          handleSelectWidget(currentWidget.id);
-                        } else {
-                          // Single select: clear others and select this one
-                          handleDeselectAll();
-                          handleSelectWidget(currentWidget.id);
-                        }
-                      }}
-                    >
+                  <div 
+                    key={currentWidget.id}
+                    className="h-full w-full"
+                    onClick={(e) => {
+                      if (!isEditMode) return;
+                      
+                      e.stopPropagation();
+                      if (e.ctrlKey || e.metaKey) {
+                        // Multi-select: add to selection
+                        handleSelectWidget(currentWidget.id);
+                      } else {
+                        // Single select: clear others and select this one
+                        handleDeselectAll();
+                        handleSelectWidget(currentWidget.id);
+                      }
+                    }}
+                  >
                     <Renderer
                       widget={currentWidget}
                       onEdit={undefined}
