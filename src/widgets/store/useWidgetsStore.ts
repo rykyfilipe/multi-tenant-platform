@@ -16,6 +16,7 @@ export interface ChangeGroup {
   changes: PropertyChange[]; // Multiple properties changed together
   timestamp: number;
   description: string; // User-friendly description: "Update config", "Move widget", "Delete widget"
+  changeType: 'style' | 'data' | 'position' | 'mixed'; // For optimization
   reversible: boolean; // Can this be undone?
   widget?: WidgetEntity; // Store full widget for DELETE operations
 }
@@ -91,12 +92,42 @@ const generateChangeGroupId = (): string => {
   return `change-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Detect change type for optimization
+const getChangeType = (changes: PropertyChange[]): 'style' | 'data' | 'position' | 'mixed' => {
+  const properties = changes.map(c => c.property);
+  
+  if (properties.length === 1 && properties[0] === 'config') {
+    // Need to check if only style changed within config
+    const configChange = changes[0];
+    const oldConfig = configChange.oldValue as any;
+    const newConfig = configChange.newValue as any;
+    
+    if (oldConfig && newConfig) {
+      const dataChanged = JSON.stringify(oldConfig.data) !== JSON.stringify(newConfig.data);
+      const settingsChanged = JSON.stringify(oldConfig.settings) !== JSON.stringify(newConfig.settings);
+      
+      if (!dataChanged && !settingsChanged) {
+        return 'style'; // Only style changed
+      }
+    }
+    return 'data'; // Data or settings changed
+  }
+  
+  if (properties.length === 1 && properties[0] === 'position') {
+    return 'position';
+  }
+  
+  return 'mixed';
+};
+
 // Generate user-friendly description based on properties changed
 const getChangeDescription = (changes: PropertyChange[], widgetId: number): string => {
   const properties = changes.map(c => c.property);
+  const changeType = getChangeType(changes);
   
+  if (changeType === 'style') return '🎨 Update style';
+  if (changeType === 'position') return '📍 Move widget';
   if (properties.includes('config')) return '🎨 Update widget config';
-  if (properties.includes('position')) return '📍 Move widget';
   if (properties.includes('title')) return '✏️ Rename widget';
   if (properties.length > 1) return `✨ Update ${properties.length} properties`;
   return `🔧 Update ${properties[0]}`;
@@ -280,20 +311,24 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             
             // Create ChangeGroup if there are actual changes
             if (propertyChanges.length > 0) {
+              const changeType = getChangeType(propertyChanges);
               const changeGroup: ChangeGroup = {
                 id: generateChangeGroupId(),
                 widgetId,
                 changes: propertyChanges,
                 timestamp: Date.now(),
                 description: getChangeDescription(propertyChanges, widgetId),
+                changeType, // For optimization
                 reversible: true
               };
               
               console.log(`📝 [History] Recording ChangeGroup:`, {
                 id: changeGroup.id,
                 description: changeGroup.description,
+                changeType: changeType,
                 properties: propertyChanges.length,
-                totalInStack: state.changeHistory.length + 1
+                totalInStack: state.changeHistory.length + 1,
+                optimistic: changeType === 'style' || changeType === 'position'
               });
               
               newChangeHistory = [changeGroup, ...state.changeHistory].slice(0, MAX_HISTORY_SIZE);
@@ -516,10 +551,12 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
 
           console.log('⏪ [UNDO] Applying patch:', {
             widgetId: changeGroup.widgetId,
-            properties: Object.keys(patch)
+            properties: Object.keys(patch),
+            isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
+            tracking: false
           });
 
-          // Apply changes using updateLocal (tracking is disabled)
+          // Apply changes using updateLocal (tracking is disabled - NO version increment)
           get().updateLocal(changeGroup.widgetId, patch);
           
           // Move ChangeGroup to redo history
@@ -570,10 +607,12 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
 
           console.log('⏩ [REDO] Applying patch:', {
             widgetId: changeGroup.widgetId,
-            properties: Object.keys(patch)
+            properties: Object.keys(patch),
+            isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
+            tracking: false
           });
 
-          // Apply changes using updateLocal (tracking is disabled)
+          // Apply changes using updateLocal (tracking is disabled - NO version increment)
           get().updateLocal(changeGroup.widgetId, patch);
           
           // Move ChangeGroup back to change history

@@ -38,7 +38,7 @@ interface ChartDataPoint {
 // MAIN COMPONENT
 // ============================================================================
 
-export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({ 
+const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({ 
   widget, 
   onEdit, 
   onDelete, 
@@ -49,16 +49,20 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   const config = widget.config as any;
   const chartType = config?.settings?.chartType || "bar";
   
-  // Debug logging for config changes
+  // OPTIMISTIC: Log only when actual config changes (not version bumps from style changes)
   React.useEffect(() => {
     console.log('📊 [ChartWidget] Config updated:', {
       widgetId: widget.id,
       version: widget.version,
       chartType,
-      theme: config?.style?.theme,
-      config: config
+      theme: config?.style?.theme
     });
-  }, [widget.id, widget.version, JSON.stringify(config)]);
+  }, [
+    widget.id, 
+    JSON.stringify(config?.data), // Only data changes
+    JSON.stringify(config?.settings), // Only settings changes
+    chartType
+  ]);
   const mappings = config?.data?.mappings || { y: [] };
   const databaseId = config?.data?.databaseId;
   const tableId = config?.data?.tableId;
@@ -100,7 +104,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     ? premiumDataColors.elegant
     : premiumDataColors.professional;
 
-  // Process data through the simplified pipeline
+  // OPTIMISTIC: Process data ONLY when data-related config changes (not style!)
   const processedData = useMemo(() => {
     // Return mock data if no configuration or data
     const yColumns = Array.isArray(mappings.y) ? mappings.y : (mappings.y ? [mappings.y] : []);
@@ -144,20 +148,21 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     // Execute the simplified pipeline (auto-groups by X axis when aggregations configured)
     return ChartDataProcessor.process(rawData.data, chartConfig);
   }, [
+    // OPTIMISTIC: Only depend on DATA-RELATED properties, NOT style or version
     widget.id,
-    widget.version, // Track widget version changes
     rawData,
-    JSON.stringify(mappings), // Serialize to detect changes
+    JSON.stringify(mappings), // X/Y mappings
     databaseId,
     tableId,
-    JSON.stringify(yColumnAggregations),
-    JSON.stringify(filters),
-    JSON.stringify(config?.settings?.dateGrouping), // Track date grouping changes
+    JSON.stringify(yColumnAggregations), // Aggregations
+    JSON.stringify(filters), // Filters
+    JSON.stringify(config?.settings?.dateGrouping), // Date grouping
     enableTopN,
     topNCount,
+    // REMOVED: widget.version (style changes don't need data reprocessing!)
   ]);
 
-  // Generate data keys for multi-series charts - simplified
+  // OPTIMISTIC: Generate data keys - only recompute when Y columns or colors change
   const dataKeys = useMemo(() => {
     // Soft, professional color palette for data visualization
     const softColors = [
@@ -205,7 +210,12 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       // Use custom color if set, otherwise use soft colors
       color: yColumnColors[key] || softColors[index % softColors.length]
     }));
-  }, [widget.id, widget.version, processedData, JSON.stringify(mappings), JSON.stringify(yColumnColors)]);
+  }, [
+    // OPTIMISTIC: Only Y columns and colors, NOT widget.version
+    processedData, 
+    JSON.stringify(mappings), 
+    JSON.stringify(yColumnColors)
+  ]);
 
   // Style configuration - NEW ADVANCED PROPERTIES
   const styleConfig = config?.style || {};
@@ -605,3 +615,51 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     </BaseWidget>
   );
 };
+
+// OPTIMISTIC RENDERING: Only re-render when DATA or SETTINGS change, NOT style
+export const ChartWidgetRenderer = React.memo(
+  ChartWidgetRendererComponent,
+  (prevProps, nextProps) => {
+    // Custom comparison - re-render ONLY when necessary
+    const prevConfig = prevProps.widget.config as any;
+    const nextConfig = nextProps.widget.config as any;
+    
+    // Always re-render if widget ID changed
+    if (prevProps.widget.id !== nextProps.widget.id) {
+      console.log('🔄 [ChartWidget] Re-render: widget ID changed');
+      return false;
+    }
+    
+    // Re-render if data config changed
+    if (JSON.stringify(prevConfig?.data) !== JSON.stringify(nextConfig?.data)) {
+      console.log('🔄 [ChartWidget] Re-render: data config changed');
+      return false;
+    }
+    
+    // Re-render if settings changed (except style-only changes)
+    const prevSettings = { ...prevConfig?.settings };
+    const nextSettings = { ...nextConfig?.settings };
+    
+    if (JSON.stringify(prevSettings) !== JSON.stringify(nextSettings)) {
+      console.log('🔄 [ChartWidget] Re-render: settings changed');
+      return false;
+    }
+    
+    // Re-render if edit mode changed
+    if (prevProps.isEditMode !== nextProps.isEditMode) {
+      console.log('🔄 [ChartWidget] Re-render: edit mode changed');
+      return false;
+    }
+    
+    // Style-only changes? Don't re-render data processing!
+    if (JSON.stringify(prevConfig?.style) !== JSON.stringify(nextConfig?.style)) {
+      console.log('✨ [ChartWidget] Style-only change - optimistic re-render');
+      // Allow style to update but skip data reprocessing
+      return false; // Re-render but useMemo won't recompute processedData
+    }
+    
+    // Props are equal - skip re-render
+    console.log('⚡ [ChartWidget] Props equal - SKIP re-render');
+    return true;
+  }
+);
