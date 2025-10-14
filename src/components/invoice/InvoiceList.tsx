@@ -401,25 +401,6 @@ export function EnhancedInvoiceList({
 		setCurrentPage(1);
 	};
 
-	const getStatusCounts = () => {
-		const counts = {
-			total: invoices.length,
-			draft: 0,
-			issued: 0,
-			paid: 0,
-			overdue: 0,
-			cancelled: 0,
-		};
-
-		invoices.forEach(invoice => {
-			const status = getInvoiceStatus(invoice);
-			counts[status as keyof typeof counts]++;
-		});
-
-		return counts;
-	};
-
-	const statusCounts = getStatusCounts();
 
 	// Show error state if there's a component error
 	if (componentError) {
@@ -448,78 +429,6 @@ export function EnhancedInvoiceList({
 			</div>
 		</div>
 
-			{/* Status Overview */}
-			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-				<Card className="border-0 shadow-sm">
-					<CardContent className="p-4">
-						<div className="flex items-center gap-3">
-							<div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-								<FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-							</div>
-							<div>
-								<p className="text-sm font-medium text-muted-foreground">Total</p>
-								<p className="text-2xl font-bold text-foreground">{statusCounts.total}</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card className="border-0 shadow-sm">
-					<CardContent className="p-4">
-						<div className="flex items-center gap-3">
-							<div className="w-10 h-10 bg-gray-100 dark:bg-gray-900/30 rounded-lg flex items-center justify-center">
-								<FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-							</div>
-							<div>
-								<p className="text-sm font-medium text-muted-foreground">Draft</p>
-								<p className="text-2xl font-bold text-foreground">{statusCounts.draft}</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card className="border-0 shadow-sm">
-					<CardContent className="p-4">
-						<div className="flex items-center gap-3">
-							<div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-								<Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-							</div>
-							<div>
-								<p className="text-sm font-medium text-muted-foreground">Issued</p>
-								<p className="text-2xl font-bold text-foreground">{statusCounts.issued}</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card className="border-0 shadow-sm">
-					<CardContent className="p-4">
-						<div className="flex items-center gap-3">
-							<div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-								<CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-							</div>
-							<div>
-								<p className="text-sm font-medium text-muted-foreground">Paid</p>
-								<p className="text-2xl font-bold text-foreground">{statusCounts.paid}</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card className="border-0 shadow-sm">
-					<CardContent className="p-4">
-						<div className="flex items-center gap-3">
-							<div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-								<AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-							</div>
-							<div>
-								<p className="text-sm font-medium text-muted-foreground">Overdue</p>
-								<p className="text-2xl font-bold text-foreground">{statusCounts.overdue}</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
 
 			{/* Filters */}
 			<Card className="border-0 shadow-sm">

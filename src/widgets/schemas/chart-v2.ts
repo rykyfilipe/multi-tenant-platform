@@ -260,6 +260,19 @@ export const chartStyleSchema = z.object({
     easing: "easeInOutQuad",
   }),
   
+  // === CONTAINER BORDER ===
+  border: z.object({
+    enabled: z.boolean().default(false),
+    width: z.number().min(0).max(10).default(1),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+    style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
+  }).optional().default({
+    enabled: false,
+    width: 1,
+    color: "rgba(0, 0, 0, 0.1)",
+    style: "solid"
+  }),
+  
   // Deprecated - kept for backward compatibility
   theme: z.enum(["platinum", "onyx", "pearl", "obsidian", "custom"]).optional(),
   textColor: z.string().optional(),

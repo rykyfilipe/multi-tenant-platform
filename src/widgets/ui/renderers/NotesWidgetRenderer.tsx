@@ -378,31 +378,29 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
           </div>
         )}
 
-        {/* Add Note Buttons */}
-        {isEditMode && (
-          <div className="mb-4 flex gap-2">
+        {/* Add Note Buttons - Always visible */}
+        <div className="mb-4 flex gap-2">
+          <Button
+            onClick={() => handleAddNote('note')}
+            size="sm"
+            className="flex-1"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Note
+          </Button>
+          {enableChecklists && (
             <Button
-              onClick={() => handleAddNote('note')}
+              onClick={() => handleAddNote('checklist')}
               size="sm"
               className="flex-1"
               variant="outline"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Note
+              <CheckSquare className="h-4 w-4 mr-2" />
+              Add Checklist
             </Button>
-            {enableChecklists && (
-              <Button
-                onClick={() => handleAddNote('checklist')}
-                size="sm"
-                className="flex-1"
-                variant="outline"
-              >
-                <CheckSquare className="h-4 w-4 mr-2" />
-                Add Checklist
-              </Button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Notes Grid/List */}
         {filteredNotes.length === 0 && !searchQuery ? (

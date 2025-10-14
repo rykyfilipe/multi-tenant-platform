@@ -45,6 +45,7 @@ export const weatherStyleSchema = z.object({
     color: "rgba(0, 0, 0, 0.1)",
     style: "solid",
   }),
+  textColor: z.string().default("#000000"),
   shadow: z.union([
     z.object({
       enabled: z.boolean().default(true),
