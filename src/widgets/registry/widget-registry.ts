@@ -449,9 +449,9 @@ const definitions: Record<WidgetType, WidgetDefinition<z.ZodTypeAny>> = {
         tableId: undefined,
         filters: [],
         metric: {
-          field: "",
-          label: "",
-          aggregations: [{ function: "sum", label: "Total" }],
+          field: "id",
+          label: "Total Count",
+          aggregations: [{ function: "count", label: "Total" }],
           format: "number",
           showTrend: true,
           showComparison: false,
