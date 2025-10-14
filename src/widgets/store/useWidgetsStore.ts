@@ -3,13 +3,21 @@ import { ConflictMetadata, DraftOperation, WidgetEntity, WidgetDraftEntity } fro
 import { getWidgetDefinition } from "../registry/widget-registry";
 import { hasWidgetId } from "../utils/pendingHelpers";
 
-// Global change tracking for undo/redo
-export interface WidgetChange {
-  widgetId: number;
+// Global change tracking for undo/redo - PROFESSIONAL SYSTEM
+export interface PropertyChange {
   property: keyof WidgetEntity;
   oldValue: any;
   newValue: any;
+}
+
+export interface ChangeGroup {
+  id: string; // Unique ID for this change group
+  widgetId: number;
+  changes: PropertyChange[]; // Multiple properties changed together
   timestamp: number;
+  description: string; // User-friendly description: "Update config", "Move widget", "Delete widget"
+  reversible: boolean; // Can this be undone?
+  widget?: WidgetEntity; // Store full widget for DELETE operations
 }
 
 export interface PendingChangesState {
@@ -21,9 +29,10 @@ export interface PendingChangesState {
   dirtyWidgetIds: Set<number>;
   lastModifiedWidgetId: number | null; // Track last modified widget for undo/redo
 
-  // GLOBAL History management - single stack for ALL widgets
-  changeHistory: WidgetChange[];
-  redoHistory: WidgetChange[];
+  // GLOBAL History management - single stack for ALL widgets (BATCH SYSTEM)
+  changeHistory: ChangeGroup[];
+  redoHistory: ChangeGroup[];
+  isTrackingEnabled: boolean; // Flag to disable tracking during undo/redo
 
   // Conflict management
   conflicts: ConflictMetadata[];
@@ -78,7 +87,23 @@ const generateOperationId = (): string => {
   return `op-${Math.floor(Math.random() * 1000000) + 1000000}`;
 };
 
+const generateChangeGroupId = (): string => {
+  return `change-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Generate user-friendly description based on properties changed
+const getChangeDescription = (changes: PropertyChange[], widgetId: number): string => {
+  const properties = changes.map(c => c.property);
+  
+  if (properties.includes('config')) return '🎨 Update widget config';
+  if (properties.includes('position')) return '📍 Move widget';
+  if (properties.includes('title')) return '✏️ Rename widget';
+  if (properties.length > 1) return `✨ Update ${properties.length} properties`;
+  return `🔧 Update ${properties[0]}`;
+};
+
 const MAX_HISTORY_SIZE = 50; // Global history limit for all changes
+const POSITION_DEBOUNCE_MS = 300; // Debounce position updates
 
 export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       // Core state
@@ -89,9 +114,10 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       dirtyWidgetIds: new Set<number>(),
       lastModifiedWidgetId: null,
 
-      // GLOBAL History management - single stack for ALL changes
+      // GLOBAL History management - single stack for ALL changes (BATCH SYSTEM)
       changeHistory: [],
       redoHistory: [],
+      isTrackingEnabled: true, // Start with tracking enabled
 
       // Conflict management
       conflicts: [],
@@ -170,12 +196,15 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       updateLocal: (widgetId, patch) => {
         const existing = get().widgets[widgetId];
         if (!existing) return;
+        
+        const state = get();
+        const isTracking = state.isTrackingEnabled;
 
         const updated = { 
           ...existing, 
           ...patch,
-          // Only increment version if not explicitly provided in patch
-          version: patch.version ?? ((existing.version || 1) + 1),
+          // Only increment version when tracking (normal updates), NOT during undo/redo
+          version: isTracking ? ((existing.version || 1) + 1) : existing.version,
           updatedAt: new Date()
         } as WidgetEntity;
 
@@ -220,38 +249,57 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           widgetId,
           oldVersion: existing.version,
           newVersion: updated.version,
+          tracking: isTracking,
           patch
         });
         
         set((state) => {
-          // Record EACH property change in global history (EXCLUDE version, updatedAt - technical fields)
-          const changes: WidgetChange[] = [];
-          const excludedProperties = ['version', 'updatedAt']; // Don't track these in history
+          let newChangeHistory = state.changeHistory;
+          let newRedoHistory = state.redoHistory;
           
-          Object.entries(patch).forEach(([key, newValue]) => {
-            if (excludedProperties.includes(key)) return; // Skip technical fields
+          // Only track changes if tracking is enabled (not during undo/redo)
+          if (isTracking) {
+            const propertyChanges: PropertyChange[] = [];
+            const excludedProperties = ['version', 'updatedAt']; // Don't track these in history
             
-            const property = key as keyof WidgetEntity;
-            const oldValue = existing[property];
+            Object.entries(patch).forEach(([key, newValue]) => {
+              if (excludedProperties.includes(key)) return; // Skip technical fields
+              
+              const property = key as keyof WidgetEntity;
+              const oldValue = existing[property];
+              
+              // Only record if value actually changed
+              if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+                propertyChanges.push({
+                  property,
+                  oldValue,
+                  newValue
+                });
+              }
+            });
             
-            // Only record if value actually changed
-            if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-              changes.push({
+            // Create ChangeGroup if there are actual changes
+            if (propertyChanges.length > 0) {
+              const changeGroup: ChangeGroup = {
+                id: generateChangeGroupId(),
                 widgetId,
-                property,
-                oldValue,
-                newValue,
-                timestamp: Date.now()
+                changes: propertyChanges,
+                timestamp: Date.now(),
+                description: getChangeDescription(propertyChanges, widgetId),
+                reversible: true
+              };
+              
+              console.log(`📝 [History] Recording ChangeGroup:`, {
+                id: changeGroup.id,
+                description: changeGroup.description,
+                properties: propertyChanges.length,
+                totalInStack: state.changeHistory.length + 1
               });
-              console.log(`📝 [History] Recording change: ${property}`, {
-                widgetId,
-                oldValue: typeof oldValue === 'object' ? 'object' : oldValue,
-                newValue: typeof newValue === 'object' ? 'object' : newValue
-              });
+              
+              newChangeHistory = [changeGroup, ...state.changeHistory].slice(0, MAX_HISTORY_SIZE);
+              newRedoHistory = []; // Clear redo history on new change
             }
-          });
-          
-          console.log(`📚 [History] Changes: ${changes.length} new, ${state.changeHistory.length} total in stack`);
+          }
           
           const newState = {
             widgets: { ...state.widgets, [widgetId]: updated },
@@ -259,9 +307,9 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             pendingOperations: [...state.pendingOperations],
             dirtyWidgetIds: new Set(state.dirtyWidgetIds),
             lastModifiedWidgetId: widgetId,
-            // Add changes to GLOBAL history stack
-            changeHistory: [...changes, ...state.changeHistory].slice(0, MAX_HISTORY_SIZE),
-            redoHistory: [], // Clear redo history on new change
+            isTrackingEnabled: state.isTrackingEnabled, // Preserve tracking state
+            changeHistory: newChangeHistory,
+            redoHistory: newRedoHistory,
           };
 
           if (isLocalWidget(widgetId)) {
@@ -434,7 +482,7 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       },
 
       undoLastChange: () => {
-        console.log('⏪ [UNDO] Undoing last change from global stack');
+        console.log('⏪ [UNDO] Undoing last ChangeGroup from global stack');
         const state = get();
         
         if (state.changeHistory.length === 0) {
@@ -442,101 +490,53 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           return false;
         }
 
-        // Take the LAST change from stack (most recent)
-        const lastChange = state.changeHistory[0];
-        console.log('⏪ [UNDO] Reverting change:', lastChange);
+        // Take the LAST ChangeGroup from stack (most recent)
+        const changeGroup = state.changeHistory[0];
+        console.log('⏪ [UNDO] Reverting ChangeGroup:', {
+          id: changeGroup.id,
+          description: changeGroup.description,
+          changes: changeGroup.changes.length
+        });
         
-        set((currentState) => {
-          const widget = currentState.widgets[lastChange.widgetId];
+        // DISABLE TRACKING to prevent infinite loop
+        set({ isTrackingEnabled: false });
+        
+        try {
+          const widget = state.widgets[changeGroup.widgetId];
           if (!widget) {
-            console.warn('⏪ [UNDO] Widget not found:', lastChange.widgetId);
-            return currentState;
+            console.warn('⏪ [UNDO] Widget not found:', changeGroup.widgetId);
+            return false;
           }
 
-          // Apply old value to widget
-          const updatedWidget = {
-            ...widget,
-            [lastChange.property]: lastChange.oldValue,
-            version: (widget.version || 1) + 1,
-            updatedAt: new Date()
-          };
-
-          console.log('⏪ [UNDO] Restored property:', {
-            widgetId: lastChange.widgetId,
-            property: lastChange.property,
-            from: lastChange.newValue,
-            to: lastChange.oldValue
+          // Build patch with ALL old values
+          const patch: Partial<WidgetEntity> = {};
+          changeGroup.changes.forEach(change => {
+            (patch as any)[change.property] = change.oldValue;
           });
 
-          const newState = {
-            widgets: { ...currentState.widgets, [lastChange.widgetId]: updatedWidget },
-            originalWidgets: { ...currentState.originalWidgets },
-            pendingOperations: [...currentState.pendingOperations],
-            dirtyWidgetIds: new Set(currentState.dirtyWidgetIds),
-            lastModifiedWidgetId: lastChange.widgetId,
-            // Remove change from history
+          console.log('⏪ [UNDO] Applying patch:', {
+            widgetId: changeGroup.widgetId,
+            properties: Object.keys(patch)
+          });
+
+          // Apply changes using updateLocal (tracking is disabled)
+          get().updateLocal(changeGroup.widgetId, patch);
+          
+          // Move ChangeGroup to redo history
+          set((currentState) => ({
             changeHistory: currentState.changeHistory.slice(1),
-            // Add to redo history (reverse: newValue becomes old, oldValue becomes new)
-            redoHistory: [lastChange, ...currentState.redoHistory].slice(0, MAX_HISTORY_SIZE),
-          };
+            redoHistory: [changeGroup, ...currentState.redoHistory].slice(0, MAX_HISTORY_SIZE),
+          }));
 
-          // Update pending operations
-          const widgetId = lastChange.widgetId;
-          if (isLocalWidget(widgetId)) {
-            const createOpIndex = currentState.pendingOperations.findIndex(op => 
-              op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widgetId
-            );
-            if (createOpIndex >= 0) {
-              newState.pendingOperations[createOpIndex] = {
-                ...newState.pendingOperations[createOpIndex],
-                widget: updatedWidget
-              } as any;
-            }
-          } else {
-            // Check if back to original
-            const originalWidget = currentState.originalWidgets[widgetId];
-            const isBackToOriginal = originalWidget &&
-              JSON.stringify(updatedWidget.config) === JSON.stringify(originalWidget.config) &&
-              updatedWidget.title === originalWidget.title &&
-              updatedWidget.description === originalWidget.description &&
-              JSON.stringify(updatedWidget.position) === JSON.stringify(originalWidget.position);
-            
-            if (isBackToOriginal) {
-              newState.pendingOperations = currentState.pendingOperations.filter(op => 
-                !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
-              );
-              newState.dirtyWidgetIds.delete(widgetId);
-            } else {
-              const updateOpIndex = currentState.pendingOperations.findIndex(op => 
-                op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
-              );
-              
-              const patch = { [lastChange.property]: lastChange.oldValue };
-              const newOperation = {
-                kind: "update" as const,
-                id: `update-${widgetId}-${generateOperationId()}`,
-                widgetId,
-                patch,
-                expectedVersion: updatedWidget.version,
-              };
-              
-              if (updateOpIndex >= 0) {
-                newState.pendingOperations[updateOpIndex] = newOperation;
-              } else {
-                newState.pendingOperations.push(newOperation);
-                newState.dirtyWidgetIds.add(widgetId);
-              }
-            }
-          }
-
-          return newState;
-        });
-
-        return true;
+          return true;
+        } finally {
+          // RE-ENABLE TRACKING
+          set({ isTrackingEnabled: true });
+        }
       },
 
       redoLastChange: () => {
-        console.log('⏩ [REDO] Redoing last undone change from global stack');
+        console.log('⏩ [REDO] Redoing last undone ChangeGroup from global stack');
         const state = get();
         
         if (state.redoHistory.length === 0) {
@@ -544,97 +544,49 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           return false;
         }
 
-        // Take the LAST undone change from redo stack
-        const lastUndone = state.redoHistory[0];
-        console.log('⏩ [REDO] Reapplying change:', lastUndone);
+        // Take the LAST undone ChangeGroup from redo stack
+        const changeGroup = state.redoHistory[0];
+        console.log('⏩ [REDO] Reapplying ChangeGroup:', {
+          id: changeGroup.id,
+          description: changeGroup.description,
+          changes: changeGroup.changes.length
+        });
         
-        set((currentState) => {
-          const widget = currentState.widgets[lastUndone.widgetId];
+        // DISABLE TRACKING to prevent infinite loop
+        set({ isTrackingEnabled: false });
+        
+        try {
+          const widget = state.widgets[changeGroup.widgetId];
           if (!widget) {
-            console.warn('⏩ [REDO] Widget not found:', lastUndone.widgetId);
-            return currentState;
+            console.warn('⏩ [REDO] Widget not found:', changeGroup.widgetId);
+            return false;
           }
 
-          // Apply new value to widget (redo the change)
-          const updatedWidget = {
-            ...widget,
-            [lastUndone.property]: lastUndone.newValue,
-            version: (widget.version || 1) + 1,
-            updatedAt: new Date()
-          };
-
-          console.log('⏩ [REDO] Reapplied property:', {
-            widgetId: lastUndone.widgetId,
-            property: lastUndone.property,
-            from: lastUndone.oldValue,
-            to: lastUndone.newValue
+          // Build patch with ALL new values
+          const patch: Partial<WidgetEntity> = {};
+          changeGroup.changes.forEach(change => {
+            (patch as any)[change.property] = change.newValue;
           });
 
-          const newState = {
-            widgets: { ...currentState.widgets, [lastUndone.widgetId]: updatedWidget },
-            originalWidgets: { ...currentState.originalWidgets },
-            pendingOperations: [...currentState.pendingOperations],
-            dirtyWidgetIds: new Set(currentState.dirtyWidgetIds),
-            lastModifiedWidgetId: lastUndone.widgetId,
-            // Add change back to history
-            changeHistory: [lastUndone, ...currentState.changeHistory].slice(0, MAX_HISTORY_SIZE),
-            // Remove from redo history
+          console.log('⏩ [REDO] Applying patch:', {
+            widgetId: changeGroup.widgetId,
+            properties: Object.keys(patch)
+          });
+
+          // Apply changes using updateLocal (tracking is disabled)
+          get().updateLocal(changeGroup.widgetId, patch);
+          
+          // Move ChangeGroup back to change history
+          set((currentState) => ({
+            changeHistory: [changeGroup, ...currentState.changeHistory].slice(0, MAX_HISTORY_SIZE),
             redoHistory: currentState.redoHistory.slice(1),
-          };
+          }));
 
-          // Update pending operations
-          const widgetId = lastUndone.widgetId;
-          if (isLocalWidget(widgetId)) {
-            const createOpIndex = currentState.pendingOperations.findIndex(op => 
-              op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widgetId
-            );
-            if (createOpIndex >= 0) {
-              newState.pendingOperations[createOpIndex] = {
-                ...newState.pendingOperations[createOpIndex],
-                widget: updatedWidget
-              } as any;
-            }
-          } else {
-            // Check if back to original
-            const originalWidget = currentState.originalWidgets[widgetId];
-            const isBackToOriginal = originalWidget &&
-              JSON.stringify(updatedWidget.config) === JSON.stringify(originalWidget.config) &&
-              updatedWidget.title === originalWidget.title &&
-              updatedWidget.description === originalWidget.description &&
-              JSON.stringify(updatedWidget.position) === JSON.stringify(originalWidget.position);
-            
-            if (isBackToOriginal) {
-              newState.pendingOperations = currentState.pendingOperations.filter(op => 
-                !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
-              );
-              newState.dirtyWidgetIds.delete(widgetId);
-            } else {
-              const updateOpIndex = currentState.pendingOperations.findIndex(op => 
-                op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
-              );
-              
-              const patch = { [lastUndone.property]: lastUndone.newValue };
-              const newOperation = {
-                kind: "update" as const,
-                id: `update-${widgetId}-${generateOperationId()}`,
-                widgetId,
-                patch,
-                expectedVersion: updatedWidget.version,
-              };
-              
-              if (updateOpIndex >= 0) {
-                newState.pendingOperations[updateOpIndex] = newOperation;
-              } else {
-                newState.pendingOperations.push(newOperation);
-                newState.dirtyWidgetIds.add(widgetId);
-              }
-            }
-          }
-
-          return newState;
-        });
-
-        return true;
+          return true;
+        } finally {
+          // RE-ENABLE TRACKING
+          set({ isTrackingEnabled: true });
+        }
       },
 
       // Utility operations
@@ -883,12 +835,12 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             }
           });
           
-          // Clean GLOBAL history - remove changes for invalid widgets
-          const cleanedChangeHistory = state.changeHistory.filter(change => 
-            validWidgetIds.has(change.widgetId)
+          // Clean GLOBAL history - remove ChangeGroups for invalid widgets
+          const cleanedChangeHistory = state.changeHistory.filter(group => 
+            validWidgetIds.has(group.widgetId)
           );
-          const cleanedRedoHistory = state.redoHistory.filter(change => 
-            validWidgetIds.has(change.widgetId)
+          const cleanedRedoHistory = state.redoHistory.filter(group => 
+            validWidgetIds.has(group.widgetId)
           );
           
           return {
