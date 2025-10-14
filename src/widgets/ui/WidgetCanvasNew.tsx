@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
@@ -258,6 +258,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
   const [isResponsiveResize, setIsResponsiveResize] = useState(false); // Track responsive resizes
+  
+  // Track mouse positions for click detection (widget ID -> position)
+  const mouseDownPositions = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const draggingWidgets = useRef<Set<number>>(new Set());
   
   // Responsive breakpoints - determine grid columns based on screen width
   const getResponsiveCols = useCallback(() => {
@@ -1122,15 +1126,52 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                     {isEditMode && (
                       <div 
                         className="widget-header absolute inset-0 z-[1] cursor-move"
-                        onClick={(e) => {
-                          console.log('🖱️ [DEBUG] Widget clicked:', currentWidget.id);
-                          e.stopPropagation();
-                          if (e.ctrlKey || e.metaKey) {
-                            handleSelectWidget(currentWidget.id);
-                          } else {
-                            handleDeselectAll();
-                            handleSelectWidget(currentWidget.id);
+                        onMouseDown={(e) => {
+                          console.log('🖱️⬇️ [DEBUG] Mouse down on widget:', currentWidget.id);
+                          mouseDownPositions.current.set(currentWidget.id, { x: e.clientX, y: e.clientY });
+                          draggingWidgets.current.delete(currentWidget.id);
+                        }}
+                        onMouseMove={(e) => {
+                          const mouseDownPos = mouseDownPositions.current.get(currentWidget.id);
+                          if (mouseDownPos) {
+                            const deltaX = Math.abs(e.clientX - mouseDownPos.x);
+                            const deltaY = Math.abs(e.clientY - mouseDownPos.y);
+                            if (deltaX > 5 || deltaY > 5) {
+                              console.log('🖱️🔄 [DEBUG] Dragging detected for widget:', currentWidget.id);
+                              draggingWidgets.current.add(currentWidget.id);
+                            }
                           }
+                        }}
+                        onMouseUp={(e) => {
+                          const mouseDownPos = mouseDownPositions.current.get(currentWidget.id);
+                          const isDragging = draggingWidgets.current.has(currentWidget.id);
+                          
+                          console.log('🖱️⬆️ [DEBUG] Mouse up on widget:', currentWidget.id, 'isDragging:', isDragging);
+                          
+                          // Only trigger selection if it was a click (not a drag)
+                          if (!isDragging && mouseDownPos) {
+                            const deltaX = Math.abs(e.clientX - mouseDownPos.x);
+                            const deltaY = Math.abs(e.clientY - mouseDownPos.y);
+                            
+                            console.log('🖱️📏 [DEBUG] Mouse movement delta:', { deltaX, deltaY });
+                            
+                            // If mouse didn't move more than 5px, it's a click
+                            if (deltaX < 5 && deltaY < 5) {
+                              console.log('🖱️✅ [DEBUG] Click detected on widget:', currentWidget.id);
+                              e.stopPropagation();
+                              if (e.ctrlKey || e.metaKey) {
+                                handleSelectWidget(currentWidget.id);
+                              } else {
+                                handleDeselectAll();
+                                handleSelectWidget(currentWidget.id);
+                              }
+                            } else {
+                              console.log('🖱️❌ [DEBUG] Drag detected, not selecting widget:', currentWidget.id);
+                            }
+                          }
+                          
+                          mouseDownPositions.current.delete(currentWidget.id);
+                          draggingWidgets.current.delete(currentWidget.id);
                         }}
                         onDoubleClick={(e) => {
                           console.log('🖱️🖱️ [DEBUG] Widget double-clicked:', currentWidget.id);

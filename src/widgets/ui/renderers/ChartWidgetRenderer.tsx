@@ -48,6 +48,17 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
   // Extract chart configuration
   const config = widget.config as any;
   const chartType = config?.settings?.chartType || "bar";
+  
+  // Debug logging for config changes
+  React.useEffect(() => {
+    console.log('📊 [ChartWidget] Config updated:', {
+      widgetId: widget.id,
+      version: widget.version,
+      chartType,
+      theme: config?.style?.theme,
+      config: config
+    });
+  }, [widget.id, widget.version, JSON.stringify(config)]);
   const mappings = config?.data?.mappings || { y: [] };
   const databaseId = config?.data?.databaseId;
   const tableId = config?.data?.tableId;
@@ -128,12 +139,14 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       } : undefined,
     };
 
+    console.log('📊 [ChartWidget] Processing data with config:', chartConfig);
     // Execute the simplified pipeline (auto-groups by X axis when aggregations configured)
     return ChartDataProcessor.process(rawData.data, chartConfig);
   }, [
-    widget.id, // Add widget.id to force re-computation when widget changes
+    widget.id,
+    widget.version, // Track widget version changes
     rawData,
-    mappings,
+    JSON.stringify(mappings), // Serialize to detect changes
     databaseId,
     tableId,
     JSON.stringify(yColumnAggregations),
@@ -190,7 +203,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       // Use custom color if set, otherwise use soft colors
       color: yColumnColors[key] || softColors[index % softColors.length]
     }));
-  }, [widget.id, processedData, mappings, yColumnColors]);
+  }, [widget.id, widget.version, processedData, JSON.stringify(mappings), JSON.stringify(yColumnColors)]);
 
   // Style configuration - NEW ADVANCED PROPERTIES
   const styleConfig = config?.style || {};

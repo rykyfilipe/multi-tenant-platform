@@ -13,13 +13,17 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 	return (
 		<SidebarProvider>
 			<div className='flex h-screen w-screen overflow-hidden'>
-				{!isEditMode && <AppSidebar />}
-				<main className={`flex-1 overflow-auto w-full relative ${!isEditMode ? 'pb-24 sm:pb-20 md:pb-0' : ''}`}>
+				{/* Sidebar always visible on desktop (hidden on mobile via AppSidebar's own classes) */}
+				<AppSidebar />
+				<main className={`flex-1 overflow-auto w-full relative ${isEditMode ? 'pb-0' : 'pb-24 sm:pb-20 md:pb-0'}`}>
 					<div className='min-h-full'>
 						{children}
 					</div>
 				</main>
-				{!isEditMode && <MobileBottomNavbar />}
+				{/* Mobile navbar hidden in edit mode */}
+				<div className={isEditMode ? 'hidden' : 'block md:hidden'}>
+					<MobileBottomNavbar />
+				</div>
 			</div>
 		</SidebarProvider>
 	);
