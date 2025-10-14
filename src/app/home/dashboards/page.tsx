@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
+import { useEditMode } from '@/contexts/EditModeContext';
 import { isWidgetsV2Enabled } from '@/lib/featureFlag';
 import { WidgetCanvasNew } from '@/widgets/ui/WidgetCanvasNew';
 import { SmartWidgetTemplatesModal } from '@/widgets/ui/components/SmartWidgetTemplatesModal';
@@ -28,6 +29,7 @@ interface DashboardSummary {
 export default function DashboardsPage() {
   const { tenant, user, token } = useApp();
   const { toast } = useToast();
+  const { isEditMode, setIsEditMode } = useEditMode();
   const [selectedDashboardId, setSelectedDashboardId] = useState<number | null>(null);
   const [dashboards, setDashboards] = useState<DashboardSummary[]>([]);
   const [actorId, setActorId] = useState<number | null>(null);
@@ -39,7 +41,6 @@ export default function DashboardsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
   const [editForm, setEditForm] = useState({ name: '', description: '', isPublic: false });
-  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     if (user?.id && actorId !== user.id) {

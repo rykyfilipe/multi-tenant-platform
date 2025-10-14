@@ -279,9 +279,9 @@ export function SchemaMode({
 	}
 
 	return (
-		<div className='flex flex-col lg:flex-row gap-6 w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-140px)]'>
+		<div className='flex flex-col lg:flex-row gap-6 w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[calc(100vh-140px)]'>
 			{/* Left Panel: Schema Panel (65%) */}
-			<div className='flex-1 lg:w-[65%] space-y-6 overflow-y-auto pr-2 schema-columns-list'>
+			<div className='w-full lg:w-[65%] space-y-6 overflow-y-auto pr-2 schema-columns-list'>
 				{/* Table Settings Card */}
 				<Card>
 					<CardHeader>
@@ -388,7 +388,7 @@ export function SchemaMode({
 			</div>
 
 			{/* Right Panel: Properties Panel (35%) - Sticky */}
-		<div className='lg:w-[35%] lg:sticky lg:top-20 lg:h-[calc(100vh-160px)] enhanced-properties-panel'>
+		<div className='w-full lg:w-[35%] lg:sticky lg:top-20 min-h-[500px] lg:h-[calc(100vh-160px)] enhanced-properties-panel'>
 			<EnhancedPropertiesPanel
 				column={selectedColumn}
 				onClose={() => onSelectColumn(null)}

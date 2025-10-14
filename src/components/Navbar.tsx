@@ -21,6 +21,7 @@ import {
 	FileText,
 	Code,
 	LayoutDashboard,
+	MoreHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 

@@ -775,22 +775,22 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
       {/* Custom Modal Overlay */}
       {open && (
         <div 
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
           onClick={() => setOpen(false)}
         >
           <div 
-            className="bg-background border rounded-lg shadow-2xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col"
+            className="bg-background border border-border rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-4xl lg:max-w-6xl my-4 sm:my-8 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="flex items-center gap-3 text-2xl font-bold">
-                    <Zap className="h-6 w-6 text-primary" />
-                    Smart Widget Templates
+            <div className="p-4 sm:p-6 border-b border-border bg-card/50 flex-shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h2 className="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl font-bold text-foreground">
+                    <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                    <span className="truncate">Smart Widget Templates</span>
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Pre-configured widgets automatically adapted to your data
                   </p>
                 </div>
@@ -798,7 +798,7 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
                   variant="ghost" 
                   size="sm"
                   onClick={() => setOpen(false)}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 flex-shrink-0"
                 >
                   ✕
                 </Button>
@@ -806,98 +806,103 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
             </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-12 flex-1">
             <div className="text-center space-y-4">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground">Loading your data structure...</p>
+              <p className="text-sm sm:text-base text-muted-foreground">Loading your data structure...</p>
             </div>
           </div>
         ) : smartTemplates.length === 0 ? (
-          <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-3">
-                <Target className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">
-                    No templates available yet
-                  </h3>
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
-                    Smart templates are generated based on your tables. 
-                    Create tables with invoices, products, or customers to see templates.
-                  </p>
+          <div className="p-4 sm:p-6 flex-1">
+            <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-start gap-3">
+                  <Target className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 text-sm sm:text-base">
+                      No templates available yet
+                    </h3>
+                    <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                      Smart templates are generated based on your tables. 
+                      Create tables with invoices, products, or customers to see templates.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-3">
-              {categories.map((category) => {
-                const Icon = category.icon;
-                return (
-                  <TabsTrigger key={category.id} value={category.id} className="gap-2">
-                    <Icon className="h-4 w-4" />
-                    {category.label}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
+            <div className="px-4 sm:px-6 pt-4 flex-shrink-0">
+              <TabsList className="grid w-full grid-cols-3 bg-muted">
+                {categories.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <TabsTrigger key={category.id} value={category.id} className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">{category.label}</span>
+                      <span className="sm:hidden">{category.label.split(' ')[0]}</span>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </div>
 
-            <TabsContent value={selectedCategory} className="flex-1 overflow-y-auto mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+            <TabsContent value={selectedCategory} className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 mt-0 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {filteredTemplates.map((template) => {
                   const Icon = template.icon;
                   return (
-                    <Card key={template.id} className="group hover:shadow-lg transition-all duration-200">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg ${template.color} bg-opacity-10 flex-shrink-0`}>
-                            <Icon className="h-5 w-5" />
+                    <Card key={template.id} className="group hover:shadow-lg transition-all duration-200 bg-card border-border">
+                      <CardHeader className="pb-3 p-3 sm:p-4">
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div className={`p-1.5 sm:p-2 rounded-lg ${template.color} bg-opacity-10 flex-shrink-0`}>
+                            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <CardTitle className="text-base truncate">{template.title}</CardTitle>
-                            <Badge variant="outline" className="mt-1 text-xs">
+                            <CardTitle className="text-sm sm:text-base truncate text-foreground">{template.title}</CardTitle>
+                            <Badge variant="outline" className="mt-1 text-[10px] sm:text-xs">
                               {template.type}
                             </Badge>
                           </div>
                         </div>
-                        <CardDescription className="text-xs mt-2">
+                        <CardDescription className="text-[11px] sm:text-xs mt-2 line-clamp-2">
                           {template.description}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-3">
+                      <CardContent className="pt-0 space-y-2 sm:space-y-3 p-3 sm:p-4">
                         {/* Configuration Preview */}
-                        <div className="p-2 bg-muted/50 rounded-lg text-xs space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Table:</span>
-                            <span className="font-medium truncate ml-2">
+                        <div className="p-2 bg-muted/50 rounded-lg text-[11px] sm:text-xs space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground flex-shrink-0">Table:</span>
+                            <span className="font-medium truncate">
                               {allTables.find(t => t.id === Number(template.config.data.tableId))?.name || 'N/A'}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Type:</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground flex-shrink-0">Type:</span>
                             <Badge variant="secondary" className="text-[10px]">
-                              <Sparkles className="h-3 w-3 mr-1" />
+                              <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                               Auto-configured
                             </Badge>
                           </div>
                         </div>
                         
                         <Button
-                          className="w-full gap-2"
+                          className="w-full gap-2 text-xs sm:text-sm"
                           onClick={() => createWidgetFromTemplate(template)}
                           disabled={isCreating}
                           size="sm"
                         >
                           {isCreating ? (
                             <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Creating...
+                              <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                              <span>Creating...</span>
                             </>
                           ) : (
                             <>
-                              <Zap className="h-4 w-4" />
-                              Use Template
+                              <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span>Use Template</span>
                             </>
                           )}
                         </Button>
@@ -908,10 +913,10 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
               </div>
 
               {filteredTemplates.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="font-medium">No templates in this category</p>
-                  <p className="text-sm mt-2">Select another category</p>
+                <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                  <Target className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+                  <p className="font-medium text-sm sm:text-base">No templates in this category</p>
+                  <p className="text-xs sm:text-sm mt-2">Select another category</p>
                 </div>
               )}
             </TabsContent>
