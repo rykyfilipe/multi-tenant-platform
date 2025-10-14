@@ -61,6 +61,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
   const pendingOperations = useWidgetsStore((state) => state.getPending());
   const clearPending = useWidgetsStore((state) => state.clearPending);
+  const clearPendingOperations = useWidgetsStore((state) => state.clearPendingOperations);
   const discardAllChanges = useWidgetsStore((state) => state.discardAllChanges);
   const cleanupOldIds = useWidgetsStore((state) => state.cleanupOldIds);
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
@@ -83,9 +84,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   // Save pending changes function
   const handleSavePending = useCallback(async () => {
     try {
-      console.log('🎯 [DEBUG] Saving pending operations:', pendingOperations);
+      console.log('💾 [SAVE] Saving pending operations:', pendingOperations);
       const response = await api.savePending({ actorId, operations: pendingOperations });
-      console.log('✅ [DEBUG] savePending result:', response);
+      console.log('✅ [SAVE] savePending result:', response);
       
       if (response?.conflicts?.length ?? 0 > 0) {
         toast({
@@ -94,23 +95,29 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           variant: "destructive",
         });
       } else {
-        console.log('[savePending] Save successful - pending operations cleared automatically');
+        // SUCCESS - Clear pending operations AND undo/redo history (keep modified widgets!)
+        console.log('💾 [SAVE] Save successful - clearing pending operations and undo/redo history');
+        
+        // clearPendingOperations: keeps widgets as-is, clears operations + history
+        clearPendingOperations();
+        
+        console.log('🧹 [SAVE] Undo/Redo history cleared - fresh state (widgets preserved)');
         
         toast({
           title: "Changes saved successfully!",
-          description: `${pendingOperations.length} operations saved.`,
+          description: `${pendingOperations.length} operations saved. Undo/Redo history cleared.`,
           variant: "default",
         });
       }
     } catch (error) {
-      console.error("Failed to save pending changes:", error);
+      console.error("❌ [SAVE] Failed to save pending changes:", error);
       toast({
         title: "Save failed",
         description: "Failed to save pending changes. Please try again.",
         variant: "destructive",
       });
     }
-  }, [api, actorId, pendingOperations, toast]);
+  }, [api, actorId, pendingOperations, toast, clearPendingOperations]);
 
   // Undo function - now global, no need for widgetId
   const handleUndo = useCallback(() => {

@@ -769,7 +769,7 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       },
 
       clearPendingOperations: () => {
-        console.log('🧹 [clearPendingOperations] Clearing only pending operations, keeping widgets and history');
+        console.log('🧹 [clearPendingOperations] Clearing pending operations AND undo/redo history (after save)');
         set((state) => {
           return {
             ...state,
@@ -778,7 +778,9 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             lastModifiedWidgetId: null,
             conflicts: [],
             activeConflict: null,
-            // Note: Keep changeHistory and redoHistory - only clearing operations
+            // CLEAR undo/redo history after save (modifications are now in DB)
+            changeHistory: [],
+            redoHistory: [],
           };
         });
       },
