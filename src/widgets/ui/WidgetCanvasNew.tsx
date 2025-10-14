@@ -565,18 +565,23 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
 
   const handleSelectWidget = (widgetId: number) => {
+    console.log('🎯 [SELECT] Selecting widget:', widgetId);
     setSelectedWidgets(prev => {
       const newSet = new Set(prev);
       if (newSet.has(widgetId)) {
+        console.log('🎯 [SELECT] Widget already selected, deselecting:', widgetId);
         newSet.delete(widgetId);
       } else {
+        console.log('🎯 [SELECT] Adding widget to selection:', widgetId);
         newSet.add(widgetId);
       }
+      console.log('🎯 [SELECT] New selection set:', Array.from(newSet));
       return newSet;
     });
   };
 
   const handleDeselectAll = () => {
+    console.log('🎯 [SELECT] Deselecting all widgets');
     setSelectedWidgets(new Set());
   };
 
@@ -1124,7 +1129,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                           if (mouseDownPos) {
                             const deltaX = Math.abs(e.clientX - mouseDownPos.x);
                             const deltaY = Math.abs(e.clientY - mouseDownPos.y);
-                            if (deltaX > 5 || deltaY > 5) {
+                            if (deltaX > 10 || deltaY > 10) {
                               console.log('🖱️🔄 [DEBUG] Dragging detected for widget:', currentWidget.id);
                               draggingWidgets.current.add(currentWidget.id);
                             }
@@ -1136,26 +1141,27 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                           
                           console.log('🖱️⬆️ [DEBUG] Mouse up on widget:', currentWidget.id, 'isDragging:', isDragging);
                           
-                          // Only trigger selection if it was a click (not a drag)
-                          if (!isDragging && mouseDownPos) {
-                            const deltaX = Math.abs(e.clientX - mouseDownPos.x);
-                            const deltaY = Math.abs(e.clientY - mouseDownPos.y);
-                            
+                          // Calculate movement delta
+                          let deltaX = 0;
+                          let deltaY = 0;
+                          if (mouseDownPos) {
+                            deltaX = Math.abs(e.clientX - mouseDownPos.x);
+                            deltaY = Math.abs(e.clientY - mouseDownPos.y);
                             console.log('🖱️📏 [DEBUG] Mouse movement delta:', { deltaX, deltaY });
-                            
-                            // If mouse didn't move more than 5px, it's a click
-                            if (deltaX < 5 && deltaY < 5) {
-                              console.log('🖱️✅ [DEBUG] Click detected on widget:', currentWidget.id);
-                              e.stopPropagation();
-                              if (e.ctrlKey || e.metaKey) {
-                                handleSelectWidget(currentWidget.id);
-                              } else {
-                                handleDeselectAll();
-                                handleSelectWidget(currentWidget.id);
-                              }
+                          }
+                          
+                          // If mouse didn't move more than 10px, it's a click (not a drag)
+                          if (deltaX <= 10 && deltaY <= 10) {
+                            console.log('🖱️✅ [DEBUG] Click detected on widget:', currentWidget.id);
+                            e.stopPropagation();
+                            if (e.ctrlKey || e.metaKey) {
+                              handleSelectWidget(currentWidget.id);
                             } else {
-                              console.log('🖱️❌ [DEBUG] Drag detected, not selecting widget:', currentWidget.id);
+                              handleDeselectAll();
+                              handleSelectWidget(currentWidget.id);
                             }
+                          } else {
+                            console.log('🖱️❌ [DEBUG] Drag detected (delta too large), not selecting widget:', currentWidget.id);
                           }
                           
                           mouseDownPositions.current.delete(currentWidget.id);
