@@ -857,7 +857,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   onClick={handleUndo}
                   disabled={changeHistory.length === 0}
                   className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
-                  title={`Undo (${changeHistory.length} changes)`}
+                  title={changeHistory.length > 0 ? `Undo: ${changeHistory[0].description}` : 'Nothing to undo'}
                 >
                   <Undo2 className="h-3 w-3 mr-1" />
                   Undo
@@ -873,7 +873,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   onClick={handleRedo}
                   disabled={redoHistory.length === 0}
                   className="h-8 px-3 text-xs hover:bg-primary/10 disabled:opacity-50"
-                  title={`Redo (${redoHistory.length} changes)`}
+                  title={redoHistory.length > 0 ? `Redo: ${redoHistory[0].description}` : 'Nothing to redo'}
                 >
                   <Redo2 className="h-3 w-3 mr-1" />
                   Redo
