@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import GridLayout, { type Layout } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
@@ -235,20 +235,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
-  const [isResponsiveResize, setIsResponsiveResize] = useState(false); // Track responsive resizes
-  
-  // Track mouse positions for click detection (widget ID -> position)
-  const mouseDownPositions = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const draggingWidgets = useRef<Set<number>>(new Set());
-  
-  // Responsive breakpoints - determine grid columns based on screen width
-  const getResponsiveCols = useCallback(() => {
-    if (containerWidth < 640) return 6;  // Mobile: 6 columns
-    if (containerWidth < 1024) return 12; // Tablet: 12 columns
-    return 24; // Desktop: 24 columns
-  }, [containerWidth]);
-  
-  const gridCols = useMemo(() => getResponsiveCols(), [getResponsiveCols]);
 
   // Handle exit confirmation dialog
   const handleExitConfirm = useCallback(() => {
@@ -328,9 +314,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   // Update container width on resize
   useEffect(() => {
     const updateWidth = () => {
-      // Mark as responsive resize to prevent pending changes
-      setIsResponsiveResize(true);
-      
       // Use the parent container instead of .layout which might not exist yet
       const container = document.querySelector('.h-full.w-full.p-6');
       if (container) {
@@ -343,9 +326,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         console.log('🎯 [DEBUG] Fallback width:', fallbackWidth);
         setContainerWidth(fallbackWidth);
       }
-      
-      // Reset responsive flag after layout has time to update
-      setTimeout(() => setIsResponsiveResize(false), 300);
     };
 
     updateWidth();
@@ -466,10 +446,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       // Find first available position starting from top-left
       const widgets = Object.values(widgetsRecord);
-      // Responsive widget size based on grid columns
-      const newWidth = gridCols === 6 ? 6 : (gridCols === 12 ? 6 : 6); // Full width on mobile
-      const newHeight = 8;
-      const cols = gridCols; // Use responsive column count
+      // Fixed widget size
+      const newWidth = 8; // 33% of 24 columns
+      const newHeight = 6;
+      const cols = 24; // Fixed 24 columns
       
       // Function to check if position is available (no collision with existing widgets)
       const isPositionAvailable = (x: number, y: number, w: number, h: number): boolean => {
@@ -1115,57 +1095,24 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                       isEditMode && isSelected && "ring-2 ring-primary/80 ring-offset-2 shadow-lg"
                     )}
                   >
-                    {/* Invisible overlay for selection and drag in edit mode */}
+                    {/* Drag handle - invisible small area at top */}
+                    {isEditMode && (
+                      <div className="widget-header absolute top-0 left-0 right-0 h-8 z-[15] cursor-move" />
+                    )}
+                    
+                    {/* Click overlay for selection - NOT a drag handle */}
                     {isEditMode && (
                       <div 
-                        className="widget-header absolute inset-0 z-[1] cursor-move"
-                        onMouseDown={(e) => {
-                          console.log('🖱️⬇️ [DEBUG] Mouse down on widget:', currentWidget.id);
-                          mouseDownPositions.current.set(currentWidget.id, { x: e.clientX, y: e.clientY });
-                          draggingWidgets.current.delete(currentWidget.id);
-                        }}
-                        onMouseMove={(e) => {
-                          const mouseDownPos = mouseDownPositions.current.get(currentWidget.id);
-                          if (mouseDownPos) {
-                            const deltaX = Math.abs(e.clientX - mouseDownPos.x);
-                            const deltaY = Math.abs(e.clientY - mouseDownPos.y);
-                            if (deltaX > 10 || deltaY > 10) {
-                              console.log('🖱️🔄 [DEBUG] Dragging detected for widget:', currentWidget.id);
-                              draggingWidgets.current.add(currentWidget.id);
-                            }
-                          }
-                        }}
-                        onMouseUp={(e) => {
-                          const mouseDownPos = mouseDownPositions.current.get(currentWidget.id);
-                          const isDragging = draggingWidgets.current.has(currentWidget.id);
-                          
-                          console.log('🖱️⬆️ [DEBUG] Mouse up on widget:', currentWidget.id, 'isDragging:', isDragging);
-                          
-                          // Calculate movement delta
-                          let deltaX = 0;
-                          let deltaY = 0;
-                          if (mouseDownPos) {
-                            deltaX = Math.abs(e.clientX - mouseDownPos.x);
-                            deltaY = Math.abs(e.clientY - mouseDownPos.y);
-                            console.log('🖱️📏 [DEBUG] Mouse movement delta:', { deltaX, deltaY });
-                          }
-                          
-                          // If mouse didn't move more than 10px, it's a click (not a drag)
-                          if (deltaX <= 10 && deltaY <= 10) {
-                            console.log('🖱️✅ [DEBUG] Click detected on widget:', currentWidget.id);
-                            e.stopPropagation();
-                            if (e.ctrlKey || e.metaKey) {
-                              handleSelectWidget(currentWidget.id);
-                            } else {
-                              handleDeselectAll();
-                              handleSelectWidget(currentWidget.id);
-                            }
+                        className="absolute inset-0 z-[1]"
+                        onClick={(e) => {
+                          console.log('🖱️✅ [DEBUG] Widget clicked:', currentWidget.id);
+                          e.stopPropagation();
+                          if (e.ctrlKey || e.metaKey) {
+                            handleSelectWidget(currentWidget.id);
                           } else {
-                            console.log('🖱️❌ [DEBUG] Drag detected (delta too large), not selecting widget:', currentWidget.id);
+                            handleDeselectAll();
+                            handleSelectWidget(currentWidget.id);
                           }
-                          
-                          mouseDownPositions.current.delete(currentWidget.id);
-                          draggingWidgets.current.delete(currentWidget.id);
                         }}
                         onDoubleClick={(e) => {
                           console.log('🖱️🖱️ [DEBUG] Widget double-clicked:', currentWidget.id);
