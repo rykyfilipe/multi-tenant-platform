@@ -65,8 +65,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
       className={cn(
         "widget-header flex h-full flex-col overflow-hidden group",
         "rounded-xl bg-transparent border-0",
-        designTokens.transitions.base,
-        isEditMode && isSelected && "ring-2 ring-primary/50 ring-offset-2"
+        designTokens.transitions.base
       )}
     >
       {/* Content - Full space, no padding, looks identical in both modes */}

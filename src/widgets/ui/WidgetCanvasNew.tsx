@@ -24,6 +24,7 @@ import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
 import { HydrationBoundary } from "./components/HydrationBoundary";
+import { cn } from "@/lib/utils";
 import { 
   BarChart3, 
   Table, 
@@ -1112,7 +1113,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 return (
                   <div 
                     key={currentWidget.id}
-                    className="h-full w-full"
+                    className={cn(
+                      "h-full w-full transition-all",
+                      isEditMode && "cursor-move",
+                      isEditMode && isSelected && "ring-2 ring-primary/80 ring-offset-2 shadow-lg"
+                    )}
                     onClick={(e) => {
                       if (!isEditMode) return;
                       
@@ -1125,6 +1130,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                         handleDeselectAll();
                         handleSelectWidget(currentWidget.id);
                       }
+                    }}
+                    onDoubleClick={(e) => {
+                      if (!isEditMode) return;
+                      e.stopPropagation();
+                      setEditorWidgetId(currentWidget.id);
                     }}
                   >
                     <Renderer
