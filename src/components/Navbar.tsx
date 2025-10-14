@@ -195,33 +195,76 @@ export function MobileBottomNavbar() {
 		signOut({ callbackUrl: "/" });
 	};
 
+	const allNavItems = getMobileNavigationItems(t, user?.role, tenant, user);
+	
+	// Păstrăm primele 4 iconuri vizibile
+	const visibleItems = allNavItems.slice(0, 4);
+	// Restul merg în "More"
+	const moreItems = allNavItems.slice(4);
+
 	return (
 		<div className='fixed bottom-0 left-0 right-0 z-50 md:hidden'>
 			{/* Clean background */}
 			<div className='bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800'>
 				{/* Main navigation - Icons only */}
-				<div className='flex items-center justify-between px-2 py-3 overflow-x-auto scrollbar-hide' style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-					{getMobileNavigationItems(t, user?.role, tenant, user).map(
-						(item) => {
-							const isActive = pathname === item.url;
-							return (
-								<div key={item.title} className="flex-shrink-0">
-									<Link
-										href={item.url}
-										className={cn(
-											"flex items-center justify-center p-3 rounded-lg min-w-0",
-											"w-12 h-12", // Fixed size for consistency
-											isActive
-												? "bg-gray-900 text-white"
-												: "text-gray-600 dark:text-gray-300",
-										)}>
-										<div className="flex items-center justify-center">
-											<item.icon className='w-5 h-5' />
-										</div>
-									</Link>
-								</div>
-							);
-						},
+				<div className='flex items-center justify-around px-2 py-3'>
+					{/* Visible nav items */}
+					{visibleItems.map((item) => {
+						const isActive = pathname === item.url;
+						return (
+							<div key={item.title} className="flex-shrink-0">
+								<Link
+									href={item.url}
+									className={cn(
+										"flex items-center justify-center p-2.5 rounded-xl min-w-0 transition-all duration-200",
+										"w-11 h-11",
+										isActive
+											? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg"
+											: "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+									)}>
+									<item.icon className='w-5 h-5' />
+								</Link>
+							</div>
+						);
+					})}
+
+					{/* More menu - Icon Only */}
+					{moreItems.length > 0 && (
+						<div className="flex-shrink-0">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<button className={cn(
+										'flex items-center justify-center p-2.5 rounded-xl transition-all duration-200 w-11 h-11',
+										moreItems.some(item => pathname === item.url)
+											? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg"
+											: "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+									)}>
+										<MoreHorizontal className='w-5 h-5' />
+									</button>
+								</DropdownMenuTrigger>
+
+								<DropdownMenuContent
+									align='end'
+									side='top'
+									className='mb-2 w-48'>
+									{moreItems.map((item) => {
+										const isActive = pathname === item.url;
+										return (
+											<DropdownMenuItem
+												key={item.title}
+												onClick={() => router.push(item.url)}
+												className={cn(
+													'cursor-pointer',
+													isActive && 'bg-gray-100 dark:bg-gray-800'
+												)}>
+												<item.icon className='w-4 h-4 mr-2' />
+												{item.title}
+											</DropdownMenuItem>
+										);
+									})}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
 					)}
 
 					{/* User Profile Menu - Icon Only */}
@@ -229,7 +272,7 @@ export function MobileBottomNavbar() {
 						<div className="flex-shrink-0">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<button className='flex items-center justify-center p-3 rounded-lg text-gray-600 dark:text-gray-300 w-12 h-12'>
+									<button className='flex items-center justify-center p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 w-11 h-11'>
 										<Avatar className='w-6 h-6'>
 											<AvatarFallback className='bg-gradient-to-br from-primary to-primary/80 text-white font-semibold text-xs'>
 												{session.user.firstName?.[0]}
@@ -243,17 +286,17 @@ export function MobileBottomNavbar() {
 								align='end'
 								side='top'
 								className='mb-2 w-48 sm:w-56'>
-								<div className='p-3 sm:p-4 border-b border-gray-200'>
-									<p className='font-medium text-gray-900 text-xs sm:text-sm'>
+								<div className='p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700'>
+									<p className='font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm'>
 										{session.user.firstName} {session.user.lastName}
 									</p>
-									<p className='text-xs text-gray-500'>
+									<p className='text-xs text-gray-500 dark:text-gray-400'>
 										{session.user.email}
 									</p>
 									{user?.role && (
 										<Badge
 											variant='secondary'
-											className='mt-1 text-xs bg-gray-100 text-gray-700'>
+											className='mt-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'>
 											{user.role}
 										</Badge>
 									)}
@@ -288,7 +331,7 @@ export function MobileBottomNavbar() {
 
 								<DropdownMenuItem
 									onClick={handleSignOut}
-									className='cursor-pointer text-red-600 hover:bg-red-50'>
+									className='cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20'>
 									<LogOut className='w-4 h-4 mr-2' />
 									{t("ui.signOut")}
 								</DropdownMenuItem>

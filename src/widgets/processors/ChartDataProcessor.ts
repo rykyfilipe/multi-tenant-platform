@@ -49,6 +49,8 @@ export interface TopNConfig {
   enabled: boolean;
   count: number;
   autoSort: boolean; // Auto-sort on first Y column
+  sortColumn?: string; // Specific column to sort by (overrides autoSort)
+  sortOrder?: 'asc' | 'desc'; // Sort order: ascending or descending
 }
 
 /**
@@ -129,6 +131,8 @@ export const chartConfigSchema = z.object({
     enabled: z.boolean(),
     count: z.number().int().positive().max(100),
     autoSort: z.boolean(),
+    sortColumn: z.string().optional(),
+    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
   }).optional(),
 });
 
@@ -200,6 +204,8 @@ export class ChartDataProcessor {
         enabled: false,
         count: 10,
         autoSort: true,
+        sortColumn: undefined,
+        sortOrder: 'desc',
       },
     };
   }
@@ -398,7 +404,10 @@ export class ChartDataProcessor {
 
     // Determine sort column
     let sortColumn: string;
-    if (config.topN.autoSort) {
+    if (config.topN.sortColumn) {
+      // Use explicitly selected column
+      sortColumn = config.topN.sortColumn;
+    } else if (config.topN.autoSort) {
       // Auto-sort on first Y column
       sortColumn = config.mappings.y[0];
     } else {
@@ -409,17 +418,23 @@ export class ChartDataProcessor {
       sortColumn = numericColumns[0] || 'name';
     }
 
+    const sortOrder = config.topN.sortOrder || 'desc';
+    console.log(`  📊 Sorting by column: ${sortColumn} (${sortOrder})`);
+    console.log(`  🔢 Top N count: ${config.topN.count}`);
+
     // Sort data
     const sorted = [...data].sort((a, b) => {
       const aVal = a[sortColumn];
       const bVal = b[sortColumn];
       
       if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return bVal - aVal; // Descending by default
+        // Apply sort order
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
       }
       
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return bVal.localeCompare(aVal);
+        // Apply sort order for strings
+        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
       
       return 0;

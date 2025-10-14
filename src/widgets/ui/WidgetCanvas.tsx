@@ -192,11 +192,12 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
 
   const handleDuplicate = (widget: WidgetEntity) => {
     const definition = getWidgetDefinition(widget.type);
+    const nextPos = findNextPosition();
     createLocal({
       ...widget,
       id: Math.floor(Math.random() * 1000000) + 1000000,
       title: `${widget.title ?? "Widget"} Copy`,
-      position: { ...widget.position, x: widget.position.x + 1 },
+      position: { ...widget.position, x: nextPos.x, y: nextPos.y },
       config: definition.schema.parse(widget.config),
       version: 1,
       schemaVersion: widget.schemaVersion,
@@ -223,12 +224,12 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
       
-      // Place new widget in top-right corner (x: cols - width = 12 - 4 = 8, y: 0)
+      // Find next available position
+      const nextPos = findNextPosition();
       const newWidth = 4;
       const newHeight = 4;
-      const cols = 12; // Must match GridLayout cols
       
-      console.log('📍 [DEBUG] Next position (top-right):', { x: cols - newWidth, y: 0, w: newWidth, h: newHeight });
+      console.log('📍 [DEBUG] Next position:', { x: nextPos.x, y: nextPos.y, w: newWidth, h: newHeight });
       
       // Create widget locally with temporary ID
       const tempId = Date.now();
@@ -239,7 +240,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
         type,
         title: `${type} Widget`,
         description: null,
-        position: { x: cols - newWidth, y: 0, w: newWidth, h: newHeight },
+        position: { x: nextPos.x, y: nextPos.y, w: newWidth, h: newHeight },
         config: defaultConfig,
         isVisible: true,
         sortOrder: 0,
@@ -305,14 +306,15 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
   };
 
   const handleDuplicateSelected = () => {
-    selectedWidgets.forEach(widgetId => {
+    selectedWidgets.forEach((widgetId, index) => {
       const widget = widgetsRecord[widgetId];
       if (widget) {
+        const nextPos = findNextPosition();
         const duplicatedWidget = {
           ...widget,
           id: Math.floor(Math.random() * 1000000) + 1000000,
           title: `${widget.title} (Copy)`,
-          position: { ...widget.position, x: widget.position.x + 1 },
+          position: { ...widget.position, x: nextPos.x, y: nextPos.y },
         };
         createLocal(duplicatedWidget);
       }
@@ -330,7 +332,44 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     console.log('Configure selected widgets:', selectedWidgets);
   };
 
+  // Find next available position in grid
+  const findNextPosition = () => {
+    const widgets = useWidgetsStore.getState().widgets;
+    const widgetsArray = Object.values(widgets).filter(w => w.dashboardId === dashboardId);
+    
+    if (widgetsArray.length === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    // Find rightmost widget
+    let maxX = 0;
+    let maxXWidget = widgetsArray[0];
+    
+    widgetsArray.forEach(widget => {
+      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 4);
+      if (rightEdge > maxX) {
+        maxX = rightEdge;
+        maxXWidget = widget;
+      }
+    });
+
+    // Place new widget to the right of the rightmost widget
+    const newX = maxX;
+    const newY = maxXWidget.position?.y || 0;
+    
+    // If exceeds grid width (24 columns), wrap to next row
+    const GRID_COLS = 24;
+    if (newX >= GRID_COLS) {
+      // Find the max Y position and add new widget below
+      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 4)));
+      return { x: 0, y: maxY };
+    }
+    
+    return { x: newX, y: newY };
+  };
+
   const handleTemplateSelect = (template: any) => {
+    const nextPos = findNextPosition();
     const newWidget: WidgetEntity = {
       id: Math.floor(Math.random() * 1000000) + 1000000,
       tenantId,
@@ -338,7 +377,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       type: template.type,
       title: template.name,
       description: template.description,
-      position: { x: 0, y: 0, w: 4, h: 4 },
+      position: { x: nextPos.x, y: nextPos.y, w: 4, h: 4 },
       config: template.config,
       isVisible: true,
       sortOrder: 0,

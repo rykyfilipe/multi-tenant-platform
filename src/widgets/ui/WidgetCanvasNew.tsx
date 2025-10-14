@@ -184,16 +184,53 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     });
   }, [discardAllChanges, toast]);
 
+  // Find next available position in grid
+  const findNextPosition = useCallback(() => {
+    const widgets = useWidgetsStore.getState().widgets;
+    const widgetsArray = Object.values(widgets).filter(w => w.dashboardId === dashboardId);
+    
+    if (widgetsArray.length === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    // Find rightmost widget
+    let maxX = 0;
+    let maxXWidget = widgetsArray[0];
+    
+    widgetsArray.forEach(widget => {
+      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 4);
+      if (rightEdge > maxX) {
+        maxX = rightEdge;
+        maxXWidget = widget;
+      }
+    });
+
+    // Place new widget to the right of the rightmost widget
+    const newX = maxX;
+    const newY = maxXWidget.position?.y || 0;
+    
+    // If exceeds grid width (24 columns), wrap to next row
+    const GRID_COLS = 24;
+    if (newX >= GRID_COLS) {
+      // Find the max Y position and add new widget below
+      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 4)));
+      return { x: 0, y: maxY };
+    }
+    
+    return { x: newX, y: newY };
+  }, [dashboardId]);
+
   // Duplicate widget function
   const handleDuplicateWidget = useCallback((widget: WidgetEntity) => {
+    const nextPos = findNextPosition();
     const newWidget: WidgetEntity = {
       ...widget,
       id: Math.floor(Date.now() + Math.random() * 1000000), // Generate new integer ID
       title: `${widget.title} (Copy)`,
       position: {
         ...widget.position,
-        x: widget.position.x + 2, // Offset position
-        y: widget.position.y + 2,
+        x: nextPos.x,
+        y: nextPos.y,
       },
       version: 1,
       schemaVersion: widget.schemaVersion,
@@ -209,7 +246,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       description: `${widget.title} has been duplicated.`,
       variant: "default",
     });
-  }, [createLocal, actorId, toast]);
+  }, [createLocal, actorId, toast, findNextPosition]);
 
   // State declarations
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
@@ -1087,7 +1124,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             useCSSTransforms={true}
             margin={[10, 10]}
             containerPadding={[10, 10]}
-            resizeHandles={['se']}
+            resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
             draggableHandle=".widget-header"
             onLayoutChange={(currentLayout, allLayouts) => {
               // Skip updates if:

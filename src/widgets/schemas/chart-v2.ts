@@ -21,6 +21,8 @@ export const chartSettingsSchema = z.object({
   // Top N - simplified (auto-sort by default)
   enableTopN: z.boolean().default(false),
   topNCount: z.number().int().positive().max(100).default(10),
+  topNSortColumn: z.string().optional(),
+  topNSort: z.enum(["desc", "asc"]).default("desc").optional(),
 });
 
 export const chartStyleSchema = z.object({

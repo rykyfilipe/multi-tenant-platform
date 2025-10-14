@@ -24,7 +24,9 @@ import {
   AlertCircle,
   Lightbulb,
   Plus,
-  Trash2
+  Trash2,
+  ArrowDown as ArrowDownIcon,
+  ArrowUp as ArrowUpIcon
 } from "lucide-react";
 import { DatabaseSelector } from "../components/DatabaseSelector";
 import { Column } from "../components/types";
@@ -128,6 +130,8 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
         enabled: true,
         count: value.settings.topNCount || 10,
         autoSort: true,
+        sortColumn: value.settings.topNSortColumn,
+        sortOrder: value.settings.topNSort || 'desc',
       } : undefined,
     };
 
@@ -697,19 +701,69 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                     </div>
 
                     {value.settings.enableTopN && (
-                      <div>
-                        <Label className="text-sm font-medium">Number of Results</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={value.settings.topNCount || 10}
-                          onChange={(e) => updateSettings({ topNCount: parseInt(e.target.value) || 10 })}
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Results will be automatically sorted by the first Y-axis column in descending order.
-                        </p>
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-sm font-medium">Number of Results</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={value.settings.topNCount || 10}
+                            onChange={(e) => updateSettings({ topNCount: parseInt(e.target.value) || 10 })}
+                            className="mt-1"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Sort By Column</Label>
+                          <Select 
+                            value={value.settings.topNSortColumn || (value.data.mappings?.y?.[0] || "")} 
+                            onValueChange={(val: string) => updateSettings({ topNSortColumn: val })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select column to sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {value.data.mappings?.y?.map((col: string) => (
+                                <SelectItem key={col} value={col}>
+                                  {col}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Choose which column to use for sorting
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Sort Order</Label>
+                          <Select 
+                            value={value.settings.topNSort || "desc"} 
+                            onValueChange={(val: "desc" | "asc") => updateSettings({ topNSort: val })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select sort order" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="desc">
+                                <div className="flex items-center gap-2">
+                                  <ArrowDownIcon className="w-4 h-4" />
+                                  <span>Descending (High to Low)</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="asc">
+                                <div className="flex items-center gap-2">
+                                  <ArrowUpIcon className="w-4 h-4" />
+                                  <span>Ascending (Low to High)</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {value.settings.topNSort === "asc" ? "Show lowest values first" : "Show highest values first"}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </CardContent>
