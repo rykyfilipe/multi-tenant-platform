@@ -17,7 +17,7 @@ import { useEditMode } from '@/contexts/EditModeContext';
 import { isWidgetsV2Enabled } from '@/lib/featureFlag';
 import { WidgetCanvasNew } from '@/widgets/ui/WidgetCanvasNew';
 import { SmartWidgetTemplatesModal } from '@/widgets/ui/components/SmartWidgetTemplatesModal';
-import { Plus, LayoutDashboard, Edit3, Eye, Settings, Trash2, Edit, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, LayoutDashboard, Edit3, Eye, EyeOff, Settings, Trash2, Edit, AlertCircle, Sparkles, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 
 interface DashboardSummary {
   id: number;
@@ -42,6 +42,7 @@ export default function DashboardsPage() {
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
   const [editForm, setEditForm] = useState({ name: '', description: '', isPublic: false });
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
 
   useEffect(() => {
     if (user?.id && actorId !== user.id) {
@@ -426,7 +427,8 @@ export default function DashboardsPage() {
   // Main dashboard view
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Header - Responsive Toolbar */}
+      {/* Header - Responsive Toolbar - Toggleable */}
+      {!isHeaderHidden && (
       <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex flex-col gap-3 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           {/* Top Row: Dashboard Info */}
@@ -518,6 +520,27 @@ export default function DashboardsPage() {
                   </>
                 )}
               </Button>
+              
+              {/* Fullscreen Toggle */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsHeaderHidden(!isHeaderHidden)}
+                className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                title={isHeaderHidden ? "Show header" : "Hide header (fullscreen)"}
+              >
+                {isHeaderHidden ? (
+                  <>
+                    <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Show</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Full</span>
+                  </>
+                )}
+              </Button>
             </div>
 
             {/* Right Side: Settings */}
@@ -547,15 +570,31 @@ export default function DashboardsPage() {
           </div>
         </div>
       </div>
+      )}
+      
+      {/* Floating Header Toggle Button - visible when header hidden */}
+      {isHeaderHidden && (
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setIsHeaderHidden(false)}
+          className="fixed top-4 right-4 z-50 h-9 px-3 shadow-lg"
+          title="Show header"
+        >
+          <Minimize2 className="h-4 w-4 mr-2" />
+          Show Header
+        </Button>
+      )}
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Main Content - Full Height */}
+      <div className={isHeaderHidden ? "h-screen overflow-hidden" : "flex-1 overflow-hidden"}>
         {selectedDashboardId && actorId ? (
           <WidgetCanvasNew 
             tenantId={tenant?.id ?? 0} 
             dashboardId={selectedDashboardId} 
             actorId={actorId}
             isEditMode={isEditMode}
+            isFullscreen={isHeaderHidden}
           />
         ) : (
           <div className="flex h-full items-center justify-center p-6">

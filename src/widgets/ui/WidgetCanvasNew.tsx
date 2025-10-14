@@ -50,13 +50,15 @@ interface WidgetCanvasNewProps {
   dashboardId: number;
   actorId: number;
   isEditMode?: boolean;
+  isFullscreen?: boolean;
 }
 
 export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({ 
   tenantId, 
   dashboardId, 
   actorId, 
-  isEditMode = false 
+  isEditMode = false,
+  isFullscreen = false
 }) => {
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
   const pendingOperations = useWidgetsStore((state) => state.getPending());
@@ -384,24 +386,27 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const updateWidth = () => {
       // First try to use the ref (most accurate)
       if (gridContainerRef.current) {
-        const width = gridContainerRef.current.clientWidth - 48; // Subtract padding (24px * 2)
-        console.log('📐 [WIDTH] Using ref - Container width:', gridContainerRef.current.clientWidth, 'Grid width:', width);
+        // Fullscreen: no padding (p-0), Normal: p-6 (24px * 2 = 48px)
+        const paddingOffset = isFullscreen ? 0 : 48;
+        const width = gridContainerRef.current.clientWidth - paddingOffset;
+        console.log('📐 [WIDTH] Using ref - Container:', gridContainerRef.current.clientWidth, 'Grid:', width, 'Fullscreen:', isFullscreen);
         setContainerWidth(width);
         return;
       }
       
       // Fallback: Try multiple selectors to find the container
-      const container = document.querySelector('.h-full.w-full.p-6') 
+      const container = document.querySelector('.h-full.w-full') 
                      || document.querySelector('main') 
                      || document.body;
       
       if (container) {
-        const width = container.clientWidth - 48; // Subtract padding (24px * 2)
-        console.log('📐 [WIDTH] Using selector - Container:', container.className || 'body', 'Width:', container.clientWidth, 'Grid width:', width);
+        const paddingOffset = isFullscreen ? 0 : 48;
+        const width = container.clientWidth - paddingOffset;
+        console.log('📐 [WIDTH] Using selector - Container:', container.clientWidth, 'Grid:', width);
         setContainerWidth(width);
       } else {
-        // Last resort: full window width with margin
-        const fallbackWidth = window.innerWidth - 100;
+        // Last resort: full window width
+        const fallbackWidth = window.innerWidth - (isFullscreen ? 0 : 100);
         console.log('📐 [WIDTH] Using fallback width:', fallbackWidth);
         setContainerWidth(fallbackWidth);
       }
@@ -419,7 +424,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
     };
-  }, []);
+  }, [isFullscreen]); // Re-run when fullscreen mode changes
 
   // Handle page exit with confirmation
   useEffect(() => {
@@ -1032,7 +1037,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       {/* Main Grid Area */}
       <div 
         ref={gridContainerRef}
-        className="h-full w-full p-6 overflow-y-auto pb-24"
+        className={cn(
+          "h-full w-full overflow-y-auto",
+          isFullscreen ? "p-0 pb-20" : "p-6 pb-24"
+        )}
         onClick={handleCanvasClick}
       >
         <style jsx global>{`
@@ -1159,7 +1167,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             preventCollision={false}
             useCSSTransforms={true}
             margin={[10, 10]}
-            containerPadding={[10, 10]}
+            containerPadding={isFullscreen ? [5, 5] : [10, 10]}
             resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
             draggableHandle=".widget-header"
             onLayoutChange={(currentLayout: Layout[]) => {
