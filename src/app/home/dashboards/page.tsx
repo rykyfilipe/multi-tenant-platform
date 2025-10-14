@@ -39,6 +39,7 @@ export default function DashboardsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPublic: false });
   const [editForm, setEditForm] = useState({ name: '', description: '', isPublic: false });
 
@@ -487,12 +488,15 @@ export default function DashboardsPage() {
 
               {/* Templates Button */}
               {selectedDashboardId && (
-                <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
-                  <Button variant="outline" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
-                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Templates</span>
-                  </Button>
-                </SmartWidgetTemplatesModal>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsTemplatesModalOpen(true)}
+                  className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                >
+                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Templates</span>
+                </Button>
               )}
 
               {/* Edit/View Mode Toggle */}
@@ -579,6 +583,15 @@ export default function DashboardsPage() {
           submitLabel="Update Dashboard"
         />
       </Dialog>
+
+      {/* Templates Modal - Rendered in Main Container */}
+      {selectedDashboardId && (
+        <SmartWidgetTemplatesModal 
+          dashboardId={selectedDashboardId}
+          isOpen={isTemplatesModalOpen}
+          onOpenChange={setIsTemplatesModalOpen}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <Dialog open={isDeleteModalOpen} onOpenChange={(open) => !isDeleting && setIsDeleteModalOpen(open)}>

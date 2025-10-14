@@ -29,17 +29,25 @@ import { WidgetType } from "@/generated/prisma";
 interface SmartWidgetTemplatesModalProps {
   dashboardId?: number;
   children?: React.ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps> = ({ 
   dashboardId,
-  children 
+  children,
+  isOpen: controlledOpen,
+  onOpenChange
 }) => {
   const { tenant, showAlert } = useApp();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isCreating, setIsCreating] = useState(false);
   const createLocal = useWidgetsStore((state) => state.createLocal);
+  
+  // Use controlled or uncontrolled mode
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
 
   // Fetch user's tables with columns loaded
   const { data: allTables, isLoading } = useTablesWithColumns(tenant?.id || 0);
@@ -762,15 +770,17 @@ export const SmartWidgetTemplatesModal: React.FC<SmartWidgetTemplatesModalProps>
 
   return (
     <>
-      {/* Trigger Button */}
-      <div onClick={() => setOpen(true)}>
-        {children || (
-          <Button variant="outline" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Smart Templates
-          </Button>
-        )}
-      </div>
+      {/* Trigger Button - Only render if not controlled externally */}
+      {controlledOpen === undefined && (
+        <div onClick={() => setOpen(true)}>
+          {children || (
+            <Button variant="outline" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Smart Templates
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Custom Modal Overlay */}
       {open && (
