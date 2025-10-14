@@ -130,6 +130,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
       },
       processing: {
         yColumnAggregations: yColumnAggregations || undefined,
+        dateGrouping: config?.settings?.dateGrouping || { enabled: false, granularity: 'day' },
       },
       filters: filters,
       topN: enableTopN ? {
@@ -151,6 +152,7 @@ export const ChartWidgetRenderer: React.FC<ChartWidgetRendererProps> = ({
     tableId,
     JSON.stringify(yColumnAggregations),
     JSON.stringify(filters),
+    JSON.stringify(config?.settings?.dateGrouping), // Track date grouping changes
     enableTopN,
     topNCount,
   ]);

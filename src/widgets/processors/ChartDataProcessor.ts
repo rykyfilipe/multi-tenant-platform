@@ -21,6 +21,15 @@ export interface ColumnMappings {
 }
 
 /**
+ * Date grouping configuration
+ */
+export interface DateGroupingConfig {
+  enabled: boolean;
+  granularity: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
+  column?: string; // Auto-detect if not specified
+}
+
+/**
  * Data processing configuration (SIMPLIFIED)
  * Automatic grouping by X axis when aggregations are configured
  */
@@ -31,6 +40,8 @@ export interface ProcessingConfig {
     function: 'sum' | 'avg' | 'count' | 'min' | 'max';
     label: string;
   }>>;
+  // Date grouping for time-series
+  dateGrouping?: DateGroupingConfig;
 }
 
 /**
@@ -332,6 +343,68 @@ export class ChartDataProcessor {
   }
 
   /**
+   * Format date based on granularity
+   */
+  private static formatDateByGranularity(value: any, granularity: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'): string {
+    if (!value) return '__NULL__';
+    
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+      return String(value); // Not a date, return as-is
+    }
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    
+    switch (granularity) {
+      case 'hour':
+        return `${year}-${month}-${day} ${hour}:00`;
+      
+      case 'day':
+        return `${year}-${month}-${day}`;
+      
+      case 'week':
+        // Get week number (ISO week)
+        const firstDayOfYear = new Date(year, 0, 1);
+        const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+        const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+        return `${year}-W${String(weekNum).padStart(2, '0')}`;
+      
+      case 'month':
+        return `${year}-${month}`;
+      
+      case 'quarter':
+        const quarter = Math.ceil((date.getMonth() + 1) / 3);
+        return `${year}-Q${quarter}`;
+      
+      case 'year':
+        return `${year}`;
+      
+      default:
+        return `${year}-${month}-${day}`;
+    }
+  }
+
+  /**
+   * Detect if a column contains date values
+   */
+  private static isDateColumn(data: NormalizedRow[], columnName: string): boolean {
+    // Check first few non-null values
+    for (let i = 0; i < Math.min(data.length, 10); i++) {
+      const value = data[i]?.[columnName];
+      if (value) {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          return true; // Found a valid date
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
    * Step 3b: Process with aggregations (AUTOMATIC grouping by X axis)
    */
   private static processWithAggregations(data: NormalizedRow[], config: ChartConfig): ChartDataPoint[] {
@@ -342,12 +415,32 @@ export class ChartDataProcessor {
     const groupByColumn = config.mappings.x;
     console.log(`   Grouping by: ${groupByColumn}`);
 
-    // Group data by X axis
+    // Check if date grouping is enabled
+    const dateGrouping = config.processing.dateGrouping;
+    const isDateGroupingEnabled = dateGrouping?.enabled && dateGrouping.granularity;
+    
+    // Auto-detect if X column is a date
+    const isXAxisDate = this.isDateColumn(data, groupByColumn);
+    
+    if (isDateGroupingEnabled && isXAxisDate) {
+      console.log(`   📅 DATE GROUPING ENABLED - Granularity: ${dateGrouping.granularity}`);
+    }
+
+    // Group data by X axis with smart date handling
     const grouped: Record<string, NormalizedRow[]> = {};
     data.forEach(row => {
-      const groupKey = row[groupByColumn] !== undefined 
-        ? String(row[groupByColumn])
-        : '__NULL__';
+      const rawValue = row[groupByColumn];
+      let groupKey: string;
+      
+      if (rawValue === undefined || rawValue === null) {
+        groupKey = '__NULL__';
+      } else if (isDateGroupingEnabled && isXAxisDate) {
+        // Format date based on granularity
+        groupKey = this.formatDateByGranularity(rawValue, dateGrouping.granularity);
+      } else {
+        // Regular string grouping
+        groupKey = String(rawValue);
+      }
       
       if (!grouped[groupKey]) {
         grouped[groupKey] = [];
@@ -357,9 +450,20 @@ export class ChartDataProcessor {
 
     console.log(`   Created ${Object.keys(grouped).length} groups`);
 
+    // Sort groups if using date grouping (chronological order)
+    let sortedGroups = Object.entries(grouped);
+    if (isDateGroupingEnabled && isXAxisDate) {
+      sortedGroups = sortedGroups.sort(([keyA], [keyB]) => {
+        if (keyA === '__NULL__') return 1;
+        if (keyB === '__NULL__') return -1;
+        return keyA.localeCompare(keyB); // Alphabetical = chronological for ISO dates
+      });
+      console.log(`   📅 Sorted groups chronologically`);
+    }
+
     // Apply aggregation pipelines to each group
     const aggregated: ChartDataPoint[] = [];
-    Object.entries(grouped).forEach(([groupKey, groupRows]) => {
+    sortedGroups.forEach(([groupKey, groupRows]) => {
       const chartPoint: ChartDataPoint = {
         name: groupKey === '__NULL__' ? 'N/A' : groupKey,
       };

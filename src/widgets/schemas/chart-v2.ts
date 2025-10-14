@@ -18,6 +18,15 @@ export const chartSettingsSchema = z.object({
     z.string(), // column name
     z.string() // hex color
   ).optional(),
+  // Date grouping for time-series data
+  dateGrouping: z.object({
+    enabled: z.boolean().default(false),
+    granularity: z.enum(["hour", "day", "week", "month", "quarter", "year"]).default("day"),
+    column: z.string().optional(), // Auto-detect if not specified (uses X axis)
+  }).optional().default({
+    enabled: false,
+    granularity: "day",
+  }),
   // Top N - simplified (auto-sort by default)
   enableTopN: z.boolean().default(false),
   topNCount: z.number().int().positive().max(100).default(10),

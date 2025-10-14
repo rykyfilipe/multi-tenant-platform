@@ -19,6 +19,15 @@ export const tableSettingsSchema = z.object({
     showGroupTotals: z.boolean().default(false),
   }),
   
+  // Date grouping for groupBy column when it's a date
+  dateGrouping: z.object({
+    enabled: z.boolean().default(false),
+    granularity: z.enum(["hour", "day", "week", "month", "quarter", "year"]).default("day"),
+  }).optional().default({
+    enabled: false,
+    granularity: "day",
+  }),
+  
   // Pagination
   pagination: z.object({
     enabled: z.boolean().default(true),

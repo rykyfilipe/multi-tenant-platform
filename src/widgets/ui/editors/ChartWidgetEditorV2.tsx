@@ -639,6 +639,84 @@ export const ChartWidgetEditorV2: React.FC<ChartWidgetEditorV2Props> = ({
                   </Card>
                 )}
 
+                {/* Date Grouping Configuration */}
+                {value.data.mappings?.x && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        📅 Date Grouping (Time Series)
+                      </CardTitle>
+                      <CardDescription>
+                        Group date/timestamp columns by hour, day, week, month, quarter, or year
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          Enable Date Grouping
+                          <div className="group relative">
+                            <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                              Auto-detects date columns and groups data by selected granularity
+                            </div>
+                          </div>
+                        </Label>
+                        <Switch
+                          checked={value.settings.dateGrouping?.enabled || false}
+                          onCheckedChange={(checked) => updateSettings({ 
+                            dateGrouping: { 
+                              ...value.settings.dateGrouping,
+                              enabled: checked,
+                              granularity: value.settings.dateGrouping?.granularity || 'day'
+                            } 
+                          })}
+                        />
+                      </div>
+
+                      {value.settings.dateGrouping?.enabled && (
+                        <div>
+                          <Label className="text-sm font-medium">Granularity</Label>
+                          <Select
+                            value={value.settings.dateGrouping.granularity || 'day'}
+                            onValueChange={(val) => updateSettings({ 
+                              dateGrouping: { 
+                                ...value.settings.dateGrouping,
+                                enabled: true,
+                                granularity: val as 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'
+                              } 
+                            })}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hour">📊 By Hour (2025-01-15 14:00)</SelectItem>
+                              <SelectItem value="day">📅 By Day (2025-01-15)</SelectItem>
+                              <SelectItem value="week">📆 By Week (2025-W03)</SelectItem>
+                              <SelectItem value="month">🗓️ By Month (2025-01)</SelectItem>
+                              <SelectItem value="quarter">📈 By Quarter (2025-Q1)</SelectItem>
+                              <SelectItem value="year">📊 By Year (2025)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Groups timestamps/dates on X axis ({value.data.mappings.x}) by selected time period
+                          </p>
+                        </div>
+                      )}
+
+                      {value.settings.dateGrouping?.enabled && (
+                        <Alert className="border-blue-200 bg-blue-50">
+                          <Lightbulb className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="text-xs text-blue-800">
+                            <strong>Example:</strong> If X axis is "created_at" and granularity is "month", 
+                            all invoices from January 2025 will be grouped together as "2025-01".
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Info Card - Auto Grouping */}
                 {value.data.mappings?.y && value.data.mappings.y.length > 0 && (
                   <Alert>
