@@ -72,6 +72,12 @@ const definitions: Record<WidgetType, WidgetDefinition<z.ZodTypeAny>> = {
         fontWeight: "normal",
         padding: "md",
         borderRadius: "xl",
+        border: {
+          enabled: false,
+          width: 1,
+          color: "rgba(0, 0, 0, 0.1)",
+          style: "solid"
+        },
         borderWidth: 1,
         shadow: "medium",
         glassEffect: false,
@@ -542,7 +548,15 @@ const definitions: Record<WidgetType, WidgetDefinition<z.ZodTypeAny>> = {
       },
       style: {
         backgroundColor: "transparent",
+        textColor: "#000000",
         padding: "md",
+        borderRadius: 0,
+        border: {
+          enabled: false,
+          width: 1,
+          color: "rgba(0, 0, 0, 0.1)",
+          style: "solid"
+        },
         cardBorderRadius: 12,
         cardShadow: "md",
         cardPadding: 16,

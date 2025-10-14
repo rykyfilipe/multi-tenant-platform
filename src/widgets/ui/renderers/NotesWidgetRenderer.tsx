@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AppContext";
 import {
   Plus,
   Trash2,
@@ -27,7 +29,8 @@ import {
   BellOff,
   Link2,
   Eye,
-  Code
+  Code,
+  Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NoteItem, ChecklistItem, noteColors } from "@/widgets/schemas/notes-v1";
@@ -48,8 +51,8 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
   onDuplicate,
   isEditMode = false
 }) => {
-  const updateLocal = useWidgetsStore((state) => state.updateLocal);
   const { toast } = useToast();
+  const { token } = useAuth();
   
   const config = widget.config as any;
   const settings = config?.settings || {};
@@ -74,9 +77,13 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     return [];
   });
 
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingNote, setEditingNote] = useState<NoteItem | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [editColor, setEditColor] = useState<NoteItem['color']>("yellow");
   const [editTags, setEditTags] = useState<string[]>([]);
   const [editIsChecklist, setEditIsChecklist] = useState(false);
   const [editChecklistItems, setEditChecklistItems] = useState<ChecklistItem[]>([]);
@@ -84,6 +91,25 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [newTag, setNewTag] = useState("");
   const [markdownPreview, setMarkdownPreview] = useState(false);
+
+  // Sync notes when widget.config changes
+  useEffect(() => {
+    if (config?.data?.notes && Array.isArray(config.data.notes)) {
+      const loadedNotes = config.data.notes.map((note: any) => ({
+        ...note,
+        createdAt: note.createdAt ? new Date(note.createdAt) : new Date(),
+        updatedAt: note.updatedAt ? new Date(note.updatedAt) : new Date(),
+        tags: note.tags || [],
+        isPinned: note.isPinned || false,
+        isChecklist: note.isChecklist || false,
+        checklistItems: note.checklistItems || [],
+        isMarkdown: note.isMarkdown || false,
+        linkedWidgetIds: note.linkedWidgetIds || [],
+        reminder: note.reminder || undefined,
+      }));
+      setNotes(loadedNotes);
+    }
+  }, [widget.id, widget.config, config]);
 
   // Extract settings
   const showDates = settings.showDates ?? true;
@@ -102,6 +128,10 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
   const enableReminders = settings.enableReminders ?? false;
 
   // Extract style
+  const backgroundColor = styleConfig.backgroundColor || "transparent";
+  const textColor = styleConfig.textColor || "#000000";
+  const containerBorderRadius = styleConfig.borderRadius ?? 0;
+  const border = styleConfig.border || { enabled: false, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" };
   const cardBorderRadius = styleConfig.cardBorderRadius ?? 12;
   const cardShadow = styleConfig.cardShadow || "md";
   const cardPadding = styleConfig.cardPadding ?? 16;
@@ -140,25 +170,69 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     }
   };
 
-  // Save notes to widget config
-  const saveNotes = useCallback((updatedNotes: NoteItem[]) => {
-    const serializedNotes = updatedNotes.map(note => ({
-      ...note,
-      createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : note.createdAt,
-      updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : note.updatedAt,
-    }));
+  // Save notes directly to API via PATCH - no pending changes
+  const saveNotesToApi = useCallback(async (updatedNotes: NoteItem[]) => {
+    if (isEditMode || !token) {
+      // Don't save while editing dashboard layout
+      console.log('[NotesWidget] Skipping save - edit mode or no token');
+      return;
+    }
 
-    updateLocal(widget.id, {
-      config: {
-        ...config,
+    setIsSaving(true);
+    try {
+      const serializedNotes = updatedNotes.map(note => ({
+        ...note,
+        createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : note.createdAt,
+        updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : note.updatedAt,
+      }));
+
+      const updatedConfig = {
+        ...widget.config,
         data: {
-          ...config.data,
+          ...(widget.config as any)?.data,
           notes: serializedNotes
         }
+      };
+
+      console.log('[NotesWidget] Saving notes via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
+
+      const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          config: updatedConfig,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save notes: ${response.statusText}`);
       }
-    });
-    setNotes(updatedNotes);
-  }, [widget.id, config, updateLocal]);
+
+      const result = await response.json();
+      console.log('[NotesWidget] Notes saved successfully:', result);
+
+      // Update local state
+      setNotes(updatedNotes);
+
+      toast({
+        title: "Notes saved",
+        description: "Your changes have been saved successfully",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('[NotesWidget] Error saving notes:', error);
+      toast({
+        title: "Error saving notes",
+        description: "Failed to save your changes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [widget.id, widget.dashboardId, widget.config, isEditMode, token, toast]);
 
   // Add new note
   const handleAddNote = (type: 'note' | 'checklist' = 'note') => {
@@ -176,23 +250,13 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
       isMarkdown: false,
       linkedWidgetIds: [],
     };
-    saveNotes([...notes, newNote]);
-    toast({
-      title: type === 'checklist' ? "Checklist added" : "Note added",
-      description: `New ${type} created successfully`,
-      variant: "default",
-    });
+    saveNotesToApi([...notes, newNote]);
   };
 
   // Delete note
   const handleDeleteNote = (id: string) => {
     const updatedNotes = notes.filter(note => note.id !== id);
-    saveNotes(updatedNotes);
-    toast({
-      title: "Note deleted",
-      description: "Note removed successfully",
-      variant: "default",
-    });
+    saveNotesToApi(updatedNotes);
   };
 
   // Toggle pin
@@ -200,32 +264,35 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     const updatedNotes = notes.map(note =>
       note.id === id ? { ...note, isPinned: !note.isPinned, updatedAt: new Date() } : note
     );
-    saveNotes(updatedNotes);
+    saveNotesToApi(updatedNotes);
   };
 
-  // Start editing
-  const handleStartEdit = (note: NoteItem) => {
-    if (!allowInlineEdit || !isEditMode) return;
-    setEditingId(note.id);
+  // Open edit dialog
+  const openEditDialog = (note: NoteItem) => {
+    if (!allowInlineEdit) return;
+    setEditingNote(note);
     setEditTitle(note.title);
     setEditContent(note.content);
+    setEditColor(note.color);
     setEditTags(note.tags || []);
     setEditIsChecklist(note.isChecklist || false);
     setEditChecklistItems(note.checklistItems || []);
     setEditIsMarkdown(note.isMarkdown || false);
     setMarkdownPreview(false);
+    setIsEditDialogOpen(true);
   };
 
-  // Save edit
-  const handleSaveEdit = () => {
-    if (!editingId) return;
+  // Save edit from dialog
+  const handleSaveEdit = async () => {
+    if (!editingNote) return;
     
     const updatedNotes = notes.map(note =>
-      note.id === editingId
+      note.id === editingNote.id
         ? { 
             ...note, 
             title: editTitle, 
-            content: editContent, 
+            content: editContent,
+            color: editColor,
             tags: editTags,
             isChecklist: editIsChecklist,
             checklistItems: editChecklistItems,
@@ -234,23 +301,10 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
           }
         : note
     );
-    saveNotes(updatedNotes);
-    setEditingId(null);
-    toast({
-      title: "Note updated",
-      description: "Changes saved successfully",
-      variant: "default",
-    });
-  };
-
-  // Cancel edit
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditTitle("");
-    setEditContent("");
-    setEditTags([]);
-    setEditChecklistItems([]);
-    setMarkdownPreview(false);
+    
+    await saveNotesToApi(updatedNotes);
+    setIsEditDialogOpen(false);
+    setEditingNote(null);
   };
 
   // Change note color
@@ -258,7 +312,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     const updatedNotes = notes.map(note =>
       note.id === id ? { ...note, color, updatedAt: new Date() } : note
     );
-    saveNotes(updatedNotes);
+    saveNotesToApi(updatedNotes);
   };
 
   // Add tag
@@ -288,7 +342,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
       }
       return note;
     });
-    saveNotes(updatedNotes);
+    saveNotesToApi(updatedNotes);
   };
 
   // Add checklist item in edit mode
@@ -362,7 +416,15 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
       onDuplicate={onDuplicate} 
       isEditMode={isEditMode}
     >
-      <div className="h-full w-full flex flex-col">
+      <div 
+        className="h-full w-full flex flex-col"
+        style={{
+          backgroundColor,
+          color: textColor,
+          borderRadius: `${containerBorderRadius}px`,
+          border: border.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
+        }}
+      >
         {/* Search Bar */}
         {enableSearch && notes.length > 0 && (
           <div className="mb-3">
@@ -430,7 +492,6 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
           >
             <AnimatePresence>
               {filteredNotes.map((note) => {
-                const isEditing = editingId === note.id;
                 const colorTheme = noteColors[note.color];
 
                 return (
@@ -446,7 +507,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
                       "border",
                       getShadowClass(),
                       "transition-all duration-200",
-                      isEditMode && !isEditing && colorTheme.hover,
+                      colorTheme.hover,
                       note.isPinned && "ring-2 ring-primary/30"
                     )}
                     style={{
@@ -454,152 +515,8 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
                       padding: `${cardPadding}px`,
                     }}
                   >
-                    {isEditing ? (
-                      // Edit Mode
-                      <div className="space-y-3">
-                        <Input
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className="bg-white/50 dark:bg-black/20 font-semibold"
-                          style={{ fontSize: `${titleFontSize}px` }}
-                          placeholder="Note title..."
-                        />
-                        
-                        {/* Checklist mode toggle */}
-                        {enableChecklists && (
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              checked={editIsChecklist}
-                              onCheckedChange={(checked) => setEditIsChecklist(!!checked)}
-                            />
-                            <label className="text-sm cursor-pointer">Checklist mode</label>
-                          </div>
-                        )}
-
-                        {/* Checklist items */}
-                        {editIsChecklist ? (
-                          <div className="space-y-2">
-                            {editChecklistItems.map((item, index) => (
-                              <div key={item.id} className="flex items-center gap-2">
-                                <Input
-                                  value={item.text}
-                                  onChange={(e) => handleUpdateChecklistItem(item.id, e.target.value)}
-                                  className="bg-white/50 dark:bg-black/20 text-sm flex-1"
-                                  placeholder={`Item ${index + 1}...`}
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveChecklistItem(item.id)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleAddChecklistItem}
-                              className="w-full"
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add item
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            {/* Markdown toggle */}
-                            {enableMarkdown && (
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  checked={editIsMarkdown}
-                                  onCheckedChange={(checked) => setEditIsMarkdown(!!checked)}
-                                />
-                                <label className="text-sm cursor-pointer flex items-center gap-1">
-                                  <Code className="h-3 w-3" />
-                                  Markdown
-                                </label>
-                                {editIsMarkdown && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setMarkdownPreview(!markdownPreview)}
-                                    className="h-6 ml-auto"
-                                  >
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    {markdownPreview ? "Edit" : "Preview"}
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Content editor or preview */}
-                            {editIsMarkdown && markdownPreview ? (
-                              <div className="prose prose-sm max-w-none bg-white/50 dark:bg-black/20 p-3 rounded min-h-[80px]">
-                                <ReactMarkdown>{editContent}</ReactMarkdown>
-                              </div>
-                            ) : (
-                              <Textarea
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                className="bg-white/50 dark:bg-black/20 min-h-[80px] resize-none"
-                                style={{ fontSize: `${contentFontSize}px` }}
-                                placeholder={editIsMarkdown ? "Markdown content..." : "Note content..."}
-                              />
-                            )}
-                          </>
-                        )}
-
-                        {/* Tags */}
-                        {enableTags && (
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap gap-1">
-                              {editTags.map(tag => (
-                                <Badge key={tag} variant="secondary" className="gap-1">
-                                  {tag}
-                                  <X
-                                    className="h-3 w-3 cursor-pointer"
-                                    onClick={() => handleRemoveTag(tag)}
-                                  />
-                                </Badge>
-                              ))}
-                            </div>
-                            <div className="flex gap-2">
-                              <Input
-                                value={newTag}
-                                onChange={(e) => setNewTag(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                                className="bg-white/50 dark:bg-black/20 text-sm flex-1"
-                                placeholder="Add tag..."
-                              />
-                              <Button size="sm" variant="outline" onClick={handleAddTag}>
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={handleSaveEdit}>
-                            <Save className="h-3 w-3 mr-1" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
-                            <X className="h-3 w-3 mr-1" />
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      // View Mode
-                      <div
-                        onClick={() => handleStartEdit(note)}
-                        className={cn(
-                          "space-y-2",
-                          isEditMode && allowInlineEdit && "cursor-pointer"
-                        )}
-                      >
+                    {/* View Mode */}
+                    <div className="space-y-2">
                         {/* Title with pin icon */}
                         <div className="flex items-start justify-between gap-2">
                           <h3
@@ -620,7 +537,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
                               <div key={item.id} className="flex items-start gap-2">
                                 <Checkbox
                                   checked={item.checked}
-                                  onCheckedChange={() => isEditMode && handleToggleChecklistItem(note.id, item.id)}
+                                  onCheckedChange={() => handleToggleChecklistItem(note.id, item.id)}
                                   className="mt-0.5"
                                 />
                                 <span className={cn(
@@ -672,28 +589,42 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
                           </p>
                         )}
                       </div>
-                    )}
 
-                    {/* Actions (visible on hover in edit mode) */}
-                    {!isEditing && isEditMode && (
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
-                        {/* Pin button */}
-                        {enablePinning && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 bg-background/90 hover:bg-primary hover:text-primary-foreground"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTogglePin(note.id);
-                            }}
-                            title={note.isPinned ? "Unpin" : "Pin"}
-                          >
-                            {note.isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
-                          </Button>
-                        )}
+                    {/* Actions (visible on hover) */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                      {/* Edit button */}
+                      {allowInlineEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 bg-background/90 hover:bg-primary hover:text-primary-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditDialog(note);
+                          }}
+                          title="Edit note"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
 
-                        {/* Color picker */}
+                      {/* Pin button */}
+                      {enablePinning && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 bg-background/90 hover:bg-primary hover:text-primary-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTogglePin(note.id);
+                          }}
+                          title={note.isPinned ? "Unpin" : "Pin"}
+                        >
+                          {note.isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                        </Button>
+                      )}
+
+                      {/* Color picker */}
                         <div className="flex gap-1 bg-background/90 p-1 rounded-md shadow-sm">
                           {(Object.keys(noteColors) as Array<keyof typeof noteColors>).map((color) => (
                             <button
@@ -727,7 +658,6 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
                           </Button>
                         )}
                       </div>
-                    )}
                   </motion.div>
                 );
               })}
@@ -735,6 +665,163 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
           </div>
         )}
       </div>
+
+      {/* Edit Note Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Note</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Title */}
+            <div>
+              <Label>Title</Label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Note title..."
+                className="mt-2"
+              />
+            </div>
+
+            {/* Color */}
+            <div>
+              <Label>Color</Label>
+              <div className="flex gap-2 mt-2">
+                {(Object.keys(noteColors) as Array<keyof typeof noteColors>).map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setEditColor(color)}
+                    className={cn(
+                      "w-8 h-8 rounded-full border-2 transition-transform hover:scale-110",
+                      noteColors[color].bg,
+                      editColor === color && "ring-2 ring-offset-2 ring-primary"
+                    )}
+                    title={color}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Checklist toggle */}
+            {enableChecklists && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={editIsChecklist}
+                  onCheckedChange={(checked) => setEditIsChecklist(!!checked)}
+                />
+                <Label>Checklist mode</Label>
+              </div>
+            )}
+
+            {/* Content */}
+            {editIsChecklist ? (
+              <div>
+                <Label>Checklist Items</Label>
+                <div className="space-y-2 mt-2">
+                  {editChecklistItems.map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-2">
+                      <Input
+                        value={item.text}
+                        onChange={(e) => handleUpdateChecklistItem(item.id, e.target.value)}
+                        placeholder={`Item ${index + 1}...`}
+                        className="flex-1"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveChecklistItem(item.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAddChecklistItem}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add item
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Label>Content</Label>
+                <Textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  placeholder="Note content..."
+                  className="mt-2 min-h-[150px]"
+                />
+              </div>
+            )}
+
+            {/* Tags */}
+            {enableTags && (
+              <div>
+                <Label>Tags</Label>
+                <div className="flex flex-wrap gap-1 mt-2 mb-2">
+                  {editTags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="gap-1">
+                      {tag}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => handleRemoveTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                    placeholder="Add tag..."
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={handleAddTag}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Markdown toggle */}
+            {enableMarkdown && !editIsChecklist && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={editIsMarkdown}
+                  onCheckedChange={(checked) => setEditIsMarkdown(!!checked)}
+                />
+                <Label className="flex items-center gap-1">
+                  <Code className="h-3 w-3" />
+                  Markdown format
+                </Label>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </BaseWidget>
   );
 };

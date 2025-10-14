@@ -73,7 +73,9 @@ export const notesSettingsSchema = z.object({
 export const notesStyleSchema = z.object({
   // Container
   backgroundColor: z.string().default("transparent"),
+  textColor: z.string().default("#000000"),
   padding: z.enum(["none", "sm", "md", "lg"]).default("md"),
+  borderRadius: z.number().min(0).max(50).default(0),
   
   // Container Border
   border: z.object({
