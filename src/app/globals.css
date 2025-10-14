@@ -200,20 +200,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .react-grid-item > .react-resizable-handle {
 	position: absolute;
-	background: transparent;
-	opacity: 1;
-	transition: all 200ms ease;
+	background: transparent !important;
+	opacity: 0 !important;
 	z-index: 10;
 	pointer-events: auto;
-}
-
-/* Show subtle background on hover for better UX */
-.react-grid-item:hover > .react-resizable-handle {
-	background-color: rgba(59, 130, 246, 0.1);
-}
-
-.react-grid-item.resizing > .react-resizable-handle {
-	background-color: rgba(59, 130, 246, 0.2) !important;
 }
 
 /* Corner handles - 20x20px for easier grabbing */
