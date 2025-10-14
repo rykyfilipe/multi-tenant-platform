@@ -80,7 +80,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       const response = await api.savePending({ actorId, operations: pendingOperations });
       console.log('✅ [DEBUG] savePending result:', response);
       
-      if (response.conflicts.length > 0) {
+      if (response?.conflicts?.length ?? 0 > 0) {
         toast({
           title: "Conflicts detected",
           description: "Please review and resolve conflicts before saving.",
@@ -1064,30 +1064,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             cursor: grabbing !important;
           }
           
-          /* Hide all other resize handles */
-          .react-grid-item > .react-resizable-handle-sw,
-          .react-grid-item > .react-resizable-handle-ne,
-          .react-grid-item > .react-resizable-handle-nw,
-          .react-grid-item > .react-resizable-handle-n,
-          .react-grid-item > .react-resizable-handle-s,
-          .react-grid-item > .react-resizable-handle-e,
-          .react-grid-item > .react-resizable-handle-w {
-            display: none !important;
-          }
-          
           /* Hide handles when not resizable */
           .react-grid-item.react-resizable-hide > .react-resizable-handle {
             display: none;
-          }
-          
-          /* Show handles on hover */
-          .react-grid-item:hover > .react-resizable-handle {
-            opacity: 1;
-          }
-          
-          .react-grid-item > .react-resizable-handle {
-            opacity: 0.7;
-            transition: opacity 200ms ease;
           }
           
           /* Dragging states */

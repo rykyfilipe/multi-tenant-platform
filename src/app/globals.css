@@ -202,17 +202,74 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	position: absolute;
 	width: 20px;
 	height: 20px;
+	background-color: rgb(59, 130, 246);
+	opacity: 0;
+	transition: opacity 200ms ease;
+	z-index: 10;
 }
 
-.react-grid-item > .react-resizable-handle::after {
-	content: "";
-	position: absolute;
-	right: 3px;
-	bottom: 3px;
-	width: 5px;
-	height: 5px;
-	border-right: 2px solid hsl(var(--border));
-	border-bottom: 2px solid hsl(var(--border));
+.react-grid-item:hover > .react-resizable-handle {
+	opacity: 0.5;
+}
+
+.react-grid-item > .react-resizable-handle-se {
+	bottom: 0;
+	right: 0;
+	cursor: se-resize;
+	border-radius: 0 0 8px 0;
+}
+
+.react-grid-item > .react-resizable-handle-sw {
+	bottom: 0;
+	left: 0;
+	cursor: sw-resize;
+	border-radius: 0 0 0 8px;
+}
+
+.react-grid-item > .react-resizable-handle-ne {
+	top: 0;
+	right: 0;
+	cursor: ne-resize;
+	border-radius: 0 8px 0 0;
+}
+
+.react-grid-item > .react-resizable-handle-nw {
+	top: 0;
+	left: 0;
+	cursor: nw-resize;
+	border-radius: 8px 0 0 0;
+}
+
+.react-grid-item > .react-resizable-handle-e {
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 10px;
+	cursor: e-resize;
+}
+
+.react-grid-item > .react-resizable-handle-w {
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 10px;
+	cursor: w-resize;
+}
+
+.react-grid-item > .react-resizable-handle-n {
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 10px;
+	cursor: n-resize;
+}
+
+.react-grid-item > .react-resizable-handle-s {
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 10px;
+	cursor: s-resize;
 }
 
 .react-resizable-hide > .react-resizable-handle {
