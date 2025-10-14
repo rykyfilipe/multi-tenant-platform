@@ -1114,29 +1114,45 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   <div 
                     key={currentWidget.id}
                     className={cn(
-                      "h-full w-full transition-all",
-                      isEditMode && "cursor-move",
+                      "h-full w-full transition-all relative",
                       isEditMode && isSelected && "ring-2 ring-primary/80 ring-offset-2 shadow-lg"
                     )}
-                    onClick={(e) => {
-                      if (!isEditMode) return;
-                      
-                      e.stopPropagation();
-                      if (e.ctrlKey || e.metaKey) {
-                        // Multi-select: add to selection
-                        handleSelectWidget(currentWidget.id);
-                      } else {
-                        // Single select: clear others and select this one
-                        handleDeselectAll();
-                        handleSelectWidget(currentWidget.id);
-                      }
-                    }}
-                    onDoubleClick={(e) => {
-                      if (!isEditMode) return;
-                      e.stopPropagation();
-                      setEditorWidgetId(currentWidget.id);
-                    }}
                   >
+                    {/* Invisible overlay for selection and drag in edit mode */}
+                    {isEditMode && (
+                      <div 
+                        className="widget-header absolute inset-0 z-[1] cursor-move"
+                        onClick={(e) => {
+                          console.log('🖱️ [DEBUG] Widget clicked:', currentWidget.id);
+                          e.stopPropagation();
+                          if (e.ctrlKey || e.metaKey) {
+                            handleSelectWidget(currentWidget.id);
+                          } else {
+                            handleDeselectAll();
+                            handleSelectWidget(currentWidget.id);
+                          }
+                        }}
+                        onDoubleClick={(e) => {
+                          console.log('🖱️🖱️ [DEBUG] Widget double-clicked:', currentWidget.id);
+                          e.stopPropagation();
+                          setEditorWidgetId(currentWidget.id);
+                        }}
+                      />
+                    )}
+                    
+                    {/* Edit button when selected */}
+                    {isEditMode && isSelected && (
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditorWidgetId(currentWidget.id);
+                        }}
+                        className="absolute top-2 right-2 z-[30] h-7 w-7 p-0 shadow-lg"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Renderer
                       widget={currentWidget}
                       onEdit={undefined}

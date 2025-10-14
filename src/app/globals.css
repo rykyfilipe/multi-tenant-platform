@@ -202,8 +202,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 	position: absolute;
 	background: transparent !important;
 	opacity: 0 !important;
-	z-index: 10;
-	pointer-events: auto;
+	z-index: 20 !important;
+	pointer-events: auto !important;
 }
 
 /* Corner handles - 20x20px for easier grabbing */
