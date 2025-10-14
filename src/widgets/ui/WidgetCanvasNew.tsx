@@ -265,6 +265,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   
   // Cache widget references to prevent unnecessary re-renders
   const widgetCacheRef = useRef<Map<number, WidgetEntity>>(new Map());
+  
+  // Ref to grid container for width calculation
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
   // Handle exit confirmation dialog
   const handleExitConfirm = useCallback(() => {
@@ -369,19 +372,30 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     cleanupOldIds();
   }, [cleanupOldIds]);
 
-  // Update container width on resize
+  // Update container width on resize - use full available width
   useEffect(() => {
     const updateWidth = () => {
-      // Use the parent container instead of .layout which might not exist yet
-      const container = document.querySelector('.h-full.w-full.p-6');
+      // First try to use the ref (most accurate)
+      if (gridContainerRef.current) {
+        const width = gridContainerRef.current.clientWidth - 48; // Subtract padding (24px * 2)
+        console.log('📐 [WIDTH] Using ref - Container width:', gridContainerRef.current.clientWidth, 'Grid width:', width);
+        setContainerWidth(width);
+        return;
+      }
+      
+      // Fallback: Try multiple selectors to find the container
+      const container = document.querySelector('.h-full.w-full.p-6') 
+                     || document.querySelector('main') 
+                     || document.body;
+      
       if (container) {
         const width = container.clientWidth - 48; // Subtract padding (24px * 2)
-        console.log('🎯 [DEBUG] Container width:', container.clientWidth, 'Final width:', width);
+        console.log('📐 [WIDTH] Using selector - Container:', container.className || 'body', 'Width:', container.clientWidth, 'Grid width:', width);
         setContainerWidth(width);
       } else {
-        // Fallback to window width
+        // Last resort: full window width with margin
         const fallbackWidth = window.innerWidth - 100;
-        console.log('🎯 [DEBUG] Fallback width:', fallbackWidth);
+        console.log('📐 [WIDTH] Using fallback width:', fallbackWidth);
         setContainerWidth(fallbackWidth);
       }
     };
@@ -389,12 +403,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     updateWidth();
     window.addEventListener('resize', updateWidth);
     
-    // Also update after a short delay to ensure DOM is ready
-    const timeoutId = setTimeout(updateWidth, 100);
+    // Update after DOM is ready and after a second delay for any layout shifts
+    const timeoutId1 = setTimeout(updateWidth, 100);
+    const timeoutId2 = setTimeout(updateWidth, 500);
     
     return () => {
       window.removeEventListener('resize', updateWidth);
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
     };
   }, []);
 
@@ -1008,6 +1024,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       {/* Main Grid Area */}
       <div 
+        ref={gridContainerRef}
         className="h-full w-full p-6 overflow-y-auto pb-24"
         onClick={handleCanvasClick}
       >
@@ -1015,7 +1032,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           .react-grid-layout {
             width: 100% !important;
             height: auto !important;
-            min-height: calc(100vh - 3rem);
+            min-height: 100% !important;
             position: relative;
           }
           .react-grid-item {
@@ -1126,7 +1143,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             className="layout" 
             layout={layout}
             cols={24}
-            width={1200}
+            width={containerWidth}
             rowHeight={30} 
             isDraggable={isEditMode}
             isResizable={isEditMode}
