@@ -485,13 +485,7 @@ export default function DashboardsPage() {
                 />
               </Dialog>
 
-              {selectedDashboardId && (
-                <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
-                  <Button variant="outline" size="sm" className="h-8 px-2">
-                    <Sparkles className="h-4 w-4" />
-                  </Button>
-                </SmartWidgetTemplatesModal>
-              )}
+              
 
               <Button
                 variant={isEditMode ? "default" : "outline"}
@@ -606,6 +600,13 @@ export default function DashboardsPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
+      {selectedDashboardId && (
+                <SmartWidgetTemplatesModal dashboardId={selectedDashboardId}>
+                  <Button variant="outline" size="sm" className="h-8 px-2">
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                </SmartWidgetTemplatesModal>
+              )}
         {selectedDashboardId && actorId ? (
           <WidgetCanvasNew 
             tenantId={tenant?.id ?? 0} 
