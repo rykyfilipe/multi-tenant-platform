@@ -262,6 +262,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
   const isInternalUpdate = useRef(false); // Flag to prevent cascade updates from undo/redo
+  
+  // Cache widget references to prevent unnecessary re-renders
+  const widgetCacheRef = useRef<Map<number, WidgetEntity>>(new Map());
 
   // Handle exit confirmation dialog
   const handleExitConfirm = useCallback(() => {
@@ -280,6 +283,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     setPendingExitAction(null);
   }, []);
 
+  // OPTIMISTIC: Cache widget references - return SAME object if content unchanged
   const widgetList = useMemo(() => {
     const filtered = Object.values(widgetsRecord).filter((widget) => 
       widget && // Ensure widget exists
@@ -290,8 +294,35 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       widget.dashboardId === dashboardId && 
       widget.isVisible
     );
-    console.log('🎯 [DEBUG] WidgetList:', filtered);
-    return filtered;
+    
+    // Use cached reference if widget content unchanged (for React.memo optimization)
+    const cachedList = filtered.map(widget => {
+      const cached = widgetCacheRef.current.get(widget.id);
+      
+      // Fast equality check: version + updatedAt (instead of deep JSON comparison)
+      if (cached && 
+          cached.version === widget.version && 
+          cached.updatedAt?.getTime() === widget.updatedAt?.getTime()) {
+        // Widget unchanged - reuse cached reference for React.memo
+        return cached;
+      }
+      
+      // Content changed or new widget - update cache and return new reference
+      console.log(`♻️ [CACHE] Updating cache for widget ${widget.id} (v${widget.version})`);
+      widgetCacheRef.current.set(widget.id, widget);
+      return widget;
+    });
+    
+    // Clean up cache for removed widgets
+    const currentIds = new Set(filtered.map(w => w.id));
+    for (const cachedId of Array.from(widgetCacheRef.current.keys())) {
+      if (!currentIds.has(cachedId)) {
+        widgetCacheRef.current.delete(cachedId);
+      }
+    }
+    
+    console.log('🎯 [DEBUG] WidgetList:', cachedList.length, 'widgets');
+    return cachedList;
   }, [widgetsRecord, tenantId, dashboardId]);
 
 
