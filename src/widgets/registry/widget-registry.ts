@@ -4,6 +4,8 @@ import { tableWidgetConfigSchemaV2 } from "../schemas/table-v2";
 import { kpiWidgetConfigSchemaV2 } from "../schemas/kpi-v2";
 import { clockWidgetConfigSchema } from "../schemas/clock-v2";
 import { weatherWidgetConfigSchema } from "../schemas/weather-v2";
+import { textWidgetConfigSchemaV1 } from "../schemas/text-v1";
+import { notesWidgetConfigSchemaV1 } from "../schemas/notes-v1";
 import { baseWidgetConfigSchema } from "../schemas/base";
 import { z } from "zod";
 import { ChartWidgetEditorV2 as ChartWidgetEditor } from "../ui/editors/ChartWidgetEditorV2";
@@ -12,12 +14,16 @@ import { KPIWidgetEditorV2 as KPIWidgetEditor } from "../ui/editors/KPIWidgetEdi
 import { ClockWidgetEditor } from "../ui/editors/ClockWidgetEditor";
 import { WeatherWidgetEditor } from "../ui/editors/WeatherWidgetEditor";
 import { TasksWidgetEditor } from "../ui/editors/TasksWidgetEditor";
+import { TextWidgetEditor } from "../ui/editors/TextWidgetEditor";
+import { NotesWidgetEditor } from "../ui/editors/NotesWidgetEditor";
 import { ChartWidgetRenderer } from "../ui/renderers/ChartWidgetRenderer";
 import { TableWidgetRenderer } from "../ui/renderers/TableWidgetRenderer";
 import { KPIWidgetRenderer } from "../ui/renderers/KPIWidgetRenderer";
 import { ClockWidgetRenderer } from "../ui/renderers/ClockWidgetRenderer";
 import { WeatherWidgetRenderer } from "../ui/renderers/WeatherWidgetRenderer";
 import { TasksWidgetRenderer } from "../ui/renderers/TasksWidgetRenderer";
+import { TextWidgetRenderer } from "../ui/renderers/TextWidgetRenderer";
+import { NotesWidgetRenderer } from "../ui/renderers/NotesWidgetRenderer";
 import { WidgetEntity } from "../domain/entities";
 
 type ConfigFromSchema<T extends z.ZodTypeAny> = z.infer<T>;
@@ -465,6 +471,87 @@ const definitions: Record<WidgetType, WidgetDefinition<z.ZodTypeAny>> = {
     },
     editor: KPIWidgetEditor,
     renderer: KPIWidgetRenderer,
+  },
+  
+  [WidgetType.TEXT]: {
+    type: WidgetType.TEXT,
+    schema: textWidgetConfigSchemaV1,
+    defaultConfig: {
+      settings: {
+        content: "Click to edit...",
+        bold: false,
+        italic: false,
+        underline: false,
+        alignment: "left",
+        fontSize: "normal",
+      },
+      style: {
+        textColor: "#000000",
+        backgroundColor: "transparent",
+        backgroundOpacity: 1,
+        padding: { top: 16, right: 16, bottom: 16, left: 16 },
+        borderRadius: 8,
+        border: {
+          enabled: false,
+          width: 1,
+          color: "rgba(0, 0, 0, 0.1)",
+          style: "solid"
+        },
+        shadow: {
+          enabled: false,
+          size: "md"
+        },
+        fontFamily: "Inter, system-ui, sans-serif",
+        lineHeight: 1.5,
+        letterSpacing: 0,
+      },
+      data: {},
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 60000,
+      },
+    },
+    editor: TextWidgetEditor,
+    renderer: TextWidgetRenderer,
+  },
+  
+  [WidgetType.NOTES]: {
+    type: WidgetType.NOTES,
+    schema: notesWidgetConfigSchemaV1,
+    defaultConfig: {
+      settings: {
+        showDates: true,
+        dateFormat: "relative",
+        layout: "grid",
+        columns: 2,
+        allowInlineEdit: true,
+        allowDelete: true,
+        maxNotes: 20,
+        defaultColor: "yellow",
+      },
+      style: {
+        backgroundColor: "transparent",
+        padding: "md",
+        cardBorderRadius: 12,
+        cardShadow: "md",
+        cardPadding: 16,
+        titleFontSize: 16,
+        contentFontSize: 14,
+        fontFamily: "Inter, system-ui, sans-serif",
+        gap: 12,
+      },
+      data: {
+        notes: [],
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 60000,
+      },
+    },
+    editor: NotesWidgetEditor,
+    renderer: NotesWidgetRenderer,
   },
 };
 

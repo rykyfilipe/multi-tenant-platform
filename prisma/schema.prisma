@@ -653,6 +653,8 @@ enum WidgetType {
   CLOCK
   WEATHER
   KPI
+  TEXT
+  NOTES
 }
 
 enum WidgetDraftStatus {

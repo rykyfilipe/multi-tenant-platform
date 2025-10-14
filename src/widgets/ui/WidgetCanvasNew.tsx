@@ -34,6 +34,8 @@ import {
   Clock, 
   CloudSun, 
   CheckSquare,
+  Type,
+  StickyNote,
   Settings, 
   Save, 
   Undo2, 
@@ -824,6 +826,24 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   title="Add Tasks Widget"
                 >
                   <CheckSquare className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAddWidget(WidgetType.TEXT)}
+                  className="h-8 w-8 p-0 hover:bg-primary/10"
+                  title="Add Text Widget"
+                >
+                  <Type className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAddWidget(WidgetType.NOTES)}
+                  className="h-8 w-8 p-0 hover:bg-primary/10"
+                  title="Add Notes Widget"
+                >
+                  <StickyNote className="h-4 w-4" />
                 </Button>
               </div>
 
