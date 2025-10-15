@@ -45,6 +45,31 @@ export const chartStyleSchema = z.object({
     z.number().min(0).max(50),
     z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]) // Backward compatibility
   ]).default(8).transform((val) => typeof val === 'string' ? 8 : val),
+  
+  // Container Border
+  border: z.object({
+    enabled: z.boolean().default(false),
+    width: z.number().min(0).max(10).default(1),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+    style: z.enum(["solid", "dashed", "dotted"]).default("solid"),
+  }).default({
+    enabled: false,
+    width: 1,
+    color: "rgba(0, 0, 0, 0.1)",
+    style: "solid"
+  }),
+  
+  // Container Shadow
+  shadow: z.object({
+    enabled: z.boolean().default(false),
+    size: z.enum(["none", "sm", "md", "lg", "xl"]).default("md"),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+  }).default({
+    enabled: false,
+    size: "md",
+    color: "rgba(0, 0, 0, 0.1)"
+  }),
+  
   padding: z.union([
     z.object({
       top: z.number().min(0).max(100).default(20),

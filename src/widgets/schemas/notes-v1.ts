@@ -90,6 +90,17 @@ export const notesStyleSchema = z.object({
     style: "solid"
   }),
   
+  // Container Shadow
+  shadow: z.object({
+    enabled: z.boolean().default(false),
+    size: z.enum(["none", "sm", "md", "lg", "xl"]).default("sm"),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+  }).default({
+    enabled: false,
+    size: "sm",
+    color: "rgba(0, 0, 0, 0.1)"
+  }),
+  
   // Note cards
   cardBorderRadius: z.number().min(0).max(50).default(12),
   cardShadow: z.enum(["none", "sm", "md", "lg"]).default("md"),

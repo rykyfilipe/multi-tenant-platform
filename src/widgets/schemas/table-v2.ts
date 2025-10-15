@@ -61,6 +61,8 @@ export const tableStyleSchema = z.object({
     z.number().min(0).max(50),
     z.enum(["none", "sm", "md", "lg", "xl", "2xl", "full"]) // Backward compatibility
   ]).default(8).transform((val) => typeof val === 'string' ? 8 : val),
+  
+  // Container Border
   border: z.object({
     enabled: z.boolean().default(true),
     width: z.number().min(0).max(10).default(1),
@@ -71,6 +73,39 @@ export const tableStyleSchema = z.object({
     width: 1,
     color: "rgba(0, 0, 0, 0.1)",
     style: "solid",
+  }),
+  
+  // Container Shadow
+  shadow: z.object({
+    enabled: z.boolean().default(false),
+    size: z.enum(["none", "sm", "md", "lg", "xl"]).default("md"),
+    color: z.string().default("rgba(0, 0, 0, 0.1)"),
+  }).default({
+    enabled: false,
+    size: "md",
+    color: "rgba(0, 0, 0, 0.1)"
+  }),
+  
+  // Container Padding
+  padding: z.union([
+    z.object({
+      x: z.number().min(0).max(100).default(16),
+      y: z.number().min(0).max(100).default(16),
+    }),
+    z.enum(["tight", "comfortable", "spacious", "sm", "md", "lg"]) // Backward compatibility
+  ]).default({ x: 16, y: 16 }).transform((val) => {
+    if (typeof val === 'string') {
+      const paddingMap: Record<string, any> = {
+        tight: { x: 8, y: 8 },
+        sm: { x: 8, y: 8 },
+        comfortable: { x: 16, y: 16 },
+        md: { x: 16, y: 16 },
+        spacious: { x: 24, y: 24 },
+        lg: { x: 24, y: 24 },
+      };
+      return paddingMap[val] || { x: 16, y: 16 };
+    }
+    return val;
   }),
   
   // === HEADER STYLING ===
