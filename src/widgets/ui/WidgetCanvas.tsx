@@ -74,30 +74,35 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     // Define responsive layouts for different screen sizes
     // Strategy: Max 2 columns on smaller screens, wrap to next row when needed
     return {
-      xxl: baseLayout, // 1600px+: 12 columns - original layout (multi-column)
-      xl: baseLayout,  // 1200px+: 10 columns - original layout (multi-column)
-      lg: baseLayout.map((item, index) => ({ // 996px+: 8 columns (laptop - max 2 widgets per row)
+      xxl: baseLayout, // >=1600px: layout original (12 coloane)
+      xl: baseLayout,  // >=1200px: layout original (10 coloane)
+      lg: baseLayout.map((item, index) => ({
         ...item,
-        w: item.w > 4 ? 8 : 4, // Large widgets = full-width, small = half-width (2 per row)
-        x: item.w > 4 ? 0 : (index % 2) * 4, // Arrange in 2 columns
+        w: item.w > 4 ? 8 : 4,           // mari = full width (8/8), mici = jumătate (4/8)
+        x: item.w > 4 ? 0 : (index % 2) * 4, // 2 coloane
+        y: Math.floor(index / 2) * (item.h || 2), // adăugat pentru a evita suprapuneri
       })),
-      md: baseLayout.map((item, index) => ({ // 768px+: 6 columns (tablet - max 2 widgets per row)
+      md: baseLayout.map((item, index) => ({
         ...item,
-        w: item.w > 3 ? 6 : 3, // Large widgets = full-width, small = half-width (2 per row)
-        x: item.w > 3 ? 0 : (index % 2) * 3, // Arrange in 2 columns
+        w: item.w > 3 ? 6 : 3,           // mari = full width (6/6), mici = jumătate (3/6)
+        x: item.w > 3 ? 0 : (index % 2) * 3,
+        y: Math.floor(index / 2) * (item.h || 2),
       })),
-      sm: baseLayout.map(item => ({ // 480px+: 4 columns (mobile landscape - 1 column only)
+      sm: baseLayout.map((item, index) => ({
         ...item,
-        w: 4, // Force full-width on mobile
+        w: 4, // full width
         x: 0,
+        y: index * (item.h || 2),
       })),
-      xs: baseLayout.map(item => ({ // <480px: 2 columns (mobile portrait - 1 column only)
+      xs: baseLayout.map((item, index) => ({
         ...item,
-        w: 2, // Force full-width on mobile
+        w: 2, // full width pe ecran mic
         x: 0,
+        y: index * (item.h || 2),
       })),
     };
   }, [widgetList]);
+
   const draftsList = useMemo(() => Object.values(draftsRecord), [draftsRecord]);
   const conflicts = useWidgetsStore((state) => state.conflicts);
   const activeConflict = useWidgetsStore((state) => state.activeConflict);
