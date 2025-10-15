@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from "react";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
-import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { WidgetLoadingState, WidgetErrorState } from "../components/WidgetStates";
 import { 
@@ -327,17 +326,14 @@ const TableWidgetRendererComponent: React.FC<TableWidgetRendererProps> = ({
   if (!config.data?.columns || config.data.columns.length === 0) {
     return (
       <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-        <PremiumWidgetContainer 
-          style={styleConfig} 
-          className="h-full transition-all duration-300 hover:shadow-xl"
-        >
+        <div className="h-full p-4 bg-card">
           <div className="flex items-center justify-center h-full text-center text-muted-foreground">
             <div className="space-y-2">
               <p className="text-lg font-semibold mb-2">No table columns configured</p>
               <p className="text-sm opacity-80">Configure columns in the editor to display data</p>
             </div>
           </div>
-        </PremiumWidgetContainer>
+        </div>
       </BaseWidget>
     );
   }
@@ -376,10 +372,7 @@ const TableWidgetRendererComponent: React.FC<TableWidgetRendererProps> = ({
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <PremiumWidgetContainer 
-        style={styleConfig} 
-        className="h-full overflow-hidden transition-all duration-300 hover:shadow-xl relative"
-      >
+      <div className="h-full overflow-hidden p-4 bg-card relative">
         {/* Search Bar - Fixed Top */}
         <div className="px-4 py-3 border-b flex items-center gap-2 bg-card/50 backdrop-blur-sm">
           <Search className="h-4 w-4 text-muted-foreground" />
@@ -628,7 +621,7 @@ const TableWidgetRendererComponent: React.FC<TableWidgetRendererProps> = ({
             </div>
           );
         })()}
-      </PremiumWidgetContainer>
+      </div>
     </BaseWidget>
   );
 };

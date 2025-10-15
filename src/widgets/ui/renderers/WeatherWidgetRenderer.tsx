@@ -6,8 +6,6 @@ import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 import { useWeather } from "@/hooks/useWeather";
 import { WidgetLoadingState, WidgetErrorState } from "../components/WidgetStates";
-import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
-import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import { cn } from "@/lib/utils";
 
 interface WeatherWidgetRendererProps {

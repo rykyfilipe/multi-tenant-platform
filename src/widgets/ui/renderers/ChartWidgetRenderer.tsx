@@ -8,8 +8,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useTableRows } from "@/hooks/useDatabaseTables";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { WidgetLoadingState, WidgetErrorState, WidgetEmptyState } from "../components/WidgetStates";
-import { getPremiumTheme, premiumDataColors } from "@/widgets/styles/premiumThemes";
-import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
 import { ChartDataProcessor } from "@/widgets/processors/ChartDataProcessor";
 import { cn } from "@/lib/utils";
 
@@ -95,14 +93,6 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
     interval: refreshSettings.interval,
     onRefresh: refetch
   });
-
-  // Get premium theme
-  const theme = getPremiumTheme(config?.style?.theme || 'platinum');
-  
-  // Premium color palette for data visualization (fallback)
-  const premiumColors = config?.style?.theme === 'onyx' || config?.style?.theme === 'obsidian'
-    ? premiumDataColors.elegant
-    : premiumDataColors.professional;
 
   // OPTIMISTIC: Process data ONLY when data-related config changes (not style!)
   const processedData = useMemo(() => {

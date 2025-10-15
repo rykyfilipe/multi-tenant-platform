@@ -13,8 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PremiumWidgetContainer } from "../components/PremiumWidgetContainer";
-import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { useAuth, useTenant } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -240,9 +238,6 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
   const maxTasks = settings.maxTasks || 50;
   const showPriorityColors = style.showPriorityColors !== false;
   const showDueDates = style.showDueDates !== false;
-
-  // Get theme and apply styles
-  const theme = getPremiumTheme(style.theme || 'premium-light');
 
   // Advanced filtering and sorting
   const filteredTasks = useMemo(() => {
@@ -585,7 +580,7 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <PremiumWidgetContainer style={style} className="h-full w-full flex flex-col">
+      <div className="h-full w-full flex flex-col p-4 bg-card">
         <div className="flex-shrink-0 space-y-3">
         {/* Controls - Responsive using container queries */}
         <div className="space-y-3">
@@ -729,7 +724,7 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
           </div>
         )}
         </div>
-      </PremiumWidgetContainer>
+      </div>
     </BaseWidget>
   );
 };
