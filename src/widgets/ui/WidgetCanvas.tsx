@@ -72,28 +72,28 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     }));
 
     // Define responsive layouts for different screen sizes
-    // Strategy: Keep multi-column on desktop, force full-width on tablet/mobile
+    // Strategy: Max 2 columns on smaller screens, wrap to next row when needed
     return {
       xxl: baseLayout, // 1600px+: 12 columns - original layout (multi-column)
       xl: baseLayout,  // 1200px+: 10 columns - original layout (multi-column)
-      lg: baseLayout.map(item => ({ // 996px+: 8 columns (laptop)
+      lg: baseLayout.map((item, index) => ({ // 996px+: 8 columns (laptop - max 2 widgets per row)
         ...item,
-        w: 8, // Force full-width on laptop - prevents compression
+        w: item.w > 4 ? 8 : 4, // Large widgets = full-width, small = half-width (2 per row)
+        x: item.w > 4 ? 0 : (index % 2) * 4, // Arrange in 2 columns
+      })),
+      md: baseLayout.map((item, index) => ({ // 768px+: 6 columns (tablet - max 2 widgets per row)
+        ...item,
+        w: item.w > 3 ? 6 : 3, // Large widgets = full-width, small = half-width (2 per row)
+        x: item.w > 3 ? 0 : (index % 2) * 3, // Arrange in 2 columns
+      })),
+      sm: baseLayout.map(item => ({ // 480px+: 4 columns (mobile landscape - 1 column only)
+        ...item,
+        w: 4, // Force full-width on mobile
         x: 0,
       })),
-      md: baseLayout.map(item => ({ // 768px+: 6 columns (tablet)
+      xs: baseLayout.map(item => ({ // <480px: 2 columns (mobile portrait - 1 column only)
         ...item,
-        w: 6, // Force full-width on tablet
-        x: 0,
-      })),
-      sm: baseLayout.map(item => ({ // 480px+: 4 columns (mobile landscape)
-        ...item,
-        w: 4, // Force full-width on mobile landscape
-        x: 0,
-      })),
-      xs: baseLayout.map(item => ({ // <480px: 2 columns (mobile portrait)
-        ...item,
-        w: 2, // Force full-width on mobile portrait
+        w: 2, // Force full-width on mobile
         x: 0,
       })),
     };
