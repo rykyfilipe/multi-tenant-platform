@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AppContext";
+import { useOptimisticUpdate } from "@/hooks/useOptimisticUpdate";
 import {
   Plus,
   Trash2,
@@ -59,7 +60,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
   const styleConfig = config?.style || {};
   
   // Initialize notes from widget data
-  const [notes, setNotes] = useState<NoteItem[]>(() => {
+  const getInitialNotes = useCallback((): NoteItem[] => {
     if (config?.data?.notes && Array.isArray(config.data.notes)) {
       return config.data.notes.map((note: any) => ({
         ...note,
@@ -75,12 +76,62 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
       }));
     }
     return [];
-  });
+  }, [config]);
+
+  // Optimistic updates hook
+  const { data: notes, setData: setNotes, isSaving, syncData } = useOptimisticUpdate<NoteItem[]>(
+    getInitialNotes(),
+    {
+      onSave: async (updatedNotes: NoteItem[]) => {
+        if (isEditMode || !token) {
+          console.log('[NotesWidget] Skipping save - edit mode or no token');
+          return;
+        }
+
+        const serializedNotes = updatedNotes.map(note => ({
+          ...note,
+          createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : note.createdAt,
+          updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : note.updatedAt,
+        }));
+
+        const updatedConfig = {
+          ...widget.config,
+          data: {
+            ...(widget.config as any)?.data,
+            notes: serializedNotes
+          }
+        };
+
+        console.log('[NotesWidget] Saving notes via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
+
+        const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            config: updatedConfig,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to save notes: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('[NotesWidget] Notes saved successfully:', result);
+      },
+      showToast: true,
+      successMessage: "Notes saved",
+      errorMessage: "Failed to save notes",
+      debounceMs: 500, // Debounce rapid changes
+    }
+  );
 
   const [editingNote, setEditingNote] = useState<NoteItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editColor, setEditColor] = useState<NoteItem['color']>("yellow");
@@ -92,7 +143,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
   const [newTag, setNewTag] = useState("");
   const [markdownPreview, setMarkdownPreview] = useState(false);
 
-  // Sync notes when widget.config changes
+  // Sync notes when widget.config changes from outside (e.g., refresh)
   useEffect(() => {
     if (config?.data?.notes && Array.isArray(config.data.notes)) {
       const loadedNotes = config.data.notes.map((note: any) => ({
@@ -107,9 +158,12 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
         linkedWidgetIds: note.linkedWidgetIds || [],
         reminder: note.reminder || undefined,
       }));
-      setNotes(loadedNotes);
+      // Only sync if different to avoid infinite loops
+      if (JSON.stringify(loadedNotes) !== JSON.stringify(notes)) {
+        syncData(loadedNotes);
+      }
     }
-  }, [widget.id, widget.config, config]);
+  }, [widget.id, widget.config, notes, syncData]);
 
   // Extract settings
   const showDates = settings.showDates ?? true;
@@ -170,71 +224,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     }
   };
 
-  // Save notes directly to API via PATCH - no pending changes
-  const saveNotesToApi = useCallback(async (updatedNotes: NoteItem[]) => {
-    if (isEditMode || !token) {
-      // Don't save while editing dashboard layout
-      console.log('[NotesWidget] Skipping save - edit mode or no token');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const serializedNotes = updatedNotes.map(note => ({
-        ...note,
-        createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : note.createdAt,
-        updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : note.updatedAt,
-      }));
-
-      const updatedConfig = {
-        ...widget.config,
-        data: {
-          ...(widget.config as any)?.data,
-          notes: serializedNotes
-        }
-      };
-
-      console.log('[NotesWidget] Saving notes via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
-
-      const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          config: updatedConfig,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to save notes: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('[NotesWidget] Notes saved successfully:', result);
-
-      // Update local state
-      setNotes(updatedNotes);
-
-      toast({
-        title: "Notes saved",
-        description: "Your changes have been saved successfully",
-        variant: "default",
-      });
-    } catch (error) {
-      console.error('[NotesWidget] Error saving notes:', error);
-      toast({
-        title: "Error saving notes",
-        description: "Failed to save your changes. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [widget.id, widget.dashboardId, widget.config, isEditMode, token, toast]);
-
-  // Add new note
+  // Add new note - optimistic
   const handleAddNote = (type: 'note' | 'checklist' = 'note') => {
     const newNote: NoteItem = {
       id: Date.now().toString(),
@@ -250,21 +240,19 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
       isMarkdown: false,
       linkedWidgetIds: [],
     };
-    saveNotesToApi([...notes, newNote]);
+    setNotes([...notes, newNote]);
   };
 
-  // Delete note
+  // Delete note - optimistic
   const handleDeleteNote = (id: string) => {
-    const updatedNotes = notes.filter(note => note.id !== id);
-    saveNotesToApi(updatedNotes);
+    setNotes(notes.filter(note => note.id !== id));
   };
 
-  // Toggle pin
+  // Toggle pin - optimistic
   const handleTogglePin = (id: string) => {
-    const updatedNotes = notes.map(note =>
+    setNotes(notes.map(note =>
       note.id === id ? { ...note, isPinned: !note.isPinned, updatedAt: new Date() } : note
-    );
-    saveNotesToApi(updatedNotes);
+    ));
   };
 
   // Open edit dialog
@@ -282,11 +270,11 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     setIsEditDialogOpen(true);
   };
 
-  // Save edit from dialog
-  const handleSaveEdit = async () => {
+  // Save edit from dialog - optimistic
+  const handleSaveEdit = () => {
     if (!editingNote) return;
     
-    const updatedNotes = notes.map(note =>
+    setNotes(notes.map(note =>
       note.id === editingNote.id
         ? { 
             ...note, 
@@ -300,19 +288,17 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
             updatedAt: new Date() 
           }
         : note
-    );
+    ));
     
-    await saveNotesToApi(updatedNotes);
     setIsEditDialogOpen(false);
     setEditingNote(null);
   };
 
-  // Change note color
+  // Change note color - optimistic
   const handleChangeColor = (id: string, color: NoteItem['color']) => {
-    const updatedNotes = notes.map(note =>
+    setNotes(notes.map(note =>
       note.id === id ? { ...note, color, updatedAt: new Date() } : note
-    );
-    saveNotesToApi(updatedNotes);
+    ));
   };
 
   // Add tag
@@ -328,9 +314,9 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     setEditTags(editTags.filter(t => t !== tag));
   };
 
-  // Toggle checklist item
+  // Toggle checklist item - optimistic
   const handleToggleChecklistItem = (noteId: string, itemId: string) => {
-    const updatedNotes = notes.map(note => {
+    setNotes(notes.map(note => {
       if (note.id === noteId && note.checklistItems) {
         return {
           ...note,
@@ -341,8 +327,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
         };
       }
       return note;
-    });
-    saveNotesToApi(updatedNotes);
+    }));
   };
 
   // Add checklist item in edit mode
@@ -402,10 +387,21 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
     }
   };
 
-  // Grid layout classes
+  // Grid layout classes - responsive using container queries
   const getGridClass = () => {
     if (layout === "list") return "flex flex-col";
-    return `grid grid-cols-1 sm:grid-cols-${Math.min(columns, 2)} lg:grid-cols-${columns}`;
+    
+    // Use container queries (@sm, @md, @lg) based on widget size, not viewport
+    const gridClasses: Record<number, string> = {
+      1: "grid grid-cols-1",
+      2: "grid grid-cols-1 @md:grid-cols-2",
+      3: "grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3",
+      4: "grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-4",
+      5: "grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 @4xl:grid-cols-5",
+      6: "grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 @4xl:grid-cols-6",
+    };
+    
+    return gridClasses[columns] || gridClasses[2];
   };
 
   return (
@@ -440,16 +436,17 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
           </div>
         )}
 
-        {/* Add Note Buttons - Always visible */}
-        <div className="mb-4 flex gap-2">
+        {/* Add Note Buttons - Responsive using container queries */}
+        <div className="mb-4 flex flex-col @sm:flex-row gap-2">
           <Button
             onClick={() => handleAddNote('note')}
             size="sm"
             className="flex-1"
             variant="outline"
+            disabled={isSaving}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Note
+            <span className="@sm:inline">Add </span>Note
           </Button>
           {enableChecklists && (
             <Button
@@ -457,9 +454,10 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
               size="sm"
               className="flex-1"
               variant="outline"
+              disabled={isSaving}
             >
               <CheckSquare className="h-4 w-4 mr-2" />
-              Add Checklist
+              <span className="@sm:inline">Add </span>Checklist
             </Button>
           )}
         </div>
@@ -590,74 +588,81 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
                         )}
                       </div>
 
-                    {/* Actions (visible on hover) */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
-                      {/* Edit button */}
-                      {allowInlineEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 bg-background/90 hover:bg-primary hover:text-primary-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditDialog(note);
-                          }}
-                          title="Edit note"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      )}
+                    {/* Actions (visible on hover on larger widgets, always visible on small widgets) */}
+                    <div className="absolute top-2 right-2 opacity-100 @md:opacity-0 @md:group-hover:opacity-100 transition-opacity flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-1 bg-background/95 backdrop-blur-sm p-1.5 rounded-lg shadow-lg border border-border/50">
+                        {/* Edit button */}
+                        {allowInlineEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 hover:bg-primary hover:text-primary-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditDialog(note);
+                            }}
+                            title="Edit note"
+                            disabled={isSaving}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
 
-                      {/* Pin button */}
-                      {enablePinning && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 bg-background/90 hover:bg-primary hover:text-primary-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTogglePin(note.id);
-                          }}
-                          title={note.isPinned ? "Unpin" : "Pin"}
-                        >
-                          {note.isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
-                        </Button>
-                      )}
-
-                      {/* Color picker */}
-                        <div className="flex gap-1 bg-background/90 p-1 rounded-md shadow-sm">
-                          {(Object.keys(noteColors) as Array<keyof typeof noteColors>).map((color) => (
-                            <button
-                              key={color}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleChangeColor(note.id, color);
-                              }}
-                              className={cn(
-                                "w-4 h-4 rounded-full border-2 transition-transform hover:scale-110",
-                                noteColors[color].bg,
-                                note.color === color && "ring-2 ring-offset-1 ring-primary"
-                              )}
-                              title={color}
-                            />
-                          ))}
-                        </div>
+                        {/* Pin button */}
+                        {enablePinning && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 hover:bg-primary hover:text-primary-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTogglePin(note.id);
+                            }}
+                            title={note.isPinned ? "Unpin" : "Pin"}
+                            disabled={isSaving}
+                          >
+                            {note.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                          </Button>
+                        )}
 
                         {/* Delete button */}
                         {allowDelete && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-6 w-6 p-0 bg-background/90 hover:bg-destructive hover:text-destructive-foreground"
+                            className="h-7 w-7 p-0 hover:bg-destructive hover:text-destructive-foreground"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteNote(note.id);
                             }}
+                            title="Delete note"
+                            disabled={isSaving}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </div>
+
+                      {/* Color picker - separate row */}
+                      <div className="flex flex-wrap gap-1 bg-background/95 backdrop-blur-sm p-1.5 rounded-lg shadow-lg border border-border/50 max-w-[140px]">
+                        {(Object.keys(noteColors) as Array<keyof typeof noteColors>).map((color) => (
+                          <button
+                            key={color}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleChangeColor(note.id, color);
+                            }}
+                            disabled={isSaving}
+                            className={cn(
+                              "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed",
+                              noteColors[color].bg,
+                              note.color === color && "ring-2 ring-offset-1 ring-primary scale-110"
+                            )}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </motion.div>
                 );
               })}
@@ -666,9 +671,9 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
         )}
       </div>
 
-      {/* Edit Note Dialog */}
+      {/* Edit Note Dialog - Responsive (uses viewport queries as it's a modal) */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>

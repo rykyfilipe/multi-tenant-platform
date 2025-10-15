@@ -63,6 +63,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
       aria-selected={isSelected}
       onKeyDown={handleKeyDown}
       className={cn(
+        "@container", // Enable container queries for responsive design based on widget size
         "widget-header flex h-full flex-col overflow-hidden group",
         "rounded-xl bg-transparent border-0",
         designTokens.transitions.base

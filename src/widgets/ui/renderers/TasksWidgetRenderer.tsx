@@ -18,6 +18,7 @@ import { getPremiumTheme } from "@/widgets/styles/premiumThemes";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { useAuth, useTenant } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
+import { useOptimisticUpdate } from "@/hooks/useOptimisticUpdate";
 import {
   CheckCircle,
   Circle,
@@ -73,9 +74,9 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
   const settings = config?.settings || {};
   const style = config?.style || {};
   
-  // Get tasks from widget data or use default
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    console.log('[TasksWidget] Initializing tasks from config:', config);
+  // Get initial tasks from widget data or use default
+  const getInitialTasks = useCallback((): Task[] => {
+    console.log('[TasksWidget] getInitialTasks - config:', config);
     console.log('[TasksWidget] config.data:', config?.data);
     console.log('[TasksWidget] config.data.tasks:', config?.data?.tasks);
     
@@ -124,9 +125,65 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
         tags: ['documentation']
       }
     ];
-  });
+  }, [config]);
 
-  // Update tasks when widget.config changes (e.g., after save or refresh)
+  // Optimistic updates hook
+  const { data: tasks, setData: setTasks, isSaving, syncData } = useOptimisticUpdate<Task[]>(
+    getInitialTasks(),
+    {
+      onSave: async (updatedTasks: Task[]) => {
+        if (isEditMode || !token) {
+          console.log('[TasksWidget] Skipping save - edit mode or no token');
+          return;
+        }
+
+        console.log('[TasksWidget] Saving tasks:', updatedTasks);
+        
+        // Convert tasks to serializable format (Date → ISO string)
+        const serializableTasks = updatedTasks.map(task => ({
+          ...task,
+          dueDate: task.dueDate ? task.dueDate.toISOString() : undefined,
+        }));
+        
+        const updatedConfig = {
+          ...widget.config,
+          data: {
+            ...(widget.config as any)?.data,
+            tasks: serializableTasks
+          }
+        };
+
+        console.log('[TasksWidget] Saving tasks via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
+        
+        const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            config: updatedConfig,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to save tasks: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('[TasksWidget] Tasks saved successfully:', result);
+        
+        // Update local store with the response from server
+        updateLocal(widget.id, { config: result.config });
+      },
+      showToast: true,
+      successMessage: "Tasks saved",
+      errorMessage: "Failed to save tasks",
+      debounceMs: 500, // Debounce rapid changes
+    }
+  );
+
+  // Sync tasks when widget.config changes from outside (e.g., refresh)
   useEffect(() => {
     console.log('[TasksWidget] useEffect - widget.config changed');
     if (config?.data?.tasks && Array.isArray(config.data.tasks)) {
@@ -134,10 +191,13 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
         ...task,
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined
       }));
-      console.log('[TasksWidget] Syncing tasks from updated config:', loadedTasks);
-      setTasks(loadedTasks);
+      // Only sync if different to avoid infinite loops
+      if (JSON.stringify(loadedTasks) !== JSON.stringify(tasks)) {
+        console.log('[TasksWidget] Syncing tasks from updated config:', loadedTasks);
+        syncData(loadedTasks);
+      }
     }
-  }, [widget.id, widget.config, config]);
+  }, [widget.id, widget.config, tasks, syncData]);
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
@@ -146,106 +206,30 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
-  // Save tasks directly to API via PATCH - no pending changes
-  const saveTasksToApi = useCallback(async (newTasks: Task[]) => {
-    if (isEditMode || !token) {
-      // Don't save while editing dashboard layout
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      console.log('[TasksWidget] saveTasksToApi called with newTasks:', newTasks);
-      
-      // Convert tasks to serializable format (Date → ISO string)
-      const serializableTasks = newTasks.map(task => ({
-        ...task,
-        dueDate: task.dueDate ? task.dueDate.toISOString() : undefined,
-      }));
-      
-      console.log('[TasksWidget] Serializable tasks:', serializableTasks);
-      
-      // IMPORTANT: Use widget.config directly, not from store (which may be stale)
-      const updatedConfig = {
-        ...widget.config,
-        data: {
-          ...(widget.config as any)?.data,
-          tasks: serializableTasks  // Use the NEW tasks passed as parameter
-        }
-      };
-
-      console.log('[TasksWidget] Saving tasks via PATCH:', `/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`);
-      console.log('[TasksWidget] Updated config being sent:', updatedConfig);
-      console.log('[TasksWidget] Number of tasks in payload:', serializableTasks.length);
-      
-      const response = await fetch(`/api/dashboards/${widget.dashboardId}/widgets/${widget.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          config: updatedConfig,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`PATCH failed: ${response.statusText}`);
-      }
-
-      const updatedWidget = await response.json();
-      console.log('[TasksWidget] PATCH successful, response:', updatedWidget);
-      console.log('[TasksWidget] Response config.data.tasks:', updatedWidget.config?.data?.tasks);
-      
-      // Update local store with the response from server
-      updateLocal(widget.id, { config: updatedWidget.config });
-      
-      // Also update local state to match what was saved
-      console.log('[TasksWidget] Updated local store with new config');
-      
-    } catch (error) {
-      console.error('[TasksWidget] Save failed:', error);
-      toast({
-        title: "Save failed",
-        description: "Could not save task changes. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [isEditMode, token, widget.dashboardId, widget.id, widget.config, updateLocal, toast]);
-
-  // CRUD operations - each one directly calls the API
-  const addTask = useCallback(async (task: Omit<Task, 'id'>) => {
+  // CRUD operations - optimistic
+  const addTask = useCallback((task: Omit<Task, 'id'>) => {
     const newTask: Task = {
       ...task,
       id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
-    const newTasks = [...tasks, newTask];
-    setTasks(newTasks);
-    await saveTasksToApi(newTasks);
-  }, [tasks, saveTasksToApi]);
+    setTasks([...tasks, newTask]);
+  }, [tasks, setTasks]);
 
-  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
-    const newTasks = tasks.map(task => 
+  const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
+    setTasks(tasks.map(task => 
       task.id === taskId ? { ...task, ...updates } : task
-    );
-    setTasks(newTasks);
-    await saveTasksToApi(newTasks);
-  }, [tasks, saveTasksToApi]);
+    ));
+  }, [tasks, setTasks]);
 
-  const deleteTask = useCallback(async (taskId: string) => {
-    const newTasks = tasks.filter(task => task.id !== taskId);
-    setTasks(newTasks);
-    await saveTasksToApi(newTasks);
-  }, [tasks, saveTasksToApi]);
+  const deleteTask = useCallback((taskId: string) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
+  }, [tasks, setTasks]);
 
-  const toggleTask = useCallback(async (taskId: string) => {
+  const toggleTask = useCallback((taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (task) {
-      await updateTask(taskId, { completed: !task.completed });
+      updateTask(taskId, { completed: !task.completed });
     }
   }, [tasks, updateTask]);
 
@@ -359,29 +343,31 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
 
   const renderTaskCard = (task: Task) => (
     <motion.div
+      key={task.id}
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className={cn(
-        "group relative p-4 rounded-lg border transition-all duration-200",
+        "group relative p-3 @md:p-4 rounded-lg border transition-all duration-200",
         task.completed
           ? "bg-muted/50 border-muted"
           : "bg-card border-border hover:shadow-md",
-        layout === 'card' && "min-h-[120px]"
+        "min-h-[140px]"
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 @md:gap-3">
         <Checkbox
           checked={task.completed}
           onCheckedChange={() => toggleTask(task.id)}
           className="mt-1"
+          disabled={isSaving}
         />
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-start gap-2 mb-2 flex-wrap">
             <h4 className={cn(
-              "font-medium truncate",
+              "font-medium flex-1 min-w-0",
               task.completed && "line-through text-muted-foreground"
             )}>
               {task.title}
@@ -389,46 +375,46 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
 
             {showPriorityColors && (
               <div className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white",
+                "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-white whitespace-nowrap flex-shrink-0",
                 getPriorityColor(task.priority)
               )}>
                 {getPriorityIcon(task.priority)}
-                <span className="capitalize">{task.priority}</span>
+                <span className="capitalize @sm:inline">{task.priority}</span>
               </div>
             )}
           </div>
 
-          {task.description && layout === 'card' && (
-            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+          {task.description && (
+            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
               {task.description}
             </p>
           )}
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {showDueDates && task.dueDate && (
               <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                <span>{formatDate(task.dueDate)}</span>
+                <Calendar className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{formatDate(task.dueDate)}</span>
               </div>
             )}
 
             {task.assignee && (
               <div className="flex items-center gap-1">
-                <User className="w-3 h-3" />
-                <span>{task.assignee}</span>
+                <User className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{task.assignee}</span>
               </div>
             )}
 
             {showProgress && task.progress !== undefined && (
               <div className="flex items-center gap-2">
                 <span>{task.progress}%</span>
-                <Progress value={task.progress} className="w-16 h-2" />
+                <Progress value={task.progress} className="w-12 @md:w-16 h-2" />
               </div>
             )}
           </div>
 
           {task.tags && task.tags.length > 0 && (
-            <div className="flex gap-1 mt-2">
+            <div className="flex flex-wrap gap-1 mt-2">
               {task.tags.map(tag => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}
@@ -438,18 +424,22 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
           )}
         </div>
 
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+        {/* Actions - always visible on small widgets, hover on larger widgets */}
+        <div className="opacity-100 @md:opacity-0 @md:group-hover:opacity-100 transition-opacity flex flex-col gap-1">
           <Dialog open={editingTask?.id === task.id} onOpenChange={(open) => !open && setEditingTask(null)}>
             <DialogTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="sm"
+                className="h-7 w-7 p-0"
                 onClick={() => setEditingTask(task)}
+                disabled={isSaving}
+                title="Edit task"
               >
-                <Edit className="w-3 h-3" />
+                <Edit className="w-3.5 h-3.5" />
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto w-[95vw] sm:w-full">
               <DialogHeader>
                 <DialogTitle>Edit Task</DialogTitle>
               </DialogHeader>
@@ -466,9 +456,12 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
           <Button 
             variant="ghost" 
             size="sm"
+            className="h-7 w-7 p-0 hover:bg-destructive hover:text-destructive-foreground"
             onClick={() => deleteTask(task.id)}
+            disabled={isSaving}
+            title="Delete task"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
@@ -483,14 +476,14 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border transition-all duration-200",
+        "group flex items-center gap-2 @md:gap-3 p-2 @md:p-3 rounded-lg border transition-all duration-200",
         task.completed
           ? "bg-muted/50 border-muted"
           : "bg-card border-border hover:shadow-sm"
       )}
     >
       <div
-        className="cursor-grab active:cursor-grabbing"
+        className="cursor-grab active:cursor-grabbing hidden @md:block"
         draggable
         onDragStart={() => setDraggedTask(task.id)}
       >
@@ -500,12 +493,13 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
       <Checkbox
         checked={task.completed}
         onCheckedChange={() => toggleTask(task.id)}
+        disabled={isSaving}
       />
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h4 className={cn(
-            "font-medium truncate",
+            "font-medium truncate flex-1 min-w-0",
             task.completed && "line-through text-muted-foreground"
           )}>
             {task.title}
@@ -513,17 +507,17 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
 
           {showPriorityColors && (
             <div className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white",
+              "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-white whitespace-nowrap flex-shrink-0",
               getPriorityColor(task.priority)
             )}>
               {getPriorityIcon(task.priority)}
-              <span className="capitalize">{task.priority}</span>
+              <span className="capitalize @md:inline">{task.priority}</span>
             </div>
           )}
         </div>
 
         {task.description && (
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-1 hidden @md:block">
             {task.description}
           </p>
         )}
@@ -531,28 +525,31 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {showDueDates && task.dueDate && (
-          <span>{formatDate(task.dueDate)}</span>
+          <span className="hidden @lg:inline truncate">{formatDate(task.dueDate)}</span>
         )}
 
         {showProgress && task.progress !== undefined && (
-          <div className="flex items-center gap-1">
+          <div className="hidden @2xl:flex items-center gap-1">
             <span>{task.progress}%</span>
             <Progress value={task.progress} className="w-12 h-1" />
           </div>
         )}
 
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 @md:gap-1 opacity-100 @md:opacity-0 @md:group-hover:opacity-100 transition-opacity">
           <Dialog open={editingTask?.id === task.id} onOpenChange={(open) => !open && setEditingTask(null)}>
             <DialogTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="sm"
+                className="h-7 w-7 p-0"
                 onClick={() => setEditingTask(task)}
+                disabled={isSaving}
+                title="Edit task"
               >
-                <Edit className="w-3 h-3" />
+                <Edit className="w-3.5 h-3.5" />
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto w-[95vw] sm:w-full">
               <DialogHeader>
                 <DialogTitle>Edit Task</DialogTitle>
               </DialogHeader>
@@ -569,9 +566,12 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
           <Button 
             variant="ghost" 
             size="sm"
+            className="h-7 w-7 p-0 hover:bg-destructive hover:text-destructive-foreground"
             onClick={() => deleteTask(task.id)}
+            disabled={isSaving}
+            title="Delete task"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
@@ -585,24 +585,27 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
       <PremiumWidgetContainer style={style} className="h-full w-full flex flex-col">
-        <div className="flex-shrink-0 space-y-4">
-        {/* Controls */}
+        <div className="flex-shrink-0 space-y-3">
+        {/* Controls - Responsive using container queries */}
         <div className="space-y-3">
-          {/* Progress Overview */}
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-4">
+          {/* Progress Overview & Filters - Responsive */}
+          <div className="flex flex-col @2xl:flex-row @2xl:items-center @2xl:justify-between gap-3">
+            {/* Progress */}
+            <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Progress:</span>
                 <span className="font-medium">{completedCount}/{totalCount}</span>
               </div>
-              <Progress value={progressPercentage} className="w-20" />
+              <Progress value={progressPercentage} className="w-24 @md:w-32" />
             </div>
 
-            <div className="flex gap-2">
+            {/* Filter Buttons - Responsive */}
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={filter === 'all' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('all')}
+                className="flex-1 @md:flex-none"
               >
                 All
               </Button>
@@ -610,6 +613,7 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
                 variant={filter === 'pending' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('pending')}
+                className="flex-1 @md:flex-none"
               >
                 Pending
               </Button>
@@ -617,17 +621,18 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
                 variant={filter === 'completed' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('completed')}
+                className="flex-1 @md:flex-none"
               >
                 Completed
               </Button>
               <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="default" size="sm">
+                  <Button variant="default" size="sm" className="w-full @md:w-auto" disabled={isSaving}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Task
+                    <span className="@sm:inline">Add </span>Task
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto w-[95vw] sm:w-full">
                   <DialogHeader>
                     <DialogTitle>Add New Task</DialogTitle>
                   </DialogHeader>
@@ -643,45 +648,49 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
             </div>
           </div>
 
-          {/* Search and Sort */}
-          <div className="flex items-center gap-2">
+          {/* Search and Sort - Responsive using container queries */}
+          <div className="flex flex-col @md:flex-row items-stretch @md:items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search tasks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="pl-9"
               />
             </div>
 
-            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-              <SelectTrigger className="w-32">
-                <ArrowUpDown className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="priority">Priority</SelectItem>
-                <SelectItem value="dueDate">Due Date</SelectItem>
-                <SelectItem value="title">Title</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <SelectTrigger className="w-full @md:w-36">
+                  <ArrowUpDown className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="priority">Priority</SelectItem>
+                  <SelectItem value="dueDate">Due Date</SelectItem>
+                  <SelectItem value="title">Title</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            >
-              {sortOrder === 'asc' ? '↑' : '↓'}
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="px-3"
+                title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              >
+                {sortOrder === 'asc' ? '↑' : '↓'}
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Tasks List/Grid - Scrollable Container */}
-        <div className="flex-1 overflow-auto pr-2">
+        <div className="flex-1 overflow-auto pr-1 @md:pr-2">
           <AnimatePresence mode="popLayout">
             {layout === 'card' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 @md:grid-cols-2 @3xl:grid-cols-3 gap-3 @md:gap-4">
                 {filteredTasks.map(renderTaskCard)}
               </div>
             ) : (
@@ -693,17 +702,17 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
         </div>
 
         {filteredTasks.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 @md:py-12 text-muted-foreground">
             <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No tasks found</p>
+            <p className="text-sm @md:text-base">No tasks found</p>
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="mt-2">
+                <Button variant="outline" size="sm" className="mt-3">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Task
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto w-[95vw] sm:w-full">
                 <DialogHeader>
                   <DialogTitle>Add New Task</DialogTitle>
                 </DialogHeader>
