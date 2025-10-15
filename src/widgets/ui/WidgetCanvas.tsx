@@ -72,23 +72,24 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
     }));
 
     // Define responsive layouts for different screen sizes
+    // Strategy: Force full-width on smaller devices for better UX
     return {
-      xxl: baseLayout, // 1600px+: 12 columns
-      xl: baseLayout,  // 1200px+: 10 columns
-      lg: baseLayout,  // 996px+: 8 columns
+      xxl: baseLayout, // 1600px+: 12 columns - original layout
+      xl: baseLayout,  // 1200px+: 10 columns - original layout
+      lg: baseLayout,  // 996px+: 8 columns - original layout
       md: baseLayout.map(item => ({ // 768px+: 6 columns (tablet)
         ...item,
-        w: Math.min(item.w, 6),
-        x: item.x >= 6 ? item.x - 6 : item.x,
+        w: 6, // Force full-width on tablet - no shrinking
+        x: 0,
       })),
       sm: baseLayout.map(item => ({ // 480px+: 4 columns (mobile landscape)
         ...item,
-        w: Math.min(item.w, 4),
-        x: item.x >= 4 ? 0 : item.x,
+        w: 4, // Force full-width on mobile landscape
+        x: 0,
       })),
       xs: baseLayout.map(item => ({ // <480px: 2 columns (mobile portrait)
         ...item,
-        w: 2,
+        w: 2, // Force full-width on mobile portrait
         x: 0,
       })),
     };

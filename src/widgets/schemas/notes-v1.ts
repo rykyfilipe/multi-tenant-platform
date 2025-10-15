@@ -71,13 +71,27 @@ export const notesSettingsSchema = z.object({
 });
 
 export const notesStyleSchema = z.object({
-  // Container
-  backgroundColor: z.string().default("transparent"),
-  textColor: z.string().default("#000000"),
-  padding: z.enum(["none", "sm", "md", "lg"]).default("md"),
-  borderRadius: z.number().min(0).max(50).default(0),
+  // ============================================================================
+  // CONTAINER STYLING
+  // ============================================================================
   
-  // Container Border
+  // Background
+  backgroundColor: z.string().default("transparent"),
+  backgroundOpacity: z.number().min(0).max(1).default(1),
+  backgroundGradient: z.object({
+    enabled: z.boolean().default(false),
+    from: z.string().default("#FFFFFF"),
+    to: z.string().default("#F3F4F6"),
+    direction: z.enum(["to-t", "to-tr", "to-r", "to-br", "to-b", "to-bl", "to-l", "to-tl"]).default("to-br"),
+  }).default({
+    enabled: false,
+    from: "#FFFFFF",
+    to: "#F3F4F6",
+    direction: "to-br"
+  }),
+  
+  // Border
+  borderRadius: z.number().min(0).max(50).default(0),
   border: z.object({
     enabled: z.boolean().default(false),
     width: z.number().min(0).max(10).default(1),
@@ -90,7 +104,7 @@ export const notesStyleSchema = z.object({
     style: "solid"
   }),
   
-  // Container Shadow
+  // Shadow
   shadow: z.object({
     enabled: z.boolean().default(false),
     size: z.enum(["none", "sm", "md", "lg", "xl"]).default("sm"),
@@ -100,6 +114,33 @@ export const notesStyleSchema = z.object({
     size: "sm",
     color: "rgba(0, 0, 0, 0.1)"
   }),
+  
+  // Padding
+  padding: z.union([
+    z.object({
+      x: z.number().min(0).max(100).default(16),
+      y: z.number().min(0).max(100).default(16),
+    }),
+    z.enum(["none", "sm", "md", "lg"]) // Backward compatibility
+  ]).default({ x: 16, y: 16 }).transform((val) => {
+    if (typeof val === 'string') {
+      const paddingMap: Record<string, any> = {
+        none: { x: 0, y: 0 },
+        sm: { x: 8, y: 8 },
+        md: { x: 16, y: 16 },
+        lg: { x: 24, y: 24 },
+      };
+      return paddingMap[val] || { x: 16, y: 16 };
+    }
+    return val;
+  }),
+  
+  // Text Color
+  textColor: z.string().default("#000000"),
+  
+  // ============================================================================
+  // NOTE CARDS STYLING
+  // ============================================================================
   
   // Note cards
   cardBorderRadius: z.number().min(0).max(50).default(12),
