@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AppContext";
 import { useOptimisticUpdate } from "@/hooks/useOptimisticUpdate";
+import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import {
   Plus,
   Trash2,
@@ -54,6 +55,7 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
 }) => {
   const { toast } = useToast();
   const { token } = useAuth();
+  const updateLocal = useWidgetsStore((state) => state.updateLocal);
   
   const config = widget.config as any;
   const settings = config?.settings || {};
@@ -121,6 +123,9 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
 
         const result = await response.json();
         console.log('[NotesWidget] Notes saved successfully:', result);
+        
+        // Update local store with the response from server
+        updateLocal(widget.id, { config: result.config });
       },
       showToast: true,
       successMessage: "Notes saved",
@@ -143,7 +148,8 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
   const [newTag, setNewTag] = useState("");
   const [markdownPreview, setMarkdownPreview] = useState(false);
 
-  // Sync notes when widget.config changes from outside (e.g., refresh)
+  // Sync notes when widget.config changes from outside (e.g., refresh or server update)
+  // DON'T include 'notes' in dependencies to avoid circular updates
   useEffect(() => {
     if (config?.data?.notes && Array.isArray(config.data.notes)) {
       const loadedNotes = config.data.notes.map((note: any) => ({
@@ -158,12 +164,13 @@ const NotesWidgetRendererComponent: React.FC<NotesWidgetRendererProps> = ({
         linkedWidgetIds: note.linkedWidgetIds || [],
         reminder: note.reminder || undefined,
       }));
-      // Only sync if different to avoid infinite loops
-      if (JSON.stringify(loadedNotes) !== JSON.stringify(notes)) {
-        syncData(loadedNotes);
-      }
+      
+      // Always sync when config changes (from server or external source)
+      console.log('[NotesWidget] Syncing notes from widget.config:', loadedNotes.length);
+      syncData(loadedNotes);
     }
-  }, [widget.id, widget.config, notes, syncData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.id, widget.config]);
 
   // Extract settings
   const showDates = settings.showDates ?? true;

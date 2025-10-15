@@ -183,7 +183,8 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
     }
   );
 
-  // Sync tasks when widget.config changes from outside (e.g., refresh)
+  // Sync tasks when widget.config changes from outside (e.g., refresh or server update)
+  // DON'T include 'tasks' in dependencies to avoid circular updates
   useEffect(() => {
     console.log('[TasksWidget] useEffect - widget.config changed');
     if (config?.data?.tasks && Array.isArray(config.data.tasks)) {
@@ -191,13 +192,13 @@ const TasksWidgetRendererComponent: React.FC<TasksWidgetRendererProps> = ({
         ...task,
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined
       }));
-      // Only sync if different to avoid infinite loops
-      if (JSON.stringify(loadedTasks) !== JSON.stringify(tasks)) {
-        console.log('[TasksWidget] Syncing tasks from updated config:', loadedTasks);
-        syncData(loadedTasks);
-      }
+      
+      // Always sync when config changes (from server or external source)
+      console.log('[TasksWidget] Syncing tasks from widget.config:', loadedTasks.length);
+      syncData(loadedTasks);
     }
-  }, [widget.id, widget.config, tasks, syncData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.id, widget.config]);
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
