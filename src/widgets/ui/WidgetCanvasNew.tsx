@@ -396,33 +396,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     };
   }, [pendingOperations]);
 
-  // Calculate optimal columns based on container width
-  const calculateOptimalColumns = useCallback((width: number): number => {
-    const MIN_WIDGET_WIDTH = 250; // Minimum widget width in pixels
-    const MARGIN = 10; // Grid margin
-    
-    // Calculate how many widgets can fit horizontally
-    const availableWidth = width - (MARGIN * 2);
-    const maxCols = Math.floor(availableWidth / (MIN_WIDGET_WIDTH + MARGIN));
-    
-    // Clamp between 1 and 24 columns
-    return Math.max(1, Math.min(24, maxCols));
-  }, []);
+  // FIXED GRID: 24 columns (no calculations, no scaling)
+  const GRID_COLUMNS = 24;
 
-  // Current optimal columns based on container width
-  const optimalColumns = useMemo(() => 
-    calculateOptimalColumns(containerWidth), 
-    [containerWidth, calculateOptimalColumns]
-  );
-
-  // Create layout: FIRST try original dimensions, ONLY scale if doesn't fit
-  const calculateAutoLayout = useCallback((widgets: WidgetEntity[], cols: number): Layout[] => {
-    console.log('🎯 [AUTO-LAYOUT] Calculating for', widgets.length, 'widgets in', cols, 'columns');
+  // Create layout EXACTLY as stored in DB - NO MODIFICATIONS
+  const layout: Layout[] = useMemo(() => {
+    console.log(`📐 [LAYOUT] Using FIXED ${GRID_COLUMNS} columns grid`);
     
-    // Reference grid size (design original pentru 24 coloane)
-    const REFERENCE_COLS = 24;
-    
-    return widgets
+    const dbLayout = widgetList
       .filter(widget => 
         widget && 
         widget.id && 
@@ -431,81 +412,36 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         widgetsRecord[widget.id]
       )
       .map((widget) => {
-        const originalX = Number.isFinite(widget.position.x) ? widget.position.x : 0;
-        const originalY = Number.isFinite(widget.position.y) ? widget.position.y : 0;
-        const originalW = Number.isFinite(widget.position.w) ? widget.position.w : 8;
-        const originalH = Number.isFinite(widget.position.h) ? widget.position.h : 6;
+        // EXACT dimensions from DB - NO CHANGES!
+        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
+        const w = Number.isFinite(widget.position.w) ? widget.position.w : 8;
+        const h = Number.isFinite(widget.position.h) ? widget.position.h : 6;
         
-        let finalX = originalX;
-        let finalW = originalW;
-        
-        // PRIORITATE 1: Încearcă dimensiunile ORIGINALE
-        if (originalX + originalW <= cols) {
-          // ✅ ÎNCAPE CU DIMENSIUNI ORIGINALE - păstrează tot!
-          console.log(`✅ Widget ${widget.id}: ORIGINAL dimensions fit! x=${originalX}, w=${originalW} (in ${cols} cols)`);
-          finalX = originalX;
-          finalW = originalW;
-        } else {
-          // ❌ NU ÎNCAPE - trebuie să scalăm
-          console.warn(`⚠️ Widget ${widget.id}: Original x=${originalX} + w=${originalW} = ${originalX + originalW} > ${cols} cols - SCALING NEEDED`);
-          
-          // Scalează proporțional pentru a păstra raportul
-          const scaledW = Math.max(1, Math.min(cols, Math.round((originalW / REFERENCE_COLS) * cols)));
-          const scaledX = Math.round((originalX / REFERENCE_COLS) * cols);
-          
-          // Verifică dacă poziția scalată încape
-          if (scaledX + scaledW <= cols) {
-            finalX = scaledX;
-            finalW = scaledW;
-            console.log(`   → Scaled to: x=${scaledX}, w=${scaledW} ✓`);
-          } else {
-            // Ultimă variantă: aliniază la dreapta
-            finalX = Math.max(0, cols - scaledW);
-            finalW = scaledW;
-            console.log(`   → Forced to right: x=${finalX}, w=${finalW}`);
-          }
-        }
+        console.log(`  Widget [${widget.id}]: x=${x}, y=${y}, w=${w}, h=${h} (EXACT from DB)`);
         
         const widgetId = widget.id;
         if (!widgetId || typeof widgetId !== 'number' || isNaN(widgetId)) {
-          console.error('[Layout] Invalid widget ID:', widgetId, 'for widget:', widget);
+          console.error('[Layout] Invalid widget ID:', widgetId);
           return null;
         }
         
         return {
           i: widgetId.toString(),
-          x: finalX,
-          y: originalY,
-          w: finalW,
-          h: originalH,
+          x,
+          y,
+          w,
+          h,
           minW: 1,
           minH: 2,
           static: false,
         };
       })
       .filter(item => item !== null) as Layout[];
-  }, [widgetsRecord]);
-
-  // Create auto-adaptive layout
-  const layout: Layout[] = useMemo(() => {
-    const autoLayout = calculateAutoLayout(widgetList, optimalColumns);
     
-    // Log EACH widget individually for debugging
-    console.log(`📐 [LAYOUT] Grid: ${optimalColumns} columns, ${containerWidth}px width`);
-    autoLayout.forEach((item, index) => {
-      const percentWidth = Math.round((item.w / optimalColumns) * 100);
-      const fitsInRow = item.x + item.w <= optimalColumns;
-      console.log(`  Widget ${index + 1} [${item.i}]: x=${item.x}, y=${item.y}, w=${item.w}, h=${item.h} | ${percentWidth}% width | Fits: ${fitsInRow ? '✅' : '❌ OVERFLOW!'}`);
-    });
-    
-    // Warning if widgets are too wide
-    const tooWideWidgets = autoLayout.filter(l => l.w > optimalColumns);
-    if (tooWideWidgets.length > 0) {
-      console.warn(`⚠️ [LAYOUT] ${tooWideWidgets.length} widgets exceed grid width!`, tooWideWidgets);
-    }
-    
-    return autoLayout;
-  }, [widgetList, optimalColumns, calculateAutoLayout, containerWidth]);
+    console.log(`✅ [LAYOUT] Created ${dbLayout.length} widgets with EXACT DB positions`);
+    return dbLayout;
+  }, [widgetList, widgetsRecord]);
 
   // Find next available position in grid
   const findNextPosition = useCallback(() => {
@@ -532,15 +468,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const newX = maxX;
     const newY = maxXWidget.position?.y || 0;
     
-    // If exceeds grid width (use current optimal columns), wrap to next row
-    if (newX >= optimalColumns) {
+    // If exceeds grid width (FIXED 24 columns), wrap to next row
+    if (newX >= GRID_COLUMNS) {
       // Find the max Y position and add new widget below
       const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
       return { x: 0, y: maxY };
     }
     
     return { x: newX, y: newY };
-  }, [dashboardId, optimalColumns]);
+  }, [dashboardId]);
 
   // Duplicate widget function
   const handleDuplicateWidget = useCallback((widget: WidgetEntity) => {
@@ -655,22 +591,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
 
-      // Calculate smart default widget size based on current grid columns
-      // Aim for ~33% width on larger grids, 50% on medium, full width on small
-      const calculateDefaultWidth = (cols: number): number => {
-        if (cols >= 12) return Math.floor(cols / 3); // 33% on large grids
-        if (cols >= 6) return Math.floor(cols / 2);  // 50% on medium grids
-        return cols; // Full width on small grids
-      };
-      
+      // Default widget size: 8 columns (33% of 24)
       const widgets = Object.values(widgetsRecord);
-      const newWidth = calculateDefaultWidth(optimalColumns);
+      const newWidth = 8; 
       const newHeight = 6;
       
       // Function to check if position is available (no collision with existing widgets)
       const isPositionAvailable = (x: number, y: number, w: number, h: number): boolean => {
         // Check if within bounds
-        if (x < 0 || y < 0 || x + w > optimalColumns) {
+        if (x < 0 || y < 0 || x + w > GRID_COLUMNS) {
           return false;
         }
         
@@ -701,7 +630,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       
       // Scan grid from top to bottom, left to right
       for (let y = 0; y < 100 && !found; y++) { // Max 100 rows
-        for (let x = 0; x <= optimalColumns - newWidth && !found; x++) {
+        for (let x = 0; x <= GRID_COLUMNS - newWidth && !found; x++) {
           if (isPositionAvailable(x, y, newWidth, newHeight)) {
             foundPosition = { x, y };
             found = true;
@@ -740,8 +669,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       console.log('🆕 [DEBUG] Creating local widget:', {
         ...newWidget,
-        optimalColumns,
-        calculatedWidth: newWidth
+        gridColumns: GRID_COLUMNS,
+        defaultWidth: newWidth
       });
 
       // Add to local state
@@ -852,7 +781,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         {isEditMode && (
           <div className="fixed top-4 right-4 z-40">
             <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
-              📐 {optimalColumns} columns · {containerWidth}px
+              📐 {GRID_COLUMNS} columns (FIXED) · {containerWidth}px
             </Badge>
           </div>
         )}
@@ -1272,14 +1201,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             key={layoutKey}
             className="layout" 
             layout={layout}
-            cols={optimalColumns}
+            cols={GRID_COLUMNS}
             width={containerWidth}
             rowHeight={30} 
             isDraggable={isEditMode}
             isResizable={isEditMode}
             isBounded={false}
             compactType={null}
-            preventCollision={true}
+            preventCollision={false}
             useCSSTransforms={true}
             margin={[10, 10]}
             containerPadding={isFullscreen ? [5, 5] : [10, 10]}
