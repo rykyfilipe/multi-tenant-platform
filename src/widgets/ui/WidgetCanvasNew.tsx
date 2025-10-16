@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import GridLayout, { type Layout } from "react-grid-layout";
+import { Responsive as ResponsiveGridLayout, type Layout, type Layouts } from "react-grid-layout";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
 import { useWidgetsApi } from "@/widgets/api/simple-client";
@@ -209,6 +209,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
+  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('xxl');
+  const [currentCols, setCurrentCols] = useState<number>(24);
   const isInternalUpdate = useRef(false); // Flag to prevent cascade updates from undo/redo
   
   // Cache widget references to prevent unnecessary re-renders
@@ -396,14 +398,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     };
   }, [pendingOperations]);
 
-  // FIXED GRID: 24 columns (no calculations, no scaling)
-  const GRID_COLUMNS = 24;
-
-  // Create layout EXACTLY as stored in DB - NO MODIFICATIONS
-  const layout: Layout[] = useMemo(() => {
-    console.log(`📐 [LAYOUT] Using FIXED ${GRID_COLUMNS} columns grid`);
-    
-    const dbLayout = widgetList
+  // Create base layout from DB - exact positions
+  const createBaseLayout = useCallback((): Layout[] => {
+    return widgetList
       .filter(widget => 
         widget && 
         widget.id && 
@@ -412,36 +409,82 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         widgetsRecord[widget.id]
       )
       .map((widget) => {
-        // EXACT dimensions from DB - NO CHANGES!
+        // EXACT dimensions from DB
         const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
         const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
         const w = Number.isFinite(widget.position.w) ? widget.position.w : 8;
         const h = Number.isFinite(widget.position.h) ? widget.position.h : 6;
         
-        console.log(`  Widget [${widget.id}]: x=${x}, y=${y}, w=${w}, h=${h} (EXACT from DB)`);
-        
-        const widgetId = widget.id;
-        if (!widgetId || typeof widgetId !== 'number' || isNaN(widgetId)) {
-          console.error('[Layout] Invalid widget ID:', widgetId);
-          return null;
-        }
-        
         return {
-          i: widgetId.toString(),
+          i: widget.id.toString(),
           x,
           y,
           w,
           h,
           minW: 1,
           minH: 2,
-          static: false,
         };
       })
-      .filter(item => item !== null) as Layout[];
-    
-    console.log(`✅ [LAYOUT] Created ${dbLayout.length} widgets with EXACT DB positions`);
-    return dbLayout;
+      .filter(Boolean) as Layout[];
   }, [widgetList, widgetsRecord]);
+
+  // Create responsive layouts with automatic wrapping
+  const layouts: Layouts = useMemo(() => {
+    const baseLayout = createBaseLayout();
+    
+    console.log(`📐 [RESPONSIVE LAYOUTS] Creating for ${baseLayout.length} widgets`);
+    
+    // Helper: wrap widgets to fit in available columns
+    const wrapToColumns = (layout: Layout[], maxCols: number): Layout[] => {
+      const wrapped: Layout[] = [];
+      let currentY = 0;
+      let currentX = 0;
+      let rowHeight = 0;
+      
+      // Sort by original Y position, then X position
+      const sorted = [...layout].sort((a, b) => {
+        if (a.y !== b.y) return a.y - b.y;
+        return a.x - b.x;
+      });
+      
+      sorted.forEach((item) => {
+        let w = item.w;
+        
+        // If widget is too wide for grid, shrink it
+        if (w > maxCols) {
+          w = maxCols;
+        }
+        
+        // If doesn't fit on current row, wrap to next row
+        if (currentX + w > maxCols) {
+          currentY += rowHeight;
+          currentX = 0;
+          rowHeight = 0;
+        }
+        
+        wrapped.push({
+          ...item,
+          x: currentX,
+          y: currentY,
+          w,
+        });
+        
+        currentX += w;
+        rowHeight = Math.max(rowHeight, item.h);
+      });
+      
+      return wrapped;
+    };
+    
+    return {
+      xxl: baseLayout,                    // >= 1600px: 24 cols - original layout
+      xl: baseLayout,                     // >= 1200px: 24 cols - original layout
+      lg: baseLayout,                     // >= 996px: 24 cols - original layout
+      md: wrapToColumns(baseLayout, 12),  // >= 768px: 12 cols - wrap widgets
+      sm: wrapToColumns(baseLayout, 6),   // >= 480px: 6 cols - wrap widgets
+      xs: wrapToColumns(baseLayout, 3),   // < 480px: 3 cols - stack vertically
+    };
+  }, [createBaseLayout]);
 
   // Find next available position in grid
   const findNextPosition = useCallback(() => {
@@ -468,8 +511,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const newX = maxX;
     const newY = maxXWidget.position?.y || 0;
     
-    // If exceeds grid width (FIXED 24 columns), wrap to next row
-    if (newX >= GRID_COLUMNS) {
+    // If exceeds grid width (24 columns), wrap to next row
+    if (newX >= 24) {
       // Find the max Y position and add new widget below
       const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
       return { x: 0, y: maxY };
@@ -598,8 +641,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       
       // Function to check if position is available (no collision with existing widgets)
       const isPositionAvailable = (x: number, y: number, w: number, h: number): boolean => {
-        // Check if within bounds
-        if (x < 0 || y < 0 || x + w > GRID_COLUMNS) {
+        // Check if within bounds (24 columns grid)
+        if (x < 0 || y < 0 || x + w > 24) {
           return false;
         }
         
@@ -628,9 +671,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       let foundPosition = { x: 0, y: 0 }; // Default: top-left
       let found = false;
       
-      // Scan grid from top to bottom, left to right
+      // Scan grid from top to bottom, left to right (24 columns)
       for (let y = 0; y < 100 && !found; y++) { // Max 100 rows
-        for (let x = 0; x <= GRID_COLUMNS - newWidth && !found; x++) {
+        for (let x = 0; x <= 24 - newWidth && !found; x++) {
           if (isPositionAvailable(x, y, newWidth, newHeight)) {
             foundPosition = { x, y };
             found = true;
@@ -669,7 +712,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
       console.log('🆕 [DEBUG] Creating local widget:', {
         ...newWidget,
-        gridColumns: GRID_COLUMNS,
+        gridColumns: 24,
         defaultWidth: newWidth
       });
 
@@ -781,7 +824,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         {isEditMode && (
           <div className="fixed top-4 right-4 z-40">
             <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
-              📐 {GRID_COLUMNS} columns (FIXED) · {containerWidth}px
+              📐 {currentCols} cols ({currentBreakpoint}) · {containerWidth}px
             </Badge>
           </div>
         )}
@@ -1197,11 +1240,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           }
         `}</style>
         <WidgetErrorBoundary>
-          <GridLayout 
+          <ResponsiveGridLayout 
             key={layoutKey}
             className="layout" 
-            layout={layout}
-            cols={GRID_COLUMNS}
+            layouts={layouts}
+            breakpoints={{ xxl: 1600, xl: 1200, lg: 996, md: 768, sm: 480, xs: 0 }}
+            cols={{ xxl: 24, xl: 24, lg: 24, md: 12, sm: 6, xs: 3 }}
             width={containerWidth}
             rowHeight={30} 
             isDraggable={isEditMode}
@@ -1214,7 +1258,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             containerPadding={isFullscreen ? [5, 5] : [10, 10]}
             resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
             draggableHandle=".widget-header"
-            onLayoutChange={(currentLayout: Layout[]) => {
+            onBreakpointChange={(breakpoint, cols) => {
+              console.log(`📱 [BREAKPOINT] Changed to: ${breakpoint} (${cols} columns)`);
+              setCurrentBreakpoint(breakpoint);
+              setCurrentCols(cols);
+            }}
+            onLayoutChange={(currentLayout: Layout[], allLayouts: Layouts) => {
               if (!isEditMode) return;
               
               // PREVENT cascade updates from undo/redo
@@ -1340,7 +1389,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   </div>
                 );
               }).filter(Boolean)}
-          </GridLayout>
+          </ResponsiveGridLayout>
         </WidgetErrorBoundary>
       </div>
 
