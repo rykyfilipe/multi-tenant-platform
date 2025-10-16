@@ -17,7 +17,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
   children,
 }) => {
   return (
-    <div className="base-widget rounded-lg border border-muted-foreground/10 bg-background shadow-sm">
+    <div className="base-widget @container h-full w-full rounded-lg border border-muted-foreground/10 bg-background shadow-sm">
       <div className="flex items-center justify-between border-b border-muted-foreground/10 px-3 py-2">
         <span className="text-sm font-medium text-foreground/80">{title}</span>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -59,7 +59,7 @@ export const BaseWidget: React.FC<PropsWithChildren<BaseWidgetProps>> = ({
           )}
         </div>
       </div>
-      <div className="p-3 text-sm text-muted-foreground">{children}</div>
+      <div className="p-3 text-sm text-muted-foreground h-full overflow-auto">{children}</div>
     </div>
   );
 };

@@ -200,69 +200,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     });
   }, [discardAllChanges, toast]);
 
-  // Find next available position in grid
-  const findNextPosition = useCallback(() => {
-    const widgets = useWidgetsStore.getState().widgets;
-    const widgetsArray = Object.values(widgets).filter(w => w.dashboardId === dashboardId);
-    
-    if (widgetsArray.length === 0) {
-      return { x: 0, y: 0 };
-    }
-
-    // Find rightmost widget
-    let maxX = 0;
-    let maxXWidget = widgetsArray[0];
-    
-    widgetsArray.forEach(widget => {
-      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 8);
-      if (rightEdge > maxX) {
-        maxX = rightEdge;
-        maxXWidget = widget;
-      }
-    });
-
-    // Place new widget to the right of the rightmost widget
-    const newX = maxX;
-    const newY = maxXWidget.position?.y || 0;
-    
-    // If exceeds grid width (24 columns), wrap to next row
-    const GRID_COLS = 24;
-    if (newX >= GRID_COLS) {
-      // Find the max Y position and add new widget below
-      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
-      return { x: 0, y: maxY };
-    }
-    
-    return { x: newX, y: newY };
-  }, [dashboardId]);
-
-  // Duplicate widget function
-  const handleDuplicateWidget = useCallback((widget: WidgetEntity) => {
-    const nextPos = findNextPosition();
-    const newWidget: WidgetEntity = {
-      ...widget,
-      id: Math.floor(Date.now() + Math.random() * 1000000), // Generate new integer ID
-      title: `${widget.title} (Copy)`,
-      position: {
-        ...widget.position,
-        x: nextPos.x,
-        y: nextPos.y,
-      },
-      version: 1,
-      schemaVersion: widget.schemaVersion,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: actorId,
-      updatedBy: actorId,
-    };
-    
-    createLocal(newWidget);
-    toast({
-      title: "Widget duplicated",
-      description: `${widget.title} has been duplicated.`,
-      variant: "default",
-    });
-  }, [createLocal, actorId, toast, findNextPosition]);
 
   // State declarations
   const [editorWidgetId, setEditorWidgetId] = useState<number | null>(null);
@@ -459,17 +396,40 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     };
   }, [pendingOperations]);
 
-  // Create single layout - NO responsive scaling, use real dimensions
-  const layout: Layout[] = useMemo(() => {
-    return widgetList
+  // Calculate optimal columns based on container width
+  const calculateOptimalColumns = useCallback((width: number): number => {
+    const MIN_WIDGET_WIDTH = 250; // Minimum widget width in pixels
+    const MARGIN = 10; // Grid margin
+    
+    // Calculate how many widgets can fit horizontally
+    const availableWidth = width - (MARGIN * 2);
+    const maxCols = Math.floor(availableWidth / (MIN_WIDGET_WIDTH + MARGIN));
+    
+    // Clamp between 1 and 24 columns
+    return Math.max(1, Math.min(24, maxCols));
+  }, []);
+
+  // Current optimal columns based on container width
+  const optimalColumns = useMemo(() => 
+    calculateOptimalColumns(containerWidth), 
+    [containerWidth, calculateOptimalColumns]
+  );
+
+  // Create layout preserving widget dimensions - responsiveness comes from container
+  const calculateAutoLayout = useCallback((widgets: WidgetEntity[], cols: number): Layout[] => {
+    console.log('🎯 [AUTO-LAYOUT] Calculating for', widgets.length, 'widgets in', cols, 'columns');
+    
+    return widgets
       .filter(widget => 
-        widget && // Ensure widget exists
-        widget.id && // Ensure widget has valid ID
-        typeof widget.id === 'number' && // Ensure ID is a number
-        !isNaN(widget.id) && // Ensure ID is not NaN
-        widgetsRecord[widget.id] // Double-check widget still exists in record
+        widget && 
+        widget.id && 
+        typeof widget.id === 'number' && 
+        !isNaN(widget.id) && 
+        widgetsRecord[widget.id]
       )
       .map((widget) => {
+        // Păstrează dimensiunile originale ale widget-ului
+        // Responsivitatea vine din container queries și CSS, NU din modificarea w/h
         const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
         const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
         const w = Number.isFinite(widget.position.w) ? widget.position.w : 8;
@@ -492,7 +452,82 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         };
       })
       .filter(item => item !== null) as Layout[];
-  }, [widgetList, widgetsRecord]);
+  }, [widgetsRecord]);
+
+  // Create auto-adaptive layout
+  const layout: Layout[] = useMemo(() => {
+    const autoLayout = calculateAutoLayout(widgetList, optimalColumns);
+    console.log('📐 [LAYOUT] Generated auto-layout:', {
+      containerWidth,
+      optimalColumns,
+      widgets: autoLayout.length,
+      layout: autoLayout.map(l => ({ id: l.i, x: l.x, y: l.y, w: l.w, h: l.h }))
+    });
+    return autoLayout;
+  }, [widgetList, optimalColumns, calculateAutoLayout, containerWidth]);
+
+  // Find next available position in grid
+  const findNextPosition = useCallback(() => {
+    const widgets = useWidgetsStore.getState().widgets;
+    const widgetsArray = Object.values(widgets).filter(w => w.dashboardId === dashboardId);
+    
+    if (widgetsArray.length === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    // Find rightmost widget
+    let maxX = 0;
+    let maxXWidget = widgetsArray[0];
+    
+    widgetsArray.forEach(widget => {
+      const rightEdge = (widget.position?.x || 0) + (widget.position?.w || 8);
+      if (rightEdge > maxX) {
+        maxX = rightEdge;
+        maxXWidget = widget;
+      }
+    });
+
+    // Place new widget to the right of the rightmost widget
+    const newX = maxX;
+    const newY = maxXWidget.position?.y || 0;
+    
+    // If exceeds grid width (use current optimal columns), wrap to next row
+    if (newX >= optimalColumns) {
+      // Find the max Y position and add new widget below
+      const maxY = Math.max(...widgetsArray.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
+      return { x: 0, y: maxY };
+    }
+    
+    return { x: newX, y: newY };
+  }, [dashboardId, optimalColumns]);
+
+  // Duplicate widget function
+  const handleDuplicateWidget = useCallback((widget: WidgetEntity) => {
+    const nextPos = findNextPosition();
+    const newWidget: WidgetEntity = {
+      ...widget,
+      id: Math.floor(Date.now() + Math.random() * 1000000), // Generate new integer ID
+      title: `${widget.title} (Copy)`,
+      position: {
+        ...widget.position,
+        x: nextPos.x,
+        y: nextPos.y,
+      },
+      version: 1,
+      schemaVersion: widget.schemaVersion,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: actorId,
+      updatedBy: actorId,
+    };
+    
+    createLocal(newWidget);
+    toast({
+      title: "Widget duplicated",
+      description: `${widget.title} has been duplicated.`,
+      variant: "default",
+    });
+  }, [createLocal, actorId, toast, findNextPosition]);
 
   const closeEditor = () => setEditorWidgetId(null);
 
@@ -579,17 +614,22 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       const definition = getWidgetDefinition(type);
       const defaultConfig = definition.defaultConfig;
 
-      // Find first available position starting from top-left
+      // Calculate smart default widget size based on current grid columns
+      // Aim for ~33% width on larger grids, 50% on medium, full width on small
+      const calculateDefaultWidth = (cols: number): number => {
+        if (cols >= 12) return Math.floor(cols / 3); // 33% on large grids
+        if (cols >= 6) return Math.floor(cols / 2);  // 50% on medium grids
+        return cols; // Full width on small grids
+      };
+      
       const widgets = Object.values(widgetsRecord);
-      // Fixed widget size
-      const newWidth = 8; // 33% of 24 columns
+      const newWidth = calculateDefaultWidth(optimalColumns);
       const newHeight = 6;
-      const cols = 24; // Fixed 24 columns
       
       // Function to check if position is available (no collision with existing widgets)
       const isPositionAvailable = (x: number, y: number, w: number, h: number): boolean => {
         // Check if within bounds
-        if (x < 0 || y < 0 || x + w > cols) {
+        if (x < 0 || y < 0 || x + w > optimalColumns) {
           return false;
         }
         
@@ -615,12 +655,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       };
       
       // Find first available position (scan left-to-right, top-to-bottom)
-      let foundPosition = { x: cols - newWidth, y: 0 }; // Default: top-right
+      let foundPosition = { x: 0, y: 0 }; // Default: top-left
       let found = false;
       
       // Scan grid from top to bottom, left to right
       for (let y = 0; y < 100 && !found; y++) { // Max 100 rows
-        for (let x = 0; x <= cols - newWidth && !found; x++) {
+        for (let x = 0; x <= optimalColumns - newWidth && !found; x++) {
           if (isPositionAvailable(x, y, newWidth, newHeight)) {
             foundPosition = { x, y };
             found = true;
@@ -630,7 +670,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       }
       
       if (!found) {
-        console.warn('⚠️ [DEBUG] No available position found, using default top-right');
+        // If no position found, place at bottom
+        const maxY = Math.max(0, ...widgets.map(w => (w.position?.y || 0) + (w.position?.h || 6)));
+        foundPosition = { x: 0, y: maxY };
+        console.warn('⚠️ [DEBUG] No available position found, placing at bottom:', foundPosition);
       }
 
       // Create widget locally with temporary ID (compatible with INT4)
@@ -654,7 +697,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         updatedBy: actorId,
       };
 
-      console.log('🆕 [DEBUG] Creating local widget:', newWidget);
+      console.log('🆕 [DEBUG] Creating local widget:', {
+        ...newWidget,
+        optimalColumns,
+        calculatedWidth: newWidth
+      });
 
       // Add to local state
       createLocal(newWidget);
@@ -760,6 +807,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       </div>
     }>
       <div className="h-full w-full relative">
+        {/* Grid Info Badge - Shows current grid configuration */}
+        {isEditMode && (
+          <div className="fixed top-4 right-4 z-40">
+            <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
+              📐 {optimalColumns} columns · {containerWidth}px
+            </Badge>
+          </div>
+        )}
+        
         {/* Floating Toolbar - Only in Edit Mode */}
         {isEditMode && (
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
@@ -1079,29 +1135,27 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             max-height: none;
           }
           
-          /* Mobile responsive adjustments */
+          /* Mobile responsive adjustments - Smart scaling */
           @media (max-width: 640px) {
             .react-grid-item {
-              width: 100% !important;
-              min-width: 0;
               min-height: 150px;
             }
             .react-grid-layout {
               min-height: auto;
             }
-            /* On mobile, override grid positioning to stack vertically */
+          }
+          
+          /* Very small screens - Stack vertically */
+          @media (max-width: 480px) {
             .react-grid-item {
-              position: relative !important;
-              transform: none !important;
-              left: 0 !important;
-              margin-bottom: 10px;
+              min-height: 200px;
             }
           }
           
-          /* Tablet adjustments */
-          @media (min-width: 641px) and (max-width: 768px) {
+          /* Tablet adjustments - Maintain grid */
+          @media (min-width: 641px) and (max-width: 1024px) {
             .react-grid-item {
-              max-width: 100%;
+              min-height: 180px;
             }
           }
           .react-grid-item.cssTransforms {
@@ -1177,14 +1231,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             key={layoutKey}
             className="layout" 
             layout={layout}
-            cols={24}
+            cols={optimalColumns}
             width={containerWidth}
             rowHeight={30} 
             isDraggable={isEditMode}
             isResizable={isEditMode}
             isBounded={false}
             compactType="vertical"
-            preventCollision={false}
+            preventCollision={true}
             useCSSTransforms={true}
             margin={[10, 10]}
             containerPadding={isFullscreen ? [5, 5] : [10, 10]}
