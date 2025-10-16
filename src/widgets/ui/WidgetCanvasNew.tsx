@@ -415,11 +415,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     [containerWidth, calculateOptimalColumns]
   );
 
-  // Create layout with proportional scaling based on grid columns
+  // Create layout: FIRST try original dimensions, ONLY scale if doesn't fit
   const calculateAutoLayout = useCallback((widgets: WidgetEntity[], cols: number): Layout[] => {
     console.log('🎯 [AUTO-LAYOUT] Calculating for', widgets.length, 'widgets in', cols, 'columns');
     
-    // Reference grid size (original design was for 24 columns on desktop)
+    // Reference grid size (design original pentru 24 coloane)
     const REFERENCE_COLS = 24;
     
     return widgets
@@ -436,12 +436,35 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         const originalW = Number.isFinite(widget.position.w) ? widget.position.w : 8;
         const originalH = Number.isFinite(widget.position.h) ? widget.position.h : 6;
         
-        // Scalează proporțional lățimea widget-ului la grid-ul curent
-        // Păstrează raportul: dacă widget era 33% din 24 cols, rămâne 33% din cols curente
-        const scaledW = Math.max(1, Math.min(cols, Math.round((originalW / REFERENCE_COLS) * cols)));
+        let finalX = originalX;
+        let finalW = originalW;
         
-        // Scalează poziția X proporțional
-        const scaledX = Math.max(0, Math.min(cols - scaledW, Math.round((originalX / REFERENCE_COLS) * cols)));
+        // PRIORITATE 1: Încearcă dimensiunile ORIGINALE
+        if (originalX + originalW <= cols) {
+          // ✅ ÎNCAPE CU DIMENSIUNI ORIGINALE - păstrează tot!
+          console.log(`✅ Widget ${widget.id}: ORIGINAL dimensions fit! x=${originalX}, w=${originalW} (in ${cols} cols)`);
+          finalX = originalX;
+          finalW = originalW;
+        } else {
+          // ❌ NU ÎNCAPE - trebuie să scalăm
+          console.warn(`⚠️ Widget ${widget.id}: Original x=${originalX} + w=${originalW} = ${originalX + originalW} > ${cols} cols - SCALING NEEDED`);
+          
+          // Scalează proporțional pentru a păstra raportul
+          const scaledW = Math.max(1, Math.min(cols, Math.round((originalW / REFERENCE_COLS) * cols)));
+          const scaledX = Math.round((originalX / REFERENCE_COLS) * cols);
+          
+          // Verifică dacă poziția scalată încape
+          if (scaledX + scaledW <= cols) {
+            finalX = scaledX;
+            finalW = scaledW;
+            console.log(`   → Scaled to: x=${scaledX}, w=${scaledW} ✓`);
+          } else {
+            // Ultimă variantă: aliniază la dreapta
+            finalX = Math.max(0, cols - scaledW);
+            finalW = scaledW;
+            console.log(`   → Forced to right: x=${finalX}, w=${finalW}`);
+          }
+        }
         
         const widgetId = widget.id;
         if (!widgetId || typeof widgetId !== 'number' || isNaN(widgetId)) {
@@ -451,12 +474,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         
         return {
           i: widgetId.toString(),
-          x: scaledX,
-          y: originalY, // Y rămâne același
-          w: scaledW,
-          h: originalH, // H rămâne același
+          x: finalX,
+          y: originalY,
+          w: finalW,
+          h: originalH,
           minW: 1,
           minH: 2,
+          static: false,
         };
       })
       .filter(item => item !== null) as Layout[];
@@ -1254,7 +1278,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             isDraggable={isEditMode}
             isResizable={isEditMode}
             isBounded={false}
-            compactType="vertical"
+            compactType={null}
             preventCollision={true}
             useCSSTransforms={true}
             margin={[10, 10]}
