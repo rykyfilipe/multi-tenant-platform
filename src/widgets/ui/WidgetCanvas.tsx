@@ -22,6 +22,7 @@ import { AccessibilityProvider } from "./components/AccessibilityProvider";
 import { ResponsiveProvider } from "./components/ResponsiveProvider";
 import { WidgetGridSkeleton, ToolbarSkeleton, SearchSkeleton } from "./components/WidgetSkeleton";
 import { useKeyboardShortcuts } from "@/widgets/hooks/useKeyboardShortcuts";
+import { LazyWidget, preloadCriticalWidgets } from "./components/LazyWidget";
 import {
   WidgetEntity,
   WidgetConfig,
@@ -143,6 +144,9 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
           api.loadWidgets(true),
           api.loadDrafts()
         ]);
+        
+        // OPTIMIZATION: Preload critical widget renderers in background
+        preloadCriticalWidgets();
       } catch (error) {
         console.error("Failed to load initial data:", error);
       } finally {
@@ -730,8 +734,6 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                         return null;
                       }
 
-                      const definition = getWidgetDefinition(currentWidget.type);
-                      const Renderer = definition.renderer;
                       const isSelected = selectedWidgets.has(currentWidget.id);
 
                       return (
@@ -749,12 +751,13 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                             handleSelectWidget(currentWidget.id, !isSelected);
                           }}
                         >
-                          <Renderer
+                          <LazyWidget
                             widget={currentWidget}
                             onEdit={() => openEditor(currentWidget.id)}
                             onDelete={() => deleteLocal(currentWidget.id)}
                             onDuplicate={() => handleDuplicate(currentWidget)}
                             isEditMode={isEditMode}
+                            isSelected={isSelected}
                           />
                         </div>
                       );
