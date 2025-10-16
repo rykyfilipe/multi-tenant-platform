@@ -415,9 +415,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     [containerWidth, calculateOptimalColumns]
   );
 
-  // Create layout preserving widget dimensions - responsiveness comes from container
+  // Create layout with proportional scaling based on grid columns
   const calculateAutoLayout = useCallback((widgets: WidgetEntity[], cols: number): Layout[] => {
     console.log('🎯 [AUTO-LAYOUT] Calculating for', widgets.length, 'widgets in', cols, 'columns');
+    
+    // Reference grid size (original design was for 24 columns on desktop)
+    const REFERENCE_COLS = 24;
     
     return widgets
       .filter(widget => 
@@ -428,12 +431,17 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         widgetsRecord[widget.id]
       )
       .map((widget) => {
-        // Păstrează dimensiunile originale ale widget-ului
-        // Responsivitatea vine din container queries și CSS, NU din modificarea w/h
-        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
-        const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
-        const w = Number.isFinite(widget.position.w) ? widget.position.w : 8;
-        const h = Number.isFinite(widget.position.h) ? widget.position.h : 6;
+        const originalX = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        const originalY = Number.isFinite(widget.position.y) ? widget.position.y : 0;
+        const originalW = Number.isFinite(widget.position.w) ? widget.position.w : 8;
+        const originalH = Number.isFinite(widget.position.h) ? widget.position.h : 6;
+        
+        // Scalează proporțional lățimea widget-ului la grid-ul curent
+        // Păstrează raportul: dacă widget era 33% din 24 cols, rămâne 33% din cols curente
+        const scaledW = Math.max(1, Math.min(cols, Math.round((originalW / REFERENCE_COLS) * cols)));
+        
+        // Scalează poziția X proporțional
+        const scaledX = Math.max(0, Math.min(cols - scaledW, Math.round((originalX / REFERENCE_COLS) * cols)));
         
         const widgetId = widget.id;
         if (!widgetId || typeof widgetId !== 'number' || isNaN(widgetId)) {
@@ -443,11 +451,11 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         
         return {
           i: widgetId.toString(),
-          x,
-          y,
-          w,
-          h,
-          minW: 2,
+          x: scaledX,
+          y: originalY, // Y rămâne același
+          w: scaledW,
+          h: originalH, // H rămâne același
+          minW: 1,
           minH: 2,
         };
       })
@@ -457,12 +465,21 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   // Create auto-adaptive layout
   const layout: Layout[] = useMemo(() => {
     const autoLayout = calculateAutoLayout(widgetList, optimalColumns);
-    console.log('📐 [LAYOUT] Generated auto-layout:', {
-      containerWidth,
-      optimalColumns,
-      widgets: autoLayout.length,
-      layout: autoLayout.map(l => ({ id: l.i, x: l.x, y: l.y, w: l.w, h: l.h }))
+    
+    // Log EACH widget individually for debugging
+    console.log(`📐 [LAYOUT] Grid: ${optimalColumns} columns, ${containerWidth}px width`);
+    autoLayout.forEach((item, index) => {
+      const percentWidth = Math.round((item.w / optimalColumns) * 100);
+      const fitsInRow = item.x + item.w <= optimalColumns;
+      console.log(`  Widget ${index + 1} [${item.i}]: x=${item.x}, y=${item.y}, w=${item.w}, h=${item.h} | ${percentWidth}% width | Fits: ${fitsInRow ? '✅' : '❌ OVERFLOW!'}`);
     });
+    
+    // Warning if widgets are too wide
+    const tooWideWidgets = autoLayout.filter(l => l.w > optimalColumns);
+    if (tooWideWidgets.length > 0) {
+      console.warn(`⚠️ [LAYOUT] ${tooWideWidgets.length} widgets exceed grid width!`, tooWideWidgets);
+    }
+    
     return autoLayout;
   }, [widgetList, optimalColumns, calculateAutoLayout, containerWidth]);
 
