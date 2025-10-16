@@ -46,16 +46,32 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
       style: {
         themeName: 'platinum',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: false,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        },
+        border: {
+          enabled: false,
+          width: 1,
+          color: 'rgba(0, 0, 0, 0.1)',
+          style: 'solid'
+        }
       },
       data: {
-        databaseId: null, // Will be set by user
-        tableId: 'invoices',
+        databaseId: null,
+        tableId: null,
         mappings: {
           x: 'created_at',
           y: ['total']
         },
         filters: []
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 300000
       }
     },
     requiresData: {
@@ -84,16 +100,32 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
       style: {
         themeName: 'sapphire',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: false,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        },
+        border: {
+          enabled: false,
+          width: 1,
+          color: 'rgba(0, 0, 0, 0.1)',
+          style: 'solid'
+        }
       },
       data: {
         databaseId: null,
-        tableId: 'invoices',
+        tableId: null,
         mappings: {
           x: 'status',
           y: ['id']
         },
         filters: []
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 300000
       }
     },
     requiresData: {
@@ -112,28 +144,41 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
     config: {
       settings: {
         layout: 'grid',
+        columns: 1,
         showTrend: true,
         showComparison: false,
+        showTargets: false,
         refreshInterval: 300
       },
       style: {
         themeName: 'emerald',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: true,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
       },
       data: {
         databaseId: null,
-        tableId: 'invoices',
+        tableId: null,
         filters: [],
         metric: {
-          column: 'total',
+          field: 'total',
+          label: 'Total Revenue',
           aggregations: [
             { function: 'sum', label: 'Total Revenue' }
           ],
-          prefix: '$',
-          suffix: '',
-          decimals: 2
+          format: 'currency',
+          showTrend: true,
+          showComparison: false
         }
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 300000
       }
     },
     requiresData: {
@@ -152,28 +197,43 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
     config: {
       settings: {
         layout: 'grid',
+        columns: 1,
         showTrend: true,
+        showComparison: false,
+        showTargets: false,
         refreshInterval: 180
       },
       style: {
         themeName: 'amber',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: true,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
       },
       data: {
         databaseId: null,
-        tableId: 'invoices',
+        tableId: null,
         filters: [
           { column: 'status', operator: '=', value: 'pending' }
         ],
         metric: {
-          column: 'total',
+          field: 'total',
+          label: 'Pending Amount',
           aggregations: [
             { function: 'sum', label: 'Pending Amount' }
           ],
-          prefix: '$',
-          decimals: 2
+          format: 'currency',
+          showTrend: true,
+          showComparison: false
         }
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 180000
       }
     },
     requiresData: {
@@ -207,16 +267,32 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
       style: {
         themeName: 'sapphire',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: false,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        },
+        border: {
+          enabled: false,
+          width: 1,
+          color: 'rgba(0, 0, 0, 0.1)',
+          style: 'solid'
+        }
       },
       data: {
         databaseId: null,
-        tableId: 'customers',
+        tableId: null,
         mappings: {
           x: 'created_at',
           y: ['id']
         },
         filters: []
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 600000
       }
     },
     requiresData: {
@@ -235,27 +311,41 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
     config: {
       settings: {
         layout: 'grid',
+        columns: 1,
         showTrend: true,
+        showComparison: false,
+        showTargets: false,
         refreshInterval: 600
       },
       style: {
         themeName: 'platinum',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: true,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
       },
       data: {
         databaseId: null,
-        tableId: 'customers',
+        tableId: null,
         filters: [],
         metric: {
-          column: 'id',
+          field: 'id',
+          label: 'Total Customers',
           aggregations: [
             { function: 'count', label: 'Total Customers' }
           ],
-          prefix: '',
-          suffix: ' customers',
-          decimals: 0
+          format: 'number',
+          showTrend: true,
+          showComparison: false
         }
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 600000
       }
     },
     requiresData: {
@@ -316,26 +406,41 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
     config: {
       settings: {
         layout: 'grid',
+        columns: 1,
         showTrend: true,
+        showComparison: false,
+        showTargets: false,
         refreshInterval: 300
       },
       style: {
         themeName: 'platinum',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: true,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
       },
       data: {
         databaseId: null,
-        tableId: 'invoices',
+        tableId: null,
         filters: [],
         metric: {
-          column: 'total',
+          field: 'total',
+          label: 'Average Invoice',
           aggregations: [
             { function: 'avg', label: 'Average Invoice' }
           ],
-          prefix: '$',
-          decimals: 2
+          format: 'currency',
+          showTrend: true,
+          showComparison: false
         }
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 300000
       }
     },
     requiresData: {
@@ -393,27 +498,41 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
     config: {
       settings: {
         layout: 'grid',
+        columns: 1,
         showTrend: true,
+        showComparison: false,
+        showTargets: false,
         refreshInterval: 300
       },
       style: {
         themeName: 'platinum',
         backgroundColor: '#FFFFFF',
-        borderRadius: 12
+        borderRadius: 12,
+        shadow: {
+          enabled: true,
+          size: 'md',
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
       },
       data: {
         databaseId: null,
-        tableId: 'invoices',
+        tableId: null,
         filters: [],
         metric: {
-          column: 'id',
+          field: 'id',
+          label: 'Total Invoices',
           aggregations: [
             { function: 'count', label: 'Total Invoices' }
           ],
-          prefix: '',
-          suffix: ' invoices',
-          decimals: 0
+          format: 'number',
+          showTrend: true,
+          showComparison: false
         }
+      },
+      metadata: {},
+      refresh: {
+        enabled: false,
+        interval: 300000
       }
     },
     requiresData: {

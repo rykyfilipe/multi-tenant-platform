@@ -12,97 +12,113 @@ datasource db {
 }
 
 model Tenant {
-  id                  Int                 @id @default(autoincrement())
-  name                String              @unique
-  adminId             Int                 @unique
-  address             String?
-  companyEmail        String?
-  createdAt           DateTime            @default(now())
-  language            String?
-  logoUrl             String?
-  phone               String?
-  theme               String?
-  timezone            String?
-  updatedAt           DateTime            @updatedAt
-  website             String?
-  lastMemoryUpdate    DateTime?
-  memoryLimitGB       Float               @default(0.1)
-  memoryUsedGB        Float               @default(0)
-  defaultCurrency     String?             @default("USD")
-  companyBank         String?
-  companyCity         String?
-  companyCountry      String?
-  companyIban         String?
-  companyPostalCode   String?
-  companyStreet       String?
-  companyStreetNumber String?
-  companyTaxId        String?
-  registrationNumber  String?
-  invoiceStartNumber  Int?                @default(1)
-  invoiceSeriesPrefix String?             @default("INV")
-  invoiceIncludeYear  Boolean?            @default(true)
-  enabledModules      String[]            @default([])
-  columnPermissions   ColumnPermission[]
-  databases           Database[]
-  invitations         Invitation[]
-  tablePermissions    TablePermission[]
-  dashboards          Dashboard[]
-  widgets             Widget[]
-  widgetDrafts        WidgetDraft[]
-  widgetAudits        WidgetAudit[]
-  admin               User                @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  users               User[]              @relation("TenantUsers")
-  userActivities      UserActivity[]
-  databaseActivities  DatabaseActivity[]
-  systemMetrics       SystemMetrics[]
-  tenantUsage         TenantUsage[]
-  apiUsage            ApiUsage[]
-  errorLogs           ErrorLog[]
-  performanceAlerts   PerformanceAlert[]
-  invoiceSeries       InvoiceSeries[]
-  invoiceAuditLogs    InvoiceAuditLog[]
-  userPreferences     UserPreferences[]
-  anafSubmissionLogs  ANAFSubmissionLog[]
+  id                   Int                   @id @default(autoincrement())
+  name                 String                @unique
+  adminId              Int                   @unique
+  address              String?
+  companyEmail         String?
+  createdAt            DateTime              @default(now())
+  language             String?
+  logoUrl              String?
+  phone                String?
+  theme                String?
+  timezone             String?
+  updatedAt            DateTime              @updatedAt
+  website              String?
+  lastMemoryUpdate     DateTime?
+  memoryLimitGB        Float                 @default(0.1)
+  memoryUsedGB         Float                 @default(0)
+  defaultCurrency      String?               @default("USD")
+  companyBank          String?
+  companyCity          String?
+  companyCountry       String?
+  companyIban          String?
+  companyPostalCode    String?
+  companyStreet        String?
+  companyStreetNumber  String?
+  companyTaxId         String?
+  registrationNumber   String?
+  invoiceStartNumber   Int?                  @default(1)
+  invoiceSeriesPrefix  String?               @default("INV")
+  invoiceIncludeYear   Boolean?              @default(true)
+  enabledModules       String[]              @default([])
+  columnPermissions    ColumnPermission[]
+  databases            Database[]
+  invitations          Invitation[]
+  tablePermissions     TablePermission[]
+  dashboardPermissions DashboardPermission[]
+  dashboards           Dashboard[]
+  widgets              Widget[]
+  widgetDrafts         WidgetDraft[]
+  widgetAudits         WidgetAudit[]
+  auditLogs            AuditLog[]
+  userTenants          UserTenant[]
+  customRoles          CustomRole[]
+  userCustomRoles      UserCustomRole[]
+  admin                User                  @relation("TenantAdmin", fields: [adminId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  users                User[]                @relation("TenantUsers")
+  userActivities       UserActivity[]
+  databaseActivities   DatabaseActivity[]
+  systemMetrics        SystemMetrics[]
+  tenantUsage          TenantUsage[]
+  apiUsage             ApiUsage[]
+  errorLogs            ErrorLog[]
+  performanceAlerts    PerformanceAlert[]
+  invoiceSeries        InvoiceSeries[]
+  invoiceAuditLogs     InvoiceAuditLog[]
+  userPreferences      UserPreferences[]
+  anafSubmissionLogs   ANAFSubmissionLog[]
 
   @@index([adminId])
 }
 
 model User {
-  id                           Int                @id @default(autoincrement())
-  email                        String             @unique
+  id                           Int                   @id @default(autoincrement())
+  email                        String                @unique
   firstName                    String
   lastName                     String
   password                     String?
   role                         Role
-  tenantId                     Int?
+  tenantId                     Int? // Legacy - kept for backward compatibility
+  activeTenantId               Int? // Current active tenant
   stripeCustomerId             String?
   stripeSubscriptionId         String?
   subscriptionCurrentPeriodEnd DateTime?
   subscriptionPlan             String?
   subscriptionStatus           String?
   profileImage                 String?
-  createdAt                    DateTime           @default(now())
-  updatedAt                    DateTime           @default(now()) @updatedAt
+  isActive                     Boolean               @default(true)
+  deactivatedAt                DateTime?
+  deactivatedBy                Int?
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @default(now()) @updatedAt
   accounts                     Account[]
   columnPermissions            ColumnPermission[]
   sessions                     Session[]
   tablePermissions             TablePermission[]
-  adminOf                      Tenant?            @relation("TenantAdmin")
-  tenant                       Tenant?            @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboardPermissions         DashboardPermission[]
+  adminOf                      Tenant?               @relation("TenantAdmin")
+  tenant                       Tenant?               @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: Cascade)
   userActivities               UserActivity[]
   apiUsage                     ApiUsage[]
   errorLogs                    ErrorLog[]
   userPreferences              UserPreferences?
-  createdDashboards            Dashboard[]        @relation("DashboardCreator")
-  updatedDashboards            Dashboard[]        @relation("DashboardUpdater")
-  createdWidgets               Widget[]           @relation("WidgetCreator")
-  updatedWidgets               Widget[]           @relation("WidgetUpdater")
+  createdDashboards            Dashboard[]           @relation("DashboardCreator")
+  updatedDashboards            Dashboard[]           @relation("DashboardUpdater")
+  createdWidgets               Widget[]              @relation("WidgetCreator")
+  updatedWidgets               Widget[]              @relation("WidgetUpdater")
   createdWidgetDrafts          WidgetDraft[]         @relation("WidgetDraftCreator")
   updatedWidgetDrafts          WidgetDraft[]         @relation("WidgetDraftUpdater")
   widgetAuditEvents            WidgetAudit[]         @relation("WidgetAuditActor")
   columnMigrationLogs          ColumnMigrationLog[]
+  auditLogs                    AuditLog[]
+  userTenants                  UserTenant[]
+  createdCustomRoles           CustomRole[]          @relation("CustomRoleCreator")
+  userCustomRoles              UserCustomRole[]
 
   @@index([tenantId])
+  @@index([isActive])
+  @@index([activeTenantId])
 }
 
 model Database {
@@ -146,24 +162,24 @@ model Table {
 }
 
 model Column {
-  id                Int                    @id @default(autoincrement())
+  id                Int                  @id @default(autoincrement())
   name              String
   type              String
   description       String?
-  required          Boolean                @default(false)
-  primary           Boolean                @default(false)
-  unique            Boolean                @default(false)
+  required          Boolean              @default(false)
+  primary           Boolean              @default(false)
+  unique            Boolean              @default(false)
   tableId           Int
   referenceTableId  Int?
-  customOptions     String[]               @default([])
+  customOptions     String[]             @default([])
   defaultValue      String?
-  order             Int                    @default(0)
-  isLocked          Boolean                @default(false)
-  isModuleColumn    Boolean                @default(false)
+  order             Int                  @default(0)
+  isLocked          Boolean              @default(false)
+  isModuleColumn    Boolean              @default(false)
   semanticType      String?
   cells             Cell[]
-  referenceTable    Table?                 @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id], onDelete: SetNull)
-  table             Table                  @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  referenceTable    Table?               @relation("ReferenceColumnTable", fields: [referenceTableId], references: [id], onDelete: SetNull)
+  table             Table                @relation(fields: [tableId], references: [id], onDelete: Cascade)
   columnPermissions ColumnPermission[]
   migrationLogs     ColumnMigrationLog[]
 
@@ -205,45 +221,78 @@ model Cell {
 }
 
 model TablePermission {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  tableId   Int
-  tenantId  Int
-  canRead   Boolean  @default(false)
-  canEdit   Boolean  @default(false)
-  canDelete Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 Int       @id @default(autoincrement())
+  userId             Int
+  tableId            Int
+  tenantId           Int
+  canRead            Boolean   @default(false)
+  canEdit            Boolean   @default(false)
+  canDelete          Boolean   @default(false)
+  expiresAt          DateTime?
+  notifyBeforeExpiry Int?      @default(3)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  table              Table     @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, tableId])
   @@index([tenantId])
   @@index([tableId])
   @@index([userId])
+  @@index([expiresAt])
+  @@index([tenantId, expiresAt])
 }
 
 model ColumnPermission {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  columnId  Int
-  tenantId  Int
-  canRead   Boolean  @default(false)
-  canEdit   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tableId   Int
-  column    Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 Int       @id @default(autoincrement())
+  userId             Int
+  columnId           Int
+  tenantId           Int
+  canRead            Boolean   @default(false)
+  canEdit            Boolean   @default(false)
+  expiresAt          DateTime?
+  notifyBeforeExpiry Int?      @default(3)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  tableId            Int
+  column             Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  table              Table     @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, columnId])
   @@index([tenantId])
   @@index([columnId])
   @@index([userId])
   @@index([tableId])
+  @@index([expiresAt])
+  @@index([tenantId, expiresAt])
+}
+
+model DashboardPermission {
+  id                 Int       @id @default(autoincrement())
+  userId             Int
+  dashboardId        Int
+  tenantId           Int
+  canView            Boolean   @default(false)
+  canEdit            Boolean   @default(false)
+  canDelete          Boolean   @default(false)
+  canShare           Boolean   @default(false)
+  expiresAt          DateTime?
+  notifyBeforeExpiry Int?      @default(3)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  dashboard          Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dashboardId])
+  @@index([tenantId])
+  @@index([dashboardId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([tenantId, expiresAt])
 }
 
 model Account {
@@ -523,23 +572,24 @@ model ANAFSubmissionLog {
 }
 
 model Dashboard {
-  id              Int              @id @default(autoincrement())
-  tenantId        Int
-  name            String
-  description     String?
-  mode            String           @default("view")
-  isPublic        Boolean          @default(false)
-  isDefault       Boolean          @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  createdBy       Int
-  updatedBy       Int
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  widgets         Widget[]
-  widgetDrafts    WidgetDraft[]
-  widgetAudits    WidgetAudit[]
-  creator         User             @relation("DashboardCreator", fields: [createdBy], references: [id])
-  updater         User             @relation("DashboardUpdater", fields: [updatedBy], references: [id])
+  id                   Int                   @id @default(autoincrement())
+  tenantId             Int
+  name                 String
+  description          String?
+  mode                 String                @default("view")
+  isPublic             Boolean               @default(false)
+  isDefault            Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  createdBy            Int
+  updatedBy            Int
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  widgets              Widget[]
+  widgetDrafts         WidgetDraft[]
+  widgetAudits         WidgetAudit[]
+  dashboardPermissions DashboardPermission[]
+  creator              User                  @relation("DashboardCreator", fields: [createdBy], references: [id])
+  updater              User                  @relation("DashboardUpdater", fields: [updatedBy], references: [id])
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -549,26 +599,26 @@ model Dashboard {
 }
 
 model Widget {
-  id            Int              @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   tenantId      Int
   dashboardId   Int
   type          WidgetType
   title         String?
   description   String?
   position      Json
-  config        Json             @default("{}")
-  isVisible     Boolean          @default(true)
-  sortOrder     Int              @default(0)
-  version       Int              @default(1)
-  schemaVersion Int              @default(1)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  config        Json          @default("{}")
+  isVisible     Boolean       @default(true)
+  sortOrder     Int           @default(0)
+  version       Int           @default(1)
+  schemaVersion Int           @default(1)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   createdBy     Int
   updatedBy     Int
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  dashboard     Dashboard        @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  creator       User             @relation("WidgetCreator", fields: [createdBy], references: [id])
-  updater       User             @relation("WidgetUpdater", fields: [updatedBy], references: [id])
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dashboard     Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  creator       User          @relation("WidgetCreator", fields: [createdBy], references: [id])
+  updater       User          @relation("WidgetUpdater", fields: [updatedBy], references: [id])
   drafts        WidgetDraft[]
   audits        WidgetAudit[]
 
@@ -674,26 +724,108 @@ enum WidgetAuditOperation {
 }
 
 model ColumnMigrationLog {
-  id                     Int      @id @default(autoincrement())
-  columnId               Int
-  oldType                String
-  newType                String
-  totalCells             Int
-  successfulConversions  Int
-  deletedCells           Int      @default(0)
-  nullifiedCells         Int      @default(0)
-  lossyConversions       Int      @default(0)
-  failedCells            Int      @default(0)
-  log                    Json?    // Detailed conversion log
-  performedBy            Int
-  performedAt            DateTime @default(now())
-  
-  column                 Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  user                   User     @relation(fields: [performedBy], references: [id], onDelete: Restrict)
-  
+  id                    Int      @id @default(autoincrement())
+  columnId              Int
+  oldType               String
+  newType               String
+  totalCells            Int
+  successfulConversions Int
+  deletedCells          Int      @default(0)
+  nullifiedCells        Int      @default(0)
+  lossyConversions      Int      @default(0)
+  failedCells           Int      @default(0)
+  log                   Json? // Detailed conversion log
+  performedBy           Int
+  performedAt           DateTime @default(now())
+
+  column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [performedBy], references: [id], onDelete: Restrict)
+
   @@index([columnId])
   @@index([performedBy])
   @@index([performedAt])
+}
+
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  userId       Int
+  action       String
+  resourceType String
+  resourceId   Int?
+  changes      Json?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([createdAt])
+  @@index([tenantId, createdAt])
+}
+
+model UserTenant {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  tenantId       Int
+  role           Role
+  isActive       Boolean   @default(true)
+  joinedAt       DateTime  @default(now())
+  lastAccessedAt DateTime?
+  invitedBy      Int?
+  metadata       Json?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([isActive])
+  @@index([userId, isActive])
+}
+
+model CustomRole {
+  id           Int              @id @default(autoincrement())
+  tenantId     Int
+  name         String
+  description  String?
+  color        String           @default("#6366f1")
+  icon         String?          @default("👤")
+  permissions  Json             @default("{}")
+  isSystemRole Boolean          @default(false)
+  createdBy    Int
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator      User             @relation("CustomRoleCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  userRoles    UserCustomRole[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([isSystemRole])
+  @@index([createdBy])
+}
+
+model UserCustomRole {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  customRoleId Int
+  tenantId     Int
+  assignedBy   Int
+  assignedAt   DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customRole   CustomRole @relation(fields: [customRoleId], references: [id], onDelete: Cascade)
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, customRoleId])
+  @@index([userId])
+  @@index([customRoleId])
+  @@index([tenantId])
 }
 
 enum Role {

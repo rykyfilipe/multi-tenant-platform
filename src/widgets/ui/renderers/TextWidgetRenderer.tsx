@@ -7,6 +7,7 @@ import { BaseWidget } from "../components/BaseWidget";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { cn } from "@/lib/utils";
 import { Type } from "lucide-react";
+import { useResponsive } from "../components/ResponsiveProvider";
 
 interface TextWidgetRendererProps {
   widget: WidgetEntity;
@@ -27,6 +28,7 @@ const TextWidgetRendererComponent: React.FC<TextWidgetRendererProps> = ({
   const settings = config?.settings || {};
   const styleConfig = config?.style || {};
   const updateLocal = useWidgetsStore((state) => state.updateLocal);
+  const { viewport, isMobile, isTablet, isDesktop } = useResponsive();
   
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(settings.content || "Click to edit...");
@@ -52,10 +54,22 @@ const TextWidgetRendererComponent: React.FC<TextWidgetRendererProps> = ({
   const lineHeight = styleConfig.lineHeight ?? 1.5;
   const letterSpacing = styleConfig.letterSpacing ?? 0;
 
-  // Font size mapping
+  // Font size mapping - RESPONSIVE
   const getFontSize = (): string => {
     if (typeof fontSize === 'number') {
-      return `${fontSize}px`;
+      // Responsive scaling for custom font sizes
+      const scaledSize = isMobile ? Math.max(fontSize * 0.75, 12) : fontSize;
+      return `${scaledSize}px`;
+    }
+    // Responsive preset sizes
+    if (isMobile) {
+      switch (fontSize) {
+        case 'small': return '12px';
+        case 'normal': return '14px';
+        case 'large': return '18px';
+        case 'xlarge': return '24px';
+        default: return '14px';
+      }
     }
     switch (fontSize) {
       case 'small': return '14px';
@@ -123,6 +137,17 @@ const TextWidgetRendererComponent: React.FC<TextWidgetRendererProps> = ({
     }
   };
 
+  // Responsive padding
+  const basePadding = padding || { top: 16, right: 16, bottom: 16, left: 16 };
+  const responsivePadding = isMobile
+    ? {
+        top: Math.max(basePadding.top * 0.7, 8),
+        right: Math.max(basePadding.right * 0.7, 8),
+        bottom: Math.max(basePadding.bottom * 0.7, 8),
+        left: Math.max(basePadding.left * 0.7, 8),
+      }
+    : basePadding;
+
   const textStyle: React.CSSProperties = {
     fontSize: getFontSize(),
     fontWeight: bold ? '700' : '400',
@@ -133,10 +158,10 @@ const TextWidgetRendererComponent: React.FC<TextWidgetRendererProps> = ({
     fontFamily,
     lineHeight,
     letterSpacing: `${letterSpacing}px`,
-    paddingTop: `${padding.top}px`,
-    paddingRight: `${padding.right}px`,
-    paddingBottom: `${padding.bottom}px`,
-    paddingLeft: `${padding.left}px`,
+    paddingTop: `${responsivePadding.top}px`,
+    paddingRight: `${responsivePadding.right}px`,
+    paddingBottom: `${responsivePadding.bottom}px`,
+    paddingLeft: `${responsivePadding.left}px`,
   };
 
   const containerStyle: React.CSSProperties = {

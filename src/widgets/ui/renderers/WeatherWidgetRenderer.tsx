@@ -7,6 +7,7 @@ import { BaseWidget } from "../components/BaseWidget";
 import { useWeather } from "@/hooks/useWeather";
 import { WidgetLoadingState, WidgetErrorState } from "../components/WidgetStates";
 import { cn } from "@/lib/utils";
+import { useResponsive } from "../components/ResponsiveProvider";
 
 interface WeatherWidgetRendererProps {
   widget: WidgetEntity;
@@ -26,10 +27,11 @@ const WeatherWidgetRendererComponent: React.FC<WeatherWidgetRendererProps> = ({
   const config = widget.config as any;
   const settings = config?.settings || {};
   const styleConfig = config?.style || {};
+  const { viewport, isMobile, isTablet, isDesktop } = useResponsive();
   const location = settings.location || "London";
   const units = settings.units || "metric";
   const showForecast = settings.showForecast !== false;
-  const forecastDays = settings.forecastDays || 5;
+  const forecastDays = settings.forecastDays || (isMobile ? 3 : 5); // Fewer forecast days on mobile
 
   // Extract ADVANCED styling from schema
   const backgroundColor = styleConfig.backgroundColor || "#FFFFFF";
@@ -40,19 +42,25 @@ const WeatherWidgetRendererComponent: React.FC<WeatherWidgetRendererProps> = ({
   const padding = styleConfig.padding || { x: 24, y: 20 };
   const layout = styleConfig.layout || "detailed";
   
-  // Temperature styling
+  // Temperature styling - RESPONSIVE
   const tempStyle = styleConfig.temperature || {};
-  const tempFontSize = tempStyle.fontSize ?? 56;
+  const baseTempFontSize = tempStyle.fontSize ?? 56;
+  const tempFontSize = isMobile 
+    ? Math.max(baseTempFontSize * 0.6, 32) 
+    : isTablet 
+    ? Math.max(baseTempFontSize * 0.8, 42) 
+    : baseTempFontSize;
   const tempFontFamily = tempStyle.fontFamily || "Inter, system-ui, sans-serif";
   const tempFontWeight = tempStyle.fontWeight || "700";
   const tempColor = tempStyle.color || "#111827";
   const tempGradient = tempStyle.gradient || { enabled: false, from: "#F59E0B", to: "#EF4444" };
   const tempShowUnit = tempStyle.showUnit ?? true;
-  const tempUnitSize = tempStyle.unitSize ?? 24;
+  const tempUnitSize = tempStyle.unitSize ?? (isMobile ? 18 : 24);
   
-  // Location styling
+  // Location styling - RESPONSIVE
   const locationStyle = styleConfig.location || {};
-  const locationFontSize = locationStyle.fontSize ?? 18;
+  const baseLocationFontSize = locationStyle.fontSize ?? 18;
+  const locationFontSize = isMobile ? Math.max(baseLocationFontSize - 2, 14) : baseLocationFontSize;
   const locationFontFamily = locationStyle.fontFamily || "Inter, system-ui, sans-serif";
   const locationFontWeight = locationStyle.fontWeight || "600";
   const locationColor = locationStyle.color || "#374151";
@@ -251,9 +259,13 @@ const WeatherWidgetRendererComponent: React.FC<WeatherWidgetRendererProps> = ({
               </div>
             </div>
 
-            {/* Weather Details */}
+            {/* Weather Details - Responsive */}
             {settings.showHumidity || settings.showWindSpeed ? (
-              <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+              <div className={cn(
+                "grid w-full max-w-xs",
+                // Responsive grid
+                "grid-cols-2 gap-2 md:gap-4"
+              )}>
                 {settings.showHumidity && (
                   <div className="text-center">
                     <div 

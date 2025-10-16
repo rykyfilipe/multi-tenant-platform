@@ -31,6 +31,7 @@ import {
 	Eye,
 	Calendar,
 	RefreshCw,
+	Send,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -179,6 +180,31 @@ export const InvitationManagementList = forwardRef<
 		}
 	};
 
+	const resendInvitation = async (invitationId: string) => {
+		if (!token) return;
+
+		try {
+			const response = await fetch(
+				`/api/tenants/${tenantId}/invitations/${invitationId}/resend`,
+				{
+					method: "POST",
+					headers: { Authorization: `Bearer ${token}` },
+				}
+			);
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || "Failed to resend invitation");
+			}
+
+			showAlert("Invitation resent successfully! Check your email.", "success");
+			// Refresh invitations list to show updated expiry
+			fetchInvitations();
+		} catch (err: any) {
+			showAlert(err.message || "Failed to resend invitation", "error");
+		}
+	};
+
 	useEffect(() => {
 		fetchInvitations();
 	}, [fetchInvitations]);
@@ -319,7 +345,7 @@ export const InvitationManagementList = forwardRef<
 									</div>
 
 									{/* Status and Actions */}
-									<div className='flex items-center gap-4'>
+									<div className='flex items-center gap-3'>
 										{/* Status Badge */}
 										<div className='text-right'>
 											{expired ? (
@@ -336,18 +362,34 @@ export const InvitationManagementList = forwardRef<
 										</div>
 
 										{/* Actions */}
-										<Button
-											variant='ghost'
-											size='sm'
-											onClick={() => cancelInvitation(invitation.id)}
-											className={`h-9 w-9 rounded-lg transition-all duration-200 ${
-												expired
-													? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-													: 'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'
-											}`}
-										>
-											<Trash2 className='w-4 h-4' />
-										</Button>
+										<div className='flex items-center gap-2'>
+											{/* Resend Button - shown for expired or near-expiry invitations */}
+											{(expired || getTimeUntilExpiry(invitation.expiresAt).includes('h')) && (
+												<Button
+													variant='outline'
+													size='sm'
+													onClick={() => resendInvitation(invitation.id)}
+													className='h-9 px-3 border-primary/30 text-primary hover:bg-primary/10 rounded-lg transition-all duration-200'
+												>
+													<Send className='w-3 h-3 mr-1' />
+													Resend
+												</Button>
+											)}
+											
+											{/* Cancel Button */}
+											<Button
+												variant='ghost'
+												size='sm'
+												onClick={() => cancelInvitation(invitation.id)}
+												className={`h-9 w-9 rounded-lg transition-all duration-200 ${
+													expired
+														? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+														: 'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'
+												}`}
+											>
+												<Trash2 className='w-4 h-4' />
+											</Button>
+										</div>
 									</div>
 								</div>
 							</CardContent>

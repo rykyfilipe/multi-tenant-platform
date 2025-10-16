@@ -64,6 +64,12 @@ export const authOptions = {
 
 					if (!user || !user.password) return null;
 
+					// Check if user is deactivated
+					if (user.isActive === false) {
+						console.warn(`Login attempt by deactivated user: ${user.email}`);
+						return null;
+					}
+
 					const isPasswordValid = await verifyPassword(credentials.password, user.password);
 					if (!isPasswordValid) return null;
 
@@ -147,11 +153,27 @@ export const authOptions = {
 						});
 						await prisma.user.update({ where: { id: newUser.id }, data: { tenantId: newTenant.id } });
 						await prisma.database.create({ data: { name: "Main Database", tenantId: newTenant.id } });
+					} else {
+						// Check if existing user is deactivated
+						if (existingUser.isActive === false) {
+							console.warn(`Login attempt by deactivated user (Google): ${existingUser.email}`);
+							return false;
+						}
 					}
 				} catch (error) {
 					console.error("Google OAuth signIn error:", error);
 				}
 			}
+			
+			// For credentials provider, check isActive
+			if (account?.provider === "credentials" && user.email) {
+				const dbUser = await prisma.user.findFirst({ where: { email: user.email } });
+				if (dbUser && dbUser.isActive === false) {
+					console.warn(`Login attempt by deactivated user (Credentials): ${dbUser.email}`);
+					return false;
+				}
+			}
+			
 			return true;
 		},
 		async jwt({ token, account, user }: { token: JWT, account: Account, user: User }) {

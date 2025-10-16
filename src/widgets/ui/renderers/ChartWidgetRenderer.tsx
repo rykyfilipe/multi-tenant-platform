@@ -10,6 +10,7 @@ import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { WidgetLoadingState, WidgetErrorState, WidgetEmptyState } from "../components/WidgetStates";
 import { ChartDataProcessor } from "@/widgets/processors/ChartDataProcessor";
 import { cn } from "@/lib/utils";
+import { useResponsive } from "../components/ResponsiveProvider";
 
 interface ChartWidgetRendererProps {
   widget: WidgetEntity;
@@ -47,19 +48,24 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
   const config = widget.config as any;
   const chartType = config?.settings?.chartType || "bar";
   
+  // Use responsive hook for breakpoint detection
+  const { viewport, isMobile, isTablet, isDesktop } = useResponsive();
+
   // OPTIMISTIC: Log only when actual config changes (not version bumps from style changes)
   React.useEffect(() => {
     console.log('📊 [ChartWidget] Config updated:', {
       widgetId: widget.id,
       version: widget.version,
       chartType,
-      theme: config?.style?.theme
+      theme: config?.style?.theme,
+      viewport
     });
   }, [
     widget.id, 
     JSON.stringify(config?.data), // Only data changes
     JSON.stringify(config?.settings), // Only settings changes
-    chartType
+    chartType,
+    viewport
   ]);
   const mappings = config?.data?.mappings || { y: [] };
   const databaseId = config?.data?.databaseId;
@@ -248,7 +254,7 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
   const gridStyle = gridConfig.style || "solid";
   const gridDashPattern = gridStyle === "dashed" ? "5 5" : gridStyle === "dotted" ? "2 2" : undefined;
   
-  // Axes styling
+  // Axes styling - RESPONSIVE
   const axesConfig = styleConfig.axes || {};
   const xAxisStyleConfig = axesConfig.x || {};
   const yAxisStyleConfig = axesConfig.y || {};
@@ -256,24 +262,28 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
   const showYAxis = yAxisStyleConfig.show ?? true;
   const xAxisColor = xAxisStyleConfig.color || "#666666";
   const yAxisColor = yAxisStyleConfig.color || "#666666";
-  const xAxisFontSize = xAxisStyleConfig.fontSize ?? 12;
-  const yAxisFontSize = yAxisStyleConfig.fontSize ?? 12;
+  const xAxisBaseFontSize = xAxisStyleConfig.fontSize ?? 12;
+  const yAxisBaseFontSize = yAxisStyleConfig.fontSize ?? 12;
+  // Responsive font sizes: smaller on mobile, base on tablet, larger on desktop
+  const xAxisFontSize = isMobile ? Math.max(xAxisBaseFontSize - 2, 9) : isTablet ? xAxisBaseFontSize : xAxisBaseFontSize;
+  const yAxisFontSize = isMobile ? Math.max(yAxisBaseFontSize - 2, 9) : isTablet ? yAxisBaseFontSize : yAxisBaseFontSize;
   const xAxisFontFamily = xAxisStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
   const yAxisFontFamily = yAxisStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
   const xAxisFontWeight = xAxisStyleConfig.fontWeight || "400";
   const yAxisFontWeight = yAxisStyleConfig.fontWeight || "400";
-  const xAxisRotation = xAxisStyleConfig.rotation ?? 0;
+  const xAxisRotation = xAxisStyleConfig.rotation ?? (isMobile ? -45 : 0); // Rotate on mobile to save space
   
-  // Legend styling
+  // Legend styling - RESPONSIVE
   const legendConfig = styleConfig.legend || {};
   const showLegend = legendConfig.show ?? true;
   const legendPosition = legendConfig.position || "bottom";
   const legendAlign = legendConfig.align || "center";
-  const legendFontSize = legendConfig.fontSize ?? 12;
+  const legendBaseFontSize = legendConfig.fontSize ?? 12;
+  const legendFontSize = isMobile ? Math.max(legendBaseFontSize - 2, 9) : legendBaseFontSize; // Smaller on mobile
   const legendFontFamily = legendConfig.fontFamily || "Inter, system-ui, sans-serif";
   const legendFontWeight = legendConfig.fontWeight || "400";
   const legendColor = legendConfig.color || "#333333";
-  const legendBoxWidth = legendConfig.boxWidth ?? 40;
+  const legendBoxWidth = legendConfig.boxWidth ?? (isMobile ? 30 : 40); // Smaller legend icons on mobile
   
   // Tooltip styling
   const tooltipConfig = styleConfig.tooltip || {};
@@ -336,6 +346,13 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
     />;
   }
 
+  // Responsive padding based on viewport
+  const responsivePadding = isMobile 
+    ? { top: 8, right: 8, bottom: 8, left: 8 }
+    : isTablet 
+    ? { top: 12, right: 12, bottom: 12, left: 12 }
+    : { top: 16, right: 16, bottom: 16, left: 16 };
+
   // Render chart
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
@@ -355,7 +372,9 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
             ease: [0.25, 0.1, 0.25, 1.0]
           }}
           className={cn(
-            "h-full relative overflow-hidden rounded-xl p-4",
+            "h-full relative overflow-hidden rounded-xl",
+            // Responsive padding classes
+            "p-2 md:p-3 lg:p-4",
             transparentBackground && "bg-transparent"
           )}
         >
@@ -363,10 +382,10 @@ const ChartWidgetRendererComponent: React.FC<ChartWidgetRendererProps> = ({
             <ChartComponent 
               data={processedData} 
               margin={{ 
-                top: padding.top + (legendPosition === "top" ? 20 : 0),
-                right: padding.right + (legendPosition === "right" ? 80 : 0),
-                bottom: padding.bottom + (legendPosition === "bottom" ? 20 : 0),
-                left: padding.left + (legendPosition === "left" ? 80 : 0),
+                top: (isMobile ? 5 : padding.top) + (legendPosition === "top" ? (isMobile ? 15 : 20) : 0),
+                right: (isMobile ? 5 : padding.right) + (legendPosition === "right" ? (isMobile ? 40 : 80) : 0),
+                bottom: (isMobile ? 5 : padding.bottom) + (legendPosition === "bottom" ? (isMobile ? 15 : 20) : 0),
+                left: (isMobile ? 5 : padding.left) + (legendPosition === "left" ? (isMobile ? 40 : 80) : 0),
               }}
             >
               {showGrid && chartType !== "pie" && chartType !== "radar" && (

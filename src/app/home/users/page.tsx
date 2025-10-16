@@ -210,6 +210,63 @@ const UsersPage = () => {
 		}
 	};
 
+	// Deactivate user
+	const deactivateUser = async (userId: string) => {
+		if (!tenant) return;
+
+		const userToDeactivate = users.find(user => user.id.toString() === userId);
+		const userName = userToDeactivate ? `${userToDeactivate.firstName} ${userToDeactivate.lastName}` : 'this user';
+
+		const confirmed = window.confirm(
+			`Are you sure you want to deactivate ${userName}? They will be logged out and won't be able to access the system until reactivated.`
+		);
+
+		if (!confirmed) return;
+
+		try {
+			const res = await fetch(`/api/tenants/${tenant.id}/users/${userId}/deactivate`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!res.ok) {
+				handleApiError(res);
+				return;
+			}
+
+			showAlert("User deactivated successfully", "success");
+			fetchUsers(true); // Refresh users list
+		} catch (err: any) {
+			showAlert(err.message || "Failed to deactivate user", "error");
+		}
+	};
+
+	// Activate user
+	const activateUser = async (userId: string) => {
+		if (!tenant) return;
+
+		try {
+			const res = await fetch(`/api/tenants/${tenant.id}/users/${userId}/activate`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!res.ok) {
+				handleApiError(res);
+				return;
+			}
+
+			showAlert("User activated successfully", "success");
+			fetchUsers(true); // Refresh users list
+		} catch (err: any) {
+			showAlert(err.message || "Failed to activate user", "error");
+		}
+	};
+
 	// Cancel invitation
 	const cancelInvitation = async (invitationId: string) => {
 		if (!tenant) return;
@@ -514,6 +571,9 @@ const UsersPage = () => {
 									users={filteredUsers as User[]}
 									onDeleteRow={deleteUser}
 									onUpdateUserRole={updateUserRole}
+									onDeactivateUser={deactivateUser}
+									onActivateUser={activateUser}
+									onRefresh={() => fetchUsers(true)}
 								/>
 							</CardContent>
 						</Card>

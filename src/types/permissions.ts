@@ -27,9 +27,23 @@ export interface ColumnPermission {
 	updatedAt: string;
 }
 
+export interface DashboardPermission {
+	id: number;
+	userId: number;
+	dashboardId: number;
+	tenantId: number;
+	canView: boolean;
+	canEdit: boolean;
+	canDelete: boolean;
+	canShare: boolean;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface Permissions {
 	tablePermissions: TablePermission[];
 	columnsPermissions: ColumnPermission[];
+	dashboardPermissions?: DashboardPermission[];
 }
 
 export interface TableInfo {

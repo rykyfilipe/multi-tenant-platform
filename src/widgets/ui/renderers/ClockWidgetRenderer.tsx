@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { WidgetEntity } from "@/widgets/domain/entities";
 import { BaseWidget } from "../components/BaseWidget";
 import { cn } from "@/lib/utils";
+import { useResponsive } from "../components/ResponsiveProvider";
 
 interface ClockWidgetRendererProps {
   widget: WidgetEntity;
@@ -34,6 +35,7 @@ const ClockWidgetRendererComponent: React.FC<ClockWidgetRendererProps> = ({
   const config = widget.config as any;
   const settings = config?.settings || {};
   const styleConfig = config?.style || {};
+  const { viewport, isMobile, isTablet, isDesktop } = useResponsive();
 
   const timezone = settings.timezone && settings.timezone !== "local"
     ? settings.timezone
@@ -54,9 +56,15 @@ const ClockWidgetRendererComponent: React.FC<ClockWidgetRendererProps> = ({
   const padding = styleConfig.padding || { x: 32, y: 24 };
   const alignment = styleConfig.alignment || "center";
   
-  // Time styling
+  // Time styling - RESPONSIVE
   const timeStyle = styleConfig.time || {};
-  const timeFontSize = timeStyle.fontSize ?? 64;
+  const baseTimeFontSize = timeStyle.fontSize ?? 64;
+  // Responsive: much smaller on mobile, medium on tablet, full on desktop
+  const timeFontSize = isMobile 
+    ? Math.max(baseTimeFontSize * 0.5, 32) 
+    : isTablet 
+    ? Math.max(baseTimeFontSize * 0.75, 48) 
+    : baseTimeFontSize;
   const timeFontFamily = timeStyle.fontFamily || "Courier New, monospace";
   const timeFontWeight = timeStyle.fontWeight || "700";
   const timeColor = timeStyle.color || "#111827";
@@ -64,15 +72,16 @@ const ClockWidgetRendererComponent: React.FC<ClockWidgetRendererProps> = ({
   const timeLetterSpacing = timeStyle.letterSpacing ?? 2;
   const showSeparatorBlink = timeStyle.showSeparatorBlink ?? true;
   
-  // Date styling
+  // Date styling - RESPONSIVE
   const dateStyle = styleConfig.date || {};
-  const dateFontSize = dateStyle.fontSize ?? 16;
+  const baseDateFontSize = dateStyle.fontSize ?? 16;
+  const dateFontSize = isMobile ? Math.max(baseDateFontSize - 2, 12) : baseDateFontSize;
   const dateFontFamily = dateStyle.fontFamily || "Inter, system-ui, sans-serif";
   const dateFontWeight = dateStyle.fontWeight || "500";
   const dateColor = dateStyle.color || "#6B7280";
   const dateTextTransform = dateStyle.textTransform || "uppercase";
   const dateLetterSpacing = dateStyle.letterSpacing ?? 1;
-  const dateMarginTop = dateStyle.marginTop ?? 8;
+  const dateMarginTop = dateStyle.marginTop ?? (isMobile ? 6 : 8);
   
   // Seconds styling
   const secondsStyle = styleConfig.seconds || {};
@@ -113,14 +122,19 @@ const ClockWidgetRendererComponent: React.FC<ClockWidgetRendererProps> = ({
     }) : '';
   }, [widget.id, time, timezone, showDate, dateFormat]);
 
-  // Container styles
+  // Container styles - RESPONSIVE
+  const basePadding = padding || { x: 32, y: 24 };
+  const responsivePadding = isMobile
+    ? { x: Math.max(basePadding.x * 0.6, 16), y: Math.max(basePadding.y * 0.6, 12) }
+    : basePadding;
+  
   const containerStyle: React.CSSProperties = {
     background: bgGradient?.enabled 
       ? `linear-gradient(${bgGradient.direction}, ${bgGradient.from}, ${bgGradient.to})` 
       : backgroundColor,
     borderRadius: `${borderRadius}px`,
     border: border?.enabled ? `${border.width}px ${border.style} ${border.color}` : 'none',
-    padding: `${padding?.y || 24}px ${padding?.x || 32}px`,
+    padding: `${responsivePadding.y}px ${responsivePadding.x}px`,
   };
 
   // Time display style

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { BaseWidget } from "../components/BaseWidget";
 import { useApp } from "@/contexts/AppContext";
+import { useResponsive } from "../components/ResponsiveProvider";
 
 interface KPIWidgetRendererProps {
   widget: WidgetEntity;
@@ -30,6 +31,7 @@ const KPIWidgetRendererComponent: React.FC<KPIWidgetRendererProps> = ({
 }) => {
   const config = widget.config as any;
   const { token, tenant } = useApp();
+  const { viewport, isMobile, isTablet, isDesktop } = useResponsive();
   const [realData, setRealData] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [snapshotUpdateNeeded, setSnapshotUpdateNeeded] = useState(false);
@@ -277,7 +279,7 @@ const KPIWidgetRendererComponent: React.FC<KPIWidgetRendererProps> = ({
     }
   };
 
-  // Extract ADVANCED styling from schema
+  // Extract ADVANCED styling from schema - RESPONSIVE
   const styleConfig = config.style || {};
   
   // Card styling
@@ -287,25 +289,28 @@ const KPIWidgetRendererComponent: React.FC<KPIWidgetRendererProps> = ({
   const border = styleConfig.border || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.1)", style: "solid" };
   const shadow = styleConfig.shadow || { enabled: true, size: "sm", color: "rgba(0, 0, 0, 0.1)" };
   
-  // Extract padding config and its x/y values immediately to avoid TDZ
+  // Extract padding config and its x/y values immediately to avoid TDZ - RESPONSIVE
   const paddingConfigFromStyle = styleConfig.padding;
-  const paddingConfig = paddingConfigFromStyle || { x: 24, y: 20 };
-  const paddingY = paddingConfig.y || 20;
-  const paddingX = paddingConfig.x || 24;
+  const paddingConfigBase = paddingConfigFromStyle || { x: 24, y: 20 };
+  const paddingY = isMobile ? Math.max((paddingConfigBase.y || 20) * 0.7, 12) : paddingConfigBase.y || 20;
+  const paddingX = isMobile ? Math.max((paddingConfigBase.x || 24) * 0.7, 16) : paddingConfigBase.x || 24;
   
-  // Value styling - Extract value config first to avoid TDZ
+  // Value styling - Extract value config first to avoid TDZ - RESPONSIVE
   const valueConfigFromStyle = styleConfig.value;
   const kpiValueStyleConfig = valueConfigFromStyle || {};
-  const valueFontSize = kpiValueStyleConfig.fontSize ?? 36;
+  const baseValueFontSize = kpiValueStyleConfig.fontSize ?? 36;
+  // Responsive font size: smaller on mobile, medium on tablet, full on desktop
+  const valueFontSize = isMobile ? Math.max(baseValueFontSize * 0.6, 20) : isTablet ? Math.max(baseValueFontSize * 0.8, 28) : baseValueFontSize;
   const valueFontFamily = kpiValueStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
   const valueFontWeight = kpiValueStyleConfig.fontWeight || "700";
   const valueColor = kpiValueStyleConfig.color || "#111827";
   const valueGradient = kpiValueStyleConfig.gradient || { enabled: false, from: "#3B82F6", to: "#8B5CF6" };
   
-  // Label styling - Extract label config first to avoid TDZ
+  // Label styling - Extract label config first to avoid TDZ - RESPONSIVE
   const labelConfigFromStyle = styleConfig.label;
   const kpiLabelStyleConfig = labelConfigFromStyle || {};
-  const labelFontSize = kpiLabelStyleConfig.fontSize ?? 14;
+  const baseLabelFontSize = kpiLabelStyleConfig.fontSize ?? 14;
+  const labelFontSize = isMobile ? Math.max(baseLabelFontSize - 2, 11) : baseLabelFontSize;
   const labelFontFamily = kpiLabelStyleConfig.fontFamily || "Inter, system-ui, sans-serif";
   const labelFontWeight = kpiLabelStyleConfig.fontWeight || "500";
   const labelColor = kpiLabelStyleConfig.color || "#6B7280";
@@ -435,7 +440,10 @@ const KPIWidgetRendererComponent: React.FC<KPIWidgetRendererProps> = ({
             borderRadius: `${borderRadius}px`,
           }}
         >
-          <CardContent className="p-6">
+          <CardContent className={cn(
+            // Responsive padding
+            "p-4 md:p-5 lg:p-6"
+          )}>
           {isLoadingData ? (
             <div className="flex items-center justify-center h-full min-h-[160px]">
               <div className="text-center">
@@ -475,18 +483,27 @@ const KPIWidgetRendererComponent: React.FC<KPIWidgetRendererProps> = ({
               </p>
             </div>
 
-            {/* Main Value */}
+            {/* Main Value - Responsive text size */}
             <div className="space-y-1">
-              <div className="text-3xl font-bold text-foreground leading-none tracking-tight">
+              <div className={cn(
+                "font-bold text-foreground leading-none tracking-tight",
+                // Responsive font sizes
+                "text-2xl md:text-3xl lg:text-3xl"
+              )}>
                 {(processedKPI as any).displayValue !== undefined && metric.displayColumn
                   ? formatDisplayValue((processedKPI as any).displayValue, metric.displayFormat)
                   : formatValue(processedKPI.value, metric.format)}
               </div>
             </div>
 
-            {/* Stats Row - Compact and clean */}
+            {/* Stats Row - Compact and clean - Responsive */}
             {(metric.showTrend && processedKPI.trend) || (metric.showComparison && processedKPI.comparison) ? (
-              <div className="flex items-center gap-4 pt-3">
+              <div className={cn(
+                "flex items-center pt-3",
+                // Responsive gap and layout
+                "gap-2 md:gap-3 lg:gap-4",
+                "flex-wrap md:flex-nowrap"
+              )}>
                 {/* Trend */}
                 {metric.showTrend && processedKPI.trend && (
                   <motion.div 

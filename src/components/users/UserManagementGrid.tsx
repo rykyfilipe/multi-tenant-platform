@@ -15,12 +15,17 @@ import {
 	ChevronUp,
 	Check,
 	X,
+	UserX,
+	UserCheck,
+	Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { User, Role } from "@/types/user";
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PermissionTemplateSelector } from "@/components/permissions/PermissionTemplateSelector";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -28,6 +33,9 @@ interface Props {
 	users: User[];
 	onDeleteRow: (userId: string) => void;
 	onUpdateUserRole?: (userId: string, newRole: Role) => void;
+	onDeactivateUser?: (userId: string) => void;
+	onActivateUser?: (userId: string) => void;
+	onRefresh?: () => void;
 }
 
 const getRoleIcon = (role: Role) => {
@@ -77,6 +85,9 @@ export function UserManagementGrid({
 	users,
 	onDeleteRow,
 	onUpdateUserRole,
+	onDeactivateUser,
+	onActivateUser,
+	onRefresh,
 }: Props) {
 	const { user: currentUser } = useApp();
 	const { t } = useLanguage();
@@ -85,6 +96,8 @@ export function UserManagementGrid({
 	const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 	const [editingRole, setEditingRole] = useState<string | null>(null);
 	const [tempRole, setTempRole] = useState<Role | null>(null);
+	const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
+	const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
 	// Handle sorting
 	const handleSort = (field: keyof User) => {
@@ -114,6 +127,29 @@ export function UserManagementGrid({
 		setEditingRole(null);
 		setTempRole(null);
 	};
+
+	// Bulk selection handlers
+	const handleSelectAll = (checked: boolean) => {
+		if (checked) {
+			const allIds = new Set(users.map(u => u.id));
+			setSelectedUsers(allIds);
+		} else {
+			setSelectedUsers(new Set());
+		}
+	};
+
+	const handleSelectUser = (userId: number, checked: boolean) => {
+		const newSelected = new Set(selectedUsers);
+		if (checked) {
+			newSelected.add(userId);
+		} else {
+			newSelected.delete(userId);
+		}
+		setSelectedUsers(newSelected);
+	};
+
+	const allSelected = users.length > 0 && selectedUsers.size === users.length;
+	const someSelected = selectedUsers.size > 0 && selectedUsers.size < users.length;
 
 	// Sort users
 	const sortedUsers = [...users].sort((a, b) => {
@@ -146,9 +182,45 @@ export function UserManagementGrid({
 
 	return (
 		<div className='space-y-0'>
+			{/* Bulk Actions Toolbar */}
+			{selectedUsers.size > 0 && (
+				<div className='bg-primary/10 border-b border-primary/20 px-6 py-3'>
+					<div className='flex items-center justify-between'>
+						<span className='text-sm font-medium text-primary'>
+							{selectedUsers.size} user(s) selected
+						</span>
+						<div className='flex items-center gap-2'>
+							<Button
+								size='sm'
+								variant='default'
+								onClick={() => setShowTemplateSelector(true)}
+								className='gap-2'
+							>
+								<Sparkles className='w-4 h-4' />
+								Apply Template
+							</Button>
+							<Button
+								size='sm'
+								variant='ghost'
+								onClick={() => setSelectedUsers(new Set())}
+							>
+								Clear Selection
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
+
 			{/* Modern Table Header */}
 			<div className='bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 px-6 py-4 border-b border-slate-200 dark:border-slate-600'>
 				<div className='grid grid-cols-12 gap-6 text-sm font-semibold text-slate-600 dark:text-slate-300'>
+					<div className='col-span-1 flex items-center'>
+						<Checkbox
+							checked={allSelected}
+							onCheckedChange={handleSelectAll}
+							className={someSelected ? 'opacity-50' : ''}
+						/>
+					</div>
 					<div className='col-span-4 flex items-center gap-2'>
 						<span>Team Member</span>
 						<button
@@ -165,7 +237,7 @@ export function UserManagementGrid({
 							<ChevronUp className={`w-4 h-4 transition-transform ${sortField === 'role' && sortDirection === 'asc' ? 'rotate-180' : ''}`} />
 						</button>
 					</div>
-					<div className='col-span-3'>Contact</div>
+					<div className='col-span-2'>Contact</div>
 					<div className='col-span-2 text-center'>Actions</div>
 				</div>
 			</div>
@@ -183,6 +255,14 @@ export function UserManagementGrid({
 						onMouseEnter={() => setHoveredRow(user.id.toString())}
 						onMouseLeave={() => setHoveredRow(null)}>
 						<div className='grid grid-cols-12 gap-6 items-center'>
+							{/* Selection Checkbox */}
+							<div className='col-span-1'>
+								<Checkbox
+									checked={selectedUsers.has(user.id)}
+									onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
+								/>
+							</div>
+
 							{/* Member Info */}
 							<div className='col-span-4 flex items-center gap-4'>
 								<div className='relative'>
@@ -202,8 +282,8 @@ export function UserManagementGrid({
 										{user.firstName} {user.lastName}
 									</div>
 									<div className='text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2'>
-										<div className='w-2 h-2 bg-green-500 rounded-full' />
-										Active • Member
+										<div className={`w-2 h-2 rounded-full ${(user as any).isActive !== false ? 'bg-green-500' : 'bg-red-500'}`} />
+										{(user as any).isActive !== false ? 'Active' : 'Inactive'} • Member
 									</div>
 								</div>
 							</div>
@@ -264,7 +344,7 @@ export function UserManagementGrid({
 							</div>
 
 							{/* Contact */}
-							<div className='col-span-3'>
+							<div className='col-span-2'>
 								<div className='flex items-center gap-3 text-slate-600 dark:text-slate-300'>
 									<div className='w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center'>
 										<Mail className='w-4 h-4' />
@@ -293,17 +373,49 @@ export function UserManagementGrid({
 									</Link>
 								</Button>
 								{currentUser?.role === 'ADMIN' && currentUser?.id !== user.id && (
-									<Button
-										variant='ghost'
-										size='sm'
-										onClick={() => onDeleteRow(user.id.toString())}
-										className={`h-9 w-9 rounded-lg transition-all duration-200 ${
-											hoveredRow === user.id.toString() 
-												? 'opacity-100 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
-												: 'opacity-0 group-hover:opacity-100'
-										}`}>
-										<Trash2 className='w-4 h-4' />
-									</Button>
+									<>
+										{/* Activate/Deactivate Button */}
+										{(user as any).isActive !== false ? (
+											<Button
+												variant='ghost'
+												size='sm'
+												onClick={() => onDeactivateUser?.(user.id.toString())}
+												className={`h-9 w-9 rounded-lg transition-all duration-200 ${
+													hoveredRow === user.id.toString() 
+														? 'opacity-100 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' 
+														: 'opacity-0 group-hover:opacity-100'
+												}`}
+												title="Deactivate user">
+												<UserX className='w-4 h-4' />
+											</Button>
+										) : (
+											<Button
+												variant='ghost'
+												size='sm'
+												onClick={() => onActivateUser?.(user.id.toString())}
+												className={`h-9 w-9 rounded-lg transition-all duration-200 ${
+													hoveredRow === user.id.toString() 
+														? 'opacity-100 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' 
+														: 'opacity-0 group-hover:opacity-100'
+												}`}
+												title="Activate user">
+												<UserCheck className='w-4 h-4' />
+											</Button>
+										)}
+										{/* Delete Button */}
+										<Button
+											variant='ghost'
+											size='sm'
+											onClick={() => onDeleteRow(user.id.toString())}
+											className={`h-9 w-9 rounded-lg transition-all duration-200 ${
+												hoveredRow === user.id.toString() 
+													? 'opacity-100 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
+													: 'opacity-0 group-hover:opacity-100'
+											}`}
+											title="Delete user">
+											<Trash2 className='w-4 h-4' />
+										</Button>
+									</>
 								)}
 							</div>
 						</div>
@@ -311,6 +423,16 @@ export function UserManagementGrid({
 				))}
 			</div>
 
+			{/* Permission Template Selector */}
+			<PermissionTemplateSelector
+				open={showTemplateSelector}
+				onOpenChange={setShowTemplateSelector}
+				selectedUserIds={Array.from(selectedUsers)}
+				onSuccess={() => {
+					setSelectedUsers(new Set());
+					if (onRefresh) onRefresh();
+				}}
+			/>
 		</div>
 	);
 }

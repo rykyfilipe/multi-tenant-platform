@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { ChevronUp, ChevronDown, Minus, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useResponsive } from "../components/ResponsiveProvider";
 
 interface TableWidgetRendererProps {
   widget: WidgetEntity;
@@ -35,6 +36,7 @@ const TableWidgetRendererComponent: React.FC<TableWidgetRendererProps> = ({
 }) => {
   const config = widget.config as any;
   const styleConfig = config?.style || {};
+  const { viewport, isMobile, isTablet, isDesktop } = useResponsive();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -49,27 +51,36 @@ const TableWidgetRendererComponent: React.FC<TableWidgetRendererProps> = ({
   const borderColor = borderConfig.color || "rgba(0, 0, 0, 0.1)";
   const borderStyle = borderConfig.style || "solid";
   
-  // Header styling
+  // Header styling - RESPONSIVE
   const headerConfig = styleConfig.header || {};
   const headerBg = headerConfig.backgroundColor || "#F9FAFB";
   const headerTextColor = headerConfig.textColor || "#111827";
-  const headerFontSize = headerConfig.fontSize ?? 14;
+  const baseHeaderFontSize = headerConfig.fontSize ?? 14;
+  const headerFontSize = isMobile ? Math.max(baseHeaderFontSize - 2, 11) : baseHeaderFontSize;
   const headerFontFamily = headerConfig.fontFamily || "Inter, system-ui, sans-serif";
   const headerFontWeight = headerConfig.fontWeight || "600";
   const headerTextAlign = headerConfig.textAlign || "left";
-  const headerPadding = headerConfig.padding || { x: 16, y: 12 };
+  const baseHeaderPadding = headerConfig.padding || { x: 16, y: 12 };
+  const headerPadding = isMobile 
+    ? { x: Math.max(baseHeaderPadding.x * 0.6, 8), y: Math.max(baseHeaderPadding.y * 0.7, 8) }
+    : baseHeaderPadding;
   const headerBorderBottom = headerConfig.borderBottom || { enabled: true, width: 2, color: "rgba(0, 0, 0, 0.1)" };
   const headerSticky = headerConfig.sticky ?? true;
   
-  // Row styling
+  // Row styling - RESPONSIVE
   const rowsConfig = styleConfig.rows || {};
-  const rowFontSize = rowsConfig.fontSize ?? 14;
+  const baseRowFontSize = rowsConfig.fontSize ?? 14;
+  const rowFontSize = isMobile ? Math.max(baseRowFontSize - 2, 11) : baseRowFontSize;
   const rowFontFamily = rowsConfig.fontFamily || "Inter, system-ui, sans-serif";
   const rowFontWeight = rowsConfig.fontWeight || "400";
   const rowTextColor = rowsConfig.textColor || "#374151";
   const rowTextAlign = rowsConfig.textAlign || "left";
-  const rowPadding = rowsConfig.padding || { x: 16, y: 12 };
-  const rowMinHeight = rowsConfig.minHeight ?? 48;
+  const baseRowPadding = rowsConfig.padding || { x: 16, y: 12 };
+  const rowPadding = isMobile
+    ? { x: Math.max(baseRowPadding.x * 0.6, 8), y: Math.max(baseRowPadding.y * 0.7, 8) }
+    : baseRowPadding;
+  const baseRowMinHeight = rowsConfig.minHeight ?? 48;
+  const rowMinHeight = isMobile ? Math.max(baseRowMinHeight * 0.8, 36) : baseRowMinHeight;
   const alternateColors = rowsConfig.alternateColors || { enabled: true, even: "#FFFFFF", odd: "#F9FAFB" };
   const hoverConfig = rowsConfig.hover || { enabled: true, backgroundColor: "#F3F4F6", transition: 150 };
   const rowBorderBottom = rowsConfig.borderBottom || { enabled: true, width: 1, color: "rgba(0, 0, 0, 0.05)", style: "solid" };
@@ -372,9 +383,17 @@ const TableWidgetRendererComponent: React.FC<TableWidgetRendererProps> = ({
 
   return (
     <BaseWidget title={widget.title} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} isEditMode={isEditMode}>
-      <div className="h-full overflow-hidden p-4 bg-card relative">
-        {/* Search Bar - Fixed Top */}
-        <div className="px-4 py-3 border-b flex items-center gap-2 bg-card/50 backdrop-blur-sm">
+      <div className={cn(
+        "h-full overflow-hidden bg-card relative",
+        // Responsive padding
+        "p-2 md:p-3 lg:p-4"
+      )}>
+        {/* Search Bar - Fixed Top - Responsive */}
+        <div className={cn(
+          "border-b flex items-center gap-2 bg-card/50 backdrop-blur-sm",
+          // Responsive padding
+          "px-2 py-2 md:px-4 md:py-3"
+        )}>
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             type="text"

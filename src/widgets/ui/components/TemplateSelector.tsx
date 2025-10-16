@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,24 +13,55 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Check } from "lucide-react";
+import { Sparkles, Check, Loader2 } from "lucide-react";
 import { 
   WIDGET_TEMPLATES, 
   getTemplatesByCategory, 
   getTemplateCategories,
   type WidgetTemplate 
 } from "@/widgets/templates/widget-templates";
+import { buildDynamicTemplates } from "@/widgets/templates/dynamic-template-builder";
 import { cn } from "@/lib/utils";
+import { useApp } from "@/contexts/AppContext";
 
 interface TemplateSelectorProps {
   onSelectTemplate: (template: WidgetTemplate) => void;
 }
 
 export const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemplate }) => {
+  const { tenant } = useApp();
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<WidgetTemplate['category']>('financial');
+  const [dynamicTemplates, setDynamicTemplates] = useState<WidgetTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const categories = getTemplateCategories();
-  const templates = getTemplatesByCategory(selectedCategory);
+  
+  // Load dynamic templates when dialog opens
+  useEffect(() => {
+    if (open && tenant?.id && dynamicTemplates.length === 0) {
+      loadDynamicTemplates();
+    }
+  }, [open, tenant?.id]);
+  
+  const loadDynamicTemplates = async () => {
+    if (!tenant?.id) return;
+    
+    try {
+      setIsLoadingTemplates(true);
+      console.log('🔄 [TemplateSelector] Loading dynamic templates for tenant:', tenant.id);
+      const templates = await buildDynamicTemplates(tenant.id);
+      setDynamicTemplates(templates);
+      console.log('✅ [TemplateSelector] Loaded', templates.length, 'dynamic templates');
+    } catch (error) {
+      console.error('[TemplateSelector] Failed to load dynamic templates:', error);
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+  
+  // Combine static and dynamic templates
+  const allTemplates = [...dynamicTemplates, ...WIDGET_TEMPLATES];
+  const templates = allTemplates.filter(t => t.category === selectedCategory);
 
   const handleSelectTemplate = (template: WidgetTemplate) => {
     onSelectTemplate(template);
@@ -48,7 +79,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemp
           <Sparkles className="h-3 w-3 mr-1" />
           Templates
           <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
-            {WIDGET_TEMPLATES.length}
+            {dynamicTemplates.length > 0 ? dynamicTemplates.length : WIDGET_TEMPLATES.length}
           </Badge>
         </Button>
       </DialogTrigger>
@@ -58,9 +89,12 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemp
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
             Widget Templates
+            {isLoadingTemplates && <Loader2 className="h-4 w-4 animate-spin" />}
           </DialogTitle>
           <DialogDescription>
-            Pre-configured widgets ready to use for your business dashboard
+            {dynamicTemplates.length > 0 
+              ? `${dynamicTemplates.length} templates with REAL data from your system`
+              : 'Pre-configured widgets ready to use for your business dashboard'}
           </DialogDescription>
         </DialogHeader>
 
@@ -76,32 +110,48 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemp
 
           {categories.map(cat => (
             <TabsContent key={cat.id} value={cat.id} className="space-y-3 mt-4">
+              {isLoadingTemplates && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading templates with real data...</span>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {getTemplatesByCategory(cat.id).map(template => (
-                  <Card 
-                    key={template.id}
-                    className={cn(
-                      "cursor-pointer transition-all hover:shadow-lg hover:border-primary/50",
-                      "group"
-                    )}
-                    onClick={() => handleSelectTemplate(template)}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <span className="text-lg">{template.icon}</span>
-                            {template.name}
-                          </CardTitle>
-                          <CardDescription className="text-xs mt-1">
-                            {template.description}
-                          </CardDescription>
+                {templates.map(template => {
+                  const hasRealData = template.config.data?.databaseId !== null && template.config.data?.tableId !== null;
+                  
+                  return (
+                    <Card 
+                      key={template.id}
+                      className={cn(
+                        "cursor-pointer transition-all hover:shadow-lg hover:border-primary/50",
+                        "group",
+                        hasRealData && "border-emerald-500/30 bg-emerald-50/10"
+                      )}
+                      onClick={() => handleSelectTemplate(template)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                              <span className="text-lg">{template.icon}</span>
+                              {template.name}
+                              {hasRealData && (
+                                <Badge variant="default" className="text-[9px] px-1 py-0 bg-emerald-600">
+                                  REAL DATA
+                                </Badge>
+                              )}
+                            </CardTitle>
+                            <CardDescription className="text-xs mt-1">
+                              {template.description}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="outline" className="ml-2 shrink-0">
+                            {template.widgetType}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="ml-2 shrink-0">
-                          {template.widgetType}
-                        </Badge>
-                      </div>
-                    </CardHeader>
+                      </CardHeader>
                     <CardContent className="pt-0">
                       {template.requiresData && (
                         <div className="space-y-2">
@@ -131,12 +181,14 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onSelectTemp
                       </Button>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
               
-              {getTemplatesByCategory(cat.id).length === 0 && (
+              {!isLoadingTemplates && templates.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <p className="text-sm">No templates available in this category yet.</p>
+                  <p className="text-xs mt-2">Add databases and tables to generate dynamic templates.</p>
                 </div>
               )}
             </TabsContent>

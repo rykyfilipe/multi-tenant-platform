@@ -8,5 +8,11 @@
 	],
 	"env": {
 		"DISABLE_ESLINT": "true"
-	}
+	},
+	"crons": [
+		{
+			"path": "/api/cron/revoke-expired-permissions",
+			"schedule": "0 * * * *"
+		}
+	]
 }
