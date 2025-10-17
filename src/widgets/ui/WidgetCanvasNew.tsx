@@ -483,13 +483,117 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const layouts: Layouts = useMemo(() => {
     console.log(`📐 [RESPONSIVE LAYOUTS] Creating per-breakpoint layouts for ${widgetList.length} widgets`);
     
-    // Create layout for each breakpoint using saved positions
-    const xxlLayout = createLayoutForBreakpoint('xxl');
-    const xlLayout = createLayoutForBreakpoint('xl');
-    const lgLayout = createLayoutForBreakpoint('lg');
-    const mdLayout = createLayoutForBreakpoint('md');
-    const smLayout = createLayoutForBreakpoint('sm');
-    const xsLayout = createLayoutForBreakpoint('xs');
+    // Helper: intelligently wrap/stack for mobile if no saved layout exists
+    const createSmartLayout = (breakpoint: Breakpoint, autoWrap: 'none' | 'stack' | 'wrap' = 'none'): Layout[] => {
+      const widgetsToLayout = widgetList.filter(widget => 
+        widget && 
+        widget.id && 
+        typeof widget.id === 'number' && 
+        !isNaN(widget.id) && 
+        widgetsRecord[widget.id]
+      );
+      
+      // Separate widgets: those with saved layouts vs those needing auto-layout
+      const withSavedLayout: Layout[] = [];
+      const needsAutoLayout: Array<{ widget: typeof widgetsToLayout[0], index: number }> = [];
+      
+      widgetsToLayout.forEach((widget, index) => {
+        const hasSavedLayout = widget.position.layouts?.[breakpoint] !== undefined;
+        
+        if (hasSavedLayout) {
+          const position = getPositionForBreakpoint(widget.position, breakpoint);
+          withSavedLayout.push({
+            i: widget.id.toString(),
+            x: Number.isFinite(position.x) ? position.x : 0,
+            y: Number.isFinite(position.y) ? position.y : 0,
+            w: Number.isFinite(position.w) ? position.w : 8,
+            h: Number.isFinite(position.h) ? position.h : 6,
+            minW: 1,
+            minH: 2,
+          });
+        } else {
+          needsAutoLayout.push({ widget, index });
+        }
+      });
+      
+      // If all widgets have saved layouts, return them
+      if (needsAutoLayout.length === 0) {
+        return withSavedLayout;
+      }
+      
+      // Apply auto-layout for widgets without saved layouts
+      const autoLayoutItems: Layout[] = needsAutoLayout.map(({ widget, index }) => {
+        const position = getPositionForBreakpoint(widget.position, breakpoint);
+        
+        if (autoWrap === 'stack') {
+          // Stack vertically - full width, one per row
+          let cumulativeY = 0;
+          for (let i = 0; i < index; i++) {
+            const w = widgetsToLayout[i];
+            const p = getPositionForBreakpoint(w.position, breakpoint);
+            cumulativeY += p.h || 6;
+          }
+          
+          return {
+            i: widget.id.toString(),
+            x: 0,
+            y: cumulativeY,
+            w: 24, // Full width
+            h: position.h || 6,
+            minW: 1,
+            minH: 2,
+          };
+        }
+        
+        if (autoWrap === 'wrap') {
+          // Wrap to 2 columns on small screens
+          const maxWidth = 12; // Half of 24 cols
+          const col = index % 2;
+          const row = Math.floor(index / 2);
+          
+          let rowY = 0;
+          for (let i = 0; i < row * 2; i++) {
+            const w = widgetsToLayout[i];
+            const p = getPositionForBreakpoint(w.position, breakpoint);
+            if (i % 2 === 0) {
+              rowY += p.h || 6;
+            }
+          }
+          
+          return {
+            i: widget.id.toString(),
+            x: col * maxWidth,
+            y: rowY,
+            w: Math.min(position.w || 8, maxWidth),
+            h: position.h || 6,
+            minW: 1,
+            minH: 2,
+          };
+        }
+        
+        // No auto-wrap - use original position
+        return {
+          i: widget.id.toString(),
+          x: Number.isFinite(position.x) ? position.x : 0,
+          y: Number.isFinite(position.y) ? position.y : 0,
+          w: Number.isFinite(position.w) ? position.w : 8,
+          h: Number.isFinite(position.h) ? position.h : 6,
+          minW: 1,
+          minH: 2,
+        };
+      });
+      
+      // Combine saved layouts with auto-generated ones
+      return [...withSavedLayout, ...autoLayoutItems].filter(Boolean) as Layout[];
+    };
+    
+    // Create layouts for each breakpoint with smart auto-wrapping
+    const xxlLayout = createSmartLayout('xxl', 'none');  // No auto-wrap on desktop
+    const xlLayout = createSmartLayout('xl', 'none');    // No auto-wrap on desktop
+    const lgLayout = createSmartLayout('lg', 'none');    // No auto-wrap on desktop
+    const mdLayout = createSmartLayout('md', 'none');    // No auto-wrap on tablet
+    const smLayout = createSmartLayout('sm', 'wrap');    // Wrap to 2 cols on small tablets
+    const xsLayout = createSmartLayout('xs', 'stack');   // Stack vertically on mobile
     
     console.log('📱 [LAYOUTS] Per-breakpoint:', {
       xxl: xxlLayout.length,
@@ -501,14 +605,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     });
     
     return {
-      xxl: xxlLayout,  // >= 1600px: 24 cols - uses xxl positions
-      xl: xlLayout,    // >= 1200px: 24 cols - uses xl positions
-      lg: lgLayout,    // >= 996px: 24 cols - uses lg positions
-      md: mdLayout,    // >= 768px: 24 cols - uses md positions
-      sm: smLayout,    // >= 480px: 24 cols - uses sm positions
-      xs: xsLayout,    // < 480px: 24 cols - uses xs positions
+      xxl: xxlLayout,  // >= 1600px: 24 cols - uses xxl positions or default
+      xl: xlLayout,    // >= 1200px: 24 cols - uses xl positions or default
+      lg: lgLayout,    // >= 996px: 24 cols - uses lg positions or default
+      md: mdLayout,    // >= 768px: 24 cols - uses md positions or default
+      sm: smLayout,    // >= 480px: 24 cols - uses sm positions or default
+      xs: xsLayout,    // < 480px: 24 cols - stacks vertically if no saved layout
     };
-  }, [widgetList, createLayoutForBreakpoint]);
+  }, [widgetList, widgetsRecord]);
 
   // Find next available position in grid
   const findNextPosition = useCallback(() => {

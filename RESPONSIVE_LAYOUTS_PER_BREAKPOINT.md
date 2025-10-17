@@ -10,6 +10,10 @@ Implemented a complete **per-breakpoint layouts system** that allows users to co
 - Each breakpoint (xxl, xl, lg, md, sm, xs) can have its own widget layout
 - When user edits on a specific breakpoint, only that layout is modified
 - Seamless restoration of the correct layout when switching viewport sizes
+- **Smart Auto-Wrapping**: For breakpoints without saved layouts:
+  - `xxl`, `xl`, `lg`, `md`: Uses default position (no auto-wrap)
+  - `sm`: Wraps to 2 columns automatically
+  - `xs`: Stacks vertically (full width) for optimal mobile viewing
 
 ### 2. **Automatic Breakpoint Detection**
 - System automatically detects current breakpoint based on container width
