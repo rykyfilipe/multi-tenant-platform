@@ -72,35 +72,28 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
       minH: 2,
     }));
 
-    // Define responsive layouts for different screen sizes
-    // Strategy: Max 2 columns on smaller screens, wrap to next row when needed
+    // Stack widgets vertically on very small screens
+    const mobileLayout = baseLayout.map((item, index) => {
+      let cumulativeY = 0;
+      for (let i = 0; i < index; i++) {
+        cumulativeY += baseLayout[i].h || 2;
+      }
+      return {
+        ...item,
+        w: 12, // full width using all 12 columns
+        x: 0,
+        y: cumulativeY,
+      };
+    });
+
+    // Keep original layout proportions on all breakpoints (12 columns)
     return {
-      xxl: baseLayout, // >=1600px: layout original (12 coloane)
-      xl: baseLayout,  // >=1200px: layout original (10 coloane)
-      lg: baseLayout.map((item, index) => ({
-        ...item,
-        w: item.w > 4 ? 8 : 4,           // mari = full width (8/8), mici = jumătate (4/8)
-        x: item.w > 4 ? 0 : (index % 2) * 4, // 2 coloane
-        y: Math.floor(index / 2) * (item.h || 2), // adăugat pentru a evita suprapuneri
-      })),
-      md: baseLayout.map((item, index) => ({
-        ...item,
-        w: item.w > 3 ? 6 : 3,           // mari = full width (6/6), mici = jumătate (3/6)
-        x: item.w > 3 ? 0 : (index % 2) * 3,
-        y: Math.floor(index / 2) * (item.h || 2),
-      })),
-      sm: baseLayout.map((item, index) => ({
-        ...item,
-        w: 4, // full width
-        x: 0,
-        y: index * (item.h || 2),
-      })),
-      xs: baseLayout.map((item, index) => ({
-        ...item,
-        w: 2, // full width pe ecran mic
-        x: 0,
-        y: index * (item.h || 2),
-      })),
+      xxl: baseLayout, // >=1600px: 12 cols - original layout
+      xl: baseLayout,  // >=1200px: 12 cols - original layout
+      lg: baseLayout,  // >=996px: 12 cols - original layout
+      md: baseLayout,  // >=768px: 12 cols - original layout preserved
+      sm: baseLayout,  // >=480px: 12 cols - original layout preserved
+      xs: mobileLayout, // <480px: 12 cols - stack vertically for mobile
     };
   }, [widgetList]);
 
@@ -699,7 +692,7 @@ export const WidgetCanvas: React.FC<WidgetCanvasProps> = ({ tenantId, dashboardI
                     className="layout" 
                     layouts={layouts}
                     breakpoints={{ xxl: 1600, xl: 1200, lg: 996, md: 768, sm: 480, xs: 0 }}
-                    cols={{ xxl: 12, xl: 10, lg: 8, md: 6, sm: 4, xs: 2 }}
+                    cols={{ xxl: 12, xl: 12, lg: 12, md: 12, sm: 12, xs: 12 }}
                     rowHeight={30} 
                     margin={[16, 16]}
                     containerPadding={[8, 8]}

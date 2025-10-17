@@ -1,6 +1,26 @@
 import { WidgetAuditOperation, WidgetDraftStatus, WidgetType } from "@/generated/prisma";
 
+// Single breakpoint position
+export interface BreakpointPosition {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+// Responsive layouts per breakpoint
+export interface ResponsiveLayouts {
+  xxl?: BreakpointPosition;
+  xl?: BreakpointPosition;
+  lg?: BreakpointPosition;
+  md?: BreakpointPosition;
+  sm?: BreakpointPosition;
+  xs?: BreakpointPosition;
+}
+
+// Main position interface with backwards compatibility
 export interface WidgetPosition {
+  // Legacy/default position (backwards compatible)
   x: number;
   y: number;
   w: number;
@@ -10,7 +30,12 @@ export interface WidgetPosition {
   maxW?: number;
   maxH?: number;
   static?: boolean;
+  
+  // NEW: Per-breakpoint layouts (optional for backwards compatibility)
+  layouts?: ResponsiveLayouts;
 }
+
+export type Breakpoint = 'xxl' | 'xl' | 'lg' | 'md' | 'sm' | 'xs';
 
 export interface WidgetConfig<TSettings = unknown, TStyle = unknown, TData = unknown> {
   settings: TSettings;

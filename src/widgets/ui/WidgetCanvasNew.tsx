@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { WidgetType } from "@/generated/prisma";
-import { WidgetEntity, WidgetConfig } from "@/widgets/domain/entities";
+import { WidgetEntity, WidgetConfig, Breakpoint } from "@/widgets/domain/entities";
 import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
 import { HydrationBoundary } from "./components/HydrationBoundary";
@@ -46,6 +46,7 @@ import {
   X,
   ArrowUpDown
 } from "lucide-react";
+import { getPositionForBreakpoint, setPositionForBreakpoint, migratePositionToResponsive, hasResponsiveLayouts } from "@/widgets/utils/layoutHelpers";
 
 interface WidgetCanvasNewProps {
   tenantId: number;
@@ -322,6 +323,49 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     cleanupOldIds();
   }, [cleanupOldIds]);
 
+  // Migrate legacy positions to responsive layouts on load
+  useEffect(() => {
+    if (isInitialLoad) return; // Wait for initial load to complete
+    
+    let needsMigration = false;
+    const widgetsToMigrate: number[] = [];
+    
+    // Check if any widgets need migration
+    widgetList.forEach((widget) => {
+      if (!hasResponsiveLayouts(widget.position)) {
+        needsMigration = true;
+        widgetsToMigrate.push(widget.id);
+      }
+    });
+    
+    if (needsMigration && widgetsToMigrate.length > 0) {
+      console.log(`🔄 [MIGRATION] Migrating ${widgetsToMigrate.length} widgets to responsive layouts`);
+      
+      // Migrate each widget
+      widgetsToMigrate.forEach((widgetId) => {
+        const widget = widgetsRecord[widgetId];
+        if (!widget) return;
+        
+        const migratedPosition = migratePositionToResponsive(widget.position);
+        
+        console.log(`✅ [MIGRATION] Widget ${widgetId} migrated:`, {
+          old: widget.position,
+          new: migratedPosition,
+        });
+        
+        updateLocal(widgetId, {
+          position: migratedPosition,
+        });
+      });
+      
+      toast({
+        title: "Layout Migrated",
+        description: `${widgetsToMigrate.length} widget(s) upgraded to responsive layouts. Save to persist changes.`,
+        variant: "default",
+      });
+    }
+  }, [isInitialLoad, widgetList, widgetsRecord, updateLocal, toast]);
+
   // Update container width on resize - use full available width
   useEffect(() => {
     const updateWidth = () => {
@@ -398,8 +442,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     };
   }, [pendingOperations]);
 
-  // Create base layout from DB - exact positions
-  const createBaseLayout = useCallback((): Layout[] => {
+  // Create layout for a specific breakpoint - uses per-breakpoint positions
+  const createLayoutForBreakpoint = useCallback((breakpoint: Breakpoint): Layout[] => {
     return widgetList
       .filter(widget => 
         widget && 
@@ -409,11 +453,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         widgetsRecord[widget.id]
       )
       .map((widget) => {
-        // EXACT dimensions from DB
-        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
-        const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
-        const w = Number.isFinite(widget.position.w) ? widget.position.w : 8;
-        const h = Number.isFinite(widget.position.h) ? widget.position.h : 6;
+        // Get position for this specific breakpoint (with fallback to default)
+        const position = getPositionForBreakpoint(widget.position, breakpoint);
+        
+        const x = Number.isFinite(position.x) ? position.x : 0;
+        const y = Number.isFinite(position.y) ? position.y : 0;
+        const w = Number.isFinite(position.w) ? position.w : 8;
+        const h = Number.isFinite(position.h) ? position.h : 6;
         
         return {
           i: widget.id.toString(),
@@ -427,64 +473,42 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       })
       .filter(Boolean) as Layout[];
   }, [widgetList, widgetsRecord]);
+  
+  // Helper: create base layout using default breakpoint (lg)
+  const createBaseLayout = useCallback((): Layout[] => {
+    return createLayoutForBreakpoint('lg');
+  }, [createLayoutForBreakpoint]);
 
-  // Create responsive layouts with automatic wrapping
+  // Create responsive layouts - each breakpoint uses its saved layout
   const layouts: Layouts = useMemo(() => {
-    const baseLayout = createBaseLayout();
+    console.log(`📐 [RESPONSIVE LAYOUTS] Creating per-breakpoint layouts for ${widgetList.length} widgets`);
     
-    console.log(`📐 [RESPONSIVE LAYOUTS] Creating for ${baseLayout.length} widgets`);
+    // Create layout for each breakpoint using saved positions
+    const xxlLayout = createLayoutForBreakpoint('xxl');
+    const xlLayout = createLayoutForBreakpoint('xl');
+    const lgLayout = createLayoutForBreakpoint('lg');
+    const mdLayout = createLayoutForBreakpoint('md');
+    const smLayout = createLayoutForBreakpoint('sm');
+    const xsLayout = createLayoutForBreakpoint('xs');
     
-    // Helper: wrap widgets to fit in available columns
-    const wrapToColumns = (layout: Layout[], maxCols: number): Layout[] => {
-      const wrapped: Layout[] = [];
-      let currentY = 0;
-      let currentX = 0;
-      let rowHeight = 0;
-      
-      // Sort by original Y position, then X position
-      const sorted = [...layout].sort((a, b) => {
-        if (a.y !== b.y) return a.y - b.y;
-        return a.x - b.x;
-      });
-      
-      sorted.forEach((item) => {
-        let w = item.w;
-        
-        // If widget is too wide for grid, shrink it
-        if (w > maxCols) {
-          w = maxCols;
-        }
-        
-        // If doesn't fit on current row, wrap to next row
-        if (currentX + w > maxCols) {
-          currentY += rowHeight;
-          currentX = 0;
-          rowHeight = 0;
-        }
-        
-        wrapped.push({
-          ...item,
-          x: currentX,
-          y: currentY,
-          w,
-        });
-        
-        currentX += w;
-        rowHeight = Math.max(rowHeight, item.h);
-      });
-      
-      return wrapped;
-    };
+    console.log('📱 [LAYOUTS] Per-breakpoint:', {
+      xxl: xxlLayout.length,
+      xl: xlLayout.length,
+      lg: lgLayout.length,
+      md: mdLayout.length,
+      sm: smLayout.length,
+      xs: xsLayout.length,
+    });
     
     return {
-      xxl: baseLayout,                    // >= 1600px: 24 cols - original layout
-      xl: baseLayout,                     // >= 1200px: 24 cols - original layout
-      lg: baseLayout,                     // >= 996px: 24 cols - original layout
-      md: wrapToColumns(baseLayout, 12),  // >= 768px: 12 cols - wrap widgets
-      sm: wrapToColumns(baseLayout, 6),   // >= 480px: 6 cols - wrap widgets
-      xs: wrapToColumns(baseLayout, 3),   // < 480px: 3 cols - stack vertically
+      xxl: xxlLayout,  // >= 1600px: 24 cols - uses xxl positions
+      xl: xlLayout,    // >= 1200px: 24 cols - uses xl positions
+      lg: lgLayout,    // >= 996px: 24 cols - uses lg positions
+      md: mdLayout,    // >= 768px: 24 cols - uses md positions
+      sm: smLayout,    // >= 480px: 24 cols - uses sm positions
+      xs: xsLayout,    // < 480px: 24 cols - uses xs positions
     };
-  }, [createBaseLayout]);
+  }, [widgetList, createLayoutForBreakpoint]);
 
   // Find next available position in grid
   const findNextPosition = useCallback(() => {
@@ -1117,6 +1141,27 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   <ArrowUpDown className="h-3 w-3 mr-1" />
                   Pack
                 </Button>
+                
+                {/* Breakpoint Indicator */}
+                <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-md border border-border/50">
+                  <span className="text-[10px] text-muted-foreground font-medium">Editing:</span>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "h-5 px-2 text-[10px] font-mono uppercase",
+                      currentBreakpoint === 'xxl' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30",
+                      currentBreakpoint === 'xl' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30",
+                      currentBreakpoint === 'lg' && "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
+                      currentBreakpoint === 'md' && "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
+                      currentBreakpoint === 'sm' && "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
+                      currentBreakpoint === 'xs' && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
+                    )}
+                    title={`Current breakpoint: ${currentBreakpoint} (${currentCols} cols)`}
+                  >
+                    {currentBreakpoint}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground">{currentCols}c</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1245,7 +1290,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             className="layout" 
             layouts={layouts}
             breakpoints={{ xxl: 1600, xl: 1200, lg: 996, md: 768, sm: 480, xs: 0 }}
-            cols={{ xxl: 24, xl: 24, lg: 24, md: 12, sm: 6, xs: 3 }}
+            cols={{ xxl: 24, xl: 24, lg: 24, md: 24, sm: 24, xs: 24 }}
             width={containerWidth}
             rowHeight={30} 
             isDraggable={isEditMode}
@@ -1272,11 +1317,29 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 return;
               }
               
-              console.log('🎯 [DEBUG] Layout changed:', currentLayout);
+              const breakpoint = currentBreakpoint as Breakpoint;
+              console.log(`🎯 [LAYOUT] Layout changed on breakpoint: ${breakpoint}`, currentLayout);
+              
+              // Update only the current breakpoint's layout for each widget
               currentLayout.forEach((item) => {
                 const widgetId = Number(item.i);
+                const widget = widgetsRecord[widgetId];
+                if (!widget) return;
+                
+                // Create new position with updated breakpoint-specific layout
+                const newPosition = setPositionForBreakpoint(
+                  widget.position,
+                  breakpoint,
+                  { x: item.x, y: item.y, w: item.w, h: item.h }
+                );
+                
+                console.log(`📱 [LAYOUT] Updating widget ${widgetId} for ${breakpoint}:`, {
+                  old: widget.position,
+                  new: newPosition,
+                });
+                
                 updateLocal(widgetId, {
-                  position: { x: item.x, y: item.y, w: item.w, h: item.h },
+                  position: newPosition,
                 });
               });
             }}
@@ -1284,20 +1347,42 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
               if (!isEditMode) return;
               if (isInternalUpdate.current) return; // Skip during undo/redo
               
-              console.log('🎯 [DEBUG] Widget resized:', { oldItem, newItem });
+              const breakpoint = currentBreakpoint as Breakpoint;
+              console.log(`🎯 [RESIZE] Widget resized on ${breakpoint}:`, { oldItem, newItem });
+              
               const widgetId = Number(newItem.i);
+              const widget = widgetsRecord[widgetId];
+              if (!widget) return;
+              
+              const newPosition = setPositionForBreakpoint(
+                widget.position,
+                breakpoint,
+                { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h }
+              );
+              
               updateLocal(widgetId, {
-                position: { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h },
+                position: newPosition,
               });
             }}
             onResizeStop={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
               if (!isEditMode) return;
               if (isInternalUpdate.current) return; // Skip during undo/redo
               
-              console.log('🎯 [DEBUG] Resize stopped:', { oldItem, newItem });
+              const breakpoint = currentBreakpoint as Breakpoint;
+              console.log(`🎯 [RESIZE STOP] Resize stopped on ${breakpoint}:`, { oldItem, newItem });
+              
               const widgetId = Number(newItem.i);
+              const widget = widgetsRecord[widgetId];
+              if (!widget) return;
+              
+              const newPosition = setPositionForBreakpoint(
+                widget.position,
+                breakpoint,
+                { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h }
+              );
+              
               updateLocal(widgetId, {
-                position: { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h },
+                position: newPosition,
               });
             }}
           >
