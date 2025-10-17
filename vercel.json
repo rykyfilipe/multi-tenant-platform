@@ -12,7 +12,7 @@
 	"crons": [
 		{
 			"path": "/api/cron/revoke-expired-permissions",
-			"schedule": "0 * * * *"
+			"schedule": "0 1 * * *"
 		}
 	]
 }
