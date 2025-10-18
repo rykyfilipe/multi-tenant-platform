@@ -127,21 +127,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     }
   }, [api, actorId, pendingOperations, toast, clearPendingOperations]);
 
-  // Undo function - now global, no need for widgetId
+  // Undo function - optimistic, no reloading (like discard)
   const handleUndo = useCallback(() => {
-    console.log('⏪ [UNDO] Setting internal update flag');
-    isInternalUpdate.current = true; // Prevent cascade updates
+    console.log('⏪ [UNDO] Undoing last change');
     
     const success = undoLastChange(); // No widgetId needed - global stack
     
     if (success) {
       setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
-      
-      // Reset flag after layout updates
-      setTimeout(() => {
-        isInternalUpdate.current = false;
-        console.log('⏪ [UNDO] Cleared internal update flag');
-      }, 100);
       
       toast({
         title: "⏪ Undo successful",
@@ -149,7 +142,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         variant: "default",
       });
     } else {
-      isInternalUpdate.current = false;
       toast({
         title: "Nothing to undo",
         description: "No changes in history.",
@@ -158,21 +150,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     }
   }, [undoLastChange, toast]);
 
-  // Redo function - now global, no need for widgetId
+  // Redo function - optimistic, no reloading (like discard)
   const handleRedo = useCallback(() => {
-    console.log('⏩ [REDO] Setting internal update flag');
-    isInternalUpdate.current = true; // Prevent cascade updates
+    console.log('⏩ [REDO] Redoing last change');
     
     const success = redoLastChange(); // No widgetId needed - global stack
     
     if (success) {
       setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
-      
-      // Reset flag after layout updates
-      setTimeout(() => {
-        isInternalUpdate.current = false;
-        console.log('⏩ [REDO] Cleared internal update flag');
-      }, 100);
       
       toast({
         title: "⏩ Redo successful",
@@ -180,7 +165,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         variant: "default",
       });
     } else {
-      isInternalUpdate.current = false;
       toast({
         title: "Nothing to redo",
         description: "No changes to redo.",
@@ -215,7 +199,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const [layoutKey, setLayoutKey] = useState(0); // Key to force GridLayout re-render
   const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('xxl');
   const [currentCols, setCurrentCols] = useState<number>(24);
-  const isInternalUpdate = useRef(false); // Flag to prevent cascade updates from undo/redo
   
   // Cache widget references to prevent unnecessary re-renders
   const widgetCacheRef = useRef<Map<number, WidgetEntity>>(new Map());
@@ -764,9 +747,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     try {
       console.log('🎨 [LAYOUT] Applying layout template:', template.name);
       
-      // Set internal update flag to prevent undo/redo from cascading
-      isInternalUpdate.current = true;
-      
       // Apply template to existing widgets
       const updatedWidgets = applyLayoutTemplate(widgetList, template);
       
@@ -780,11 +760,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       // Force grid re-render
       setLayoutKey(prev => prev + 1);
       
-      // Reset internal update flag
-      setTimeout(() => {
-        isInternalUpdate.current = false;
-      }, 100);
-      
       toast({
         title: "Layout applied!",
         description: `${template.name} has been applied to your ${updatedWidgets.length} widget${updatedWidgets.length !== 1 ? 's' : ''} across all screen sizes.`,
@@ -793,7 +768,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       });
     } catch (error) {
       console.error("Failed to apply layout template:", error);
-      isInternalUpdate.current = false;
       toast({
         title: "Failed to apply layout",
         description: "An error occurred while applying the layout template.",
@@ -1468,12 +1442,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             onLayoutChange={(currentLayout: Layout[], allLayouts: Layouts) => {
               if (!isEditMode) return;
               
-              // PREVENT cascade updates from undo/redo
-              if (isInternalUpdate.current) {
-                console.log('⚡ [LAYOUT] Skipping onLayoutChange - internal update (undo/redo)');
-                return;
-              }
-              
               const breakpoint = currentBreakpoint as Breakpoint;
               console.log(`🎯 [LAYOUT] Layout changed on breakpoint: ${breakpoint}`, currentLayout);
               
@@ -1502,7 +1470,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
             onResize={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
               if (!isEditMode) return;
-              if (isInternalUpdate.current) return; // Skip during undo/redo
               
               const breakpoint = currentBreakpoint as Breakpoint;
               console.log(`🎯 [RESIZE] Widget resized on ${breakpoint}:`, { oldItem, newItem });
@@ -1523,7 +1490,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
             onResizeStop={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
               if (!isEditMode) return;
-              if (isInternalUpdate.current) return; // Skip during undo/redo
               
               const breakpoint = currentBreakpoint as Breakpoint;
               console.log(`🎯 [RESIZE STOP] Resize stopped on ${breakpoint}:`, { oldItem, newItem });

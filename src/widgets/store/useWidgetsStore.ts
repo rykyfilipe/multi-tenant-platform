@@ -347,70 +347,75 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             redoHistory: newRedoHistory,
           };
 
-          if (isLocalWidget(widgetId)) {
-            // For local widgets, update the existing create operation
-            const createOpIndex = state.pendingOperations.findIndex(op => 
-              op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widgetId
-            );
-            
-            if (createOpIndex >= 0) {
-              newState.pendingOperations[createOpIndex] = {
-                ...newState.pendingOperations[createOpIndex],
-                widget: updated
-              } as any;
-            }
-          } else {
-            // For DB widgets, manage update operations
-            // Compare with ORIGINAL widget from DB, not current state
-            const originalWidget = state.originalWidgets[widgetId] || existing;
-            
-            console.log('[updateLocal] DB Widget comparison:', {
-              widgetId,
-              hasOriginal: !!state.originalWidgets[widgetId],
-              originalConfig: originalWidget.config,
-              updatedConfig: updated.config,
-              originalTitle: originalWidget.title,
-              updatedTitle: updated.title,
-              originalPosition: originalWidget.position,
-              updatedPosition: updated.position
-            });
-            
-            const isReverted = JSON.stringify(updated.config) === JSON.stringify(originalWidget.config) &&
-                              updated.title === originalWidget.title &&
-                              updated.description === originalWidget.description &&
-                              JSON.stringify(updated.position) === JSON.stringify(originalWidget.position);
-            
-            if (isReverted) {
-              // Remove update operation if reverted to original
-              console.log('[updateLocal] Widget reverted to original, removing pending operation');
-              newState.pendingOperations = state.pendingOperations.filter(op => 
-                !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
+          // Manage pending operations - SKIP during undo/redo (when tracking is disabled)
+          if (isTracking) {
+            if (isLocalWidget(widgetId)) {
+              // For local widgets, update the existing create operation
+              const createOpIndex = state.pendingOperations.findIndex(op => 
+                op.kind === "create" && op.widget && (op.widget as WidgetEntity).id === widgetId
               );
-              newState.dirtyWidgetIds.delete(widgetId);
+              
+              if (createOpIndex >= 0) {
+                newState.pendingOperations[createOpIndex] = {
+                  ...newState.pendingOperations[createOpIndex],
+                  widget: updated
+                } as any;
+              }
             } else {
-              // Add or update pending operation
-              console.log('[updateLocal] Widget modified, adding/updating pending operation');
-              const existingOpIndex = state.pendingOperations.findIndex(op => 
-                op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
-              );
+              // For DB widgets, manage update operations
+              // Compare with ORIGINAL widget from DB, not current state
+              const originalWidget = state.originalWidgets[widgetId] || existing;
               
-              const newOperation = {
-                kind: "update" as const,
-                id: `update-${widgetId}-${generateOperationId()}`,
-              widgetId,
-              patch,
-              expectedVersion: updated.version,
-              };
+              console.log('[updateLocal] DB Widget comparison:', {
+                widgetId,
+                hasOriginal: !!state.originalWidgets[widgetId],
+                originalConfig: originalWidget.config,
+                updatedConfig: updated.config,
+                originalTitle: originalWidget.title,
+                updatedTitle: updated.title,
+                originalPosition: originalWidget.position,
+                updatedPosition: updated.position
+              });
               
-              if (existingOpIndex >= 0) {
-                console.log('[updateLocal] Updating existing operation at index:', existingOpIndex);
-                newState.pendingOperations[existingOpIndex] = newOperation;
+              const isReverted = JSON.stringify(updated.config) === JSON.stringify(originalWidget.config) &&
+                                updated.title === originalWidget.title &&
+                                updated.description === originalWidget.description &&
+                                JSON.stringify(updated.position) === JSON.stringify(originalWidget.position);
+              
+              if (isReverted) {
+                // Remove update operation if reverted to original
+                console.log('[updateLocal] Widget reverted to original, removing pending operation');
+                newState.pendingOperations = state.pendingOperations.filter(op => 
+                  !(op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId)
+                );
+                newState.dirtyWidgetIds.delete(widgetId);
               } else {
-                console.log('[updateLocal] Adding new update operation');
-                newState.pendingOperations.push(newOperation);
-                newState.dirtyWidgetIds.add(widgetId);
+                // Add or update pending operation
+                console.log('[updateLocal] Widget modified, adding/updating pending operation');
+                const existingOpIndex = state.pendingOperations.findIndex(op => 
+                  op.kind === "update" && hasWidgetId(op) && op.widgetId === widgetId
+                );
+                
+                const newOperation = {
+                  kind: "update" as const,
+                  id: `update-${widgetId}-${generateOperationId()}`,
+                widgetId,
+                patch,
+                expectedVersion: updated.version,
+                };
+                
+                if (existingOpIndex >= 0) {
+                  console.log('[updateLocal] Updating existing operation at index:', existingOpIndex);
+                  newState.pendingOperations[existingOpIndex] = newOperation;
+                } else {
+                  console.log('[updateLocal] Adding new update operation');
+                  newState.pendingOperations.push(newOperation);
+                  newState.dirtyWidgetIds.add(widgetId);
+                }
               }
             }
+          } else {
+            console.log('[updateLocal] Skipping pending operations - tracking disabled (undo/redo in progress)');
           }
 
           return newState;
