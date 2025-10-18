@@ -134,7 +134,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const success = undoLastChange(); // No widgetId needed - global stack
     
     if (success) {
-      setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
+      // NO setLayoutKey! GridLayout will see position changes automatically via layouts prop
       
       toast({
         title: "⏪ Undo successful",
@@ -157,7 +157,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const success = redoLastChange(); // No widgetId needed - global stack
     
     if (success) {
-      setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
+      // NO setLayoutKey! GridLayout will see position changes automatically via layouts prop
       
       toast({
         title: "⏩ Redo successful",
@@ -179,7 +179,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     
     // Use discardAllChanges instead of clearPending to keep local widgets
     discardAllChanges();
-    setLayoutKey(prev => prev + 1); // Force GridLayout to re-render
+    // NO setLayoutKey! GridLayout will see changes automatically via layouts prop
     
     toast({
       title: "All changes discarded",
@@ -782,8 +782,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         });
       });
       
-      // Force grid re-render
-      setLayoutKey(prev => prev + 1);
+      // NO setLayoutKey! GridLayout will see position changes automatically via layouts prop
       
       toast({
         title: "Layout applied!",
