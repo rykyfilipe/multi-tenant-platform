@@ -202,6 +202,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   
   // Cache widget references to prevent unnecessary re-renders
   const widgetCacheRef = useRef<Map<number, WidgetEntity>>(new Map());
+  const previousWidgetListRef = useRef<WidgetEntity[]>([]);
   
   // Ref to grid container for width calculation
   const gridContainerRef = useRef<HTMLDivElement>(null);
@@ -225,6 +226,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   // OPTIMISTIC: Cache widget references - return SAME object if content unchanged
   const widgetList = useMemo(() => {
+    console.log('🔄 [WIDGET LIST] useMemo triggered - checking if widgets changed');
+    
     const filtered = Object.values(widgetsRecord).filter((widget) => 
       widget && // Ensure widget exists
       widget.id && // Ensure widget has valid ID
@@ -235,6 +238,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       widget.isVisible
     );
     
+    let changedCount = 0;
+    let unchangedCount = 0;
+    
     // Use cached reference if widget object reference unchanged (for React.memo optimization)
     const cachedList = filtered.map(widget => {
       const cached = widgetCacheRef.current.get(widget.id);
@@ -243,11 +249,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       // This works because Zustand creates new objects only for modified widgets
       if (cached === widget) {
         // Widget unchanged - reuse cached reference for React.memo
+        unchangedCount++;
+        console.log(`✅ [CACHE] Widget ${widget.id} unchanged (reference match)`);
         return cached;
       }
       
       // Content changed or new widget - update cache and return new reference
-      console.log(`♻️ [CACHE] Updating cache for widget ${widget.id} (v${widget.version})`);
+      changedCount++;
+      console.log(`♻️ [CACHE] Widget ${widget.id} changed (v${widget.version}) - NEW reference detected`);
       widgetCacheRef.current.set(widget.id, widget);
       return widget;
     });
@@ -260,7 +269,26 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       }
     }
     
-    console.log('🎯 [DEBUG] WidgetList:', cachedList.length, 'widgets');
+    // CRITICAL: If widget list hasn't changed (same length and all same references), 
+    // return previous array to prevent layout recalculation
+    const previousList = previousWidgetListRef.current;
+    if (previousList.length === cachedList.length) {
+      let allSame = true;
+      for (let i = 0; i < cachedList.length; i++) {
+        if (previousList[i] !== cachedList[i]) {
+          allSame = false;
+          break;
+        }
+      }
+      
+      if (allSame) {
+        console.log(`✅ [WIDGET LIST] Array unchanged - returning previous reference (prevents layout recalc)`);
+        return previousList;
+      }
+    }
+    
+    console.log(`🎯 [DEBUG] WidgetList: ${cachedList.length} widgets (${changedCount} changed, ${unchangedCount} unchanged) - NEW ARRAY`);
+    previousWidgetListRef.current = cachedList;
     return cachedList;
   }, [widgetsRecord, tenantId, dashboardId]);
 
@@ -434,8 +462,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         widget && 
         widget.id && 
         typeof widget.id === 'number' && 
-        !isNaN(widget.id) && 
-        widgetsRecord[widget.id]
+        !isNaN(widget.id)
       )
       .map((widget) => {
         // Get position for this specific breakpoint (with fallback to default)
@@ -466,7 +493,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
   // Create responsive layouts - each breakpoint uses its saved layout
   const layouts: Layouts = useMemo(() => {
-    console.log(`📐 [RESPONSIVE LAYOUTS] Creating per-breakpoint layouts for ${widgetList.length} widgets`);
+    console.log(`📐 [RESPONSIVE LAYOUTS] useMemo triggered - recalculating layouts for ${widgetList.length} widgets`);
     
     // Helper: intelligently wrap/stack for mobile if no saved layout exists
     const createSmartLayout = (breakpoint: Breakpoint, autoWrap: 'none' | 'stack' | 'wrap' = 'none'): Layout[] => {
@@ -474,8 +501,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         widget && 
         widget.id && 
         typeof widget.id === 'number' && 
-        !isNaN(widget.id) && 
-        widgetsRecord[widget.id]
+        !isNaN(widget.id)
       );
       
       // Separate widgets: those with saved layouts vs those needing auto-layout
@@ -597,7 +623,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       sm: smLayout,    // >= 480px: 24 cols - uses sm positions or default
       xs: xsLayout,    // < 480px: 24 cols - stacks vertically if no saved layout
     };
-  }, [widgetList, widgetsRecord]);
+  }, [widgetList]);
 
   // Find next available position in grid
   const findNextPosition = useCallback(() => {

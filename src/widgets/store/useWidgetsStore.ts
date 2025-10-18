@@ -564,13 +564,43 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           // Keep original updatedAt and version for cache optimization
         };
         
+        console.log('⏪ [UNDO] Widget references:', {
+          widgetId: changeGroup.widgetId,
+          oldWidget: widget,
+          newWidget: updatedWidget,
+          areSameRef: widget === updatedWidget,
+          patchedProps: Object.keys(patch),
+        });
+        
         // Single atomic update - only update the specific widget + history
-        set((currentState) => ({
-          widgets: { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget },
-          changeHistory: currentState.changeHistory.slice(1),
-          redoHistory: [changeGroup, ...currentState.redoHistory].slice(0, MAX_HISTORY_SIZE),
-          lastModifiedWidgetId: changeGroup.widgetId,
-        }));
+        set((currentState) => {
+          const newWidgets = { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget };
+          
+          // Log which widget references changed
+          const changedRefs: number[] = [];
+          const unchangedRefs: number[] = [];
+          Object.keys(newWidgets).forEach(id => {
+            const widgetId = Number(id);
+            if (currentState.widgets[widgetId] !== newWidgets[widgetId]) {
+              changedRefs.push(widgetId);
+            } else {
+              unchangedRefs.push(widgetId);
+            }
+          });
+          
+          console.log('⏪ [UNDO] State update:', {
+            totalWidgets: Object.keys(newWidgets).length,
+            changedRefs: changedRefs,
+            unchangedRefs: unchangedRefs,
+          });
+          
+          return {
+            widgets: newWidgets,
+            changeHistory: currentState.changeHistory.slice(1),
+            redoHistory: [changeGroup, ...currentState.redoHistory].slice(0, MAX_HISTORY_SIZE),
+            lastModifiedWidgetId: changeGroup.widgetId,
+          };
+        });
 
         return true;
       },
@@ -618,13 +648,43 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           // Keep original updatedAt and version for cache optimization
         };
         
+        console.log('⏩ [REDO] Widget references:', {
+          widgetId: changeGroup.widgetId,
+          oldWidget: widget,
+          newWidget: updatedWidget,
+          areSameRef: widget === updatedWidget,
+          patchedProps: Object.keys(patch),
+        });
+        
         // Single atomic update - only update the specific widget + history
-        set((currentState) => ({
-          widgets: { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget },
-          changeHistory: [changeGroup, ...currentState.changeHistory].slice(0, MAX_HISTORY_SIZE),
-          redoHistory: currentState.redoHistory.slice(1),
-          lastModifiedWidgetId: changeGroup.widgetId,
-        }));
+        set((currentState) => {
+          const newWidgets = { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget };
+          
+          // Log which widget references changed
+          const changedRefs: number[] = [];
+          const unchangedRefs: number[] = [];
+          Object.keys(newWidgets).forEach(id => {
+            const widgetId = Number(id);
+            if (currentState.widgets[widgetId] !== newWidgets[widgetId]) {
+              changedRefs.push(widgetId);
+            } else {
+              unchangedRefs.push(widgetId);
+            }
+          });
+          
+          console.log('⏩ [REDO] State update:', {
+            totalWidgets: Object.keys(newWidgets).length,
+            changedRefs: changedRefs,
+            unchangedRefs: unchangedRefs,
+          });
+          
+          return {
+            widgets: newWidgets,
+            changeHistory: [changeGroup, ...currentState.changeHistory].slice(0, MAX_HISTORY_SIZE),
+            redoHistory: currentState.redoHistory.slice(1),
+            lastModifiedWidgetId: changeGroup.widgetId,
+          };
+        });
 
         return true;
       },
