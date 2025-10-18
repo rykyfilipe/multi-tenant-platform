@@ -131,10 +131,20 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const handleUndo = useCallback(() => {
     console.log('⏪ [UNDO] Undoing last change');
     
+    // Set flag to prevent onLayoutChange cascade
+    isUndoRedoInProgress.current = true;
+    
     const success = undoLastChange(); // No widgetId needed - global stack
     
     if (success) {
-      // NO setLayoutKey! GridLayout will see position changes automatically via layouts prop
+      // Force GridLayout to see new layouts
+      setLayoutKey(prev => prev + 1);
+      
+      // Reset flag after a brief delay (after GridLayout processes the change)
+      setTimeout(() => {
+        isUndoRedoInProgress.current = false;
+        console.log('⏪ [UNDO] Reset undo/redo flag');
+      }, 50);
       
       toast({
         title: "⏪ Undo successful",
@@ -142,6 +152,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         variant: "default",
       });
     } else {
+      isUndoRedoInProgress.current = false;
       toast({
         title: "Nothing to undo",
         description: "No changes in history.",
@@ -154,10 +165,20 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   const handleRedo = useCallback(() => {
     console.log('⏩ [REDO] Redoing last change');
     
+    // Set flag to prevent onLayoutChange cascade
+    isUndoRedoInProgress.current = true;
+    
     const success = redoLastChange(); // No widgetId needed - global stack
     
     if (success) {
-      // NO setLayoutKey! GridLayout will see position changes automatically via layouts prop
+      // Force GridLayout to see new layouts
+      setLayoutKey(prev => prev + 1);
+      
+      // Reset flag after a brief delay (after GridLayout processes the change)
+      setTimeout(() => {
+        isUndoRedoInProgress.current = false;
+        console.log('⏩ [REDO] Reset undo/redo flag');
+      }, 50);
       
       toast({
         title: "⏩ Redo successful",
@@ -165,6 +186,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         variant: "default",
       });
     } else {
+      isUndoRedoInProgress.current = false;
       toast({
         title: "Nothing to redo",
         description: "No changes to redo.",
@@ -203,6 +225,9 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   // Cache widget references to prevent unnecessary re-renders
   const widgetCacheRef = useRef<Map<number, WidgetEntity>>(new Map());
   const previousWidgetListRef = useRef<WidgetEntity[]>([]);
+  
+  // Flag to prevent onLayoutChange during undo/redo
+  const isUndoRedoInProgress = useRef(false);
   
   // Ref to grid container for width calculation
   const gridContainerRef = useRef<HTMLDivElement>(null);
@@ -352,7 +377,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     });
     
     if (needsMigration && widgetsToMigrate.length > 0) {
-      console.log(`🔄 [MIGRATION] Migrating ${widgetsToMigrate.length} widgets to responsive layouts`);
+      console.log(`🔄 [MIGRATION] Migrating ${widgetsToMigrate.length} widgets to responsive layouts (NO tracking)`);
+      
+      // CRITICAL: Disable tracking during migration to prevent pending operations
+      useWidgetsStore.setState({ isTrackingEnabled: false });
       
       // Migrate each widget
       widgetsToMigrate.forEach((widgetId) => {
@@ -361,7 +389,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         
         const migratedPosition = migratePositionToResponsive(widget.position);
         
-        console.log(`✅ [MIGRATION] Widget ${widgetId} migrated:`, {
+        console.log(`✅ [MIGRATION] Widget ${widgetId} migrated (silent):`, {
           old: widget.position,
           new: migratedPosition,
         });
@@ -371,13 +399,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         });
       });
       
-      toast({
-        title: "Layout Migrated",
-        description: `${widgetsToMigrate.length} widget(s) upgraded to responsive layouts. Save to persist changes.`,
-        variant: "default",
-      });
+      // Re-enable tracking after migration
+      useWidgetsStore.setState({ isTrackingEnabled: true });
+      
+      console.log(`✅ [MIGRATION] Complete - ${widgetsToMigrate.length} widgets migrated WITHOUT creating pending operations`);
     }
-  }, [isInitialLoad, widgetList, widgetsRecord, updateLocal, toast]);
+  }, [isInitialLoad, widgetList, widgetsRecord, updateLocal]);
 
   // Update container width on resize - use full available width
   useEffect(() => {
@@ -484,7 +511,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         };
       })
       .filter(Boolean) as Layout[];
-  }, [widgetList, widgetsRecord]);
+  }, [widgetList]);
   
   // Helper: create base layout using default breakpoint (lg)
   const createBaseLayout = useCallback((): Layout[] => {
@@ -494,6 +521,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   // Create responsive layouts - each breakpoint uses its saved layout
   const layouts: Layouts = useMemo(() => {
     console.log(`📐 [RESPONSIVE LAYOUTS] useMemo triggered - recalculating layouts for ${widgetList.length} widgets`);
+    console.log(`📐 [RESPONSIVE LAYOUTS] widgetList reference:`, widgetList);
     
     // Helper: intelligently wrap/stack for mobile if no saved layout exists
     const createSmartLayout = (breakpoint: Breakpoint, autoWrap: 'none' | 'stack' | 'wrap' = 'none'): Layout[] => {
@@ -1466,6 +1494,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             onLayoutChange={(currentLayout: Layout[], allLayouts: Layouts) => {
               if (!isEditMode) return;
               
+              // PREVENT cascade during undo/redo
+              if (isUndoRedoInProgress.current) {
+                console.log('⚡ [LAYOUT] Skipping onLayoutChange - undo/redo in progress');
+                return;
+              }
+              
               const breakpoint = currentBreakpoint as Breakpoint;
               console.log(`🎯 [LAYOUT] Layout changed on breakpoint: ${breakpoint}`, currentLayout);
               
@@ -1495,6 +1529,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             onResize={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
               if (!isEditMode) return;
               
+              // PREVENT cascade during undo/redo
+              if (isUndoRedoInProgress.current) {
+                console.log('⚡ [RESIZE] Skipping onResize - undo/redo in progress');
+                return;
+              }
+              
               const breakpoint = currentBreakpoint as Breakpoint;
               console.log(`🎯 [RESIZE] Widget resized on ${breakpoint}:`, { oldItem, newItem });
               
@@ -1514,6 +1554,12 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             }}
             onResizeStop={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
               if (!isEditMode) return;
+              
+              // PREVENT cascade during undo/redo
+              if (isUndoRedoInProgress.current) {
+                console.log('⚡ [RESIZE STOP] Skipping onResizeStop - undo/redo in progress');
+                return;
+              }
               
               const breakpoint = currentBreakpoint as Breakpoint;
               console.log(`🎯 [RESIZE STOP] Resize stopped on ${breakpoint}:`, { oldItem, newItem });
