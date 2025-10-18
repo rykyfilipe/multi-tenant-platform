@@ -25,7 +25,10 @@ import { WidgetErrorBoundary } from "./components/WidgetErrorBoundary";
 import { WidgetEditorSheet } from "./components/WidgetEditorSheet";
 import { HydrationBoundary } from "./components/HydrationBoundary";
 import { TemplateSelector } from "./components/TemplateSelector";
+import { LayoutTemplateSelector } from "./components/LayoutTemplateSelector";
 import { getTemplateById, type WidgetTemplate } from "@/widgets/templates/widget-templates";
+import { type DashboardLayoutTemplate } from "@/widgets/templates/layout-templates";
+import { applyLayoutTemplate } from "@/widgets/utils/applyLayoutTemplate";
 import { cn } from "@/lib/utils";
 import { 
   BarChart3, 
@@ -756,6 +759,50 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     }
   }, [tenantId, dashboardId, actorId, createLocal, toast, findNextPosition]);
 
+  // Apply layout template to existing widgets
+  const handleApplyLayout = useCallback((template: DashboardLayoutTemplate) => {
+    try {
+      console.log('🎨 [LAYOUT] Applying layout template:', template.name);
+      
+      // Set internal update flag to prevent undo/redo from cascading
+      isInternalUpdate.current = true;
+      
+      // Apply template to existing widgets
+      const updatedWidgets = applyLayoutTemplate(widgetList, template);
+      
+      // Update each widget in the store
+      updatedWidgets.forEach((widget) => {
+        updateLocal(widget.id, {
+          position: widget.position,
+        });
+      });
+      
+      // Force grid re-render
+      setLayoutKey(prev => prev + 1);
+      
+      // Reset internal update flag
+      setTimeout(() => {
+        isInternalUpdate.current = false;
+      }, 100);
+      
+      toast({
+        title: "Layout applied!",
+        description: `${template.name} has been applied to your ${updatedWidgets.length} widget${updatedWidgets.length !== 1 ? 's' : ''} across all screen sizes.`,
+        variant: "success",
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error("Failed to apply layout template:", error);
+      isInternalUpdate.current = false;
+      toast({
+        title: "Failed to apply layout",
+        description: "An error occurred while applying the layout template.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  }, [widgetList, updateLocal, toast]);
+
   const handleAddWidget = (type: WidgetType) => {
     try {
       console.log('🎯 [DEBUG] Adding widget locally:', type);
@@ -962,8 +1009,14 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-background/90 backdrop-blur-xl border border-border/30 rounded-2xl shadow-2xl px-4 py-2">
             <div className="flex items-center space-x-2">
-              {/* Template Selector - FIRST! */}
+              {/* Template Selector - Add new widgets */}
               <TemplateSelector onSelectTemplate={handleAddFromTemplate} />
+              
+              {/* Layout Template Selector - Rearrange existing widgets */}
+              <LayoutTemplateSelector 
+                onSelectLayout={handleApplyLayout}
+                currentWidgetCount={widgetList.length}
+              />
               
               {/* Separator */}
               <div className="w-px h-6 bg-border/30 mx-2" />
