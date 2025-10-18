@@ -235,14 +235,13 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       widget.isVisible
     );
     
-    // Use cached reference if widget content unchanged (for React.memo optimization)
+    // Use cached reference if widget object reference unchanged (for React.memo optimization)
     const cachedList = filtered.map(widget => {
       const cached = widgetCacheRef.current.get(widget.id);
       
-      // Fast equality check: version + updatedAt (instead of deep JSON comparison)
-      if (cached && 
-          cached.version === widget.version && 
-          cached.updatedAt?.getTime() === widget.updatedAt?.getTime()) {
+      // OPTIMIZED: Check object reference equality - if same object, reuse cache
+      // This works because Zustand creates new objects only for modified widgets
+      if (cached === widget) {
         // Widget unchanged - reuse cached reference for React.memo
         return cached;
       }

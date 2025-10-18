@@ -538,43 +538,41 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           changes: changeGroup.changes.length
         });
         
-        // DISABLE TRACKING to prevent infinite loop
-        set({ isTrackingEnabled: false });
-        
-        try {
-          const widget = state.widgets[changeGroup.widgetId];
-          if (!widget) {
-            console.warn('⏪ [UNDO] Widget not found:', changeGroup.widgetId);
-            return false;
-          }
-
-          // Build patch with ALL old values
-          const patch: Partial<WidgetEntity> = {};
-          changeGroup.changes.forEach(change => {
-            (patch as any)[change.property] = change.oldValue;
-          });
-
-          console.log('⏪ [UNDO] Applying patch:', {
-            widgetId: changeGroup.widgetId,
-            properties: Object.keys(patch),
-            isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
-            tracking: false
-          });
-
-          // Apply changes using updateLocal (tracking is disabled - NO version increment)
-          get().updateLocal(changeGroup.widgetId, patch);
-          
-          // Move ChangeGroup to redo history
-          set((currentState) => ({
-            changeHistory: currentState.changeHistory.slice(1),
-            redoHistory: [changeGroup, ...currentState.redoHistory].slice(0, MAX_HISTORY_SIZE),
-          }));
-
-          return true;
-        } finally {
-          // RE-ENABLE TRACKING
-          set({ isTrackingEnabled: true });
+        const widget = state.widgets[changeGroup.widgetId];
+        if (!widget) {
+          console.warn('⏪ [UNDO] Widget not found:', changeGroup.widgetId);
+          return false;
         }
+
+        // Build patch with ALL old values
+        const patch: Partial<WidgetEntity> = {};
+        changeGroup.changes.forEach(change => {
+          (patch as any)[change.property] = change.oldValue;
+        });
+
+        console.log('⏪ [UNDO] Applying patch:', {
+          widgetId: changeGroup.widgetId,
+          properties: Object.keys(patch),
+          isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
+        });
+
+        // OPTIMISTIC: Modify widget directly WITHOUT touching updatedAt or version
+        // This preserves cache and only re-renders the affected widget
+        const updatedWidget = { 
+          ...widget, 
+          ...patch,
+          // Keep original updatedAt and version for cache optimization
+        };
+        
+        // Single atomic update - only update the specific widget + history
+        set((currentState) => ({
+          widgets: { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget },
+          changeHistory: currentState.changeHistory.slice(1),
+          redoHistory: [changeGroup, ...currentState.redoHistory].slice(0, MAX_HISTORY_SIZE),
+          lastModifiedWidgetId: changeGroup.widgetId,
+        }));
+
+        return true;
       },
 
       redoLastChange: () => {
@@ -594,43 +592,41 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           changes: changeGroup.changes.length
         });
         
-        // DISABLE TRACKING to prevent infinite loop
-        set({ isTrackingEnabled: false });
-        
-        try {
-          const widget = state.widgets[changeGroup.widgetId];
-          if (!widget) {
-            console.warn('⏩ [REDO] Widget not found:', changeGroup.widgetId);
-            return false;
-          }
-
-          // Build patch with ALL new values
-          const patch: Partial<WidgetEntity> = {};
-          changeGroup.changes.forEach(change => {
-            (patch as any)[change.property] = change.newValue;
-          });
-
-          console.log('⏩ [REDO] Applying patch:', {
-            widgetId: changeGroup.widgetId,
-            properties: Object.keys(patch),
-            isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
-            tracking: false
-          });
-
-          // Apply changes using updateLocal (tracking is disabled - NO version increment)
-          get().updateLocal(changeGroup.widgetId, patch);
-          
-          // Move ChangeGroup back to change history
-          set((currentState) => ({
-            changeHistory: [changeGroup, ...currentState.changeHistory].slice(0, MAX_HISTORY_SIZE),
-            redoHistory: currentState.redoHistory.slice(1),
-          }));
-
-          return true;
-        } finally {
-          // RE-ENABLE TRACKING
-          set({ isTrackingEnabled: true });
+        const widget = state.widgets[changeGroup.widgetId];
+        if (!widget) {
+          console.warn('⏩ [REDO] Widget not found:', changeGroup.widgetId);
+          return false;
         }
+
+        // Build patch with ALL new values
+        const patch: Partial<WidgetEntity> = {};
+        changeGroup.changes.forEach(change => {
+          (patch as any)[change.property] = change.newValue;
+        });
+
+        console.log('⏩ [REDO] Applying patch:', {
+          widgetId: changeGroup.widgetId,
+          properties: Object.keys(patch),
+          isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
+        });
+
+        // OPTIMISTIC: Modify widget directly WITHOUT touching updatedAt or version
+        // This preserves cache and only re-renders the affected widget
+        const updatedWidget = { 
+          ...widget, 
+          ...patch,
+          // Keep original updatedAt and version for cache optimization
+        };
+        
+        // Single atomic update - only update the specific widget + history
+        set((currentState) => ({
+          widgets: { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget },
+          changeHistory: [changeGroup, ...currentState.changeHistory].slice(0, MAX_HISTORY_SIZE),
+          redoHistory: currentState.redoHistory.slice(1),
+          lastModifiedWidgetId: changeGroup.widgetId,
+        }));
+
+        return true;
       },
 
       // Utility operations
