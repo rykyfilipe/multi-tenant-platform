@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { Responsive as ResponsiveGridLayout, type Layout, type Layouts } from "react-grid-layout";
+import { Responsive as ResponsiveGridLayout, WidthProvider, type Layout, type Layouts } from "react-grid-layout";
+import { clamp, packLayout, scaleItem } from "@/widgets/utils/gridLayoutUtils";
 import { useWidgetsStore } from "@/widgets/store/useWidgetsStore";
 import { getWidgetDefinition } from "@/widgets/registry/widget-registry";
 import { useWidgetsApi } from "@/widgets/api/simple-client";
@@ -65,6 +66,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   isEditMode = false,
   isFullscreen = false
 }) => {
+  // Wrap Responsive with WidthProvider to auto-measure width
+  const ResponsiveGrid = useMemo(() => WidthProvider(ResponsiveGridLayout), []);
+
+  // Grid configuration (responsive)
+  const GRID_BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 0 } as const;
+  const GRID_COLS = { lg: 12, md: 10, sm: 6, xs: 2 } as const;
+  const BASE_FROM_COLS = 24; // positions in store are based on 24 cols
+  const BASE_TO_COLS = GRID_COLS.lg; // our canonical base layout is lg
+
   const widgetsRecord = useWidgetsStore((state) => state.widgets);
   const pendingOperations = useWidgetsStore((state) => state.getPending());
   const clearPending = useWidgetsStore((state) => state.clearPending);
@@ -230,6 +240,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
   
   // Ref to grid container for width calculation
   const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  // Helpers moved to utils/gridLayoutUtils for testability (clamp, scaleItem, packLayout)
 
   // Handle exit confirmation dialog
   const handleExitConfirm = useCallback(() => {
@@ -475,47 +487,40 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
 
 
   // Create responsive layouts - each breakpoint uses its saved layout
-  // Create layouts object - SAME layout for ALL breakpoints (responsive scaling without layout changes)
+  // Create layouts per breakpoint from a single canonical lg layout
   const layouts: Layouts = useMemo(() => {
-    console.log(`📐 [RESPONSIVE SCALING] Creating uniform layout for ${widgetList.length} widgets`);
-    
-    // Create single layout from widget positions
-    const baseLayout: Layout[] = widgetList
-      .filter(widget => 
-        widget && 
-        widget.id && 
-        typeof widget.id === 'number' && 
-        !isNaN(widget.id)
-      )
+    console.log(`📐 [RESPONSIVE LAYOUTS] Building proportional layouts for ${widgetList.length} widgets`);
+
+    // 1) Build canonical LG layout from store (24 cols -> 12 cols)
+    const baseLg: Layout[] = widgetList
+      .filter(widget => widget && widget.id && typeof widget.id === 'number' && !isNaN(widget.id))
       .map((widget) => {
-        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
-        const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
-        const w = Number.isFinite(widget.position.w) ? widget.position.w : 8;
-        const h = Number.isFinite(widget.position.h) ? widget.position.h : 6;
-        
-        return {
-          i: widget.id.toString(),
-          x,
-          y,
-          w,
-          h,
-          minW: 1,
-          minH: 2,
-        };
-      })
-      .filter(Boolean) as Layout[];
-    
-    // Return SAME layout for ALL breakpoints - grid scales but layout stays the same
-    console.log(`📐 [RESPONSIVE SCALING] Using identical layout for all breakpoints (${baseLayout.length} widgets)`);
-    
-    return {
-      xxl: baseLayout,  // Desktop - same layout
-      xl: baseLayout,   // Desktop - same layout
-      lg: baseLayout,   // Desktop - same layout
-      md: baseLayout,   // Tablet - same layout
-      sm: baseLayout,   // Mobile - same layout
-      xs: baseLayout,   // Small mobile - same layout
-    };
+        const x24 = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        const y24 = Number.isFinite(widget.position.y) ? widget.position.y : 0;
+        const w24 = Number.isFinite(widget.position.w) ? widget.position.w : 8;
+        const h24 = Number.isFinite(widget.position.h) ? widget.position.h : 6;
+        // scale from 24 -> 12
+        const ratio = BASE_TO_COLS / BASE_FROM_COLS;
+        const x = clamp(Math.round(x24 * ratio), 0, Math.max(0, BASE_TO_COLS - 1));
+        const w = clamp(Math.max(1, Math.round(w24 * ratio)), 1, BASE_TO_COLS);
+        const h = Math.max(1, Math.round(h24 * ratio));
+        const y = Math.max(0, Math.round(y24 * ratio));
+        return { i: widget.id.toString(), x, y, w, h, minW: 1, maxW: BASE_TO_COLS, minH: 1 } as Layout;
+      });
+
+    const packedLg = packLayout(baseLg, GRID_COLS.lg);
+
+    // 2) Derive other breakpoints proportionally from LG
+    const scaleFromLg = (toCols: number) => packLayout(
+      packedLg.map(it => scaleItem(it, GRID_COLS.lg, toCols)),
+      toCols
+    );
+
+    const md = scaleFromLg(GRID_COLS.md);
+    const sm = scaleFromLg(GRID_COLS.sm);
+    const xs = scaleFromLg(GRID_COLS.xs);
+
+    return { lg: packedLg, md, sm, xs };
   }, [widgetList]);
 
   // Find next available position in grid
@@ -1333,18 +1338,17 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
           }
         `}</style>
         <WidgetErrorBoundary>
-          <ResponsiveGridLayout 
+          <ResponsiveGrid 
             key={layoutKey}
             className="layout" 
             layouts={layouts}
-            breakpoints={{ xxl: 1600, xl: 1200, lg: 996, md: 768, sm: 480, xs: 0 }}
-            cols={{ xxl: 24, xl: 24, lg: 24, md: 24, sm: 24, xs: 24 }}
-            width={containerWidth}
-            rowHeight={30} 
+            breakpoints={GRID_BREAKPOINTS as any}
+            cols={GRID_COLS as any}
+            rowHeight={30}
             isDraggable={isEditMode}
             isResizable={isEditMode}
             isBounded={false}
-            compactType={null}
+            compactType="vertical"
             preventCollision={false}
             useCSSTransforms={true}
             margin={[10, 10]}
@@ -1360,34 +1364,38 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 return;
               }
               
-              console.log(`🎯 [LAYOUT] Layout changed - updating all widgets`, currentLayout);
-              
-              // Update widget positions directly (same for all breakpoints)
-              currentLayout.forEach((item) => {
+              // Always persist from LG layout as the canonical base
+              const lgLayout = allLayouts?.lg && allLayouts.lg.length > 0 ? allLayouts.lg : currentLayout;
+              console.log(`🎯 [LAYOUT] Persisting from LG layout`, lgLayout);
+
+              lgLayout.forEach((item) => {
                 const widgetId = Number(item.i);
                 const widget = widgetsRecord[widgetId];
                 if (!widget) return;
                 
-                // Only update if position actually changed
-                const hasChanged = 
-                  widget.position.x !== item.x ||
-                  widget.position.y !== item.y ||
-                  widget.position.w !== item.w ||
-                  widget.position.h !== item.h;
+                // Map back from LG (12 cols) to store (24 cols)
+                const ratioBack = BASE_FROM_COLS / BASE_TO_COLS; // 24/12 = 2
+                const pos24 = {
+                  x: Math.max(0, Math.round(item.x * ratioBack)),
+                  y: Math.max(0, Math.round(item.y * ratioBack)),
+                  w: Math.max(1, Math.round(item.w * ratioBack)),
+                  h: Math.max(1, Math.round(item.h * ratioBack)),
+                };
+
+                const hasChanged =
+                  widget.position.x !== pos24.x ||
+                  widget.position.y !== pos24.y ||
+                  widget.position.w !== pos24.w ||
+                  widget.position.h !== pos24.h;
                 
                 if (hasChanged) {
                   console.log(`📱 [LAYOUT] Updating widget ${widgetId}:`, {
                     old: widget.position,
-                    new: { x: item.x, y: item.y, w: item.w, h: item.h },
+                    new: pos24,
                   });
                   
                   updateLocal(widgetId, {
-                    position: {
-                      x: item.x,
-                      y: item.y,
-                      w: item.w,
-                      h: item.h,
-                    },
+                    position: pos24,
                   });
                 }
               });
@@ -1481,7 +1489,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                   </div>
                 );
               }).filter(Boolean)}
-          </ResponsiveGridLayout>
+          </ResponsiveGrid>
         </WidgetErrorBoundary>
       </div>
 
