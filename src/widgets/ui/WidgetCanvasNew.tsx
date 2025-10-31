@@ -137,8 +137,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const success = undoLastChange(); // No widgetId needed - global stack
     
     if (success) {
-      // Force GridLayout to see new layouts
-      setLayoutKey(prev => prev + 1);
+      // NO setLayoutKey! Let React detect changes automatically via widgetsRecord
+      // Only the modified widget will have a new reference, others are preserved
       
       // Reset flag after a brief delay (after GridLayout processes the change)
       setTimeout(() => {
@@ -171,8 +171,8 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     const success = redoLastChange(); // No widgetId needed - global stack
     
     if (success) {
-      // Force GridLayout to see new layouts
-      setLayoutKey(prev => prev + 1);
+      // NO setLayoutKey! Let React detect changes automatically via widgetsRecord
+      // Only the modified widget will have a new reference, others are preserved
       
       // Reset flag after a brief delay (after GridLayout processes the change)
       setTimeout(() => {
@@ -263,6 +263,58 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
       widget.isVisible
     );
     
+    // Get previous list reference
+    const previousList = previousWidgetListRef.current;
+    
+    // CRITICAL FIX: Check if we can reuse the previous array entirely
+    // This prevents creating new references for unchanged widgets
+    if (previousList.length === filtered.length) {
+      // Check if all widgets are the same by comparing with cache
+      let allSame = true;
+      const changedWidgetIds: number[] = [];
+      
+      for (let i = 0; i < filtered.length; i++) {
+        const widget = filtered[i];
+        const cached = widgetCacheRef.current.get(widget.id);
+        
+        // If widget reference changed, mark it
+        if (cached !== widget) {
+          allSame = false;
+          changedWidgetIds.push(widget.id);
+          // Update cache for changed widget
+          widgetCacheRef.current.set(widget.id, widget);
+        }
+      }
+      
+      if (allSame) {
+        // No widgets changed - return previous array reference
+        console.log(`✅ [WIDGET LIST] No changes detected - returning previous array reference`);
+        return previousList;
+      } else {
+        // Some widgets changed - update only those widgets in the array
+        console.log(`♻️ [WIDGET LIST] ${changedWidgetIds.length} widget(s) changed:`, changedWidgetIds);
+        
+        // Create new array only with updated references
+        const newList = previousList.map((prevWidget) => {
+          if (changedWidgetIds.includes(prevWidget.id)) {
+            // Find updated widget from filtered list
+            const updatedWidget = filtered.find(w => w.id === prevWidget.id);
+            console.log(`♻️ [CACHE] Widget ${prevWidget.id} changed (v${updatedWidget?.version}) - NEW reference detected`);
+            return updatedWidget || prevWidget;
+          }
+          // Reuse previous reference for unchanged widgets
+          console.log(`✅ [CACHE] Widget ${prevWidget.id} unchanged (reference match)`);
+          return prevWidget;
+        });
+        
+        previousWidgetListRef.current = newList;
+        return newList;
+      }
+    }
+    
+    // Length changed - new/removed widgets - rebuild list
+    console.log(`🔄 [WIDGET LIST] Length changed (${previousList.length} -> ${filtered.length}) - rebuilding list`);
+    
     let changedCount = 0;
     let unchangedCount = 0;
     
@@ -291,24 +343,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     for (const cachedId of Array.from(widgetCacheRef.current.keys())) {
       if (!currentIds.has(cachedId)) {
         widgetCacheRef.current.delete(cachedId);
-      }
-    }
-    
-    // CRITICAL: If widget list hasn't changed (same length and all same references), 
-    // return previous array to prevent layout recalculation
-    const previousList = previousWidgetListRef.current;
-    if (previousList.length === cachedList.length) {
-      let allSame = true;
-      for (let i = 0; i < cachedList.length; i++) {
-        if (previousList[i] !== cachedList[i]) {
-          allSame = false;
-          break;
-        }
-      }
-      
-      if (allSame) {
-        console.log(`✅ [WIDGET LIST] Array unchanged - returning previous reference (prevents layout recalc)`);
-        return previousList;
       }
     }
     

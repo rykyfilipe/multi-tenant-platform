@@ -556,27 +556,22 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
         });
 
-        // OPTIMISTIC: Modify widget directly WITHOUT touching updatedAt or version
-        // This preserves cache and only re-renders the affected widget
-        const updatedWidget = { 
-          ...widget, 
-          ...patch,
-          // Keep original updatedAt and version for cache optimization
-        };
-        
-        console.log('⏪ [UNDO] Widget references:', {
-          widgetId: changeGroup.widgetId,
-          oldWidget: widget,
-          newWidget: updatedWidget,
-          areSameRef: widget === updatedWidget,
-          patchedProps: Object.keys(patch),
-        });
-        
-        // Single atomic update - only update the specific widget + history
+        // CRITICAL FIX: Update ONLY the modified widget, preserve references for others
         set((currentState) => {
-          const newWidgets = { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget };
+          // Create new widgets object with ONLY the modified widget changed
+          const newWidgets = { ...currentState.widgets };
           
-          // Log which widget references changed
+          // Apply patch to create updated widget
+          const updatedWidget = { 
+            ...widget, 
+            ...patch,
+            // Keep original updatedAt and version for cache optimization
+          };
+          
+          // Replace ONLY the modified widget
+          newWidgets[changeGroup.widgetId] = updatedWidget;
+          
+          // Log which widget references changed (should be only 1)
           const changedRefs: number[] = [];
           const unchangedRefs: number[] = [];
           Object.keys(newWidgets).forEach(id => {
@@ -592,6 +587,7 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             totalWidgets: Object.keys(newWidgets).length,
             changedRefs: changedRefs,
             unchangedRefs: unchangedRefs,
+            targetWidget: changeGroup.widgetId,
           });
           
           return {
@@ -640,27 +636,22 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
           isStyleOnly: Object.keys(patch).every(k => k === 'config' && patch.config?.style),
         });
 
-        // OPTIMISTIC: Modify widget directly WITHOUT touching updatedAt or version
-        // This preserves cache and only re-renders the affected widget
-        const updatedWidget = { 
-          ...widget, 
-          ...patch,
-          // Keep original updatedAt and version for cache optimization
-        };
-        
-        console.log('⏩ [REDO] Widget references:', {
-          widgetId: changeGroup.widgetId,
-          oldWidget: widget,
-          newWidget: updatedWidget,
-          areSameRef: widget === updatedWidget,
-          patchedProps: Object.keys(patch),
-        });
-        
-        // Single atomic update - only update the specific widget + history
+        // CRITICAL FIX: Update ONLY the modified widget, preserve references for others
         set((currentState) => {
-          const newWidgets = { ...currentState.widgets, [changeGroup.widgetId]: updatedWidget };
+          // Create new widgets object with ONLY the modified widget changed
+          const newWidgets = { ...currentState.widgets };
           
-          // Log which widget references changed
+          // Apply patch to create updated widget
+          const updatedWidget = { 
+            ...widget, 
+            ...patch,
+            // Keep original updatedAt and version for cache optimization
+          };
+          
+          // Replace ONLY the modified widget
+          newWidgets[changeGroup.widgetId] = updatedWidget;
+          
+          // Log which widget references changed (should be only 1)
           const changedRefs: number[] = [];
           const unchangedRefs: number[] = [];
           Object.keys(newWidgets).forEach(id => {
@@ -676,6 +667,7 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
             totalWidgets: Object.keys(newWidgets).length,
             changedRefs: changedRefs,
             unchangedRefs: unchangedRefs,
+            targetWidget: changeGroup.widgetId,
           });
           
           return {
@@ -849,25 +841,42 @@ export const useWidgetsStore = create<PendingChangesState>()((set, get) => ({
       discardAllChanges: () => {
         console.log('🗑️ [discardAllChanges] Discarding all changes and restoring to original state');
         set((state) => {
+          // CRITICAL FIX: Preserve widget references that haven't changed
           const restoredWidgets: Record<number, WidgetEntity> = {};
+          const changedWidgetIds: number[] = [];
+          const unchangedWidgetIds: number[] = [];
           
           // Restore all widgets to their original state
           Object.entries(state.widgets).forEach(([idStr, widget]) => {
             const widgetId = Number(idStr);
             
             if (state.originalWidgets[widgetId]) {
-              // Restore DB widgets to original state
-              console.log('[discardAllChanges] Restoring widget to original:', widgetId);
-              restoredWidgets[widgetId] = state.originalWidgets[widgetId];
+              // Check if widget actually changed
+              const hasChanged = JSON.stringify(widget) !== JSON.stringify(state.originalWidgets[widgetId]);
+              
+              if (hasChanged) {
+                // Restore DB widgets to original state
+                console.log('[discardAllChanges] Restoring widget to original:', widgetId);
+                restoredWidgets[widgetId] = state.originalWidgets[widgetId];
+                changedWidgetIds.push(widgetId);
+              } else {
+                // Widget unchanged - preserve reference
+                console.log('[discardAllChanges] Widget unchanged, preserving reference:', widgetId);
+                restoredWidgets[widgetId] = widget;
+                unchangedWidgetIds.push(widgetId);
+              }
             } else {
               // Keep local widgets as they are (they don't have original state)
               console.log('[discardAllChanges] Keeping local widget:', widgetId);
               restoredWidgets[widgetId] = widget;
+              unchangedWidgetIds.push(widgetId);
             }
           });
           
           console.log('🗑️ [discardAllChanges] Discarded changes:', {
-            restoredWidgets: Object.keys(restoredWidgets).length,
+            totalWidgets: Object.keys(restoredWidgets).length,
+            changedWidgets: changedWidgetIds,
+            unchangedWidgets: unchangedWidgetIds,
             keptLocalWidgets: Object.values(restoredWidgets).filter(w => isLocalWidget(w.id)).length
           });
 
