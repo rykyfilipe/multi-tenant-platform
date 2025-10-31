@@ -1,7 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  output          = "../src/generated/prisma"
-  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -569,6 +568,97 @@ model ANAFSubmissionLog {
   @@index([submissionId])
   @@index([status])
   @@index([submittedAt])
+}
+
+// ANAF Integration Models
+model ANAFOAuthToken {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  tenantId     Int
+  accessToken  String   @db.Text
+  refreshToken String?  @db.Text
+  tokenType    String   @default("Bearer")
+  expiresAt    DateTime
+  scope        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([expiresAt])
+}
+
+model ANAFCertificate {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  tenantId          Int
+  encryptedCert     String   @db.Text
+  commonName        String
+  organization      String
+  validFrom         DateTime
+  validTo           DateTime
+  issuer            String
+  serialNumber      String
+  encryptionIv      String
+  encryptionAuthTag String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([validTo])
+}
+
+model ANAFSubmission {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  tenantId      Int
+  invoiceId     Int
+  submissionId  String    @unique
+  status        String    @default("pending")
+  xmlContent    String?   @db.Text
+  anafResponse  String?   @db.Text
+  errorMessage  String?   @db.Text
+  submittedAt   DateTime  @default(now())
+  processedAt   DateTime?
+  downloadIndex String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model ANAFAuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tenantId  Int
+  action    String
+  status    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ANAFRateLimit {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([resetAt])
 }
 
 model Dashboard {

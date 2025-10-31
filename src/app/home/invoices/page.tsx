@@ -23,6 +23,7 @@ import {
 	CheckCircle2,
 	AlertCircle,
 	TrendingUp,
+	Shield,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -32,6 +33,7 @@ import { useSilentANAF } from "@/hooks/useSilentANAF";
 import { TourManager } from "@/components/tours/TourManager";
 import { allTours } from "@/tours";
 import { SeriesManager } from "@/components/invoice/SeriesManager";
+import { ANAFAuthManager } from "@/components/anaf/ANAFAuthManager";
 
 export default function InvoicesPage() {
 	const [activeTab, setActiveTab] = useState("list");
@@ -370,7 +372,7 @@ export default function InvoicesPage() {
 					value={activeTab}
 					onValueChange={setActiveTab}
 					className='space-y-6'>
-					<TabsList className='grid w-full sm:w-auto sm:inline-grid grid-cols-3 h-11 bg-muted/50 border border-border shadow-sm'>
+					<TabsList className='grid w-full sm:w-auto sm:inline-grid grid-cols-4 h-11 bg-muted/50 border border-border shadow-sm'>
 						<TabsTrigger
 							value='list'
 							className='gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all'>
@@ -385,6 +387,13 @@ export default function InvoicesPage() {
 							<Plus className='w-4 h-4' />
 							<span className='hidden sm:inline'>Create Invoice</span>
 							<span className='sm:hidden'>Create</span>
+						</TabsTrigger>
+						<TabsTrigger
+							value='anaf'
+							className='gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all'>
+							<Shield className='w-4 h-4' />
+							<span className='hidden sm:inline'>ANAF Setup</span>
+							<span className='sm:hidden'>ANAF</span>
 						</TabsTrigger>
 						<TabsTrigger
 							value='series'
@@ -428,6 +437,15 @@ export default function InvoicesPage() {
 					/>
 				</TabsContent>
 				
+				<TabsContent value='anaf' className='mt-0'>
+					<ANAFAuthManager 
+						onAuthComplete={() => {
+							// Refresh ANAF status after auth complete
+							window.location.reload();
+						}}
+					/>
+				</TabsContent>
+
 				<TabsContent value='series' className='mt-0'>
 					{tenant && <SeriesManager tenantId={tenant.id.toString()} />}
 				</TabsContent>

@@ -31,28 +31,17 @@ export function applyLayoutTemplate(
       return widget;
     }
     
-    // Create new position with layouts for all breakpoints
+    // Create new position using xxl breakpoint as the fixed position
     const newPosition: WidgetPosition = {
-      // Default position (use xxl as default)
       x: slot.positions.xxl.x,
       y: slot.positions.xxl.y,
       w: slot.positions.xxl.w,
       h: slot.positions.xxl.h,
-      // Responsive layouts for all breakpoints
-      layouts: {
-        xxl: slot.positions.xxl,
-        xl: slot.positions.xl,
-        lg: slot.positions.lg,
-        md: slot.positions.md,
-        sm: slot.positions.sm,
-        xs: slot.positions.xs,
-      },
     };
     
     console.log(`✅ [LAYOUT] Widget ${widget.id} → Slot ${slot.id}:`, {
       old: { x: widget.position.x, y: widget.position.y, w: widget.position.w, h: widget.position.h },
       new: { x: newPosition.x, y: newPosition.y, w: newPosition.w, h: newPosition.h },
-      breakpoints: Object.keys(newPosition.layouts || {}).length,
     });
     
     return {
