@@ -481,7 +481,7 @@ export class ANAFAuthService {
    * @param tenantId Tenant ID
    * @returns Stored token data
    */
-  private static async getStoredToken(
+  static async getStoredToken(
     userId: number,
     tenantId: number
   ): Promise<{

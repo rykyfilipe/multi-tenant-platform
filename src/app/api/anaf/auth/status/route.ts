@@ -38,6 +38,31 @@ export async function GET(request: NextRequest) {
     // Check OAuth authentication status
     const isAuthenticated = await ANAFAuthService.isAuthenticated(userId, tenantId);
 
+    // Get token info if authenticated
+    let tokenInfo = null;
+    if (isAuthenticated) {
+      try {
+        const token = await ANAFAuthService.getStoredToken(userId, tenantId);
+        if (token) {
+          const now = Date.now();
+          const expiresAt = token.expiresAt.getTime();
+          const expiresIn = Math.max(0, Math.floor((expiresAt - now) / 1000)); // seconds
+          const willRefreshSoon = (expiresAt - now) < 5 * 60 * 1000; // <5 minutes
+          
+          tokenInfo = {
+            expiresAt: token.expiresAt.toISOString(),
+            expiresIn, // seconds
+            expiresInMinutes: Math.floor(expiresIn / 60),
+            willRefreshSoon,
+            hasRefreshToken: !!token.refreshToken,
+            isExpired: expiresIn <= 0,
+          };
+        }
+      } catch (error) {
+        console.error('[ANAF Auth Status] Error getting token info:', error);
+      }
+    }
+
     // Check certificate status
     const certInfo = await ANAFCertificateService.getCertificateInfo(userId, tenantId);
 
@@ -45,13 +70,15 @@ export async function GET(request: NextRequest) {
       authenticated: isAuthenticated,
       hasCertificate: !!certInfo,
       certificateValid: certInfo?.isValid || false,
-      certificateInfo: certInfo ? {
-        subject: certInfo.subject,
+      token: tokenInfo,
+      certificate: certInfo ? {
+        commonName: certInfo.subject,
+        organization: certInfo.issuer, // Use issuer as organization for now
         issuer: certInfo.issuer,
         validFrom: certInfo.validFrom,
         validTo: certInfo.validTo,
         daysUntilExpiry: certInfo.daysUntilExpiry,
-        serialNumber: certInfo.serialNumber,
+        isValid: certInfo.isValid,
       } : null,
     });
   } catch (error) {

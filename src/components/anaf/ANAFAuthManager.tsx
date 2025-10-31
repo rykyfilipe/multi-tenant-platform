@@ -37,6 +37,15 @@ interface CertificateInfo {
   issuer: string;
 }
 
+interface TokenInfo {
+  expiresAt: string;
+  expiresIn: number; // seconds
+  expiresInMinutes: number;
+  willRefreshSoon: boolean;
+  hasRefreshToken: boolean;
+  isExpired: boolean;
+}
+
 interface ANAFAuthManagerProps {
   onAuthComplete?: () => void;
 }
@@ -46,6 +55,9 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Token State
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
 
   // Certificate State
   const [certificateInfo, setCertificateInfo] = useState<CertificateInfo | null>(null);
@@ -59,20 +71,18 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // Current tab
-  const [activeTab, setActiveTab] = useState('oauth');
+  // Current tab - Start with upload certificate (Step 1)
+  const [activeTab, setActiveTab] = useState('upload');
 
   // Check OAuth2 authentication status
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
-  // Load certificate info
+  // Load certificate info on mount
   useEffect(() => {
-    if (isAuthenticated) {
-      loadCertificateInfo();
-    }
-  }, [isAuthenticated]);
+    loadCertificateInfo();
+  }, []);
 
   const checkAuthStatus = async () => {
     try {
@@ -82,6 +92,20 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
       if (response.ok) {
         const data = await response.json();
         setIsAuthenticated(data.authenticated || false);
+        setTokenInfo(data.token || null);
+        
+        // Also update certificate info from status response
+        if (data.certificate) {
+          setCertificateInfo({
+            isValid: data.certificate.isValid,
+            commonName: data.certificate.commonName,
+            organization: data.certificate.organization,
+            validFrom: data.certificate.validFrom,
+            validTo: data.certificate.validTo,
+            daysUntilExpiry: data.certificate.daysUntilExpiry,
+            issuer: data.certificate.issuer,
+          });
+        }
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -196,10 +220,11 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
       // Call callback
       onAuthComplete?.();
 
-      // Switch to certificate info tab
+      // Auto-switch to OAuth2 tab (Step 2) after 2 seconds
       setTimeout(() => {
-        setActiveTab('certificate');
-      }, 1000);
+        setActiveTab('oauth');
+        setUploadSuccess(false); // Clear success message
+      }, 2000);
     } catch (error) {
       console.error('Upload error:', error);
       setUploadError(error instanceof Error ? error.message : 'Eroare necunoscută');
@@ -231,6 +256,19 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
   };
 
   const isFullyConfigured = isAuthenticated && certificateInfo?.isValid;
+
+  // Utility function to format time duration
+  const formatDuration = (seconds: number): string => {
+    if (seconds <= 0) return 'Expirat';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes} minute`;
+  };
 
   return (
     <div className="space-y-6">
@@ -319,33 +357,212 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
         </CardContent>
       </Card>
 
-      {/* Configuration Tabs */}
+      {/* Configuration Tabs - Step-by-step flow */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="oauth" className="gap-2">
-            <Shield className="h-4 w-4" />
-            OAuth2
-          </TabsTrigger>
-          <TabsTrigger value="upload" className="gap-2" disabled={!isAuthenticated}>
+          {/* STEP 1: Upload Certificate - ALWAYS enabled */}
+          <TabsTrigger value="upload" className="gap-2">
             <Upload className="h-4 w-4" />
-            Upload Certificat
+            <span>1. Upload Certificat</span>
           </TabsTrigger>
-          <TabsTrigger value="certificate" className="gap-2" disabled={!certificateInfo}>
+          
+          {/* STEP 2: OAuth2 - Enabled only if certificate is valid */}
+          <TabsTrigger 
+            value="oauth" 
+            className="gap-2" 
+            disabled={!certificateInfo?.isValid}
+          >
+            <Shield className="h-4 w-4" />
+            <span>2. OAuth2</span>
+          </TabsTrigger>
+          
+          {/* STEP 3: Certificate Info - Enabled only if authenticated */}
+          <TabsTrigger 
+            value="certificate" 
+            className="gap-2" 
+            disabled={!isAuthenticated || !certificateInfo}
+          >
             <FileKey className="h-4 w-4" />
-            Info Certificat
+            <span>3. Info Certificat</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* OAuth2 Tab */}
+        {/* Upload Certificate Tab - STEP 1 */}
+        <TabsContent value="upload" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="bg-blue-500">Pasul 1</Badge>
+                <div>
+                  <CardTitle className="text-lg">Încărcare Certificat Digital</CardTitle>
+                  <CardDescription>
+                    Începeți prin a încărca certificatul digital PKCS#12 (.pfx sau .p12)
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Step indicator */}
+              <Alert variant="default" className="border-blue-500 bg-blue-50">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <p className="font-semibold mb-2">🔐 Pasul 1: Încărcați certificatul digital</p>
+                  <p className="text-sm">
+                    Pentru a continua integrarea ANAF, trebuie să încărcați mai întâi certificatul digital. 
+                    După ce certificatul este validat, veți putea continua cu autentificarea OAuth2.
+                  </p>
+                </AlertDescription>
+              </Alert>
+
+              {uploadSuccess && (
+                <Alert variant="default" className="border-green-500 bg-green-50">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <p className="font-semibold">✅ Certificatul a fost încărcat și validat cu succes!</p>
+                    <p className="text-sm mt-1">Acum puteți continua cu Pasul 2: Autentificare OAuth2</p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {uploadError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{uploadError}</AlertDescription>
+                </Alert>
+              )}
+
+              {certificateInfo?.isValid && (
+                <Alert variant="default" className="border-green-500 bg-green-50">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <p className="font-semibold">Certificat deja încărcat</p>
+                    <p className="text-sm mt-1">
+                      Aveți deja un certificat valid. Puteți continua cu Pasul 2 sau încărca un certificat nou.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <form onSubmit={handleCertificateUpload} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="certificate-file">Fișier Certificat *</Label>
+                  <Input
+                    id="certificate-file"
+                    type="file"
+                    accept=".pfx,.p12"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Fișiere acceptate: .pfx, .p12 (max 10MB)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="certificate-password">Parola Certificatului *</Label>
+                  <Input
+                    id="certificate-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Introduceți parola"
+                    disabled={isUploading}
+                    autoComplete="new-password"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Parola folosită pentru protecția certificatului
+                  </p>
+                </div>
+
+                <Alert variant="default" className="border-yellow-500 bg-yellow-50">
+                  <Lock className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800 text-sm">
+                    <p className="font-semibold mb-1">🔒 Securitate:</p>
+                    Certificatul va fi criptat cu AES-256-GCM înainte de stocare. 
+                    Parola nu este salvată și este folosită doar pentru validare.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="p-4 border rounded-lg space-y-2">
+                  <h4 className="font-medium text-sm">📋 Despre certificatul digital:</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                      Certificatul trebuie obținut de la ANAF sau furnizori autorizați (ex: CertSign)
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                      Certificatul este folosit pentru autentificare mTLS și semnare XML
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                      Verificați data de expirare înainte de încărcare
+                    </li>
+                  </ul>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={!selectedFile || !password || isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Se încarcă și validează...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Încarcă și Validează Certificat
+                    </>
+                  )}
+                </Button>
+
+                {certificateInfo?.isValid && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setActiveTab('oauth')}
+                  >
+                    Continuă cu Pasul 2: OAuth2 →
+                  </Button>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* OAuth2 Tab - STEP 2 */}
         <TabsContent value="oauth" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Autentificare OAuth2</CardTitle>
-              <CardDescription>
-                Conectați-vă cu contul ANAF pentru accesul la serviciul e-Factura
-              </CardDescription>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="bg-green-500">Pasul 2</Badge>
+                <div>
+                  <CardTitle className="text-lg">Autentificare OAuth2</CardTitle>
+                  <CardDescription>
+                    Conectați-vă cu contul ANAF pentru accesul la serviciul e-Factura
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Certificate check */}
+              {!certificateInfo?.isValid && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <p className="font-semibold">❌ Certificat lipsă sau invalid</p>
+                    <p className="text-sm mt-1">
+                      Trebuie să completați Pasul 1 (Upload Certificat) înainte de a continua.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {authError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -362,9 +579,97 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
                   <Alert variant="default" className="border-green-500 bg-green-50">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                     <AlertDescription className="text-green-800">
-                      Autentificat cu succes la ANAF. Acum puteți încărca certificatul digital.
+                      <p className="font-semibold">✅ Autentificat cu succes la ANAF!</p>
+                      <p className="text-sm mt-1">
+                        Token-ul OAuth2 este activ. Acum puteți vizualiza informațiile despre certificat și trimite facturi.
+                      </p>
                     </AlertDescription>
                   </Alert>
+
+                  {/* Token Status Card */}
+                  {tokenInfo && (
+                    <div className="p-4 border rounded-lg bg-blue-50/50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-blue-600" />
+                          🔑 Status Token OAuth2
+                        </h4>
+                        {tokenInfo.willRefreshSoon && (
+                          <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-600">
+                            🔄 Se refreshează curând
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="space-y-1">
+                          <p className="text-muted-foreground">Status Token:</p>
+                          <p className="font-medium flex items-center gap-1">
+                            {tokenInfo.isExpired ? (
+                              <>
+                                <XCircle className="h-3 w-3 text-red-500" />
+                                <span className="text-red-600">Expirat</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                <span className="text-green-600">Activ</span>
+                              </>
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-muted-foreground">Expiră în:</p>
+                          <p className="font-medium">
+                            {formatDuration(tokenInfo.expiresIn)}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-muted-foreground">Data expirării:</p>
+                          <p className="font-medium text-xs">
+                            {new Date(tokenInfo.expiresAt).toLocaleString('ro-RO')}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-muted-foreground">Auto-refresh:</p>
+                          <p className="font-medium flex items-center gap-1">
+                            {tokenInfo.hasRefreshToken ? (
+                              <>
+                                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                <span className="text-green-600">Activat</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-3 w-3 text-red-500" />
+                                <span className="text-red-600">Dezactivat</span>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      {tokenInfo.willRefreshSoon && !tokenInfo.isExpired && (
+                        <Alert variant="default" className="border-yellow-500 bg-yellow-50 py-2">
+                          <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                          <AlertDescription className="text-yellow-800 text-xs">
+                            Token-ul va fi refreshat automat în următoarele 5 minute pentru a menține conectarea activă.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {tokenInfo.isExpired && (
+                        <Alert variant="destructive" className="py-2">
+                          <XCircle className="h-3 w-3" />
+                          <AlertDescription className="text-xs">
+                            Token-ul a expirat. Vă rugăm să vă reconectați.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
                     <div className="space-y-1">
@@ -382,22 +687,45 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
                     </Button>
                   </div>
 
-                  <div className="p-4 border rounded-lg space-y-2">
-                    <h4 className="font-medium text-sm">Pași următori:</h4>
-                    <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Accesați tab-ul "Upload Certificat"</li>
-                      <li>Încărcați certificatul digital (.pfx sau .p12)</li>
-                      <li>Introduceți parola certificatului</li>
-                      <li>Trimiteți facturi către ANAF</li>
-                    </ol>
+                  <div className="p-4 border rounded-lg space-y-2 bg-green-50">
+                    <h4 className="font-medium text-sm">✨ Configurare completă!</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Puteți acum să:
+                    </p>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        Vizualizați informațiile despre certificat (Pasul 3)
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        Trimiteți facturi către ANAF e-Factura
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        Verificați statusul facturilor
+                      </li>
+                    </ul>
                   </div>
+
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={() => setActiveTab('certificate')}
+                  >
+                    Continuă cu Pasul 3: Info Certificat →
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <Alert variant="default" className="border-blue-500 bg-blue-50">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-800">
-                      Pentru a utiliza integrarea ANAF e-Factura, trebuie să vă autentificați cu contul SPV.
+                      <p className="font-semibold mb-1">🔐 Pasul 2: Autentificare OAuth2</p>
+                      <p className="text-sm">
+                        După ce ați încărcat certificatul, trebuie să vă autentificați cu contul ANAF SPV 
+                        pentru a activa integrarea e-Factura.
+                      </p>
                     </AlertDescription>
                   </Alert>
 
@@ -410,148 +738,65 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
                     <ul className="space-y-1 text-sm text-muted-foreground">
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-3 w-3 text-green-500" />
-                        Securitate maximă
+                        Securitate maximă cu mTLS
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-3 w-3 text-green-500" />
-                        Acces controlat
+                        Acces controlat și revocat oricând
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-3 w-3 text-green-500" />
-                        Conformitate ANAF
+                        Conformitate ANAF 100%
                       </li>
                     </ul>
                   </div>
+
+                  <Alert variant="default" className="border-yellow-500 bg-yellow-50">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800 text-sm">
+                      <p className="font-semibold mb-1">📋 Ce vă trebuie:</p>
+                      <ul className="space-y-0.5 text-xs">
+                        <li>✅ Cont ANAF SPV activ</li>
+                        <li>✅ Certificat digital încărcat (Pasul 1)</li>
+                        <li>✅ Aplicație înregistrată în portalul ANAF</li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
 
                   <Button
                     onClick={handleOAuthConnect}
                     className="w-full gap-2"
                     size="lg"
+                    disabled={!certificateInfo?.isValid}
                   >
                     <ExternalLink className="h-4 w-4" />
-                    Conectare cu ANAF
+                    {certificateInfo?.isValid ? 'Conectare cu ANAF' : 'Completați Pasul 1 mai întâi'}
                   </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        {/* Upload Certificate Tab */}
-        <TabsContent value="upload" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Încărcare Certificat Digital</CardTitle>
-              <CardDescription>
-                Încărcați certificatul digital PKCS#12 (.pfx sau .p12) pentru semnarea facturilor
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {uploadSuccess && (
-                <Alert variant="default" className="border-green-500 bg-green-50">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    Certificatul a fost încărcat și validat cu succes!
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {uploadError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{uploadError}</AlertDescription>
-                </Alert>
-              )}
-
-              <form onSubmit={handleCertificateUpload} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="certificate-file">Fișier Certificat</Label>
-                  <Input
-                    id="certificate-file"
-                    type="file"
-                    accept=".pfx,.p12"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Fișiere acceptate: .pfx, .p12 (max 10MB)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="certificate-password">Parola Certificatului</Label>
-                  <Input
-                    id="certificate-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Introduceți parola"
-                    disabled={isUploading}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Parola folosită pentru protecția certificatului
-                  </p>
-                </div>
-
-                <Alert variant="default" className="border-yellow-500 bg-yellow-50">
-                  <Lock className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800 text-sm">
-                    <p className="font-semibold mb-1">Securitate:</p>
-                    Certificatul va fi criptat cu AES-256-GCM înainte de stocare. 
-                    Parola nu este salvată și este folosită doar pentru validare.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="p-4 border rounded-lg space-y-2">
-                  <h4 className="font-medium text-sm">Despre certificatul digital:</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
-                      Certificatul trebuie obținut de la ANAF sau furnizori autorizați (ex: CertSign)
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
-                      Certificatul este folosit pentru semnarea digitală a facturilor
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
-                      Verificați data de expirare înainte de încărcare
-                    </li>
-                  </ul>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={!selectedFile || !password || isUploading}
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Se încarcă...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Încarcă Certificat
-                    </>
+                  {!certificateInfo?.isValid && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Certificatul trebuie să fie valid pentru a continua
+                    </p>
                   )}
-                </Button>
-              </form>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Certificate Info Tab */}
+        {/* Certificate Info Tab - STEP 3 */}
         <TabsContent value="certificate" className="space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Informații Certificat</CardTitle>
-                  <CardDescription>
-                    Detalii despre certificatul digital încărcat
-                  </CardDescription>
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="bg-purple-500">Pasul 3</Badge>
+                  <div>
+                    <CardTitle className="text-lg">Informații Certificat</CardTitle>
+                    <CardDescription>
+                      Detalii complete despre certificatul digital încărcat
+                    </CardDescription>
+                  </div>
                 </div>
                 {certificateInfo?.isValid ? (
                   <Badge variant="default" className="flex items-center gap-1 bg-green-500 hover:bg-green-600">
@@ -567,19 +812,45 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Step completion indicator */}
+              {!isAuthenticated && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <p className="font-semibold">❌ OAuth2 neconectat</p>
+                    <p className="text-sm mt-1">
+                      Trebuie să completați Pasul 2 (OAuth2) înainte de a vedea informațiile complete.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {isLoadingCert ? (
                 <div className="flex items-center justify-center p-8">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : certificateInfo ? (
                 <div className="space-y-4">
+                  {/* Success message */}
+                  {isAuthenticated && certificateInfo.isValid && (
+                    <Alert variant="default" className="border-green-500 bg-green-50">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        <p className="font-semibold">🎉 Configurare completă!</p>
+                        <p className="text-sm mt-1">
+                          Integrarea ANAF e-Factura este activă. Puteți trimite facturi către SPV.
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Expiration Warning */}
                   {certificateInfo.isValid && certificateInfo.daysUntilExpiry <= 30 && (
                     <Alert variant="default" className="border-yellow-500 bg-yellow-50">
                       <AlertTriangle className="h-4 w-4 text-yellow-600" />
                       <AlertDescription className="text-yellow-800">
-                        Certificatul expiră în {certificateInfo.daysUntilExpiry} zile. 
-                        Încărcați un certificat nou cât mai curând.
+                        ⚠️ Certificatul expiră în {certificateInfo.daysUntilExpiry} zile. 
+                        Încărcați un certificat nou cât mai curând (Pasul 1).
                       </AlertDescription>
                     </Alert>
                   )}
@@ -589,7 +860,10 @@ export function ANAFAuthManager({ onAuthComplete }: ANAFAuthManagerProps) {
                     <Alert variant="destructive">
                       <XCircle className="h-4 w-4" />
                       <AlertDescription>
-                        Certificatul a expirat. Încărcați un certificat nou pentru a continua integrarea ANAF.
+                        <p className="font-semibold">❌ Certificat expirat</p>
+                        <p className="text-sm mt-1">
+                          Încărcați un certificat nou în Pasul 1 pentru a continua integrarea ANAF.
+                        </p>
                       </AlertDescription>
                     </Alert>
                   )}

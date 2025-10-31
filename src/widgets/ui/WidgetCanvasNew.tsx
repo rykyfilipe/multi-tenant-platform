@@ -49,7 +49,6 @@ import {
   X,
   ArrowUpDown
 } from "lucide-react";
-import { getPositionForBreakpoint, setPositionForBreakpoint, migratePositionToResponsive, hasResponsiveLayouts } from "@/widgets/utils/layoutHelpers";
 
 interface WidgetCanvasNewProps {
   tenantId: number;
@@ -395,50 +394,7 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     cleanupOldIds();
   }, [cleanupOldIds]);
 
-  // Migrate legacy positions to responsive layouts on load
-  useEffect(() => {
-    if (isInitialLoad) return; // Wait for initial load to complete
-    
-    let needsMigration = false;
-    const widgetsToMigrate: number[] = [];
-    
-    // Check if any widgets need migration
-    widgetList.forEach((widget) => {
-      if (!hasResponsiveLayouts(widget.position)) {
-        needsMigration = true;
-        widgetsToMigrate.push(widget.id);
-      }
-    });
-    
-    if (needsMigration && widgetsToMigrate.length > 0) {
-      console.log(`🔄 [MIGRATION] Migrating ${widgetsToMigrate.length} widgets to responsive layouts (NO tracking)`);
-      
-      // CRITICAL: Disable tracking during migration to prevent pending operations
-      useWidgetsStore.setState({ isTrackingEnabled: false });
-      
-      // Migrate each widget
-      widgetsToMigrate.forEach((widgetId) => {
-        const widget = widgetsRecord[widgetId];
-        if (!widget) return;
-        
-        const migratedPosition = migratePositionToResponsive(widget.position);
-        
-        console.log(`✅ [MIGRATION] Widget ${widgetId} migrated (silent):`, {
-          old: widget.position,
-          new: migratedPosition,
-        });
-        
-        updateLocal(widgetId, {
-          position: migratedPosition,
-        });
-      });
-      
-      // Re-enable tracking after migration
-      useWidgetsStore.setState({ isTrackingEnabled: true });
-      
-      console.log(`✅ [MIGRATION] Complete - ${widgetsToMigrate.length} widgets migrated WITHOUT creating pending operations`);
-    }
-  }, [isInitialLoad, widgetList, widgetsRecord, updateLocal]);
+  // No migration needed - positions are already in the correct format
 
   // Update container width on resize - use full available width
   useEffect(() => {
@@ -516,9 +472,15 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
     };
   }, [pendingOperations]);
 
-  // Create layout for a specific breakpoint - uses per-breakpoint positions
-  const createLayoutForBreakpoint = useCallback((breakpoint: Breakpoint): Layout[] => {
-    return widgetList
+
+
+  // Create responsive layouts - each breakpoint uses its saved layout
+  // Create layouts object - SAME layout for ALL breakpoints (responsive scaling without layout changes)
+  const layouts: Layouts = useMemo(() => {
+    console.log(`📐 [RESPONSIVE SCALING] Creating uniform layout for ${widgetList.length} widgets`);
+    
+    // Create single layout from widget positions
+    const baseLayout: Layout[] = widgetList
       .filter(widget => 
         widget && 
         widget.id && 
@@ -526,13 +488,10 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         !isNaN(widget.id)
       )
       .map((widget) => {
-        // Get position for this specific breakpoint (with fallback to default)
-        const position = getPositionForBreakpoint(widget.position, breakpoint);
-        
-        const x = Number.isFinite(position.x) ? position.x : 0;
-        const y = Number.isFinite(position.y) ? position.y : 0;
-        const w = Number.isFinite(position.w) ? position.w : 8;
-        const h = Number.isFinite(position.h) ? position.h : 6;
+        const x = Number.isFinite(widget.position.x) ? widget.position.x : 0;
+        const y = Number.isFinite(widget.position.y) ? widget.position.y : 0;
+        const w = Number.isFinite(widget.position.w) ? widget.position.w : 8;
+        const h = Number.isFinite(widget.position.h) ? widget.position.h : 6;
         
         return {
           i: widget.id.toString(),
@@ -545,145 +504,17 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
         };
       })
       .filter(Boolean) as Layout[];
-  }, [widgetList]);
-  
-  // Helper: create base layout using default breakpoint (lg)
-  const createBaseLayout = useCallback((): Layout[] => {
-    return createLayoutForBreakpoint('lg');
-  }, [createLayoutForBreakpoint]);
-
-  // Create responsive layouts - each breakpoint uses its saved layout
-  const layouts: Layouts = useMemo(() => {
-    console.log(`📐 [RESPONSIVE LAYOUTS] useMemo triggered - recalculating layouts for ${widgetList.length} widgets`);
-    console.log(`📐 [RESPONSIVE LAYOUTS] widgetList reference:`, widgetList);
     
-    // Helper: intelligently wrap/stack for mobile if no saved layout exists
-    const createSmartLayout = (breakpoint: Breakpoint, autoWrap: 'none' | 'stack' | 'wrap' = 'none'): Layout[] => {
-      const widgetsToLayout = widgetList.filter(widget => 
-        widget && 
-        widget.id && 
-        typeof widget.id === 'number' && 
-        !isNaN(widget.id)
-      );
-      
-      // Separate widgets: those with saved layouts vs those needing auto-layout
-      const withSavedLayout: Layout[] = [];
-      const needsAutoLayout: Array<{ widget: typeof widgetsToLayout[0], index: number }> = [];
-      
-      widgetsToLayout.forEach((widget, index) => {
-        const hasSavedLayout = widget.position.layouts?.[breakpoint] !== undefined;
-        
-        if (hasSavedLayout) {
-          const position = getPositionForBreakpoint(widget.position, breakpoint);
-          withSavedLayout.push({
-            i: widget.id.toString(),
-            x: Number.isFinite(position.x) ? position.x : 0,
-            y: Number.isFinite(position.y) ? position.y : 0,
-            w: Number.isFinite(position.w) ? position.w : 8,
-            h: Number.isFinite(position.h) ? position.h : 6,
-            minW: 1,
-            minH: 2,
-          });
-        } else {
-          needsAutoLayout.push({ widget, index });
-        }
-      });
-      
-      // If all widgets have saved layouts, return them
-      if (needsAutoLayout.length === 0) {
-        return withSavedLayout;
-      }
-      
-      // Apply auto-layout for widgets without saved layouts
-      const autoLayoutItems: Layout[] = needsAutoLayout.map(({ widget, index }) => {
-        const position = getPositionForBreakpoint(widget.position, breakpoint);
-        
-        if (autoWrap === 'stack') {
-          // Stack vertically - full width, one per row
-          let cumulativeY = 0;
-          for (let i = 0; i < index; i++) {
-            const w = widgetsToLayout[i];
-            const p = getPositionForBreakpoint(w.position, breakpoint);
-            cumulativeY += p.h || 6;
-          }
-          
-          return {
-            i: widget.id.toString(),
-            x: 0,
-            y: cumulativeY,
-            w: 24, // Full width
-            h: position.h || 6,
-            minW: 1,
-            minH: 2,
-          };
-        }
-        
-        if (autoWrap === 'wrap') {
-          // Wrap to 2 columns on small screens
-          const maxWidth = 12; // Half of 24 cols
-          const col = index % 2;
-          const row = Math.floor(index / 2);
-          
-          let rowY = 0;
-          for (let i = 0; i < row * 2; i++) {
-            const w = widgetsToLayout[i];
-            const p = getPositionForBreakpoint(w.position, breakpoint);
-            if (i % 2 === 0) {
-              rowY += p.h || 6;
-            }
-          }
-          
-          return {
-            i: widget.id.toString(),
-            x: col * maxWidth,
-            y: rowY,
-            w: Math.min(position.w || 8, maxWidth),
-            h: position.h || 6,
-            minW: 1,
-            minH: 2,
-          };
-        }
-        
-        // No auto-wrap - use original position
-        return {
-          i: widget.id.toString(),
-          x: Number.isFinite(position.x) ? position.x : 0,
-          y: Number.isFinite(position.y) ? position.y : 0,
-          w: Number.isFinite(position.w) ? position.w : 8,
-          h: Number.isFinite(position.h) ? position.h : 6,
-          minW: 1,
-          minH: 2,
-        };
-      });
-      
-      // Combine saved layouts with auto-generated ones
-      return [...withSavedLayout, ...autoLayoutItems].filter(Boolean) as Layout[];
-    };
-    
-    // Create layouts for each breakpoint with smart auto-wrapping
-    const xxlLayout = createSmartLayout('xxl', 'none');  // No auto-wrap on desktop
-    const xlLayout = createSmartLayout('xl', 'none');    // No auto-wrap on desktop
-    const lgLayout = createSmartLayout('lg', 'none');    // No auto-wrap on desktop
-    const mdLayout = createSmartLayout('md', 'none');    // No auto-wrap on tablet
-    const smLayout = createSmartLayout('sm', 'wrap');    // Wrap to 2 cols on small tablets
-    const xsLayout = createSmartLayout('xs', 'stack');   // Stack vertically on mobile
-    
-    console.log('📱 [LAYOUTS] Per-breakpoint:', {
-      xxl: xxlLayout.length,
-      xl: xlLayout.length,
-      lg: lgLayout.length,
-      md: mdLayout.length,
-      sm: smLayout.length,
-      xs: xsLayout.length,
-    });
+    // Return SAME layout for ALL breakpoints - grid scales but layout stays the same
+    console.log(`📐 [RESPONSIVE SCALING] Using identical layout for all breakpoints (${baseLayout.length} widgets)`);
     
     return {
-      xxl: xxlLayout,  // >= 1600px: 24 cols - uses xxl positions or default
-      xl: xlLayout,    // >= 1200px: 24 cols - uses xl positions or default
-      lg: lgLayout,    // >= 996px: 24 cols - uses lg positions or default
-      md: mdLayout,    // >= 768px: 24 cols - uses md positions or default
-      sm: smLayout,    // >= 480px: 24 cols - uses sm positions or default
-      xs: xsLayout,    // < 480px: 24 cols - stacks vertically if no saved layout
+      xxl: baseLayout,  // Desktop - same layout
+      xl: baseLayout,   // Desktop - same layout
+      lg: baseLayout,   // Desktop - same layout
+      md: baseLayout,   // Tablet - same layout
+      sm: baseLayout,   // Mobile - same layout
+      xs: baseLayout,   // Small mobile - same layout
     };
   }, [widgetList]);
 
@@ -1520,11 +1351,6 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
             containerPadding={isFullscreen ? [5, 5] : [10, 10]}
             resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
             draggableHandle=".widget-header"
-            onBreakpointChange={(breakpoint, cols) => {
-              console.log(`📱 [BREAKPOINT] Changed to: ${breakpoint} (${cols} columns)`);
-              setCurrentBreakpoint(breakpoint);
-              setCurrentCols(cols);
-            }}
             onLayoutChange={(currentLayout: Layout[], allLayouts: Layouts) => {
               if (!isEditMode) return;
               
@@ -1534,82 +1360,36 @@ export const WidgetCanvasNew: React.FC<WidgetCanvasNewProps> = ({
                 return;
               }
               
-              const breakpoint = currentBreakpoint as Breakpoint;
-              console.log(`🎯 [LAYOUT] Layout changed on breakpoint: ${breakpoint}`, currentLayout);
+              console.log(`🎯 [LAYOUT] Layout changed - updating all widgets`, currentLayout);
               
-              // Update only the current breakpoint's layout for each widget
+              // Update widget positions directly (same for all breakpoints)
               currentLayout.forEach((item) => {
                 const widgetId = Number(item.i);
                 const widget = widgetsRecord[widgetId];
                 if (!widget) return;
                 
-                // Create new position with updated breakpoint-specific layout
-                const newPosition = setPositionForBreakpoint(
-                  widget.position,
-                  breakpoint,
-                  { x: item.x, y: item.y, w: item.w, h: item.h }
-                );
+                // Only update if position actually changed
+                const hasChanged = 
+                  widget.position.x !== item.x ||
+                  widget.position.y !== item.y ||
+                  widget.position.w !== item.w ||
+                  widget.position.h !== item.h;
                 
-                console.log(`📱 [LAYOUT] Updating widget ${widgetId} for ${breakpoint}:`, {
-                  old: widget.position,
-                  new: newPosition,
-                });
-                
-                updateLocal(widgetId, {
-                  position: newPosition,
-                });
-              });
-            }}
-            onResize={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
-              if (!isEditMode) return;
-              
-              // PREVENT cascade during undo/redo
-              if (isUndoRedoInProgress.current) {
-                console.log('⚡ [RESIZE] Skipping onResize - undo/redo in progress');
-                return;
-              }
-              
-              const breakpoint = currentBreakpoint as Breakpoint;
-              console.log(`🎯 [RESIZE] Widget resized on ${breakpoint}:`, { oldItem, newItem });
-              
-              const widgetId = Number(newItem.i);
-              const widget = widgetsRecord[widgetId];
-              if (!widget) return;
-              
-              const newPosition = setPositionForBreakpoint(
-                widget.position,
-                breakpoint,
-                { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h }
-              );
-              
-              updateLocal(widgetId, {
-                position: newPosition,
-              });
-            }}
-            onResizeStop={(layout: Layout[], oldItem: Layout, newItem: Layout, placeholder: Layout, e: MouseEvent, element: HTMLElement) => {
-              if (!isEditMode) return;
-              
-              // PREVENT cascade during undo/redo
-              if (isUndoRedoInProgress.current) {
-                console.log('⚡ [RESIZE STOP] Skipping onResizeStop - undo/redo in progress');
-                return;
-              }
-              
-              const breakpoint = currentBreakpoint as Breakpoint;
-              console.log(`🎯 [RESIZE STOP] Resize stopped on ${breakpoint}:`, { oldItem, newItem });
-              
-              const widgetId = Number(newItem.i);
-              const widget = widgetsRecord[widgetId];
-              if (!widget) return;
-              
-              const newPosition = setPositionForBreakpoint(
-                widget.position,
-                breakpoint,
-                { x: newItem.x, y: newItem.y, w: newItem.w, h: newItem.h }
-              );
-              
-              updateLocal(widgetId, {
-                position: newPosition,
+                if (hasChanged) {
+                  console.log(`📱 [LAYOUT] Updating widget ${widgetId}:`, {
+                    old: widget.position,
+                    new: { x: item.x, y: item.y, w: item.w, h: item.h },
+                  });
+                  
+                  updateLocal(widgetId, {
+                    position: {
+                      x: item.x,
+                      y: item.y,
+                      w: item.w,
+                      h: item.h,
+                    },
+                  });
+                }
               });
             }}
           >
