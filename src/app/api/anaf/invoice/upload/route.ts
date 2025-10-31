@@ -3,16 +3,16 @@
  * 
  * POST /api/anaf/invoice/upload
  * 
- * Uploads an invoice to ANAF e-Factura system.
- * Requires valid authentication and digital certificate.
+ * Uploads an invoice to ANAF e-Factura system
+ * Uses Bearer token authentication (NOT mTLS)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { ANAFIntegration } from '@/lib/anaf/anaf-integration';
+import { ANAFInvoiceService } from '@/lib/anaf/services/anafInvoiceService';
+import { ANAFAuthService } from '@/lib/anaf/services/anafAuthService';
 import { ANAFCertificateService } from '@/lib/anaf/certificate-service';
-import { ANAFRateLimiter } from '@/lib/anaf/rate-limiter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,24 +36,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check rate limiting
-    const rateLimitKey = `anaf_upload_${userId}_${tenantId}`;
-    const rateLimit = ANAFRateLimiter.checkRateLimit(rateLimitKey);
-    
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          retryAfter: rateLimit.retryAfter,
-          message: `Too many requests. Please try again in ${rateLimit.retryAfter} seconds.`,
-        },
-        { status: 429 }
-      );
-    }
-
     // Parse request body
     const body = await request.json();
-    const { invoiceId, submissionType = 'manual' } = body;
+    const { invoiceId } = body;
 
     if (!invoiceId || typeof invoiceId !== 'number') {
       return NextResponse.json(
@@ -62,14 +47,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if certificate exists
+    // Verify user is authenticated with ANAF
+    const isAuthenticated = await ANAFAuthService.isAuthenticated(userId, tenantId);
+    
+    if (!isAuthenticated) {
+      return NextResponse.json(
+        {
+          error: 'Not authenticated with ANAF',
+          message: 'Please connect to ANAF first.',
+          action: 'connect_anaf',
+        },
+        { status: 401 }
+      );
+    }
+
+    // Check certificate validity
     const certInfo = await ANAFCertificateService.getCertificateInfo(userId, tenantId);
     
     if (!certInfo) {
       return NextResponse.json(
         {
           error: 'Digital certificate not found',
-          message: 'Please upload your ANAF digital certificate before submitting invoices.',
+          message: 'Please upload your ANAF digital certificate.',
           action: 'upload_certificate',
         },
         { status: 400 }
@@ -88,25 +87,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Warn if certificate expires soon
+    // Warn if certificate expires soon (< 30 days)
     if (certInfo.daysUntilExpiry <= 30) {
       console.warn(
         `[ANAF Upload] Certificate expires in ${certInfo.daysUntilExpiry} days for user ${userId}`
       );
     }
 
-    // Submit invoice to ANAF
-    const anafIntegration = new ANAFIntegration();
-    const result = await anafIntegration.submitInvoice(invoiceId, tenantId, {
-      userId,
-      submissionType,
-    });
+    // Upload invoice to ANAF
+    const result = await ANAFInvoiceService.uploadInvoice(invoiceId, userId, tenantId);
 
     if (!result.success) {
       return NextResponse.json(
         {
-          error: 'Failed to submit invoice',
-          message: result.error,
+          error: result.error || 'Failed to submit invoice',
           timestamp: result.timestamp,
         },
         { status: 500 }
@@ -115,9 +109,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      submissionId: result.submissionId,
-      message: result.message,
+      requestId: result.requestId,
       status: result.status,
+      message: result.message,
       timestamp: result.timestamp,
       certificateInfo: {
         validUntil: certInfo.validTo,

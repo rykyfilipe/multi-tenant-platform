@@ -2,12 +2,14 @@
  * ANAF Auth Login API Route
  * GET /api/anaf/auth/login
  * 
- * Initiates OAuth2 authorization code flow
+ * Initiates OAuth2 authorization code flow with mutual TLS
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { ANAFAuthService } from '@/lib/anaf/services/anafAuthService';
+import { ANAFCertificateService } from '@/lib/anaf/certificate-service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,41 +32,49 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build OAuth2 authorization URL
-    const clientId = process.env.ANAF_CLIENT_ID;
-    const redirectUri = process.env.ANAF_REDIRECT_URI;
-    const authUrl = process.env.ANAF_AUTH_URL || 'https://logincert.anaf.ro/anaf-oauth2/v1/authorize';
-
-    if (!clientId || !redirectUri) {
+    // Verify user has uploaded certificate
+    const certInfo = await ANAFCertificateService.getCertificateInfo(userId, tenantId);
+    
+    if (!certInfo) {
       return NextResponse.json(
-        { error: 'ANAF OAuth2 not configured' },
-        { status: 500 }
+        {
+          error: 'Digital certificate required',
+          message: 'Please upload your digital certificate before connecting to ANAF.',
+          action: 'upload_certificate',
+        },
+        { status: 400 }
       );
     }
 
-    // Generate state parameter for CSRF protection
-    const state = Buffer.from(
-      JSON.stringify({ userId, tenantId, timestamp: Date.now() })
-    ).toString('base64');
+    if (!certInfo.isValid) {
+      return NextResponse.json(
+        {
+          error: 'Certificate expired',
+          message: 'Your digital certificate has expired. Please upload a new certificate.',
+          action: 'upload_certificate',
+        },
+        { status: 400 }
+      );
+    }
 
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'efactura',
-      state,
-    });
-
-    const authorizationUrl = `${authUrl}?${params.toString()}`;
+    // Generate OAuth2 authorization URL
+    const authorizationUrl = await ANAFAuthService.getAuthorizationUrl(userId, tenantId);
 
     return NextResponse.json({
       authUrl: authorizationUrl,
+      certificateInfo: {
+        validUntil: certInfo.validTo,
+        daysUntilExpiry: certInfo.daysUntilExpiry,
+      },
     });
   } catch (error) {
     console.error('[ANAF Auth Login] Error:', error);
     
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Failed to generate authorization URL',
+      },
       { status: 500 }
     );
   }

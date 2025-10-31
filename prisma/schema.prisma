@@ -580,6 +580,7 @@ model ANAFOAuthToken {
   tokenType    String   @default("Bearer")
   expiresAt    DateTime
   scope        String?
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -587,49 +588,51 @@ model ANAFOAuthToken {
   @@index([userId])
   @@index([tenantId])
   @@index([expiresAt])
+  @@index([isActive])
 }
 
 model ANAFCertificate {
   id                Int      @id @default(autoincrement())
   userId            Int
   tenantId          Int
-  encryptedCert     String   @db.Text
-  commonName        String
-  organization      String
+  encryptedData     Bytes
+  encryptedPassword Bytes
+  iv                Bytes
+  authTag           Bytes
+  salt              Bytes
+  thumbprint        String
+  serialNumber      String
+  subject           String   @db.Text
+  issuer            String   @db.Text
   validFrom         DateTime
   validTo           DateTime
-  issuer            String
-  serialNumber      String
-  encryptionIv      String
-  encryptionAuthTag String
+  isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  @@unique([userId, tenantId])
   @@index([userId])
   @@index([tenantId])
   @@index([validTo])
+  @@index([isActive])
+  @@index([thumbprint])
 }
 
 model ANAFSubmission {
-  id            Int       @id @default(autoincrement())
-  userId        Int
-  tenantId      Int
-  invoiceId     Int
-  submissionId  String    @unique
-  status        String    @default("pending")
-  xmlContent    String?   @db.Text
-  anafResponse  String?   @db.Text
-  errorMessage  String?   @db.Text
-  submittedAt   DateTime  @default(now())
-  processedAt   DateTime?
-  downloadIndex String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  invoiceId    Int
+  requestId    String?  @unique
+  status       String   @default("pending")
+  message      String?  @db.Text
+  error        String?  @db.Text
+  xmlContent   String?  @db.Text
+  anafResponse String?  @db.Text
+  submittedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  @@index([userId])
   @@index([tenantId])
   @@index([invoiceId])
+  @@index([requestId])
   @@index([status])
   @@index([submittedAt])
 }
