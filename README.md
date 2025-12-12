@@ -1,6 +1,6 @@
 # Multi-Tenant Data Platform
 
-A comprehensive, enterprise-grade multi-tenant platform that enables organizations to manage their data, create custom dashboards, generate invoices, and integrate with external systems like ANAF e-Factura for Romanian compliance.
+A comprehensive, enterprise-grade multi-tenant platform that enables organizations to manage their data, create custom dashboards, generate invoices, and integrate with external systems like ANAF e-Factura for Romanian complian
 
 ## 🚀 Overview
 
